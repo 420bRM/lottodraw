@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>동행복권 번호 생성기</title>
+    <title>동행복권 로또 번호 생성기 - lottodraw.kr</title>
+    <meta name="description" content="동행복권 로또번호를 무작위로 생성하는 무료 도구입니다. 특수 패턴 배제 기능 포함.">
+    <meta name="keywords" content="로또 번호 생성기, 동행복권, 로또 번호 추천, 로또 통계, 로또 확률, 당첨 번호">
     <style>
         body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
         #result { font-size: 24px; margin-top: 20px; color: green; }
@@ -18,8 +20,8 @@
     </style>
 </head>
 <body onload="updateVisitorCount(); initCheckboxes(); loadHistory();">
-    <h1>동행복권(로또 6/45) 번호 생성기</h1>
-    <p>버튼을 클릭하여 새로운 번호를 생성하세요. 해당 프로그램은 법칙을 규정할 수 있는 특수 패턴들을 배제합니다. 아래 체크박스로 배제할 패턴을 선택하세요 (기본: 모두 체크).</p>
+    <h1>동행복권 번호 생성기</h1>
+    <p>버튼을 클릭하여 새로운 번호를 생성하세요. 해당 프로그램은 정의될 수 있는 특수 패턴을 배제합니다. 아래 체크박스로 배제할 패턴을 선택하세요 (기본: 모두 체크).</p>
     <button onclick="generateNumbers()">번호 생성</button>
     <div id="result"></div>
     <div id="log"></div>
@@ -45,7 +47,7 @@
 
     <div id="visitor-count"></div>
     <div id="history">
-        <h3>생성된 번호 이력:</h3>
+        <h3>생성된 번호 이력 (최대 20개):</h3>
         <table id="history-table">
             <thead>
                 <tr>
@@ -223,5 +225,6 @@
     </script>
 </body>
 </html>
+
 
 
