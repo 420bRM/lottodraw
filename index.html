@@ -3,85 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> 동행복권 번호 생성기 / 로또 번호 추출기 </title>
+    <title>동행복권 번호 생성기 / 로또 번호 추출기 - lottodraw.kr</title>
+    <meta name="description" content="동행복권 로또 6/45 번호를 무작위로 생성하는 무료 도구입니다. 특수 패턴 배제 기능 포함.">
+    <meta name="keywords" content="로또 번호 생성기, 동행복권, 로또 번호 추천, 로또 통계">
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9372871176021283" crossorigin="anonymous"></script>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
         #result { font-size: 24px; margin-top: 20px; color: green; }
         #log { margin-top: 20px; text-align: left; max-width: 600px; margin: 20px auto; border: 1px solid #ccc; padding: 10px; background: #f9f9f9; overflow-y: auto; max-height: 300px; }
-        #patterns { margin-top: 20px; text-align: left; max-width: 600px; margin: 20px auto; }
+        #patterns, #include-section, #exclude-section { margin-top: 20px; text-align: left; max-width: 600px; margin: 20px auto; }
         #visitor-count { margin-top: 40px; font-size: 16px; color: gray; }
+        #history { margin-top: 40px; text-align: center; max-width: 600px; margin: 20px auto; }
+        #history-table { border-collapse: collapse; width: 100%; }
+        #history-table th, #history-table td { border: 1px solid #ddd; padding: 4px; text-align: center; font-size: 8pt; }
+        #history-table th { background-color: #f2f2f2; }
         .pattern-item { margin-bottom: 5px; }
+        #include-slider, #exclude-slider { width: 500px; }
+        @media (max-width: 600px) {
+            #include-slider, #exclude-slider { width: 100%; }
+        }
     </style>
 </head>
-<body onload="updateVisitorCount(); initCheckboxes();">
+<body onload="updateVisitorCount(); initCheckboxes(); loadHistory();">
     <h1>동행복권 번호 생성기 / 로또 번호 추출기</h1>
-    <p>버튼을 클릭하여 새로운 번호를 생성하세요. 과거 당첨 번호 반복과 선택된 특수 패턴을 배제합니다. 아래 체크박스로 배제할 패턴을 선택하세요 (기본: 모두 체크).</p>
+    <p>버튼을 클릭하여 새로운 번호를 생성하세요. 해당 프로그램은 정의될 수 있는 특수 패턴을 배제합니다. 아래 체크박스로 배제할 패턴을 선택하세요 (기본: 모두 체크).</p>
     <button onclick="generateNumbers()">번호 생성</button>
     <div id="result"></div>
     <div id="log"></div>
-
     <div id="patterns">
-        <h3>배제할 특수 패턴 선택 (총 15개):</h3>
-        <div class="pattern-item"><input type="checkbox" id="pattern1"> 모든 숫자가 짝수로 구성된 경우</div>
-        <div class="pattern-item"><input type="checkbox" id="pattern2"> 모든 숫자가 홀수로 구성된 경우</div>
-        <div class="pattern-item"><input type="checkbox" id="pattern3"> 모든 숫자가 3의 배수인 경우</div>
-        <div class="pattern-item"><input type="checkbox" id="pattern4"> 모든 숫자가 5의 배수인 경우</div>
-        <div class="pattern-item"><input type="checkbox" id="pattern5"> 6개 숫자가 연속적으로 배열된 경우 (예: 10,11,12,13,14,15)</div>
-        <div class="pattern-item"><input type="checkbox" id="pattern6"> 모든 숫자가 소수인 경우</div>
-        <div class="pattern-item"><input type="checkbox" id="pattern7"> 모든 숫자가 1~15 범위 내에 집중된 경우</div>
+        <h3>배제할 특수 패턴 선택 (총 17개):</h3>
+        <div class="pattern-item"><input type="checkbox" id="pattern1"> 6개 숫자가 연속적으로 배열된 경우 (예: 10,11,12,13,14,15)</div>
+        <div class="pattern-item"><input type="checkbox" id="pattern2"> 모든 숫자가 1~15 범위 내에 집중된 경우</div>
+        <div class="pattern-item"><input type="checkbox" id="pattern3"> 모든 숫자가 1~20 범위 내에 집중된 경우</div>
+        <div class="pattern-item"><input type="checkbox" id="pattern4"> 모든 숫자가 1~31 범위 내에 집중된 경우</div>
+        <div class="pattern-item"><input type="checkbox" id="pattern5"> 모든 숫자가 3의 배수인 경우</div>
+        <div class="pattern-item"><input type="checkbox" id="pattern6"> 모든 숫자가 4의 배수인 경우</div>
+        <div class="pattern-item"><input type="checkbox" id="pattern7"> 모든 숫자가 5의 배수인 경우</div>
         <div class="pattern-item"><input type="checkbox" id="pattern8"> 모든 숫자가 31~45 범위 내에 집중된 경우</div>
-        <div class="pattern-item"><input type="checkbox" id="pattern9"> 숫자 합계가 50 미만 또는 200 초과하는 극단적인 경우</div>
-        <div class="pattern-item"><input type="checkbox" id="pattern10"> 모든 숫자가 동일한 자리대(예: 10~19) 내에 속한 경우</div>
-        <div class="pattern-item"><input type="checkbox" id="pattern11"> 모든 숫자가 1~31 범위 내에 집중된 경우</div>
-        <div class="pattern-item"><input type="checkbox" id="pattern12"> 모든 숫자가 4의 배수인 경우</div>
-        <div class="pattern-item"><input type="checkbox" id="pattern13"> 숫자 합계가 50~69 또는 181~200인 경우</div>
-        <div class="pattern-item"><input type="checkbox" id="pattern14"> 모든 숫자가 제곱수(1,4,9,16,25,36)인 경우</div>
-        <div class="pattern-item"><input type="checkbox" id="pattern15"> 모든 숫자가 1~20 범위 내에 집중된 경우</div>
+        <div class="pattern-item"><input type="checkbox" id="pattern9"> 모든 숫자가 동일한 자리대(예: 10~19) 내에 속한 경우</div>
+        <div class="pattern-item"><input type="checkbox" id="pattern10"> 모든 숫자가 소수인 경우</div>
+        <div class="pattern-item"><input type="checkbox" id="pattern11"> 모든 숫자가 홀수로 구성된 경우</div>
+        <div class="pattern-item"><input type="checkbox" id="pattern12"> 모든 숫자가 짝수로 구성된 경우</div>
+        <div class="pattern-item"><input type="checkbox" id="pattern13"> 숫자 합계가 50 미만 또는 200 초과하는 극단적인 경우</div>
+        <div class="pattern-item"><input type="checkbox" id="pattern14"> 숫자 합계가 50~69 또는 181~200인 경우</div>
+        <div class="pattern-item"><input type="checkbox" id="pattern15"> 제곱수 4개 이상 포함된 경우</div>
+        <div class="pattern-item"><input type="checkbox" id="pattern16"> 제곱수 5개 이상 포함된 경우</div>
+        <div class="pattern-item"><input type="checkbox" id="pattern17"> 제곱수 0개 또는 3개 이상 포함된 불균형 경우</div>
     </div>
-
+    <div id="include-section">
+        <h3>꼭 포함할 숫자 선택 (드래그로 결정, 1~45 중 하나):</h3>
+        <input type="checkbox" id="include-active" checked> 활성화
+        <input type="range" id="include-slider" min="1" max="45" value="1" oninput="updateSliderValue('include')">
+        <p>선택된 숫자: <span id="include-value">1</span></p>
+    </div>
+    <div id="exclude-section">
+        <h3>꼭 제외할 숫자 선택 (드래그로 결정, 1~45 중 하나):</h3>
+        <input type="checkbox" id="exclude-active" checked> 활성화
+        <input type="range" id="exclude-slider" min="1" max="45" value="1" oninput="updateSliderValue('exclude')">
+        <p>선택된 숫자: <span id="exclude-value">1</span></p>
+    </div>
     <div id="visitor-count"></div>
-
+    <div id="history">
+        <h3>생성된 번호 이력 (최대 20개):</h3>
+        <table id="history-table">
+            <thead>
+                <tr>
+                    <th>번호 1</th>
+                    <th>번호 2</th>
+                    <th>번호 3</th>
+                    <th>번호 4</th>
+                    <th>번호 5</th>
+                    <th>번호 6</th>
+                </tr>
+            </thead>
+            <tbody id="history-body"></tbody>
+        </table>
+    </div>
     <script>
         const today = new Date().toISOString().split('T')[0];
         const visitorKey = 'visitorCount_' + today;
         const clickKey = 'clickCount_' + today;
-
+        const historyKey = 'numberHistory_' + today;
         // 페이지 로드 시 모든 체크박스 기본 체크
         function initCheckboxes() {
-            for (let i = 1; i <= 15; i++) {
+            for (let i = 1; i <= 17; i++) {
                 document.getElementById(`pattern${i}`).checked = true;
             }
         }
-
+        // 슬라이더 값 업데이트 함수
+        function updateSliderValue(type) {
+            const slider = document.getElementById(`${type}-slider`);
+            const valueSpan = document.getElementById(`${type}-value`);
+            valueSpan.innerText = slider.value;
+        }
         // 오늘 접속자 수 및 클릭 횟수 업데이트 및 표시
         function updateVisitorCount() {
             let visitorCount = parseInt(localStorage.getItem(visitorKey) || 0) + 1;
             localStorage.setItem(visitorKey, visitorCount);
             updateDisplay();
         }
-
         function updateClickCount() {
             let clickCount = parseInt(localStorage.getItem(clickKey) || 0) + 1;
             localStorage.setItem(clickKey, clickCount);
             updateDisplay();
         }
-
         function updateDisplay() {
-            let visitorCount = localStorage.getItem(visitorKey) || 0;
             let clickCount = localStorage.getItem(clickKey) || 0;
-            document.getElementById('visitor-count').innerText = `오늘 접속한 사람: ${visitorCount}명 | 오늘 번호 생성 클릭 횟수: ${clickCount}회`;
+            document.getElementById('visitor-count').innerText = `오늘 번호 생성 클릭 횟수: ${clickCount}회`;
         }
-
-        // 과거 당첨 번호 목록 (예시)
-        const pastWinners = [
-            [8, 16, 28, 30, 31, 44],
-            [3, 6, 18, 29, 35, 39],
-            [5, 12, 21, 33, 37, 40],
-            [7, 9, 24, 27, 35, 36],
-            [1, 2, 4, 16, 20, 32],
-            // 전체 데이터 추가 필요
-        ];
-
+        // 번호 이력 로드 및 테이블 표시 (최신 번호 위로)
+        function loadHistory() {
+            const history = JSON.parse(localStorage.getItem(historyKey) || []);
+            const tbody = document.getElementById('history-body');
+            tbody.innerHTML = '';
+            for (let i = history.length - 1; i >= 0; i--) { // 역순으로 행 추가
+                const tr = document.createElement('tr');
+                history[i].split(', ').forEach(num => {
+                    const td = document.createElement('td');
+                    td.innerText = num;
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            }
+        }
+        // 번호 이력 저장 (최대 20개)
+        function saveHistory(numStr) {
+            let history = JSON.parse(localStorage.getItem(historyKey) || []);
+            history.push(numStr);
+            if (history.length > 20) history.shift(); // 초과 시 가장 오래된 항목 제거
+            localStorage.setItem(historyKey, JSON.stringify(history));
+            loadHistory();
+        }
         // 소수 판별 함수
         function isPrime(n) {
             if (n <= 1) return false;
@@ -92,31 +144,31 @@
             }
             return true;
         }
-
         // 패턴 검사 함수 (선택된 패턴만 검사)
         function checkInvalidPattern(numbers) {
             const sorted = [...numbers].sort((a, b) => a - b);
             const sum = sorted.reduce((a, b) => a + b, 0);
             const squares = [1, 4, 9, 16, 25, 36];
-
+            const squareCount = sorted.filter(n => squares.includes(n)).length;
             const patterns = [
-                {id: 1, check: () => sorted.every(n => n % 2 === 0), reason: "모든 숫자가 짝수"},
-                {id: 2, check: () => sorted.every(n => n % 2 !== 0), reason: "모든 숫자가 홀수"},
-                {id: 3, check: () => sorted.every(n => n % 3 === 0), reason: "모든 숫자가 3의 배수"},
-                {id: 4, check: () => sorted.every(n => n % 5 === 0), reason: "모든 숫자가 5의 배수"},
-                {id: 5, check: () => sorted[5] - sorted[0] === 5, reason: "6개 숫자가 연속적"},
-                {id: 6, check: () => sorted.every(isPrime), reason: "모든 숫자가 소수"},
-                {id: 7, check: () => sorted.every(n => n >= 1 && n <= 15), reason: "모든 숫자가 1~15 범위"},
+                {id: 1, check: () => sorted[5] - sorted[0] === 5, reason: "6개 숫자가 연속적"},
+                {id: 2, check: () => sorted.every(n => n >= 1 && n <= 15), reason: "모든 숫자가 1~15 범위"},
+                {id: 3, check: () => sorted.every(n => n >= 1 && n <= 20), reason: "모든 숫자가 1~20 범위"},
+                {id: 4, check: () => sorted.every(n => n >= 1 && n <= 31), reason: "모든 숫자가 1~31 범위"},
+                {id: 5, check: () => sorted.every(n => n % 3 === 0), reason: "모든 숫자가 3의 배수"},
+                {id: 6, check: () => sorted.every(n => n % 4 === 0), reason: "모든 숫자가 4의 배수"},
+                {id: 7, check: () => sorted.every(n => n % 5 === 0), reason: "모든 숫자가 5의 배수"},
                 {id: 8, check: () => sorted.every(n => n >= 31 && n <= 45), reason: "모든 숫자가 31~45 범위"},
-                {id: 9, check: () => sum < 50 || sum > 200, reason: "숫자 합계가 50 미만 또는 200 초과"},
-                {id: 10, check: () => sorted.every(n => Math.floor(n / 10) === Math.floor(sorted[0] / 10)), reason: "모든 숫자가 동일한 자리대"},
-                {id: 11, check: () => sorted.every(n => n >= 1 && n <= 31), reason: "모든 숫자가 1~31 범위"},
-                {id: 12, check: () => sorted.every(n => n % 4 === 0), reason: "모든 숫자가 4의 배수"},
-                {id: 13, check: () => (sum >= 50 && sum <= 69) || (sum >= 181 && sum <= 200), reason: "숫자 합계가 50~69 또는 181~200"},
-                {id: 14, check: () => sorted.every(n => squares.includes(n)), reason: "모든 숫자가 제곱수"},
-                {id: 15, check: () => sorted.every(n => n >= 1 && n <= 20), reason: "모든 숫자가 1~20 범위"}
+                {id: 9, check: () => sorted.every(n => Math.floor(n / 10) === Math.floor(sorted[0] / 10)), reason: "모든 숫자가 동일한 자리대"},
+                {id: 10, check: () => sorted.every(isPrime), reason: "모든 숫자가 소수"},
+                {id: 11, check: () => sorted.every(n => n % 2 !== 0), reason: "모든 숫자가 홀수"},
+                {id: 12, check: () => sorted.every(n => n % 2 === 0), reason: "모든 숫자가 짝수"},
+                {id: 13, check: () => sum < 50 || sum > 200, reason: "숫자 합계가 50 미만 또는 200 초과"},
+                {id: 14, check: () => (sum >= 50 && sum <= 69) || (sum >= 181 && sum <= 200), reason: "숫자 합계가 50~69 또는 181~200"},
+                {id: 15, check: () => squareCount >= 4, reason: "제곱수 4개 이상 포함된 경우"},
+                {id: 16, check: () => squareCount >= 5, reason: "제곱수 5개 이상 포함된 경우"},
+                {id: 17, check: () => squareCount === 0 || squareCount >= 3, reason: "제곱수 0개 또는 3개 이상 포함된 불균형 경우"}
             ];
-
             for (let pattern of patterns) {
                 if (document.getElementById(`pattern${pattern.id}`).checked && pattern.check()) {
                     return pattern.reason;
@@ -124,58 +176,59 @@
             }
             return null;
         }
-
-        // 과거 당첨 번호와 일치 여부 검사
-        function isPastWinner(numbers) {
-            const sortedStr = [...numbers].sort((a, b) => a - b).toString();
-            return pastWinners.some(w => [...w].sort((a, b) => a - b).toString() === sortedStr);
-        }
-
-        // 번호 생성 함수
+        // 번호 생성 함수 (포함/제외 로직 추가)
         function generateNumbers() {
-            updateClickCount();  // 클릭 횟수 증가
+            updateClickCount(); // 클릭 횟수 증가
             const resultDiv = document.getElementById('result');
             const logDiv = document.getElementById('log');
             resultDiv.innerText = '';
             logDiv.innerHTML = '<strong>생성 과정 로그:</strong><br>';
-
+            // 포함 숫자 가져오기 (활성 시)
+            let includeNums = [];
+            if (document.getElementById('include-active').checked) {
+                const includeNum = parseInt(document.getElementById('include-slider').value);
+                includeNums = [includeNum];
+            }
+            // 제외 숫자 가져오기 (활성 시)
+            let uniqueExclude = new Set();
+            if (document.getElementById('exclude-active').checked) {
+                const excludeNum = parseInt(document.getElementById('exclude-slider').value);
+                uniqueExclude.add(excludeNum);
+            }
+            // 포함과 제외 충돌 확인
+            if (includeNums.length > 0 && uniqueExclude.has(includeNums[0])) {
+                resultDiv.innerText = '포함과 제외 숫자가 동일할 수 없습니다.';
+                return;
+            }
             let attempts = 0;
             const maxAttempts = 10000;
-
             while (attempts < maxAttempts) {
                 attempts++;
-                const numbers = [];
-                const pool = Array.from({length: 45}, (_, i) => i + 1);
-
-                for (let i = 0; i < 6; i++) {
+                let numbers = [...includeNums];
+                let pool = Array.from({length: 45}, (_, i) => i + 1).filter(n => !uniqueExclude.has(n) && !includeNums.includes(n));
+                while (numbers.length < 6 && pool.length > 0) {
                     const index = Math.floor(Math.random() * pool.length);
                     numbers.push(pool.splice(index, 1)[0]);
                 }
-
+                if (numbers.length < 6) {
+                    logDiv.innerHTML += `시도 ${attempts}: 포함/제외 조건으로 번호 생성 불가능 - 재시도<br>`;
+                    continue;
+                }
                 numbers.sort((a, b) => a - b);
                 const numStr = numbers.join(', ');
-
-                if (isPastWinner(numbers)) {
-                    logDiv.innerHTML += `시도 ${attempts}: ${numStr} - 과거 당첨 번호와 일치하여 제외<br>`;
-                    continue;
-                }
-
                 const invalidReason = checkInvalidPattern(numbers);
                 if (invalidReason) {
-                    logDiv.innerHTML += `시도 ${attempts}: ${numStr} - ${invalidReason} 패턴으로 제외<br>`;
+                    logDiv.innerHTML += `시도 ${attempts}: ${numStr} - ${invalidReason} 패턴으로 제외 (해당 패턴은 위배되는 조건)<br>`;
                     continue;
                 }
-
                 resultDiv.innerText = `생성된 번호: ${numStr}\n(이 번호는 선택된 특수 패턴을 피했습니다.)`;
                 logDiv.innerHTML += `시도 ${attempts}: ${numStr} - 유효하여 선택됨<br>`;
                 logDiv.scrollTop = logDiv.scrollHeight;
+                saveHistory(numStr); // 이력 저장 및 표시
                 return;
             }
-
             resultDiv.innerText = '조건을 만족하는 번호를 찾지 못했습니다. 시도 횟수를 증가시키거나 조건을 조정하세요.';
         }
     </script>
 </body>
 </html>
-
-
