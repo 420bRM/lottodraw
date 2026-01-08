@@ -15,11 +15,11 @@
         #visitor-count { margin-top: 40px; font-size: 16px; color: gray; }
         #history { margin-top: 40px; text-align: center; max-width: 600px; margin: 20px auto; }
         #history-table { border-collapse: collapse; width: 100%; }
-        #history-table th, #history-table td { border: 1px solid #ddd; padding: 4px; text-align: center; font-size: 8pt; }
+        #history-table th, #history-table td { border: 1px solid #ddd; padding: 4px; text-align: center; font-size: 8pt; } /* 여백 4px로 조정, 숫자 폰트 8pt */
         #history-table th { background-color: #f2f2f2; }
         .pattern-item { margin-bottom: 5px; }
-        #include-slider, #exclude-slider { width: 500px; }
-        @media (max-width: 600px) {
+        #include-slider, #exclude-slider { width: 500px; } /* 기본 슬라이더 길이 */
+        @media (max-width: 600px) { /* 모바일에서 슬라이더 길이 자동 조정 */
             #include-slider, #exclude-slider { width: 100%; }
         }
     </style>
@@ -30,6 +30,21 @@
     <button onclick="generateNumbers()">번호 생성</button>
     <div id="result"></div>
     <div id="log"></div>
+
+    <div id="include-section">
+        <h3>꼭 포함할 숫자 선택 (드래그로 결정, 1~45 중 하나):</h3>
+        <input type="checkbox" id="include-active" checked> 활성화
+        <input type="range" id="include-slider" min="1" max="45" value="1" oninput="updateSliderValue('include')">
+        <p>선택된 숫자: <span id="include-value">1</span></p>
+    </div>
+
+    <div id="exclude-section">
+        <h3>꼭 제외할 숫자 선택 (드래그로 결정, 1~45 중 하나):</h3>
+        <input type="checkbox" id="exclude-active" checked> 활성화
+        <input type="range" id="exclude-slider" min="1" max="45" value="1" oninput="updateSliderValue('exclude')">
+        <p>선택된 숫자: <span id="exclude-value">1</span></p>
+    </div>
+
     <div id="patterns">
         <h3>배제할 특수 패턴 선택 (총 17개):</h3>
         <div class="pattern-item"><input type="checkbox" id="pattern1"> 6개 숫자가 연속적으로 배열된 경우 (예: 10,11,12,13,14,15)</div>
@@ -49,18 +64,6 @@
         <div class="pattern-item"><input type="checkbox" id="pattern15"> 제곱수 4개 이상 포함된 경우</div>
         <div class="pattern-item"><input type="checkbox" id="pattern16"> 제곱수 5개 이상 포함된 경우</div>
         <div class="pattern-item"><input type="checkbox" id="pattern17"> 제곱수 0개 또는 3개 이상 포함된 불균형 경우</div>
-    </div>
-    <div id="include-section">
-        <h3>꼭 포함할 숫자 선택 (드래그로 결정, 1~45 중 하나):</h3>
-        <input type="checkbox" id="include-active" checked> 활성화
-        <input type="range" id="include-slider" min="1" max="45" value="1" oninput="updateSliderValue('include')">
-        <p>선택된 숫자: <span id="include-value">1</span></p>
-    </div>
-    <div id="exclude-section">
-        <h3>꼭 제외할 숫자 선택 (드래그로 결정, 1~45 중 하나):</h3>
-        <input type="checkbox" id="exclude-active" checked> 활성화
-        <input type="range" id="exclude-slider" min="1" max="45" value="1" oninput="updateSliderValue('exclude')">
-        <p>선택된 숫자: <span id="exclude-value">1</span></p>
     </div>
     <div id="visitor-count"></div>
     <div id="history">
@@ -120,7 +123,7 @@
                 const tr = document.createElement('tr');
                 history[i].split(', ').forEach(num => {
                     const td = document.createElement('td');
-                    td.innerText = num;
+                    td.innerText = num.trim(); // 공백 제거
                     tr.appendChild(td);
                 });
                 tbody.appendChild(tr);
