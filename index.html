@@ -30,23 +30,20 @@
     <button onclick="generateNumbers()">번호 생성</button>
     <div id="result"></div>
     <div id="log"></div>
-
     <div id="include-section">
-        <h3>꼭 포함할 숫자 선택 (드래그로 결정):</h3>
+        <h3>꼭 포함할 숫자 선택 (드래그로 결정, 1~45 중 하나):</h3>
         <input type="checkbox" id="include-active"> 활성화
         <input type="range" id="include-slider" min="1" max="45" value="1" oninput="updateSliderValue('include')">
         <p>선택된 숫자: <span id="include-value">1</span></p>
     </div>
-
     <div id="exclude-section">
-        <h3>꼭 제외할 숫자 선택 (드래그로 결정):</h3>
+        <h3>꼭 제외할 숫자 선택 (드래그로 결정, 1~45 중 하나):</h3>
         <input type="checkbox" id="exclude-active"> 활성화
         <input type="range" id="exclude-slider" min="1" max="45" value="1" oninput="updateSliderValue('exclude')">
         <p>선택된 숫자: <span id="exclude-value">1</span></p>
     </div>
-
     <div id="patterns">
-        <h3>배제할 특수 패턴 선택 :</h3>
+        <h3>배제할 특수 패턴 선택 (총 17개):</h3>
         <div class="pattern-item"><input type="checkbox" id="pattern1"> 6개 숫자가 연속적으로 배열된 경우 (예: 10,11,12,13,14,15)</div>
         <div class="pattern-item"><input type="checkbox" id="pattern2"> 모든 숫자가 1~15 범위 내에 집중된 경우</div>
         <div class="pattern-item"><input type="checkbox" id="pattern3"> 모든 숫자가 1~20 범위 내에 집중된 경우</div>
@@ -67,7 +64,7 @@
     </div>
     <div id="visitor-count"></div>
     <div id="history">
-        <h3>생성된 번호 이력 :</h3>
+        <h3>생성된 번호 이력 (최대 20개):</h3>
         <table id="history-table">
             <thead>
                 <tr>
@@ -116,7 +113,7 @@
         }
         // 번호 이력 로드 및 테이블 표시 (최신 번호 위로)
         function loadHistory() {
-            const history = JSON.parse(localStorage.getItem(historyKey) || []);
+            const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
             const tbody = document.getElementById('history-body');
             tbody.innerHTML = '';
             for (let i = history.length - 1; i >= 0; i--) { // 역순으로 행 추가
@@ -129,9 +126,9 @@
                 tbody.appendChild(tr);
             }
         }
-        // 번호 이력 저장
+        // 번호 이력 저장 (최대 20개)
         function saveHistory(numStr) {
-            let history = JSON.parse(localStorage.getItem(historyKey) || []);
+            let history = JSON.parse(localStorage.getItem(historyKey) || '[]');
             history.push(numStr);
             if (history.length > 20) history.shift(); // 초과 시 가장 오래된 항목 제거
             localStorage.setItem(historyKey, JSON.stringify(history));
