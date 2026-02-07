@@ -25,9 +25,9 @@
         .borel-description p { margin: 5px 0; } /* 여백 조정으로 공간 절약 */
         #sidebar { 
             position: fixed; 
-            left: -250px; /* 초기 숨김 */
+            left: -300px; /* 초기 숨김, 너비에 맞춤 */
             top: 0; 
-            width: 250px; 
+            width: 300px; /* 너비 증가로 더 넓게 */
             height: 100%; 
             background-color: #f2f2f2; 
             transition: left 0.3s; /* 슬라이드 애니메이션 */
@@ -35,7 +35,8 @@
             box-shadow: 2px 0 5px rgba(0,0,0,0.5); 
         }
         #sidebar.open { left: 0; } /* 열릴 때 */
-        #sidebar a { display: block; margin: 10px 0; text-decoration: none; color: black; }
+        #sidebar a { display: block; margin: 15px 0; text-decoration: none; color: black; font-size: 16px; /* 글자 크기 증가로 더 잘 보이게 */ }
+        #sidebar a:hover { color: green; }
         #menu-btn { cursor: pointer; font-size: 24px; margin: 10px; position: absolute; left: 10px; top: 10px; }
     </style>
 </head>
@@ -279,6 +280,7 @@
 </footer>
 </body>
 </html>
+
 
 
 
