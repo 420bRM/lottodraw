@@ -23,18 +23,36 @@
         }
         .borel-description { font-size: 0.8em; } /* Borel's Law 설명 부분 폰트 크기 줄임 (필요시 0.8em으로 조정) */
         .borel-description p { margin: 5px 0; } /* 여백 조정으로 공간 절약 */
-        nav { background-color: #f2f2f2; padding: 10px; text-align: center; }
-        nav a { margin: 0 15px; text-decoration: none; color: black; font-weight: bold; }
+        nav { background-color: #f2f2f2; padding: 10px; text-align: center; position: relative; }
+        nav ul { list-style: none; padding: 0; margin: 0; display: flex; justify-content: center; }
+        nav li { margin: 0 15px; }
+        nav a { text-decoration: none; color: black; font-weight: bold; }
         nav a:hover { color: blue; }
+        .hamburger { display: none; cursor: pointer; position: absolute; top: 10px; right: 10px; }
+        .hamburger span { display: block; width: 25px; height: 3px; background: black; margin: 5px auto; }
+        /* 모바일 반응형 */
+        @media (max-width: 600px) {
+            nav ul { flex-direction: column; display: none; } /* 기본 숨김 */
+            nav ul.active { display: flex; } /* 클릭 시 보임 */
+            nav li { margin: 10px 0; }
+            .hamburger { display: block; }
+        }
     </style>
 </head>
 <body onload="updateVisitorCount(); initCheckboxes(); loadHistory();">
     <nav>
-        <a href="index.html">Home</a>
-        <a href="about.html">About</a>
-        <a href="contact.html">Contact</a>
-        <a href="privacy.html">Privacy Policy</a>
-        <a href="terms.html">Terms of Service</a>
+        <div class="hamburger" onclick="toggleMenu()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <ul id="nav-menu">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="about.html">About</a></li>
+            <li><a href="contact.html">Contact</a></li>
+            <li><a href="privacy.html">Privacy Policy</a></li>
+            <li><a href="terms.html">Terms of Service</a></li>
+        </ul>
     </nav>
     <h1>동행복권 번호 생성기 / 로또 번호 추출기 by borel's Law </h1>
     <p>버튼을 클릭하여 새로운 번호를 생성하세요. 해당 프로그램은 정의될 수 있는 특수 패턴을 배제합니다. 아래 체크박스로 배제할 패턴을 선택하세요 (기본: 모두 체크).</p>
@@ -105,6 +123,11 @@
         <livere-comment client-id="5Qnz059feDSs78GOTvi5"></livere-comment>
     </div>
     <script>
+        // 메뉴 토글 함수 추가
+        function toggleMenu() {
+            const menu = document.getElementById('nav-menu');
+            menu.classList.toggle('active');
+        }
         const today = new Date().toISOString().split('T')[0];
         const visitorKey = 'visitorCount_' + today;
         const clickKey = 'clickCount_' + today;
@@ -263,4 +286,3 @@
 </footer>
 </body>
 </html>
-
