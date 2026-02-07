@@ -36,7 +36,6 @@
             nav ul.active { display: flex; } /* 클릭 시 보임 */
             nav li { margin: 10px 0; }
             .hamburger { display: block; }
-            .borel-description { display: none; }
         }
     </style>
 </head>
@@ -57,8 +56,7 @@
     </nav>
     <h1>동행복권 번호 생성기 / 로또 번호 추출기 by borel's Law </h1>
     <p>버튼을 클릭하여 새로운 번호를 생성하세요. 해당 프로그램은 정의될 수 있는 특수 패턴을 배제합니다. 아래 체크박스로 배제할 패턴을 선택하세요 (기본: 모두 체크).</p>
-    <button id="toggle-borel" onclick="toggleBorel()" style="margin-bottom: 10px; display: none;">Borel's Law 설명 보기</button>
-    <div class="borel-description" id="borel-content">
+   <div class="borel-description">
         <p>※해당 사이트는 보렐의 법칙을 아이디어로 삼아 만들어 졌습니다.</p>
         <p>보렐의 법칙(Borel's Law)이란 "확률이 극도로 낮은 사건은 현실적으로 절대로 일어나지 않는다"는 경험적 원칙으로</p>
         <p>수학자 에밀 보렐(Émile Borel)이 제안했으며, 아무리 많은 시행을 해도 발생 가능성이 0에 가까운 특수한 경우는 무시하고 불가능하다고 간주해야 한다는 개념입니다.</p>
@@ -288,6 +286,3 @@
 </footer>
 </body>
 </html>
-
-
-
