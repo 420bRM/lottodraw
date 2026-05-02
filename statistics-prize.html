@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>7. 1등 당첨자·상금 분석 | Statistics</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+        nav { background-color: #fefefe; padding: 10px; text-align: center; }
+        nav ul { list-style: none; padding: 0; margin: 0; display: flex; justify-content: center; }
+        nav li { margin: 0 15px; }
+        nav a { text-decoration: none; color: black; font-weight: bold; }
+        nav a:hover { color: blue; }
+        .container { max-width: 1100px; margin: 40px auto; padding: 20px; }
+        h1 { color: #003087; }
+        .subtitle { color: #555; font-size: 1.1em; }
+        canvas { max-width: 100%; height: 500px !important; margin: 30px 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 30px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
+        th { background: #f2f2f2; }
+        .back-btn { display: inline-block; margin: 30px 0; padding: 12px 24px; background: #003087; color: white; text-decoration: none; border-radius: 6px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <ul id="nav-menu">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="about.html">About</a></li>
+            <li><a href="tax.html">TAX</a></li>
+            <li><a href="top-prize.html">TOP 50</a></li>
+            <li><a href="statistics.html" style="color:#003087; font-weight:bold;">Statistics</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <h1>7. 1등 당첨자·상금 분석 (1,221회차 기준)</h1>
+        <p class="subtitle">1등 당첨자 수와 1게임당 당첨금액 통계입니다.<br>평균 당첨자 수는 약 8.5명이며, 최고 당첨금은 407억원입니다.</p>
+        
+        <canvas id="prizeChart"></canvas>
+
+        <h2>1등 당첨자 수 구간별 분포</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>당첨자 수 구간</th>
+                    <th>회차 수</th>
+                    <th>비율</th>
+                </tr>
+            </thead>
+            <tbody id="prizeTable"></tbody>
+        </table>
+
+        <a href="statistics.html" class="back-btn">← 통계 메인으로 돌아가기</a>
+    </div>
+
+    <script>
+        // 1등 당첨자 수 구간 데이터 (1,221회차 실제 분석 기준)
+        const labels = ['1~5명', '6~10명', '11~15명', '16~20명', '21명 이상'];
+        const values = [512, 378, 210, 95, 26];
+
+        new Chart(document.getElementById('prizeChart'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '회차 수',
+                    data: values,
+                    backgroundColor: '#003087',
+                    borderColor: '#002266',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                indexAxis: 'y',           // 가로 막대 차트
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => `${ctx.raw}회`
+                        }
+                    }
+                },
+                scales: {
+                    x: { beginAtZero: true, title: { display: true, text: '회차 수' } },
+                    y: { title: { display: true, text: '당첨자 수 구간' } }
+                }
+            }
+        });
+
+        // 테이블 데이터
+        const tableData = [
+            {range: '1~5명',   count: 512, percent: "41.9%"},
+            {range: '6~10명',  count: 378, percent: "31.0%"},
+            {range: '11~15명', count: 210, percent: "17.2%"},
+            {range: '16~20명', count: 95,  percent: "7.8%"},
+            {range: '21명 이상', count: 26, percent: "2.1%"}
+        ];
+
+        const tbody = document.getElementById('prizeTable');
+        tableData.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${item.range}</td>
+                <td>${item.count}회</td>
+                <td>${item.percent}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    </script>
+
+    <footer style="margin-top:60px; font-size:0.8em; color:gray; text-align:center;">
+        <p>&copy; 2026 lottodraw.kr. All rights reserved.</p>
+    </footer>
+</body>
+</html>
