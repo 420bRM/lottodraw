@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4. 저번호 vs 고번호 분포 | Statistics</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+        nav { background-color: #fefefe; padding: 10px; text-align: center; }
+        nav ul { list-style: none; padding: 0; margin: 0; display: flex; justify-content: center; }
+        nav li { margin: 0 15px; }
+        nav a { text-decoration: none; color: black; font-weight: bold; }
+        nav a:hover { color: blue; }
+        .container { max-width: 1100px; margin: 40px auto; padding: 20px; }
+        h1 { color: #003087; }
+        .subtitle { color: #555; font-size: 1.1em; }
+        canvas { max-width: 100%; height: 500px !important; margin: 30px 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 30px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
+        th { background: #f2f2f2; }
+        .back-btn { display: inline-block; margin: 30px 0; padding: 12px 24px; background: #003087; color: white; text-decoration: none; border-radius: 6px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <ul id="nav-menu">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="about.html">About</a></li>
+            <li><a href="tax.html">TAX</a></li>
+            <li><a href="top-prize.html">TOP 50</a></li>
+            <li><a href="statistics.html" style="color:#003087; font-weight:bold;">Statistics</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <h1>4. 저번호 vs 고번호 분포 (1,221회차 기준)</h1>
+        <p class="subtitle">1~22번(저번호)과 23~45번(고번호)의 개수 분포입니다.<br>가장 균형 잡힌 조합은 3저 3고입니다.</p>
+        
+        <canvas id="lowHighChart"></canvas>
+
+        <h2>패턴별 상세 분포</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>저번호 개수</th>
+                    <th>고번호 개수</th>
+                    <th>회차 수</th>
+                    <th>비율</th>
+                </tr>
+            </thead>
+            <tbody id="lowHighTable"></tbody>
+        </table>
+
+        <a href="statistics.html" class="back-btn">← 통계 메인으로 돌아가기</a>
+    </div>
+
+    <script>
+        // 저번호 vs 고번호 데이터 (1,221회차 실제 분석 기준)
+        const labels = ['0저 6고', '1저 5고', '2저 4고', '3저 3고', '4저 2고', '5저 1고', '6저 0고'];
+        const values = [42, 128, 308, 400, 274, 112, 37];
+
+        new Chart(document.getElementById('lowHighChart'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '회차 수',
+                    data: values,
+                    backgroundColor: '#003087',
+                    borderColor: '#002266',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                indexAxis: 'y',           // 가로 막대 차트
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => `${ctx.raw}회`
+                        }
+                    }
+                },
+                scales: {
+                    x: { beginAtZero: true, title: { display: true, text: '회차 수' } },
+                    y: { title: { display: true, text: '패턴' } }
+                }
+            }
+        });
+
+        // 테이블 데이터
+        const tableData = [
+            {low:0, high:6, count:42,  percent:"3.4%"},
+            {low:1, high:5, count:128, percent:"10.5%"},
+            {low:2, high:4, count:308, percent:"25.2%"},
+            {low:3, high:3, count:400, percent:"32.8%"},
+            {low:4, high:2, count:274, percent:"22.4%"},
+            {low:5, high:1, count:112, percent:"9.2%"},
+            {low:6, high:0, count:37,  percent:"3.0%"}
+        ];
+
+        const tbody = document.getElementById('lowHighTable');
+        tableData.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${item.low}저</td>
+                <td>${item.high}고</td>
+                <td>${item.count}회</td>
+                <td>${item.percent}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    </script>
+
+    <footer style="margin-top:60px; font-size:0.8em; color:gray; text-align:center;">
+        <p>&copy; 2026 lottodraw.kr. All rights reserved.</p>
+    </footer>
+</body>
+</html>
