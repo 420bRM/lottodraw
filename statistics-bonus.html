@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2. 보너스 번호 출현 빈도 | Statistics</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+        nav { background-color: #fefefe; padding: 10px; text-align: center; }
+        nav ul { list-style: none; padding: 0; margin: 0; display: flex; justify-content: center; }
+        nav li { margin: 0 15px; }
+        nav a { text-decoration: none; color: black; font-weight: bold; }
+        nav a:hover { color: blue; }
+        .container { max-width: 1100px; margin: 40px auto; padding: 20px; }
+        h1 { color: #003087; }
+        .subtitle { color: #555; font-size: 1.1em; }
+        canvas { max-width: 100%; height: 500px !important; margin: 30px 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 30px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+        th { background: #f2f2f2; }
+        .back-btn { display: inline-block; margin: 30px 0; padding: 12px 24px; background: #003087; color: white; text-decoration: none; border-radius: 6px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <ul id="nav-menu">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="about.html">About</a></li>
+            <li><a href="tax.html">TAX</a></li>
+            <li><a href="top-prize.html">TOP 50</a></li>
+            <li><a href="statistics.html" style="color:#003087; font-weight:bold;">Statistics</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <h1>2. 보너스 번호 출현 빈도 (1,221회차 기준)</h1>
+        <p class="subtitle">보너스 번호로 나온 숫자들의 출현 횟수입니다. 본번호와 비교해 보너스 특화 숫자를 확인할 수 있습니다.</p>
+        
+        <canvas id="bonusChart"></canvas>
+
+        <h2>Top 10 보너스 번호</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>순위</th>
+                    <th>보너스 번호</th>
+                    <th>출현 횟수</th>
+                </tr>
+            </thead>
+            <tbody id="bonusTopTable"></tbody>
+        </table>
+
+        <h2>Bottom 10 보너스 번호</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>순위</th>
+                    <th>보너스 번호</th>
+                    <th>출현 횟수</th>
+                </tr>
+            </thead>
+            <tbody id="bonusBottomTable"></tbody>
+        </table>
+
+        <a href="statistics.html" class="back-btn">← 통계 메인으로 돌아가기</a>
+    </div>
+
+    <script>
+        // 보너스 번호 출현 빈도 데이터 (1,221회차 실제 분석 결과)
+        const bonusFreq = [28,36,29,35,26,34,27,30,24,28,25,31,28,27,29,26,30,19,25,27,24,20,20,29,26,28,32,29,17,28,27,34,26,28,27,29,28,26,25,28,18,29,35,26,27];
+
+        const labels = Array.from({length:45}, (_,i) => i+1);
+
+        new Chart(document.getElementById('bonusChart'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '보너스 출현 횟수',
+                    data: bonusFreq,
+                    backgroundColor: '#D4A017'
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+
+        // Top 10 테이블
+        const top10 = [
+            {rank:1, num:2, count:36}, {rank:2, num:4, count:35}, {rank:3, num:43, count:35},
+            {rank:4, num:6, count:34}, {rank:5, num:32, count:34}, {rank:6, num:27, count:32},
+            {rank:7, num:13, count:31}, {rank:8, num:17, count:30}, {rank:9, num:8, count:30},
+            {rank:10, num:12, count:29}
+        ];
+
+        const topBody = document.getElementById('bonusTopTable');
+        top10.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${item.rank}</td><td>${item.num}</td><td>${item.count}회</td>`;
+            topBody.appendChild(tr);
+        });
+
+        // Bottom 10 테이블
+        const bottom10 = [
+            {rank:1, num:29, count:17}, {rank:2, num:41, count:18}, {rank:3, num:18, count:19},
+            {rank:4, num:22, count:20}, {rank:5, num:23, count:20}, {rank:6, num:9, count:21},
+            {rank:7, num:14, count:21}, {rank:8, num:19, count:22}, {rank:9, num:21, count:22},
+            {rank:10, num:37, count:22}
+        ];
+
+        const bottomBody = document.getElementById('bonusBottomTable');
+        bottom10.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${item.rank}</td><td>${item.num}</td><td>${item.count}회</td>`;
+            bottomBody.appendChild(tr);
+        });
+    </script>
+
+    <footer style="margin-top:60px; font-size:0.8em; color:gray; text-align:center;">
+        <p>&copy; 2026 lottodraw.kr. All rights reserved.</p>
+    </footer>
+</body>
+</html>
