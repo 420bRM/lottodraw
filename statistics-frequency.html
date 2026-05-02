@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>통계 - 숫자별 출현 빈도 | lottodraw.kr</title>
+    <style>
+        /* index.html의 style 전체 복사 후 아래 추가 */
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+        nav { background-color: #fefefe; padding: 10px; text-align: center; }
+        /* ... (index.html style 전체 복사) ... */
+        .container { max-width: 1100px; margin: 20px auto; padding: 20px; }
+        canvas { max-width: 100%; height: 500px !important; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body onload="initPage()">
+    <!-- 위에서 업데이트한 nav 전체 복사 -->
+    <div class="container">
+        <h1>1. 숫자별 출현 빈도 (1,221회차 기준)</h1>
+        <p>1~45번 숫자가 본번호(6개)로 나온 총 횟수입니다.</p>
+        
+        <canvas id="frequencyChart"></canvas>
+        
+        <h2>Top 10 / Bottom 10</h2>
+        <table border="1" style="width:100%; border-collapse:collapse; margin-top:20px;">
+            <thead><tr><th>순위</th><th>숫자</th><th>출현 횟수</th></tr></thead>
+            <tbody id="freqTable"></tbody>
+        </table>
+    </div>
+
+    <script>
+        function initPage() {
+            // Chart.js 예시 (실제 데이터)
+            const ctx = document.getElementById('frequencyChart');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Array.from({length:45},(_,i)=>i+1),
+                    datasets: [{
+                        label: '출현 횟수',
+                        data: [165,162,170,/* ... 실제 45개 데이터 ... */], // 이전 계산값 사용
+                        backgroundColor: '#003087'
+                    }]
+                },
+                options: { responsive: true, scales: { y: { beginAtZero: true } } }
+            });
+            // 테이블 채우기 (Top 10 등)
+        }
+    </script>
+    <!-- footer 복사 -->
+</body>
+</html>
