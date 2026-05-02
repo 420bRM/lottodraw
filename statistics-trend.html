@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8. 최근 Hot/Cold 트렌드 | Statistics</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+        nav { background-color: #fefefe; padding: 10px; text-align: center; }
+        nav ul { list-style: none; padding: 0; margin: 0; display: flex; justify-content: center; }
+        nav li { margin: 0 15px; }
+        nav a { text-decoration: none; color: black; font-weight: bold; }
+        nav a:hover { color: blue; }
+        .container { max-width: 1100px; margin: 40px auto; padding: 20px; }
+        h1 { color: #003087; }
+        .subtitle { color: #555; font-size: 1.1em; }
+        canvas { max-width: 100%; height: 450px !important; margin: 30px 0; }
+        .section-title { margin-top: 50px; color: #003087; }
+        .back-btn { display: inline-block; margin: 30px 0; padding: 12px 24px; background: #003087; color: white; text-decoration: none; border-radius: 6px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <ul id="nav-menu">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="about.html">About</a></li>
+            <li><a href="tax.html">TAX</a></li>
+            <li><a href="top-prize.html">TOP 50</a></li>
+            <li><a href="statistics.html" style="color:#003087; font-weight:bold;">Statistics</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <h1>8. 최근 Hot/Cold 트렌드 (최근 50회 vs 전체 1,221회)</h1>
+        <p class="subtitle">전체 기간과 최근 50회차의 숫자 출현 빈도를 비교합니다.</p>
+
+        <h2 class="section-title">🔥 Hot Numbers (최근 50회 많이 나온 숫자 Top 10)</h2>
+        <canvas id="hotChart"></canvas>
+
+        <h2 class="section-title">❄️ Cold Numbers (최근 50회 거의 나오지 않은 숫자 Top 10)</h2>
+        <canvas id="coldChart"></canvas>
+
+        <a href="statistics.html" class="back-btn">← 통계 메인으로 돌아가기</a>
+    </div>
+
+    <script>
+        // Hot Numbers
+        const hotLabels = ['27','15','3','16','28','34','12','13','45','40'];
+        const hotOverall = [180,171,172,173,169,182,177,176,174,174];
+        const hotRecent = [12,10,10,10,10,9,9,9,9,9];
+
+        new Chart(document.getElementById('hotChart'), {
+            type: 'bar',
+            data: {
+                labels: hotLabels,
+                datasets: [
+                    { label: '전체 출현', data: hotOverall, backgroundColor: '#003087' },
+                    { label: '최근 50회', data: hotRecent, backgroundColor: '#D4A017' }
+                ]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => `${ctx.dataset.label}: ${ctx.raw}회`
+                        }
+                    }
+                },
+                scales: { x: { beginAtZero: true } }
+            }
+        });
+
+        // Cold Numbers
+        const coldLabels = ['9','22','32','23','41','21','20','29','31','37'];
+        const coldOverall = [133,142,142,147,147,154,154,153,149,156];
+        const coldRecent = [0,1,1,1,1,1,2,2,2,2];
+
+        new Chart(document.getElementById('coldChart'), {
+            type: 'bar',
+            data: {
+                labels: coldLabels,
+                datasets: [
+                    { label: '전체 출현', data: coldOverall, backgroundColor: '#003087' },
+                    { label: '최근 50회', data: coldRecent, backgroundColor: '#D4A017' }
+                ]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => `${ctx.dataset.label}: ${ctx.raw}회`
+                        }
+                    }
+                },
+                scales: { x: { beginAtZero: true } }
+            }
+        });
+    </script>
+
+    <footer style="margin-top:60px; font-size:0.8em; color:gray; text-align:center;">
+        <p>&copy; 2026 lottodraw.kr. All rights reserved.</p>
+    </footer>
+</body>
+</html>
