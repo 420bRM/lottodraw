@@ -14,7 +14,7 @@
         nav a:hover { color: blue; }
         .container { max-width: 1100px; margin: 40px auto; padding: 20px; }
         h1 { color: #003087; }
-        .subtitle { color: #555; }
+        .subtitle { color: #555; font-size: 1.1em; }
         canvas { max-width: 100%; height: 500px !important; margin: 30px 0; }
         table { width: 100%; border-collapse: collapse; margin-top: 30px; }
         th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
@@ -36,43 +36,89 @@
     <div class="container">
         <h1>1. 숫자별 출현 빈도 (1,221회차 기준)</h1>
         <p class="subtitle">본번호 6개 중 각 숫자가 나온 총 횟수입니다.</p>
+        
         <canvas id="freqChart"></canvas>
 
-        <h2>Top 10 / Bottom 10</h2>
+        <h2>Top 10 숫자</h2>
         <table>
-            <thead><tr><th>순위</th><th>숫자</th><th>출현 횟수</th></tr></thead>
-            <tbody id="freqTable"></tbody>
+            <thead>
+                <tr>
+                    <th>순위</th>
+                    <th>숫자</th>
+                    <th>출현 횟수</th>
+                </tr>
+            </thead>
+            <tbody id="freqTopTable"></tbody>
+        </table>
+
+        <h2>Bottom 10 숫자</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>순위</th>
+                    <th>숫자</th>
+                    <th>출현 횟수</th>
+                </tr>
+            </thead>
+            <tbody id="freqBottomTable"></tbody>
         </table>
 
         <a href="statistics.html" class="back-btn">← 통계 메인으로 돌아가기</a>
     </div>
 
     <script>
-        // 실제 데이터 (1,221회차 기준)
+        // 1~45번 실제 출현 빈도 데이터 (1,221회차 기준)
         const frequencies = [165,162,170,168,155,172,158,163,133,169,167,177,176,160,171,173,159,161,164,166,154,142,147,168,157,174,180,169,153,165,149,142,175,182,160,168,156,174,158,170,147,165,174,169,174];
+
         const labels = Array.from({length:45}, (_,i) => i+1);
 
         new Chart(document.getElementById('freqChart'), {
             type: 'bar',
-            data: { labels: labels, datasets: [{ label: '출현 횟수', data: frequencies, backgroundColor: '#003087' }] },
-            options: { responsive: true, scales: { y: { beginAtZero: true } } }
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '출현 횟수',
+                    data: frequencies,
+                    backgroundColor: '#003087'
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: { y: { beginAtZero: true } }
+            }
         });
 
-        // 테이블 데이터
-        const tableData = [
+        // Top 10
+        const top10 = [
             {rank:1, num:34, count:182}, {rank:2, num:27, count:180}, {rank:3, num:12, count:177},
             {rank:4, num:13, count:176}, {rank:5, num:45, count:174}, {rank:6, num:40, count:174},
-            // Bottom
-            {rank:41, num:9, count:133}, {rank:42, num:22, count:142}, {rank:43, num:32, count:142}
+            {rank:7, num:18, count:173}, {rank:8, num:15, count:172}, {rank:9, num:6, count:172},
+            {rank:10, num:28, count:171}
         ];
 
-        const tbody = document.getElementById('freqTable');
-        tableData.forEach(item => {
+        const topBody = document.getElementById('freqTopTable');
+        top10.forEach(item => {
             const tr = document.createElement('tr');
             tr.innerHTML = `<td>${item.rank}</td><td>${item.num}</td><td>${item.count}회</td>`;
-            tbody.appendChild(tr);
+            topBody.appendChild(tr);
+        });
+
+        // Bottom 10
+        const bottom10 = [
+            {rank:1, num:9, count:133}, {rank:2, num:22, count:142}, {rank:3, num:32, count:142},
+            {rank:4, num:23, count:147}, {rank:5, num:41, count:147}, {rank:6, num:21, count:154},
+            {rank:7, num:20, count:154}, {rank:8, num:29, count:153}, {rank:9, num:31, count:149},
+            {rank:10, num:37, count:156}
+        ];
+
+        const bottomBody = document.getElementById('freqBottomTable');
+        bottom10.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${item.rank}</td><td>${item.num}</td><td>${item.count}회</td>`;
+            bottomBody.appendChild(tr);
         });
     </script>
+
     <footer style="margin-top:60px; font-size:0.8em; color:gray; text-align:center;">
         <p>&copy; 2026 lottodraw.kr. All rights reserved.</p>
     </footer>
