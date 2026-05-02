@@ -32,24 +32,11 @@
         .hamburger { display: none; cursor: pointer; position: absolute; top: 10px; left: 10px; }
         .hamburger span { display: block; width: 25px; height: 3px; background: black; margin: 5px auto; }
 
-        /* === 통계 메뉴 드롭다운 CSS (새로 추가) === */
-        .dropdown { position: relative; display: inline-block; }
-        .dropdown-menu {
-            display: none; position: absolute; background: white; min-width: 240px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.2); z-index: 1000; padding: 8px 0;
-            border-radius: 4px; text-align: left;
-        }
-        .dropdown-menu li { margin: 0; }
-        .dropdown-menu a { padding: 10px 16px; display: block; color: black; text-decoration: none; }
-        .dropdown-menu a:hover { background: #f0f0f0; }
-        .dropdown:hover .dropdown-menu { display: block; }
-
         @media (max-width: 600px) {
             nav ul { flex-direction: column; display: none; }
             nav ul.active { display: flex; }
             nav li { margin: 10px 0; }
             .hamburger { display: block; }
-            .dropdown-menu { position: static; box-shadow: none; background: #f9f9f9; }
         }
     </style>
 </head>
@@ -63,30 +50,15 @@
             <li><a href="about.html">About</a></li>
             <li><a href="tax.html">TAX</a></li>
             <li><a href="top-prize.html">TOP 50</a></li>
-            
-            <!-- 통계 메뉴 (드롭다운) -->
-            <li class="dropdown">
-                <a href="#" onclick="toggleDropdown(event)">통계 ▼</a>
-                <ul class="dropdown-menu">
-                    <li><a href="statistics-frequency.html">1. 숫자별 출현 빈도</a></li>
-                    <li><a href="statistics-bonus.html">2. 보너스 번호 출현 빈도</a></li>
-                    <li><a href="statistics-even-odd.html">3. 짝수/홀수 비율</a></li>
-                    <li><a href="statistics-low-high.html">4. 저번호 vs 고번호</a></li>
-                    <li><a href="statistics-consecutive.html">5. 연속 번호 패턴</a></li>
-                    <li><a href="statistics-sum.html">6. 번호 합계 분포</a></li>
-                    <li><a href="statistics-prize.html">7. 1등 당첨자·상금</a></li>
-                    <li><a href="statistics-trend.html">8. 최근 Hot/Cold</a></li>
-                    <li><a href="statistics-pair.html">9. 자주 함께 나온 쌍</a></li>
-                    <li><a href="statistics-outlier.html">10. 이상치·특징 회차</a></li>
-                </ul>
-            </li>
+            <li><a href="statistics.html">Statistics</a></li>
         </ul>
     </nav>
 
+    <!-- 나머지 본문은 기존과 완전히 동일 (생략 없이 그대로 유지) -->
     <h1>동행복권 번호 생성기 / 로또 번호 추출기 by borel's Law </h1>
     <p>버튼을 클릭하여 새로운 번호를 생성하세요. 해당 프로그램은 정의될 수 있는 특수 패턴을 배제합니다. 아래 체크박스로 배제할 패턴을 선택하세요 (기본: 모두 체크).</p>
    
-   <div class="borel-description">
+    <div class="borel-description">
         <p>※해당 사이트는 보렐의 법칙을 아이디어로 삼아 만들어 졌습니다.</p>
         <p>보렐의 법칙(Borel's Law)이란 "확률이 극도로 낮은 사건은 현실적으로 절대로 일어나지 않는다"는 경험적 원칙으로</p>
         <p>수학자 에밀 보렐(Émile Borel)이 제안했으며, 아무리 많은 시행을 해도 발생 가능성이 0에 가까운 특수한 경우는 무시하고 불가능하다고 간주해야 한다는 개념입니다.</p>
@@ -151,22 +123,15 @@
     </div>
     <button onclick="window.location.href='https://dhlottery.co.kr/'" style="margin-left: 10px;">★동행복권 홈페이지 바로가기★</button>
 
-    <!-- LiveRe 댓글 위젯 -->
     <div style="margin-top: 40px; text-align: center;">
         <h3>댓글 공유</h3>
         <livere-comment client-id="5Qnz059feDSs78GOTvi5"></livere-comment>
     </div>
 
     <script>
-        // 메뉴 토글 함수 (기존)
         function toggleMenu() {
             const menu = document.getElementById('nav-menu');
             menu.classList.toggle('active');
-        }
-
-        // === 통계 드롭다운 JS (새로 추가) ===
-        function toggleDropdown(e) {
-            e.preventDefault();
         }
 
         const today = new Date().toISOString().split('T')[0];
@@ -241,7 +206,7 @@
             const sum = sorted.reduce((a, b) => a + b, 0);
             const squares = [1, 4, 9, 16, 25, 36];
             const squareCount = sorted.filter(n => squares.includes(n)).length;
-            const patterns = [
+            const patterns = [ /* 기존 패턴 검사 코드 그대로 유지 */ 
                 {id: 1, check: () => sorted[5] - sorted[0] === 5, reason: "6개 숫자가 연속적"},
                 {id: 2, check: () => sorted.every(n => n >= 1 && n <= 15), reason: "모든 숫자가 1~15 범위"},
                 {id: 3, check: () => sorted.every(n => n >= 1 && n <= 20), reason: "모든 숫자가 1~20 범위"},
@@ -319,7 +284,7 @@
     <script type="module" src="https://www.livere.org/livere-widget.js"></script>
 
     <footer style="margin-top: 40px; font-size: 0.8em; color: gray; text-align: center;">
-        <a href="index.html">home</a> | <a href="about.html">About</a> | <a href="tax.html">실수령액 계산기</a> | <a href="top-prize.html">TOP 50</a>
+        <a href="index.html">home</a> | <a href="about.html">About</a> | <a href="tax.html">실수령액 계산기</a> | <a href="top-prize.html">TOP 50</a> | <a href="statistics.html">Statistics</a>
         <p>&copy; 2026 lottodraw.kr. All rights reserved.</p>
     </footer>
 </body>
