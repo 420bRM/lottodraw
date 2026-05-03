@@ -53,6 +53,7 @@
             text-align: left; 
         }
         h1 { color: #003087; text-align: center; }
+        p.subtitle { text-align: center; color: #555; margin-bottom: 30px; }
         
         table { 
             width: 100%; 
@@ -68,7 +69,14 @@
         th { background-color: #f2f2f2; font-weight: bold; }
         tr:nth-child(even) { background-color: #f9f9f9; }
         tr:hover { background-color: #f1f1f1; }
-        .note { font-size: 0.9em; color: #666; margin: 20px auto; max-width: 900px; }
+        
+        .note { 
+            font-size: 0.9em; 
+            color: #666; 
+            margin: 30px auto; 
+            max-width: 900px; 
+            text-align: center; 
+        }
         
         @media (max-width: 600px) {
             nav ul { flex-direction: column; display: none; }
@@ -96,76 +104,25 @@
 
     <div class="container">
         <h1>역대 로또 6/45 1등 당첨금 TOP 50</h1>
-        <p>(1인당 실수령액 기준 / 천만원 단위 반올림)</p>
+        <p class="subtitle">(1인당 실수령액 기준 / 최신 1,221회차까지 자동 업데이트)</p>
 
-        <table>
+        <table id="topPrizeTable">
             <thead>
                 <tr>
                     <th>순위</th>
                     <th>회차</th>
-                    <th>추첨일</th>
                     <th>1인당 당첨금 (약)</th>
                     <th>당첨자 수</th>
                     <th>총 1등 당첨금</th>
                 </tr>
             </thead>
-        <tbody>
-            <tr><td>1</td><td>19회</td><td>2003-04-12</td><td>407억 원</td><td>1명</td><td>40,722,959,400원</td></tr>
-            <tr><td>2</td><td>25회</td><td>2003-05-24</td><td>242억 원</td><td>2명</td><td>48,455,490,600원</td></tr>
-            <tr><td>3</td><td>20회</td><td>2003-04-19</td><td>193억 원</td><td>1명</td><td>19,352,212,800원</td></tr>
-            <tr><td>4</td><td>43회</td><td>2003-09-27</td><td>177억 원</td><td>1명</td><td>17,749,630,800원</td></tr>
-            <tr><td>5</td><td>15회</td><td>2003-03-15</td><td>170억 원</td><td>1명</td><td>17,014,245,000원</td></tr>
-            <tr><td>6</td><td>36회</td><td>2003-08-09</td><td>160억 원</td><td>1명</td><td>16,014,475,800원</td></tr>
-            <tr><td>7</td><td>62회</td><td>2004-02-07</td><td>158억 원</td><td>1명</td><td>15,817,286,400원</td></tr>
-            <tr><td>8</td><td>33회</td><td>2003-07-19</td><td>149억 원</td><td>1명</td><td>14,903,517,600원</td></tr>
-            <tr><td>9</td><td>82회</td><td>2004-06-26</td><td>146억 원</td><td>1명</td><td>14,562,494,400원</td></tr>
-            <tr><td>10</td><td>86회</td><td>2004-07-24</td><td>143억 원</td><td>1명</td><td>14,252,186,400원</td></tr>
-            <tr><td>11</td><td>534회</td><td>2013-02-23</td><td>142억 원</td><td>1명</td><td>14,215,763,250원</td></tr>
-            <tr><td>12</td><td>80회</td><td>2004-06-12</td><td>138억 원</td><td>1명</td><td>13,809,540,000원</td></tr>
-            <tr><td>13</td><td>551회</td><td>2013-06-22</td><td>135억 원</td><td>1명</td><td>13,526,973,750원</td></tr>
-            <tr><td>14</td><td>515회</td><td>2012-10-13</td><td>132억 원</td><td>1명</td><td>13,200,466,875원</td></tr>
-            <tr><td>15</td><td>427회</td><td>2010-11-06</td><td>126억 원</td><td>1명</td><td>12,571,445,625원</td></tr>
-            <tr><td>16</td><td>1018회</td><td>2022-06-04</td><td>124억 원</td><td>2명</td><td>24,723,489,376원</td></tr>
-            <tr><td>17</td><td>414회</td><td>2010-11-06</td><td>117억 원</td><td>1명</td><td>11,703,832,500원</td></tr>
-            <tr><td>18</td><td>365회</td><td>2009-11-28</td><td>107억 원</td><td>1명</td><td>10,697,716,800원</td></tr>
-            <tr><td>19</td><td>394회</td><td>2010-06-19</td><td>107억 원</td><td>1명</td><td>10,654,349,100원</td></tr>
-            <tr><td>20</td><td>391회</td><td>2010-05-29</td><td>105억 원</td><td>1명</td><td>10,508,749,800원</td></tr>
-            <tr><td>21</td><td>390회</td><td>2010-05-22</td><td>104억 원</td><td>1명</td><td>10,373,997,900원</td></tr>
-            <tr><td>22</td><td>308회</td><td>2008-10-25</td><td>102억 원</td><td>1명</td><td>10,232,872,800원</td></tr>
-            <tr><td>23</td><td>275회</td><td>2008-03-08</td><td>100억 원</td><td>1명</td><td>10,044,066,900원</td></tr>
-            <tr><td>24</td><td>298회</td><td>2008-08-16</td><td>99억 원</td><td>1명</td><td>9,909,778,500원</td></tr>
-            <tr><td>25</td><td>254회</td><td>2007-10-13</td><td>97억 원</td><td>1명</td><td>9,741,015,900원</td></tr>
-            <tr><td>26</td><td>201회</td><td>2006-10-07</td><td>97억 원</td><td>1명</td><td>9,719,465,400원</td></tr>
-            <tr><td>27</td><td>27회</td><td>2003-06-07</td><td>95억 원</td><td>2명</td><td>19,087,965,000원</td></tr>
-            <tr><td>28</td><td>14회</td><td>2003-03-08</td><td>94억 원</td><td>4명</td><td>37,500,193,200원</td></tr>
-            <tr><td>29</td><td>244회</td><td>2007-08-04</td><td>91억 원</td><td>1명</td><td>9,121,583,100원</td></tr>
-            <tr><td>30</td><td>30회</td><td>2003-06-28</td><td>87억 원</td><td>2명</td><td>17,457,111,000원</td></tr>
-            <tr><td>31</td><td>45회</td><td>2003-10-11</td><td>84억 원</td><td>2명</td><td>16,712,835,600원</td></tr>
-            <tr><td>32</td><td>31회</td><td>2003-07-05</td><td>81억 원</td><td>2명</td><td>16,213,345,800원</td></tr>
-            <tr><td>33</td><td>63회</td><td>2004-02-14</td><td>79억 원</td><td>2명</td><td>15,844,491,000원</td></tr>
-            <tr><td>34</td><td>84회</td><td>2004-07-10</td><td>77억 원</td><td>2명</td><td>15,339,558,000원</td></tr>
-            <tr><td>35</td><td>76회</td><td>2004-05-15</td><td>75억 원</td><td>2명</td><td>14,902,045,200원</td></tr>
-            <tr><td>36</td><td>656회</td><td>2015-06-27</td><td>73억 원</td><td>2명</td><td>14,660,005,500원</td></tr>
-            <tr><td>37</td><td>55회</td><td>2003-12-20</td><td>71억 원</td><td>2명</td><td>14,177,598,000원</td></tr>
-            <tr><td>38</td><td>83회</td><td>2004-07-03</td><td>71억 원</td><td>2명</td><td>14,173,896,600원</td></tr>
-            <tr><td>39</td><td>574회</td><td>2013-11-30</td><td>70억 원</td><td>2명</td><td>13,930,369,876원</td></tr>
-            <tr><td>40</td><td>42회</td><td>2003-09-20</td><td>69억 원</td><td>6명</td><td>41,395,680,600원</td></tr>
-            <tr><td>41</td><td>121회</td><td>2005-03-26</td><td>68억 원</td><td>2명</td><td>13,679,296,200원</td></tr>
-            <tr><td>42</td><td>554회</td><td>2013-07-13</td><td>68억 원</td><td>2명</td><td>13,627,787,250원</td></tr>
-            <tr><td>43</td><td>165회</td><td>2006-01-28</td><td>68억 원</td><td>2명</td><td>13,534,853,400원</td></tr>
-            <tr><td>44</td><td>107회</td><td>2004-12-18</td><td>67억 원</td><td>2명</td><td>13,359,855,600원</td></tr>
-            <tr><td>45</td><td>104회</td><td>2004-11-27</td><td>66억 원</td><td>2명</td><td>13,221,487,500원</td></tr>
-            <tr><td>46</td><td>6회</td><td>2003-01-11</td><td>66억 원</td><td>1명</td><td>6,574,451,700원</td></tr>
-            <tr><td>47</td><td>10회</td><td>2003-02-08</td><td>64억 원</td><td>13명</td><td>83,595,692,700원</td></tr>
-            <tr><td>48</td><td>609회</td><td>2014-08-02</td><td>63억 원</td><td>2명</td><td>12,678,622,876원</td></tr>
-            <tr><td>49</td><td>778회</td><td>2017-10-28</td><td>63억 원</td><td>3명</td><td>18,792,208,500원</td></tr>
-            <tr><td>50</td><td>1025회</td><td>2022-07-23</td><td>61억 원</td><td>4명</td><td>24,475,413,376원</td></tr>
-        </tbody>
-    </table>
+            <tbody></tbody>
+        </table>
 
         <p class="note">
-            * 금액은 백만원 단위로 반올림한 값이며, 정확한 금액은 동행복권 공식 발표를 참고하세요.<br>
-            * 출처: 동행복권 공식 사이트 (최신 기준) 부정확한 정보 발생시 제보해주세요 : 420b@jachwibang.com
+            * 금액은 백만원 단위로 반올림한 값입니다.<br>
+            * 모든 데이터는 lotto-data.json을 통해 실시간으로 불러옵니다.<br>
+            * 출처: 동행복권 공식 데이터 (부정확한 정보 발생 시 제보해주세요 : 420b@jachwibang.com)
         </p>
 
         <p style="margin-top: 30px; text-align: center;">
@@ -178,10 +135,43 @@
     </footer>
 
     <script>
-    function toggleMenu() {
-        const menu = document.getElementById('nav-menu');
-        menu.classList.toggle('active');
-    }
+        function toggleMenu() {
+            const menu = document.getElementById('nav-menu');
+            menu.classList.toggle('active');
+        }
+
+        fetch('lotto-data.json')
+            .then(response => response.json())
+            .then(data => {
+                // 1인당 당첨금 기준 내림차순 정렬
+                const sorted = [...data.draws]
+                    .sort((a, b) => b.firstPrizeAmount - a.firstPrizeAmount)
+                    .slice(0, 50);   // Top 50만 추출
+
+                const tbody = document.querySelector('#topPrizeTable tbody');
+                tbody.innerHTML = '';
+
+                sorted.forEach((draw, index) => {
+                    const onePerson = draw.firstPrizeAmount;
+                    const winners = draw.firstPrizeWinners;
+                    const totalPrize = onePerson * winners;
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>${index + 1}</strong></td>
+                        <td>${draw.round}회</td>
+                        <td>${(onePerson / 100000000).toFixed(0)}억 원</td>
+                        <td>${winners}명</td>
+                        <td>${(totalPrize / 100000000).toFixed(0)}억 원</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            })
+            .catch(err => {
+                console.error(err);
+                document.querySelector('#topPrizeTable tbody').innerHTML = 
+                    `<tr><td colspan="5" style="color:red;">데이터를 불러오지 못했습니다. lotto-data.json 파일을 확인해주세요.</td></tr>`;
+            });
     </script>
 </body>
 </html>
