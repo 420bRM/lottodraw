@@ -51,8 +51,7 @@
             text-align: left; 
         }
         h1 { color: #003087; text-align: center; }
-        .subtitle { color: #555; font-size: 1.1em; margin-bottom: 30px; }
-        canvas { max-width: 100%; height: 420px !important; margin: 30px 0; }
+        .subtitle { color: #555; font-size: 1.1em; text-align: center; margin-bottom: 30px; }
 
         /* Top 10 & Bottom 10 */
         .rank-section { margin: 40px 0; }
@@ -144,8 +143,8 @@
     </nav>
 
     <div class="container">
-        <h1>1. 숫자별 출현 빈도 (1,221회차 기준)</h1>
-        <p class="subtitle">본번호 6개 중 각 숫자가 나온 총 횟수입니다.</p>
+        <h1>1. 숫자별 출현 빈도</h1>
+        <p id="subtitle" class="subtitle">로또 6/45 데이터를 분석 중...</p>
         
         <canvas id="freqChart"></canvas>
 
@@ -193,6 +192,13 @@
         fetch('lotto-data.json')
             .then(response => response.json())
             .then(jsonData => {
+                const totalRounds = jsonData.draws.length;
+
+                // 최신 회차 수를 동적으로 표시
+                document.getElementById('subtitle').innerHTML = 
+                    `최신 <strong>${totalRounds}</strong>회차 기준`;
+
+                // 출현 횟수 계산
                 const freq = new Array(45).fill(0);
                 jsonData.draws.forEach(draw => {
                     draw.numbers.forEach(num => {
@@ -204,12 +210,21 @@
                 originalFreq = [...freq];
                 allData = originalLabels.map((num, i) => ({ num: num, count: freq[i] }));
 
+                // 초기 그래프 (1~45 순서)
                 renderChart(originalLabels, originalFreq);
 
+                // Top 10 & Bottom 10
                 const sortedDesc = [...allData].sort((a, b) => b.count - a.count);
                 renderRankTable('top10Table', sortedDesc.slice(0, 10));
                 renderRankTable('bottom10Table', sortedDesc.slice(-10).reverse());
+
+                // 10단위 그룹 테이블
                 renderGroupedTables(allData);
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById('subtitle').innerHTML = 
+                    `<span style="color:red;">데이터 로드 실패 - lotto-data.json 확인</span>`;
             });
 
         function renderChart(labels, data) {
