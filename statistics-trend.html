@@ -3,25 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>8. 최근 Hot/Cold 트렌드 | Statistics</title>
+    <title>8. 핫/콜드 TREND | Statistics</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-        nav { background-color: #fefefe; padding: 10px; text-align: center; }
-        nav ul { list-style: none; padding: 0; margin: 0; display: flex; justify-content: center; }
-        nav li { margin: 0 15px; }
-        nav a { text-decoration: none; color: black; font-weight: bold; }
-        nav a:hover { color: blue; }
-        .container { max-width: 1100px; margin: 40px auto; padding: 20px; }
-        h1 { color: #003087; }
-        .subtitle { color: #555; font-size: 1.1em; }
-        canvas { max-width: 100%; height: 450px !important; margin: 30px 0; }
-        .section-title { margin-top: 50px; color: #003087; }
-        .back-btn { display: inline-block; margin: 30px 0; padding: 12px 24px; background: #003087; color: white; text-decoration: none; border-radius: 6px; }
+        body { font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 0; line-height: 1.6; }
+        nav { 
+            background-color: #fefefe; 
+            padding: 15px 10px; 
+            text-align: center; 
+            position: relative; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        nav ul { 
+            list-style: none; 
+            padding: 0; 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            flex-wrap: wrap; 
+        }
+        nav li { margin: 8px 15px; }
+        nav a { 
+            text-decoration: none; 
+            color: black; 
+            font-weight: bold; 
+        }
+        nav a:hover { color: #003087; }
+        .hamburger { 
+            display: none; 
+            cursor: pointer; 
+            position: absolute; 
+            top: 18px; 
+            left: 15px; 
+        }
+        .hamburger span { 
+            display: block; 
+            width: 25px; 
+            height: 3px; 
+            background: black; 
+            margin: 5px auto; 
+        }
+        
+        .container { 
+            max-width: 1200px; 
+            margin: 50px auto 40px; 
+            padding: 20px; 
+            text-align: left; 
+        }
+        h1 { color: #003087; text-align: center; }
+        .subtitle { color: #555; font-size: 1.1em; text-align: center; margin-bottom: 30px; }
+
+        /* 차트 */
+        canvas { max-width: 100%; height: 420px !important; margin: 30px 0; }
+
+        /* 테이블 */
+        table { 
+            width: 100%; 
+            margin: 30px auto; 
+            border-collapse: collapse; 
+            font-size: 0.95em; 
+        }
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 12px; 
+            text-align: center; 
+        }
+        th { background-color: #f2f2f2; font-weight: bold; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+
+        .back-btn { 
+            display: inline-block; 
+            margin: 40px 0; 
+            padding: 12px 24px; 
+            background: #003087; 
+            color: white; 
+            text-decoration: none; 
+            border-radius: 6px; 
+        }
+
+        @media (max-width: 768px) {
+            canvas { height: 360px !important; }
+            nav ul { flex-direction: column; display: none; }
+            nav ul.active { display: flex; }
+            nav li { margin: 10px 0; }
+            .hamburger { display: block; }
+            .container { margin-top: 30px; padding: 15px; }
+        }
     </style>
 </head>
 <body>
     <nav>
+        <div class="hamburger" onclick="toggleMenu()">
+            <span></span><span></span><span></span>
+        </div>
         <ul id="nav-menu">
             <li><a href="index.html">Home</a></li>
             <li><a href="about.html">About</a></li>
@@ -32,78 +106,105 @@
     </nav>
 
     <div class="container">
-        <h1>8. 최근 Hot/Cold 트렌드 (최근 50회 vs 전체 1,221회)</h1>
-        <p class="subtitle">전체 기간과 최근 50회차의 숫자 출현 빈도를 비교합니다.</p>
-
-        <h2 class="section-title">🔥 Hot Numbers (최근 50회 많이 나온 숫자 Top 10)</h2>
+        <h1>8. 핫/콜드 넘버</h1>
+        <p id="subtitle" class="subtitle">로또 6/45 데이터를 분석 중...</p>
+        
+        <h2>🔥 Hot Numbers (최근 50회 가장 많이 나온 숫자)</h2>
         <canvas id="hotChart"></canvas>
 
-        <h2 class="section-title">❄️ Cold Numbers (최근 50회 거의 나오지 않은 숫자 Top 10)</h2>
+        <h2>❄️ Cold Numbers (최근 50회 가장 적게 나온 숫자)</h2>
         <canvas id="coldChart"></canvas>
+
+        <h2>Hot / Cold 상세 비교 테이블</h2>
+        <table id="trendTable">
+            <thead>
+                <tr>
+                    <th>숫자</th>
+                    <th>전체 출현</th>
+                    <th>최근 50회</th>
+                    <th>차이</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
 
         <a href="statistics.html" class="back-btn">← 통계 메인으로 돌아가기</a>
     </div>
 
-    <script>
-        // Hot Numbers
-        const hotLabels = ['27','15','3','16','28','34','12','13','45','40'];
-        const hotOverall = [180,171,172,173,169,182,177,176,174,174];
-        const hotRecent = [12,10,10,10,10,9,9,9,9,9];
-
-        new Chart(document.getElementById('hotChart'), {
-            type: 'bar',
-            data: {
-                labels: hotLabels,
-                datasets: [
-                    { label: '전체 출현', data: hotOverall, backgroundColor: '#003087' },
-                    { label: '최근 50회', data: hotRecent, backgroundColor: '#D4A017' }
-                ]
-            },
-            options: {
-                indexAxis: 'y',
-                responsive: true,
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: (ctx) => `${ctx.dataset.label}: ${ctx.raw}회`
-                        }
-                    }
-                },
-                scales: { x: { beginAtZero: true } }
-            }
-        });
-
-        // Cold Numbers
-        const coldLabels = ['9','22','32','23','41','21','20','29','31','37'];
-        const coldOverall = [133,142,142,147,147,154,154,153,149,156];
-        const coldRecent = [0,1,1,1,1,1,2,2,2,2];
-
-        new Chart(document.getElementById('coldChart'), {
-            type: 'bar',
-            data: {
-                labels: coldLabels,
-                datasets: [
-                    { label: '전체 출현', data: coldOverall, backgroundColor: '#003087' },
-                    { label: '최근 50회', data: coldRecent, backgroundColor: '#D4A017' }
-                ]
-            },
-            options: {
-                indexAxis: 'y',
-                responsive: true,
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: (ctx) => `${ctx.dataset.label}: ${ctx.raw}회`
-                        }
-                    }
-                },
-                scales: { x: { beginAtZero: true } }
-            }
-        });
-    </script>
-
     <footer style="margin-top:60px; font-size:0.8em; color:gray; text-align:center;">
         <p>&copy; 2026 lottodraw.kr. All rights reserved.</p>
     </footer>
-</body>
-</html>
+
+    <script>
+        let hotChart = null;
+        let coldChart = null;
+
+        fetch('lotto-data.json')
+            .then(response => response.json())
+            .then(jsonData => {
+                const totalRounds = jsonData.draws.length;
+                const recentRounds = Math.min(50, totalRounds);
+
+                document.getElementById('subtitle').innerHTML = 
+                    `최신 <strong>${totalRounds}</strong>회차 기준 (최근 ${recentRounds}회 비교)`;
+
+                // 전체 출현 횟수
+                const overallFreq = new Array(45).fill(0);
+                // 최근 50회 출현 횟수
+                const recentFreq = new Array(45).fill(0);
+
+                jsonData.draws.forEach((draw, index) => {
+                    draw.numbers.forEach(num => {
+                        if (num >= 1 && num <= 45) {
+                            overallFreq[num - 1]++;
+                            if (index >= totalRounds - recentRounds) {
+                                recentFreq[num - 1]++;
+                            }
+                        }
+                    });
+                });
+
+                // Hot 10 (최근 50회 기준)
+                const hotData = [...Array(45).keys()].map(i => ({
+                    num: i + 1,
+                    overall: overallFreq[i],
+                    recent: recentFreq[i]
+                })).sort((a, b) => b.recent - a.recent).slice(0, 10);
+
+                // Cold 10 (최근 50회 기준)
+                const coldData = [...Array(45).keys()].map(i => ({
+                    num: i + 1,
+                    overall: overallFreq[i],
+                    recent: recentFreq[i]
+                })).sort((a, b) => a.recent - b.recent).slice(0, 10);
+
+                // Hot 차트
+                renderChart('hotChart', hotData.map(d => d.num), hotData.map(d => d.recent), 'Hot Numbers (최근 50회)');
+                // Cold 차트
+                renderChart('coldChart', coldData.map(d => d.num), coldData.map(d => d.recent), 'Cold Numbers (최근 50회)');
+
+                // 비교 테이블
+                const tbody = document.querySelector('#trendTable tbody');
+                tbody.innerHTML = '';
+                const allNumbers = [...Array(45).keys()].map(i => ({
+                    num: i + 1,
+                    overall: overallFreq[i],
+                    recent: recentFreq[i]
+                })).sort((a, b) => b.recent - a.recent);
+
+                allNumbers.forEach(item => {
+                    const diff = item.recent - Math.round(item.overall / totalRounds * recentRounds);
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>${item.num}</strong></td>
+                        <td>${item.overall}회</td>
+                        <td>${item.recent}회</td>
+                        <td style="font-weight:bold; color:${diff > 0 ? '#003087' : '#888'};">${diff > 0 ? '+' : ''}${diff}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById('subtitle').innerHTML = 
+                    `<span style="
