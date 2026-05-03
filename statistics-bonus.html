@@ -3,27 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2. 보너스 번호 출현 빈도 | Statistics</title>
+    <title>2. 보너스 번호 통계 | Statistics</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-        nav { background-color: #fefefe; padding: 10px; text-align: center; }
-        nav ul { list-style: none; padding: 0; margin: 0; display: flex; justify-content: center; }
-        nav li { margin: 0 15px; }
-        nav a { text-decoration: none; color: black; font-weight: bold; }
-        nav a:hover { color: blue; }
-        .container { max-width: 1100px; margin: 40px auto; padding: 20px; }
-        h1 { color: #003087; }
-        .subtitle { color: #555; font-size: 1.1em; }
-        canvas { max-width: 100%; height: 500px !important; margin: 30px 0; }
-        table { width: 100%; border-collapse: collapse; margin-top: 30px; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
-        th { background: #f2f2f2; }
-        .back-btn { display: inline-block; margin: 30px 0; padding: 12px 24px; background: #003087; color: white; text-decoration: none; border-radius: 6px; }
+        body { font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 0; line-height: 1.6; }
+        nav { 
+            background-color: #fefefe; 
+            padding: 15px 10px; 
+            text-align: center; 
+            position: relative; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        nav ul { 
+            list-style: none; 
+            padding: 0; 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            flex-wrap: wrap; 
+        }
+        nav li { margin: 8px 15px; }
+        nav a { 
+            text-decoration: none; 
+            color: black; 
+            font-weight: bold; 
+        }
+        nav a:hover { color: #003087; }
+        .hamburger { 
+            display: none; 
+            cursor: pointer; 
+            position: absolute; 
+            top: 18px; 
+            left: 15px; 
+        }
+        .hamburger span { 
+            display: block; 
+            width: 25px; 
+            height: 3px; 
+            background: black; 
+            margin: 5px auto; 
+        }
+        
+        .container { 
+            max-width: 1200px; 
+            margin: 50px auto 40px; 
+            padding: 20px; 
+            text-align: left; 
+        }
+        h1 { color: #003087; text-align: center; }
+        .subtitle { color: #555; font-size: 1.1em; text-align: center; margin-bottom: 30px; }
+
+        /* Top 10 & Bottom 10 */
+        .rank-section { margin: 40px 0; }
+        .rank-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .rank-table th, .rank-table td { 
+            border: 1px solid #ddd; 
+            padding: 12px; 
+            text-align: center; 
+        }
+        .rank-table th { background: #f2f2f2; }
+        .top10 { border-left: 5px solid #003087; }
+        .bottom10 { border-left: 5px solid #888; }
+
+        /* 그룹화된 전체 테이블 */
+        .freq-groups {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin: 40px 0;
+        }
+        .freq-group {
+            flex: 1;
+            min-width: 180px;
+        }
+        .freq-group h3 {
+            text-align: center;
+            color: #003087;
+            margin-bottom: 10px;
+        }
+        .freq-group table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .freq-group th, .freq-group td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+        .freq-group th { background: #f8f9fa; }
+
+        .sort-buttons {
+            margin: 20px 0;
+        }
+        .sort-btn {
+            padding: 12px 20px;
+            margin-right: 12px;
+            background: #003087;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .sort-btn:hover { background: #002266; }
+
+        .back-btn { 
+            display: inline-block; 
+            margin: 40px 0; 
+            padding: 12px 24px; 
+            background: #003087; 
+            color: white; 
+            text-decoration: none; 
+            border-radius: 6px; 
+        }
+
+        @media (max-width: 768px) {
+            canvas { height: 360px !important; }
+            .freq-groups { flex-direction: column; }
+            nav ul { flex-direction: column; display: none; }
+            nav ul.active { display: flex; }
+            nav li { margin: 10px 0; }
+            .hamburger { display: block; }
+            .container { margin-top: 30px; padding: 15px; }
+        }
     </style>
 </head>
 <body>
     <nav>
+        <div class="hamburger" onclick="toggleMenu()">
+            <span></span><span></span><span></span>
+        </div>
         <ul id="nav-menu">
             <li><a href="index.html">Home</a></li>
             <li><a href="about.html">About</a></li>
@@ -34,93 +143,163 @@
     </nav>
 
     <div class="container">
-        <h1>2. 보너스 번호 출현 빈도 (1,221회차 기준)</h1>
-        <p class="subtitle">보너스 번호로 나온 숫자들의 출현 횟수입니다. 본번호와 비교해 보너스 특화 숫자를 확인할 수 있습니다.</p>
+        <h1>2. 보너스 번호 통계</h1>
+        <p id="subtitle" class="subtitle">로또 6/45 데이터를 분석 중...</p>
         
         <canvas id="bonusChart"></canvas>
 
-        <h2>Top 10 보너스 번호</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>순위</th>
-                    <th>보너스 번호</th>
-                    <th>출현 횟수</th>
-                </tr>
-            </thead>
-            <tbody id="bonusTopTable"></tbody>
-        </table>
+        <div class="sort-buttons">
+            <button class="sort-btn" onclick="sortChartAndData('desc')">그래프 - 많이 나온 순 ▼</button>
+            <button class="sort-btn" onclick="sortChartAndData('asc')">그래프 - 적게 나온 순 ▲</button>
+            <button class="sort-btn" onclick="resetChart()" style="background:#555;">원래 순서 (1~45)로</button>
+        </div>
 
-        <h2>Bottom 10 보너스 번호</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>순위</th>
-                    <th>보너스 번호</th>
-                    <th>출현 횟수</th>
-                </tr>
-            </thead>
-            <tbody id="bonusBottomTable"></tbody>
-        </table>
+        <!-- Top 10 -->
+        <div class="rank-section">
+            <h2>🔥 Top 10 가장 많이 나온 보너스 번호</h2>
+            <table class="rank-table top10" id="top10Table">
+                <thead><tr><th>순위</th><th>보너스 번호</th><th>출현 횟수</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- Bottom 10 -->
+        <div class="rank-section">
+            <h2>❄️ Bottom 10 가장 적게 나온 보너스 번호</h2>
+            <table class="rank-table bottom10" id="bottom10Table">
+                <thead><tr><th>순위</th><th>보너스 번호</th><th>출현 횟수</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- 전체 보너스 번호 (10단위 그룹화) -->
+        <h2>전체 보너스 번호 출현 횟수</h2>
+        <div class="freq-groups" id="freqGroups"></div>
 
         <a href="statistics.html" class="back-btn">← 통계 메인으로 돌아가기</a>
     </div>
 
-    <script>
-        // 보너스 번호 출현 빈도 데이터 (1,221회차 실제 분석 결과)
-        const bonusFreq = [28,36,29,35,26,34,27,30,24,28,25,31,28,27,29,26,30,19,25,27,24,20,20,29,26,28,32,29,17,28,27,34,26,28,27,29,28,26,25,28,18,29,35,26,27];
-
-        const labels = Array.from({length:45}, (_,i) => i+1);
-
-        new Chart(document.getElementById('bonusChart'), {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: '보너스 출현 횟수',
-                    data: bonusFreq,
-                    backgroundColor: '#D4A017'
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: { y: { beginAtZero: true } }
-            }
-        });
-
-        // Top 10 테이블
-        const top10 = [
-            {rank:1, num:2, count:36}, {rank:2, num:4, count:35}, {rank:3, num:43, count:35},
-            {rank:4, num:6, count:34}, {rank:5, num:32, count:34}, {rank:6, num:27, count:32},
-            {rank:7, num:13, count:31}, {rank:8, num:17, count:30}, {rank:9, num:8, count:30},
-            {rank:10, num:12, count:29}
-        ];
-
-        const topBody = document.getElementById('bonusTopTable');
-        top10.forEach(item => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${item.rank}</td><td>${item.num}</td><td>${item.count}회</td>`;
-            topBody.appendChild(tr);
-        });
-
-        // Bottom 10 테이블
-        const bottom10 = [
-            {rank:1, num:29, count:17}, {rank:2, num:41, count:18}, {rank:3, num:18, count:19},
-            {rank:4, num:22, count:20}, {rank:5, num:23, count:20}, {rank:6, num:9, count:21},
-            {rank:7, num:14, count:21}, {rank:8, num:19, count:22}, {rank:9, num:21, count:22},
-            {rank:10, num:37, count:22}
-        ];
-
-        const bottomBody = document.getElementById('bonusBottomTable');
-        bottom10.forEach(item => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${item.rank}</td><td>${item.num}</td><td>${item.count}회</td>`;
-            bottomBody.appendChild(tr);
-        });
-    </script>
-
     <footer style="margin-top:60px; font-size:0.8em; color:gray; text-align:center;">
         <p>&copy; 2026 lottodraw.kr. All rights reserved.</p>
     </footer>
+
+    <script>
+        let myChart = null;
+        let allData = [];
+        let originalLabels = [];
+        let originalFreq = [];
+
+        fetch('lotto-data.json')
+            .then(response => response.json())
+            .then(jsonData => {
+                const totalRounds = jsonData.draws.length;
+
+                // 최신 회차 수 동적 표시
+                document.getElementById('subtitle').innerHTML = 
+                    `최신 <strong>${totalRounds}</strong>회차 기준`;
+
+                // 보너스 번호 출현 횟수 계산
+                const freq = new Array(45).fill(0);
+                jsonData.draws.forEach(draw => {
+                    const bonus = draw.bonus;
+                    if (bonus >= 1 && bonus <= 45) freq[bonus - 1]++;
+                });
+
+                originalLabels = Array.from({length: 45}, (_, i) => i + 1);
+                originalFreq = [...freq];
+                allData = originalLabels.map((num, i) => ({ num: num, count: freq[i] }));
+
+                // 초기 그래프 (1~45 순서)
+                renderChart(originalLabels, originalFreq);
+
+                // Top 10 & Bottom 10
+                const sortedDesc = [...allData].sort((a, b) => b.count - a.count);
+                renderRankTable('top10Table', sortedDesc.slice(0, 10));
+                renderRankTable('bottom10Table', sortedDesc.slice(-10).reverse());
+
+                // 10단위 그룹 테이블
+                renderGroupedTables(allData);
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById('subtitle').innerHTML = 
+                    `<span style="color:red;">데이터 로드 실패 - lotto-data.json 확인</span>`;
+            });
+
+        function renderChart(labels, data) {
+            if (myChart) myChart.destroy();
+            myChart = new Chart(document.getElementById('bonusChart'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '보너스 번호 출현 횟수',
+                        data: data,
+                        backgroundColor: '#003087'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+        function sortChartAndData(order) {
+            let sortedData = [...allData];
+            if (order === 'desc') {
+                sortedData.sort((a, b) => b.count - a.count);
+            } else {
+                sortedData.sort((a, b) => a.count - b.count);
+            }
+            const newLabels = sortedData.map(item => item.num);
+            const newCounts = sortedData.map(item => item.count);
+            renderChart(newLabels, newCounts);
+        }
+
+        function resetChart() {
+            renderChart(originalLabels, originalFreq);
+        }
+
+        function renderRankTable(tableId, data) {
+            const tbody = document.getElementById(tableId).querySelector('tbody');
+            tbody.innerHTML = '';
+            data.forEach((item, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td><strong>${idx + 1}</strong></td><td><strong>${item.num}</strong></td><td>${item.count}회</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderGroupedTables(data) {
+            const container = document.getElementById('freqGroups');
+            container.innerHTML = '';
+            const groups = [
+                { title: '1 ~ 10', start: 1, end: 10 },
+                { title: '11 ~ 20', start: 11, end: 20 },
+                { title: '21 ~ 30', start: 21, end: 30 },
+                { title: '31 ~ 40', start: 31, end: 40 },
+                { title: '41 ~ 45', start: 41, end: 45 }
+            ];
+            groups.forEach(group => {
+                const groupData = data.filter(item => item.num >= group.start && item.num <= group.end);
+                const div = document.createElement('div');
+                div.className = 'freq-group';
+                div.innerHTML = `<h3>${group.title}</h3><table><thead><tr><th>보너스 번호</th><th>출현 횟수</th></tr></thead><tbody></tbody></table>`;
+                const tbody = div.querySelector('tbody');
+                groupData.forEach(item => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td><strong>${item.num}</strong></td><td>${item.count}회</td>`;
+                    tbody.appendChild(tr);
+                });
+                container.appendChild(div);
+            });
+        }
+
+        function toggleMenu() {
+            const menu = document.getElementById('nav-menu');
+            menu.classList.toggle('active');
+        }
+    </script>
 </body>
 </html>
