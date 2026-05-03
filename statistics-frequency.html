@@ -12,11 +12,11 @@
         nav li { margin: 8px 15px; }
         nav a { text-decoration: none; color: black; font-weight: bold; }
         nav a:hover { color: #003087; }
-        .container { max-width: 1100px; margin: 40px auto; padding: 20px; }
+        .container { max-width: 1200px; margin: 40px auto; padding: 20px; }
         h1 { color: #003087; }
         .subtitle { color: #555; font-size: 1.1em; margin-bottom: 30px; }
         canvas { max-width: 100%; height: 420px !important; margin: 30px 0; }
-        
+
         /* Top 10 & Bottom 10 */
         .rank-section { margin: 40px 0; }
         .rank-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
@@ -29,28 +29,39 @@
         .top10 { border-left: 5px solid #003087; }
         .bottom10 { border-left: 5px solid #888; }
 
-        /* 전체 테이블 */
-        table#freqTable { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-top: 20px; 
-            overflow-x: auto; 
-            display: block;
+        /* 그룹화된 전체 테이블 */
+        .freq-groups {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin: 40px 0;
         }
-        th, td { 
-            border: 1px solid #ddd; 
-            padding: 10px; 
-            text-align: center; 
-            font-size: 0.95em;
+        .freq-group {
+            flex: 1;
+            min-width: 180px;
         }
-        th { background: #f2f2f2; }
-        
+        .freq-group h3 {
+            text-align: center;
+            color: #003087;
+            margin-bottom: 10px;
+        }
+        .freq-group table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .freq-group th, .freq-group td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+        .freq-group th { background: #f8f9fa; }
+
         .sort-buttons {
             margin: 20px 0;
         }
         .sort-btn {
-            padding: 10px 18px;
-            margin-right: 10px;
+            padding: 12px 20px;
+            margin-right: 12px;
             background: #003087;
             color: white;
             border: none;
@@ -59,7 +70,7 @@
             font-weight: bold;
         }
         .sort-btn:hover { background: #002266; }
-        
+
         .back-btn { 
             display: inline-block; 
             margin: 40px 0; 
@@ -70,16 +81,15 @@
             border-radius: 6px; 
         }
 
-        @media (max-width: 600px) {
-            canvas { height: 350px !important; }
-            th, td { padding: 8px; font-size: 0.9em; }
-            nav ul { flex-direction: column; }
+        @media (max-width: 768px) {
+            canvas { height: 360px !important; }
+            .freq-groups { flex-direction: column; }
         }
     </style>
 </head>
 <body>
     <nav>
-        <ul id="nav-menu">
+        <ul>
             <li><a href="index.html">Home</a></li>
             <li><a href="about.html">About</a></li>
             <li><a href="tax.html">TAX</a></li>
@@ -93,6 +103,11 @@
         <p class="subtitle">본번호 6개 중 각 숫자가 나온 총 횟수입니다.</p>
         
         <canvas id="freqChart"></canvas>
+
+        <div class="sort-buttons">
+            <button class="sort-btn" onclick="sortChartAndData('desc')">그래프 - 많이 나온 순 ▼</button>
+            <button class="sort-btn" onclick="sortChartAndData('asc')">그래프 - 적게 나온 순 ▲</button>
+        </div>
 
         <!-- Top 10 -->
         <div class="rank-section">
@@ -112,33 +127,20 @@
             </table>
         </div>
 
-        <div class="sort-buttons">
-            <button class="sort-btn" onclick="sortTable('desc')">많이 나온 순 ▼</button>
-            <button class="sort-btn" onclick="sortTable('asc')">적게 나온 순 ▲</button>
-        </div>
-
+        <!-- 전체 숫자별 (10단위 그룹화) -->
         <h2>전체 숫자별 출현 횟수</h2>
-        <table id="freqTable">
-            <thead>
-                <tr>
-                    <th>순위</th>
-                    <th>숫자</th>
-                    <th>출현 횟수</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+        <div class="freq-groups" id="freqGroups"></div>
 
         <a href="statistics.html" class="back-btn">← 통계 메인으로 돌아가기</a>
     </div>
 
     <script>
+        let myChart = null;
         let allData = [];
 
         fetch('lotto-data.json')
             .then(response => response.json())
             .then(jsonData => {
-                // 출현 횟수 계산
                 const freq = new Array(45).fill(0);
                 jsonData.draws.forEach(draw => {
                     draw.numbers.forEach(num => {
@@ -147,73 +149,94 @@
                 });
 
                 const labels = Array.from({length: 45}, (_, i) => i + 1);
-                allData = labels.map((num, i) => ({
-                    num: num,
-                    count: freq[i]
-                }));
+                allData = labels.map((num, i) => ({ num: num, count: freq[i] }));
 
-                // 그래프
-                new Chart(document.getElementById('freqChart'), {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: '출현 횟수',
-                            data: freq,
-                            backgroundColor: '#003087'
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        scales: { y: { beginAtZero: true } }
-                    }
-                });
+                // 초기 그래프 (기본 내림차순)
+                renderChart(labels, freq);
 
                 // Top 10 & Bottom 10
                 const sortedDesc = [...allData].sort((a, b) => b.count - a.count);
                 renderRankTable('top10Table', sortedDesc.slice(0, 10));
                 renderRankTable('bottom10Table', sortedDesc.slice(-10).reverse());
 
-                // 전체 테이블 (기본 내림차순)
-                renderFullTable(sortedDesc);
+                // 10단위 그룹 테이블
+                renderGroupedTables(allData);
             });
+
+        function renderChart(labels, data) {
+            if (myChart) myChart.destroy();
+            myChart = new Chart(document.getElementById('freqChart'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '출현 횟수',
+                        data: data,
+                        backgroundColor: '#003087'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+        function sortChartAndData(order) {
+            let sortedData = [...allData];
+            if (order === 'desc') {
+                sortedData.sort((a, b) => b.count - a.count);
+            } else {
+                sortedData.sort((a, b) => a.count - b.count);
+            }
+
+            const newLabels = sortedData.map(item => item.num);
+            const newCounts = sortedData.map(item => item.count);
+
+            renderChart(newLabels, newCounts);
+        }
 
         function renderRankTable(tableId, data) {
             const tbody = document.getElementById(tableId).querySelector('tbody');
             tbody.innerHTML = '';
             data.forEach((item, idx) => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td><strong>${idx + 1}</strong></td>
-                    <td><strong>${item.num}</strong></td>
-                    <td>${item.count}회</td>
-                `;
+                tr.innerHTML = `<td><strong>${idx + 1}</strong></td><td><strong>${item.num}</strong></td><td>${item.count}회</td>`;
                 tbody.appendChild(tr);
             });
         }
 
-        function renderFullTable(data) {
-            const tbody = document.querySelector('#freqTable tbody');
-            tbody.innerHTML = '';
-            data.forEach((item, idx) => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${idx + 1}</td>
-                    <td><strong>${item.num}</strong></td>
-                    <td>${item.count}회</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
+        function renderGroupedTables(data) {
+            const container = document.getElementById('freqGroups');
+            container.innerHTML = '';
+            const groups = [
+                { title: '1 ~ 10', start: 1, end: 10 },
+                { title: '11 ~ 20', start: 11, end: 20 },
+                { title: '21 ~ 30', start: 21, end: 30 },
+                { title: '31 ~ 40', start: 31, end: 40 },
+                { title: '41 ~ 45', start: 41, end: 45 }
+            ];
 
-        function sortTable(order) {
-            let sorted = [...allData];
-            if (order === 'desc') {
-                sorted.sort((a, b) => b.count - a.count);
-            } else {
-                sorted.sort((a, b) => a.count - b.count);
-            }
-            renderFullTable(sorted);
+            groups.forEach(group => {
+                const groupData = data.filter(item => item.num >= group.start && item.num <= group.end);
+                
+                const div = document.createElement('div');
+                div.className = 'freq-group';
+                div.innerHTML = `
+                    <h3>${group.title}</h3>
+                    <table>
+                        <thead><tr><th>숫자</th><th>출현 횟수</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                `;
+                const tbody = div.querySelector('tbody');
+                groupData.forEach(item => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td><strong>${item.num}</strong></td><td>${item.count}회</td>`;
+                    tbody.appendChild(tr);
+                });
+                container.appendChild(div);
+            });
         }
     </script>
 
