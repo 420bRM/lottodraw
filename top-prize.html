@@ -53,7 +53,7 @@
             text-align: left; 
         }
         h1 { color: #003087; text-align: center; }
-        p.subtitle { text-align: center; color: #555; margin-bottom: 30px; }
+        .subtitle { text-align: center; color: #555; margin-bottom: 30px; }
         
         table { 
             width: 100%; 
@@ -104,7 +104,7 @@
 
     <div class="container">
         <h1>역대 로또 6/45 1등 당첨금 TOP 50</h1>
-        <p class="subtitle">(1인당 실수령액 기준 / 최신 1,221회차까지 자동 업데이트)</p>
+        <p id="subtitle" class="subtitle"></p>
 
         <table id="topPrizeTable">
             <thead>
@@ -113,16 +113,16 @@
                     <th>회차</th>
                     <th>1인당 당첨금 (약)</th>
                     <th>당첨자 수</th>
-                    <th>총 1등 당첨금</th>
+                    <th>총 1등 당첨금 (정확)</th>
                 </tr>
             </thead>
             <tbody></tbody>
         </table>
 
         <p class="note">
-            * 금액은 백만원 단위로 반올림한 값입니다.<br>
-            * 모든 데이터는 lotto-data.json을 통해 실시간으로 불러옵니다.<br>
-            * 출처: 동행복권 공식 데이터 (부정확한 정보 발생 시 제보해주세요 : 420b@jachwibang.com)
+            * 1인당 당첨금은 가독성을 위해 “억 원” 단위로 표시<br>
+            * 총 1등 당첨금은 **1원 단위까지 정확한 금액**입니다.<br>
+            * 모든 데이터는 lotto-data.json을 통해 실시간으로 불러옵니다.
         </p>
 
         <p style="margin-top: 30px; text-align: center;">
@@ -143,17 +143,21 @@
         fetch('lotto-data.json')
             .then(response => response.json())
             .then(data => {
-                // 1인당 당첨금 기준 내림차순 정렬
+                const totalRounds = data.draws.length;
+
+                document.getElementById('subtitle').innerHTML = 
+                    `(1인당 실수령액 기준 / 최신 <strong>${totalRounds}</strong>회차까지 자동 업데이트)`;
+
                 const sorted = [...data.draws]
                     .sort((a, b) => b.firstPrizeAmount - a.firstPrizeAmount)
-                    .slice(0, 50);   // Top 50만 추출
+                    .slice(0, 50);
 
                 const tbody = document.querySelector('#topPrizeTable tbody');
                 tbody.innerHTML = '';
 
                 sorted.forEach((draw, index) => {
                     const onePerson = draw.firstPrizeAmount;
-                    const winners = draw.firstPrizeWinners;
+                    const winners = draw.firstPrizeWinners || 1;
                     const totalPrize = onePerson * winners;
 
                     const tr = document.createElement('tr');
@@ -162,15 +166,15 @@
                         <td>${draw.round}회</td>
                         <td>${(onePerson / 100000000).toFixed(0)}억 원</td>
                         <td>${winners}명</td>
-                        <td>${(totalPrize / 100000000).toFixed(0)}억 원</td>
+                        <td style="font-weight:bold;">${totalPrize.toLocaleString()} 원</td>
                     `;
                     tbody.appendChild(tr);
                 });
             })
             .catch(err => {
                 console.error(err);
-                document.querySelector('#topPrizeTable tbody').innerHTML = 
-                    `<tr><td colspan="5" style="color:red;">데이터를 불러오지 못했습니다. lotto-data.json 파일을 확인해주세요.</td></tr>`;
+                document.getElementById('subtitle').innerHTML = 
+                    `<span style="color:red;">데이터를 불러오지 못했습니다. lotto-data.json을 확인해주세요.</span>`;
             });
     </script>
 </body>
