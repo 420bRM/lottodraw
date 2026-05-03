@@ -7,28 +7,80 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 0; line-height: 1.6; }
-        nav { background-color: #fefefe; padding: 15px 10px; text-align: center; position: relative; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        nav ul { list-style: none; padding: 0; margin: 0; display: flex; justify-content: center; flex-wrap: wrap; }
+        nav { 
+            background-color: #fefefe; 
+            padding: 15px 10px; 
+            text-align: center; 
+            position: relative; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        nav ul { 
+            list-style: none; 
+            padding: 0; 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            flex-wrap: wrap; 
+        }
         nav li { margin: 8px 15px; }
-        nav a { text-decoration: none; color: black; font-weight: bold; }
+        nav a { 
+            text-decoration: none; 
+            color: black; 
+            font-weight: bold; 
+        }
         nav a:hover { color: #003087; }
-        .hamburger { display: none; cursor: pointer; position: absolute; top: 18px; left: 15px; }
-        .hamburger span { display: block; width: 25px; height: 3px; background: black; margin: 5px auto; }
+        .hamburger { 
+            display: none; 
+            cursor: pointer; 
+            position: absolute; 
+            top: 18px; 
+            left: 15px; 
+        }
+        .hamburger span { 
+            display: block; 
+            width: 25px; 
+            height: 3px; 
+            background: black; 
+            margin: 5px auto; 
+        }
         
-        .container { max-width: 1200px; margin: 50px auto 40px; padding: 20px; text-align: left; }
+        .container { 
+            max-width: 1200px; 
+            margin: 50px auto 40px; 
+            padding: 20px; 
+            text-align: left; 
+        }
         h1 { color: #003087; text-align: center; }
         .subtitle { color: #555; font-size: 1.1em; text-align: center; margin-bottom: 30px; }
-        #loading { font-size: 1.1em; color: #003087; margin: 40px 0; }
-        canvas { max-width: 100%; height: 380px !important; margin: 30px 0; }
 
-        table { width: 100%; margin: 30px auto; border-collapse: collapse; font-size: 0.95em; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
+        canvas { max-width: 100%; height: 420px !important; margin: 30px 0; }
+
+        table { 
+            width: 100%; 
+            margin: 30px auto; 
+            border-collapse: collapse; 
+            font-size: 0.95em; 
+        }
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 12px; 
+            text-align: center; 
+        }
         th { background-color: #f2f2f2; font-weight: bold; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
 
-        .back-btn { display: inline-block; margin: 40px 0; padding: 12px 24px; background: #003087; color: white; text-decoration: none; border-radius: 6px; }
+        .back-btn { 
+            display: inline-block; 
+            margin: 40px 0; 
+            padding: 12px 24px; 
+            background: #003087; 
+            color: white; 
+            text-decoration: none; 
+            border-radius: 6px; 
+        }
 
         @media (max-width: 768px) {
-            canvas { height: 340px !important; }
+            canvas { height: 360px !important; }
             nav ul { flex-direction: column; display: none; }
             nav ul.active { display: flex; }
             nav li { margin: 10px 0; }
@@ -55,15 +107,13 @@
         <h1>8. 핫/콜드 넘버</h1>
         <p id="subtitle" class="subtitle">로또 6/45 데이터를 분석 중...</p>
         
-        <div id="loading">데이터를 불러오는 중입니다... (최대 10초 소요될 수 있습니다)</div>
-
         <h2>🔥 Hot Numbers (최근 50회 가장 많이 나온 숫자)</h2>
         <canvas id="hotChart"></canvas>
 
         <h2>❄️ Cold Numbers (최근 50회 가장 적게 나온 숫자)</h2>
         <canvas id="coldChart"></canvas>
 
-        <h2>전체 숫자 Hot / Cold 비교 (45개 모두)</h2>
+        <h2>Hot / Cold 상세 비교 테이블</h2>
         <table id="trendTable">
             <thead>
                 <tr>
@@ -84,34 +134,19 @@
     </footer>
 
     <script>
-        function toggleMenu() {
-            const menu = document.getElementById('nav-menu');
-            menu.classList.toggle('active');
-        }
+        let hotChartInstance = null;
+        let coldChartInstance = null;
 
-        // fetch with timeout (10초)
-        function fetchWithTimeout(url, timeout = 10000) {
-            return Promise.race([
-                fetch(url),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Request timeout')), timeout))
-            ]);
-        }
-
-        fetchWithTimeout('lotto-data.json')
-            .then(response => {
-                if (!response.ok) throw new Error('HTTP error! Status: ' + response.status);
-                return response.json();
-            })
+        fetch('lotto-data.json')
+            .then(response => response.json())
             .then(jsonData => {
-                const totalRounds = jsonData.draws ? jsonData.draws.length : 0;
-                document.getElementById('subtitle').innerHTML = `최신 <strong>${totalRounds}</strong>회차 기준 (최근 50회 비교)`;
-                document.getElementById('loading').style.display = 'none';
-
-                if (!jsonData.draws || jsonData.draws.length === 0) {
-                    throw new Error('JSON에 draws 데이터가 없습니다.');
-                }
-
+                const totalRounds = jsonData.draws.length;
                 const recentRounds = Math.min(50, totalRounds);
+
+                document.getElementById('subtitle').innerHTML = 
+                    `최신 <strong>${totalRounds}</strong>회차 기준 (최근 ${recentRounds}회 비교)`;
+
+                // 전체 & 최근 50회 출현 횟수 계산
                 const overallFreq = new Array(45).fill(0);
                 const recentFreq = new Array(45).fill(0);
 
@@ -119,27 +154,41 @@
                     draw.numbers.forEach(num => {
                         if (num >= 1 && num <= 45) {
                             overallFreq[num - 1]++;
-                            if (index >= totalRounds - recentRounds) recentFreq[num - 1]++;
+                            if (index >= totalRounds - recentRounds) {
+                                recentFreq[num - 1]++;
+                            }
                         }
                     });
                 });
 
-                let allNumbers = Array.from({length: 45}, (_, i) => ({
+                // Hot 10
+                const hotData = [...Array(45).keys()].map(i => ({
                     num: i + 1,
                     overall: overallFreq[i],
                     recent: recentFreq[i]
-                }));
+                })).sort((a, b) => b.recent - a.recent).slice(0, 10);
 
-                const hotData = [...allNumbers].sort((a, b) => b.recent - a.recent).slice(0, 10);
-                const coldData = [...allNumbers].sort((a, b) => a.recent - b.recent).slice(0, 10);
+                // Cold 10
+                const coldData = [...Array(45).keys()].map(i => ({
+                    num: i + 1,
+                    overall: overallFreq[i],
+                    recent: recentFreq[i]
+                })).sort((a, b) => a.recent - b.recent).slice(0, 10);
 
-                renderChart('hotChart', hotData.map(d => d.num), hotData.map(d => d.recent), 'Hot Numbers');
-                renderChart('coldChart', coldData.map(d => d.num), coldData.map(d => d.recent), 'Cold Numbers');
+                // 차트 렌더링
+                renderChart('hotChart', hotData.map(d => d.num), hotData.map(d => d.recent), 'Hot Numbers (최근 50회)');
+                renderChart('coldChart', coldData.map(d => d.num), coldData.map(d => d.recent), 'Cold Numbers (최근 50회)');
 
-                // 테이블 45개 모두 표시
+                // 비교 테이블
                 const tbody = document.querySelector('#trendTable tbody');
                 tbody.innerHTML = '';
-                allNumbers.sort((a, b) => b.recent - a.recent).forEach(item => {
+                const allNumbers = [...Array(45).keys()].map(i => ({
+                    num: i + 1,
+                    overall: overallFreq[i],
+                    recent: recentFreq[i]
+                })).sort((a, b) => b.recent - a.recent);
+
+                allNumbers.forEach(item => {
                     const expected = Math.round(item.overall / totalRounds * recentRounds);
                     const diff = item.recent - expected;
                     const tr = document.createElement('tr');
@@ -153,19 +202,43 @@
                 });
             })
             .catch(err => {
-                console.error('Error:', err);
-                document.getElementById('loading').innerHTML = 
-                    `<span style="color:red;">❌ 데이터를 불러오지 못했습니다.<br>lotto-data.json 파일이 루트 폴더에 있는지 확인해주세요.<br>(${err.message})</span>`;
+                console.error(err);
+                document.getElementById('subtitle').innerHTML = 
+                    `<span style="color:red;">데이터 로드 실패 - lotto-data.json 확인</span>`;
             });
 
         function renderChart(canvasId, labels, data, labelText) {
-            const ctx = document.getElementById(canvasId);
-            if (window[canvasId]) window[canvasId].destroy();
-            window[canvasId] = new Chart(ctx, {
+            const canvas = document.getElementById(canvasId);
+            
+            // 기존 차트가 있으면 제거
+            if (canvasId === 'hotChart' && hotChartInstance) hotChartInstance.destroy();
+            if (canvasId === 'coldChart' && coldChartInstance) coldChartInstance.destroy();
+
+            const chartInstance = new Chart(canvas, {
                 type: 'bar',
-                data: { labels: labels, datasets: [{ label: labelText, data: data, backgroundColor: '#003087' }] },
-                options: { indexAxis: 'y', responsive: true, scales: { x: { beginAtZero: true } } }
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: labelText,
+                        data: data,
+                        backgroundColor: '#003087'
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    scales: { x: { beginAtZero: true } }
+                }
             });
+
+            // 인스턴스 저장
+            if (canvasId === 'hotChart') hotChartInstance = chartInstance;
+            if (canvasId === 'coldChart') coldChartInstance = chartInstance;
+        }
+
+        function toggleMenu() {
+            const menu = document.getElementById('nav-menu');
+            menu.classList.toggle('active');
         }
     </script>
 </body>
