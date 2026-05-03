@@ -3,71 +3,133 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Statistics - 로또 통계 분석 | lottodraw.kr</title>
-    <meta name="description" content="총 1,221회차 동행복권 로또 6/45 당첨 데이터를 기반으로 한 다양한 통계 정보">
+    <title>1. 숫자별 출현 빈도 | Statistics</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 0; }
-        nav { background-color: #fefefe; padding: 10px; text-align: center; position: relative; }
-        nav ul { list-style: none; padding: 0; margin: 0; display: flex; justify-content: center; }
-        nav li { margin: 0 15px; }
-        nav a { text-decoration: none; color: black; font-weight: bold; }
-        nav a:hover { color: blue; }
-        .hamburger { display: none; cursor: pointer; position: absolute; top: 10px; left: 10px; }
-        .hamburger span { display: block; width: 25px; height: 3px; background: black; margin: 5px auto; }
+        body { font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 0; line-height: 1.6; }
+        nav { 
+            background-color: #fefefe; 
+            padding: 15px 10px; 
+            text-align: center; 
+            position: relative; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        nav ul { 
+            list-style: none; 
+            padding: 0; 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            flex-wrap: wrap; 
+        }
+        nav li { margin: 8px 15px; }
+        nav a { 
+            text-decoration: none; 
+            color: black; 
+            font-weight: bold; 
+        }
+        nav a:hover { color: #003087; }
+        .hamburger { 
+            display: none; 
+            cursor: pointer; 
+            position: absolute; 
+            top: 18px; 
+            left: 15px; 
+        }
+        .hamburger span { 
+            display: block; 
+            width: 25px; 
+            height: 3px; 
+            background: black; 
+            margin: 5px auto; 
+        }
+        
+        .container { 
+            max-width: 1200px; 
+            margin: 50px auto 40px; 
+            padding: 20px; 
+            text-align: left; 
+        }
+        h1 { color: #003087; text-align: center; }
+        .subtitle { color: #555; font-size: 1.1em; margin-bottom: 30px; }
+        canvas { max-width: 100%; height: 420px !important; margin: 30px 0; }
 
-        .container { max-width: 1100px; margin: 40px auto; padding: 20px; }
-        h1 { color: #003087; margin-bottom: 10px; }
-        .subtitle { font-size: 1.2em; color: #555; margin-bottom: 40px; }
+        /* Top 10 & Bottom 10 */
+        .rank-section { margin: 40px 0; }
+        .rank-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .rank-table th, .rank-table td { 
+            border: 1px solid #ddd; 
+            padding: 12px; 
+            text-align: center; 
+        }
+        .rank-table th { background: #f2f2f2; }
+        .top10 { border-left: 5px solid #003087; }
+        .bottom10 { border-left: 5px solid #888; }
 
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        /* 그룹화된 전체 테이블 */
+        .freq-groups {
+            display: flex;
+            flex-wrap: wrap;
             gap: 20px;
-            margin-top: 30px;
+            margin: 40px 0;
         }
-        .stat-card {
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 12px;
-            padding: 25px 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            text-align: left;
-            transition: all 0.3s;
+        .freq-group {
+            flex: 1;
+            min-width: 180px;
         }
-        .stat-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 12px 20px rgba(0,0,0,0.15);
-        }
-        .stat-card h3 {
-            margin: 0 0 8px 0;
+        .freq-group h3 {
+            text-align: center;
             color: #003087;
+            margin-bottom: 10px;
         }
-        .stat-card p {
-            color: #555;
-            font-size: 0.95em;
-            line-height: 1.5;
-            margin-bottom: 20px;
+        .freq-group table {
+            width: 100%;
+            border-collapse: collapse;
         }
-        .btn {
-            display: inline-block;
-            padding: 10px 20px;
+        .freq-group th, .freq-group td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+        .freq-group th { background: #f8f9fa; }
+
+        .sort-buttons {
+            margin: 20px 0;
+        }
+        .sort-btn {
+            padding: 12px 20px;
+            margin-right: 12px;
             background: #003087;
             color: white;
-            text-decoration: none;
+            border: none;
             border-radius: 6px;
+            cursor: pointer;
             font-weight: bold;
         }
-        .btn:hover { background: #002266; }
+        .sort-btn:hover { background: #002266; }
 
-        @media (max-width: 600px) {
+        .back-btn { 
+            display: inline-block; 
+            margin: 40px 0; 
+            padding: 12px 24px; 
+            background: #003087; 
+            color: white; 
+            text-decoration: none; 
+            border-radius: 6px; 
+        }
+
+        @media (max-width: 768px) {
+            canvas { height: 360px !important; }
+            .freq-groups { flex-direction: column; }
             nav ul { flex-direction: column; display: none; }
             nav ul.active { display: flex; }
             nav li { margin: 10px 0; }
             .hamburger { display: block; }
+            .container { margin-top: 30px; padding: 15px; }
         }
     </style>
 </head>
-<body onload="toggleMenu()">
+<body>
     <nav>
         <div class="hamburger" onclick="toggleMenu()">
             <span></span><span></span><span></span>
@@ -82,68 +144,148 @@
     </nav>
 
     <div class="container">
-        <h1>Statistics</h1>
-        <p class="subtitle">총 <strong>1,221회차</strong> 동행복권 로또 6/45 당첨 데이터를 기반으로 한<br>다양한 통계 분석 정보입니다.</p>
+        <h1>1. 숫자별 출현 빈도 (1,221회차 기준)</h1>
+        <p class="subtitle">본번호 6개 중 각 숫자가 나온 총 횟수입니다.</p>
+        
+        <canvas id="freqChart"></canvas>
 
-        <div class="stats-grid">
-            <div class="stat-card">
-                <h3>1. 숫자별 출현 빈도</h3>
-                <p>1~45번 숫자가 본번호(6개)로 나온 총 횟수를 순위별로 보여줍니다. 가장 많이 나온 숫자와 적게 나온 숫자를 한눈에 확인할 수 있습니다.</p>
-                <a href="statistics-frequency.html" class="btn">자세히 보기 →</a>
-            </div>
-            <div class="stat-card">
-                <h3>2. 보너스 번호 출현 빈도</h3>
-                <p>보너스 번호로 나온 숫자들의 출현 횟수를 분석합니다. 본번호와 비교해 보너스 특화 숫자를 찾을 수 있습니다.</p>
-                <a href="statistics-bonus.html" class="btn">자세히 보기 →</a>
-            </div>
-            <div class="stat-card">
-                <h3>3. 짝수/홀수 비율</h3>
-                <p>각 회차의 본번호 6개 중 짝수와 홀수의 개수 분포를 보여줍니다. 가장 흔한 패턴(3짝 3홀 등)을 확인할 수 있습니다.</p>
-                <a href="statistics-even-odd.html" class="btn">자세히 보기 →</a>
-            </div>
-            <div class="stat-card">
-                <h3>4. 저번호 vs 고번호 분포</h3>
-                <p>1~22번(저번호)과 23~45번(고번호)의 균형을 분석합니다. 3저 3고처럼 균형 잡힌 조합의 비율을 확인하세요.</p>
-                <a href="statistics-low-high.html" class="btn">자세히 보기 →</a>
-            </div>
-            <div class="stat-card">
-                <h3>5. 연속 번호 패턴</h3>
-                <p>당첨번호에 연속된 숫자(예: 13-14)가 얼마나 자주 등장하는지 분석합니다. 연속 번호가 포함된 회차 비율도 제공합니다.</p>
-                <a href="statistics-consecutive.html" class="btn">자세히 보기 →</a>
-            </div>
-            <div class="stat-card">
-                <h3>6. 번호 합계 분포</h3>
-                <p>6개 본번호의 합계 평균, 최소·최대값, 구간별 분포를 보여줍니다. 합계가 어느 범위에 가장 많이 분포하는지 알 수 있습니다.</p>
-                <a href="statistics-sum.html" class="btn">자세히 보기 →</a>
-            </div>
-            <div class="stat-card">
-                <h3>7. 1등 당첨자·상금 분석</h3>
-                <p>1등 당첨자 수, 최고·최저 당첨금, 평균 상금 등을 분석합니다. 당첨자 수가 많았던 회차와 상금 규모도 확인 가능합니다.</p>
-                <a href="statistics-prize.html" class="btn">자세히 보기 →</a>
-            </div>
-            <div class="stat-card">
-                <h3>8. 최근 Hot/Cold 트렌드</h3>
-                <p>최근 50회와 전체 기간의 숫자 출현 빈도를 비교합니다. 최근에 자주 나온 핫 넘버와 오랫동안 나오지 않은 콜드 넘버를 확인하세요.</p>
-                <a href="statistics-trend.html" class="btn">자세히 보기 →</a>
-            </div>
-            <div class="stat-card">
-                <h3>9. 자주 함께 나온 숫자 쌍</h3>
-                <p>동반 출현 횟수가 많은 숫자 쌍 Top 10을 보여줍니다. 번호 조합 시 참고하기 좋은 동반 출현 통계입니다.</p>
-                <a href="statistics-pair.html" class="btn">자세히 보기 →</a>
-            </div>
+        <div class="sort-buttons">
+            <button class="sort-btn" onclick="sortChartAndData('desc')">그래프 - 많이 나온 순 ▼</button>
+            <button class="sort-btn" onclick="sortChartAndData('asc')">그래프 - 적게 나온 순 ▲</button>
+            <button class="sort-btn" onclick="resetChart()" style="background:#555;">원래 순서 (1~45)로</button>
         </div>
+
+        <!-- Top 10 -->
+        <div class="rank-section">
+            <h2>🔥 Top 10 가장 많이 나온 숫자</h2>
+            <table class="rank-table top10" id="top10Table">
+                <thead><tr><th>순위</th><th>숫자</th><th>출현 횟수</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- Bottom 10 -->
+        <div class="rank-section">
+            <h2>❄️ Bottom 10 가장 적게 나온 숫자</h2>
+            <table class="rank-table bottom10" id="bottom10Table">
+                <thead><tr><th>순위</th><th>숫자</th><th>출현 횟수</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- 전체 숫자별 (10단위 그룹화) -->
+        <h2>전체 숫자별 출현 횟수</h2>
+        <div class="freq-groups" id="freqGroups"></div>
+
+        <a href="statistics.html" class="back-btn">← 통계 메인으로 돌아가기</a>
     </div>
 
+    <footer style="margin-top:60px; font-size:0.8em; color:gray; text-align:center;">
+        <p>&copy; 2026 lottodraw.kr. All rights reserved.</p>
+    </footer>
+
     <script>
+        let myChart = null;
+        let allData = [];
+        let originalLabels = [];
+        let originalFreq = [];
+
+        fetch('lotto-data.json')
+            .then(response => response.json())
+            .then(jsonData => {
+                const freq = new Array(45).fill(0);
+                jsonData.draws.forEach(draw => {
+                    draw.numbers.forEach(num => {
+                        if (num >= 1 && num <= 45) freq[num - 1]++;
+                    });
+                });
+
+                originalLabels = Array.from({length: 45}, (_, i) => i + 1);
+                originalFreq = [...freq];
+                allData = originalLabels.map((num, i) => ({ num: num, count: freq[i] }));
+
+                renderChart(originalLabels, originalFreq);
+
+                const sortedDesc = [...allData].sort((a, b) => b.count - a.count);
+                renderRankTable('top10Table', sortedDesc.slice(0, 10));
+                renderRankTable('bottom10Table', sortedDesc.slice(-10).reverse());
+                renderGroupedTables(allData);
+            });
+
+        function renderChart(labels, data) {
+            if (myChart) myChart.destroy();
+            myChart = new Chart(document.getElementById('freqChart'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '출현 횟수',
+                        data: data,
+                        backgroundColor: '#003087'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+        function sortChartAndData(order) {
+            let sortedData = [...allData];
+            if (order === 'desc') {
+                sortedData.sort((a, b) => b.count - a.count);
+            } else {
+                sortedData.sort((a, b) => a.count - b.count);
+            }
+            const newLabels = sortedData.map(item => item.num);
+            const newCounts = sortedData.map(item => item.count);
+            renderChart(newLabels, newCounts);
+        }
+
+        function resetChart() {
+            renderChart(originalLabels, originalFreq);
+        }
+
+        function renderRankTable(tableId, data) {
+            const tbody = document.getElementById(tableId).querySelector('tbody');
+            tbody.innerHTML = '';
+            data.forEach((item, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td><strong>${idx + 1}</strong></td><td><strong>${item.num}</strong></td><td>${item.count}회</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderGroupedTables(data) {
+            const container = document.getElementById('freqGroups');
+            container.innerHTML = '';
+            const groups = [
+                { title: '1 ~ 10', start: 1, end: 10 },
+                { title: '11 ~ 20', start: 11, end: 20 },
+                { title: '21 ~ 30', start: 21, end: 30 },
+                { title: '31 ~ 40', start: 31, end: 40 },
+                { title: '41 ~ 45', start: 41, end: 45 }
+            ];
+            groups.forEach(group => {
+                const groupData = data.filter(item => item.num >= group.start && item.num <= group.end);
+                const div = document.createElement('div');
+                div.className = 'freq-group';
+                div.innerHTML = `<h3>${group.title}</h3><table><thead><tr><th>숫자</th><th>출현 횟수</th></tr></thead><tbody></tbody></table>`;
+                const tbody = div.querySelector('tbody');
+                groupData.forEach(item => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td><strong>${item.num}</strong></td><td>${item.count}회</td>`;
+                    tbody.appendChild(tr);
+                });
+                container.appendChild(div);
+            });
+        }
+
         function toggleMenu() {
             const menu = document.getElementById('nav-menu');
             menu.classList.toggle('active');
         }
     </script>
-
-    <footer style="margin-top: 60px; font-size: 0.8em; color: gray; text-align: center; padding: 20px;">
-        <a href="index.html">home</a> | <a href="about.html">About</a> | <a href="tax.html">실수령액 계산기</a> | <a href="top-prize.html">TOP 50</a> | <a href="statistics.html">Statistics</a>
-        <p>&copy; 2026 lottodraw.kr. All rights reserved.</p>
-    </footer>
 </body>
 </html>
