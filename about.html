@@ -9,17 +9,55 @@
     <meta name="keywords" content="lottodraw.kr, 로또 번호 생성기, 보렐의 법칙, 로또 통계">
     <style>
         body { font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 0; line-height: 1.6; }
-        nav { background-color: #fefefe; padding: 10px; text-align: center; position: relative; }
-        nav ul { list-style: none; padding: 0; margin: 0; display: flex; justify-content: center; flex-wrap: wrap; }
+        nav { 
+            background-color: #fefefe; 
+            padding: 15px 10px; 
+            text-align: center; 
+            position: relative; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        nav ul { 
+            list-style: none; 
+            padding: 0; 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            flex-wrap: wrap; 
+        }
         nav li { margin: 8px 15px; }
-        nav a { text-decoration: none; color: black; font-weight: bold; }
+        nav a { 
+            text-decoration: none; 
+            color: black; 
+            font-weight: bold; 
+        }
         nav a:hover { color: #003087; }
-        .hamburger { display: none; cursor: pointer; position: absolute; top: 15px; left: 15px; }
-        .hamburger span { display: block; width: 25px; height: 3px; background: black; margin: 5px auto; }
+        .hamburger { 
+            display: none; 
+            cursor: pointer; 
+            position: absolute; 
+            top: 18px; 
+            left: 15px; 
+        }
+        .hamburger span { 
+            display: block; 
+            width: 25px; 
+            height: 3px; 
+            background: black; 
+            margin: 5px auto; 
+        }
         
-        .container { max-width: 900px; margin: 40px auto; padding: 20px; text-align: left; }
+        .container { 
+            max-width: 900px; 
+            margin: 50px auto 40px; /* index.html처럼 여백 추가 */
+            padding: 20px; 
+            text-align: left; 
+        }
         h1 { color: #003087; text-align: center; }
-        .intro { font-size: 1.1em; margin-bottom: 50px; text-align: center; }
+        .intro { 
+            font-size: 1.1em; 
+            margin-bottom: 50px; 
+            text-align: center; 
+        }
         
         /* 토글 섹션 */
         details {
@@ -57,9 +95,15 @@
             nav ul.active { display: flex; }
             nav li { margin: 10px 0; }
             .hamburger { display: block; }
-            .container { padding: 15px; }
+            .container { margin-top: 30px; padding: 15px; }
         }
-        footer { margin-top: 60px; font-size: 0.8em; color: gray; text-align: center; padding: 20px; }
+        footer { 
+            margin-top: 60px; 
+            font-size: 0.8em; 
+            color: gray; 
+            text-align: center; 
+            padding: 20px; 
+        }
     </style>
 </head>
 <body>
@@ -69,10 +113,10 @@
         </div>
         <ul id="nav-menu">
             <li><a href="index.html">Home</a></li>
-            <li><a href="about.html">About</a></li>
+            <li><a href="about.html" style="color:#003087; font-weight:bold;">About</a></li>
             <li><a href="tax.html">TAX</a></li>
             <li><a href="top-prize.html">TOP 50</a></li>
-            <li><a href="statistics.html" style="color:#003087; font-weight:bold;">Statistics</a></li>
+            <li><a href="statistics.html">Statistics</a></li>
         </ul>
     </nav>
 
@@ -85,7 +129,7 @@
             TAX 계산기, TOP 50, Statistics 등 실용적인 분석 기능을 제공합니다.
         </p>
 
-        <!-- 토글 유지 섹션 -->
+        <!-- 토글 섹션 -->
         <details>
             <summary>이 사이트는 왜 특수 패턴을 배제하나요?</summary>
             <div class="content">
@@ -102,35 +146,38 @@
             </div>
         </details>
 
-        <!-- 항상 보이는 섹션 -->
-        <div class="section">
-            <h2>TAX 계산기</h2>
-            <p>로또 1등 당첨 시 <strong>실제 받을 수 있는 세후 실수령액</strong>을 정확히 계산해 주는 도구입니다.</p>
-            <p>당첨금액, 당첨자 수 등을 입력하면 즉시 세금 내역과 실수령액을 보여드립니다.</p>
-        </div>
-
-        <div class="section">
-            <h2>TOP 50</h2>
-            <p>역대 로또 1등 당첨금 중 <strong>가장 많은 금액을 수령한 상위 50회차</strong>를 한눈에 볼 수 있는 페이지입니다.</p>
-            <p>회차별 당첨금, 당첨자 수, 실수령액 등을 확인할 수 있습니다.</p>
-        </div>
-
-        <div class="section">
-            <h2>Statistics</h2>
-            <p>1,221회차(최신)까지의 모든 당첨 데이터를 분석한 <strong>9가지 통계 페이지</strong>입니다.</p>
-            <p>숫자별 출현 빈도, 보너스 번호 통계, 홀짝·저고·연속수·합계 분포, 핫/콜드 넘버, 쌍 분석 등<br>
-            로또를 더 깊이 있게 이해할 수 있는 다양한 통계를 제공합니다.</p>
-            <p>모든 데이터는 lotto-data.json을 통해 자동 업데이트됩니다.</p>
-        </div>
-
         <details>
-            <summary>사이트 정보</summary>
+            <summary>TAX 계산기</summary>
             <div class="content">
-                <p><strong>운영자</strong>: DC<br>
-                <strong>연락처</strong>: 420b@jachwibang.com<br>
-                <strong>Give me coffee</strong>: 1001-3742-8762 토스뱅크 </p>
+                <p>로또 1등 당첨 시 <strong>실제 받을 수 있는 세후 실수령액</strong>을 정확히 계산해 주는 도구입니다.</p>
+                <p>당첨금액, 당첨자 수 등을 입력하면 즉시 세금 내역과 실수령액을 보여드립니다.</p>
             </div>
         </details>
+
+        <details>
+            <summary>TOP 50</summary>
+            <div class="content">
+                <p>역대 로또 1등 당첨금 중 <strong>가장 많은 금액을 수령한 상위 50회차</strong>를 한눈에 볼 수 있는 페이지입니다.</p>
+                <p>회차별 당첨금, 당첨자 수, 실수령액 등을 확인할 수 있습니다.</p>
+            </div>
+        </details>
+
+        <details>
+            <summary>Statistics</summary>
+            <div class="content">
+                <p>1,221회차(최신)까지의 모든 당첨 데이터를 분석한 <strong>9가지 통계 페이지</strong>입니다.</p>
+                <p>숫자별 출현 빈도, 보너스 번호 통계, 홀짝·저고·연속수·합계 분포, 핫/콜드 넘버, 쌍 분석 등<br>
+                로또를 더 깊이 있게 이해할 수 있는 다양한 통계를 제공합니다.</p>
+            </div>
+        </details>
+
+        <!-- 항상 보이는 섹션 -->
+        <div class="section">
+            <h2>사이트 정보</h2>
+            <p><strong>운영자</strong>: DC<br>
+            <strong>연락처</strong>: 420b@jachwibang.com<br>
+            <strong>Give me coffe</strong>: 1001-3742-8762 토스뱅크 </p>
+        </div>
     </div>
 
     <a href="index.html" style="display: inline-block; margin: 30px 0; padding: 12px 28px; background: #003087; color: white; text-decoration: none; border-radius: 6px;">
