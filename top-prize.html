@@ -8,16 +8,13 @@
     <meta name="description" content="로또 6/45 역대 1등 당첨금 TOP 50 (1인당 기준)">
     <meta name="keywords" content="로또 1등 당첨금, 로또 최고 당첨금, 로또 통계">
     <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            text-align: center; 
-            margin: 50px; 
-        }
+        body { font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 0; line-height: 1.6; }
         nav { 
             background-color: #fefefe; 
-            padding: 10px; 
+            padding: 15px 10px; 
             text-align: center; 
             position: relative; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         nav ul { 
             list-style: none; 
@@ -25,24 +22,21 @@
             margin: 0; 
             display: flex; 
             justify-content: center; 
+            flex-wrap: wrap; 
         }
-        nav li { 
-            margin: 0 15px; 
-        }
+        nav li { margin: 8px 15px; }
         nav a { 
             text-decoration: none; 
             color: black; 
             font-weight: bold; 
         }
-        nav a:hover { 
-            color: blue; 
-        }
+        nav a:hover { color: #003087; }
         .hamburger { 
             display: none; 
             cursor: pointer; 
             position: absolute; 
-            top: 10px; 
-            left: 10px; 
+            top: 18px; 
+            left: 15px; 
         }
         .hamburger span { 
             display: block; 
@@ -51,15 +45,17 @@
             background: black; 
             margin: 5px auto; 
         }
-        @media (max-width: 600px) {
-            nav ul { flex-direction: column; display: none; }
-            nav ul.active { display: flex; }
-            nav li { margin: 10px 0; }
-            .hamburger { display: block; }
+        
+        .container { 
+            max-width: 1200px; 
+            margin: 50px auto 40px; 
+            padding: 20px; 
+            text-align: left; 
         }
+        h1 { color: #003087; text-align: center; }
+        
         table { 
             width: 100%; 
-            max-width: 1100px; 
             margin: 30px auto; 
             border-collapse: collapse; 
             font-size: 0.95em; 
@@ -69,61 +65,50 @@
             padding: 12px; 
             text-align: center; 
         }
-        th { 
-            background-color: #f2f2f2; 
-            font-weight: bold; 
+        th { background-color: #f2f2f2; font-weight: bold; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        tr:hover { background-color: #f1f1f1; }
+        .note { font-size: 0.9em; color: #666; margin: 20px auto; max-width: 900px; }
+        
+        @media (max-width: 600px) {
+            nav ul { flex-direction: column; display: none; }
+            nav ul.active { display: flex; }
+            nav li { margin: 10px 0; }
+            .hamburger { display: block; }
+            .container { margin-top: 30px; padding: 15px; }
         }
-        tr:nth-child(even) { 
-            background-color: #f9f9f9; 
-        }
-        tr:hover { 
-            background-color: #f1f1f1; 
-        }
-        .note { 
-            font-size: 0.9em; 
-            color: #666; 
-            margin: 20px auto; 
-            max-width: 900px; 
-        }
-        footer { 
-            margin-top: 60px; 
-            font-size: 0.85em; 
-            color: #777; 
-            text-align: center; 
-        }
+        footer { margin-top: 60px; font-size: 0.8em; color: gray; text-align: center; padding: 20px; }
     </style>
 </head>
 <body>
-
     <nav>
         <div class="hamburger" onclick="toggleMenu()">
-            <span></span>
-            <span></span>
-            <span></span>
+            <span></span><span></span><span></span>
         </div>
         <ul id="nav-menu">
             <li><a href="index.html">Home</a></li>
             <li><a href="about.html">About</a></li>
             <li><a href="tax.html">TAX</a></li>
-            <li><a href="top-prize.html">TOP 50</a></li>
+            <li><a href="top-prize.html" style="color:#003087; font-weight:bold;">TOP 50</a></li>
             <li><a href="statistics.html">Statistics</a></li>
         </ul>
     </nav>
 
-    <h1>역대 로또 6/45 1등 당첨금 TOP 50</h1>
-    <p>(1인당 실수령액 기준 / 천만원 단위 반올림)</p>
+    <div class="container">
+        <h1>역대 로또 6/45 1등 당첨금 TOP 50</h1>
+        <p>(1인당 실수령액 기준 / 천만원 단위 반올림)</p>
 
-    <table>
-        <thead>
-            <tr>
-                <th>순위</th>
-                <th>회차</th>
-                <th>추첨일</th>
-                <th>1인당 당첨금 (약)</th>
-                <th>당첨자 수</th>
-                <th>총 1등 당첨금 </th>
-            </tr>
-        </thead>
+        <table>
+            <thead>
+                <tr>
+                    <th>순위</th>
+                    <th>회차</th>
+                    <th>추첨일</th>
+                    <th>1인당 당첨금 (약)</th>
+                    <th>당첨자 수</th>
+                    <th>총 1등 당첨금</th>
+                </tr>
+            </thead>
         <tbody>
             <tr><td>1</td><td>19회</td><td>2003-04-12</td><td>407억 원</td><td>1명</td><td>40,722,959,400원</td></tr>
             <tr><td>2</td><td>25회</td><td>2003-05-24</td><td>242억 원</td><td>2명</td><td>48,455,490,600원</td></tr>
@@ -178,16 +163,17 @@
         </tbody>
     </table>
 
-    <p class="note">
-        * 금액은 백만원 단위로 반올림한 값이며, 정확한 금액은 동행복권 공식 발표를 참고하세요.<br>
-        * 출처: 동행복권 공식 사이트 (최신 기준) 부정확한 정보 발생시 제보해주세요 : 420b@jachwibang.com
-    </p>
+        <p class="note">
+            * 금액은 백만원 단위로 반올림한 값이며, 정확한 금액은 동행복권 공식 발표를 참고하세요.<br>
+            * 출처: 동행복권 공식 사이트 (최신 기준) 부정확한 정보 발생시 제보해주세요 : 420b@jachwibang.com
+        </p>
 
-    <p style="margin-top: 30px;">
-        <a href="index.html" style="color: #0066cc; font-weight: bold;">← 번호 생성하러 돌아가기</a>
-    </p>
+        <p style="margin-top: 30px; text-align: center;">
+            <a href="index.html" style="color: #003087; font-weight: bold;">← 번호 생성하러 돌아가기</a>
+        </p>
+    </div>
 
-    <footer style="margin-top: 60px; font-size: 0.85em; color: #777;">
+    <footer>
         <p>&copy; 2026 lottodraw.kr. All rights reserved.</p>
     </footer>
 
@@ -197,7 +183,5 @@
         menu.classList.toggle('active');
     }
     </script>
-
 </body>
 </html>
-
