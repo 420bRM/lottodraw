@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Statistics - lottodraw.kr</title>
-    <meta name="description" content="로또 6/45 1,221회차까지의 모든 데이터를 분석한 9가지 통계 페이지">
+    <meta name="description" content="로또 6/45 최신 회차까지의 모든 데이터를 분석한 9가지 통계 페이지">
     <meta name="keywords" content="로또 통계, 로또 번호 분석, 로또 출현 빈도, lottodraw.kr">
     <meta name="google-adsense-account" content="ca-pub-9372871176021283">
     <style>
@@ -121,7 +121,7 @@
 
     <div class="container">
         <h1>Statistics</h1>
-        <p class="subtitle">1,221회차까지의 로또 6/45 데이터를 분석한 9가지 통계</p>
+        <p id="subtitle" class="subtitle">로또 6/45 데이터를 분석한 9가지 통계</p>
 
         <div class="stats-grid">
             <div class="stat-card">
@@ -161,7 +161,7 @@
             </div>
             <div class="stat-card">
                 <h3>8. 핫/콜드 넘버</h3>
-                <p>전체 1,221회차 대비 최근 50회차에서 많이 나온 숫자(Hot)와 적게 나온 숫자(Cold)를 비교 분석합니다. 최근 흐름을 파악하는 데 유용합니다.</p>
+                <p>전체 회차 대비 최근 50회차에서 많이 나온 숫자(Hot)와 적게 나온 숫자(Cold)를 비교 분석합니다. 최근 흐름을 파악하는 데 유용합니다.</p>
                 <a href="statistics-trend.html">바로가기 →</a>
             </div>
             <div class="stat-card">
@@ -181,6 +181,21 @@
             const menu = document.getElementById('nav-menu');
             menu.classList.toggle('active');
         }
+
+        // 최신 회차 수를 JSON에서 동적으로 가져와 subtitle에 표시
+        fetch('lotto-data.json')
+            .then(response => response.json())
+            .then(data => {
+                const totalRounds = data.draws.length;
+                document.getElementById('subtitle').innerHTML = 
+                    `최신 <strong>${totalRounds}</strong>회차까지의 로또 6/45 데이터를 분석한 9가지 통계`;
+            })
+            .catch(err => {
+                console.error(err);
+                // JSON 로드 실패 시 기본 문구 표시
+                document.getElementById('subtitle').innerHTML = 
+                    `로또 6/45 데이터를 분석한 9가지 통계`;
+            });
     </script>
 </body>
 </html>
