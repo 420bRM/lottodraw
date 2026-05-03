@@ -107,6 +107,7 @@
         <div class="sort-buttons">
             <button class="sort-btn" onclick="sortChartAndData('desc')">그래프 - 많이 나온 순 ▼</button>
             <button class="sort-btn" onclick="sortChartAndData('asc')">그래프 - 적게 나온 순 ▲</button>
+            <button class="sort-btn" onclick="resetChart()" style="background:#555;">원래 순서 (1~45)로</button>
         </div>
 
         <!-- Top 10 -->
@@ -137,6 +138,8 @@
     <script>
         let myChart = null;
         let allData = [];
+        let originalLabels = [];
+        let originalFreq = [];
 
         fetch('lotto-data.json')
             .then(response => response.json())
@@ -148,11 +151,12 @@
                     });
                 });
 
-                const labels = Array.from({length: 45}, (_, i) => i + 1);
-                allData = labels.map((num, i) => ({ num: num, count: freq[i] }));
+                originalLabels = Array.from({length: 45}, (_, i) => i + 1);
+                originalFreq = [...freq];
+                allData = originalLabels.map((num, i) => ({ num: num, count: freq[i] }));
 
-                // 초기 그래프 (기본 내림차순)
-                renderChart(labels, freq);
+                // 초기 그래프 (1~45 순서)
+                renderChart(originalLabels, originalFreq);
 
                 // Top 10 & Bottom 10
                 const sortedDesc = [...allData].sort((a, b) => b.count - a.count);
@@ -189,11 +193,13 @@
             } else {
                 sortedData.sort((a, b) => a.count - b.count);
             }
-
             const newLabels = sortedData.map(item => item.num);
             const newCounts = sortedData.map(item => item.count);
-
             renderChart(newLabels, newCounts);
+        }
+
+        function resetChart() {
+            renderChart(originalLabels, originalFreq);
         }
 
         function renderRankTable(tableId, data) {
@@ -216,19 +222,11 @@
                 { title: '31 ~ 40', start: 31, end: 40 },
                 { title: '41 ~ 45', start: 41, end: 45 }
             ];
-
             groups.forEach(group => {
                 const groupData = data.filter(item => item.num >= group.start && item.num <= group.end);
-                
                 const div = document.createElement('div');
                 div.className = 'freq-group';
-                div.innerHTML = `
-                    <h3>${group.title}</h3>
-                    <table>
-                        <thead><tr><th>숫자</th><th>출현 횟수</th></tr></thead>
-                        <tbody></tbody>
-                    </table>
-                `;
+                div.innerHTML = `<h3>${group.title}</h3><table><thead><tr><th>숫자</th><th>출현 횟수</th></tr></thead><tbody></tbody></table>`;
                 const tbody = div.querySelector('tbody');
                 groupData.forEach(item => {
                     const tr = document.createElement('tr');
