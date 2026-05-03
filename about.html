@@ -6,33 +6,66 @@
     <meta name="google-adsense-account" content="ca-pub-9372871176021283">
     <title>About - lottodraw.kr</title>
     <meta name="description" content="동행복권 로또 6/45 번호 생성기 lottodraw.kr에 대해 소개합니다.">
-    <meta name="keywords" content="lottodraw.kr, 로또 번호 생성기, 보렐의 법칙">
+    <meta name="keywords" content="lottodraw.kr, 로또 번호 생성기, 보렐의 법칙, 로또 통계">
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
+        body { font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 0; line-height: 1.6; }
         nav { background-color: #fefefe; padding: 10px; text-align: center; position: relative; }
-        nav ul { list-style: none; padding: 0; margin: 0; display: flex; justify-content: center; }
-        nav li { margin: 0 15px; }
+        nav ul { list-style: none; padding: 0; margin: 0; display: flex; justify-content: center; flex-wrap: wrap; }
+        nav li { margin: 8px 15px; }
         nav a { text-decoration: none; color: black; font-weight: bold; }
         nav a:hover { color: #003087; }
-        .hamburger { display: none; cursor: pointer; position: absolute; top: 10px; left: 10px; }
+        .hamburger { display: none; cursor: pointer; position: absolute; top: 15px; left: 15px; }
         .hamburger span { display: block; width: 25px; height: 3px; background: black; margin: 5px auto; }
+        
+        .container { max-width: 900px; margin: 40px auto; padding: 20px; text-align: left; }
+        h1 { color: #003087; text-align: center; }
+        .intro { font-size: 1.1em; margin-bottom: 50px; text-align: center; }
+        
+        /* 토글 섹션 */
+        details {
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        summary {
+            padding: 18px 20px;
+            background: #f8f9fa;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #003087;
+        }
+        summary:hover { background: #eef1f5; }
+        .content {
+            padding: 20px;
+            background: white;
+        }
+        
+        /* 항상 보이는 섹션 */
+        .section {
+            margin-bottom: 45px;
+        }
+        .section h2 {
+            color: #003087;
+            border-bottom: 2px solid #003087;
+            padding-bottom: 8px;
+        }
+        
         @media (max-width: 600px) {
             nav ul { flex-direction: column; display: none; }
             nav ul.active { display: flex; }
             nav li { margin: 10px 0; }
             .hamburger { display: block; }
+            .container { padding: 15px; }
         }
-        .borel-description { font-size: 0.8em; }
-        .borel-description p { margin: 5px 0; }
-        footer { margin-top: 40px; font-size: 0.8em; color: gray; text-align: center; }
+        footer { margin-top: 60px; font-size: 0.8em; color: gray; text-align: center; padding: 20px; }
     </style>
 </head>
 <body>
     <nav>
         <div class="hamburger" onclick="toggleMenu()">
-            <span></span>
-            <span></span>
-            <span></span>
+            <span></span><span></span><span></span>
         </div>
         <ul id="nav-menu">
             <li><a href="index.html">Home</a></li>
@@ -43,19 +76,76 @@
         </ul>
     </nav>
 
-    <!-- 기존 본문 내용 (변경 없음) -->
-    <h1>About lottodraw.kr</h1>
-    <p>lottodraw.kr은 동행복권 로또 6/45 번호를 무작위로 생성하는 무료 도구입니다.<br>
-    단순한 랜덤 생성이 아니라, 특수 패턴을 배제해서 "현실적으로 나올 법한" 조합에 더 가까운 번호를 제안합니다.</p>
-    <!-- ... (중간 내용 생략) ... -->
+    <div class="container">
+        <h1>About lottodraw.kr</h1>
+        
+        <p class="intro">
+            lottodraw.kr은 동행복권 로또 6/45 번호를 생성하는 무료 도구입니다.<br>
+            단순 랜덤 생성이 아닌, <strong>특수 패턴을 배제</strong>하여 현실적으로 나올 법한 번호를 제안하며,<br>
+            TAX 계산기, TOP 50, Statistics 등 실용적인 분석 기능을 제공합니다.
+        </p>
+
+        <!-- 토글 유지 섹션 -->
+        <details>
+            <summary>이 사이트는 왜 특수 패턴을 배제하나요?</summary>
+            <div class="content">
+                <p>로또는 순수한 확률 게임이지만, 연속 숫자·모두 홀수/짝수·극단적 합계 등은 통계적으로 매우 드물게 등장합니다.</p>
+                <p>이러한 패턴을 미리 제외함으로써 “현실적으로 나올 법한” 조합에 더 가까운 번호를 제안합니다.</p>
+            </div>
+        </details>
+
+        <details>
+            <summary>보렐의 법칙이란?</summary>
+            <div class="content">
+                <p>수학자 에밀 보렐(Émile Borel)이 제안한 경험적 원칙으로, “확률이 극도로 낮은 사건은 현실적으로 절대로 일어나지 않는다”는 개념입니다.</p>
+                <p>로또에서 16가지 특수 패턴(연속번호, 모두 소수, 제곱수 등)을 제외하는 근거가 됩니다.</p>
+            </div>
+        </details>
+
+        <!-- 항상 보이는 섹션 -->
+        <div class="section">
+            <h2>TAX 계산기</h2>
+            <p>로또 1등 당첨 시 <strong>실제 받을 수 있는 세후 실수령액</strong>을 정확히 계산해 주는 도구입니다.</p>
+            <p>당첨금액, 당첨자 수 등을 입력하면 즉시 세금 내역과 실수령액을 보여드립니다.</p>
+        </div>
+
+        <div class="section">
+            <h2>TOP 50</h2>
+            <p>역대 로또 1등 당첨금 중 <strong>가장 많은 금액을 수령한 상위 50회차</strong>를 한눈에 볼 수 있는 페이지입니다.</p>
+            <p>회차별 당첨금, 당첨자 수, 실수령액 등을 확인할 수 있습니다.</p>
+        </div>
+
+        <div class="section">
+            <h2>Statistics</h2>
+            <p>1,221회차(최신)까지의 모든 당첨 데이터를 분석한 <strong>9가지 통계 페이지</strong>입니다.</p>
+            <p>숫자별 출현 빈도, 보너스 번호 통계, 홀짝·저고·연속수·합계 분포, 핫/콜드 넘버, 쌍 분석 등<br>
+            로또를 더 깊이 있게 이해할 수 있는 다양한 통계를 제공합니다.</p>
+            <p>모든 데이터는 lotto-data.json을 통해 자동 업데이트됩니다.</p>
+        </div>
+
+        <details>
+            <summary>사이트 정보</summary>
+            <div class="content">
+                <p><strong>운영자</strong>: DC<br>
+                <strong>연락처</strong>: 420b@jachwibang.com<br>
+                <strong>Give me coffee</strong>: 1001-3742-8762 토스뱅크 </p>
+            </div>
+        </details>
+    </div>
+
+    <a href="index.html" style="display: inline-block; margin: 30px 0; padding: 12px 28px; background: #003087; color: white; text-decoration: none; border-radius: 6px;">
+        홈으로 돌아가기
+    </a>
+
     <footer>
         <p>&copy; 2026 lottodraw.kr. All rights reserved.</p>
     </footer>
+
     <script>
-    function toggleMenu() {
-        const menu = document.getElementById('nav-menu');
-        menu.classList.toggle('active');
-    }
+        function toggleMenu() {
+            const menu = document.getElementById('nav-menu');
+            menu.classList.toggle('active');
+        }
     </script>
 </body>
 </html>
