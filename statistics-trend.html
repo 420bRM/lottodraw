@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>8. 핫/콜드 TREND | Statistics</title>
+    <title>8. 핫/콜드 넘버 | Statistics</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 0; line-height: 1.6; }
@@ -207,4 +207,34 @@
             .catch(err => {
                 console.error(err);
                 document.getElementById('subtitle').innerHTML = 
-                    `<span style="
+                    `<span style="color:red;">데이터 로드 실패 - lotto-data.json 확인</span>`;
+            });
+
+        function renderChart(canvasId, labels, data, labelText) {
+            const ctx = document.getElementById(canvasId);
+            if (window[canvasId]) window[canvasId].destroy();
+            window[canvasId] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: labelText,
+                        data: data,
+                        backgroundColor: '#003087'
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    scales: { x: { beginAtZero: true } }
+                }
+            });
+        }
+
+        function toggleMenu() {
+            const menu = document.getElementById('nav-menu');
+            menu.classList.toggle('active');
+        }
+    </script>
+</body>
+</html>
