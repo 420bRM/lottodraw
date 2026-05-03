@@ -6,14 +6,51 @@
     <title>1. 숫자별 출현 빈도 | Statistics</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-        nav { background-color: #fefefe; padding: 10px; text-align: center; }
-        nav ul { list-style: none; padding: 0; margin: 0; display: flex; justify-content: center; flex-wrap: wrap; }
+        body { font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 0; line-height: 1.6; }
+        nav { 
+            background-color: #fefefe; 
+            padding: 15px 10px; 
+            text-align: center; 
+            position: relative; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        nav ul { 
+            list-style: none; 
+            padding: 0; 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            flex-wrap: wrap; 
+        }
         nav li { margin: 8px 15px; }
-        nav a { text-decoration: none; color: black; font-weight: bold; }
+        nav a { 
+            text-decoration: none; 
+            color: black; 
+            font-weight: bold; 
+        }
         nav a:hover { color: #003087; }
-        .container { max-width: 1200px; margin: 40px auto; padding: 20px; }
-        h1 { color: #003087; }
+        .hamburger { 
+            display: none; 
+            cursor: pointer; 
+            position: absolute; 
+            top: 18px; 
+            left: 15px; 
+        }
+        .hamburger span { 
+            display: block; 
+            width: 25px; 
+            height: 3px; 
+            background: black; 
+            margin: 5px auto; 
+        }
+        
+        .container { 
+            max-width: 1200px; 
+            margin: 50px auto 40px; 
+            padding: 20px; 
+            text-align: left; 
+        }
+        h1 { color: #003087; text-align: center; }
         .subtitle { color: #555; font-size: 1.1em; margin-bottom: 30px; }
         canvas { max-width: 100%; height: 420px !important; margin: 30px 0; }
 
@@ -84,12 +121,20 @@
         @media (max-width: 768px) {
             canvas { height: 360px !important; }
             .freq-groups { flex-direction: column; }
+            nav ul { flex-direction: column; display: none; }
+            nav ul.active { display: flex; }
+            nav li { margin: 10px 0; }
+            .hamburger { display: block; }
+            .container { margin-top: 30px; padding: 15px; }
         }
     </style>
 </head>
 <body>
     <nav>
-        <ul>
+        <div class="hamburger" onclick="toggleMenu()">
+            <span></span><span></span><span></span>
+        </div>
+        <ul id="nav-menu">
             <li><a href="index.html">Home</a></li>
             <li><a href="about.html">About</a></li>
             <li><a href="tax.html">TAX</a></li>
@@ -135,6 +180,10 @@
         <a href="statistics.html" class="back-btn">← 통계 메인으로 돌아가기</a>
     </div>
 
+    <footer style="margin-top:60px; font-size:0.8em; color:gray; text-align:center;">
+        <p>&copy; 2026 lottodraw.kr. All rights reserved.</p>
+    </footer>
+
     <script>
         let myChart = null;
         let allData = [];
@@ -155,15 +204,11 @@
                 originalFreq = [...freq];
                 allData = originalLabels.map((num, i) => ({ num: num, count: freq[i] }));
 
-                // 초기 그래프 (1~45 순서)
                 renderChart(originalLabels, originalFreq);
 
-                // Top 10 & Bottom 10
                 const sortedDesc = [...allData].sort((a, b) => b.count - a.count);
                 renderRankTable('top10Table', sortedDesc.slice(0, 10));
                 renderRankTable('bottom10Table', sortedDesc.slice(-10).reverse());
-
-                // 10단위 그룹 테이블
                 renderGroupedTables(allData);
             });
 
@@ -236,10 +281,11 @@
                 container.appendChild(div);
             });
         }
-    </script>
 
-    <footer style="margin-top:60px; font-size:0.8em; color:gray; text-align:center;">
-        <p>&copy; 2026 lottodraw.kr. All rights reserved.</p>
-    </footer>
+        function toggleMenu() {
+            const menu = document.getElementById('nav-menu');
+            menu.classList.toggle('active');
+        }
+    </script>
 </body>
 </html>
