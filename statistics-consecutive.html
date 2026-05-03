@@ -3,27 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>5. 연속 번호 패턴 | Statistics</title>
+    <title>5. 연속번호 분석 | Statistics</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-        nav { background-color: #fefefe; padding: 10px; text-align: center; }
-        nav ul { list-style: none; padding: 0; margin: 0; display: flex; justify-content: center; }
-        nav li { margin: 0 15px; }
-        nav a { text-decoration: none; color: black; font-weight: bold; }
-        nav a:hover { color: blue; }
-        .container { max-width: 1100px; margin: 40px auto; padding: 20px; }
-        h1 { color: #003087; }
-        .subtitle { color: #555; font-size: 1.1em; }
-        canvas { max-width: 100%; height: 500px !important; margin: 30px 0; }
-        table { width: 100%; border-collapse: collapse; margin-top: 30px; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
-        th { background: #f2f2f2; }
-        .back-btn { display: inline-block; margin: 30px 0; padding: 12px 24px; background: #003087; color: white; text-decoration: none; border-radius: 6px; }
+        body { font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 0; line-height: 1.6; }
+        nav { 
+            background-color: #fefefe; 
+            padding: 15px 10px; 
+            text-align: center; 
+            position: relative; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        nav ul { 
+            list-style: none; 
+            padding: 0; 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            flex-wrap: wrap; 
+        }
+        nav li { margin: 8px 15px; }
+        nav a { 
+            text-decoration: none; 
+            color: black; 
+            font-weight: bold; 
+        }
+        nav a:hover { color: #003087; }
+        .hamburger { 
+            display: none; 
+            cursor: pointer; 
+            position: absolute; 
+            top: 18px; 
+            left: 15px; 
+        }
+        .hamburger span { 
+            display: block; 
+            width: 25px; 
+            height: 3px; 
+            background: black; 
+            margin: 5px auto; 
+        }
+        
+        .container { 
+            max-width: 1200px; 
+            margin: 50px auto 40px; 
+            padding: 20px; 
+            text-align: left; 
+        }
+        h1 { color: #003087; text-align: center; }
+        .subtitle { color: #555; font-size: 1.1em; text-align: center; margin-bottom: 30px; }
+
+        canvas { max-width: 100%; height: 420px !important; margin: 30px 0; }
+
+        table { 
+            width: 100%; 
+            margin: 30px auto; 
+            border-collapse: collapse; 
+            font-size: 0.95em; 
+        }
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 12px; 
+            text-align: center; 
+        }
+        th { background-color: #f2f2f2; font-weight: bold; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+
+        .back-btn { 
+            display: inline-block; 
+            margin: 40px 0; 
+            padding: 12px 24px; 
+            background: #003087; 
+            color: white; 
+            text-decoration: none; 
+            border-radius: 6px; 
+        }
+
+        @media (max-width: 768px) {
+            canvas { height: 360px !important; }
+            nav ul { flex-direction: column; display: none; }
+            nav ul.active { display: flex; }
+            nav li { margin: 10px 0; }
+            .hamburger { display: block; }
+            .container { margin-top: 30px; padding: 15px; }
+        }
     </style>
 </head>
 <body>
     <nav>
+        <div class="hamburger" onclick="toggleMenu()">
+            <span></span><span></span><span></span>
+        </div>
         <ul id="nav-menu">
             <li><a href="index.html">Home</a></li>
             <li><a href="about.html">About</a></li>
@@ -34,83 +104,119 @@
     </nav>
 
     <div class="container">
-        <h1>5. 연속 번호 패턴 (1,221회차 기준)</h1>
-        <p class="subtitle">당첨번호에 연속된 숫자(예: 13-14)가 얼마나 자주 등장하는지 분석합니다.<br>연속 번호가 없는 회차가 가장 많습니다.</p>
+        <h1>5. 연속번호 분석</h1>
+        <p id="subtitle" class="subtitle">로또 6/45 데이터를 분석 중...</p>
         
         <canvas id="consecutiveChart"></canvas>
 
-        <h2>연속 쌍 개수별 분포</h2>
-        <table>
+        <h2>최대 연속 길이별 상세 분포</h2>
+        <table id="consecutiveTable">
             <thead>
                 <tr>
-                    <th>연속 쌍 개수</th>
-                    <th>회차 수</th>
+                    <th>패턴</th>
+                    <th>출현 횟수</th>
                     <th>비율</th>
                 </tr>
             </thead>
-            <tbody id="consecutiveTable"></tbody>
+            <tbody></tbody>
         </table>
 
         <a href="statistics.html" class="back-btn">← 통계 메인으로 돌아가기</a>
     </div>
 
-    <script>
-        // 연속 번호 패턴 데이터 (1,221회차 실제 분석 기준)
-        const labels = ['연속 쌍 0개', '연속 쌍 1개', '연속 쌍 2개', '연속 쌍 3개 이상'];
-        const values = [590, 478, 130, 23];
-
-        new Chart(document.getElementById('consecutiveChart'), {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: '회차 수',
-                    data: values,
-                    backgroundColor: '#003087',
-                    borderColor: '#002266',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                indexAxis: 'y',           // 가로 막대 차트
-                responsive: true,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: (ctx) => `${ctx.raw}회`
-                        }
-                    }
-                },
-                scales: {
-                    x: { beginAtZero: true, title: { display: true, text: '회차 수' } },
-                    y: { title: { display: true, text: '연속 쌍 개수' } }
-                }
-            }
-        });
-
-        // 테이블 데이터
-        const tableData = [
-            {pattern: '0개', count: 590, percent: '48.3%'},
-            {pattern: '1개', count: 478, percent: '39.1%'},
-            {pattern: '2개', count: 130, percent: '10.6%'},
-            {pattern: '3개 이상', count: 23, percent: '1.9%'}
-        ];
-
-        const tbody = document.getElementById('consecutiveTable');
-        tableData.forEach(item => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${item.pattern}</td>
-                <td>${item.count}회</td>
-                <td>${item.percent}</td>
-            `;
-            tbody.appendChild(tr);
-        });
-    </script>
-
     <footer style="margin-top:60px; font-size:0.8em; color:gray; text-align:center;">
         <p>&copy; 2026 lottodraw.kr. All rights reserved.</p>
     </footer>
+
+    <script>
+        let myChart = null;
+
+        fetch('lotto-data.json')
+            .then(response => response.json())
+            .then(jsonData => {
+                const totalRounds = jsonData.draws.length;
+
+                document.getElementById('subtitle').innerHTML = 
+                    `최신 <strong>${totalRounds}</strong>회차 기준`;
+
+                // 최대 연속 길이 계산
+                const patternCount = new Array(5).fill(0); // 0, 2, 3, 4, 5+
+
+                jsonData.draws.forEach(draw => {
+                    const sorted = [...draw.numbers].sort((a, b) => a - b);
+                    let maxStreak = 1;
+                    let currentStreak = 1;
+
+                    for (let i = 1; i < 6; i++) {
+                        if (sorted[i] === sorted[i-1] + 1) {
+                            currentStreak++;
+                            maxStreak = Math.max(maxStreak, currentStreak);
+                        } else {
+                            currentStreak = 1;
+                        }
+                    }
+
+                    if (maxStreak === 1) patternCount[0]++;           // 연속 없음
+                    else if (maxStreak === 2) patternCount[1]++;      // 최대 2연속
+                    else if (maxStreak === 3) patternCount[2]++;      // 최대 3연속
+                    else if (maxStreak === 4) patternCount[3]++;      // 최대 4연속
+                    else patternCount[4]++;                           // 5연속 이상
+                });
+
+                const labels = [
+                    '연속 없음',
+                    '최대 연속 2개',
+                    '최대 연속 3개',
+                    '최대 연속 4개',
+                    '최대 연속 5개 이상'
+                ];
+                const counts = patternCount;
+                const percentages = counts.map(c => (c / totalRounds * 100).toFixed(2) + '%');
+
+                renderChart(labels, counts);
+
+                const tbody = document.querySelector('#consecutiveTable tbody');
+                tbody.innerHTML = '';
+                labels.forEach((label, i) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>${label}</strong></td>
+                        <td>${counts[i]}회</td>
+                        <td>${percentages[i]}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById('subtitle').innerHTML = 
+                    `<span style="color:red;">데이터 로드 실패 - lotto-data.json 확인</span>`;
+            });
+
+        function renderChart(labels, data) {
+            if (myChart) myChart.destroy();
+            myChart = new Chart(document.getElementById('consecutiveChart'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '출현 횟수',
+                        data: data,
+                        backgroundColor: '#003087'
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    scales: { x: { beginAtZero: true } }
+                }
+            });
+        }
+
+        function toggleMenu() {
+            const menu = document.getElementById('nav-menu');
+            menu.classList.toggle('active');
+        }
+    </script>
 </body>
 </html>
