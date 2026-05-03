@@ -3,27 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3. 짝수/홀수 비율 | Statistics</title>
+    <title>3. 홀짝 비율 분석 | Statistics</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-        nav { background-color: #fefefe; padding: 10px; text-align: center; }
-        nav ul { list-style: none; padding: 0; margin: 0; display: flex; justify-content: center; }
-        nav li { margin: 0 15px; }
-        nav a { text-decoration: none; color: black; font-weight: bold; }
-        nav a:hover { color: blue; }
-        .container { max-width: 1100px; margin: 40px auto; padding: 20px; }
-        h1 { color: #003087; }
-        .subtitle { color: #555; font-size: 1.1em; }
-        canvas { max-width: 100%; height: 500px !important; margin: 30px 0; }
-        table { width: 100%; border-collapse: collapse; margin-top: 30px; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
-        th { background: #f2f2f2; }
-        .back-btn { display: inline-block; margin: 30px 0; padding: 12px 24px; background: #003087; color: white; text-decoration: none; border-radius: 6px; }
+        body { font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 0; line-height: 1.6; }
+        nav { 
+            background-color: #fefefe; 
+            padding: 15px 10px; 
+            text-align: center; 
+            position: relative; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        nav ul { 
+            list-style: none; 
+            padding: 0; 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            flex-wrap: wrap; 
+        }
+        nav li { margin: 8px 15px; }
+        nav a { 
+            text-decoration: none; 
+            color: black; 
+            font-weight: bold; 
+        }
+        nav a:hover { color: #003087; }
+        .hamburger { 
+            display: none; 
+            cursor: pointer; 
+            position: absolute; 
+            top: 18px; 
+            left: 15px; 
+        }
+        .hamburger span { 
+            display: block; 
+            width: 25px; 
+            height: 3px; 
+            background: black; 
+            margin: 5px auto; 
+        }
+        
+        .container { 
+            max-width: 1200px; 
+            margin: 50px auto 40px; 
+            padding: 20px; 
+            text-align: left; 
+        }
+        h1 { color: #003087; text-align: center; }
+        .subtitle { color: #555; font-size: 1.1em; text-align: center; margin-bottom: 30px; }
+
+        /* 차트 */
+        canvas { max-width: 100%; height: 420px !important; margin: 30px 0; }
+
+        /* 테이블 */
+        table { 
+            width: 100%; 
+            margin: 30px auto; 
+            border-collapse: collapse; 
+            font-size: 0.95em; 
+        }
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 12px; 
+            text-align: center; 
+        }
+        th { background-color: #f2f2f2; font-weight: bold; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+
+        .back-btn { 
+            display: inline-block; 
+            margin: 40px 0; 
+            padding: 12px 24px; 
+            background: #003087; 
+            color: white; 
+            text-decoration: none; 
+            border-radius: 6px; 
+        }
+
+        @media (max-width: 768px) {
+            canvas { height: 360px !important; }
+            nav ul { flex-direction: column; display: none; }
+            nav ul.active { display: flex; }
+            nav li { margin: 10px 0; }
+            .hamburger { display: block; }
+            .container { margin-top: 30px; padding: 15px; }
+        }
     </style>
 </head>
 <body>
     <nav>
+        <div class="hamburger" onclick="toggleMenu()">
+            <span></span><span></span><span></span>
+        </div>
         <ul id="nav-menu">
             <li><a href="index.html">Home</a></li>
             <li><a href="about.html">About</a></li>
@@ -34,88 +106,110 @@
     </nav>
 
     <div class="container">
-        <h1>3. 짝수/홀수 비율 (1,221회차 기준)</h1>
-        <p class="subtitle">각 회차의 본번호 6개 중 짝수와 홀수의 개수 분포입니다.<br>가장 흔한 패턴은 3짝 3홀입니다.</p>
+        <h1>3. 홀짝 비율 분석</h1>
+        <p id="subtitle" class="subtitle">로또 6/45 데이터를 분석 중...</p>
         
         <canvas id="evenOddChart"></canvas>
 
-        <h2>패턴별 상세 분포</h2>
-        <table>
+        <h2>홀짝 패턴 상세 분포</h2>
+        <table id="evenOddTable">
             <thead>
                 <tr>
-                    <th>짝수 개수</th>
-                    <th>홀수 개수</th>
-                    <th>회차 수</th>
+                    <th>패턴</th>
+                    <th>출현 횟수</th>
                     <th>비율</th>
                 </tr>
             </thead>
-            <tbody id="evenOddTable"></tbody>
+            <tbody></tbody>
         </table>
 
         <a href="statistics.html" class="back-btn">← 통계 메인으로 돌아가기</a>
     </div>
 
-    <script>
-        // 데이터 (1,221회차 실제 분석 기준)
-        const labels = ['0짝 6홀', '1짝 5홀', '2짝 4홀', '3짝 3홀', '4짝 2홀', '5짝 1홀', '6짝 0홀'];
-        const values = [18, 85, 326, 409, 271, 95, 17];
-
-        new Chart(document.getElementById('evenOddChart'), {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: '회차 수',
-                    data: values,
-                    backgroundColor: '#003087',
-                    borderColor: '#002266',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                indexAxis: 'y',           // 가로 막대 차트
-                responsive: true,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: (ctx) => `${ctx.raw}회`
-                        }
-                    }
-                },
-                scales: {
-                    x: { beginAtZero: true, title: { display: true, text: '회차 수' } },
-                    y: { title: { display: true, text: '패턴' } }
-                }
-            }
-        });
-
-        // 테이블 데이터
-        const tableData = [
-            {even:0, odd:6, count:18,  percent:"1.5%"},
-            {even:1, odd:5, count:85,  percent:"7.0%"},
-            {even:2, odd:4, count:326, percent:"26.7%"},
-            {even:3, odd:3, count:409, percent:"33.5%"},
-            {even:4, odd:2, count:271, percent:"22.2%"},
-            {even:5, odd:1, count:95,  percent:"7.8%"},
-            {even:6, odd:0, count:17,  percent:"1.4%"}
-        ];
-
-        const tbody = document.getElementById('evenOddTable');
-        tableData.forEach(item => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${item.even}짝</td>
-                <td>${item.odd}홀</td>
-                <td>${item.count}회</td>
-                <td>${item.percent}</td>
-            `;
-            tbody.appendChild(tr);
-        });
-    </script>
-
     <footer style="margin-top:60px; font-size:0.8em; color:gray; text-align:center;">
         <p>&copy; 2026 lottodraw.kr. All rights reserved.</p>
     </footer>
+
+    <script>
+        let myChart = null;
+
+        fetch('lotto-data.json')
+            .then(response => response.json())
+            .then(jsonData => {
+                const totalRounds = jsonData.draws.length;
+
+                // 최신 회차 수 동적 표시
+                document.getElementById('subtitle').innerHTML = 
+                    `최신 <strong>${totalRounds}</strong>회차 기준`;
+
+                // 홀짝 패턴 계산 (짝수 개수 기준)
+                const patternCount = new Array(7).fill(0); // 0짝 ~ 6짝
+
+                jsonData.draws.forEach(draw => {
+                    let evenCount = 0;
+                    draw.numbers.forEach(num => {
+                        if (num % 2 === 0) evenCount++;
+                    });
+                    patternCount[evenCount]++;
+                });
+
+                const labels = [
+                    '6짝 0홀', '5짝 1홀', '4짝 2홀', 
+                    '3짝 3홀', '2짝 4홀', '1짝 5홀', '0짝 6홀'
+                ];
+                const counts = patternCount;
+                const percentages = counts.map(c => (c / totalRounds * 100).toFixed(2) + '%');
+
+                // 가로 막대 차트
+                renderChart(labels, counts);
+
+                // 테이블 채우기
+                const tbody = document.querySelector('#evenOddTable tbody');
+                tbody.innerHTML = '';
+                labels.forEach((label, i) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>${label}</strong></td>
+                        <td>${counts[i]}회</td>
+                        <td>${percentages[i]}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById('subtitle').innerHTML = 
+                    `<span style="color:red;">데이터 로드 실패 - lotto-data.json 확인</span>`;
+            });
+
+        function renderChart(labels, data) {
+            if (myChart) myChart.destroy();
+            myChart = new Chart(document.getElementById('evenOddChart'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '출현 횟수',
+                        data: data,
+                        backgroundColor: '#003087',
+                        borderColor: '#003087',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',   // 가로 막대
+                    responsive: true,
+                    scales: {
+                        x: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function toggleMenu() {
+            const menu = document.getElementById('nav-menu');
+            menu.classList.toggle('active');
+        }
+    </script>
 </body>
 </html>
