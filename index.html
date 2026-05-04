@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
+   
     <!-- SEO 핵심 메타 태그 -->
     <title>동행복권 로또 6/45 번호 생성기 | lottodraw.kr</title>
     <meta name="description" content="동행복권 로또 6/45 번호를 무작위로 생성하는 무료 도구. 특수 패턴 배제 기능과 로또 통계, TAX 계산기, TOP 50 당첨금 분석까지 제공합니다.">
     <meta name="keywords" content="로또 번호 생성기, 동행복권, 로또 6/45, 로또 통계, 로또 번호 추천, lottodraw">
-
     <!-- Open Graph -->
     <meta property="og:title" content="동행복권 로또 6/45 번호 생성기 | lottodraw.kr">
     <meta property="og:description" content="특수 패턴을 배제한 현실적인 로또 번호 생성 + 9가지 통계 분석 + TAX 계산기 + TOP 50 당첨금. 로또를 더 스마트하게 즐기세요.">
@@ -16,7 +15,6 @@
     <meta property="og:url" content="https://www.lottodraw.kr/">
     <meta property="og:image" content="https://www.lottodraw.kr/og-image-main.jpg">
     <meta property="og:site_name" content="lottodraw.kr">
-
     <meta name="google-adsense-account" content="ca-pub-9372871176021283">
     <style>
         body { font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 0; line-height: 1.6; }
@@ -25,24 +23,17 @@
         nav li { margin: 8px 15px; }
         nav a { text-decoration: none; color: black; font-weight: bold; }
         nav a:hover { color: #003087; }
-
-        /* Home 메뉴 강조 (Statistics 강조 제거) */
         #nav-menu li:first-child a { color: #003087; font-weight: bold; }
-
         .hamburger { display: none; cursor: pointer; position: absolute; top: 18px; left: 15px; }
         .hamburger span { display: block; width: 25px; height: 3px; background: black; margin: 5px auto; }
-
         #latest-draw, #history { max-width: 600px; margin: 40px auto; text-align: center; }
         #latest-draw h3, #history h3 { font-size: 1.3em; margin-bottom: 10px; color: #333; cursor: pointer; }
         #latest-table, #history-table { width: 100%; margin: 0 auto; border-collapse: collapse; table-layout: fixed; }
         #latest-table th, #latest-table td, #history-table th, #history-table td { border: 1px solid #ddd; padding: 6px 4px; text-align: center; font-size: 9pt; }
         #latest-table th, #history-table th { background-color: #f2f2f2; }
         #latest-table { display: none; }
-
-        /* 6개 번호 등간격 */
         #latest-table td:nth-child(2) { width: 42%; }
         #latest-table td:nth-child(2) span { display: inline-block; width: 14%; text-align: center; }
-
         #result { font-size: 24px; margin-top: 20px; color: green; }
         #log { margin-top: 20px; text-align: left; max-width: 600px; margin: 20px auto; border: 1px solid #ccc; padding: 10px; background: #f9f9f9; overflow-y: auto; max-height: 300px; }
         #patterns, #include-section, #exclude-section { margin-top: 20px; text-align: left; max-width: 600px; margin: 20px auto; }
@@ -67,10 +58,8 @@
             <li><a href="statistics.html">Statistics</a></li>
         </ul>
     </nav>
-
     <h1>동행복권 번호 생성기 / 로또 번호 추출기 by borel's Law</h1>
     <p>버튼을 클릭하여 새로운 번호를 생성하세요. 해당 프로그램은 정의될 수 있는 특수 패턴을 배제합니다. 아래 체크박스로 배제할 패턴을 선택하세요 (기본: 모두 체크).</p>
-
     <div class="borel-description">
         <p>※해당 사이트는 보렐의 법칙을 아이디어로 삼아 만들어 졌습니다.</p>
         <p>보렐의 법칙(Borel's Law)이란 "확률이 극도로 낮은 사건은 현실적으로 절대로 일어나지 않는다"는 경험적 원칙으로</p>
@@ -80,19 +69,15 @@
         <p>로또 번호 조합 수는 45개 중 6개를 선택하는 조합으로, 총 8,145,060개이나 </p>
         <p>정의된 16개 특수 패턴을 모두 적용해 제외할 경우 대략 1,629,012개 정도 제외되고, 남는 조합은 약 6,516,048개입니다. (약 20% 정도 제외) </p>
     </div>
-
     <button onclick="generateNumbers()">번호 생성</button>
     <div id="result"></div>
-
     <p style="margin-top: 30px; font-size: 1.1em;">
         <strong>당첨되면 얼마 받을 수 있을까?</strong><br>
         <a href="tax.html" style="color: #0066cc; font-weight: bold; text-decoration: underline;">
             → 실수령액 계산기 바로가기
         </a>
     </p>
-
     <div id="log"></div>
-
     <div id="include-section">
         <h3>꼭 포함할 숫자 선택 (드래그로 결정, 1~45 중 하나):</h3>
         <input type="checkbox" id="include-active"> 활성화
@@ -105,7 +90,6 @@
         <input type="range" id="exclude-slider" min="1" max="45" value="1" oninput="updateSliderValue('exclude')">
         <p>선택된 숫자: <span id="exclude-value">1</span></p>
     </div>
-
     <div id="patterns">
         <h3>배제할 특수 패턴 선택 (총 16개):</h3>
         <div class="pattern-item"><input type="checkbox" id="pattern1"> 6개 숫자가 연속적으로 배열된 경우 (예: 10,11,12,13,14,15)</div>
@@ -125,9 +109,7 @@
         <div class="pattern-item"><input type="checkbox" id="pattern15"> 제곱수 4개 이상 포함된 경우</div>
         <div class="pattern-item"><input type="checkbox" id="pattern16"> 제곱수 5개 이상 포함된 경우</div>
     </div>
-
     <div id="visitor-count"></div>
-
     <div id="history">
         <h3>생성된 번호 이력 :</h3>
         <table id="history-table">
@@ -139,11 +121,10 @@
             <tbody id="history-body"></tbody>
         </table>
     </div>
-
     <!-- 최근 10회차 당첨번호 (1222회부터 1213회까지) -->
     <div id="latest-draw">
         <h3 onclick="toggleLatestDraw()">
-            🔔 최근 10회차 당첨번호 
+            🔔 최근 10회차 당첨번호
             <span id="toggle-icon" style="font-size:0.9em;">▼</span>
         </h3>
         <table id="latest-table">
@@ -157,14 +138,11 @@
             <tbody id="latest-body"></tbody>
         </table>
     </div>
-
     <button onclick="window.location.href='https://dhlottery.co.kr/'" style="margin-left: 10px;">★동행복권 홈페이지 바로가기★</button>
-
     <div style="margin-top: 40px; text-align: center;">
         <h3>댓글 공유</h3>
         <livere-comment client-id="5Qnz059feDSs78GOTvi5"></livere-comment>
     </div>
-
     <footer style="margin-top: 40px; font-size: 0.8em; color: gray; text-align: center;">
         <a href="index.html">home</a> | <a href="about.html">About</a> | <a href="tax.html">실수령액 계산기</a> | <a href="top-prize.html">TOP 50</a> | <a href="statistics.html">Statistics</a>
         <p>&copy; 2026 lottodraw.kr. All rights reserved.</p>
@@ -175,7 +153,6 @@
             const menu = document.getElementById('nav-menu');
             menu.classList.toggle('active');
         }
-
         function toggleLatestDraw() {
             const table = document.getElementById('latest-table');
             const icon = document.getElementById('toggle-icon');
@@ -188,14 +165,14 @@
             }
         }
 
-        // 최근 10회차 데이터 로드 (1222회부터 1213회까지 실제 회차 번호 표시)
+        // 최근 10회차 데이터 로드 (1222회 ~ 1213회)
         fetch('lotto-data.json')
             .then(response => response.json())
             .then(data => {
-                const latest10 = data.draws.slice(-10).reverse(); // 최신(1222회)부터 표시
+                // draws 배열은 최신 회차(1222회)가 index 0에 위치하므로 앞 10개가 정확히 최근 10회차입니다.
+                const latest10 = data.draws.slice(0, 10);
                 const tbody = document.getElementById('latest-body');
                 tbody.innerHTML = '';
-
                 latest10.forEach(draw => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
@@ -348,7 +325,6 @@
             resultDiv.innerText = '조건을 만족하는 번호를 찾지 못했습니다.';
         }
     </script>
-
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9372871176021283" crossorigin="anonymous"></script>
     <script type="module" src="https://www.livere.org/livere-widget.js"></script>
 </body>
