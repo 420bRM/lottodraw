@@ -42,6 +42,13 @@
             font-weight: bold; 
         }
         nav a:hover { color: #003087; }
+
+        /* Home 메뉴 강조 */
+        #nav-menu li:first-child a {
+            color: #003087;
+            font-weight: bold;
+        }
+
         .hamburger { 
             display: none; 
             cursor: pointer; 
@@ -57,54 +64,45 @@
             margin: 5px auto; 
         }
 
-        /* 최근 10회차 - 생성된 번호 이력과 완전 동일한 스타일 */
-        #latest-draw { 
+        /* 최근 10회차 테이블 - 이력과 동일 스타일 + 등간격 개선 */
+        #latest-draw, #history { 
             max-width: 600px; 
             margin: 40px auto; 
             text-align: center; 
         }
-        #latest-draw h3 {
+        #latest-draw h3, #history h3 {
             font-size: 1.3em;
             margin-bottom: 10px;
             color: #333;
             cursor: pointer;
         }
-        #latest-table {
+        #latest-table, #history-table {
             width: 100%;
             margin: 0 auto;
             border-collapse: collapse;
-            display: none;   /* 토글로 제어 */
+            table-layout: fixed;   /* 등간격 강제 적용 */
         }
-        #latest-table th, #latest-table td {
+        #latest-table th, #latest-table td,
+        #history-table th, #history-table td {
             border: 1px solid #ddd;
-            padding: 4px;
+            padding: 6px 4px;
             text-align: center;
-            font-size: 8pt;
+            font-size: 9pt;
         }
-        #latest-table th { 
+        #latest-table th, #history-table th { 
             background-color: #f2f2f2; 
         }
+        #latest-table { display: none; } /* 토글 제어 */
 
-        /* 생성된 번호 이력 테이블 스타일 */
-        #history { 
-            margin-top: 40px; 
-            text-align: center; 
-            max-width: 600px; 
-            margin: 20px auto; 
+        /* 6개 번호 칸 등간격 */
+        #latest-table td:nth-child(2) { width: 42%; } /* 당첨번호 전체 너비 */
+        #latest-table td:nth-child(2) span {
+            display: inline-block;
+            width: 14%; /* 6개 번호 등간격 */
+            text-align: center;
         }
-        #history-table { 
-            border-collapse: collapse; 
-            width: 100%; 
-        }
-        #history-table th, #history-table td { 
-            border: 1px solid #ddd; 
-            padding: 4px; 
-            text-align: center; 
-            font-size: 8pt; 
-        }
-        #history-table th { background-color: #f2f2f2; }
 
-        /* 나머지 기존 스타일 */
+        /* 나머지 스타일 */
         #result { font-size: 24px; margin-top: 20px; color: green; }
         #log { margin-top: 20px; text-align: left; max-width: 600px; margin: 20px auto; border: 1px solid #ccc; padding: 10px; background: #f9f9f9; overflow-y: auto; max-height: 300px; }
         #patterns, #include-section, #exclude-section { margin-top: 20px; text-align: left; max-width: 600px; margin: 20px auto; }
@@ -128,7 +126,7 @@
             <li><a href="about.html">About</a></li>
             <li><a href="tax.html">TAX</a></li>
             <li><a href="top-prize.html">TOP 50</a></li>
-            <li><a href="statistics.html" style="color:#870012; font-weight:bold;">Statistics</a></li>
+            <li><a href="statistics.html" style="color:#003087; font-weight:bold;">Statistics</a></li>
         </ul>
     </nav>
 
@@ -204,7 +202,7 @@
         </table>
     </div>
 
-    <!-- 최근 10회차 당첨번호 (이력과 동일 스타일) -->
+    <!-- 최근 10회차 당첨번호 (최신부터 역순) -->
     <div id="latest-draw">
         <h3 onclick="toggleLatestDraw()">
             🔔 최근 10회차 당첨번호 
@@ -213,9 +211,9 @@
         <table id="latest-table">
             <thead>
                 <tr>
-                    <th>회차</th>
+                    <th style="width:12%">회차</th>
                     <th>당첨번호</th>
-                    <th>보너스</th>
+                    <th style="width:10%">보너스</th>
                 </tr>
             </thead>
             <tbody id="latest-body"></tbody>
@@ -253,11 +251,11 @@
             }
         }
 
-        // 최근 10회차 데이터 로드 (1222회부터 최신순)
+        // 최근 10회차 데이터 로드 (1222회부터 역순 표시)
         fetch('lotto-data.json')
             .then(response => response.json())
             .then(data => {
-                const latest10 = data.draws.slice(-10);
+                const latest10 = data.draws.slice(-10).reverse(); // 최신(1222) → 1213 순
                 const tbody = document.getElementById('latest-body');
                 tbody.innerHTML = '';
 
@@ -265,7 +263,7 @@
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td><strong>${draw.round}회</strong></td>
-                        <td>${draw.numbers.join(', ')}</td>
+                        <td>${draw.numbers.join(' ')}</td>
                         <td style="color:#d4af37; font-weight:bold;">${draw.bonus}</td>
                     `;
                     tbody.appendChild(tr);
@@ -277,6 +275,7 @@
                     `<tr><td colspan="3" style="color:red;">데이터를 불러올 수 없습니다.</td></tr>`;
             });
 
+        // ==================== 기존 기능 (그대로 유지) ====================
         const today = new Date().toISOString().split('T')[0];
         const visitorKey = 'visitorCount_' + today;
         const clickKey = 'clickCount_' + today;
