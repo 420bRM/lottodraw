@@ -5,21 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <!-- SEO 핵심 메타 태그 -->
-    <title>로또 통계 | 로또 6/45 최신 분석 (1,221회차 기준) - lottodraw.kr</title>
-    <meta name="description" content="로또 6/45 1,221회차까지의 모든 당첨 데이터를 분석한 9가지 통계. 숫자별 출현 빈도, 보너스 번호, 홀짝·저고·합계·연속번호·핫콜드·번호 쌍 분석까지 한눈에 확인하세요.">
+    <title>로또 통계 | 로또 6/45 최신 분석 - lottodraw.kr</title>
+    <meta name="description" content="로또 6/45 최신 회차까지의 모든 당첨 데이터를 분석한 9가지 통계. 숫자별 출현 빈도, 보너스 번호, 홀짝·저고·합계·연속번호·핫/콜드·번호 쌍 분석까지 한눈에 확인하세요.">
     <meta name="keywords" content="로또 통계, 로또 분석, 로또 6/45 통계, 로또 번호 출현 빈도, 로또 핫콜드, 로또 번호 쌍, lottodraw, 동행복권 통계">
-    
-    <!-- Open Graph (카카오톡·페이스북 공유 최적화) -->
+
+    <!-- Open Graph -->
     <meta property="og:title" content="로또 통계 | 로또 6/45 최신 분석 - lottodraw.kr">
-    <meta property="og:description" content="1,221회차까지의 로또 데이터를 기반으로 한 정확한 통계 분석. 숫자별 출현, 핫콜드, 번호 쌍 등 실전 분석 자료">
+    <meta property="og:description" content="로또 6/45 최신 회차까지의 모든 당첨 데이터를 분석한 9가지 통계. 숫자별 출현 빈도, 보너스 번호, 홀짝·저고·합계·연속번호·핫/콜드·번호 쌍 분석까지 한눈에 확인하세요.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://www.lottodraw.kr/statistics.html">
-    <meta property="og:image" content="https://www.lottodraw.kr/og-image-statistics.jpg"> <!-- 필요시 이미지 업로드 후 경로 변경 -->
+    <meta property="og:image" content="https://www.lottodraw.kr/og-image-statistics.jpg">
     <meta property="og:site_name" content="lottodraw.kr">
 
     <meta name="google-adsense-account" content="ca-pub-9372871176021283">
+
     <style>
-        /* 기존 스타일 그대로 유지 (변경 없음) */
         body { font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 0; line-height: 1.6; }
         nav { 
             background-color: #fefefe; 
@@ -117,7 +117,6 @@
     </style>
 </head>
 <body>
-    <!-- nav는 이전과 동일 -->
     <nav>
         <div class="hamburger" onclick="toggleMenu()">
             <span></span><span></span><span></span>
@@ -132,8 +131,8 @@
     </nav>
 
     <div class="container">
-        <h1>Statistics</h1>
-        <p id="subtitle" class="subtitle">로또 6/45 데이터를 분석한 9가지 통계</p>
+        <h1>로또 통계</h1>
+        <p id="subtitle" class="subtitle">로또 6/45 데이터를 분석 중...</p>
 
         <div class="stats-grid">
             <div class="stat-card">
@@ -194,7 +193,7 @@
             menu.classList.toggle('active');
         }
 
-        // 최신 회차 수를 JSON에서 동적으로 가져와 subtitle에 표시
+        // 최신 회차 수 동적 표시
         fetch('lotto-data.json')
             .then(response => response.json())
             .then(data => {
@@ -204,10 +203,26 @@
             })
             .catch(err => {
                 console.error(err);
-                // JSON 로드 실패 시 기본 문구 표시
                 document.getElementById('subtitle').innerHTML = 
                     `로또 6/45 데이터를 분석한 9가지 통계`;
             });
+    </script>
+
+    <!-- Structured Data (Schema.org) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "로또 통계",
+      "description": "로또 6/45 최신 회차까지의 모든 당첨 데이터를 분석한 9가지 통계",
+      "url": "https://www.lottodraw.kr/statistics.html",
+      "about": {
+        "@type": "Dataset",
+        "name": "로또 6/45 당첨 데이터",
+        "description": "동행복권 로또 6/45의 회차별 당첨번호, 보너스 번호, 1등 당첨자 수, 당첨금액 등 통계 데이터",
+        "keywords": "로또 통계, 로또 분석, 로또 6/45"
+      }
+    }
     </script>
 </body>
 </html>
