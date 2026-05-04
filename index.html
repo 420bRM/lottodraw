@@ -9,15 +9,16 @@
     <meta name="description" content="동행복권 로또 6/45 번호를 무작위로 생성하는 무료 도구. 특수 패턴 배제 기능과 로또 통계, TAX 계산기, TOP 50 당첨금 분석까지 제공합니다.">
     <meta name="keywords" content="로또 번호 생성기, 동행복권, 로또 6/45, 로또 통계, 로또 번호 추천, lottodraw">
 
-    <!-- Open Graph (카카오톡·네이버·페이스북 공유 최적화) -->
+    <!-- Open Graph -->
     <meta property="og:title" content="동행복권 로또 6/45 번호 생성기 | lottodraw.kr">
     <meta property="og:description" content="특수 패턴을 배제한 현실적인 로또 번호 생성 + 9가지 통계 분석 + TAX 계산기 + TOP 50 당첨금. 로또를 더 스마트하게 즐기세요.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://www.lottodraw.kr/">
-    <meta property="og:image" content="https://www.lottodraw.kr/og-image-main.jpg"> <!-- 필요시 이미지 업로드 후 경로 변경 -->
+    <meta property="og:image" content="https://www.lottodraw.kr/og-image-main.jpg">
     <meta property="og:site_name" content="lottodraw.kr">
 
     <meta name="google-adsense-account" content="ca-pub-9372871176021283">
+
     <style>
         body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
         #result { font-size: 24px; margin-top: 20px; color: green; }
@@ -30,7 +31,7 @@
         #history-table th { background-color: #f2f2f2; }
         .pattern-item { margin-bottom: 5px; }
         #include-slider, #exclude-slider { width: 500px; }
-        @media (max-width: 600px) { 
+        @media (max-width: 600px) {
             #include-slider, #exclude-slider { width: 100%; }
         }
         .borel-description { font-size: 0.8em; }
@@ -42,12 +43,35 @@
         nav a:hover { color: blue; }
         .hamburger { display: none; cursor: pointer; position: absolute; top: 10px; left: 10px; }
         .hamburger span { display: block; width: 25px; height: 3px; background: black; margin: 5px auto; }
-
         @media (max-width: 600px) {
             nav ul { flex-direction: column; display: none; }
             nav ul.active { display: flex; }
             nav li { margin: 10px 0; }
             .hamburger { display: block; }
+        }
+
+        /* 최근 회차 카드 스타일 */
+        #latest-draw { 
+            max-width: 700px; 
+            margin: 30px auto; 
+            padding: 20px; 
+            background: #f8f9fa; 
+            border-radius: 12px; 
+            border: 2px solid #003087; 
+        }
+        #latest-numbers { 
+            display: flex; 
+            justify-content: center; 
+            flex-wrap: wrap; 
+            gap: 8px; 
+            font-size: 1.5em; 
+            margin: 15px 0; 
+        }
+        #latest-numbers span { 
+            background: #003087; 
+            color: white; 
+            padding: 10px 16px; 
+            border-radius: 50%; 
         }
     </style>
 </head>
@@ -65,10 +89,17 @@
         </ul>
     </nav>
 
-    <!-- 나머지 본문은 기존과 완전히 동일 (생략 없이 그대로 유지) -->
-    <h1>동행복권 번호 생성기 / 로또 번호 추출기 by borel's Law </h1>
+    <!-- 최근 회차 당첨번호 카드 (번호 생성기 바로 위에 배치) -->
+    <div id="latest-draw">
+        <h2 style="margin:0 0 15px 0; color:#003087;">🔔 최신 회차 당첨번호</h2>
+        <p id="latest-round" style="font-size:1.1em; margin:0 0 15px 0; font-weight:bold;"></p>
+        <div id="latest-numbers"></div>
+        <p id="latest-bonus" style="margin:15px 0 0 0; font-size:1.1em; color:#d4af37; font-weight:bold;"></p>
+    </div>
+
+    <h1>동행복권 번호 생성기 / 로또 번호 추출기 by borel's Law</h1>
     <p>버튼을 클릭하여 새로운 번호를 생성하세요. 해당 프로그램은 정의될 수 있는 특수 패턴을 배제합니다. 아래 체크박스로 배제할 패턴을 선택하세요 (기본: 모두 체크).</p>
-   
+
     <div class="borel-description">
         <p>※해당 사이트는 보렐의 법칙을 아이디어로 삼아 만들어 졌습니다.</p>
         <p>보렐의 법칙(Borel's Law)이란 "확률이 극도로 낮은 사건은 현실적으로 절대로 일어나지 않는다"는 경험적 원칙으로</p>
@@ -81,13 +112,14 @@
 
     <button onclick="generateNumbers()">번호 생성</button>
     <div id="result"></div>
+
     <p style="margin-top: 30px; font-size: 1.1em;">
-    <strong>당첨되면 얼마 받을 수 있을까?</strong><br>
-    <a href="tax.html" style="color: #0066cc; font-weight: bold; text-decoration: underline;">
-        → 실수령액 계산기 바로가기
-    </a>
+        <strong>당첨되면 얼마 받을 수 있을까?</strong><br>
+        <a href="tax.html" style="color: #0066cc; font-weight: bold; text-decoration: underline;">
+            → 실수령액 계산기 바로가기
+        </a>
     </p>
-   
+
     <div id="log"></div>
     <div id="include-section">
         <h3>꼭 포함할 숫자 선택 (드래그로 결정, 1~45 중 하나):</h3>
@@ -139,12 +171,37 @@
         <livere-comment client-id="5Qnz059feDSs78GOTvi5"></livere-comment>
     </div>
 
+    <footer style="margin-top: 40px; font-size: 0.8em; color: gray; text-align: center;">
+        <a href="index.html">home</a> | <a href="about.html">About</a> | <a href="tax.html">실수령액 계산기</a> | <a href="top-prize.html">TOP 50</a> | <a href="statistics.html">Statistics</a>
+        <p>&copy; 2026 lottodraw.kr. All rights reserved.</p>
+    </footer>
+
     <script>
         function toggleMenu() {
             const menu = document.getElementById('nav-menu');
             menu.classList.toggle('active');
         }
 
+        // 최근 회차 당첨번호 표시
+        fetch('lotto-data.json')
+            .then(response => response.json())
+            .then(data => {
+                const latest = data.draws[data.draws.length - 1];
+                document.getElementById('latest-round').innerHTML = 
+                    `제 <strong>${latest.round}</strong>회차 당첨번호`;
+                const numbersContainer = document.getElementById('latest-numbers');
+                numbersContainer.innerHTML = latest.numbers.map(num => 
+                    `<span>${num}</span>`
+                ).join('');
+                document.getElementById('latest-bonus').innerHTML = 
+                    `보너스 번호 : <strong style="font-size:1.4em;">${latest.bonus}</strong>`;
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById('latest-draw').innerHTML = `<p style="color:red;">최신 회차 정보를 불러올 수 없습니다.</p>`;
+            });
+
+        // ==================== 기존 스크립트 (원본 그대로 유지) ====================
         const today = new Date().toISOString().split('T')[0];
         const visitorKey = 'visitorCount_' + today;
         const clickKey = 'clickCount_' + today;
@@ -155,30 +212,25 @@
                 document.getElementById(`pattern${i}`).checked = true;
             }
         }
-
         function updateSliderValue(type) {
             const slider = document.getElementById(`${type}-slider`);
             const valueSpan = document.getElementById(`${type}-value`);
             valueSpan.innerText = slider.value;
         }
-
         function updateVisitorCount() {
             let visitorCount = parseInt(localStorage.getItem(visitorKey) || 0) + 1;
             localStorage.setItem(visitorKey, visitorCount);
             updateDisplay();
         }
-
         function updateClickCount() {
             let clickCount = parseInt(localStorage.getItem(clickKey) || 0) + 1;
             localStorage.setItem(clickKey, clickCount);
             updateDisplay();
         }
-
         function updateDisplay() {
             let clickCount = localStorage.getItem(clickKey) || 0;
             document.getElementById('visitor-count').innerText = `오늘 번호 생성 클릭 횟수: ${clickCount}회`;
         }
-
         function loadHistory() {
             const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
             const tbody = document.getElementById('history-body');
@@ -193,7 +245,6 @@
                 tbody.appendChild(tr);
             }
         }
-
         function saveHistory(numStr) {
             let history = JSON.parse(localStorage.getItem(historyKey) || '[]');
             history.push(numStr);
@@ -201,7 +252,6 @@
             localStorage.setItem(historyKey, JSON.stringify(history));
             loadHistory();
         }
-
         function isPrime(n) {
             if (n <= 1) return false;
             if (n <= 3) return true;
@@ -211,13 +261,12 @@
             }
             return true;
         }
-
         function checkInvalidPattern(numbers) {
             const sorted = [...numbers].sort((a, b) => a - b);
             const sum = sorted.reduce((a, b) => a + b, 0);
             const squares = [1, 4, 9, 16, 25, 36];
             const squareCount = sorted.filter(n => squares.includes(n)).length;
-            const patterns = [ /* 기존 패턴 검사 코드 그대로 유지 */ 
+            const patterns = [
                 {id: 1, check: () => sorted[5] - sorted[0] === 5, reason: "6개 숫자가 연속적"},
                 {id: 2, check: () => sorted.every(n => n >= 1 && n <= 15), reason: "모든 숫자가 1~15 범위"},
                 {id: 3, check: () => sorted.every(n => n >= 1 && n <= 20), reason: "모든 숫자가 1~20 범위"},
@@ -242,7 +291,6 @@
             }
             return null;
         }
-
         function generateNumbers() {
             updateClickCount();
             const resultDiv = document.getElementById('result');
@@ -293,10 +341,5 @@
 
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9372871176021283" crossorigin="anonymous"></script>
     <script type="module" src="https://www.livere.org/livere-widget.js"></script>
-
-    <footer style="margin-top: 40px; font-size: 0.8em; color: gray; text-align: center;">
-        <a href="index.html">home</a> | <a href="about.html">About</a> | <a href="tax.html">실수령액 계산기</a> | <a href="top-prize.html">TOP 50</a> | <a href="statistics.html">Statistics</a>
-        <p>&copy; 2026 lottodraw.kr. All rights reserved.</p>
-    </footer>
 </body>
 </html>
