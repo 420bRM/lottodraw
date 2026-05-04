@@ -18,9 +18,77 @@
     <meta property="og:site_name" content="lottodraw.kr">
 
     <meta name="google-adsense-account" content="ca-pub-9372871176021283">
-
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
+        body { font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 0; line-height: 1.6; }
+        nav { 
+            background-color: #fefefe; 
+            padding: 15px 10px; 
+            text-align: center; 
+            position: relative; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        nav ul { 
+            list-style: none; 
+            padding: 0; 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            flex-wrap: wrap; 
+        }
+        nav li { margin: 8px 15px; }
+        nav a { 
+            text-decoration: none; 
+            color: black; 
+            font-weight: bold; 
+        }
+        nav a:hover { color: #003087; }
+        .hamburger { 
+            display: none; 
+            cursor: pointer; 
+            position: absolute; 
+            top: 18px; 
+            left: 15px; 
+        }
+        .hamburger span { 
+            display: block; 
+            width: 25px; 
+            height: 3px; 
+            background: black; 
+            margin: 5px auto; 
+        }
+
+        /* 최근 10회차 토글 카드 */
+        #latest-draw {
+            max-width: 800px;
+            margin: 30px auto;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border: 2px solid #003087;
+        }
+        .toggle-header {
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.25em;
+            font-weight: bold;
+            color: #003087;
+        }
+        #latest-table {
+            width: 100%;
+            margin-top: 15px;
+            border-collapse: collapse;
+            display: none;
+        }
+        #latest-table th, #latest-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+        #latest-table th { background-color: #f2f2f2; }
+
+        /* 기존 스타일 */
         #result { font-size: 24px; margin-top: 20px; color: green; }
         #log { margin-top: 20px; text-align: left; max-width: 600px; margin: 20px auto; border: 1px solid #ccc; padding: 10px; background: #f9f9f9; overflow-y: auto; max-height: 300px; }
         #patterns, #include-section, #exclude-section { margin-top: 20px; text-align: left; max-width: 600px; margin: 20px auto; }
@@ -36,43 +104,6 @@
         }
         .borel-description { font-size: 0.8em; }
         .borel-description p { margin: 5px 0; }
-        nav { background-color: #fefefe; padding: 10px; text-align: center; position: relative; }
-        nav ul { list-style: none; padding: 0; margin: 0; display: flex; justify-content: center; }
-        nav li { margin: 0 15px; }
-        nav a { text-decoration: none; color: black; font-weight: bold; }
-        nav a:hover { color: blue; }
-        .hamburger { display: none; cursor: pointer; position: absolute; top: 10px; left: 10px; }
-        .hamburger span { display: block; width: 25px; height: 3px; background: black; margin: 5px auto; }
-        @media (max-width: 600px) {
-            nav ul { flex-direction: column; display: none; }
-            nav ul.active { display: flex; }
-            nav li { margin: 10px 0; }
-            .hamburger { display: block; }
-        }
-
-        /* 최근 회차 카드 스타일 */
-        #latest-draw { 
-            max-width: 700px; 
-            margin: 30px auto; 
-            padding: 20px; 
-            background: #f8f9fa; 
-            border-radius: 12px; 
-            border: 2px solid #003087; 
-        }
-        #latest-numbers { 
-            display: flex; 
-            justify-content: center; 
-            flex-wrap: wrap; 
-            gap: 8px; 
-            font-size: 1.5em; 
-            margin: 15px 0; 
-        }
-        #latest-numbers span { 
-            background: #003087; 
-            color: white; 
-            padding: 10px 16px; 
-            border-radius: 50%; 
-        }
     </style>
 </head>
 <body onload="updateVisitorCount(); initCheckboxes(); loadHistory();">
@@ -85,16 +116,26 @@
             <li><a href="about.html">About</a></li>
             <li><a href="tax.html">TAX</a></li>
             <li><a href="top-prize.html">TOP 50</a></li>
-            <li><a href="statistics.html">Statistics</a></li>
+            <li><a href="statistics.html" style="color:#003087; font-weight:bold;">Statistics</a></li>
         </ul>
     </nav>
 
-    <!-- 최근 회차 당첨번호 카드 (번호 생성기 바로 위에 배치) -->
+    <!-- 최근 10회차 당첨번호 (토글) -->
     <div id="latest-draw">
-        <h2 style="margin:0 0 15px 0; color:#003087;">🔔 최신 회차 당첨번호</h2>
-        <p id="latest-round" style="font-size:1.1em; margin:0 0 15px 0; font-weight:bold;"></p>
-        <div id="latest-numbers"></div>
-        <p id="latest-bonus" style="margin:15px 0 0 0; font-size:1.1em; color:#d4af37; font-weight:bold;"></p>
+        <div class="toggle-header" onclick="toggleLatestDraw()">
+            🔔 최근 10회차 당첨번호
+            <span id="toggle-icon">▼</span>
+        </div>
+        <table id="latest-table">
+            <thead>
+                <tr>
+                    <th>회차</th>
+                    <th>당첨번호</th>
+                    <th>보너스</th>
+                </tr>
+            </thead>
+            <tbody id="latest-body"></tbody>
+        </table>
     </div>
 
     <h1>동행복권 번호 생성기 / 로또 번호 추출기 by borel's Law</h1>
@@ -182,23 +223,41 @@
             menu.classList.toggle('active');
         }
 
-        // 최근 회차 당첨번호 표시
+        // 최근 10회차 토글
+        function toggleLatestDraw() {
+            const table = document.getElementById('latest-table');
+            const icon = document.getElementById('toggle-icon');
+            if (table.style.display === 'none' || table.style.display === '') {
+                table.style.display = 'table';
+                icon.textContent = '▲';
+            } else {
+                table.style.display = 'none';
+                icon.textContent = '▼';
+            }
+        }
+
+        // 최근 10회차 데이터 로드
         fetch('lotto-data.json')
             .then(response => response.json())
             .then(data => {
-                const latest = data.draws[data.draws.length - 1];
-                document.getElementById('latest-round').innerHTML = 
-                    `제 <strong>${latest.round}</strong>회차 당첨번호`;
-                const numbersContainer = document.getElementById('latest-numbers');
-                numbersContainer.innerHTML = latest.numbers.map(num => 
-                    `<span>${num}</span>`
-                ).join('');
-                document.getElementById('latest-bonus').innerHTML = 
-                    `보너스 번호 : <strong style="font-size:1.4em;">${latest.bonus}</strong>`;
+                const latest10 = data.draws.slice(-10).reverse(); // 최신 10회차 역순
+                const tbody = document.getElementById('latest-body');
+                tbody.innerHTML = '';
+
+                latest10.forEach(draw => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>${draw.round}회</strong></td>
+                        <td>${draw.numbers.join(', ')}</td>
+                        <td style="color:#d4af37; font-weight:bold;">${draw.bonus}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
             })
             .catch(err => {
                 console.error(err);
-                document.getElementById('latest-draw').innerHTML = `<p style="color:red;">최신 회차 정보를 불러올 수 없습니다.</p>`;
+                document.getElementById('latest-body').innerHTML = 
+                    `<tr><td colspan="3" style="color:red;">데이터를 불러올 수 없습니다.</td></tr>`;
             });
 
         // ==================== 기존 스크립트 (원본 그대로 유지) ====================
