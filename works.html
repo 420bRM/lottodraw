@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Works — 빅아트 BIG ART</title>
+<meta name="description" content="빅아트 시그니처 컬렉션. 공간에 스며드는 LIVING, 공간을 규정하는 STATEMENT. 전 작품 자체 디자인, B0 대형 캔버스로 제작합니다.">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="빅아트 BIG ART">
+<meta property="og:title" content="Works — 빅아트 BIG ART">
+<meta property="og:description" content="공간에 스며드는 LIVING, 공간을 규정하는 STATEMENT.">
+<!-- TODO(도메인 확정 후): og:url · og:image · canonical -->
+
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --signature: #E8431E;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+  }
+
+  /* ── LIVING : 홈페이지와 이어지는 크림 톤 ── */
+  body[data-theme="living"] {
+    --bg: #eeeae2;
+    --bg-soft: #fbfaf7;
+    --fg: #1f1d1a;
+    --fg-mid: #6e6659;
+    --fg-dim: #a09889;
+    --hair: #ded8cd;
+    --shadow: 0 30px 56px -18px rgba(58,50,38,0.34), 0 6px 14px rgba(58,50,38,0.10);
+    --navbg: rgba(238,234,226,0.82);
+    --btn-bg: #1f1d1a;
+    --btn-fg: #fbfaf7;
+    --idx: rgba(31,29,26,0.055);
+  }
+
+  /* ── FEATURE : 작품이 주인공인 다크 톤 ── */
+  body[data-theme="feature"] {
+    --bg: #141311;
+    --bg-soft: #1c1a18;
+    --fg: #f2efe9;
+    --fg-mid: #a6a096;
+    --fg-dim: #736d64;
+    --hair: rgba(255,255,255,0.10);
+    --shadow: 0 26px 70px rgba(0,0,0,0.6);
+    --navbg: rgba(20,19,17,0.78);
+    --btn-bg: #f2efe9;
+    --btn-fg: #141311;
+    --idx: rgba(242,239,233,0.06);
+  }
+
+  html { scroll-behavior: smooth; scroll-padding-top: 70px; }
+
+  body {
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    transition: background 0.5s ease, color 0.5s ease;
+  }
+  a { color: inherit; text-decoration: none; }
+
+  /* ── NAV ── */
+  .nav {
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.1rem 1.5rem;
+    background: var(--navbg);
+    backdrop-filter: blur(14px);
+    border-bottom: 0.5px solid var(--hair);
+    transition: background 0.5s ease, border-color 0.5s ease;
+  }
+  .logo {
+    font-family: 'Fraunces', serif;
+    font-size: 20px; font-weight: 500; letter-spacing: 0.06em;
+    color: var(--fg);
+  }
+  .logo em { font-style: normal; color: var(--signature); }
+  .nav-cta {
+    position: relative;
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-size: 15px; font-weight: 400; letter-spacing: 0.01em;
+    display: inline-flex; align-items: baseline; gap: 8px;
+    color: var(--fg); opacity: 0.78;
+    padding-bottom: 3px;
+    transition: opacity 0.3s, gap 0.3s;
+  }
+  .nav-cta .ar {
+    font-family: 'Pretendard Variable', Pretendard, sans-serif;
+    font-style: normal; font-size: 12px;
+    transition: transform 0.3s;
+  }
+  .nav-cta::after {
+    content: ''; position: absolute; left: 0; bottom: 0;
+    width: 100%; height: 0.5px; background: currentColor;
+    transform: scaleX(0); transform-origin: right;
+    transition: transform 0.4s cubic-bezier(0.4,0,0.2,1);
+  }
+  .nav-cta:hover { opacity: 1; }
+  .nav-cta:hover::after { transform: scaleX(1); transform-origin: left; }
+  .nav-cta:hover .ar { transform: translateX(3px); }
+
+  /* ── HERO ── */
+  .w-hero { max-width: 1440px; margin: 0 auto; padding: 5rem 1.5rem 2.5rem; }
+  .eyebrow {
+    font-size: 11px; font-weight: 500; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--fg-dim); margin-bottom: 1.1rem;
+  }
+  .w-hero h1 {
+    font-family: 'Fraunces', serif; font-style: italic; font-weight: 500;
+    font-size: clamp(38px, 6vw, 74px);
+    letter-spacing: -0.005em; line-height: 1.08; margin-bottom: 1.2rem;
+  }
+  .w-hero .lede { font-size: 15px; color: var(--fg-mid); max-width: 640px; }
+
+  /* ── 카테고리 탭 ── */
+  .tabs {
+    max-width: 1440px; margin: 0 auto;
+    padding: 1.1rem 1.5rem 0;
+  }
+  .tabs-in {
+    display: flex; gap: 2.4rem;
+    border-bottom: 0.5px solid var(--hair);
+    background: var(--bg);
+    transition: background 0.5s ease;
+  }
+  .tab {
+    position: relative;
+    background: none; border: 0; cursor: pointer;
+    font-family: inherit; font-size: 13px; font-weight: 500;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--fg-dim); padding: 0 0 14px;
+    transition: color 0.25s;
+  }
+  .tab .n { font-size: 10px; opacity: 0.6; margin-left: 5px; letter-spacing: 0; }
+  .tab-link { text-decoration: none; display: inline-flex; align-items: baseline; }
+  .tab-link .go { font-size: 10px; margin-left: 7px; opacity: 0.5; transition: transform 0.25s, opacity 0.25s; }
+  .tab-link:hover .go { opacity: 1; transform: translate(2px,-2px); }
+
+  /* 페이지 전환 — 우측에서 흰 면이 밀고 들어옴 */
+  .wipe {
+    position: fixed; inset: 0; z-index: 999;
+    background: #fff;
+    transform: translateX(100%);
+    transition: transform 0.62s cubic-bezier(0.76,0,0.24,1);
+    pointer-events: none;
+  }
+  .wipe.on { transform: translateX(0); }
+
+  .tab-sep {
+    width: 0.5px; align-self: stretch; margin: 0 0.4rem 14px;
+    background: var(--hair);
+  }
+  .ed-badge {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-size: 11px; letter-spacing: 0.06em;
+    color: var(--signature);
+    border: 0.5px solid var(--hair);
+    background: rgba(232,67,30,0.07);
+    padding: 5px 12px; border-radius: 100px;
+    margin-bottom: 1rem;
+  }
+  .ed-badge::before {
+    content: ''; width: 4px; height: 4px; border-radius: 50%;
+    background: var(--signature);
+  }
+  .tab:hover { color: var(--fg-mid); }
+  .tab.on { color: var(--fg); }
+  .tab.on::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: -0.5px;
+    height: 1.5px; background: var(--fg);
+  }
+  .tab-note-wrap { max-width: 1440px; margin: 0 auto; padding: 1.8rem 1.5rem 0; }
+  .tab-note {
+    /* 작품 이미지 열과 같은 폭에 맞춤 */
+    max-width: calc(min(112vh, 1080px) / 1.4136);
+    font-size: 14px; line-height: 1.9; color: var(--fg-mid);
+  }
+  .tab-note .en {
+    margin-top: 0.5rem;
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-size: 13.5px; line-height: 1.7;
+    color: var(--fg-dim);
+  }
+
+  /* ── 작품 ── */
+  .works { max-width: 1440px; margin: 0 auto; padding: 0 1.5rem 2rem; }
+  .panel { display: none; }
+  .panel.on { display: block; animation: fade 0.45s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  .work {
+    display: grid; grid-template-columns: 1.35fr 0.65fr;
+    gap: 3.5rem; align-items: center;
+    padding: 4.5rem 0;
+    border-top: 0.5px solid var(--hair);
+  }
+  .work:first-child { border-top: 0; padding-top: 2rem; }
+
+  /* 이미지 캐러셀 */
+  .gal {
+    position: relative;
+    width: 100%;
+    max-width: calc(min(112vh, 1080px) / 1.4136);
+    aspect-ratio: 1030 / 1456;
+    border-radius: 2px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    background: var(--bg-soft);
+    transition: box-shadow 0.5s ease;
+  }
+  .gal-track { display: flex; height: 100%; transition: transform 0.45s cubic-bezier(0.4,0,0.2,1); }
+  .gal-slide { flex: 0 0 100%; height: 100%; position: relative; }
+  .gal-slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  /* 확대컷 대기 자리 */
+  .gal-slide.ph {
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg-soft);
+    border: 0.5px dashed var(--hair);
+  }
+  .gal-slide.ph span {
+    font-size: 12px; color: var(--fg-dim); text-align: center; line-height: 1.9;
+  }
+
+  .gal-nav {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 42px; height: 42px; border: 0; cursor: pointer;
+    background: rgba(0,0,0,0.28); backdrop-filter: blur(6px);
+    color: #fff; font-size: 17px; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity 0.25s, background 0.2s;
+  }
+  .gal:hover .gal-nav { opacity: 1; }
+  .gal-nav:hover { background: rgba(0,0,0,0.5); }
+  .gal-nav:disabled { opacity: 0 !important; cursor: default; }
+  .gal-prev { left: 0; border-radius: 0 3px 3px 0; }
+  .gal-next { right: 0; border-radius: 3px 0 0 3px; }
+
+  .gal-dots {
+    position: absolute; left: 0; right: 0; bottom: 16px;
+    display: flex; justify-content: center; gap: 7px;
+  }
+  .gal-dots button {
+    width: 6px; height: 6px; padding: 0; border-radius: 50%;
+    border: 0.5px solid rgba(255,255,255,0.75); background: transparent;
+    cursor: pointer; transition: background 0.2s, transform 0.2s;
+  }
+  .gal-dots button.on { background: rgba(255,255,255,0.9); transform: scale(1.3); }
+
+
+  /* 정보 */
+  .work-info { position: relative; }
+  .work-idx {
+    position: absolute;
+    right: -0.5rem; top: -3.6rem;
+    font-family: 'Fraunces', serif; font-style: italic; font-weight: 500;
+    font-size: clamp(76px, 9vw, 128px); line-height: 1;
+    color: var(--idx);
+    pointer-events: none; user-select: none;
+    transition: color 0.5s ease;
+  }
+  .work-info .series {
+    position: relative;
+    font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--fg-dim); margin-bottom: 0.9rem;
+  }
+  .work-info h2, .work-info .hook, .work-info .desc,
+  .work-info .desc-more, .work-info .spec, .work-info .work-cta { position: relative; }
+  .work-info h2 {
+    font-family: 'Fraunces', serif; font-weight: 500;
+    font-size: clamp(28px, 3.4vw, 40px);
+    letter-spacing: 0.005em; line-height: 1.15; margin-bottom: 0.9rem;
+  }
+  .work-info .hook {
+    font-size: 15.5px; color: var(--fg); opacity: 0.92; margin-bottom: 0.9rem;
+  }
+  .work-info .desc {
+    font-size: 14px; color: var(--fg-mid); line-height: 1.85;
+    margin-bottom: 0.55rem;
+  }
+  .work-info .desc p + p { margin-top: 0.85rem; }
+  .desc-clip {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .desc-more {
+    background: none; border: 0; padding: 0 0 2px;
+    font-family: inherit; font-size: 12.5px; letter-spacing: 0.02em;
+    color: var(--fg); opacity: 0.65; cursor: pointer;
+    border-bottom: 0.5px solid var(--fg-dim);
+    margin-bottom: 1.6rem;
+    transition: opacity 0.2s;
+  }
+  .desc-more:hover { opacity: 1; }
+
+  .spec {
+    border: 0.5px solid var(--hair); border-radius: var(--radius-md);
+    background: var(--bg-soft); padding: 1.2rem 1.4rem; margin-bottom: 1.4rem;
+    transition: background 0.5s ease, border-color 0.5s ease;
+  }
+  /* Statement는 작품 간 호흡을 더 길게 — 한 점씩 마주하는 리듬 */
+  body[data-theme="feature"] .work { padding: 6.5rem 0; }
+  body[data-theme="feature"] .work:first-child { padding-top: 2rem; }
+  .spec-row {
+    display: flex; justify-content: space-between; gap: 1rem;
+    padding: 7px 0; font-size: 12.5px;
+    border-bottom: 0.5px solid var(--hair);
+  }
+  .spec-row:last-child { border-bottom: 0; }
+  .spec-row .k { color: var(--fg-dim); letter-spacing: 0.04em; white-space: nowrap; }
+  .spec-row .v { color: var(--fg); text-align: right; }
+
+  .work-cta {
+    display: inline-block; font-size: 13px; font-weight: 500;
+    padding: 11px 22px; border-radius: var(--radius-sm);
+    background: var(--btn-bg); color: var(--btn-fg);
+    transition: opacity 0.15s;
+  }
+  .work-cta:hover { opacity: 0.82; }
+
+
+  /* ── 표면 마감 안내 ── */
+  .care { border-top: 0.5px solid var(--hair); }
+  .care-in { max-width: 1440px; margin: 0 auto; padding: 3.5rem 1.5rem; }
+  .care-title {
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-size: 20px; margin-bottom: 1.8rem; color: var(--fg);
+  }
+  .care-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2.4rem; }
+  .care-k { font-size: 13px; font-weight: 600; margin-bottom: 0.5rem; color: var(--fg); }
+  .care-grid p { font-size: 13px; line-height: 1.85; color: var(--fg-mid); }
+  @media (max-width: 860px) { .care-grid { grid-template-columns: 1fr; gap: 1.6rem; } }
+  @media (max-width: 640px) { .care-in { padding: 2.5rem 1.25rem; } }
+
+  /* ── 하단 CTA ── */
+  .end {
+    background: var(--bg-soft); border-top: 0.5px solid var(--hair);
+    margin-top: 2rem; padding: 4.5rem 1.5rem;
+    transition: background 0.5s ease;
+  }
+  .end-in { max-width: 1440px; margin: 0 auto; }
+  .end h2 { font-size: clamp(22px, 2.8vw, 30px); font-weight: 700; margin-bottom: 0.9rem; }
+  .end p { font-size: 14px; color: var(--fg-mid); max-width: 560px; margin-bottom: 1.8rem; }
+  .end-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn-l {
+    font-size: 13px; font-weight: 500; padding: 12px 24px;
+    border-radius: var(--radius-sm); background: var(--btn-bg); color: var(--btn-fg);
+    transition: opacity 0.15s;
+  }
+  .btn-l:hover { opacity: 0.85; }
+  .btn-d {
+    font-size: 13px; font-weight: 500; padding: 12px 24px;
+    border-radius: var(--radius-sm); border: 0.5px solid var(--hair); color: var(--fg-mid);
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .btn-d:hover { color: var(--fg); }
+
+  footer {
+    display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+    padding: 1.6rem 1.5rem; font-size: 12px; color: var(--fg-dim);
+    border-top: 0.5px solid var(--hair);
+  }
+
+  /* ── 반응형 ── */
+  @media (max-width: 860px) {
+    .work { grid-template-columns: 1fr; gap: 1.8rem; padding: 3rem 0; }
+    .gal { max-width: min(520px, 100%); }
+    .gal-nav { opacity: 1; width: 36px; height: 36px; background: rgba(0,0,0,0.22); }
+  }
+  @media (max-width: 640px) {
+    .nav { padding: 1rem 1.25rem; }
+    .w-hero { padding: 2.75rem 1.25rem 1.5rem; }
+    .tabs { padding: 0.9rem 1.25rem 0; }
+    .tabs-in { gap: 1.6rem; }
+    .tab { font-size: 12px; letter-spacing: 0.1em; }
+    .tab-note-wrap { padding: 1.1rem 1.25rem 0; }
+    .tab-note { max-width: 100%; font-size: 13px; }
+    .works { padding: 0 1.25rem 1rem; }
+    .gal { max-width: 100%; }
+    .work-idx { font-size: 62px; top: -2.6rem; right: 0; }
+    .end { padding: 3rem 1.25rem; }
+    .end-actions { flex-direction: column; }
+    .btn-l, .btn-d { text-align: center; }
+    footer { padding: 1.25rem; flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body data-theme="living">
+
+<nav class="nav">
+  <a class="logo" href="index.html">BIG <em>ART</em></a>
+  <a class="nav-cta" href="index.html#contact">Get the Catalog <span class="ar" aria-hidden="true">→</span></a>
+</nav>
+
+<header class="w-hero">
+  <div class="eyebrow">Signature Collection</div>
+  <h1>Works</h1>
+  <p class="lede">벽은 남는 자리가 아니라 공간의 마지막 결정입니다.
+     빅아트는 수를 늘리는 대신, 몇 해가 지나도 자리를 지킬 이미지만 남깁니다.</p>
+</header>
+
+<div class="tabs">
+  <div class="tabs-in" role="tablist">
+    <button class="tab on" role="tab" aria-selected="true"  data-tab="living">Living<span class="n">03</span></button>
+    <button class="tab"    role="tab" aria-selected="false" data-tab="feature">Feature<span class="n">02</span></button>
+    <span class="tab-sep" aria-hidden="true"></span>
+    <a class="tab tab-link" href="limited.html" id="toLimited">Annual Limited<span class="n">03</span><span class="go" aria-hidden="true">↗</span></a>
+  </div>
+</div>
+<div class="tab-note-wrap">
+  <div class="tab-note" id="tabNote">
+    <p class="ko">공간의 배경을 구성하는 작품입니다. 강렬한 시선을 유도하기보다 공간의 온도를 올립니다.</p>
+    <p class="en">Works that form the background of a space — raising its warmth rather than demanding attention.</p>
+  </div>
+</div>
+
+<main class="works">
+
+<!-- ══════════ LIVING ══════════ -->
+<section class="panel on" id="panel-living" role="tabpanel">
+
+  <article class="work">
+    <div class="gal" data-gal>
+      <div class="gal-track">
+        <div class="gal-slide"><img src="images/w-horizon-01.webp" alt="Horizon 26-01 — 수평으로 층을 이룬 색면 작품" loading="lazy"></div>
+        <div class="gal-slide ph"><span>확대컷 01<br>images/w-horizon-01-d1.webp</span></div>
+        <div class="gal-slide ph"><span>확대컷 02<br>images/w-horizon-01-d2.webp</span></div>
+        <div class="gal-slide ph"><span>확대컷 03<br>images/w-horizon-01-d3.webp</span></div>
+      </div>
+      <button class="gal-nav gal-prev" aria-label="이전 사진">‹</button>
+      <button class="gal-nav gal-next" aria-label="다음 사진">›</button>
+      <div class="gal-dots"></div>
+    </div>
+    <div class="work-info">
+      <div class="work-idx" aria-hidden="true">01</div>
+      <div class="series">Horizon Series · 색면</div>
+      <h2>Horizon 26-01</h2>
+      <p class="hook">하늘이 겹겹이 쌓인다.</p>
+      <div class="desc desc-clip"><p>붉은 계열과 청록이 수평으로 층을 이루는 색면 작품입니다. 멀리서 보면 노을이 내려앉은 지평선처럼 읽히고, 가까이 서면 물감이 밀려 쌓인 결이 층마다 다르게 드러납니다.</p><p>색이 선명하지만 구성은 단순합니다. 시선을 붙잡는 형태가 없어 오래 두고 보아도 눈이 피로해지지 않으며, 계절과 조명에 따라 같은 층이 다른 색으로 읽힙니다.</p><p>가로로 흐르는 구성이라 세로 캔버스임에도 벽을 넓어 보이게 합니다.</p></div>
+      <button class="desc-more" type="button">펼치기 +</button>
+      <div class="spec">
+        <div class="spec-row"><span class="k">규격</span><span class="v">B0 · 1,030 × 1,456 mm (세로)</span></div>
+        <div class="spec-row"><span class="k">마감</span><span class="v">프레임리스 캔버스 랩 · 측면 약 4cm</span></div>
+        <div class="spec-row"><span class="k">소재</span><span class="v">면천 아트캔버스 · 원목 스트레처</span></div>
+        <div class="spec-row"><span class="k">표면</span><span class="v">무광 바니쉬 코팅 · 유리 없음</span></div>
+        <div class="spec-row"><span class="k">가격</span><span class="v">950,000원 <span style="opacity:.6">(VAT 포함)</span></span></div>
+      </div>
+      <a class="work-cta" href="index.html#contact">이 작품 문의 →</a>
+    </div>
+  </article>
+
+  <article class="work">
+    <div class="gal" data-gal>
+      <div class="gal-track">
+        <div class="gal-slide"><img src="images/w-horizon-02.webp" alt="Horizon 26-02 — 흰 면과 짙은 청색이 만나는 색면 작품" loading="lazy"></div>
+        <div class="gal-slide ph"><span>확대컷 01<br>images/w-horizon-02-d1.webp</span></div>
+        <div class="gal-slide ph"><span>확대컷 02<br>images/w-horizon-02-d2.webp</span></div>
+        <div class="gal-slide ph"><span>확대컷 03<br>images/w-horizon-02-d3.webp</span></div>
+      </div>
+      <button class="gal-nav gal-prev" aria-label="이전 사진">‹</button>
+      <button class="gal-nav gal-next" aria-label="다음 사진">›</button>
+      <div class="gal-dots"></div>
+    </div>
+    <div class="work-info">
+      <div class="work-idx" aria-hidden="true">02</div>
+      <div class="series">Horizon Series · 색면</div>
+      <h2>Horizon 26-02</h2>
+      <p class="hook">흰 벽과 깊은 바다가 만나는 한 줄.</p>
+      <div class="desc desc-clip"><p>화면을 가로지르는 단 하나의 경계로 구성된 작품입니다. 위쪽은 회벽처럼 마른 흰 면, 아래쪽은 짙은 청색이 자리하며 그 사이의 선 하나가 전체를 결정합니다.</p><p>색 수를 최소로 줄인 대신 표면의 밀도를 남겼습니다. 흰 면에는 갈라짐과 얼룩이, 청색 면에는 긁힌 자국과 튄 흔적이 그대로 남아 단색이 아닌 깊이로 읽힙니다.</p><p>비어 있는 위쪽 면이 벽의 여백과 이어지며, 작품이 벽을 침범하지 않고 함께 놓입니다.</p></div>
+      <button class="desc-more" type="button">펼치기 +</button>
+      <div class="spec">
+        <div class="spec-row"><span class="k">규격</span><span class="v">B0 · 1,030 × 1,456 mm (세로)</span></div>
+        <div class="spec-row"><span class="k">마감</span><span class="v">프레임리스 캔버스 랩 · 측면 약 4cm</span></div>
+        <div class="spec-row"><span class="k">소재</span><span class="v">면천 아트캔버스 · 원목 스트레처</span></div>
+        <div class="spec-row"><span class="k">표면</span><span class="v">무광 바니쉬 코팅 · 유리 없음</span></div>
+        <div class="spec-row"><span class="k">가격</span><span class="v">950,000원 <span style="opacity:.6">(VAT 포함)</span></span></div>
+      </div>
+      <a class="work-cta" href="index.html#contact">이 작품 문의 →</a>
+    </div>
+  </article>
+
+  <article class="work">
+    <div class="gal" data-gal>
+      <div class="gal-track">
+        <div class="gal-slide"><img src="images/w-presence-02.webp" alt="Presence 26-02 — 빛을 받은 인물 작품" loading="lazy"></div>
+        <div class="gal-slide ph"><span>확대컷 01<br>images/w-presence-02-d1.webp</span></div>
+        <div class="gal-slide ph"><span>확대컷 02<br>images/w-presence-02-d2.webp</span></div>
+        <div class="gal-slide ph"><span>확대컷 03<br>images/w-presence-02-d3.webp</span></div>
+      </div>
+      <button class="gal-nav gal-prev" aria-label="이전 사진">‹</button>
+      <button class="gal-nav gal-next" aria-label="다음 사진">›</button>
+      <div class="gal-dots"></div>
+    </div>
+    <div class="work-info">
+      <div class="work-idx" aria-hidden="true">03</div>
+      <div class="series">Presence Series · 인물</div>
+      <h2>Presence 26-02</h2>
+      <p class="hook">고개를 든 순간, 빛이 얼굴 위로 쏟아진다.</p>
+      <div class="desc desc-clip"><p>두껍게 쌓인 질감이 빛의 방향을 그대로 드러내는 인물 작품입니다. 어두운 배경 덕분에 벽에 걸면 인물만 떠오르듯 보입니다.</p><p>정면에서 마주할 때보다 비스듬히 지나칠 때 인상이 더 오래 남습니다. 시선이 화면 밖 위쪽을 향하고 있어 보는 사람과 눈이 마주치지 않고, 그래서 매일 지나다니는 공간에 두어도 부담이 없습니다.</p><p>인물 작품이지만 색이 차분해 가구와 부딪히지 않습니다.</p></div>
+      <button class="desc-more" type="button">펼치기 +</button>
+      <div class="spec">
+        <div class="spec-row"><span class="k">규격</span><span class="v">B0 · 1,030 × 1,456 mm (세로)</span></div>
+        <div class="spec-row"><span class="k">마감</span><span class="v">프레임리스 캔버스 랩 · 측면 약 4cm</span></div>
+        <div class="spec-row"><span class="k">소재</span><span class="v">면천 아트캔버스 · 원목 스트레처</span></div>
+        <div class="spec-row"><span class="k">표면</span><span class="v">무광 바니쉬 코팅 · 유리 없음</span></div>
+        <div class="spec-row"><span class="k">가격</span><span class="v">950,000원 <span style="opacity:.6">(VAT 포함)</span></span></div>
+      </div>
+      <a class="work-cta" href="index.html#contact">이 작품 문의 →</a>
+    </div>
+  </article>
+
+</section>
+
+<!-- ══════════ FEATURE ══════════ -->
+<section class="panel" id="panel-feature" role="tabpanel">
+
+  <article class="work">
+    <div class="gal" data-gal>
+      <div class="gal-track">
+        <div class="gal-slide"><img src="images/w-presence-01.webp" alt="Presence 26-01 — 푸른 색면으로 구성된 인물 작품" loading="lazy"></div>
+        <div class="gal-slide ph"><span>확대컷 01<br>images/w-presence-01-d1.webp</span></div>
+        <div class="gal-slide ph"><span>확대컷 02<br>images/w-presence-01-d2.webp</span></div>
+        <div class="gal-slide ph"><span>확대컷 03<br>images/w-presence-01-d3.webp</span></div>
+      </div>
+      <button class="gal-nav gal-prev" aria-label="이전 사진">‹</button>
+      <button class="gal-nav gal-next" aria-label="다음 사진">›</button>
+      <div class="gal-dots"></div>
+    </div>
+    <div class="work-info">
+      <div class="work-idx" aria-hidden="true">01</div>
+      <div class="series">Presence Series · 인물</div>
+      <h2>Presence 26-01</h2>
+      <p class="hook">어둠이 내려앉기 직전, 얼굴만 푸르게 남는 시간.</p>
+      <div class="desc desc-clip"><p>검은 배경 위로 푸른 면들이 촘촘히 쌓여 하나의 옆얼굴을 이룹니다. 멀리서는 단정한 실루엣으로, 가까이서는 수천 개의 결로 두 번 읽히는 작품입니다.</p><p>푸른색의 채도가 높아 벽 전체의 인상을 바꿉니다. 주변에 다른 액자를 두지 않고 단독으로 걸 때 가장 강하게 작동하며, 어두운 벽이나 우드 패널 위에서 색이 한층 깊어집니다.</p><p>가까이 다가설수록 다른 그림이 되는 작품이라, 사람이 멈춰 설 수 있는 거리가 확보된 벽을 권합니다.</p></div>
+      <button class="desc-more" type="button">펼치기 +</button>
+      <div class="spec">
+        <div class="spec-row"><span class="k">규격</span><span class="v">B0 · 1,030 × 1,456 mm (세로)</span></div>
+        <div class="spec-row"><span class="k">마감</span><span class="v">프레임리스 캔버스 랩 · 측면 약 4cm</span></div>
+        <div class="spec-row"><span class="k">소재</span><span class="v">면천 아트캔버스 · 원목 스트레처</span></div>
+        <div class="spec-row"><span class="k">표면</span><span class="v">무광 바니쉬 코팅 · 유리 없음</span></div>
+        <div class="spec-row"><span class="k">가격</span><span class="v">950,000원 <span style="opacity:.6">(VAT 포함)</span></span></div>
+      </div>
+      <a class="work-cta" href="index.html#contact">이 작품 문의 →</a>
+    </div>
+  </article>
+
+  <article class="work">
+    <div class="gal" data-gal>
+      <div class="gal-track">
+        <div class="gal-slide"><img src="images/w-orbit-01.webp" alt="Orbit 26-01 — 쌓아 올린 사물 위의 인물 작품" loading="lazy"></div>
+        <div class="gal-slide ph"><span>확대컷 01<br>images/w-orbit-01-d1.webp</span></div>
+        <div class="gal-slide ph"><span>확대컷 02<br>images/w-orbit-01-d2.webp</span></div>
+        <div class="gal-slide ph"><span>확대컷 03<br>images/w-orbit-01-d3.webp</span></div>
+      </div>
+      <button class="gal-nav gal-prev" aria-label="이전 사진">‹</button>
+      <button class="gal-nav gal-next" aria-label="다음 사진">›</button>
+      <div class="gal-dots"></div>
+    </div>
+    <div class="work-info">
+      <div class="work-idx" aria-hidden="true">02</div>
+      <div class="series">Orbit Series · 서사</div>
+      <h2>Orbit 26-01</h2>
+      <p class="hook">아무도 없는 곳에서, 한 사람이 쌓아 올린 시간.</p>
+      <div class="desc desc-clip"><p>쌓아 올린 사물 더미 위에 홀로 앉은 인물을 담은 작품입니다. 금속과 유리의 반사, 옷의 무늬, 사물 하나하나의 색이 화면에 빼곡히 들어차 시선을 오래 붙듭니다.</p><p>볼 때마다 없던 것이 보입니다. 더미 사이에 끼워진 작은 사물들과 손에 든 것들이 각자의 이야기를 갖고 있어, 처음 본 사람도 한참을 들여다보게 됩니다.</p><p>사람들이 멈춰 서는 작품이라, 시선을 모아야 하는 벽에서 제 역할을 합니다.</p></div>
+      <button class="desc-more" type="button">펼치기 +</button>
+      <div class="spec">
+        <div class="spec-row"><span class="k">규격</span><span class="v">B0 · 1,030 × 1,456 mm (세로)</span></div>
+        <div class="spec-row"><span class="k">마감</span><span class="v">프레임리스 캔버스 랩 · 측면 약 4cm</span></div>
+        <div class="spec-row"><span class="k">소재</span><span class="v">면천 아트캔버스 · 원목 스트레처</span></div>
+        <div class="spec-row"><span class="k">표면</span><span class="v">무광 바니쉬 코팅 · 유리 없음</span></div>
+        <div class="spec-row"><span class="k">가격</span><span class="v">950,000원 <span style="opacity:.6">(VAT 포함)</span></span></div>
+      </div>
+      <a class="work-cta" href="index.html#contact">이 작품 문의 →</a>
+    </div>
+  </article>
+
+</section>
+
+</main>
+
+<section class="care">
+  <div class="care-in">
+    <div class="care-title">표면 마감에 대하여</div>
+    <div class="care-grid">
+      <div>
+        <div class="care-k">무광 바니쉬 코팅</div>
+        <p>표면 전체에 미술용 무광 바니쉬를 도포합니다. 스크래치와 지문, 습기로 인한 번짐을 막고 색을 보호합니다.</p>
+      </div>
+      <div>
+        <div class="care-k">유리가 없습니다</div>
+        <p>액자 유리를 쓰지 않아 조명이나 창의 반사가 화면에 맺히지 않습니다. 어느 각도에서 보아도 그림 자체가 보입니다.</p>
+      </div>
+      <div>
+        <div class="care-k">관리</div>
+        <p>마른 부드러운 천으로 가볍게 닦아내면 됩니다. 세제나 알코올은 사용하지 마시고, 직사광선이 오래 닿는 위치는 피해 주세요.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="end">
+  <div class="end-in">
+    <h2>공간에 맞는 작품을 찾아드립니다</h2>
+    <p>벽 사진과 크기를 알려주시면 어울리는 작품과 적정 사이즈를 함께 제안해 드립니다.
+       비율·사이즈 검토는 무료입니다.</p>
+    <div class="end-actions">
+      <a class="btn-l" href="index.html#contact">카탈로그 · 파트너 문의</a>
+      <a class="btn-d" href="consult.html">개인 공간 상담 신청 →</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span>© 2026 BIG ART · 월데코 코리아</span>
+  <span>사업자등록번호 226-27-62319 · <a href="mailto:walldecor.korea@gmail.com">walldecor.korea@gmail.com</a></span>
+</footer>
+
+<script>
+  /* ── 카테고리 전환 ── */
+  (function () {
+    var NOTE = {
+      living: {
+        ko: '공간의 배경을 구성하는 작품입니다. 강렬한 시선을 유도하기보다 공간의 온도를 올립니다.',
+        en: 'Works that form the background of a space — raising its warmth rather than demanding attention.'
+      },
+      feature: {
+        ko: '들어서는 순간 강렬한 시선을 유도합니다. 존재감을 발산하며 하나의 오브제 역할을 합니다.',
+        en: 'Works that draw the eye the moment you enter — present enough to stand as an object in itself.'
+      }
+    };
+    var tabs = document.querySelectorAll('.tab');
+    var note = document.getElementById('tabNote');
+
+    function go(key) {
+      tabs.forEach(function (t) {
+        var on = t.dataset.tab === key;
+        t.classList.toggle('on', on);
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+      document.querySelectorAll('.panel').forEach(function (p) {
+        p.classList.toggle('on', p.id === 'panel-' + key);
+      });
+      document.body.dataset.theme = key;
+      note.querySelector('.ko').textContent = NOTE[key].ko;
+      note.querySelector('.en').textContent = NOTE[key].en;
+      history.replaceState(null, '', '#' + key);
+    }
+
+    tabs.forEach(function (t) {
+      t.addEventListener('click', function () {
+        go(t.dataset.tab);
+        var y = document.querySelector('.tabs').offsetTop - 60;
+        if (window.scrollY > y) window.scrollTo({ top: y, behavior: 'smooth' });
+      });
+    });
+
+    if (location.hash === '#feature') go('feature');
+    else if (location.hash === '#living') go('living');
+  })();
+
+  /* ── Annual Limited 페이지 전환 ── */
+  (function () {
+    var link = document.getElementById('toLimited');
+    if (!link) return;
+    var wipe = document.createElement('div');
+    wipe.className = 'wipe';
+    document.body.appendChild(wipe);
+    link.addEventListener('click', function (e) {
+      if (e.metaKey || e.ctrlKey) return;   /* 새 탭 열기는 그대로 */
+      e.preventDefault();
+      wipe.classList.add('on');
+      setTimeout(function () { location.href = link.getAttribute('href'); }, 560);
+    });
+    /* 뒤로가기로 돌아왔을 때 흰 면이 남지 않도록 */
+    window.addEventListener('pageshow', function () { wipe.classList.remove('on'); });
+  })();
+
+  /* ── 설명 펼치기 ── */
+  (function () {
+    document.querySelectorAll('.desc-more').forEach(function (btn) {
+      var box = btn.previousElementSibling;
+      if (!box) return;
+      /* 잘릴 내용이 없으면 버튼 숨김 */
+      if (box.scrollHeight <= box.clientHeight + 2) { btn.style.display = 'none'; return; }
+      btn.addEventListener('click', function () {
+        var open = box.classList.toggle('desc-clip') === false;
+        btn.textContent = open ? '접기 −' : '펼치기 +';
+      });
+    });
+  })();
+
+  /* ── 작품별 이미지 캐러셀 ── */
+  (function () {
+    document.querySelectorAll('[data-gal]').forEach(function (gal) {
+      var track = gal.querySelector('.gal-track');
+      var slides = gal.querySelectorAll('.gal-slide');
+      var prev = gal.querySelector('.gal-prev');
+      var next = gal.querySelector('.gal-next');
+      var dots = gal.querySelector('.gal-dots');
+      var i = 0;
+
+      slides.forEach(function (_, n) {
+        var b = document.createElement('button');
+        b.setAttribute('aria-label', (n + 1) + '번째 사진');
+        if (n === 0) b.className = 'on';
+        b.addEventListener('click', function () { i = n; sync(); });
+        dots.appendChild(b);
+      });
+
+      function sync() {
+        track.style.transform = 'translateX(' + (-i * 100) + '%)';
+        dots.querySelectorAll('button').forEach(function (d, n) { d.classList.toggle('on', n === i); });
+        prev.disabled = i === 0;
+        next.disabled = i === slides.length - 1;
+      }
+      prev.addEventListener('click', function () { if (i > 0) { i--; sync(); } });
+      next.addEventListener('click', function () { if (i < slides.length - 1) { i++; sync(); } });
+
+      /* 터치 스와이프 */
+      var x0 = null;
+      gal.addEventListener('touchstart', function (e) { x0 = e.touches[0].clientX; }, { passive: true });
+      gal.addEventListener('touchend', function (e) {
+        if (x0 === null) return;
+        var dx = e.changedTouches[0].clientX - x0;
+        if (dx < -40 && i < slides.length - 1) { i++; sync(); }
+        if (dx > 40 && i > 0) { i--; sync(); }
+        x0 = null;
+      }, { passive: true });
+
+      sync();
+    });
+  })();
+</script>
+</body>
+</html>
