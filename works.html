@@ -77,7 +77,7 @@
   .nav {
     position: sticky; top: 0; z-index: 100;
     display: flex; align-items: center; justify-content: space-between;
-    padding: 1.1rem 1.5rem;
+    padding: 1.1rem 2.5rem;
     background: var(--navbg);
     backdrop-filter: blur(14px);
     border-bottom: 0.5px solid var(--hair);
@@ -411,8 +411,6 @@
 <header class="w-hero">
   <div class="eyebrow">Signature Collection</div>
   <h1>Works</h1>
-  <p class="lede">벽은 남는 자리가 아니라 공간의 마지막 결정입니다.
-     빅아트는 수를 늘리는 대신, 몇 해가 지나도 자리를 지킬 이미지만 남깁니다.</p>
 </header>
 
 <div class="tabs">
@@ -644,7 +642,7 @@
         en: 'Works that draw the eye the moment you enter — present enough to stand as an object in itself.'
       }
     };
-    var tabs = document.querySelectorAll('.tab');
+    var tabs = document.querySelectorAll('.tab:not(.tab-link)');  /* Annual Limited는 실제 링크이므로 제외 */
     var note = document.getElementById('tabNote');
 
     function go(key) {
