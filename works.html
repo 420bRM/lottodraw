@@ -267,6 +267,9 @@
   }
   /* 파노라마처럼 옆으로 긴 작품 — 가로로 스크롤한다 */
   .plate-scroll.is-wide { overflow-x: auto; overflow-y: hidden; }
+  /* 정방형처럼 전신이 한 화면에 들어오는 작품 — 스크롤할 것이 없다.
+     overscroll-behavior 를 풀어주지 않으면 그림 위에서 페이지 스크롤이 갇힌다. */
+  .plate-scroll.is-fit { overflow: hidden; overscroll-behavior: auto; }
   .plate-scroll::-webkit-scrollbar { display: none; }
   /* 좌측부터 [미리보기 열][간격][그림] 순. 미리보기는 판면 좌측선(Back 글씨 선)에 붙는다. */
   .plate {
@@ -282,10 +285,13 @@
     transition: opacity 0.25s ease;
   }
   /* 미리보기 열 — 그림 왼쪽. 점은 그림과 맞닿는 안쪽(오른쪽)에 오도록 뒤집는다. */
+  /* 폭을 판면 좌측 자리(--side-w)만큼 고정하고 안쪽(오른쪽) 끝에 붙인다.
+     컷이 많아 미리보기 열이 좁아져도 점과 그림 사이 간격이 벌어지지 않는다. */
   .plate-side {
     position: absolute; top: var(--img-top); z-index: 2;
-    left: 0;
-    display: flex; flex-direction: row-reverse; align-items: center; gap: 10px;
+    left: 0; width: var(--side-w, 237px);
+    display: flex; flex-direction: row-reverse; justify-content: flex-start;
+    align-items: center; gap: 10px;
   }
   /* 점 인디케이터 — 비활성은 테두리만, 활성은 내부가 채워짐 */
   .plate-dots {
@@ -301,7 +307,7 @@
   .plate-dots button.on { background: var(--fg); opacity: 0.7; }
   /* 미리보기 — 그림 우측, 원본 색상 그대로 노출한다 */
   .plate-thumbs {
-    width: 220px;
+    width: 220px; max-width: 100%;
     display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
   }
   .plate-thumbs button {
@@ -822,7 +828,7 @@
       </button>
       <button class="pick" type="button" data-cat="feature" data-group="세로"
               data-full="images/works/VA-009_2026-08-09.webp" data-ratio="1415/2000"
-              data-detail="images/works/detail/VA-009_2026-08-09-d1.webp" data-more="images/works/detail/VA-009_2026-08-09-d2.webp, images/works/detail/VA-009_2026-08-09-d3.webp"
+              data-detail="images/works/detail/VA-009_2026-08-09-d1.webp" data-more="images/works/detail/VA-009_2026-08-09-d2.webp, images/works/detail/VA-009_2026-08-09-d3.webp, images/works/detail/VA-009_2026-08-09-d4.webp, images/works/detail/VA-009_2026-08-09-d5.webp"
               data-title="색을 입은 옆모습" data-series="VA-009_2026-08-09">
         <span class="pick-no">09</span>
         <img src="images/works/thumb/VA-009_2026-08-09.webp" alt="색을 입은 옆모습" loading="lazy">
@@ -852,7 +858,7 @@
       </button>
       <button class="pick" type="button" data-cat="feature" data-group="세로"
               data-full="images/works/VA-013_2026-08-18.webp" data-ratio="1415/2000"
-              data-detail="images/works/detail/VA-013_2026-08-18-d1.webp" data-more="images/works/detail/VA-013_2026-08-18-d2.webp, images/works/detail/VA-013_2026-08-18-d3.webp"
+              data-detail="images/works/detail/VA-013_2026-08-18-d1.webp" data-more="images/works/detail/VA-013_2026-08-18-d2.webp, images/works/detail/VA-013_2026-08-18-d3.webp, images/works/detail/VA-013_2026-08-18-d4.webp, images/works/detail/VA-013_2026-08-18-d5.webp"
               data-title="붉은 옷의 인물" data-series="VA-013_2026-08-18" data-limited="1">
         <span class="pick-no">13</span>
         <span class="pick-lim">limited</span>
@@ -874,7 +880,7 @@
       </button>
       <button class="pick" type="button" data-cat="feature" data-group="세로"
               data-full="images/works/V34-001_2026-05-30.webp" data-ratio="1506/2000"
-              data-detail="images/works/detail/V34-001_2026-05-30-d1.webp" data-more="images/works/detail/V34-001_2026-05-30-d2.webp, images/works/detail/V34-001_2026-05-30-d3.webp"
+              data-detail="images/works/detail/V34-001_2026-05-30-d1.webp" data-more="images/works/detail/V34-001_2026-05-30-d2.webp, images/works/detail/V34-001_2026-05-30-d3.webp, images/works/detail/V34-001_2026-05-30-d4.webp"
               data-title="쌓아 올린 자리" data-series="V34-001_2026-05-30" data-limited="1">
         <span class="pick-no">16</span>
         <span class="pick-lim">limited</span>
@@ -896,21 +902,21 @@
       </button>
       <button class="pick" type="button" data-cat="living" data-group="세로"
               data-full="images/works/V34-004_2026-07-23.webp" data-ratio="1506/2000"
-              data-detail="images/works/detail/V34-004_2026-07-23-d1.webp" data-more="images/works/detail/V34-004_2026-07-23-d2.webp, images/works/detail/V34-004_2026-07-23-d3.webp"
+              data-detail="images/works/detail/V34-004_2026-07-23-d1.webp" data-more="images/works/detail/V34-004_2026-07-23-d2.webp, images/works/detail/V34-004_2026-07-23-d3.webp, images/works/detail/V34-004_2026-07-23-d4.webp"
               data-title="물결이 스민 자국" data-series="V34-004_2026-07-23">
         <span class="pick-no">19</span>
         <img src="images/works/thumb/V34-004_2026-07-23.webp" alt="물결이 스민 자국" loading="lazy">
       </button>
       <button class="pick" type="button" data-cat="feature" data-group="세로"
               data-full="images/works/V34-005_2026-09-07.webp" data-ratio="1506/2000"
-              data-detail="images/works/detail/V34-005_2026-09-07-d1.webp" data-more="images/works/detail/V34-005_2026-09-07-d2.webp, images/works/detail/V34-005_2026-09-07-d3.webp"
+              data-detail="images/works/detail/V34-005_2026-09-07-d1.webp" data-more="images/works/detail/V34-005_2026-09-07-d2.webp, images/works/detail/V34-005_2026-09-07-d3.webp, images/works/detail/V34-005_2026-09-07-d4.webp"
               data-title="두꺼운 색 I" data-series="V34-005_2026-09-07">
         <span class="pick-no">20</span>
         <img src="images/works/thumb/V34-005_2026-09-07.webp" alt="두꺼운 색 I" loading="lazy">
       </button>
       <button class="pick" type="button" data-cat="feature" data-group="세로"
               data-full="images/works/V34-006_2026-09-07.webp" data-ratio="1506/2000"
-              data-detail="images/works/detail/V34-006_2026-09-07-d1.webp" data-more="images/works/detail/V34-006_2026-09-07-d2.webp, images/works/detail/V34-006_2026-09-07-d3.webp"
+              data-detail="images/works/detail/V34-006_2026-09-07-d1.webp" data-more="images/works/detail/V34-006_2026-09-07-d2.webp, images/works/detail/V34-006_2026-09-07-d3.webp, images/works/detail/V34-006_2026-09-07-d4.webp"
               data-title="두꺼운 색 II" data-series="V34-006_2026-09-07">
         <span class="pick-no">21</span>
         <img src="images/works/thumb/V34-006_2026-09-07.webp" alt="두꺼운 색 II" loading="lazy">
@@ -954,7 +960,7 @@
       </button>
       <button class="pick" type="button" data-cat="feature" data-group="정방형"
               data-full="images/works/SQ-005_2026-08-26.webp" data-ratio="2000/2000"
-              data-detail="images/works/detail/SQ-005_2026-08-26-d1.webp" data-more="images/works/detail/SQ-005_2026-08-26-d2.webp, images/works/detail/SQ-005_2026-08-26-d3.webp"
+              data-detail="images/works/detail/SQ-005_2026-08-26-d1.webp" data-more="images/works/detail/SQ-005_2026-08-26-d2.webp, images/works/detail/SQ-005_2026-08-26-d3.webp, images/works/detail/SQ-005_2026-08-26-d4.webp"
               data-title="휘도는 하늘" data-series="SQ-005_2026-08-26">
         <span class="pick-no">27</span>
         <img src="images/works/thumb/SQ-005_2026-08-26.webp" alt="휘도는 하늘" loading="lazy">
@@ -975,14 +981,14 @@
       </button>
       <button class="pick" type="button" data-cat="living" data-group="파노라마"
               data-full="images/works/W21-001_2026-05-26.webp" data-ratio="2000/857"
-              data-detail="images/works/detail/W21-001_2026-05-26-d1.webp" data-more="images/works/detail/W21-001_2026-05-26-d2.webp, images/works/detail/W21-001_2026-05-26-d3.webp"
+              data-detail="images/works/detail/W21-001_2026-05-26-d1.webp" data-more="images/works/detail/W21-001_2026-05-26-d2.webp, images/works/detail/W21-001_2026-05-26-d3.webp, images/works/detail/W21-001_2026-05-26-d4.webp, images/works/detail/W21-001_2026-05-26-d5.webp"
               data-title="면과 면" data-series="W21-001_2026-05-26">
         <span class="pick-no">30</span>
         <img src="images/works/thumb/W21-001_2026-05-26.webp" alt="면과 면" loading="lazy">
       </button>
       <button class="pick" type="button" data-cat="feature" data-group="파노라마"
               data-full="images/works/W21-002_2026-06-04.webp" data-ratio="2000/857"
-              data-detail="images/works/detail/W21-002_2026-06-04-d1.webp" data-more="images/works/detail/W21-002_2026-06-04-d2.webp, images/works/detail/W21-002_2026-06-04-d3.webp"
+              data-detail="images/works/detail/W21-002_2026-06-04-d1.webp" data-more="images/works/detail/W21-002_2026-06-04-d2.webp, images/works/detail/W21-002_2026-06-04-d3.webp, images/works/detail/W21-002_2026-06-04-d4.webp, images/works/detail/W21-002_2026-06-04-d5.webp"
               data-title="우주의 꽃다발" data-series="W21-002_2026-06-04" data-limited="1">
         <span class="pick-no">31</span>
         <span class="pick-lim">limited</span>
@@ -1411,9 +1417,19 @@
         var boxW  = Math.max(0, scroll.clientWidth - 245);
 
         var imgW, imgH;
-        if (RATIO >= 1) {
-          imgW = boxW;                             /* 폭을 꽉 채운다 */
+        if (RATIO > 1.08) {
+          /* 세로 대형(B0·3:4·2:3) — 폭을 꽉 채우고 넘치는 만큼 아래로 읽는다 */
+          imgW = boxW;
           imgH = Math.round(boxW * RATIO);
+        } else if (RATIO >= 0.92) {
+          /* 정방형 — 전신이 한 화면에 들어오게 맞춘다.
+             폭을 채웠을 때 창보다 높으면 높이 기준으로 다시 잡는다. */
+          imgW = boxW;
+          imgH = Math.round(boxW * RATIO);
+          if (winH > 0 && imgH > winH) {
+            imgH = winH;
+            imgW = Math.round(winH / RATIO);
+          }
         } else {
           var S = Math.max(0, Math.min(boxW, winH));   /* 파노라마는 높이를 창에 맞춘다 */
           imgH = S;
@@ -1433,9 +1449,12 @@
         stage.style.flex = '0 0 auto';
         stage.style.height = winH + 'px';
 
-        /* 넘치는 방향에 따라 스크롤 방향을 정한다 */
+        /* 넘치는 방향에 따라 스크롤 방향을 정한다.
+           어느 쪽으로도 넘치지 않으면 스크롤을 아예 끈다(정방형). */
         var wide = imgW > boxW + 1;
+        var tall = imgH > winH + 1;
         scroll.classList.toggle('is-wide', wide);
+        scroll.classList.toggle('is-fit', !wide && !tall);
         scroll.scrollLeft = 0;
         scroll.scrollTop = 0;
         if (window.plateCuePaint) window.plateCuePaint();
@@ -1494,13 +1513,25 @@
       if (sc) sc.scrollTop = 0;
       var single = list.length < 2;
 
-      /* 미리보기(1번=작품 원본, 2~4번=확대컷) + 점 인디케이터를 함께 채운다 */
+      /* 미리보기(1번=작품 원본, 그 뒤는 확대컷) + 점 인디케이터를 함께 채운다.
+         확대컷은 작품마다 개수가 다르므로(최대 6장) 있는 만큼 모두 채운다. */
       thumbs.innerHTML = '';
       if (dotsEl) dotsEl.innerHTML = '';
       if (side) side.style.display = single ? 'none' : '';
       if (single) return;
 
-      list.slice(0, 4).forEach(function (src, n) {
+      /* 컷이 많으면 미리보기 열이 그림보다 길어진다 — 열 폭을 줄여 안에 들어오게 한다 */
+      (function () {
+        var st = document.getElementById('plateStage');
+        var imgH = st ? parseFloat(getComputedStyle(st).getPropertyValue('--img-h')) : 0;
+        var rows = Math.ceil(list.length / 2);
+        if (!imgH || rows < 3) { thumbs.style.width = ''; return; }
+        var thumbH = (imgH - (rows - 1) * 8) / rows;
+        var colW   = Math.floor(thumbH * (1030 / 1456) * 2 + 8);
+        thumbs.style.width = Math.max(120, Math.min(220, colW)) + 'px';
+      })();
+
+      list.forEach(function (src, n) {
         var b = document.createElement('button');
         b.type = 'button';
         b.setAttribute('aria-label', n === 0 ? '작품 전체' : '확대컷 ' + n);
