@@ -194,6 +194,32 @@
         const clickKey = 'clickCount_' + today;
         const historyKey = 'numberHistory_' + today;
 
+        // localStorage 래퍼: getItem 이 null 일 때 대비, 사파리 프라이빗 모드의
+        // setItem 예외까지 여기서 흡수한다. 이 파일의 다른 코드는 localStorage 를
+        // 직접 건드리지 않는다.
+        function storageGet(key, fallback) {
+            try {
+                const v = localStorage.getItem(key);
+                return v === null ? fallback : v;
+            } catch (e) {
+                return fallback;
+            }
+        }
+        function storageSet(key, value) {
+            try {
+                localStorage.setItem(key, value);
+            } catch (e) {
+                // 사파리 프라이빗 모드 등에서 던질 수 있음 — 무시하고 계속 진행
+            }
+        }
+        function readHistory() {
+            try {
+                return JSON.parse(storageGet(historyKey, '[]'));
+            } catch (e) {
+                return [];
+            }
+        }
+
         function initCheckboxes() {
             for (let i = 1; i <= 16; i++) {
                 document.getElementById(`pattern${i}`).checked = true;
@@ -205,21 +231,21 @@
             valueSpan.innerText = slider.value;
         }
         function updateVisitorCount() {
-            let visitorCount = parseInt(localStorage.getItem(visitorKey) || 0) + 1;
-            localStorage.setItem(visitorKey, visitorCount);
+            let visitorCount = parseInt(storageGet(visitorKey, '0')) + 1;
+            storageSet(visitorKey, visitorCount);
             updateDisplay();
         }
         function updateClickCount() {
-            let clickCount = parseInt(localStorage.getItem(clickKey) || 0) + 1;
-            localStorage.setItem(clickKey, clickCount);
+            let clickCount = parseInt(storageGet(clickKey, '0')) + 1;
+            storageSet(clickKey, clickCount);
             updateDisplay();
         }
         function updateDisplay() {
-            let clickCount = localStorage.getItem(clickKey) || 0;
+            let clickCount = storageGet(clickKey, '0');
             document.getElementById('visitor-count').innerText = `오늘 번호 생성 클릭 횟수: ${clickCount}회`;
         }
         function loadHistory() {
-            const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
+            const history = readHistory();
             const tbody = document.getElementById('history-body');
             tbody.innerHTML = '';
             for (let i = history.length - 1; i >= 0; i--) {
@@ -233,10 +259,10 @@
             }
         }
         function saveHistory(numStr) {
-            let history = JSON.parse(localStorage.getItem(historyKey) || '[]');
+            let history = readHistory();
             history.push(numStr);
             if (history.length > 20) history.shift();
-            localStorage.setItem(historyKey, JSON.stringify(history));
+            storageSet(historyKey, JSON.stringify(history));
             loadHistory();
         }
         function isPrime(n) {
