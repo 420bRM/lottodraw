@@ -285,7 +285,18 @@
             const resultDiv = document.getElementById('result');
             const logDiv = document.getElementById('log');
             resultDiv.innerText = '';
-            logDiv.innerHTML = '<strong>생성 과정 로그:</strong><br>';
+            // 시도 로그를 배열에 모아 두고 마지막에 한 번만 그린다 (최대 10,000회
+            // 반복마다 innerHTML 을 재파싱하면 조건이 빡빡할 때 탭이 멎는다).
+            // 화면에는 최근 50줄만 남긴다.
+            const logLines = [];
+            function renderLog() {
+                const shown = logLines.slice(-50);
+                logDiv.innerHTML = '<strong>생성 과정 로그' +
+                    (logLines.length > shown.length ? ` (최근 ${shown.length}줄)` : '') +
+                    ':</strong><br>' + shown.join('<br>');
+                logDiv.scrollTop = logDiv.scrollHeight;
+            }
+            renderLog();
             let includeNums = [];
             if (document.getElementById('include-active').checked) {
                 const includeNum = parseInt(document.getElementById('include-slider').value);
@@ -321,15 +332,16 @@
                 const numStr = numbers.join(', ');
                 const invalidReason = checkInvalidPattern(numbers, checkedPatternIds);
                 if (invalidReason) {
-                    logDiv.innerHTML += `시도 ${attempts}: ${numStr} - ${invalidReason} 패턴으로 제외<br>`;
+                    logLines.push(`시도 ${attempts}: ${numStr} - ${invalidReason} 패턴으로 제외`);
                     continue;
                 }
                 resultDiv.innerText = `생성된 번호: ${numStr}\n(이 번호는 선택된 특수 패턴을 피했습니다.)`;
-                logDiv.innerHTML += `시도 ${attempts}: ${numStr} - 유효하여 선택됨<br>`;
-                logDiv.scrollTop = logDiv.scrollHeight;
+                logLines.push(`시도 ${attempts}: ${numStr} - 유효하여 선택됨`);
+                renderLog();
                 saveHistory(numStr);
                 return;
             }
+            renderLog();
             resultDiv.innerText = '조건을 만족하는 번호를 찾지 못했습니다.';
         }
     </script>
