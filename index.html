@@ -201,7 +201,7 @@
             <tbody id="history-body"></tbody>
         </table>
     </div>
-    <!-- 최근 10회차 당첨번호 (1222회부터 1213회까지) -->
+    <!-- 최근 10회차 당첨번호 -->
     <div id="latest-draw">
         <h3>
             <button type="button" id="latest-toggle" aria-expanded="false" aria-controls="latest-table">
@@ -245,11 +245,11 @@
             document.getElementById('latest-toggle').setAttribute('aria-expanded', open ? 'true' : 'false');
         }
 
-        // 최근 10회차 데이터 로드 (1222회 ~ 1213회)
+        // 최근 10회차 데이터 로드
         fetch('lotto-data.json')
             .then(response => response.json())
             .then(data => {
-                // draws 배열은 최신 회차(1222회)가 index 0에 위치하므로 앞 10개가 정확히 최근 10회차입니다.
+                // draws 는 최신 회차가 index 0 이라 앞 10개가 그대로 최근 10회차다.
                 const latest10 = data.draws.slice(0, 10);
                 const tbody = document.getElementById('latest-body');
                 tbody.innerHTML = '';
@@ -270,7 +270,6 @@
 
         // ==================== 기존 기능 ====================
         const today = new Date().toISOString().split('T')[0];
-        const visitorKey = 'visitorCount_' + today;
         const clickKey = 'clickCount_' + today;
         const historyKey = 'numberHistory_' + today;
 
@@ -408,11 +407,6 @@
             excludeSet.clear();
             document.getElementById('picker-warning').textContent = '';
             renderPicker();
-        }
-        function updateVisitorCount() {
-            let visitorCount = parseInt(storageGet(visitorKey, '0')) + 1;
-            storageSet(visitorKey, visitorCount);
-            updateDisplay();
         }
         function updateClickCount() {
             let clickCount = parseInt(storageGet(clickKey, '0')) + 1;
@@ -568,7 +562,7 @@
             buildGrid();
             renderPicker();
             initCheckboxes();
-            updateVisitorCount();
+            updateDisplay();
             loadHistory();
             document.getElementById('generate-btn').addEventListener('click', generateNumbers);
             document.getElementById('reset-picker').addEventListener('click', resetPicker);
