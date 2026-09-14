@@ -23,8 +23,9 @@
         nav a { text-decoration: none; color: black; font-weight: bold; }
         nav a:hover { color: #003087; }
         #nav-menu li:first-child a { color: #003087; font-weight: bold; }
-        .hamburger { display: none; cursor: pointer; position: absolute; top: 18px; left: 15px; }
+        .hamburger { display: none; cursor: pointer; position: absolute; top: 18px; left: 15px; border: none; background: none; padding: 0; }
         .hamburger span { display: block; width: 25px; height: 3px; background: black; margin: 5px auto; }
+        #latest-toggle { font: inherit; color: inherit; border: none; background: none; cursor: pointer; padding: 0; }
         #latest-draw, #history { max-width: 600px; margin: 40px auto; text-align: center; }
         #latest-draw h3, #history h3 { font-size: 1.3em; margin-bottom: 10px; color: #333; cursor: pointer; }
         #latest-table, #history-table { width: 100%; margin: 0 auto; border-collapse: collapse; table-layout: fixed; }
@@ -33,7 +34,32 @@
         #latest-table { display: none; }
         #latest-table td:nth-child(2) { width: 42%; }
         #latest-table td:nth-child(2) span { display: inline-block; width: 14%; text-align: center; }
-        #result { font-size: 24px; margin-top: 20px; color: green; }
+        /* 히어로 — 페이지를 열면 공 6개가 놓일 자리가 먼저 보인다 */
+        #hero { margin: 24px auto 8px; }
+        #result-balls { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin: 0 auto 16px; padding: 0 16px; }
+        .ball {
+            width: 56px; height: 56px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; font-weight: bold; font-variant-numeric: tabular-nums;
+            background: #fafafa; color: #ccc; border: 2px dashed #e0e0e0;
+        }
+        .ball.filled { color: #fff; border: 2px solid transparent; animation: ball-pop .28s ease-out both; }
+        .ball.filled[data-band="1"] { background: #fbc400; }
+        .ball.filled[data-band="2"] { background: #69c8f2; }
+        .ball.filled[data-band="3"] { background: #ff7272; }
+        .ball.filled[data-band="4"] { background: #aaaaaa; }
+        .ball.filled[data-band="5"] { background: #b0d840; }
+        @keyframes ball-pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @media (prefers-reduced-motion: reduce) { .ball.filled { animation: none; } }
+        #result { font-size: 1.05em; margin: 0 auto 16px; max-width: 600px; padding: 0 16px; color: #555; }
+        #result.error { color: #c00; }
+        #generate-btn { font-size: 1.1em; font-weight: bold; padding: 12px 32px; border: none; border-radius: 8px; background: #003087; color: #fff; cursor: pointer; }
+        #generate-btn:hover { background: #002266; }
+        .lead { max-width: 600px; margin: 20px auto; padding: 0 16px; color: #444; }
+        @media (max-width: 400px) {
+            .ball { width: 44px; height: 44px; font-size: 18px; }
+            #result-balls { gap: 6px; }
+        }
         #log { margin-top: 20px; text-align: left; max-width: 600px; margin: 20px auto; border: 1px solid #ccc; padding: 10px; background: #f9f9f9; overflow-y: auto; max-height: 300px; }
         #patterns, #picker { margin-top: 20px; text-align: left; max-width: 600px; margin: 20px auto; }
         #visitor-count { margin-top: 40px; font-size: 16px; color: gray; }
@@ -86,11 +112,11 @@
         }
     </style>
 </head>
-<body onload="updateVisitorCount(); initCheckboxes(); buildGrid(); renderPicker(); loadHistory();">
+<body>
     <nav>
-        <div class="hamburger" onclick="toggleMenu()">
+        <button type="button" class="hamburger" id="hamburger" aria-label="메뉴 열기" aria-expanded="false" aria-controls="nav-menu">
             <span></span><span></span><span></span>
-        </div>
+        </button>
         <ul id="nav-menu">
             <li><a href="index.html">Home</a></li>
             <li><a href="about.html">About</a></li>
@@ -100,8 +126,25 @@
         </ul>
     </nav>
     <h1>동행복권 번호 생성기 / 로또 번호 추출기 by borel's Law</h1>
-    <p>버튼을 클릭하여 새로운 번호를 생성하세요. 해당 프로그램은 정의될 수 있는 특수 패턴을 배제합니다. 아래 체크박스로 배제할 패턴을 선택하세요 (기본: 모두 체크).</p>
-    <div class="borel-description">
+
+    <section id="hero">
+        <div id="result-balls"></div>
+        <p id="result" role="status" aria-live="polite">버튼을 누르면 여기에 번호가 채워집니다.</p>
+        <button type="button" id="generate-btn">번호 생성</button>
+    </section>
+
+    <p class="lead">
+        이 도구는 정의된 16개 특수 패턴에 걸리는 조합을 걸러냅니다.
+        아래에서 배제할 패턴과 꼭 포함하거나 제외할 숫자를 고를 수 있습니다.
+    </p>
+    <p style="margin-top: 30px; font-size: 1.1em;">
+        <strong>당첨되면 얼마 받을 수 있을까?</strong><br>
+        <a href="tax.html" style="color: #0066cc; font-weight: bold; text-decoration: underline;">
+            → 실수령액 계산기 바로가기
+        </a>
+    </p>
+    <details class="borel-description">
+        <summary>보렐의 법칙이란? (이 사이트가 특수 패턴을 배제하는 이유)</summary>
         <p>※해당 사이트는 보렐의 법칙을 아이디어로 삼아 만들어 졌습니다.</p>
         <p>보렐의 법칙(Borel's Law)이란 "확률이 극도로 낮은 사건은 현실적으로 절대로 일어나지 않는다"는 경험적 원칙으로</p>
         <p>수학자 에밀 보렐(Émile Borel)이 제안했으며, 아무리 많은 시행을 해도 발생 가능성이 0에 가까운 특수한 경우는 무시하고 불가능하다고 간주해야 한다는 개념입니다.</p>
@@ -109,15 +152,11 @@
         <p>(같은 생각으로 복권의 모든 당첨번호가 소수이거나 제곱수일 가능성은 일어나지 않을 특수한 경우로 간주합니다)</p>
         <p>로또 번호 조합 수는 45개 중 6개를 선택하는 조합으로, 총 8,145,060개이나 </p>
         <p>정의된 16개 특수 패턴을 모두 적용해 제외할 경우 1,561,694개(약 19.17%)가 제외되고, 남는 조합은 6,583,366개(약 80.83%)입니다. </p>
-    </div>
-    <button onclick="generateNumbers()">번호 생성</button>
-    <div id="result"></div>
-    <p style="margin-top: 30px; font-size: 1.1em;">
-        <strong>당첨되면 얼마 받을 수 있을까?</strong><br>
-        <a href="tax.html" style="color: #0066cc; font-weight: bold; text-decoration: underline;">
-            → 실수령액 계산기 바로가기
-        </a>
-    </p>
+        <p><strong>패턴을 걸러낸다고 당첨 확률이 올라가지는 않습니다.</strong> 추첨은 조합마다 같은 확률이고,
+        680만 개 중에서 뽑든 810만 개 중에서 뽑든 내가 쥔 한 장이 맞을 확률은 1/8,145,060 그대로입니다.
+        이 도구가 하는 일은 당첨됐을 때 유난히 이상해 보이는 조합, 그리고 사람이 직접 고르면 몰리기 쉬운
+        조합을 피하는 것입니다. 뒤쪽은 의미가 있습니다 — 1등이 갈릴 때 나눠 가질 사람이 줄어들 수 있습니다.</p>
+    </details>
     <div id="log"></div>
     <div id="picker">
         <h3>포함할 숫자 / 제외할 숫자 고르기</h3>
@@ -133,22 +172,22 @@
     </div>
     <div id="patterns">
         <h3>배제할 특수 패턴 선택 (총 16개):</h3>
-        <div class="pattern-item"><input type="checkbox" id="pattern1"> 6개 숫자가 연속적으로 배열된 경우 (예: 10,11,12,13,14,15)</div>
-        <div class="pattern-item"><input type="checkbox" id="pattern2"> 모든 숫자가 1~15 범위 내에 집중된 경우</div>
-        <div class="pattern-item"><input type="checkbox" id="pattern3"> 모든 숫자가 1~20 범위 내에 집중된 경우</div>
-        <div class="pattern-item"><input type="checkbox" id="pattern4"> 모든 숫자가 1~31 범위 내에 집중된 경우</div>
-        <div class="pattern-item"><input type="checkbox" id="pattern5"> 모든 숫자가 3의 배수인 경우</div>
-        <div class="pattern-item"><input type="checkbox" id="pattern6"> 모든 숫자가 4의 배수인 경우</div>
-        <div class="pattern-item"><input type="checkbox" id="pattern7"> 모든 숫자가 5의 배수인 경우</div>
-        <div class="pattern-item"><input type="checkbox" id="pattern8"> 모든 숫자가 31~45 범위 내에 집중된 경우</div>
-        <div class="pattern-item"><input type="checkbox" id="pattern9"> 모든 숫자가 동일한 자리대(예: 10~19) 내에 속한 경우</div>
-        <div class="pattern-item"><input type="checkbox" id="pattern10"> 모든 숫자가 소수인 경우</div>
-        <div class="pattern-item"><input type="checkbox" id="pattern11"> 모든 숫자가 홀수로 구성된 경우</div>
-        <div class="pattern-item"><input type="checkbox" id="pattern12"> 모든 숫자가 짝수로 구성된 경우</div>
-        <div class="pattern-item"><input type="checkbox" id="pattern13"> 숫자 합계가 50 미만 또는 200 초과하는 극단적인 경우</div>
-        <div class="pattern-item"><input type="checkbox" id="pattern14"> 숫자 합계가 50~69 또는 181~200인 경우</div>
-        <div class="pattern-item"><input type="checkbox" id="pattern15"> 제곱수 4개 이상 포함된 경우</div>
-        <div class="pattern-item"><input type="checkbox" id="pattern16"> 제곱수 5개 이상 포함된 경우</div>
+        <div class="pattern-item"><input type="checkbox" id="pattern1"><label for="pattern1"> 6개 숫자가 연속적으로 배열된 경우 (예: 10,11,12,13,14,15)</label></div>
+        <div class="pattern-item"><input type="checkbox" id="pattern2"><label for="pattern2"> 모든 숫자가 1~15 범위 내에 집중된 경우</label></div>
+        <div class="pattern-item"><input type="checkbox" id="pattern3"><label for="pattern3"> 모든 숫자가 1~20 범위 내에 집중된 경우</label></div>
+        <div class="pattern-item"><input type="checkbox" id="pattern4"><label for="pattern4"> 모든 숫자가 1~31 범위 내에 집중된 경우</label></div>
+        <div class="pattern-item"><input type="checkbox" id="pattern5"><label for="pattern5"> 모든 숫자가 3의 배수인 경우</label></div>
+        <div class="pattern-item"><input type="checkbox" id="pattern6"><label for="pattern6"> 모든 숫자가 4의 배수인 경우</label></div>
+        <div class="pattern-item"><input type="checkbox" id="pattern7"><label for="pattern7"> 모든 숫자가 5의 배수인 경우</label></div>
+        <div class="pattern-item"><input type="checkbox" id="pattern8"><label for="pattern8"> 모든 숫자가 31~45 범위 내에 집중된 경우</label></div>
+        <div class="pattern-item"><input type="checkbox" id="pattern9"><label for="pattern9"> 모든 숫자가 동일한 자리대(예: 10~19) 내에 속한 경우</label></div>
+        <div class="pattern-item"><input type="checkbox" id="pattern10"><label for="pattern10"> 모든 숫자가 소수인 경우</label></div>
+        <div class="pattern-item"><input type="checkbox" id="pattern11"><label for="pattern11"> 모든 숫자가 홀수로 구성된 경우</label></div>
+        <div class="pattern-item"><input type="checkbox" id="pattern12"><label for="pattern12"> 모든 숫자가 짝수로 구성된 경우</label></div>
+        <div class="pattern-item"><input type="checkbox" id="pattern13"><label for="pattern13"> 숫자 합계가 50 미만 또는 200 초과하는 극단적인 경우</label></div>
+        <div class="pattern-item"><input type="checkbox" id="pattern14"><label for="pattern14"> 숫자 합계가 50~69 또는 181~200인 경우</label></div>
+        <div class="pattern-item"><input type="checkbox" id="pattern15"><label for="pattern15"> 제곱수 4개 이상 포함된 경우</label></div>
+        <div class="pattern-item"><input type="checkbox" id="pattern16"><label for="pattern16"> 제곱수 5개 이상 포함된 경우</label></div>
     </div>
     <div id="visitor-count"></div>
     <div id="history">
@@ -164,9 +203,11 @@
     </div>
     <!-- 최근 10회차 당첨번호 (1222회부터 1213회까지) -->
     <div id="latest-draw">
-        <h3 onclick="toggleLatestDraw()">
-            (Click) 최근 10회차 당첨번호
-            <span id="toggle-icon" style="font-size:0.9em;">▼</span>
+        <h3>
+            <button type="button" id="latest-toggle" aria-expanded="false" aria-controls="latest-table">
+                최근 10회차 당첨번호
+                <span id="toggle-icon" style="font-size:0.9em;">▼</span>
+            </button>
         </h3>
         <table id="latest-table">
             <thead>
@@ -179,7 +220,7 @@
             <tbody id="latest-body"></tbody>
         </table>
     </div>
-    <button onclick="window.location.href='https://dhlottery.co.kr/'" style="margin-left: 10px;">★동행복권 홈페이지 바로가기★</button>
+    <p><a href="https://dhlottery.co.kr/" rel="noopener">★동행복권 홈페이지 바로가기★</a></p>
     <div style="margin-top: 40px; text-align: center;">
         <h3>댓글 공유</h3>
         <livere-comment client-id="5Qnz059feDSs78GOTvi5"></livere-comment>
@@ -192,18 +233,16 @@
     <script>
         function toggleMenu() {
             const menu = document.getElementById('nav-menu');
-            menu.classList.toggle('active');
+            const open = menu.classList.toggle('active');
+            document.getElementById('hamburger').setAttribute('aria-expanded', open ? 'true' : 'false');
         }
         function toggleLatestDraw() {
             const table = document.getElementById('latest-table');
             const icon = document.getElementById('toggle-icon');
-            if (table.style.display === 'none' || table.style.display === '') {
-                table.style.display = 'table';
-                icon.textContent = '▲';
-            } else {
-                table.style.display = 'none';
-                icon.textContent = '▼';
-            }
+            const open = table.style.display !== 'table';
+            table.style.display = open ? 'table' : 'none';
+            icon.textContent = open ? '▲' : '▼';
+            document.getElementById('latest-toggle').setAttribute('aria-expanded', open ? 'true' : 'false');
         }
 
         // 최근 10회차 데이터 로드 (1222회 ~ 1213회)
@@ -274,6 +313,42 @@
         const excludeSet = new Set();
         const MAX_INCLUDE = 6;
 
+        // ---- 결과 표시 ----
+        // 빈 자리 6개를 먼저 깔아 두고, 생성되면 그 자리에 채운다. 자리가
+        // 흔들리지 않도록 자리표시자도 같은 크기를 차지한다.
+        function buildBalls() {
+            const box = document.getElementById('result-balls');
+            box.innerHTML = '';
+            for (let i = 0; i < 6; i++) {
+                const ball = document.createElement('div');
+                ball.className = 'ball';
+                ball.textContent = '';
+                box.appendChild(ball);
+            }
+        }
+        function fillBalls(numbers) {
+            const balls = document.getElementById('result-balls').children;
+            for (let i = 0; i < 6; i++) {
+                const ball = balls[i];
+                ball.className = 'ball filled';
+                ball.dataset.band = bandOf(numbers[i]);
+                ball.style.animationDelay = `${i * 0.06}s`;
+                ball.textContent = numbers[i];
+            }
+        }
+        function clearBalls() {
+            const balls = document.getElementById('result-balls').children;
+            for (let i = 0; i < 6; i++) {
+                balls[i].className = 'ball';
+                balls[i].textContent = '';
+            }
+        }
+        function setMessage(text, isError) {
+            const el = document.getElementById('result');
+            el.innerText = text;
+            el.classList.toggle('error', !!isError);
+        }
+
         function bandOf(n) {
             if (n <= 10) return 1;
             if (n <= 20) return 2;
@@ -334,7 +409,6 @@
             document.getElementById('picker-warning').textContent = '';
             renderPicker();
         }
-        document.getElementById('reset-picker').addEventListener('click', resetPicker);
         function updateVisitorCount() {
             let visitorCount = parseInt(storageGet(visitorKey, '0')) + 1;
             storageSet(visitorKey, visitorCount);
@@ -413,9 +487,8 @@
         }
         function generateNumbers() {
             updateClickCount();
-            const resultDiv = document.getElementById('result');
             const logDiv = document.getElementById('log');
-            resultDiv.innerText = '';
+            setMessage('');
             // 시도 로그를 배열에 모아 두고 마지막에 한 번만 그린다 (최대 10,000회
             // 반복마다 innerHTML 을 재파싱하면 조건이 빡빡할 때 탭이 멎는다).
             // 화면에는 최근 50줄만 남긴다.
@@ -440,17 +513,19 @@
             const pool = 45 - uniqueExclude.size - includeNums.length;
             const needed = 6 - includeNums.length;
             if (pool < needed) {
-                resultDiv.innerText =
+                clearBalls();
+                setMessage(
                     `제외한 숫자가 너무 많아 6개를 채울 수 없습니다. ` +
-                    `제외를 ${uniqueExclude.size - (needed - pool)}개 이하로 줄여 주세요.`;
+                    `제외를 ${uniqueExclude.size - (needed - pool)}개 이하로 줄여 주세요.`, true);
                 return;
             }
             if (includeNums.length === 6) {
                 const fixedReason = checkInvalidPattern(includeNums, checkedPatternIds);
                 if (fixedReason) {
-                    resultDiv.innerText =
+                    clearBalls();
+                    setMessage(
                         `포함으로 고른 6개가 그대로 조합이 되는데, ` +
-                        `"${fixedReason}" 패턴에 걸립니다. 해당 패턴 체크를 풀거나 번호를 바꿔 주세요.`;
+                        `"${fixedReason}" 패턴에 걸립니다. 해당 패턴 체크를 풀거나 번호를 바꿔 주세요.`, true);
                     return;
                 }
             }
@@ -473,17 +548,34 @@
                     logLines.push(`시도 ${attempts}: ${numStr} - ${invalidReason} 패턴으로 제외`);
                     continue;
                 }
-                resultDiv.innerText = `생성된 번호: ${numStr}\n(이 번호는 선택된 특수 패턴을 피했습니다.)`;
+                fillBalls(numbers);
+                setMessage(`생성된 번호: ${numStr} — 선택된 특수 패턴을 피했습니다. (${attempts}번째 시도)`);
                 logLines.push(`시도 ${attempts}: ${numStr} - 유효하여 선택됨`);
                 renderLog();
                 saveHistory(numStr);
                 return;
             }
             renderLog();
-            resultDiv.innerText =
+            clearBalls();
+            setMessage(
                 `${maxAttempts.toLocaleString()}번 시도했지만 조건을 만족하는 조합을 찾지 못했습니다. ` +
-                `배제 패턴을 몇 개 풀거나 포함/제외 번호를 줄여 보세요.`;
+                `배제 패턴을 몇 개 풀거나 포함/제외 번호를 줄여 보세요.`, true);
         }
+
+        // ---- 초기화 ----
+        function init() {
+            buildBalls();
+            buildGrid();
+            renderPicker();
+            initCheckboxes();
+            updateVisitorCount();
+            loadHistory();
+            document.getElementById('generate-btn').addEventListener('click', generateNumbers);
+            document.getElementById('reset-picker').addEventListener('click', resetPicker);
+            document.getElementById('hamburger').addEventListener('click', toggleMenu);
+            document.getElementById('latest-toggle').addEventListener('click', toggleLatestDraw);
+        }
+        init();
     </script>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9372871176021283" crossorigin="anonymous"></script>
     <script type="module" src="https://www.livere.org/livere-widget.js"></script>
