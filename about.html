@@ -165,7 +165,7 @@
         <details>
             <summary>Statistics</summary>
             <div class="content">
-                <p>1,221회차(최신)까지의 모든 당첨 데이터를 분석한 <strong>9가지 통계 페이지</strong>입니다.</p>
+                <p><span id="latest-round-count">최신</span>회차까지의 모든 당첨 데이터를 분석한 <strong>9가지 통계 페이지</strong>입니다.</p>
                 <p>숫자별 출현 빈도, 보너스 번호 통계, 홀짝·저고·연속수·합계 분포, 핫/콜드 넘버, 쌍 분석 등<br>
                 로또를 더 깊이 있게 이해할 수 있는 다양한 통계를 제공합니다.</p>
             </div>
@@ -193,6 +193,13 @@
             const menu = document.getElementById('nav-menu');
             menu.classList.toggle('active');
         }
+        // 회차 수는 여기 문자열로 박아 두지 않는다 — lotto-data.json 에서 읽는다.
+        fetch('lotto-data.json')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('latest-round-count').textContent = `${data.totalDraws}`;
+            })
+            .catch(err => console.error(err));
     </script>
 </body>
 </html>
