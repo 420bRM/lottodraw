@@ -17,6 +17,8 @@
     <meta name="google-adsense-account" content="ca-pub-9372871176021283">
     <style>
         body { font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 0; line-height: 1.6; }
+        /* 포커스 링은 지우지 않는다 — 키보드로만 쓰는 사람이 자기 위치를 잃는다 */
+        :focus-visible { outline: 3px solid #003087; outline-offset: 2px; }
         nav { background-color: #fefefe; padding: 15px 10px; text-align: center; position: relative; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         nav ul { list-style: none; padding: 0; margin: 0; display: flex; justify-content: center; flex-wrap: wrap; }
         nav li { margin: 8px 15px; }
@@ -26,10 +28,10 @@
         .hamburger { display: none; cursor: pointer; position: absolute; top: 18px; left: 15px; border: none; background: none; padding: 0; }
         .hamburger span { display: block; width: 25px; height: 3px; background: black; margin: 5px auto; }
         #latest-toggle { font: inherit; color: inherit; border: none; background: none; cursor: pointer; padding: 0; }
-        #latest-draw, #history { max-width: 600px; margin: 40px auto; text-align: center; }
+        #latest-draw, #history { max-width: 600px; margin: 40px auto; padding: 0 16px; text-align: center; }
         #latest-draw h3, #history h3 { font-size: 1.3em; margin-bottom: 10px; color: #333; cursor: pointer; }
         #latest-table, #history-table { width: 100%; margin: 0 auto; border-collapse: collapse; table-layout: fixed; }
-        #latest-table th, #latest-table td, #history-table th, #history-table td { border: 1px solid #ddd; padding: 6px 4px; text-align: center; font-size: 9pt; }
+        #latest-table th, #latest-table td, #history-table th, #history-table td { border: 1px solid #ddd; padding: 6px 4px; text-align: center; font-size: 0.85em; }
         #latest-table th, #history-table th { background-color: #f2f2f2; }
         #latest-table { display: none; }
         #latest-table td:nth-child(2) { width: 42%; }
@@ -56,12 +58,14 @@
         #generate-btn { font-size: 1.1em; font-weight: bold; padding: 12px 32px; border: none; border-radius: 8px; background: #003087; color: #fff; cursor: pointer; }
         #generate-btn:hover { background: #002266; }
         .lead { max-width: 600px; margin: 20px auto; padding: 0 16px; color: #444; }
-        @media (max-width: 400px) {
+        /* 공 6개 + 간격이 한 줄에 들어가는 폭을 기준으로 줄인다
+           (56*6 + 10*5 + 좌우 여백 32 = 418px) */
+        @media (max-width: 430px) {
             .ball { width: 44px; height: 44px; font-size: 18px; }
             #result-balls { gap: 6px; }
         }
         #log { margin-top: 20px; text-align: left; max-width: 600px; margin: 20px auto; border: 1px solid #ccc; padding: 10px; background: #f9f9f9; overflow-y: auto; max-height: 300px; }
-        #patterns, #picker { margin-top: 20px; text-align: left; max-width: 600px; margin: 20px auto; }
+        #patterns, #picker { text-align: left; max-width: 600px; margin: 20px auto; padding: 0 16px; }
         #visitor-count { margin-top: 40px; font-size: 16px; color: gray; }
         .pattern-item { margin-bottom: 5px; }
         .borel-description { font-size: 0.8em; }
