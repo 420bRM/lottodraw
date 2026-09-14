@@ -248,7 +248,9 @@
             }
             return true;
         }
-        function checkInvalidPattern(numbers) {
+        // checkedPatternIds 는 루프 시작 전에 한 번만 스냅샷한 Set — 시도마다
+        // getElementById 를 16번씩 부르지 않는다.
+        function checkInvalidPattern(numbers, checkedPatternIds) {
             const sorted = [...numbers].sort((a, b) => a - b);
             const sum = sorted.reduce((a, b) => a + b, 0);
             const squares = [1, 4, 9, 16, 25, 36];
@@ -272,7 +274,7 @@
                 {id: 16, check: () => squareCount >= 5, reason: "제곱수 5개 이상 포함된 경우"}
             ];
             for (let pattern of patterns) {
-                if (document.getElementById(`pattern${pattern.id}`).checked && pattern.check()) {
+                if (checkedPatternIds.has(pattern.id) && pattern.check()) {
                     return pattern.reason;
                 }
             }
@@ -298,6 +300,12 @@
                 resultDiv.innerText = '포함과 제외 숫자가 동일할 수 없습니다.';
                 return;
             }
+            // 체크된 패턴을 루프 시작 전에 한 번만 스냅샷 (최대 10,000회 반복 동안
+            // getElementById 를 매번 16번씩 부르지 않기 위함)
+            const checkedPatternIds = new Set();
+            for (let i = 1; i <= 16; i++) {
+                if (document.getElementById(`pattern${i}`).checked) checkedPatternIds.add(i);
+            }
             let attempts = 0;
             const maxAttempts = 10000;
             while (attempts < maxAttempts) {
@@ -311,7 +319,7 @@
                 if (numbers.length < 6) continue;
                 numbers.sort((a, b) => a - b);
                 const numStr = numbers.join(', ');
-                const invalidReason = checkInvalidPattern(numbers);
+                const invalidReason = checkInvalidPattern(numbers, checkedPatternIds);
                 if (invalidReason) {
                     logDiv.innerHTML += `시도 ${attempts}: ${numStr} - ${invalidReason} 패턴으로 제외<br>`;
                     continue;
