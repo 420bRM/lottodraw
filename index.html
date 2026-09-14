@@ -35,16 +35,58 @@
         #latest-table td:nth-child(2) span { display: inline-block; width: 14%; text-align: center; }
         #result { font-size: 24px; margin-top: 20px; color: green; }
         #log { margin-top: 20px; text-align: left; max-width: 600px; margin: 20px auto; border: 1px solid #ccc; padding: 10px; background: #f9f9f9; overflow-y: auto; max-height: 300px; }
-        #patterns, #include-section, #exclude-section { margin-top: 20px; text-align: left; max-width: 600px; margin: 20px auto; }
+        #patterns, #picker { margin-top: 20px; text-align: left; max-width: 600px; margin: 20px auto; }
         #visitor-count { margin-top: 40px; font-size: 16px; color: gray; }
         .pattern-item { margin-bottom: 5px; }
-        #include-slider, #exclude-slider { width: 500px; }
-        @media (max-width: 600px) { #include-slider, #exclude-slider { width: 100%; } }
         .borel-description { font-size: 0.8em; }
         .borel-description p { margin: 5px 0; }
+
+        /* 포함/제외 번호 그리드 — 마킹용지처럼 45칸을 그대로 놓는다 */
+        #number-grid {
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            gap: 6px;
+            margin: 16px 0;
+            padding: 0;
+        }
+        .cell {
+            aspect-ratio: 1 / 1;
+            min-width: 0;
+            padding: 0;
+            border: 2px solid #ddd;
+            border-radius: 50%;
+            background: #fff;
+            color: #333;
+            font: inherit;
+            font-weight: bold;
+            font-variant-numeric: tabular-nums;
+            cursor: pointer;
+        }
+        .cell:hover { border-color: #999; }
+        .cell.include { color: #fff; border-color: transparent; }
+        .cell.include[data-band="1"] { background: #fbc400; }
+        .cell.include[data-band="2"] { background: #69c8f2; }
+        .cell.include[data-band="3"] { background: #ff7272; }
+        .cell.include[data-band="4"] { background: #aaaaaa; }
+        .cell.include[data-band="5"] { background: #b0d840; }
+        .cell.exclude {
+            background: #eee;
+            color: #bbb;
+            border-color: #eee;
+            text-decoration: line-through;
+        }
+        .picker-help { font-size: 0.9em; color: #555; }
+        .chip { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 0.85em; }
+        .chip.include { background: #003087; color: #fff; }
+        .chip.exclude { background: #eee; color: #777; text-decoration: line-through; }
+        #picker-summary { font-weight: bold; }
+        #picker-warning { color: #c00; min-height: 1.4em; }
+        @media (max-width: 600px) {
+            #number-grid { grid-template-columns: repeat(5, 1fr); }
+        }
     </style>
 </head>
-<body onload="updateVisitorCount(); initCheckboxes(); loadHistory();">
+<body onload="updateVisitorCount(); initCheckboxes(); buildGrid(); renderPicker(); loadHistory();">
     <nav>
         <div class="hamburger" onclick="toggleMenu()">
             <span></span><span></span><span></span>
@@ -77,17 +119,17 @@
         </a>
     </p>
     <div id="log"></div>
-    <div id="include-section">
-        <h3>꼭 포함할 숫자 선택 (드래그로 결정, 1~45 중 하나):</h3>
-        <input type="checkbox" id="include-active"> 활성화
-        <input type="range" id="include-slider" min="1" max="45" value="1" oninput="updateSliderValue('include')">
-        <p>선택된 숫자: <span id="include-value">1</span></p>
-    </div>
-    <div id="exclude-section">
-        <h3>꼭 제외할 숫자 선택 (드래그로 결정, 1~45 중 하나):</h3>
-        <input type="checkbox" id="exclude-active"> 활성화
-        <input type="range" id="exclude-slider" min="1" max="45" value="1" oninput="updateSliderValue('exclude')">
-        <p>선택된 숫자: <span id="exclude-value">1</span></p>
+    <div id="picker">
+        <h3>포함할 숫자 / 제외할 숫자 고르기</h3>
+        <p class="picker-help">
+            칸을 누를 때마다 <span class="chip include">포함</span> →
+            <span class="chip exclude">제외</span> → 해제 순으로 바뀝니다.
+            포함은 최대 6개까지 고를 수 있습니다.
+        </p>
+        <div id="number-grid" role="group" aria-label="포함하거나 제외할 번호 선택"></div>
+        <p id="picker-summary" aria-live="polite">포함 0개 · 제외 0개</p>
+        <p id="picker-warning" role="alert"></p>
+        <button type="button" id="reset-picker">선택 초기화</button>
     </div>
     <div id="patterns">
         <h3>배제할 특수 패턴 선택 (총 16개):</h3>
@@ -224,11 +266,75 @@
                 document.getElementById(`pattern${i}`).checked = true;
             }
         }
-        function updateSliderValue(type) {
-            const slider = document.getElementById(`${type}-slider`);
-            const valueSpan = document.getElementById(`${type}-value`);
-            valueSpan.innerText = slider.value;
+        // ---- 포함/제외 번호 그리드 ----
+        // 한 칸은 none → include → exclude → none 으로 순환한다. 포함/제외가
+        // 칸 하나의 상태라서 "같은 숫자를 포함이자 제외로" 두는 것이 구조적으로
+        // 불가능하다.
+        const includeSet = new Set();
+        const excludeSet = new Set();
+        const MAX_INCLUDE = 6;
+
+        function bandOf(n) {
+            if (n <= 10) return 1;
+            if (n <= 20) return 2;
+            if (n <= 30) return 3;
+            if (n <= 40) return 4;
+            return 5;
         }
+        function buildGrid() {
+            const grid = document.getElementById('number-grid');
+            for (let n = 1; n <= 45; n++) {
+                const cell = document.createElement('button');
+                cell.type = 'button';
+                cell.className = 'cell';
+                cell.dataset.number = n;
+                cell.dataset.band = bandOf(n);
+                cell.textContent = n;
+                cell.setAttribute('aria-pressed', 'false');
+                cell.addEventListener('click', () => cycleCell(n));
+                grid.appendChild(cell);
+            }
+        }
+        function cycleCell(n) {
+            const warning = document.getElementById('picker-warning');
+            warning.textContent = '';
+            if (includeSet.has(n)) {
+                includeSet.delete(n);
+                excludeSet.add(n);
+            } else if (excludeSet.has(n)) {
+                excludeSet.delete(n);
+            } else if (includeSet.size >= MAX_INCLUDE) {
+                // 포함이 이미 6개면 포함 단계를 건너뛰고 제외로 간다
+                excludeSet.add(n);
+                warning.textContent = `포함은 최대 ${MAX_INCLUDE}개까지입니다. ${n}번은 제외로 표시했습니다.`;
+            } else {
+                includeSet.add(n);
+            }
+            renderPicker();
+        }
+        function renderPicker() {
+            document.querySelectorAll('#number-grid .cell').forEach(cell => {
+                const n = Number(cell.dataset.number);
+                cell.classList.toggle('include', includeSet.has(n));
+                cell.classList.toggle('exclude', excludeSet.has(n));
+                cell.setAttribute('aria-pressed', includeSet.has(n) ? 'true' : 'false');
+                const state = includeSet.has(n) ? '포함' : excludeSet.has(n) ? '제외' : '선택 안 함';
+                cell.setAttribute('aria-label', `${n}번 ${state}`);
+            });
+            const asc = (a, b) => a - b;
+            const inc = [...includeSet].sort(asc);
+            const exc = [...excludeSet].sort(asc);
+            document.getElementById('picker-summary').textContent =
+                `포함 ${inc.length}개${inc.length ? ` (${inc.join(', ')})` : ''}` +
+                ` · 제외 ${exc.length}개${exc.length ? ` (${exc.join(', ')})` : ''}`;
+        }
+        function resetPicker() {
+            includeSet.clear();
+            excludeSet.clear();
+            document.getElementById('picker-warning').textContent = '';
+            renderPicker();
+        }
+        document.getElementById('reset-picker').addEventListener('click', resetPicker);
         function updateVisitorCount() {
             let visitorCount = parseInt(storageGet(visitorKey, '0')) + 1;
             storageSet(visitorKey, visitorCount);
@@ -322,20 +428,8 @@
                 logDiv.scrollTop = logDiv.scrollHeight;
             }
             renderLog();
-            let includeNums = [];
-            if (document.getElementById('include-active').checked) {
-                const includeNum = parseInt(document.getElementById('include-slider').value);
-                includeNums = [includeNum];
-            }
-            let uniqueExclude = new Set();
-            if (document.getElementById('exclude-active').checked) {
-                const excludeNum = parseInt(document.getElementById('exclude-slider').value);
-                uniqueExclude.add(excludeNum);
-            }
-            if (includeNums.length > 0 && uniqueExclude.has(includeNums[0])) {
-                resultDiv.innerText = '포함과 제외 숫자가 동일할 수 없습니다.';
-                return;
-            }
+            const includeNums = [...includeSet];
+            const uniqueExclude = new Set(excludeSet);
             // 체크된 패턴을 루프 시작 전에 한 번만 스냅샷 (최대 10,000회 반복 동안
             // getElementById 를 매번 16번씩 부르지 않기 위함)
             const checkedPatternIds = new Set();
