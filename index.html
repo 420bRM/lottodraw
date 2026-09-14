@@ -436,6 +436,25 @@
             for (let i = 1; i <= 16; i++) {
                 if (document.getElementById(`pattern${i}`).checked) checkedPatternIds.add(i);
             }
+            // 사전 검사 — 10,000번 돌려 봐야 결과가 같은 경우는 미리 잘라낸다
+            const pool = 45 - uniqueExclude.size - includeNums.length;
+            const needed = 6 - includeNums.length;
+            if (pool < needed) {
+                resultDiv.innerText =
+                    `제외한 숫자가 너무 많아 6개를 채울 수 없습니다. ` +
+                    `제외를 ${uniqueExclude.size - (needed - pool)}개 이하로 줄여 주세요.`;
+                return;
+            }
+            if (includeNums.length === 6) {
+                const fixedReason = checkInvalidPattern(includeNums, checkedPatternIds);
+                if (fixedReason) {
+                    resultDiv.innerText =
+                        `포함으로 고른 6개가 그대로 조합이 되는데, ` +
+                        `"${fixedReason}" 패턴에 걸립니다. 해당 패턴 체크를 풀거나 번호를 바꿔 주세요.`;
+                    return;
+                }
+            }
+
             let attempts = 0;
             const maxAttempts = 10000;
             while (attempts < maxAttempts) {
@@ -461,7 +480,9 @@
                 return;
             }
             renderLog();
-            resultDiv.innerText = '조건을 만족하는 번호를 찾지 못했습니다.';
+            resultDiv.innerText =
+                `${maxAttempts.toLocaleString()}번 시도했지만 조건을 만족하는 조합을 찾지 못했습니다. ` +
+                `배제 패턴을 몇 개 풀거나 포함/제외 번호를 줄여 보세요.`;
         }
     </script>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9372871176021283" crossorigin="anonymous"></script>
