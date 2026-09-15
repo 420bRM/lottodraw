@@ -103,7 +103,7 @@
             title: '1. 번호별 출현 횟수', meta: scope,
             body: vbars(stats.frequency, '1부터 45까지 번호별 출현 횟수 막대그래프')
                 .concat([extremes(stats.frequency, '회'),
-                    el('p', { className: 'card-note', text: '막대 색은 공 구간 색입니다. 높이 차이가 작다면 실제로 거의 고르게 나왔다는 뜻입니다.' })]),
+                    el('p', { className: 'card-note', text: '막대 높이 차이가 작다면 실제로 거의 고르게 나왔다는 뜻입니다.' })]),
         }));
 
         const trendTitle = opts.trendTitle || `8. 최근 ${stats.trend.window}회 많이·적게 나온 번호`;
