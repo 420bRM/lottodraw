@@ -3,103 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>실수령액 계산기 - lottodraw.kr</title>
+    <title>실수령액 계산기 | lottodraw.kr</title>
     <meta name="description" content="로또 6/45 당첨금 세금과 실수령액을 계산해 드려요.">
     <meta name="keywords" content="로또 당첨금 세금, 로또 실수령액, 로또 세율">
+    <link rel="canonical" href="https://www.lottodraw.kr/tax.html">
     <meta name="google-adsense-account" content="ca-pub-9372871176021283">
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 0; line-height: 1.6; }
-        nav { 
-            background-color: #fefefe; 
-            padding: 15px 10px; 
-            text-align: center; 
-            position: relative; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-        nav ul { 
-            list-style: none; 
-            padding: 0; 
-            margin: 0; 
-            display: flex; 
-            justify-content: center; 
-            flex-wrap: wrap; 
-        }
-        nav li { margin: 8px 15px; }
-        nav a { 
-            text-decoration: none; 
-            color: black; 
-            font-weight: bold; 
-        }
-        nav a:hover { color: #003087; }
-        .hamburger { 
-            display: none; 
-            cursor: pointer; 
-            position: absolute; 
-            top: 18px; 
-            left: 15px; 
-        }
-        .hamburger span { 
-            display: block; 
-            width: 25px; 
-            height: 3px; 
-            background: black; 
-            margin: 5px auto; 
-        }
-        
-        .container { 
-            max-width: 900px; 
-            margin: 50px auto 40px; 
-            padding: 20px; 
-            text-align: left; 
-        }
-        h1 { color: #003087; text-align: center; }
-        
-        table { margin: 20px auto; border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
-        th { background: #f2f2f2; }
-        input[type="number"] { width: 100%; padding: 12px; font-size: 1.1em; margin: 10px 0; }
-        button { padding: 14px 24px; font-size: 1.1em; background: #003087; color: white; border: none; cursor: pointer; border-radius: 6px; }
-        #resultBox { margin-top: 20px; padding: 20px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 8px; display: none; }
-        
-        @media (max-width: 600px) {
-            nav ul { flex-direction: column; display: none; }
-            nav ul.active { display: flex; }
-            nav li { margin: 10px 0; }
-            .hamburger { display: block; }
-            .container { margin-top: 30px; padding: 15px; }
-        }
-        footer { margin-top: 60px; font-size: 0.8em; color: gray; text-align: center; padding: 20px; }
-    </style>
+    <link rel="stylesheet" href="css/site.css">
 </head>
 <body>
-    <nav>
-        <div class="hamburger" onclick="toggleMenu()">
-            <span></span><span></span><span></span>
+<div class="page">
+    <header class="banner">
+        <a class="brand" href="index.html">
+            <span class="brand-name">LOTTODRAW.KR</span>
+            <span class="brand-tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
+        </a>
+        <div class="banner-right">
+            <p class="latest-callout" id="latest-callout">최신 회차 불러오는 중…</p>
+            <a class="sticker" href="statistics.html">최근 <b>30일</b> 통계</a>
         </div>
-        <ul id="nav-menu">
-            <li><a href="index.html">Home</a></li>
-            <li><a href="about.html">About</a></li>
-            <li><a href="tax.html" style="color:#003087; font-weight:bold;">TAX</a></li>
-            <li><a href="top-prize.html">TOP 50</a></li>
+    </header>
+
+    <nav class="nav" aria-label="주 메뉴">
+        <ul>
+            <li><a href="index.html">생성기 · 통계</a></li>
             <li><a href="statistics.html">30일 통계 (유료)</a></li>
+            <li><a href="top-prize.html">TOP 50 당첨금</a></li>
+            <li><a href="tax.html" aria-current="page">실수령액 계산</a></li>
+            <li><a href="about.html">ABOUT</a></li>
         </ul>
     </nav>
 
-    <div class="container">
+    <main class="prose">
         <h1>실수령액 계산기</h1>
-        <p>당첨금액을 입력하면 세금과 실수령액을 바로 계산해 드려요!</p>
+        <p class="intro">당첨금액을 입력하면 세금과 실수령액을 바로 계산해 드려요.</p>
 
-        <div style="max-width: 500px; margin: 30px auto; text-align: left;">
-            <label for="prizeInput">당첨금액 (원):</label><br>
-            <input type="number" id="prizeInput" placeholder="예: 200000000" min="0">
-            <button onclick="calculateTax()">계산하기</button>
+        <div class="calc-form">
+            <label for="prizeInput">당첨금액 (원)</label>
+            <input type="number" id="prizeInput" placeholder="예: 200000000" min="0" inputmode="numeric">
+            <button type="button" class="btn" id="calc-btn">계산하기</button>
+        </div>
+        <p class="calc-error" id="calc-error" role="alert"></p>
 
-            <div id="resultBox">
-                <p><strong>당첨금액:</strong> <span id="prizeAmount"></span> 원</p>
-                <p><strong>세율:</strong> <span id="taxRate"></span></p>
-                <p><strong>세금:</strong> <span id="taxAmount"></span> 원</p>
-                <p><strong>실수령액:</strong> <span id="netAmount" style="font-size: 1.3em; color: #2e7d32; font-weight: bold;"></span> 원</p>
-            </div>
+        <div class="calc-result" id="resultBox" hidden aria-live="polite">
+            <p><strong>당첨금액:</strong> <span id="prizeAmount"></span> 원</p>
+            <p><strong>세율:</strong> <span id="taxRate"></span></p>
+            <p><strong>세금:</strong> <span id="taxAmount"></span> 원</p>
+            <p><strong>실수령액:</strong> <span class="calc-net" id="netAmount"></span> 원</p>
         </div>
 
         <h2>로또 1등 당첨금, 세금은 얼마나 낼까?</h2>
@@ -113,18 +62,21 @@
         </ul>
 
         <h3>실제 실수령액 예시</h3>
-        <table>
-            <tr><th>당첨금 (1인 몫)</th><th>세율</th><th>세금</th><th>실수령액</th></tr>
-            <tr><td>5억 원</td><td>33%</td><td>1억 6,500만 원</td><td>약 3억 3,500만 원</td></tr>
-            <tr><td>2억 원</td><td>22%</td><td>4,400만 원</td><td>약 1억 5,600만 원</td></tr>
-            <tr><td>1억 원</td><td>22%</td><td>2,200만 원</td><td>약 7,800만 원</td></tr>
-            <tr><td>1,000만 원</td><td>22%</td><td>220만 원</td><td>약 780만 원</td></tr>
-            <tr><td>100만 원</td><td>0%</td><td>0원</td><td>100만 원</td></tr>
-        </table>
-
-        <p style="font-size: 0.9em; color: gray;">
-            * 위 금액은 대략적인 계산치이며, 정확한 실수령액은 세무서나 동행복권에 문의하세요.<br>
-        </p>
+        <div class="table-scroll">
+            <table class="data-table">
+                <thead>
+                    <tr><th>당첨금 (1인 몫)</th><th>세율</th><th>세금</th><th>실수령액</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>5억 원</td><td>33%</td><td>1억 6,500만 원</td><td>약 3억 3,500만 원</td></tr>
+                    <tr><td>2억 원</td><td>22%</td><td>4,400만 원</td><td>약 1억 5,600만 원</td></tr>
+                    <tr><td>1억 원</td><td>22%</td><td>2,200만 원</td><td>약 7,800만 원</td></tr>
+                    <tr><td>1,000만 원</td><td>22%</td><td>220만 원</td><td>약 780만 원</td></tr>
+                    <tr><td>100만 원</td><td>0%</td><td>0원</td><td>100만 원</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="note">* 위 금액은 대략적인 계산치이며, 정확한 실수령액은 세무서나 동행복권에 문의하세요.</p>
 
         <h3>추가 팁</h3>
         <ul>
@@ -132,35 +84,43 @@
             <li>1등 당첨 시 세금은 자동 공제되므로, 받는 금액이 이미 세후 금액입니다.</li>
             <li>세율은 매년 변동될 수 있으니 최신 정보는 국세청 홈페이지를 확인하세요.</li>
         </ul>
-    </div>
 
-    <a href="index.html" style="display: inline-block; margin: 30px 0; padding: 12px 28px; background: #003087; color: white; text-decoration: none; border-radius: 6px;">
-        홈으로 돌아가기
-    </a>
+        <p class="page-actions"><a class="btn" href="index.html">홈으로 돌아가기</a></p>
+    </main>
 
-    <footer>
-        <p class="legal-links"><a href="privacy.html">개인정보 보호 정책</a> | <a href="terms.html">이용약관</a> | <a href="contact.html">문의</a></p>
-        <p>&copy; 2026 lottodraw.kr. All rights reserved.</p>
+    <footer class="footer">
+        <ul class="footer-nav">
+            <li><a href="index.html">HOME</a></li>
+            <li><a href="statistics.html">30일 통계</a></li>
+            <li><a href="top-prize.html">TOP 50</a></li>
+            <li><a href="tax.html">실수령액</a></li>
+            <li><a href="about.html">ABOUT</a></li>
+        </ul>
+        <p><a href="privacy.html">개인정보 처리방침</a> · <a href="terms.html">이용약관</a> · <a href="contact.html">문의</a></p>
+        <p>&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권</p>
     </footer>
+</div>
 
-    <script>
-    function toggleMenu() {
-        const menu = document.getElementById('nav-menu');
-        menu.classList.toggle('active');
-    }
+<script src="js/site-header.js"></script>
+<script>
+    const prizeInput = document.getElementById('prizeInput');
+    const resultBox = document.getElementById('resultBox');
+    const errorBox = document.getElementById('calc-error');
 
     function calculateTax() {
-        const input = document.getElementById('prizeInput').value.trim();
+        const input = prizeInput.value.trim();
         const prize = Number(input);
 
-        if (!input || isNaN(prize) || prize <= 0) {
-            alert("올바른 당첨금액을 숫자로 입력해주세요.");
+        if (!input || !isFinite(prize) || prize <= 0) {
+            errorBox.textContent = '올바른 당첨금액을 숫자로 입력해 주세요.';
+            resultBox.hidden = true;
             return;
         }
+        errorBox.textContent = '';
 
+        // 200만 원 이하 비과세 / 3억 원 이하 22% / 초과 33% (지방소득세 포함)
         let taxRate = 0;
         let tax = 0;
-
         if (prize <= 2000000) {
             taxRate = 0;
             tax = 0;
@@ -172,15 +132,18 @@
             tax = Math.floor(prize * 0.33);
         }
 
-        const net = prize - tax;
-
-        document.getElementById('prizeAmount').innerText = prize.toLocaleString();
-        document.getElementById('taxRate').innerText = taxRate + '%';
-        document.getElementById('taxAmount').innerText = tax.toLocaleString();
-        document.getElementById('netAmount').innerText = net.toLocaleString();
-
-        document.getElementById('resultBox').style.display = 'block';
+        document.getElementById('prizeAmount').textContent = prize.toLocaleString();
+        document.getElementById('taxRate').textContent = taxRate + '%';
+        document.getElementById('taxAmount').textContent = tax.toLocaleString();
+        document.getElementById('netAmount').textContent = (prize - tax).toLocaleString();
+        resultBox.hidden = false;
     }
-    </script>
+
+    document.getElementById('calc-btn').addEventListener('click', calculateTax);
+    prizeInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter') calculateTax();
+    });
+</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9372871176021283" crossorigin="anonymous"></script>
 </body>
 </html>

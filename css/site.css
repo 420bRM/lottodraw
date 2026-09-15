@@ -333,6 +333,71 @@ details[open] > summary.card-title { padding-bottom: 0; }
 .contact-form { display: grid; gap: 8px; max-width: 480px; }
 .contact-form input, .contact-form textarea { padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; font: 15px var(--font); }
 
+/* ───── 일반 본문 페이지 (ABOUT · 실수령액 · TOP 50) ───── */
+.prose.wide { max-width: 1200px; }
+.prose h3 { margin: 18px 0 6px; color: var(--text); font-size: 16px; }
+.prose .intro { margin: 0 0 24px; color: var(--muted); font-size: 16px; text-align: center; }
+.prose .note { margin: 16px 0 0; color: var(--muted); font-size: 13px; }
+.prose .intro.error { color: var(--error); }
+.page-actions { margin: 28px 0 0; text-align: center; }
+
+/* 본문 표 */
+.table-scroll { overflow-x: auto; }
+.data-table {
+    width: 100%;
+    margin: 16px 0;
+    border-collapse: collapse;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+}
+.data-table th, .data-table td { border: 1px solid var(--line); padding: 10px; text-align: center; }
+.data-table th { background: var(--head); font-weight: bold; }
+.data-table tbody tr:nth-child(even) { background: #f9f9f9; }
+.data-table tbody tr:hover { background: #f1f1f1; }
+
+/* 접었다 펴는 문답 (ABOUT) */
+.faq { display: grid; gap: 10px; margin: 16px 0 28px; }
+.faq details { background: #fff; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.faq summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 14px 16px;
+    background: var(--head);
+    color: var(--brand);
+    font-weight: bold;
+    cursor: pointer;
+    list-style: none;
+}
+.faq summary::after { content: "▼"; color: var(--muted); font-size: 11px; }
+.faq details[open] summary::after { content: "▲"; }
+.faq summary:hover { background: #eef1f5; }
+.faq .content { padding: 4px 16px 14px; }
+
+/* 계산기 폼 (실수령액) */
+.calc-form { display: grid; gap: 8px; max-width: 480px; margin: 16px 0 0; }
+.calc-form label { font-weight: bold; }
+.calc-form input {
+    min-width: 0;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font: 15px var(--font);
+}
+.calc-form .btn { justify-self: start; }
+.calc-result {
+    max-width: 480px;
+    margin: 16px 0 0;
+    padding: 16px;
+    background: #f8f9fa;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+}
+.calc-result p { margin: 6px 0; }
+.calc-net { color: #2e7d32; font-size: 20px; font-weight: bold; }
+.calc-error { margin: 8px 0 0; min-height: 1.4em; color: var(--error); font-size: 14px; }
+
 /* ───── 댓글 · 푸터 ───── */
 .comments { padding: 24px 20px; text-align: center; }
 .comments h2 { margin: 0 0 8px; color: var(--text); font-size: 18px; }
