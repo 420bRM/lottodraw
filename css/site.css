@@ -236,8 +236,10 @@ details[open] > summary.card-title { padding-bottom: 0; }
 .history th { background: var(--head); }
 .muted { color: gray; font-size: 13px; }
 
-/* ───── 통계 그리드 ───── */
-.stat-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+/* ───── 통계 그리드 ─────
+   카드는 제목 번호 순서대로 DOM 에 들어온다. 좁은 화면에서 span-2 가 2칸을 차지하면
+   뒤 카드가 앞으로 끼어들어 번호가 뒤섞이므로, 4단이 아닐 때는 한 줄을 다 쓰게 한다. */
+.stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
 .span-2 { grid-column: span 2; }
 
 /* 가로 막대 */
@@ -251,7 +253,12 @@ details[open] > summary.card-title { padding-bottom: 0; }
     font-variant-numeric: tabular-nums;
 }
 .hbar-track { height: 12px; overflow: hidden; background: #eee; border-radius: 6px; }
-.hbar-fill { height: 100%; background: var(--brand); border-radius: 6px; }
+.hbar-fill { height: 100%; background: var(--brand); border-radius: 6px; transition: filter .18s ease, background .18s ease; }
+.hbar:hover .hbar-fill, .hbar:focus-within .hbar-fill {
+    background: #1b5fd9;
+    filter: drop-shadow(0 0 5px rgba(27, 95, 217, .85)) brightness(1.1);
+}
+.hbar:hover .hbar-val, .hbar:focus-within .hbar-val { color: var(--brand); font-weight: bold; }
 .hbar-val { color: var(--muted); text-align: right; white-space: nowrap; }
 
 /* 세로 막대 45개 */
@@ -263,7 +270,19 @@ details[open] > summary.card-title { padding-bottom: 0; }
     height: 110px;
     border-bottom: 1px solid var(--line);
 }
-.vbar { min-height: 1px; background: var(--brand); border-radius: 2px 2px 0 0; }
+.vbar {
+    min-height: 1px;
+    background: var(--brand);
+    border-radius: 2px 2px 0 0;
+    transition: filter .18s ease, background .18s ease, transform .18s ease;
+    transform-origin: bottom;
+}
+.vbars:hover .vbar { filter: saturate(.5) opacity(.55); }
+.vbars .vbar:hover {
+    background: #1b5fd9;
+    filter: drop-shadow(0 0 7px rgba(27, 95, 217, .95)) brightness(1.15);
+    transform: scaleX(1.5);
+}
 .vaxis { display: grid; grid-template-columns: repeat(45, minmax(0, 1fr)); color: var(--muted); font-size: 10px; line-height: 1.6; font-variant-numeric: tabular-nums; }
 .vaxis span { text-align: center; white-space: nowrap; }
 .extremes { margin: 8px 0 0; font-size: 13px; }
@@ -332,6 +351,149 @@ details[open] > summary.card-title { padding-bottom: 0; }
 .prose p, .prose ul { margin: 6px 0; }
 .contact-form { display: grid; gap: 8px; max-width: 480px; }
 .contact-form input, .contact-form textarea { padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; font: 15px var(--font); }
+
+/* ───── 홈: 세로 3구간 스냅 ─────
+   구간마다 화면을 채우고, 경계 근처에서만 붙는다(proximity). mandatory 로 하면
+   통계처럼 한 화면을 넘는 구간에 갇혀 중간을 못 본다. */
+html.home { scroll-snap-type: y proximity; scroll-behavior: smooth; }
+.snap-section {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 100svh;
+    padding: 20px;
+    scroll-snap-align: start;
+    scroll-margin-top: 0;
+}
+/* 첫 구간은 위에 헤더·메뉴가 얹혀 있으니 그만큼 뺀다. 스냅 지점으로 삼지는 않는다 —
+   삼으면 브라우저가 열자마자 여기로 붙어 버려서 로고와 메뉴가 화면 밖으로 밀린다.
+   위로 올라올 때는 스냅 없이 문서 맨 위(헤더가 보이는 자리)에 선다. */
+#sec-generator { min-height: calc(100svh - var(--chrome-h, 118px)); scroll-snap-align: none; }
+/* 통계는 카드가 13장이라 한 화면에 딱 맞추면 글씨가 읽기 어려워진다.
+   가운데 정렬을 풀고 위에서부터 쌓되, 한 화면에 가깝도록 여백만 조인다. */
+#sec-stats { justify-content: flex-start; padding-top: 20px; }
+#sec-stats .eyebrow { padding-bottom: 6px; }
+#sec-stats .eyebrow h2 { font-size: 21px; }
+#sec-stats .notice { margin-bottom: 10px; font-size: 13px; }
+#sec-stats .card-title { padding: 10px 12px 0; font-size: 14px; }
+#sec-stats .card-body { padding: 8px 12px 10px; font-size: 13px; }
+#sec-stats .vbars { height: 84px; }
+#sec-stats .hbar { font-size: 11px; }
+#sec-stats .hbars { gap: 3px; }
+#sec-stats .ball-list li { font-size: 12px; }
+#sec-stats .card-note { font-size: 11px; }
+#sec-stats .extremes { font-size: 12px; }
+
+/* 아래에 더 있다는 표시 */
+.scroll-cue {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    margin-top: auto;
+    padding-top: 16px;
+    border: 0;
+    background: none;
+    color: var(--muted);
+    font: bold 12px/1.4 var(--font);
+    cursor: pointer;
+}
+.scroll-cue:hover { color: var(--brand); }
+.scroll-cue .chevron { font-size: 18px; line-height: 1; animation: cue-bob 1.6s ease-in-out infinite; }
+@keyframes cue-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
+.scroll-cue[hidden] { display: none !important; }
+
+/* 오른쪽 구간 점 */
+.dot-nav {
+    position: fixed;
+    top: 50%;
+    right: 14px;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    transform: translateY(-50%);
+}
+.dot-nav button {
+    display: block;
+    width: 11px; height: 11px;
+    padding: 0;
+    border: 2px solid var(--brand);
+    border-radius: 50%;
+    background: #fff;
+    cursor: pointer;
+    transition: background .18s ease, transform .18s ease;
+}
+.dot-nav button:hover { transform: scale(1.25); }
+.dot-nav button[aria-current="true"] { background: var(--brand); transform: scale(1.25); }
+
+/* ───── 홈 3구간: 생성기 ───── */
+/* 결과 · 포함/제외 · 특수패턴을 한 줄에. 번호 그리드는 aspect-ratio 로 칸이 정사각형이라
+   칸 폭이 넓어지면 카드가 그만큼 세로로도 커진다 — 3단으로 좁혀야 한 화면에 들어온다. */
+.gen-hero {
+    display: grid;
+    grid-template-columns: minmax(260px, 0.85fr) minmax(0, 1.1fr) minmax(0, 1.15fr);
+    gap: 14px;
+    align-items: stretch;
+}
+/* 이 화면에서 제일 중요한 건 번호 생성이다 — 남는 세로를 결과 카드가 가져간다 */
+#sec-generator .cta { display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+#sec-generator .cta h2 { font-size: 20px; }
+#sec-generator .result-msg { margin: 16px 0; }
+.gen-extras { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: start; margin-top: 14px; }
+.gen-extras .card-body { font-size: 13px; }
+
+/* ───── 홈 3구간: 10회차 미리보기 ───── */
+.teaser { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.heat-grid { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 5px; }
+.heat {
+    aspect-ratio: 1 / 1;
+    min-height: 30px;
+    padding: 0;
+    border: 2px solid var(--line);
+    border-radius: 50%;
+    background: #fff;
+    color: #999;
+    font: bold 14px/1 var(--font);
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    transition: transform .15s ease, filter .15s ease;
+}
+.heat[data-hits="1"] { background: #cfe0ff; border-color: #cfe0ff; color: var(--brand); }
+.heat[data-hits="2"] { background: #7ea9f0; border-color: #7ea9f0; color: #fff; }
+.heat[data-hits="3"] { background: #3d72d6; border-color: #3d72d6; color: #fff; }
+.heat[data-hits="4"] { background: var(--brand); border-color: var(--brand); color: #fff; }
+.heat:hover, .heat[aria-pressed="true"] { transform: scale(1.12); filter: drop-shadow(0 0 6px rgba(27, 95, 217, .8)); }
+.heat-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 10px 0 0; color: var(--muted); font-size: 12px; }
+.heat-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--line); vertical-align: -2px; }
+.heat-readout { margin: 10px 0 0; min-height: 3em; font-size: 14px; }
+.heat-readout b { color: var(--brand); font-size: 18px; }
+
+@media (max-width: 1099px) {
+    .gen-hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+@media (max-width: 899px) {
+    .gen-hero, .teaser { grid-template-columns: minmax(0, 1fr); }
+    .gen-extras { grid-template-columns: minmax(0, 1fr); }
+    .dot-nav { display: none; }
+}
+@media (max-width: 599px) {
+    .snap-section { padding: 14px 12px; min-height: 0; }
+    #sec-generator { min-height: 0; }
+}
+/* 화면이 낮으면 구간을 화면에 맞추는 게 오히려 답답하다 */
+@media (max-height: 700px) {
+    html.home { scroll-snap-type: none; }
+    .snap-section { min-height: 0; }
+    #sec-generator { min-height: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+    html.home { scroll-snap-type: none; scroll-behavior: auto; }
+    .scroll-cue .chevron { animation: none; }
+}
 
 /* ───── 일반 본문 페이지 (ABOUT · 실수령액 · TOP 50) ───── */
 .prose.wide { max-width: 1200px; }
@@ -408,14 +570,18 @@ details[open] > summary.card-title { padding-bottom: 0; }
 
 /* ───── 반응형 ───── */
 @media (max-width: 1279px) {
-    .stat-grid, .plans { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .stat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .plans { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .span-2 { grid-column: 1 / -1; }
 }
 @media (max-width: 899px) {
     .layout { grid-template-columns: minmax(0, 1fr); }
 }
+@media (max-width: 899px) {
+    .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 @media (max-width: 599px) {
     .stat-grid, .plans { grid-template-columns: minmax(0, 1fr); }
-    .span-2 { grid-column: auto; }
     .layout { gap: 16px; padding: 16px 12px; }
     .banner { padding: 10px 12px; }
     .page > .eyebrow { padding: 16px 12px 8px; }

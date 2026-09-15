@@ -90,7 +90,7 @@ function validate(data) {
     draws.forEach((d, i) => {
         const expectRound = draws.length - i;
         if (d.round !== expectRound) errs.push(`${i}번째 항목 회차 ${d.round} (기대값 ${expectRound}) — 누락/중복/정렬 오류`);
-        // 30일 통계가 추첨일로 기간을 자르므로 날짜가 빠진 회차가 있으면 안 된다
+        // 회차 목록과 날짜 표시에 쓰이므로 날짜가 빠진 회차가 있으면 안 된다
         if (!/^\d{4}-\d{2}-\d{2}$/.test(d.date || '')) errs.push(`${d.round}회 날짜 없음/형식 오류: ${d.date} (처음이면 --full 로 실행)`);
         else if (i > 0 && draws[i - 1].date && draws[i - 1].date <= d.date) errs.push(`${d.round}회 날짜가 다음 회차보다 늦다: ${d.date}`);
         const n = d.numbers;
