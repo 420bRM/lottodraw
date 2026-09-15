@@ -1,21 +1,61 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <!-- head 복사 -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>문의 | lottodraw.kr</title>
+    <meta name="description" content="lottodraw.kr 문의 및 이용권 환불 요청">
+    <link rel="canonical" href="https://www.lottodraw.kr/contact.html">
     <meta name="google-adsense-account" content="ca-pub-9372871176021283">
-    <title>Contact - lottodraw.kr</title>
+    <link rel="stylesheet" href="css/site.css">
 </head>
 <body>
-    <h1>Contact Us</h1>
-    <p>문의사항이 있으시면 아래 이메일로 연락 주세요.</p>
-    <p>이메일: 	420b@jachwibang.com</p>
-    <form action="mailto:youremail@example.com" method="post" enctype="text/plain">
-        <label for="name">이름:</label><input type="text" id="name" name="name"><br>
-        <label for="message">메시지:</label><textarea id="message" name="message"></textarea><br>
-        <input type="submit" value="보내기">
-    </form>
-    <a href="index.html">홈으로 돌아가기</a>
+<div class="page">
+    <header class="banner">
+        <a class="brand" href="index.html">
+            <span class="brand-name">LOTTODRAW.KR</span>
+            <span class="brand-tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
+        </a>
+    </header>
+    <nav class="nav" aria-label="주 메뉴">
+        <ul>
+            <li><a href="index.html">생성기 · 통계</a></li>
+            <li><a href="statistics.html">30일 통계 (유료)</a></li>
+            <li><a href="top-prize.html">TOP 50 당첨금</a></li>
+            <li><a href="tax.html">실수령액 계산</a></li>
+            <li><a href="about.html">ABOUT</a></li>
+        </ul>
+    </nav>
+
+    <main class="prose">
+        <h1>문의</h1>
+        <p>이메일: <a href="mailto:420b@jachwibang.com">420b@jachwibang.com</a></p>
+        <p>이용권 관련 문의(키가 작동하지 않음, 중복 결제, 환불 요청)는 결제 확인 메일에 적힌 주문 번호나 라이선스 키 앞자리를 함께 보내 주시면 빨리 확인할 수 있습니다.</p>
+
+        <h2>메일 앱으로 보내기</h2>
+        <p>아래 내용을 채우고 보내기를 누르면 사용 중인 메일 앱이 열립니다. 이 사이트는 입력 내용을 따로 저장하지 않습니다.</p>
+        <form class="contact-form" id="contact-form">
+            <label for="contact-subject">제목</label>
+            <input type="text" id="contact-subject" maxlength="100" required>
+            <label for="contact-message">내용</label>
+            <textarea id="contact-message" rows="6" maxlength="2000" required></textarea>
+            <button type="submit" class="btn">메일 앱으로 보내기</button>
+        </form>
+    </main>
+
+    <footer class="footer">
+        <p><a href="privacy.html">개인정보 처리방침</a> · <a href="terms.html">이용약관</a> · <a href="contact.html">문의</a></p>
+        <p>&copy; 2026 lottodraw.kr</p>
+    </footer>
+</div>
+<script>
+    // mailto: form POST 는 브라우저마다 동작이 달라 제목/본문을 링크로 만들어 연다
+    document.getElementById('contact-form').addEventListener('submit', e => {
+        e.preventDefault();
+        const subject = encodeURIComponent(document.getElementById('contact-subject').value.trim());
+        const body = encodeURIComponent(document.getElementById('contact-message').value.trim());
+        window.location.href = `mailto:420b@jachwibang.com?subject=${subject}&body=${body}`;
+    });
+</script>
 </body>
-
 </html>
-
