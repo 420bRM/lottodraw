@@ -1,7 +1,189 @@
 {
-  "totalDraws": 1228,
-  "lastUpdated": "2026-06-13",
+  "totalDraws": 1241,
+  "lastUpdated": "2026-09-12",
   "draws": [
+    {
+      "round": 1241,
+      "numbers": [
+        7,
+        13,
+        16,
+        23,
+        24,
+        43
+      ],
+      "bonus": 9,
+      "firstPrizeWinners": 18,
+      "firstPrizeAmount": 1628391980
+    },
+    {
+      "round": 1240,
+      "numbers": [
+        11,
+        13,
+        19,
+        20,
+        31,
+        44
+      ],
+      "bonus": 27,
+      "firstPrizeWinners": 16,
+      "firstPrizeAmount": 1791817758
+    },
+    {
+      "round": 1239,
+      "numbers": [
+        11,
+        13,
+        22,
+        32,
+        33,
+        36
+      ],
+      "bonus": 8,
+      "firstPrizeWinners": 13,
+      "firstPrizeAmount": 2214789375
+    },
+    {
+      "round": 1238,
+      "numbers": [
+        2,
+        13,
+        18,
+        32,
+        38,
+        42
+      ],
+      "bonus": 22,
+      "firstPrizeWinners": 23,
+      "firstPrizeAmount": 1197258718
+    },
+    {
+      "round": 1237,
+      "numbers": [
+        10,
+        20,
+        23,
+        34,
+        37,
+        40
+      ],
+      "bonus": 36,
+      "firstPrizeWinners": 23,
+      "firstPrizeAmount": 1214932680
+    },
+    {
+      "round": 1236,
+      "numbers": [
+        12,
+        18,
+        21,
+        29,
+        34,
+        38
+      ],
+      "bonus": 10,
+      "firstPrizeWinners": 11,
+      "firstPrizeAmount": 2441919375
+    },
+    {
+      "round": 1235,
+      "numbers": [
+        6,
+        7,
+        11,
+        15,
+        39,
+        43
+      ],
+      "bonus": 20,
+      "firstPrizeWinners": 9,
+      "firstPrizeAmount": 3090961625
+    },
+    {
+      "round": 1234,
+      "numbers": [
+        1,
+        15,
+        19,
+        31,
+        35,
+        43
+      ],
+      "bonus": 27,
+      "firstPrizeWinners": 18,
+      "firstPrizeAmount": 1595129563
+    },
+    {
+      "round": 1233,
+      "numbers": [
+        2,
+        7,
+        20,
+        25,
+        37,
+        40
+      ],
+      "bonus": 29,
+      "firstPrizeWinners": 31,
+      "firstPrizeAmount": 837965396
+    },
+    {
+      "round": 1232,
+      "numbers": [
+        12,
+        15,
+        19,
+        22,
+        24,
+        36
+      ],
+      "bonus": 3,
+      "firstPrizeWinners": 11,
+      "firstPrizeAmount": 2533260819
+    },
+    {
+      "round": 1231,
+      "numbers": [
+        4,
+        13,
+        14,
+        18,
+        31,
+        38
+      ],
+      "bonus": 15,
+      "firstPrizeWinners": 17,
+      "firstPrizeAmount": 1652990074
+    },
+    {
+      "round": 1230,
+      "numbers": [
+        3,
+        8,
+        9,
+        22,
+        28,
+        42
+      ],
+      "bonus": 45,
+      "firstPrizeWinners": 16,
+      "firstPrizeAmount": 1771357196
+    },
+    {
+      "round": 1229,
+      "numbers": [
+        12,
+        13,
+        29,
+        34,
+        37,
+        42
+      ],
+      "bonus": 16,
+      "firstPrizeWinners": 8,
+      "firstPrizeAmount": 3519759000
+    },
     {
       "round": 1228,
       "numbers": [
@@ -13,8 +195,8 @@
         44
       ],
       "bonus": 1,
-      "firstPrizeWinners": 0,
-      "firstPrizeAmount": 0
+      "firstPrizeWinners": 11,
+      "firstPrizeAmount": 2698334421
     },
     {
       "round": 1227,
