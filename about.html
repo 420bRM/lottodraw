@@ -3,204 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="google-adsense-account" content="ca-pub-9372871176021283">
-    <title>About - lottodraw.kr</title>
+    <title>ABOUT | lottodraw.kr</title>
     <meta name="description" content="동행복권 로또 6/45 번호 생성기 lottodraw.kr에 대해 소개합니다.">
     <meta name="keywords" content="lottodraw.kr, 로또 번호 생성기, 보렐의 법칙, 로또 통계">
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 0; line-height: 1.6; }
-        nav { 
-            background-color: #fefefe; 
-            padding: 15px 10px; 
-            text-align: center; 
-            position: relative; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-        nav ul { 
-            list-style: none; 
-            padding: 0; 
-            margin: 0; 
-            display: flex; 
-            justify-content: center; 
-            flex-wrap: wrap; 
-        }
-        nav li { margin: 8px 15px; }
-        nav a { 
-            text-decoration: none; 
-            color: black; 
-            font-weight: bold; 
-        }
-        nav a:hover { color: #003087; }
-        .hamburger { 
-            display: none; 
-            cursor: pointer; 
-            position: absolute; 
-            top: 18px; 
-            left: 15px; 
-        }
-        .hamburger span { 
-            display: block; 
-            width: 25px; 
-            height: 3px; 
-            background: black; 
-            margin: 5px auto; 
-        }
-        
-        .container { 
-            max-width: 900px; 
-            margin: 50px auto 40px; /* index.html처럼 여백 추가 */
-            padding: 20px; 
-            text-align: left; 
-        }
-        h1 { color: #003087; text-align: center; }
-        .intro { 
-            font-size: 1.1em; 
-            margin-bottom: 50px; 
-            text-align: center; 
-        }
-        
-        /* 토글 섹션 */
-        details {
-            margin-bottom: 15px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        summary {
-            padding: 18px 20px;
-            background: #f8f9fa;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 1.1em;
-            color: #003087;
-        }
-        summary:hover { background: #eef1f5; }
-        .content {
-            padding: 20px;
-            background: white;
-        }
-        
-        /* 항상 보이는 섹션 */
-        .section {
-            margin-bottom: 45px;
-        }
-        .section h2 {
-            color: #003087;
-            border-bottom: 2px solid #003087;
-            padding-bottom: 8px;
-        }
-        
-        @media (max-width: 600px) {
-            nav ul { flex-direction: column; display: none; }
-            nav ul.active { display: flex; }
-            nav li { margin: 10px 0; }
-            .hamburger { display: block; }
-            .container { margin-top: 30px; padding: 15px; }
-        }
-        footer { 
-            margin-top: 60px; 
-            font-size: 0.8em; 
-            color: gray; 
-            text-align: center; 
-            padding: 20px; 
-        }
-    </style>
+    <link rel="canonical" href="https://www.lottodraw.kr/about.html">
+    <meta name="google-adsense-account" content="ca-pub-9372871176021283">
+    <link rel="stylesheet" href="css/site.css">
 </head>
 <body>
-    <nav>
-        <div class="hamburger" onclick="toggleMenu()">
-            <span></span><span></span><span></span>
+<div class="page">
+    <header class="banner">
+        <a class="brand" href="index.html">
+            <span class="brand-name">LOTTODRAW.KR</span>
+            <span class="brand-tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
+        </a>
+        <div class="banner-right">
+            <p class="latest-callout" id="latest-callout">최신 회차 불러오는 중…</p>
+            <a class="sticker" href="statistics.html">최근 <b>30일</b> 통계</a>
         </div>
-        <ul id="nav-menu">
-            <li><a href="index.html">Home</a></li>
-            <li><a href="about.html" style="color:#003087; font-weight:bold;">About</a></li>
-            <li><a href="tax.html">TAX</a></li>
-            <li><a href="top-prize.html">TOP 50</a></li>
+    </header>
+
+    <nav class="nav" aria-label="주 메뉴">
+        <ul>
+            <li><a href="index.html">생성기 · 통계</a></li>
             <li><a href="statistics.html">30일 통계 (유료)</a></li>
+            <li><a href="top-prize.html">TOP 50 당첨금</a></li>
+            <li><a href="tax.html">실수령액 계산</a></li>
+            <li><a href="about.html" aria-current="page">ABOUT</a></li>
         </ul>
     </nav>
 
-    <div class="container">
+    <main class="prose">
         <h1>About lottodraw.kr</h1>
-        
+
         <p class="intro">
             lottodraw.kr은 동행복권 로또 6/45 번호를 생성하는 무료 도구입니다.<br>
-            단순 랜덤 생성이 아닌, <strong>특수 패턴을 배제</strong>하여 현실적으로 나올 법한 번호를 제안하며,<br>
-            TAX 계산기, TOP 50, Statistics 등 실용적인 분석 기능을 제공합니다.
+            단순 랜덤 생성이 아닌 <strong>특수 패턴을 배제</strong>하여 현실적으로 나올 법한 번호를 제안하며,<br>
+            실수령액 계산기 · TOP 50 · 통계 등 실용적인 분석 기능을 제공합니다.
         </p>
 
-        <!-- 토글 섹션 -->
-        <details>
-            <summary>이 사이트는 왜 특수 패턴을 배제하나요?</summary>
-            <div class="content">
-                <p>로또는 순수한 확률 게임이지만, 연속 숫자·모두 홀수/짝수·소수만의 조합은 극단적인(다소 인위적인) 패턴으로 정의됩니다.</p>
-                <p>로또드로닷컴은 극단적 패턴을 미리 제외함으로써 현실적으로 나올 법한 조합에 더 가까운 번호를 제안합니다.</p>
-            </div>
-        </details>
+        <div class="faq">
+            <details>
+                <summary>이 사이트는 왜 특수 패턴을 배제하나요?</summary>
+                <div class="content">
+                    <p>로또는 순수한 확률 게임이지만, 연속 숫자·모두 홀수/짝수·소수만의 조합은 극단적인(다소 인위적인) 패턴으로 정의됩니다.</p>
+                    <p>lottodraw.kr은 극단적 패턴을 미리 제외함으로써 현실적으로 나올 법한 조합에 더 가까운 번호를 제안합니다.</p>
+                </div>
+            </details>
 
-        <details>
-            <summary>보렐의 법칙이란?</summary>
-            <div class="content">
-                <p>수학자 에밀 보렐(Émile Borel)이 제안한 경험적 원칙으로, “확률이 극도로 낮은 사건은 현실적에선 절대로 일어나지 않는다”는 개념입니다.</p>
-                <p>로또드로닷컴에서 16가지 특수 패턴(연속번호, 모두 소수, 제곱수 등)을 제외하는 근거가 됩니다.</p>
-            </div>
-        </details>
+            <details>
+                <summary>보렐의 법칙이란?</summary>
+                <div class="content">
+                    <p>수학자 에밀 보렐(Émile Borel)이 제안한 경험적 원칙으로, “확률이 극도로 낮은 사건은 현실에서 절대로 일어나지 않는다”는 개념입니다.</p>
+                    <p>lottodraw.kr에서 16가지 특수 패턴(연속번호, 모두 소수, 제곱수 등)을 제외하는 근거가 됩니다.</p>
+                </div>
+            </details>
 
-        <details>
-            <summary>TAX 계산기</summary>
-            <div class="content">
-                <p>로또 1등 당첨 시 <strong>실제 받을 수 있는 세후 실수령액</strong>을 정확히 계산해 주는 도구입니다.</p>
-                <p>당첨금액, 당첨자 수 등을 입력하면 즉시 세금 내역과 실수령액을 보여드립니다.</p>
-            </div>
-        </details>
+            <details>
+                <summary>실수령액 계산기</summary>
+                <div class="content">
+                    <p>로또 1등 당첨 시 <strong>실제 받을 수 있는 세후 실수령액</strong>을 계산해 주는 도구입니다.</p>
+                    <p>당첨금액을 입력하면 즉시 세금 내역과 실수령액을 보여드립니다.</p>
+                </div>
+            </details>
 
-        <details>
-            <summary>TOP 50</summary>
-            <div class="content">
-                <p>역대 로또 1등 당첨금 중 <strong>가장 많은 금액을 수령한 상위 50회차</strong>를 한눈에 볼 수 있는 페이지입니다.</p>
-                <p>회차별 당첨금, 당첨자 수, 실수령액 등을 확인할 수 있습니다.</p>
-            </div>
-        </details>
+            <details>
+                <summary>TOP 50 당첨금</summary>
+                <div class="content">
+                    <p>역대 로또 1등 당첨금 중 <strong>가장 많은 금액을 수령한 상위 50회차</strong>를 한눈에 볼 수 있는 페이지입니다.</p>
+                    <p>회차별 1인당 당첨금, 당첨자 수, 총 1등 당첨금을 확인할 수 있습니다.</p>
+                </div>
+            </details>
 
-        <details>
-            <summary>Statistics</summary>
-            <div class="content">
-                <p><span id="latest-round-count">최신</span>회차까지의 모든 당첨 데이터로 계산한 <strong>9가지 통계</strong>를 홈 화면 오른쪽에서 한 번에 볼 수 있습니다. 최근 30일 통계는 유료 이용권으로 제공합니다.</p>
-                <p>숫자별 출현 빈도, 보너스 번호 통계, 홀짝·저고·연속수·합계 분포, 핫/콜드 넘버, 쌍 분석 등<br>
-                로또를 더 깊이 있게 이해할 수 있는 다양한 통계를 제공합니다.</p>
-            </div>
-        </details>
-
-        <!-- 항상 보이는 섹션 -->
-        <div class="section">
-            <h2>사이트 정보</h2>
-            <p><strong>운영자</strong>: DC<br>
-            <strong>연락처</strong>: 420b@jachwibang.com<br>
-            <strong> L O V E </strong>: 1001-3742-8762 토스뱅크 </p>
+            <details>
+                <summary>통계</summary>
+                <div class="content">
+                    <p><span id="latest-round-count">최신</span>회차까지의 모든 당첨 데이터로 계산한 <strong>9가지 통계</strong>를 홈 화면 오른쪽에서 한 번에 볼 수 있습니다. 최근 30일 통계는 유료 이용권으로 제공합니다.</p>
+                    <p>숫자별 출현 빈도, 보너스 번호 통계, 홀짝·저고·연속수·합계 분포, 핫/콜드 넘버, 쌍 분석 등<br>
+                    로또를 더 깊이 있게 이해할 수 있는 다양한 통계를 제공합니다.</p>
+                </div>
+            </details>
         </div>
-    </div>
 
-    <a href="index.html" style="display: inline-block; margin: 30px 0; padding: 12px 28px; background: #003087; color: white; text-decoration: none; border-radius: 6px;">
-        홈으로 돌아가기
-    </a>
+        <h2>사이트 정보</h2>
+        <p>
+            <strong>운영자</strong>: DC<br>
+            <strong>연락처</strong>: 420b@jachwibang.com<br>
+            <strong>L O V E</strong>: 1001-3742-8762 토스뱅크
+        </p>
 
-    <footer>
-        <p class="legal-links"><a href="privacy.html">개인정보 보호 정책</a> | <a href="terms.html">이용약관</a> | <a href="contact.html">문의</a></p>
-        <p>&copy; 2026 lottodraw.kr. All rights reserved.</p>
+        <p class="page-actions"><a class="btn" href="index.html">홈으로 돌아가기</a></p>
+    </main>
+
+    <footer class="footer">
+        <ul class="footer-nav">
+            <li><a href="index.html">HOME</a></li>
+            <li><a href="statistics.html">30일 통계</a></li>
+            <li><a href="top-prize.html">TOP 50</a></li>
+            <li><a href="tax.html">실수령액</a></li>
+            <li><a href="about.html">ABOUT</a></li>
+        </ul>
+        <p><a href="privacy.html">개인정보 처리방침</a> · <a href="terms.html">이용약관</a> · <a href="contact.html">문의</a></p>
+        <p>&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권</p>
     </footer>
+</div>
 
-    <script>
-        function toggleMenu() {
-            const menu = document.getElementById('nav-menu');
-            menu.classList.toggle('active');
-        }
-        // 회차 수는 여기 문자열로 박아 두지 않는다 — lotto-data.json 에서 읽는다.
-        fetch('lotto-data.json')
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('latest-round-count').textContent = `${data.totalDraws}`;
-            })
-            .catch(err => console.error(err));
-    </script>
+<script src="js/site-header.js"></script>
+<script>
+    // 회차 수는 문자열로 박아 두지 않는다 — lotto-data.json 에서 읽는다.
+    SiteHeader.loadData()
+        .then(data => {
+            document.getElementById('latest-round-count').textContent = `${data.totalDraws}`;
+        })
+        .catch(err => console.error(err));
+</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9372871176021283" crossorigin="anonymous"></script>
 </body>
 </html>
