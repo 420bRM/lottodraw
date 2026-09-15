@@ -66,15 +66,14 @@ async function fetchRound(round) {
             if (list.length === 0) return null;
             const x = list[0];
             if (x.ltEpsd !== round) throw new Error(`${round}회를 요청했는데 ${x.ltEpsd}회가 왔다`);
+            const ymd = String(x.ltRflYmd);
             return {
-                draw: {
-                    round: x.ltEpsd,
-                    numbers: [x.tm1WnNo, x.tm2WnNo, x.tm3WnNo, x.tm4WnNo, x.tm5WnNo, x.tm6WnNo].sort((a, b) => a - b),
-                    bonus: x.bnsWnNo,
-                    firstPrizeWinners: x.rnk1WnNope,
-                    firstPrizeAmount: x.rnk1WnAmt,
-                },
-                date: `${String(x.ltRflYmd).slice(0, 4)}-${String(x.ltRflYmd).slice(4, 6)}-${String(x.ltRflYmd).slice(6, 8)}`,
+                round: x.ltEpsd,
+                date: `${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}`,
+                numbers: [x.tm1WnNo, x.tm2WnNo, x.tm3WnNo, x.tm4WnNo, x.tm5WnNo, x.tm6WnNo].sort((a, b) => a - b),
+                bonus: x.bnsWnNo,
+                firstPrizeWinners: x.rnk1WnNope,
+                firstPrizeAmount: x.rnk1WnAmt,
             };
         } catch (e) {
             lastErr = e;
@@ -91,6 +90,9 @@ function validate(data) {
     draws.forEach((d, i) => {
         const expectRound = draws.length - i;
         if (d.round !== expectRound) errs.push(`${i}번째 항목 회차 ${d.round} (기대값 ${expectRound}) — 누락/중복/정렬 오류`);
+        // 30일 통계가 추첨일로 기간을 자르므로 날짜가 빠진 회차가 있으면 안 된다
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(d.date || '')) errs.push(`${d.round}회 날짜 없음/형식 오류: ${d.date} (처음이면 --full 로 실행)`);
+        else if (i > 0 && draws[i - 1].date && draws[i - 1].date <= d.date) errs.push(`${d.round}회 날짜가 다음 회차보다 늦다: ${d.date}`);
         const n = d.numbers;
         const ok = Array.isArray(n) && n.length === 6 && new Set(n).size === 6 &&
             n.every(v => Number.isInteger(v) && v >= 1 && v <= 45) &&
@@ -106,7 +108,7 @@ function validate(data) {
 }
 
 function diffDraw(a, b) {
-    return ['numbers', 'bonus', 'firstPrizeWinners', 'firstPrizeAmount']
+    return ['date', 'numbers', 'bonus', 'firstPrizeWinners', 'firstPrizeAmount']
         .filter(k => JSON.stringify(a[k]) !== JSON.stringify(b[k]))
         .map(k => `${k} ${JSON.stringify(a[k])} → ${JSON.stringify(b[k])}`);
 }
@@ -126,7 +128,6 @@ async function main() {
 
     const added = [];
     const changed = [];
-    let latestDate = data.lastUpdated;
 
     const refreshFrom = FULL ? 1 : Math.max(1, maxRound - REFRESH_RECENT + 1);
     console.log(`현재 ${maxRound}회차까지 보유. ${refreshFrom}~${maxRound}회 재확인 후 ${maxRound + 1}회부터 새로 받는다.`);
@@ -134,9 +135,8 @@ async function main() {
     for (let r = refreshFrom; r <= maxRound; r++) {
         const got = await fetchRound(r);
         if (!got) throw new Error(`${r}회는 이미 보유한 회차인데 API가 빈 목록을 돌려줬다`);
-        const diffs = diffDraw(byRound.get(r), got.draw);
-        if (diffs.length) { changed.push({ round: r, diffs }); byRound.set(r, got.draw); }
-        if (r === maxRound) latestDate = got.date;
+        const diffs = diffDraw(byRound.get(r), got);
+        if (diffs.length) { changed.push({ round: r, diffs }); byRound.set(r, got); }
         if (FULL && r % 100 === 0) console.log(`  … ${r}회 확인`);
         await sleep(DELAY_MS);
     }
@@ -144,28 +144,31 @@ async function main() {
     for (let r = maxRound + 1; ; r++) {
         const got = await fetchRound(r);
         if (!got) break;
-        byRound.set(r, got.draw);
+        byRound.set(r, got);
         added.push(r);
-        latestDate = got.date;
-        console.log(`  + ${r}회 ${got.date} [${got.draw.numbers.join(', ')}] +${got.draw.bonus}`);
+        console.log(`  + ${r}회 ${got.date} [${got.numbers.join(', ')}] +${got.bonus}`);
         await sleep(DELAY_MS);
     }
 
     const draws = [...byRound.values()].sort((a, b) => b.round - a.round);
-    const next = { totalDraws: draws.length, lastUpdated: latestDate, draws };
+    const next = { totalDraws: draws.length, lastUpdated: draws[0].date || data.lastUpdated, draws };
 
     const errs = validate(next);
     if (errs.length) {
-        console.error(`검증 실패 — 파일을 쓰지 않는다:\n  ${errs.slice(0, 20).join('\n  ')}`);
+        console.error(`검증 실패 — 파일을 쓰지 않는다:\n  ${errs.slice(0, 20).join('\n  ')}${errs.length > 20 ? `\n  … 외 ${errs.length - 20}건` : ''}`);
         process.exit(1);
     }
 
-    changed.forEach(c => console.log(`  ~ ${c.round}회 교정: ${c.diffs.join(' / ')}`));
+    // 날짜만 새로 붙은 회차는 한 줄로 요약한다 (--full 첫 실행 때 1,000줄 넘게 찍히지 않도록)
+    const dateOnly = changed.filter(c => c.diffs.length === 1 && c.diffs[0].startsWith('date undefined'));
+    changed.filter(c => dateOnly.indexOf(c) === -1).forEach(c => console.log(`  ~ ${c.round}회 교정: ${c.diffs.join(' / ')}`));
+    if (dateOnly.length) console.log(`  ~ 추첨일 새로 기록: ${dateOnly.length}회차`);
+
     let out = JSON.stringify(next, null, 2).replace(/\n/g, eol);
     if (trailing) out += eol;
 
     const isChanged = out !== raw;
-    console.log(`\n추가 ${added.length}회차, 교정 ${changed.length}회차 → 최신 ${draws[0].round}회 (${latestDate})`);
+    console.log(`\n추가 ${added.length}회차, 교정 ${changed.length}회차 → 최신 ${draws[0].round}회 (${next.lastUpdated})`);
     setOutput('changed', isChanged);
     setOutput('latest', draws[0].round);
     setOutput('added', added.length);
