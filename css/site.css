@@ -223,11 +223,32 @@ details[open] > summary.card-title { padding-bottom: 0; }
 .picker-warning { margin: 4px 0 0; min-height: 1.4em; color: var(--error); font-size: 13px; }
 .picker-actions { display: flex; justify-content: flex-end; }
 
-/* 패턴 체크 목록 */
-.patterns { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 12px; margin: 0; padding: 0; list-style: none; }
-.patterns li { display: flex; gap: 6px; align-items: flex-start; font-size: 13px; line-height: 1.4; }
-.patterns input { flex: none; margin: 3px 0 0; }
+/* 패턴 체크 목록 — 두 칸을 같은 폭으로 두고 줄바꿈을 막아 행 높이를 맞춘다.
+   한 줄이라도 접히면 그 줄부터 좌우 체크박스가 어긋나 보인다. */
+.patterns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2px 14px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.patterns li {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    min-width: 0;
+    font-size: 13px;
+    line-height: 1.5;
+}
+.patterns label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.patterns input { flex: none; margin: 0; }
 .patterns-actions { display: flex; gap: 8px; margin-top: 10px; }
+
+/* 생성기 구간에서는 카드 세로를 꽉 채우도록 체크 목록을 고르게 벌린다 */
+#sec-generator #patterns-title + .card-body { display: flex; flex-direction: column; }
+#sec-generator .patterns { flex: 1; align-content: space-evenly; }
+#sec-generator .patterns-actions { margin-top: 12px; }
 
 /* 로그/이력 */
 .log { max-height: 200px; overflow-y: auto; margin-top: 10px; padding: 10px; background: #f9f9f9; border: 1px solid #ccc; font-size: 12px; }
@@ -356,6 +377,9 @@ details[open] > summary.card-title { padding-bottom: 0; }
    구간마다 화면을 채우고, 경계 근처에서만 붙는다(proximity). mandatory 로 하면
    통계처럼 한 화면을 넘는 구간에 갇혀 중간을 못 본다. */
 html.home { scroll-snap-type: y proximity; scroll-behavior: smooth; }
+/* 휠 이동을 JS 가 맡으면 CSS 스냅은 끈다. 둘 다 켜면 구간 중간 자리에서
+   스냅이 구간 머리로 도로 잡아당겨 서로 싸운다. */
+html.home.js-wheelnav { scroll-snap-type: none; }
 .snap-section {
     display: flex;
     flex-direction: column;
@@ -443,11 +467,31 @@ html.home { scroll-snap-type: y proximity; scroll-behavior: smooth; }
 #sec-generator .cta { display: flex; flex-direction: column; justify-content: center; gap: 4px; }
 #sec-generator .cta h2 { font-size: 20px; }
 #sec-generator .result-msg { margin: 16px 0; }
-.gen-extras { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: start; margin-top: 14px; }
-.gen-extras .card-body { font-size: 13px; }
+.gen-extras { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; margin-top: 14px; }
+/* 펼쳤을 때 구간이 한 화면을 넘지 않도록 본문 높이를 묶고 안에서 스크롤시킨다 */
+.gen-extras .card-body { max-height: 12vh; overflow-y: auto; font-size: 12px; line-height: 1.55; }
+.gen-extras .card-body p { margin: 4px 0; }
+.gen-extras .history { font-size: 12px; }
+.gen-extras .log { max-height: none; margin-top: 6px; padding: 6px; font-size: 11px; }
 
 /* ───── 홈 3구간: 10회차 미리보기 ───── */
-.teaser { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.teaser { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.teaser-side { display: grid; gap: 14px; min-width: 0; }
+.teaser-side .card-body { font-size: 13px; }
+
+/* 이용권 카드 — 이 화면에서 유일하게 돈이 걸린 자리라 눈에 띄게 둔다 */
+.card.sell { border: 2px solid var(--brand); box-shadow: 0 10px 20px rgba(0, 48, 135, .15); }
+.card.sell .card-title { background: var(--brand); color: #fff; padding: 10px 14px; font-size: 16px; }
+.card.sell .card-title small { color: #cfe0ff; }
+.sell-lede { margin: 0 0 8px; }
+.sell-list { margin: 0; padding: 0 0 0 2px; list-style: none; }
+.sell-list li { padding: 5px 0 5px 22px; position: relative; border-top: 1px solid var(--line); }
+.sell-list li::before { content: "✓"; position: absolute; left: 2px; color: var(--brand); font-weight: bold; }
+.sell-list b { color: var(--brand); }
+.sell-price { margin: 12px 0 0; text-align: center; font-size: 14px; color: var(--muted); }
+.sell-price b { color: #000; font-size: 22px; }
+.card.sell .page-actions { margin: 10px 0 0; }
+.card.sell .btn-big { display: block; width: 100%; }
 .heat-grid { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 5px; }
 .heat {
     aspect-ratio: 1 / 1;
@@ -484,8 +528,25 @@ html.home { scroll-snap-type: y proximity; scroll-behavior: smooth; }
     .snap-section { padding: 14px 12px; min-height: 0; }
     #sec-generator { min-height: 0; }
 }
-/* 화면이 낮으면 구간을 화면에 맞추는 게 오히려 답답하다 */
-@media (max-height: 700px) {
+/* 1366x768 같은 낮은 화면에서는 탭을 펼치면 1구간이 한 화면을 넘는다 — 여백과 글자를 조인다 */
+@media (max-height: 899px) {
+    #sec-generator .eyebrow h1 { font-size: 20px; }
+    #sec-generator .eyebrow p { font-size: 13px; }
+    #sec-generator .eyebrow { padding-bottom: 8px; }
+    #sec-generator .cta h2 { font-size: 17px; }
+    #sec-generator .result-msg { margin: 10px 0; font-size: 13px; }
+    #sec-generator .ball { width: 42px; height: 42px; font-size: 17px; }
+    #sec-generator .patterns li { font-size: 12px; }
+    #sec-generator .picker-help { font-size: 12px; }
+    .gen-extras { margin-top: 8px; gap: 10px; }
+    .gen-extras .card-body { max-height: 6vh; }
+    #sec-generator { padding-top: 14px; padding-bottom: 14px; }
+    .scroll-cue { padding-top: 8px; font-size: 11px; }
+    .scroll-cue .chevron { font-size: 15px; }
+}
+
+/* 화면이 아주 낮으면 구간을 화면에 맞추는 게 오히려 답답하다 — 평범한 스크롤로 둔다 */
+@media (max-height: 740px) {
     html.home { scroll-snap-type: none; }
     .snap-section { min-height: 0; }
     #sec-generator { min-height: 0; }

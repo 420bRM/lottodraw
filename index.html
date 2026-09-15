@@ -35,14 +35,14 @@
         </a>
         <div class="banner-right">
             <p class="latest-callout" id="latest-callout">최신 회차 불러오는 중…</p>
-            <a class="sticker" href="statistics.html">최근 <b>10회차</b> 통계</a>
+            <a class="sticker" href="statistics.html">최근 <b>5개월</b> 통계</a>
         </div>
     </header>
 
     <nav class="nav" aria-label="주 메뉴">
         <ul>
             <li><a href="index.html" aria-current="page">생성기 · 통계</a></li>
-            <li><a href="statistics.html">10회차 통계 (유료)</a></li>
+            <li><a href="statistics.html">5개월 통계 (유료)</a></li>
             <li><a href="top-prize.html">TOP 50 당첨금</a></li>
             <li><a href="tax.html">실수령액 계산</a></li>
             <li><a href="about.html">ABOUT</a></li>
@@ -112,9 +112,9 @@
             </div>
 
             <div class="gen-extras">
-                    <section class="card">
-                        <details>
-                            <summary class="card-title"><span>생성 이력 · 과정 로그</span></summary>
+                <section class="card">
+                    <details>
+                        <summary class="card-title"><span>생성 이력 · 과정 로그</span></summary>
                             <div class="card-body">
                                 <table class="history">
                                     <caption class="sr-only">오늘 생성한 번호 (최근 20개)</caption>
@@ -138,12 +138,6 @@
                         </details>
                     </section>
 
-                    <section class="card">
-                        <div class="card-body">
-                            <strong>당첨되면 얼마 받을까?</strong> <a href="tax.html">실수령액 계산기</a><br>
-                            <a href="https://dhlottery.co.kr/" rel="noopener">동행복권 홈페이지</a>
-                        </div>
-                    </section>
             </div>
 
             <button type="button" class="scroll-cue" data-goto="sec-stats">
@@ -196,15 +190,33 @@
                     </div>
                 </section>
 
-                <section class="card" aria-labelledby="recent-cta-title">
-                    <h3 class="card-title" id="recent-cta-title"><span>10회차 통계 더 보기</span></h3>
-                    <div class="card-body">
-                        <p>여기서는 최근 10회차에 어떤 번호가 몇 번 나왔는지만 보여줍니다.</p>
-                        <p>같은 10회차를 홀짝·저고·연속·합계·AC값까지 통계 11종으로 쪼개 본 페이지는 이용권으로 제공합니다.</p>
-                        <p class="card-note">10회차는 표본이 작아 우연의 영향이 큽니다. 지난 기록 요약이며 예측이 아닙니다.</p>
-                        <p class="page-actions"><a class="btn" href="statistics.html">10회차 통계 보기</a></p>
-                    </div>
-                </section>
+                <div class="teaser-side">
+                    <section class="card sell" aria-labelledby="recent-cta-title">
+                        <h3 class="card-title" id="recent-cta-title"><span>최근 5개월 통계 더 보기</span><small>이용권</small></h3>
+                        <div class="card-body">
+                            <p class="sell-lede">위 그리드는 <strong>최근 10회차</strong>에 어떤 번호가 몇 번 나왔는지만 보여줍니다.</p>
+                            <ul class="sell-list">
+                                <li><b>22회차</b>(약 5개월) 치를 통계 <b>11종</b>으로</li>
+                                <li>홀짝 · 저고 · 연속 · 합계 · <b>AC값</b> · 끝자리까지</li>
+                                <li>기간 중 많이 · 적게 나온 번호와 번호 쌍</li>
+                            </ul>
+                            <p class="sell-price"><b>$2</b>부터 · 평생 이용권 <b>$10</b></p>
+                            <p class="page-actions"><a class="btn btn-big" href="statistics.html">5개월 통계 열어보기</a></p>
+                            <p class="card-note">지난 기록 요약이며 예측이 아닙니다. 어떤 조합이든 1등 확률은 1/8,145,060 입니다.</p>
+                        </div>
+                    </section>
+
+                    <section class="card" aria-labelledby="doubt-title">
+                        <h3 class="card-title" id="doubt-title"><span>정말 우연일까?</span></h3>
+                        <div class="card-body">
+                            <p>숫자는 독립시행입니다. 1번이 지난주에 나왔든 10년을 쉬었든 이번 주 확률은 같습니다. 그런데 추첨기 안에서 도는 건 숫자가 아니라 <strong>공</strong>입니다.</p>
+                            <p>45개 공이 완전히 똑같을 수 있을까요? 무게가 0.01g 다를 수 있고, 수만 번 부딪히며 표면이 아주 미세하게 눌릴 수도 있습니다. 인쇄된 숫자의 잉크 양마저 번호마다 다릅니다. 이론상 이런 차이는 어떤 공을 조금 더 자주 튀어 오르게 만들 수 있습니다.</p>
+                            <p>실제로 1980년 미국 펜실베이니아 복권에서는 일부 공에 페인트를 주입해 무게를 늘린 조작 사건이 적발됐습니다. <strong>공의 무게가 결과를 바꾼다는 건 이미 증명된 셈입니다.</strong></p>
+                            <p>그럼 우리 기록은 어떨까요? 1,241회 기준 한 번호의 기대 출현은 165회, 표준편차는 약 12회입니다. 가장 많이 나온 <b>34번(186회)</b>은 +1.7, 가장 적게 나온 <b>9번(136회)</b>은 −2.5 표준편차입니다. 번호 45개를 한꺼번에 놓고 보면, 완벽하게 공평한 추첨에서도 늘 이 정도의 최대·최소 차이가 나옵니다.</p>
+                            <p class="card-note">공이 완전히 같지 않다는 건 사실입니다. 다만 지금까지의 기록만으로는 그 차이가 결과를 바꿨다고 말할 수 없습니다. 의심할 이유는 있고, 증거는 아직 없습니다.</p>
+                        </div>
+                    </section>
+                </div>
             </div>
 
             <section class="comments" aria-labelledby="comments-title">
@@ -223,7 +235,7 @@
     <footer class="footer">
         <ul class="footer-nav">
             <li><a href="index.html">HOME</a></li>
-            <li><a href="statistics.html">10회차 통계</a></li>
+            <li><a href="statistics.html">5개월 통계</a></li>
             <li><a href="top-prize.html">TOP 50</a></li>
             <li><a href="tax.html">실수령액</a></li>
             <li><a href="about.html">ABOUT</a></li>
@@ -599,37 +611,112 @@
     }
 
     // ---- 구간 이동 ----
+    // 휠 한 번에 한 화면씩 움직인다. CSS 스냅만으로는 안 되는데, 통계 구간이 한 화면보다
+    // 커서 그 안의 중간 지점이 스냅 지점이 아니기 때문이다. 그래서 "설 자리"를 직접 만든다:
+    // 각 구간의 머리, 그리고 한 화면을 넘는 구간이면 그 꼬리(끝이 화면에 닿는 위치)까지.
     function initSections() {
         const ids = ['sec-generator', 'sec-stats', 'sec-recent'];
         const dots = [...document.querySelectorAll('.dot-nav button')];
+        const smooth = !matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-        // 첫 구간은 헤더·메뉴 아래부터 시작하므로 그 높이만큼 빼 준다.
-        const chrome = () => {
+        function chrome() {
             const banner = document.querySelector('.banner');
             const nav = document.querySelector('.nav');
             const h = (banner ? banner.offsetHeight : 0) + (nav ? nav.offsetHeight : 0);
             document.documentElement.style.setProperty('--chrome-h', h + 'px');
-        };
-        chrome();
-        window.addEventListener('resize', chrome);
+        }
 
+        let stops = [];
+        function measure() {
+            chrome();
+            const vh = window.innerHeight;
+            const maxScroll = document.documentElement.scrollHeight - vh;
+            const els = ids.map(id => document.getElementById(id)).filter(Boolean);
+            const list = [];
+            els.forEach((el, i) => {
+                const top = i === 0 ? 0 : el.offsetTop;   // 첫 구간은 헤더가 보이는 문서 맨 위
+                const next = els[i + 1];
+                const bottom = next ? next.offsetTop : document.documentElement.scrollHeight;
+                list.push(top);
+                // 구간이 한 화면보다 뚜렷하게 크면 꼬리에도 설 자리를 둔다
+                if (bottom - top > vh * 1.25) list.push(Math.min(bottom - vh, maxScroll));
+            });
+            stops = [...new Set(list.map(v => Math.max(0, Math.round(v))))].sort((a, b) => a - b);
+        }
+        measure();
+        window.addEventListener('resize', measure);
+        // 통계는 나중에 그려져 구간 높이가 바뀐다 — 처음 잰 값만 들고 있으면 자리가 어긋난다
+        if ('ResizeObserver' in window) new ResizeObserver(measure).observe(document.body);
+
+        function goTo(y) {
+            window.scrollTo({ top: y, behavior: smooth ? 'smooth' : 'auto' });
+        }
         document.querySelectorAll('[data-goto]').forEach(btn => {
             btn.addEventListener('click', () => {
                 const t = document.getElementById(btn.dataset.goto);
-                if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                if (t) goTo(btn.dataset.goto === ids[0] ? 0 : t.offsetTop);
             });
         });
 
-        // 지금 보고 있는 구간을 점에 표시하고, 첫 구간을 지나면 안내 화살표를 감춘다.
-        if (!('IntersectionObserver' in window)) return;
-        const io = new IntersectionObserver(entries => {
-            entries.forEach(en => {
-                if (!en.isIntersecting) return;
-                const i = ids.indexOf(en.target.id);
-                dots.forEach((d, k) => d.setAttribute('aria-current', String(k === i)));
-            });
-        }, { threshold: 0.5 });
-        ids.forEach(id => { const el = document.getElementById(id); if (el) io.observe(el); });
+        // 지금 보고 있는 구간을 점에 표시한다
+        if ('IntersectionObserver' in window) {
+            const io = new IntersectionObserver(entries => {
+                entries.forEach(en => {
+                    if (!en.isIntersecting) return;
+                    const i = ids.indexOf(en.target.id);
+                    dots.forEach((d, k) => d.setAttribute('aria-current', String(k === i)));
+                });
+            }, { threshold: 0.5 });
+            ids.forEach(id => { const el = document.getElementById(id); if (el) io.observe(el); });
+        }
+
+        // 마우스 휠에서만 가로챈다. 손가락 스크롤(터치)과 좁은 화면은 그대로 둔다.
+        const wheelOK = matchMedia('(min-width: 900px) and (min-height: 700px) and (pointer: fine)');
+        if (!wheelOK.matches) return;
+
+        // JS 가 자리 이동을 맡으므로 CSS 스냅은 끈다 — 켜 두면 구간 중간 자리에서
+        // 스냅이 구간 머리로 도로 잡아당겨 서로 싸운다.
+        document.documentElement.classList.add('js-wheelnav');
+
+        let lock = false;
+        function release() { lock = false; }
+
+        // 안에서 따로 스크롤되는 상자(로그, 접힌 카드 본문, 표) 위에서는 가로채지 않는다
+        function scrollableUnder(node, down) {
+            for (let el = node; el && el !== document.body; el = el.parentElement) {
+                if (!(el instanceof Element)) continue;
+                const oy = getComputedStyle(el).overflowY;
+                if (oy !== 'auto' && oy !== 'scroll') continue;
+                if (el.scrollHeight - el.clientHeight < 4) continue;
+                if (down ? el.scrollTop < el.scrollHeight - el.clientHeight - 2 : el.scrollTop > 2) return true;
+            }
+            return false;
+        }
+
+        window.addEventListener('wheel', e => {
+            if (e.ctrlKey) return;                       // 확대/축소는 건드리지 않는다
+            if (Math.abs(e.deltaY) < 4) return;
+            const down = e.deltaY > 0;
+            if (scrollableUnder(e.target, down)) return;
+
+            if (lock) { e.preventDefault(); return; }
+
+            const y = window.scrollY;
+            const target = down
+                ? stops.find(v => v > y + 4)
+                : [...stops].reverse().find(v => v < y - 4);
+            if (target === undefined) return;            // 더 갈 데가 없으면 평소대로 (푸터까지)
+
+            e.preventDefault();
+            lock = true;
+            goTo(target);
+            if ('onscrollend' in window) {
+                window.addEventListener('scrollend', release, { once: true });
+                setTimeout(release, 1200);               // scrollend 가 안 오는 경우 대비
+            } else {
+                setTimeout(release, 620);
+            }
+        }, { passive: false });
     }
 
     // ---- 초기화 ----

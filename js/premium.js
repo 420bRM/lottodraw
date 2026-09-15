@@ -1,4 +1,4 @@
-// 10회차 통계 잠금. Polar 라이선스 키를 브라우저에서 확인한다.
+// 5개월 통계 잠금. Polar 라이선스 키를 브라우저에서 확인한다.
 //
 // 이 잠금은 편의 잠금이다. 원본 데이터(lotto-data.json)와 계산 코드가 공개돼 있어서,
 // 마음먹은 사람이 직접 계산하는 것까지 막을 수는 없다. 서버 없는 정적 사이트의 한계다.
@@ -111,7 +111,7 @@
         fetch('lotto-data.json')
             .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
             .then(data => {
-                const count = cfg.windowDraws || 10;
+                const count = cfg.windowDraws || 22;
                 const w = LottoStats.withinDraws(data.draws, count);
                 if (!w.draws.length) throw new Error('추첨 기록이 없다');
                 const sorted = w.draws.slice().sort((a, b) => b.round - a.round);
