@@ -3,580 +3,513 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   
-    <!-- SEO 핵심 메타 태그 -->
-    <title>동행복권 로또 6/45 번호 생성기 | lottodraw.kr</title>
-    <meta name="description" content="동행복권 로또 6/45 번호를 무작위로 생성하는 무료 도구. 특수 패턴 배제 기능과 로또 통계, TAX 계산기, TOP 50 당첨금 분석까지 제공합니다.">
-    <meta name="keywords" content="로또 번호 생성기, 동행복권, 로또 6/45, 로또 통계, 로또 번호 추천, lottodraw">
-    <!-- Open Graph -->
-    <meta property="og:title" content="동행복권 로또 6/45 번호 생성기 | lottodraw.kr">
-    <meta property="og:description" content="특수 패턴을 배제한 현실적인 로또 번호 생성 + 9가지 통계 분석 + TAX 계산기 + TOP 50 당첨금. 로또를 더 스마트하게 즐기세요.">
+    <title>로또 6/45 번호 생성기 · 전 회차 통계 | lottodraw.kr</title>
+    <meta name="description" content="16개 특수 패턴에 걸리는 조합을 걸러내는 로또 6/45 번호 생성기와 전 회차 당첨번호 통계 9종을 한 화면에서 봅니다.">
+    <meta name="keywords" content="로또 번호 생성기, 동행복권, 로또 6/45, 로또 통계, 로또 당첨번호, lottodraw">
+    <link rel="canonical" href="https://www.lottodraw.kr/">
+    <meta property="og:title" content="로또 6/45 번호 생성기 · 전 회차 통계 | lottodraw.kr">
+    <meta property="og:description" content="특수 패턴을 걸러내는 번호 생성기와 전 회차 통계 9종을 한 화면에서.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://www.lottodraw.kr/">
     <meta property="og:site_name" content="lottodraw.kr">
     <meta name="google-adsense-account" content="ca-pub-9372871176021283">
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 0; line-height: 1.6; }
-        /* 포커스 링은 지우지 않는다 — 키보드로만 쓰는 사람이 자기 위치를 잃는다 */
-        :focus-visible { outline: 3px solid #003087; outline-offset: 2px; }
-        nav { background-color: #fefefe; padding: 15px 10px; text-align: center; position: relative; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        nav ul { list-style: none; padding: 0; margin: 0; display: flex; justify-content: center; flex-wrap: wrap; }
-        nav li { margin: 8px 15px; }
-        nav a { text-decoration: none; color: black; font-weight: bold; }
-        nav a:hover { color: #003087; }
-        #nav-menu li:first-child a { color: #003087; font-weight: bold; }
-        .hamburger { display: none; cursor: pointer; position: absolute; top: 18px; left: 15px; border: none; background: none; padding: 0; }
-        .hamburger span { display: block; width: 25px; height: 3px; background: black; margin: 5px auto; }
-        #latest-toggle { font: inherit; color: inherit; border: none; background: none; cursor: pointer; padding: 0; }
-        #latest-draw, #history { max-width: 600px; margin: 40px auto; padding: 0 16px; text-align: center; }
-        #latest-draw h3, #history h3 { font-size: 1.3em; margin-bottom: 10px; color: #333; cursor: pointer; }
-        #latest-table, #history-table { width: 100%; margin: 0 auto; border-collapse: collapse; table-layout: fixed; }
-        #latest-table th, #latest-table td, #history-table th, #history-table td { border: 1px solid #ddd; padding: 6px 4px; text-align: center; font-size: 0.85em; }
-        #latest-table th, #history-table th { background-color: #f2f2f2; }
-        #latest-table { display: none; }
-        #latest-table td:nth-child(2) { width: 42%; }
-        #latest-table td:nth-child(2) span { display: inline-block; width: 14%; text-align: center; }
-        /* 히어로 — 페이지를 열면 공 6개가 놓일 자리가 먼저 보인다 */
-        #hero { margin: 24px auto 8px; }
-        #result-balls { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin: 0 auto 16px; padding: 0 16px; }
-        .ball {
-            width: 56px; height: 56px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 22px; font-weight: bold; font-variant-numeric: tabular-nums;
-            background: #fafafa; color: #ccc; border: 2px dashed #e0e0e0;
-        }
-        .ball.filled { color: #fff; border: 2px solid transparent; animation: ball-pop .28s ease-out both; }
-        .ball.filled[data-band="1"] { background: #fbc400; }
-        .ball.filled[data-band="2"] { background: #69c8f2; }
-        .ball.filled[data-band="3"] { background: #ff7272; }
-        .ball.filled[data-band="4"] { background: #aaaaaa; }
-        .ball.filled[data-band="5"] { background: #b0d840; }
-        @keyframes ball-pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        @media (prefers-reduced-motion: reduce) { .ball.filled { animation: none; } }
-        #result { font-size: 1.05em; margin: 0 auto 16px; max-width: 600px; padding: 0 16px; color: #555; }
-        #result.error { color: #c00; }
-        #generate-btn { font-size: 1.1em; font-weight: bold; padding: 12px 32px; border: none; border-radius: 8px; background: #003087; color: #fff; cursor: pointer; }
-        #generate-btn:hover { background: #002266; }
-        .lead { max-width: 600px; margin: 20px auto; padding: 0 16px; color: #444; }
-        /* 공 6개 + 간격이 한 줄에 들어가는 폭을 기준으로 줄인다
-           (56*6 + 10*5 + 좌우 여백 32 = 418px) */
-        @media (max-width: 430px) {
-            .ball { width: 44px; height: 44px; font-size: 18px; }
-            #result-balls { gap: 6px; }
-        }
-        #log { margin-top: 20px; text-align: left; max-width: 600px; margin: 20px auto; border: 1px solid #ccc; padding: 10px; background: #f9f9f9; overflow-y: auto; max-height: 300px; }
-        #patterns, #picker { text-align: left; max-width: 600px; margin: 20px auto; padding: 0 16px; }
-        #visitor-count { margin-top: 40px; font-size: 16px; color: gray; }
-        .pattern-item { margin-bottom: 5px; }
-        .borel-description { font-size: 0.8em; }
-        .borel-description p { margin: 5px 0; }
-
-        /* 포함/제외 번호 그리드 — 마킹용지처럼 45칸을 그대로 놓는다 */
-        #number-grid {
-            display: grid;
-            grid-template-columns: repeat(9, 1fr);
-            gap: 6px;
-            margin: 16px 0;
-            padding: 0;
-        }
-        .cell {
-            aspect-ratio: 1 / 1;
-            min-width: 0;
-            padding: 0;
-            border: 2px solid #ddd;
-            border-radius: 50%;
-            background: #fff;
-            color: #333;
-            font: inherit;
-            font-weight: bold;
-            font-variant-numeric: tabular-nums;
-            cursor: pointer;
-        }
-        .cell:hover { border-color: #999; }
-        .cell.include { color: #fff; border-color: transparent; }
-        .cell.include[data-band="1"] { background: #fbc400; }
-        .cell.include[data-band="2"] { background: #69c8f2; }
-        .cell.include[data-band="3"] { background: #ff7272; }
-        .cell.include[data-band="4"] { background: #aaaaaa; }
-        .cell.include[data-band="5"] { background: #b0d840; }
-        .cell.exclude {
-            background: #eee;
-            color: #bbb;
-            border-color: #eee;
-            text-decoration: line-through;
-        }
-        .picker-help { font-size: 0.9em; color: #555; }
-        .chip { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 0.85em; }
-        .chip.include { background: #003087; color: #fff; }
-        .chip.exclude { background: #eee; color: #777; text-decoration: line-through; }
-        #picker-summary { font-weight: bold; }
-        #picker-warning { color: #c00; min-height: 1.4em; }
-        @media (max-width: 600px) {
-            #number-grid { grid-template-columns: repeat(5, 1fr); }
-        }
-    </style>
+    <link rel="stylesheet" href="css/site.css">
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Dataset",
+      "name": "로또 6/45 전 회차 당첨번호 통계",
+      "description": "동행복권 로또 6/45 회차별 당첨번호, 보너스 번호, 1등 당첨자 수로 계산한 통계 9종",
+      "url": "https://www.lottodraw.kr/",
+      "isAccessibleForFree": true,
+      "keywords": "로또 통계, 로또 6/45, 당첨번호"
+    }
+    </script>
 </head>
 <body>
-    <nav>
-        <button type="button" class="hamburger" id="hamburger" aria-label="메뉴 열기" aria-expanded="false" aria-controls="nav-menu">
-            <span></span><span></span><span></span>
-        </button>
-        <ul id="nav-menu">
-            <li><a href="index.html">Home</a></li>
-            <li><a href="about.html">About</a></li>
-            <li><a href="tax.html">TAX</a></li>
-            <li><a href="top-prize.html">TOP 50</a></li>
-            <li><a href="statistics.html">Statistics</a></li>
+<div class="page">
+    <header class="banner">
+        <a class="brand" href="index.html">
+            <span class="brand-name">LOTTODRAW.KR</span>
+            <span class="brand-tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
+        </a>
+        <div class="banner-right">
+            <p class="latest-callout" id="latest-callout">최신 회차 불러오는 중…</p>
+            <a class="sticker" href="statistics.html">최근 <b>30일</b> 통계</a>
+        </div>
+    </header>
+
+    <nav class="nav" aria-label="주 메뉴">
+        <ul>
+            <li><a href="index.html" aria-current="page">생성기 · 통계</a></li>
+            <li><a href="statistics.html">30일 통계 (유료)</a></li>
+            <li><a href="top-prize.html">TOP 50 당첨금</a></li>
+            <li><a href="tax.html">실수령액 계산</a></li>
+            <li><a href="about.html">ABOUT</a></li>
         </ul>
     </nav>
-    <h1>동행복권 번호 생성기 / 로또 번호 추출기 by borel's Law</h1>
 
-    <section id="hero">
-        <div id="result-balls"></div>
-        <p id="result" role="status" aria-live="polite">버튼을 누르면 여기에 번호가 채워집니다.</p>
-        <button type="button" id="generate-btn">번호 생성</button>
+    <div class="layout">
+        <section class="rail" aria-labelledby="gen-title">
+            <div class="eyebrow bg-olive">
+                <div>
+                    <h1 id="gen-title">번호 생성기</h1>
+                    <p>16개 특수 패턴에 걸리는 조합을 걸러냅니다</p>
+                </div>
+            </div>
+
+            <div class="cta">
+                <h2>이번 번호</h2>
+                <div class="tray" id="result-balls"></div>
+                <p class="result-msg" id="result" role="status" aria-live="polite">버튼을 누르면 위 자리에 번호가 채워집니다.</p>
+                <button type="button" class="btn btn-big" id="generate-btn">번호 생성</button>
+            </div>
+
+            <section class="card" aria-labelledby="picker-title">
+                <h2 class="card-title" id="picker-title"><span>포함 / 제외 번호</span><small>누를 때마다 순환</small></h2>
+                <div class="card-body">
+                    <p class="picker-help">
+                        <span class="chip include">포함</span> → <span class="chip exclude">제외</span> → 해제 순으로 바뀝니다. 포함은 최대 6개.
+                    </p>
+                    <div class="number-grid" id="number-grid" role="group" aria-label="포함하거나 제외할 번호 선택"></div>
+                    <p class="picker-summary" id="picker-summary" aria-live="polite">포함 0개 · 제외 0개</p>
+                    <p class="picker-warning" id="picker-warning" role="alert"></p>
+                    <div class="picker-actions">
+                        <button type="button" class="btn btn-secondary" id="reset-picker">선택 초기화</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card" aria-labelledby="patterns-title">
+                <h2 class="card-title" id="patterns-title"><span>배제할 특수 패턴</span><small>16개</small></h2>
+                <div class="card-body bg-sage">
+                    <ul class="patterns">
+                        <li><input type="checkbox" id="pattern1"><label for="pattern1">6개 모두 연속 (예: 10~15)</label></li>
+                        <li><input type="checkbox" id="pattern2"><label for="pattern2">모두 1~15 안</label></li>
+                        <li><input type="checkbox" id="pattern3"><label for="pattern3">모두 1~20 안</label></li>
+                        <li><input type="checkbox" id="pattern4"><label for="pattern4">모두 1~31 안</label></li>
+                        <li><input type="checkbox" id="pattern5"><label for="pattern5">모두 3의 배수</label></li>
+                        <li><input type="checkbox" id="pattern6"><label for="pattern6">모두 4의 배수</label></li>
+                        <li><input type="checkbox" id="pattern7"><label for="pattern7">모두 5의 배수</label></li>
+                        <li><input type="checkbox" id="pattern8"><label for="pattern8">모두 31~45 안</label></li>
+                        <li><input type="checkbox" id="pattern9"><label for="pattern9">모두 같은 십의 자리 (예: 10~19)</label></li>
+                        <li><input type="checkbox" id="pattern10"><label for="pattern10">모두 소수</label></li>
+                        <li><input type="checkbox" id="pattern11"><label for="pattern11">모두 홀수</label></li>
+                        <li><input type="checkbox" id="pattern12"><label for="pattern12">모두 짝수</label></li>
+                        <li><input type="checkbox" id="pattern13"><label for="pattern13">합계 50 미만 또는 200 초과</label></li>
+                        <li><input type="checkbox" id="pattern14"><label for="pattern14">합계 50~69 또는 181~200</label></li>
+                        <li><input type="checkbox" id="pattern15"><label for="pattern15">제곱수 4개 이상</label></li>
+                        <li><input type="checkbox" id="pattern16"><label for="pattern16">제곱수 5개 이상</label></li>
+                    </ul>
+                    <div class="patterns-actions">
+                        <button type="button" class="btn btn-secondary" id="patterns-all">모두 체크</button>
+                        <button type="button" class="btn btn-secondary" id="patterns-none">모두 해제</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card">
+                <details>
+                    <summary class="card-title"><span>생성 이력 · 과정 로그</span></summary>
+                    <div class="card-body bg-steel">
+                        <table class="history">
+                            <caption class="sr-only">오늘 생성한 번호 (최근 20개)</caption>
+                            <thead><tr><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr></thead>
+                            <tbody id="history-body"></tbody>
+                        </table>
+                        <p class="muted" id="visitor-count"></p>
+                        <div class="log" id="log"></div>
+                    </div>
+                </details>
+            </section>
+
+            <section class="card">
+                <details>
+                    <summary class="card-title"><span>보렐의 법칙과 이 도구의 한계</span></summary>
+                    <div class="card-body bg-sky">
+                        <p>보렐의 법칙은 "확률이 극도로 낮은 사건은 현실에서 일어나지 않는다고 봐도 된다"는 경험적 원칙으로, 수학자 에밀 보렐이 제안했습니다. 이 사이트는 모든 번호가 소수이거나 제곱수인 조합 같은 특수한 경우를 이 생각으로 걸러냅니다.</p>
+                        <p>45개 중 6개를 고르는 조합은 8,145,060개이고, 16개 패턴을 모두 적용하면 1,561,694개(약 19.17%)가 제외되어 6,583,366개(약 80.83%)가 남습니다.</p>
+                        <p><strong>패턴을 걸러낸다고 당첨 확률이 올라가지는 않습니다.</strong> 추첨은 조합마다 같은 확률이라, 내가 쥔 한 장이 맞을 확률은 1/8,145,060 그대로입니다. 이 도구가 하는 일은 사람이 직접 고르면 몰리기 쉬운 조합을 피하는 것이고, 1등이 갈릴 때 나눠 가질 사람이 줄어들 수 있다는 점에서만 의미가 있습니다.</p>
+                    </div>
+                </details>
+            </section>
+
+            <section class="card">
+                <div class="card-body">
+                    <strong>당첨되면 얼마 받을까?</strong> <a href="tax.html">실수령액 계산기</a><br>
+                    <a href="https://dhlottery.co.kr/" rel="noopener">동행복권 홈페이지</a>
+                </div>
+            </section>
+        </section>
+
+        <section class="main" aria-labelledby="stats-title">
+            <div class="eyebrow bg-salmon">
+                <div>
+                    <h2 id="stats-title">전 회차 통계</h2>
+                    <p id="stats-scope">데이터를 불러오는 중…</p>
+                </div>
+                <div class="seal" role="img" aria-label="동행복권 공식 조회 데이터">동행복권<br>공식<br>데이터</div>
+            </div>
+            <p class="notice">
+                지나간 추첨 기록을 정리한 것이며 다음 회차를 예측하지 않습니다. 모든 조합의 당첨 확률은 1/8,145,060으로 같습니다.
+                <a href="statistics.html">최근 30일 통계</a> <span class="sticker-burst">NEW</span>
+            </p>
+            <div class="stat-grid" id="stat-grid">
+                <p class="stats-loading">통계를 계산하는 중…</p>
+            </div>
+        </section>
+    </div>
+
+    <section class="comments" aria-labelledby="comments-title">
+        <h2 id="comments-title">댓글</h2>
+        <livere-comment client-id="5Qnz059feDSs78GOTvi5"></livere-comment>
     </section>
 
-    <p class="lead">
-        이 도구는 정의된 16개 특수 패턴에 걸리는 조합을 걸러냅니다.
-        아래에서 배제할 패턴과 꼭 포함하거나 제외할 숫자를 고를 수 있습니다.
-    </p>
-    <p style="margin-top: 30px; font-size: 1.1em;">
-        <strong>당첨되면 얼마 받을 수 있을까?</strong><br>
-        <a href="tax.html" style="color: #0066cc; font-weight: bold; text-decoration: underline;">
-            → 실수령액 계산기 바로가기
-        </a>
-    </p>
-    <details class="borel-description">
-        <summary>보렐의 법칙이란? (이 사이트가 특수 패턴을 배제하는 이유)</summary>
-        <p>※해당 사이트는 보렐의 법칙을 아이디어로 삼아 만들어 졌습니다.</p>
-        <p>보렐의 법칙(Borel's Law)이란 "확률이 극도로 낮은 사건은 현실적으로 절대로 일어나지 않는다"는 경험적 원칙으로</p>
-        <p>수학자 에밀 보렐(Émile Borel)이 제안했으며, 아무리 많은 시행을 해도 발생 가능성이 0에 가까운 특수한 경우는 무시하고 불가능하다고 간주해야 한다는 개념입니다.</p>
-        <p>(예를들어 몸이 벽을 뚫고 지나가는 것은 양자역학적으로 극히 낮은 확률로 가능하지만, 보렐의 법칙에 따르면 수억 년 동안 시도해도 일어나지 않을 일입니다)</p>
-        <p>(같은 생각으로 복권의 모든 당첨번호가 소수이거나 제곱수일 가능성은 일어나지 않을 특수한 경우로 간주합니다)</p>
-        <p>로또 번호 조합 수는 45개 중 6개를 선택하는 조합으로, 총 8,145,060개이나 </p>
-        <p>정의된 16개 특수 패턴을 모두 적용해 제외할 경우 1,561,694개(약 19.17%)가 제외되고, 남는 조합은 6,583,366개(약 80.83%)입니다. </p>
-        <p><strong>패턴을 걸러낸다고 당첨 확률이 올라가지는 않습니다.</strong> 추첨은 조합마다 같은 확률이고,
-        680만 개 중에서 뽑든 810만 개 중에서 뽑든 내가 쥔 한 장이 맞을 확률은 1/8,145,060 그대로입니다.
-        이 도구가 하는 일은 당첨됐을 때 유난히 이상해 보이는 조합, 그리고 사람이 직접 고르면 몰리기 쉬운
-        조합을 피하는 것입니다. 뒤쪽은 의미가 있습니다 — 1등이 갈릴 때 나눠 가질 사람이 줄어들 수 있습니다.</p>
-    </details>
-    <div id="log"></div>
-    <div id="picker">
-        <h3>포함할 숫자 / 제외할 숫자 고르기</h3>
-        <p class="picker-help">
-            칸을 누를 때마다 <span class="chip include">포함</span> →
-            <span class="chip exclude">제외</span> → 해제 순으로 바뀝니다.
-            포함은 최대 6개까지 고를 수 있습니다.
-        </p>
-        <div id="number-grid" role="group" aria-label="포함하거나 제외할 번호 선택"></div>
-        <p id="picker-summary" aria-live="polite">포함 0개 · 제외 0개</p>
-        <p id="picker-warning" role="alert"></p>
-        <button type="button" id="reset-picker">선택 초기화</button>
-    </div>
-    <div id="patterns">
-        <h3>배제할 특수 패턴 선택 (총 16개):</h3>
-        <div class="pattern-item"><input type="checkbox" id="pattern1"><label for="pattern1"> 6개 숫자가 연속적으로 배열된 경우 (예: 10,11,12,13,14,15)</label></div>
-        <div class="pattern-item"><input type="checkbox" id="pattern2"><label for="pattern2"> 모든 숫자가 1~15 범위 내에 집중된 경우</label></div>
-        <div class="pattern-item"><input type="checkbox" id="pattern3"><label for="pattern3"> 모든 숫자가 1~20 범위 내에 집중된 경우</label></div>
-        <div class="pattern-item"><input type="checkbox" id="pattern4"><label for="pattern4"> 모든 숫자가 1~31 범위 내에 집중된 경우</label></div>
-        <div class="pattern-item"><input type="checkbox" id="pattern5"><label for="pattern5"> 모든 숫자가 3의 배수인 경우</label></div>
-        <div class="pattern-item"><input type="checkbox" id="pattern6"><label for="pattern6"> 모든 숫자가 4의 배수인 경우</label></div>
-        <div class="pattern-item"><input type="checkbox" id="pattern7"><label for="pattern7"> 모든 숫자가 5의 배수인 경우</label></div>
-        <div class="pattern-item"><input type="checkbox" id="pattern8"><label for="pattern8"> 모든 숫자가 31~45 범위 내에 집중된 경우</label></div>
-        <div class="pattern-item"><input type="checkbox" id="pattern9"><label for="pattern9"> 모든 숫자가 동일한 자리대(예: 10~19) 내에 속한 경우</label></div>
-        <div class="pattern-item"><input type="checkbox" id="pattern10"><label for="pattern10"> 모든 숫자가 소수인 경우</label></div>
-        <div class="pattern-item"><input type="checkbox" id="pattern11"><label for="pattern11"> 모든 숫자가 홀수로 구성된 경우</label></div>
-        <div class="pattern-item"><input type="checkbox" id="pattern12"><label for="pattern12"> 모든 숫자가 짝수로 구성된 경우</label></div>
-        <div class="pattern-item"><input type="checkbox" id="pattern13"><label for="pattern13"> 숫자 합계가 50 미만 또는 200 초과하는 극단적인 경우</label></div>
-        <div class="pattern-item"><input type="checkbox" id="pattern14"><label for="pattern14"> 숫자 합계가 50~69 또는 181~200인 경우</label></div>
-        <div class="pattern-item"><input type="checkbox" id="pattern15"><label for="pattern15"> 제곱수 4개 이상 포함된 경우</label></div>
-        <div class="pattern-item"><input type="checkbox" id="pattern16"><label for="pattern16"> 제곱수 5개 이상 포함된 경우</label></div>
-    </div>
-    <div id="visitor-count"></div>
-    <div id="history">
-        <h3>생성된 번호 이력 :</h3>
-        <table id="history-table">
-            <thead>
-                <tr>
-                    <th>번호 1</th><th>번호 2</th><th>번호 3</th><th>번호 4</th><th>번호 5</th><th>번호 6</th>
-                </tr>
-            </thead>
-            <tbody id="history-body"></tbody>
-        </table>
-    </div>
-    <!-- 최근 10회차 당첨번호 -->
-    <div id="latest-draw">
-        <h3>
-            <button type="button" id="latest-toggle" aria-expanded="false" aria-controls="latest-table">
-                최근 10회차 당첨번호
-                <span id="toggle-icon" style="font-size:0.9em;">▼</span>
-            </button>
-        </h3>
-        <table id="latest-table">
-            <thead>
-                <tr>
-                    <th style="width:15%">회차</th>
-                    <th>당첨번호</th>
-                    <th style="width:15%">보너스</th>
-                </tr>
-            </thead>
-            <tbody id="latest-body"></tbody>
-        </table>
-    </div>
-    <p><a href="https://dhlottery.co.kr/" rel="noopener">★동행복권 홈페이지 바로가기★</a></p>
-    <div style="margin-top: 40px; text-align: center;">
-        <h3>댓글 공유</h3>
-        <livere-comment client-id="5Qnz059feDSs78GOTvi5"></livere-comment>
-    </div>
-    <footer style="margin-top: 40px; font-size: 0.8em; color: gray; text-align: center;">
-        <a href="index.html">home</a> | <a href="about.html">About</a> | <a href="tax.html">실수령액 계산기</a> | <a href="top-prize.html">TOP 50</a> | <a href="statistics.html">Statistics</a>
-        <p class="legal-links"><a href="privacy.html">개인정보 보호 정책</a> | <a href="terms.html">이용약관</a> | <a href="contact.html">문의</a></p>
-        <p>&copy; 2026 lottodraw.kr. All rights reserved.</p>
+    <footer class="footer">
+        <ul class="footer-nav">
+            <li><a href="index.html">HOME</a></li>
+            <li><a href="statistics.html">30일 통계</a></li>
+            <li><a href="top-prize.html">TOP 50</a></li>
+            <li><a href="tax.html">실수령액</a></li>
+            <li><a href="about.html">ABOUT</a></li>
+        </ul>
+        <p><a href="privacy.html">개인정보 처리방침</a> · <a href="terms.html">이용약관</a> · <a href="contact.html">문의</a></p>
+        <p>&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권</p>
     </footer>
+</div>
 
-    <script>
-        function toggleMenu() {
-            const menu = document.getElementById('nav-menu');
-            const open = menu.classList.toggle('active');
-            document.getElementById('hamburger').setAttribute('aria-expanded', open ? 'true' : 'false');
+<script src="js/lotto-stats.js"></script>
+<script src="js/stats-render.js"></script>
+<script>
+    const today = new Date().toISOString().split('T')[0];
+    const clickKey = 'clickCount_' + today;
+    const historyKey = 'numberHistory_' + today;
+
+    // localStorage 래퍼: getItem 이 null 일 때 대비, 사파리 프라이빗 모드의
+    // setItem 예외까지 여기서 흡수한다.
+    function storageGet(key, fallback) {
+        try {
+            const v = localStorage.getItem(key);
+            return v === null ? fallback : v;
+        } catch (e) {
+            return fallback;
         }
-        function toggleLatestDraw() {
-            const table = document.getElementById('latest-table');
-            const icon = document.getElementById('toggle-icon');
-            const open = table.style.display !== 'table';
-            table.style.display = open ? 'table' : 'none';
-            icon.textContent = open ? '▲' : '▼';
-            document.getElementById('latest-toggle').setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    function storageSet(key, value) {
+        try {
+            localStorage.setItem(key, value);
+        } catch (e) {
+            // 사파리 프라이빗 모드 등에서 던질 수 있음 — 무시하고 계속 진행
+        }
+    }
+    function readHistory() {
+        try {
+            return JSON.parse(storageGet(historyKey, '[]'));
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function setAllPatterns(on) {
+        for (let i = 1; i <= 16; i++) document.getElementById(`pattern${i}`).checked = on;
+    }
+
+    // ---- 포함/제외 번호 그리드 ----
+    // 한 칸은 none → include → exclude → none 으로 순환한다. 포함/제외가 칸 하나의
+    // 상태라서 "같은 숫자를 포함이자 제외로" 두는 것이 구조적으로 불가능하다.
+    const includeSet = new Set();
+    const excludeSet = new Set();
+    const MAX_INCLUDE = 6;
+
+    // ---- 결과 표시 ----
+    // 빈 자리 6개를 먼저 깔아 두고, 생성되면 그 자리에 채운다.
+    function buildBalls() {
+        const box = document.getElementById('result-balls');
+        box.innerHTML = '';
+        for (let i = 0; i < 6; i++) {
+            const ball = document.createElement('div');
+            ball.className = 'ball';
+            ball.textContent = '';
+            box.appendChild(ball);
+        }
+    }
+    function fillBalls(numbers) {
+        const balls = document.getElementById('result-balls').children;
+        for (let i = 0; i < 6; i++) {
+            const ball = balls[i];
+            ball.className = 'ball filled';
+            ball.dataset.band = bandOf(numbers[i]);
+            ball.style.animationDelay = `${i * 0.06}s`;
+            ball.textContent = numbers[i];
+        }
+    }
+    function clearBalls() {
+        const balls = document.getElementById('result-balls').children;
+        for (let i = 0; i < 6; i++) {
+            balls[i].className = 'ball';
+            balls[i].textContent = '';
+        }
+    }
+    function setMessage(text, isError) {
+        const el = document.getElementById('result');
+        el.innerText = text;
+        el.classList.toggle('error', !!isError);
+    }
+
+    function bandOf(n) {
+        if (n <= 10) return 1;
+        if (n <= 20) return 2;
+        if (n <= 30) return 3;
+        if (n <= 40) return 4;
+        return 5;
+    }
+    function buildGrid() {
+        const grid = document.getElementById('number-grid');
+        for (let n = 1; n <= 45; n++) {
+            const cell = document.createElement('button');
+            cell.type = 'button';
+            cell.className = 'cell';
+            cell.dataset.number = n;
+            cell.dataset.band = bandOf(n);
+            cell.textContent = n;
+            cell.setAttribute('aria-pressed', 'false');
+            cell.addEventListener('click', () => cycleCell(n));
+            grid.appendChild(cell);
+        }
+    }
+    function cycleCell(n) {
+        const warning = document.getElementById('picker-warning');
+        warning.textContent = '';
+        if (includeSet.has(n)) {
+            includeSet.delete(n);
+            excludeSet.add(n);
+        } else if (excludeSet.has(n)) {
+            excludeSet.delete(n);
+        } else if (includeSet.size >= MAX_INCLUDE) {
+            // 포함이 이미 6개면 포함 단계를 건너뛰고 제외로 간다
+            excludeSet.add(n);
+            warning.textContent = `포함은 최대 ${MAX_INCLUDE}개까지입니다. ${n}번은 제외로 표시했습니다.`;
+        } else {
+            includeSet.add(n);
+        }
+        renderPicker();
+    }
+    function renderPicker() {
+        document.querySelectorAll('#number-grid .cell').forEach(cell => {
+            const n = Number(cell.dataset.number);
+            cell.classList.toggle('include', includeSet.has(n));
+            cell.classList.toggle('exclude', excludeSet.has(n));
+            cell.setAttribute('aria-pressed', includeSet.has(n) ? 'true' : 'false');
+            const state = includeSet.has(n) ? '포함' : excludeSet.has(n) ? '제외' : '선택 안 함';
+            cell.setAttribute('aria-label', `${n}번 ${state}`);
+        });
+        const asc = (a, b) => a - b;
+        const inc = [...includeSet].sort(asc);
+        const exc = [...excludeSet].sort(asc);
+        document.getElementById('picker-summary').textContent =
+            `포함 ${inc.length}개${inc.length ? ` (${inc.join(', ')})` : ''}` +
+            ` · 제외 ${exc.length}개${exc.length ? ` (${exc.join(', ')})` : ''}`;
+    }
+    function resetPicker() {
+        includeSet.clear();
+        excludeSet.clear();
+        document.getElementById('picker-warning').textContent = '';
+        renderPicker();
+    }
+    function updateClickCount() {
+        let clickCount = parseInt(storageGet(clickKey, '0')) + 1;
+        storageSet(clickKey, clickCount);
+        updateDisplay();
+    }
+    function updateDisplay() {
+        let clickCount = storageGet(clickKey, '0');
+        document.getElementById('visitor-count').innerText = `오늘 이 브라우저에서 생성한 횟수: ${clickCount}회`;
+    }
+    function loadHistory() {
+        const history = readHistory();
+        const tbody = document.getElementById('history-body');
+        tbody.innerHTML = '';
+        for (let i = history.length - 1; i >= 0; i--) {
+            const tr = document.createElement('tr');
+            history[i].split(', ').forEach(num => {
+                const td = document.createElement('td');
+                td.innerText = num.trim();
+                tr.appendChild(td);
+            });
+            tbody.appendChild(tr);
+        }
+    }
+    function saveHistory(numStr) {
+        let history = readHistory();
+        history.push(numStr);
+        if (history.length > 20) history.shift();
+        storageSet(historyKey, JSON.stringify(history));
+        loadHistory();
+    }
+    function isPrime(n) {
+        if (n <= 1) return false;
+        if (n <= 3) return true;
+        if (n % 2 === 0 || n % 3 === 0) return false;
+        for (let i = 5; i * i <= n; i += 6) {
+            if (n % i === 0 || n % (i + 2) === 0) return false;
+        }
+        return true;
+    }
+    // checkedPatternIds 는 루프 시작 전에 한 번만 스냅샷한 Set
+    function checkInvalidPattern(numbers, checkedPatternIds) {
+        const sorted = [...numbers].sort((a, b) => a - b);
+        const sum = sorted.reduce((a, b) => a + b, 0);
+        const squares = [1, 4, 9, 16, 25, 36];
+        const squareCount = sorted.filter(n => squares.includes(n)).length;
+        const patterns = [
+            {id: 1, check: () => sorted[5] - sorted[0] === 5, reason: "6개 숫자가 연속적"},
+            {id: 2, check: () => sorted.every(n => n >= 1 && n <= 15), reason: "모든 숫자가 1~15 범위"},
+            {id: 3, check: () => sorted.every(n => n >= 1 && n <= 20), reason: "모든 숫자가 1~20 범위"},
+            {id: 4, check: () => sorted.every(n => n >= 1 && n <= 31), reason: "모든 숫자가 1~31 범위"},
+            {id: 5, check: () => sorted.every(n => n % 3 === 0), reason: "모든 숫자가 3의 배수"},
+            {id: 6, check: () => sorted.every(n => n % 4 === 0), reason: "모든 숫자가 4의 배수"},
+            {id: 7, check: () => sorted.every(n => n % 5 === 0), reason: "모든 숫자가 5의 배수"},
+            {id: 8, check: () => sorted.every(n => n >= 31 && n <= 45), reason: "모든 숫자가 31~45 범위"},
+            {id: 9, check: () => sorted.every(n => Math.floor(n / 10) === Math.floor(sorted[0] / 10)), reason: "모든 숫자가 동일한 자리대"},
+            {id: 10, check: () => sorted.every(isPrime), reason: "모든 숫자가 소수"},
+            {id: 11, check: () => sorted.every(n => n % 2 !== 0), reason: "모든 숫자가 홀수"},
+            {id: 12, check: () => sorted.every(n => n % 2 === 0), reason: "모든 숫자가 짝수"},
+            {id: 13, check: () => sum < 50 || sum > 200, reason: "숫자 합계가 50 미만 또는 200 초과"},
+            {id: 14, check: () => (sum >= 50 && sum <= 69) || (sum >= 181 && sum <= 200), reason: "숫자 합계가 50~69 또는 181~200"},
+            {id: 15, check: () => squareCount >= 4, reason: "제곱수 4개 이상 포함된 경우"},
+            {id: 16, check: () => squareCount >= 5, reason: "제곱수 5개 이상 포함된 경우"}
+        ];
+        for (let pattern of patterns) {
+            if (checkedPatternIds.has(pattern.id) && pattern.check()) {
+                return pattern.reason;
+            }
+        }
+        return null;
+    }
+    function generateNumbers() {
+        updateClickCount();
+        const logDiv = document.getElementById('log');
+        setMessage('');
+        // 시도 로그를 배열에 모아 두고 마지막에 한 번만 그린다. 화면에는 최근 50줄만.
+        const logLines = [];
+        function renderLog() {
+            const shown = logLines.slice(-50);
+            logDiv.innerHTML = '<strong>생성 과정 로그' +
+                (logLines.length > shown.length ? ` (최근 ${shown.length}줄)` : '') +
+                ':</strong><br>' + shown.join('<br>');
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        renderLog();
+        const includeNums = [...includeSet];
+        const uniqueExclude = new Set(excludeSet);
+        const checkedPatternIds = new Set();
+        for (let i = 1; i <= 16; i++) {
+            if (document.getElementById(`pattern${i}`).checked) checkedPatternIds.add(i);
+        }
+        // 사전 검사 — 10,000번 돌려 봐야 결과가 같은 경우는 미리 잘라낸다
+        const pool = 45 - uniqueExclude.size - includeNums.length;
+        const needed = 6 - includeNums.length;
+        if (pool < needed) {
+            clearBalls();
+            setMessage(
+                `제외한 숫자가 너무 많아 6개를 채울 수 없습니다. ` +
+                `제외를 ${uniqueExclude.size - (needed - pool)}개 이하로 줄여 주세요.`, true);
+            return;
+        }
+        if (includeNums.length === 6) {
+            const fixedReason = checkInvalidPattern(includeNums, checkedPatternIds);
+            if (fixedReason) {
+                clearBalls();
+                setMessage(
+                    `포함으로 고른 6개가 그대로 조합이 되는데, ` +
+                    `"${fixedReason}" 패턴에 걸립니다. 해당 패턴 체크를 풀거나 번호를 바꿔 주세요.`, true);
+                return;
+            }
         }
 
-        // 최근 10회차 데이터 로드
+        let attempts = 0;
+        const maxAttempts = 10000;
+        while (attempts < maxAttempts) {
+            attempts++;
+            let numbers = [...includeNums];
+            let pool = Array.from({length: 45}, (_, i) => i + 1).filter(n => !uniqueExclude.has(n) && !includeNums.includes(n));
+            while (numbers.length < 6 && pool.length > 0) {
+                const index = Math.floor(Math.random() * pool.length);
+                numbers.push(pool.splice(index, 1)[0]);
+            }
+            if (numbers.length < 6) continue;
+            numbers.sort((a, b) => a - b);
+            const numStr = numbers.join(', ');
+            const invalidReason = checkInvalidPattern(numbers, checkedPatternIds);
+            if (invalidReason) {
+                logLines.push(`시도 ${attempts}: ${numStr} - ${invalidReason} 패턴으로 제외`);
+                continue;
+            }
+            fillBalls(numbers);
+            setMessage(`생성된 번호: ${numStr} — 선택된 특수 패턴을 피했습니다. (${attempts}번째 시도)`);
+            logLines.push(`시도 ${attempts}: ${numStr} - 유효하여 선택됨`);
+            renderLog();
+            saveHistory(numStr);
+            return;
+        }
+        renderLog();
+        clearBalls();
+        setMessage(
+            `${maxAttempts.toLocaleString()}번 시도했지만 조건을 만족하는 조합을 찾지 못했습니다. ` +
+            `배제 패턴을 몇 개 풀거나 포함/제외 번호를 줄여 보세요.`, true);
+    }
+
+    // ---- 전 회차 통계 ----
+    function renderLatestCallout(draw) {
+        const box = document.getElementById('latest-callout');
+        box.textContent = `제${draw.round}회 ${draw.numbers.join(' ')} `;
+        const sep = document.createElement('span');
+        sep.className = 'bonus-sep';
+        sep.textContent = '+';
+        box.appendChild(sep);
+        box.appendChild(document.createTextNode(` ${draw.bonus}`));
+    }
+    function loadStats() {
+        const grid = document.getElementById('stat-grid');
         fetch('lotto-data.json')
-            .then(response => response.json())
+            .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
             .then(data => {
-                // draws 는 최신 회차가 index 0 이라 앞 10개가 그대로 최근 10회차다.
-                const latest10 = data.draws.slice(0, 10);
-                const tbody = document.getElementById('latest-body');
-                tbody.innerHTML = '';
-                latest10.forEach(draw => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td><strong>${draw.round}회</strong></td>
-                        <td>${draw.numbers.join(', ')}</td>
-                        <td style="color:#d4af37; font-weight:bold;">${draw.bonus}</td>
-                    `;
-                    tbody.appendChild(tr);
-                });
+                const sorted = data.draws.slice().sort((a, b) => b.round - a.round);
+                const stats = LottoStats.compute(sorted);
+                renderLatestCallout(sorted[0]);
+                const period = stats.oldestDate && stats.latestDate ? ` · ${stats.oldestDate} ~ ${stats.latestDate}` : '';
+                document.getElementById('stats-scope').textContent =
+                    `${stats.oldestRound}~${stats.latestRound}회 (${LottoStatsView.fmt(stats.rounds)}회 추첨)${period}`;
+                LottoStatsView.render(grid, stats, { latestDraws: sorted.slice(0, 10) });
             })
             .catch(err => {
                 console.error(err);
-                document.getElementById('latest-body').innerHTML = `<tr><td colspan="3" style="color:red;">데이터를 불러올 수 없습니다.</td></tr>`;
+                grid.textContent = '';
+                const p = document.createElement('p');
+                p.className = 'stats-loading';
+                p.textContent = '통계 데이터를 불러오지 못했습니다. 잠시 뒤 새로고침해 주세요.';
+                grid.appendChild(p);
+                document.getElementById('latest-callout').textContent = '최신 회차 정보를 불러오지 못했습니다';
             });
+    }
 
-        // ==================== 기존 기능 ====================
-        const today = new Date().toISOString().split('T')[0];
-        const clickKey = 'clickCount_' + today;
-        const historyKey = 'numberHistory_' + today;
-
-        // localStorage 래퍼: getItem 이 null 일 때 대비, 사파리 프라이빗 모드의
-        // setItem 예외까지 여기서 흡수한다. 이 파일의 다른 코드는 localStorage 를
-        // 직접 건드리지 않는다.
-        function storageGet(key, fallback) {
-            try {
-                const v = localStorage.getItem(key);
-                return v === null ? fallback : v;
-            } catch (e) {
-                return fallback;
-            }
-        }
-        function storageSet(key, value) {
-            try {
-                localStorage.setItem(key, value);
-            } catch (e) {
-                // 사파리 프라이빗 모드 등에서 던질 수 있음 — 무시하고 계속 진행
-            }
-        }
-        function readHistory() {
-            try {
-                return JSON.parse(storageGet(historyKey, '[]'));
-            } catch (e) {
-                return [];
-            }
-        }
-
-        function initCheckboxes() {
-            for (let i = 1; i <= 16; i++) {
-                document.getElementById(`pattern${i}`).checked = true;
-            }
-        }
-        // ---- 포함/제외 번호 그리드 ----
-        // 한 칸은 none → include → exclude → none 으로 순환한다. 포함/제외가
-        // 칸 하나의 상태라서 "같은 숫자를 포함이자 제외로" 두는 것이 구조적으로
-        // 불가능하다.
-        const includeSet = new Set();
-        const excludeSet = new Set();
-        const MAX_INCLUDE = 6;
-
-        // ---- 결과 표시 ----
-        // 빈 자리 6개를 먼저 깔아 두고, 생성되면 그 자리에 채운다. 자리가
-        // 흔들리지 않도록 자리표시자도 같은 크기를 차지한다.
-        function buildBalls() {
-            const box = document.getElementById('result-balls');
-            box.innerHTML = '';
-            for (let i = 0; i < 6; i++) {
-                const ball = document.createElement('div');
-                ball.className = 'ball';
-                ball.textContent = '';
-                box.appendChild(ball);
-            }
-        }
-        function fillBalls(numbers) {
-            const balls = document.getElementById('result-balls').children;
-            for (let i = 0; i < 6; i++) {
-                const ball = balls[i];
-                ball.className = 'ball filled';
-                ball.dataset.band = bandOf(numbers[i]);
-                ball.style.animationDelay = `${i * 0.06}s`;
-                ball.textContent = numbers[i];
-            }
-        }
-        function clearBalls() {
-            const balls = document.getElementById('result-balls').children;
-            for (let i = 0; i < 6; i++) {
-                balls[i].className = 'ball';
-                balls[i].textContent = '';
-            }
-        }
-        function setMessage(text, isError) {
-            const el = document.getElementById('result');
-            el.innerText = text;
-            el.classList.toggle('error', !!isError);
-        }
-
-        function bandOf(n) {
-            if (n <= 10) return 1;
-            if (n <= 20) return 2;
-            if (n <= 30) return 3;
-            if (n <= 40) return 4;
-            return 5;
-        }
-        function buildGrid() {
-            const grid = document.getElementById('number-grid');
-            for (let n = 1; n <= 45; n++) {
-                const cell = document.createElement('button');
-                cell.type = 'button';
-                cell.className = 'cell';
-                cell.dataset.number = n;
-                cell.dataset.band = bandOf(n);
-                cell.textContent = n;
-                cell.setAttribute('aria-pressed', 'false');
-                cell.addEventListener('click', () => cycleCell(n));
-                grid.appendChild(cell);
-            }
-        }
-        function cycleCell(n) {
-            const warning = document.getElementById('picker-warning');
-            warning.textContent = '';
-            if (includeSet.has(n)) {
-                includeSet.delete(n);
-                excludeSet.add(n);
-            } else if (excludeSet.has(n)) {
-                excludeSet.delete(n);
-            } else if (includeSet.size >= MAX_INCLUDE) {
-                // 포함이 이미 6개면 포함 단계를 건너뛰고 제외로 간다
-                excludeSet.add(n);
-                warning.textContent = `포함은 최대 ${MAX_INCLUDE}개까지입니다. ${n}번은 제외로 표시했습니다.`;
-            } else {
-                includeSet.add(n);
-            }
-            renderPicker();
-        }
-        function renderPicker() {
-            document.querySelectorAll('#number-grid .cell').forEach(cell => {
-                const n = Number(cell.dataset.number);
-                cell.classList.toggle('include', includeSet.has(n));
-                cell.classList.toggle('exclude', excludeSet.has(n));
-                cell.setAttribute('aria-pressed', includeSet.has(n) ? 'true' : 'false');
-                const state = includeSet.has(n) ? '포함' : excludeSet.has(n) ? '제외' : '선택 안 함';
-                cell.setAttribute('aria-label', `${n}번 ${state}`);
-            });
-            const asc = (a, b) => a - b;
-            const inc = [...includeSet].sort(asc);
-            const exc = [...excludeSet].sort(asc);
-            document.getElementById('picker-summary').textContent =
-                `포함 ${inc.length}개${inc.length ? ` (${inc.join(', ')})` : ''}` +
-                ` · 제외 ${exc.length}개${exc.length ? ` (${exc.join(', ')})` : ''}`;
-        }
-        function resetPicker() {
-            includeSet.clear();
-            excludeSet.clear();
-            document.getElementById('picker-warning').textContent = '';
-            renderPicker();
-        }
-        function updateClickCount() {
-            let clickCount = parseInt(storageGet(clickKey, '0')) + 1;
-            storageSet(clickKey, clickCount);
-            updateDisplay();
-        }
-        function updateDisplay() {
-            let clickCount = storageGet(clickKey, '0');
-            document.getElementById('visitor-count').innerText = `오늘 번호 생성 클릭 횟수: ${clickCount}회`;
-        }
-        function loadHistory() {
-            const history = readHistory();
-            const tbody = document.getElementById('history-body');
-            tbody.innerHTML = '';
-            for (let i = history.length - 1; i >= 0; i--) {
-                const tr = document.createElement('tr');
-                history[i].split(', ').forEach(num => {
-                    const td = document.createElement('td');
-                    td.innerText = num.trim();
-                    tr.appendChild(td);
-                });
-                tbody.appendChild(tr);
-            }
-        }
-        function saveHistory(numStr) {
-            let history = readHistory();
-            history.push(numStr);
-            if (history.length > 20) history.shift();
-            storageSet(historyKey, JSON.stringify(history));
-            loadHistory();
-        }
-        function isPrime(n) {
-            if (n <= 1) return false;
-            if (n <= 3) return true;
-            if (n % 2 === 0 || n % 3 === 0) return false;
-            for (let i = 5; i * i <= n; i += 6) {
-                if (n % i === 0 || n % (i + 2) === 0) return false;
-            }
-            return true;
-        }
-        // checkedPatternIds 는 루프 시작 전에 한 번만 스냅샷한 Set — 시도마다
-        // getElementById 를 16번씩 부르지 않는다.
-        function checkInvalidPattern(numbers, checkedPatternIds) {
-            const sorted = [...numbers].sort((a, b) => a - b);
-            const sum = sorted.reduce((a, b) => a + b, 0);
-            const squares = [1, 4, 9, 16, 25, 36];
-            const squareCount = sorted.filter(n => squares.includes(n)).length;
-            const patterns = [
-                {id: 1, check: () => sorted[5] - sorted[0] === 5, reason: "6개 숫자가 연속적"},
-                {id: 2, check: () => sorted.every(n => n >= 1 && n <= 15), reason: "모든 숫자가 1~15 범위"},
-                {id: 3, check: () => sorted.every(n => n >= 1 && n <= 20), reason: "모든 숫자가 1~20 범위"},
-                {id: 4, check: () => sorted.every(n => n >= 1 && n <= 31), reason: "모든 숫자가 1~31 범위"},
-                {id: 5, check: () => sorted.every(n => n % 3 === 0), reason: "모든 숫자가 3의 배수"},
-                {id: 6, check: () => sorted.every(n => n % 4 === 0), reason: "모든 숫자가 4의 배수"},
-                {id: 7, check: () => sorted.every(n => n % 5 === 0), reason: "모든 숫자가 5의 배수"},
-                {id: 8, check: () => sorted.every(n => n >= 31 && n <= 45), reason: "모든 숫자가 31~45 범위"},
-                {id: 9, check: () => sorted.every(n => Math.floor(n / 10) === Math.floor(sorted[0] / 10)), reason: "모든 숫자가 동일한 자리대"},
-                {id: 10, check: () => sorted.every(isPrime), reason: "모든 숫자가 소수"},
-                {id: 11, check: () => sorted.every(n => n % 2 !== 0), reason: "모든 숫자가 홀수"},
-                {id: 12, check: () => sorted.every(n => n % 2 === 0), reason: "모든 숫자가 짝수"},
-                {id: 13, check: () => sum < 50 || sum > 200, reason: "숫자 합계가 50 미만 또는 200 초과"},
-                {id: 14, check: () => (sum >= 50 && sum <= 69) || (sum >= 181 && sum <= 200), reason: "숫자 합계가 50~69 또는 181~200"},
-                {id: 15, check: () => squareCount >= 4, reason: "제곱수 4개 이상 포함된 경우"},
-                {id: 16, check: () => squareCount >= 5, reason: "제곱수 5개 이상 포함된 경우"}
-            ];
-            for (let pattern of patterns) {
-                if (checkedPatternIds.has(pattern.id) && pattern.check()) {
-                    return pattern.reason;
-                }
-            }
-            return null;
-        }
-        function generateNumbers() {
-            updateClickCount();
-            const logDiv = document.getElementById('log');
-            setMessage('');
-            // 시도 로그를 배열에 모아 두고 마지막에 한 번만 그린다 (최대 10,000회
-            // 반복마다 innerHTML 을 재파싱하면 조건이 빡빡할 때 탭이 멎는다).
-            // 화면에는 최근 50줄만 남긴다.
-            const logLines = [];
-            function renderLog() {
-                const shown = logLines.slice(-50);
-                logDiv.innerHTML = '<strong>생성 과정 로그' +
-                    (logLines.length > shown.length ? ` (최근 ${shown.length}줄)` : '') +
-                    ':</strong><br>' + shown.join('<br>');
-                logDiv.scrollTop = logDiv.scrollHeight;
-            }
-            renderLog();
-            const includeNums = [...includeSet];
-            const uniqueExclude = new Set(excludeSet);
-            // 체크된 패턴을 루프 시작 전에 한 번만 스냅샷 (최대 10,000회 반복 동안
-            // getElementById 를 매번 16번씩 부르지 않기 위함)
-            const checkedPatternIds = new Set();
-            for (let i = 1; i <= 16; i++) {
-                if (document.getElementById(`pattern${i}`).checked) checkedPatternIds.add(i);
-            }
-            // 사전 검사 — 10,000번 돌려 봐야 결과가 같은 경우는 미리 잘라낸다
-            const pool = 45 - uniqueExclude.size - includeNums.length;
-            const needed = 6 - includeNums.length;
-            if (pool < needed) {
-                clearBalls();
-                setMessage(
-                    `제외한 숫자가 너무 많아 6개를 채울 수 없습니다. ` +
-                    `제외를 ${uniqueExclude.size - (needed - pool)}개 이하로 줄여 주세요.`, true);
-                return;
-            }
-            if (includeNums.length === 6) {
-                const fixedReason = checkInvalidPattern(includeNums, checkedPatternIds);
-                if (fixedReason) {
-                    clearBalls();
-                    setMessage(
-                        `포함으로 고른 6개가 그대로 조합이 되는데, ` +
-                        `"${fixedReason}" 패턴에 걸립니다. 해당 패턴 체크를 풀거나 번호를 바꿔 주세요.`, true);
-                    return;
-                }
-            }
-
-            let attempts = 0;
-            const maxAttempts = 10000;
-            while (attempts < maxAttempts) {
-                attempts++;
-                let numbers = [...includeNums];
-                let pool = Array.from({length: 45}, (_, i) => i + 1).filter(n => !uniqueExclude.has(n) && !includeNums.includes(n));
-                while (numbers.length < 6 && pool.length > 0) {
-                    const index = Math.floor(Math.random() * pool.length);
-                    numbers.push(pool.splice(index, 1)[0]);
-                }
-                if (numbers.length < 6) continue;
-                numbers.sort((a, b) => a - b);
-                const numStr = numbers.join(', ');
-                const invalidReason = checkInvalidPattern(numbers, checkedPatternIds);
-                if (invalidReason) {
-                    logLines.push(`시도 ${attempts}: ${numStr} - ${invalidReason} 패턴으로 제외`);
-                    continue;
-                }
-                fillBalls(numbers);
-                setMessage(`생성된 번호: ${numStr} — 선택된 특수 패턴을 피했습니다. (${attempts}번째 시도)`);
-                logLines.push(`시도 ${attempts}: ${numStr} - 유효하여 선택됨`);
-                renderLog();
-                saveHistory(numStr);
-                return;
-            }
-            renderLog();
-            clearBalls();
-            setMessage(
-                `${maxAttempts.toLocaleString()}번 시도했지만 조건을 만족하는 조합을 찾지 못했습니다. ` +
-                `배제 패턴을 몇 개 풀거나 포함/제외 번호를 줄여 보세요.`, true);
-        }
-
-        // ---- 초기화 ----
-        function init() {
-            buildBalls();
-            buildGrid();
-            renderPicker();
-            initCheckboxes();
-            updateDisplay();
-            loadHistory();
-            document.getElementById('generate-btn').addEventListener('click', generateNumbers);
-            document.getElementById('reset-picker').addEventListener('click', resetPicker);
-            document.getElementById('hamburger').addEventListener('click', toggleMenu);
-            document.getElementById('latest-toggle').addEventListener('click', toggleLatestDraw);
-        }
-        init();
-    </script>
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9372871176021283" crossorigin="anonymous"></script>
-    <script type="module" src="https://www.livere.org/livere-widget.js"></script>
+    // ---- 초기화 ----
+    function init() {
+        buildBalls();
+        buildGrid();
+        renderPicker();
+        setAllPatterns(true);
+        updateDisplay();
+        loadHistory();
+        document.getElementById('generate-btn').addEventListener('click', generateNumbers);
+        document.getElementById('reset-picker').addEventListener('click', resetPicker);
+        document.getElementById('patterns-all').addEventListener('click', () => setAllPatterns(true));
+        document.getElementById('patterns-none').addEventListener('click', () => setAllPatterns(false));
+        loadStats();
+    }
+    init();
+</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9372871176021283" crossorigin="anonymous"></script>
+<script type="module" src="https://www.livere.org/livere-widget.js"></script>
 </body>
 </html>
