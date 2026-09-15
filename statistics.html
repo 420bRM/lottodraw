@@ -3,226 +3,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <!-- SEO 핵심 메타 태그 -->
-    <title>로또 통계 | 로또 6/45 최신 분석 - lottodraw.kr</title>
-    <meta name="description" content="로또 6/45 최신 회차까지의 모든 당첨 데이터를 분석한 9가지 통계. 숫자별 출현 빈도, 보너스 번호, 홀짝·저고·합계·연속번호·핫/콜드·번호 쌍 분석까지 한눈에 확인하세요.">
-    <meta name="keywords" content="로또 통계, 로또 분석, 로또 6/45 통계, 로또 번호 출현 빈도, 로또 핫콜드, 로또 번호 쌍, lottodraw, 동행복권 통계">
-
-    <!-- Open Graph -->
-    <meta property="og:title" content="로또 통계 | 로또 6/45 최신 분석 - lottodraw.kr">
-    <meta property="og:description" content="로또 6/45 최신 회차까지의 모든 당첨 데이터를 분석한 9가지 통계. 숫자별 출현 빈도, 보너스 번호, 홀짝·저고·합계·연속번호·핫/콜드·번호 쌍 분석까지 한눈에 확인하세요.">
+    <title>최근 30일 로또 통계 (이용권) | lottodraw.kr</title>
+    <meta name="description" content="최근 30일 당첨번호로 계산한 통계 9종을 한 화면에서. 1주 $2 · 1개월 $5 · 평생 $10 이용권. 지난 기록 요약이며 예측이 아닙니다.">
+    <meta name="keywords" content="로또 최근 통계, 로또 30일 통계, 로또 6/45 통계, lottodraw">
+    <link rel="canonical" href="https://www.lottodraw.kr/statistics.html">
+    <meta property="og:title" content="최근 30일 로또 통계 | lottodraw.kr">
+    <meta property="og:description" content="최근 30일 당첨번호로 계산한 통계 9종. 지난 기록 요약이며 예측이 아닙니다.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://www.lottodraw.kr/statistics.html">
     <meta property="og:site_name" content="lottodraw.kr">
-
     <meta name="google-adsense-account" content="ca-pub-9372871176021283">
-
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 0; line-height: 1.6; }
-        nav { 
-            background-color: #fefefe; 
-            padding: 15px 10px; 
-            text-align: center; 
-            position: relative; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-        nav ul { 
-            list-style: none; 
-            padding: 0; 
-            margin: 0; 
-            display: flex; 
-            justify-content: center; 
-            flex-wrap: wrap; 
-        }
-        nav li { margin: 8px 15px; }
-        nav a { 
-            text-decoration: none; 
-            color: black; 
-            font-weight: bold; 
-        }
-        nav a:hover { color: #003087; }
-        .hamburger { 
-            display: none; 
-            cursor: pointer; 
-            position: absolute; 
-            top: 18px; 
-            left: 15px; 
-        }
-        .hamburger span { 
-            display: block; 
-            width: 25px; 
-            height: 3px; 
-            background: black; 
-            margin: 5px auto; 
-        }
-        
-        .container { 
-            max-width: 1100px; 
-            margin: 50px auto 40px; 
-            padding: 20px; 
-        }
-        h1 { color: #003087; text-align: center; margin-bottom: 10px; }
-        .subtitle { color: #555; font-size: 1.1em; text-align: center; margin-bottom: 40px; }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 25px;
-            margin-top: 30px;
-        }
-        .stat-card {
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 12px;
-            padding: 25px 20px;
-            text-align: center;
-            transition: all 0.3s;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
-        }
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0,48,135,0.15);
-            border-color: #003087;
-        }
-        .stat-card h3 {
-            color: #003087;
-            margin: 15px 0 10px;
-        }
-        .stat-card p {
-            color: #555;
-            font-size: 0.97em;
-            line-height: 1.5;
-        }
-        .stat-card a {
-            display: inline-block;
-            margin-top: 15px;
-            padding: 10px 24px;
-            background: #003087;
-            color: white;
-            text-decoration: none;
-            border-radius: 6px;
-            font-weight: bold;
-        }
-
-        @media (max-width: 600px) {
-            nav ul { flex-direction: column; display: none; }
-            nav ul.active { display: flex; }
-            nav li { margin: 10px 0; }
-            .hamburger { display: block; }
-            .container { margin-top: 30px; padding: 15px; }
-        }
-        footer { margin-top: 60px; font-size: 0.8em; color: gray; text-align: center; padding: 20px; }
-    </style>
+    <link rel="stylesheet" href="css/site.css">
 </head>
 <body>
-    <nav>
-        <div class="hamburger" onclick="toggleMenu()">
-            <span></span><span></span><span></span>
+<div class="page">
+    <header class="banner">
+        <a class="brand" href="index.html">
+            <span class="brand-name">LOTTODRAW.KR</span>
+            <span class="brand-tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
+        </a>
+        <div class="banner-right">
+            <a class="sticker" href="index.html#stat-frequency">전 회차 통계는 <b>무료</b></a>
         </div>
-        <ul id="nav-menu">
-            <li><a href="index.html">Home</a></li>
-            <li><a href="about.html">About</a></li>
-            <li><a href="tax.html">TAX</a></li>
-            <li><a href="top-prize.html">TOP 50</a></li>
-            <li><a href="statistics.html" style="color:#003087; font-weight:bold;">Statistics</a></li>
+    </header>
+
+    <nav class="nav" aria-label="주 메뉴">
+        <ul>
+            <li><a href="index.html">생성기 · 통계</a></li>
+            <li><a href="statistics.html" aria-current="page">30일 통계 (유료)</a></li>
+            <li><a href="top-prize.html">TOP 50 당첨금</a></li>
+            <li><a href="tax.html">실수령액 계산</a></li>
+            <li><a href="about.html">ABOUT</a></li>
         </ul>
     </nav>
 
-    <div class="container">
-        <h1>로또 통계</h1>
-        <p id="subtitle" class="subtitle">로또 6/45 데이터를 분석 중...</p>
+    <div class="eyebrow bg-periwinkle">
+        <div>
+            <h1>최근 30일 통계</h1>
+            <p id="window-scope">기간과 회차는 잠금을 푼 뒤 표시됩니다</p>
+        </div>
+        <div class="seal" role="img" aria-label="동행복권 공식 조회 데이터">동행복권<br>공식<br>데이터</div>
+    </div>
+    <p class="notice">
+        <strong>결제 전에 알아 두세요.</strong>
+        최근 30일은 추첨 4~5회 분량이라 표본이 매우 작고 우연의 영향이 큽니다.
+        이 통계는 지난 기록을 요약할 뿐 다음 회차를 예측하지 않으며, 어떤 조합이든 1등 확률은 1/8,145,060입니다.
+        같은 형식의 전 회차 통계는 <a href="index.html#stat-frequency">홈</a>에서 무료로 볼 수 있습니다.
+    </p>
 
-        <div class="stats-grid">
-            <div class="stat-card">
-                <h3>1. 숫자별 출현 빈도</h3>
-                <p>1부터 45까지 각 숫자가 본번호 6개 중 몇 번 나왔는지 분석합니다. 가장 많이 나온 숫자와 가장 적게 나온 숫자를 Top 10 / Bottom 10으로 한눈에 확인할 수 있습니다.</p>
-                <a href="statistics-frequency.html">바로가기 →</a>
-            </div>
-            <div class="stat-card">
-                <h3>2. 보너스 번호 통계</h3>
-                <p>매 회차 7번째로 뽑히는 보너스 번호의 출현 빈도를 분석합니다. 본번호와 마찬가지로 자주 나오는 보너스 번호와 드문 번호를 Top 10 / Bottom 10으로 보여줍니다.</p>
-                <a href="statistics-bonus.html">바로가기 →</a>
-            </div>
-            <div class="stat-card">
-                <h3>3. 홀짝 비율 분석</h3>
-                <p>당첨번호 6개 중 홀수와 짝수의 조합(3홀3짝, 4홀2짝 등)이 얼마나 자주 나오는지 보여줍니다. 균형 잡힌 번호 조합을 찾는 데 도움이 됩니다.</p>
-                <a href="statistics-even-odd.html">바로가기 →</a>
-            </div>
-            <div class="stat-card">
-                <h3>4. 저고 비율 분석</h3>
-                <p>1~22번(저번호)과 23~45번(고번호)의 비율을 분석합니다. 저번호와 고번호가 적절히 섞인 조합이 얼마나 자주 등장하는지 확인할 수 있습니다.</p>
-                <a href="statistics-low-high.html">바로가기 →</a>
-            </div>
-            <div class="stat-card">
-                <h3>5. 연속번호 분석</h3>
-                <p>당첨번호에 연속된 숫자(예: 12-13, 34-35-36)가 몇 개 들어있는지 분석합니다. 연속번호가 얼마나 흔한 패턴인지 알려드립니다.</p>
-                <a href="statistics-consecutive.html">바로가기 →</a>
-            </div>
-            <div class="stat-card">
-                <h3>6. 합계 분포 분석</h3>
-                <p>6개 번호의 합계가 어느 범위(예: 120~139)에 가장 많이 분포하는지 분석합니다. 합계가 너무 작거나 큰 번호는 얼마나 드문지 알 수 있습니다.</p>
-                <a href="statistics-sum.html">바로가기 →</a>
-            </div>
-            <div class="stat-card">
-                <h3>7. 1등 당첨자 수 분석</h3>
-                <p>1등에 당첨된 사람이 1명이었을 때, 여러 명이었을 때 각각 얼마나 자주 발생했는지 보여줍니다. 당첨자 수가 많을수록 1인당 실수령액이 줄어드는 이유를 이해할 수 있습니다.</p>
-                <a href="statistics-prize.html">바로가기 →</a>
-            </div>
-            <div class="stat-card">
-                <h3>8. 핫/콜드 넘버</h3>
-                <p>전체 회차 대비 최근 50회차에서 많이 나온 숫자(Hot)와 적게 나온 숫자(Cold)를 비교 분석합니다. 최근 흐름을 파악하는 데 유용합니다.</p>
-                <a href="statistics-trend.html">바로가기 →</a>
-            </div>
-            <div class="stat-card">
-                <h3>9. 번호 쌍 분석</h3>
-                <p>두 숫자가 함께 당첨번호로 나온 빈도를 분석하여, 가장 자주 같이 나온 숫자 쌍 Top 10을 보여줍니다. 번호를 조합할 때 참고하기 좋습니다.</p>
-                <a href="statistics-pair.html">바로가기 →</a>
+    <section id="paywall" aria-labelledby="plans-title">
+        <h2 class="sr-only" id="plans-title">이용권</h2>
+        <div class="plans">
+            <section class="plan" aria-labelledby="plan-week-t">
+                <h3 class="card-title" id="plan-week-t"><span>1주 이용권</span></h3>
+                <div class="card-body bg-sage">
+                    <p class="plan-price">$2</p>
+                    <ul>
+                        <li>결제 후 7일 동안</li>
+                        <li>최근 30일 통계 9종</li>
+                        <li>라이선스 키 1개</li>
+                    </ul>
+                    <a class="btn" data-plan="week">결제하기</a>
+                </div>
+            </section>
+            <section class="plan featured" aria-labelledby="plan-month-t">
+                <h3 class="card-title" id="plan-month-t"><span>1개월 이용권</span></h3>
+                <div class="card-body">
+                    <p class="plan-price">$5</p>
+                    <ul>
+                        <li>결제 후 30일 동안</li>
+                        <li>최근 30일 통계 9종</li>
+                        <li>라이선스 키 1개</li>
+                    </ul>
+                    <a class="btn" data-plan="month">결제하기</a>
+                </div>
+            </section>
+            <section class="plan" aria-labelledby="plan-lifetime-t">
+                <h3 class="card-title" id="plan-lifetime-t"><span>평생 이용권</span></h3>
+                <div class="card-body bg-lime">
+                    <p class="plan-price">$10</p>
+                    <ul>
+                        <li>기간 제한 없음 (사이트 운영 기간)</li>
+                        <li>최근 30일 통계 9종</li>
+                        <li>라이선스 키 1개</li>
+                    </ul>
+                    <a class="btn" data-plan="lifetime">결제하기</a>
+                </div>
+            </section>
+        </div>
+
+        <div style="padding: 0 10px 10px;">
+            <section class="card" aria-labelledby="unlock-title">
+                <h3 class="card-title" id="unlock-title"><span>이미 결제했어요</span><small>라이선스 키로 잠금 해제</small></h3>
+                <div class="card-body bg-steel">
+                    <form class="license-form" id="license-form">
+                        <label class="sr-only" for="license-key">라이선스 키</label>
+                        <input type="text" id="license-key" autocomplete="off" spellcheck="false" maxlength="200" placeholder="결제 메일에 있는 라이선스 키">
+                        <button type="submit" class="btn" id="license-submit">잠금 해제</button>
+                    </form>
+                    <p class="license-status" id="license-status" role="status" aria-live="polite"></p>
+                    <p class="card-note">
+                        키는 결제 확인 메일이나 Polar 구매 내역에서 볼 수 있습니다. 입력한 키는 유효한지 확인하기 위해 결제대행사 Polar에만 보내고,
+                        다시 입력하지 않도록 이 브라우저에 저장합니다. 환불 기준은 <a href="terms.html">이용약관</a>, 문제가 있으면 <a href="contact.html">문의</a>로 알려 주세요.
+                    </p>
+                </div>
+            </section>
+        </div>
+
+        <div class="locked-preview" aria-hidden="true">
+            <div class="stat-grid">
+                <section class="card span-2"><h3 class="card-title"><span>1. 번호별 출현 횟수</span></h3><div class="card-body bg-sky" style="height: 120px;"></div></section>
+                <section class="card"><h3 class="card-title"><span>8. 기간 중 많이·적게 나온 번호</span></h3><div class="card-body bg-peach" style="height: 120px;"></div></section>
+                <section class="card span-2"><h3 class="card-title"><span>2. 보너스 번호 출현 횟수</span></h3><div class="card-body bg-periwinkle" style="height: 120px;"></div></section>
+                <section class="card"><h3 class="card-title"><span>9. 함께 나온 번호 쌍 Top 10</span></h3><div class="card-body bg-lime" style="height: 120px;"></div></section>
+                <section class="card"><h3 class="card-title"><span>3. 홀짝 비율</span></h3><div class="card-body bg-sage" style="height: 120px;"></div></section>
+                <section class="card"><h3 class="card-title"><span>4. 저고 비율</span></h3><div class="card-body bg-salmon" style="height: 120px;"></div></section>
+                <section class="card"><h3 class="card-title"><span>5. 연속번호</span></h3><div class="card-body bg-steel" style="height: 120px;"></div></section>
+                <section class="card"><h3 class="card-title"><span>6. 번호 합계 분포</span></h3><div class="card-body bg-lime" style="height: 120px;"></div></section>
+                <section class="card"><h3 class="card-title"><span>7. 1등 당첨자 수</span></h3><div class="card-body bg-sky" style="height: 120px;"></div></section>
             </div>
         </div>
-    </div>
+    </section>
 
-    <footer>
-        <p class="legal-links"><a href="privacy.html">개인정보 보호 정책</a> | <a href="terms.html">이용약관</a> | <a href="contact.html">문의</a></p>
-        <p>&copy; 2026 lottodraw.kr. All rights reserved.</p>
+    <section id="premium" hidden aria-labelledby="premium-title">
+        <h2 class="sr-only" id="premium-title">최근 30일 통계</h2>
+        <div class="license-bar">
+            <span id="license-summary"></span>
+            <button type="button" class="btn btn-secondary" id="license-clear">이 브라우저에서 키 지우기</button>
+        </div>
+        <div class="stat-grid" id="stat-grid">
+            <p class="stats-loading">통계를 계산하는 중…</p>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <ul class="footer-nav">
+            <li><a href="index.html">HOME</a></li>
+            <li><a href="statistics.html">30일 통계</a></li>
+            <li><a href="top-prize.html">TOP 50</a></li>
+            <li><a href="tax.html">실수령액</a></li>
+            <li><a href="about.html">ABOUT</a></li>
+        </ul>
+        <p><a href="privacy.html">개인정보 처리방침</a> · <a href="terms.html">이용약관</a> · <a href="contact.html">문의</a></p>
+        <p>&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권 · 결제 대행: Polar</p>
     </footer>
+</div>
 
-    <script>
-        function toggleMenu() {
-            const menu = document.getElementById('nav-menu');
-            menu.classList.toggle('active');
-        }
-
-        // 최신 회차 수 동적 표시
-        fetch('lotto-data.json')
-            .then(response => response.json())
-            .then(data => {
-                const totalRounds = data.draws.length;
-                document.getElementById('subtitle').innerHTML = 
-                    `최신 <strong>${totalRounds}</strong>회차까지의 로또 6/45 데이터를 분석한 9가지 통계`;
-            })
-            .catch(err => {
-                console.error(err);
-                document.getElementById('subtitle').innerHTML = 
-                    `로또 6/45 데이터를 분석한 9가지 통계`;
-            });
-    </script>
-
-    <!-- Structured Data (Schema.org) -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebPage",
-      "name": "로또 통계",
-      "description": "로또 6/45 최신 회차까지의 모든 당첨 데이터를 분석한 9가지 통계",
-      "url": "https://www.lottodraw.kr/statistics.html",
-      "about": {
-        "@type": "Dataset",
-        "name": "로또 6/45 당첨 데이터",
-        "description": "동행복권 로또 6/45의 회차별 당첨번호, 보너스 번호, 1등 당첨자 수, 당첨금액 등 통계 데이터",
-        "keywords": "로또 통계, 로또 분석, 로또 6/45"
-      }
-    }
-    </script>
+<script src="js/lotto-stats.js"></script>
+<script src="js/stats-render.js"></script>
+<script src="js/premium-config.js"></script>
+<script src="js/premium.js"></script>
 </body>
 </html>
