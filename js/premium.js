@@ -1,4 +1,4 @@
-// 30일 통계 잠금. Polar 라이선스 키를 브라우저에서 확인한다.
+// 10회차 통계 잠금. Polar 라이선스 키를 브라우저에서 확인한다.
 //
 // 이 잠금은 편의 잠금이다. 원본 데이터(lotto-data.json)와 계산 코드가 공개돼 있어서,
 // 마음먹은 사람이 직접 계산하는 것까지 막을 수는 없다. 서버 없는 정적 사이트의 한계다.
@@ -111,18 +111,18 @@
         fetch('lotto-data.json')
             .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
             .then(data => {
-                const days = cfg.windowDays || 30;
-                const w = LottoStats.withinDays(data.draws, days);
-                if (!w.draws.length) throw new Error('기간 안에 추첨 기록이 없다');
+                const count = cfg.windowDraws || 10;
+                const w = LottoStats.withinDraws(data.draws, count);
+                if (!w.draws.length) throw new Error('추첨 기록이 없다');
                 const sorted = w.draws.slice().sort((a, b) => b.round - a.round);
                 const stats = LottoStats.compute(sorted, { recentWindow: sorted.length });
                 $('window-scope').textContent =
                     `${w.from} ~ ${w.to} · ${stats.oldestRound}~${stats.latestRound}회 (추첨 ${stats.rounds}회)`;
                 LottoStatsView.render(grid, stats, {
-                    scopeLabel: `최근 ${days}일 ${stats.rounds}회`,
-                    trendTitle: `8. 기간 중 많이·적게 나온 번호`,
+                    scopeLabel: `최근 ${stats.rounds}회차`,
+                    trendTitle: '기간 중 많이·적게 나온 번호',
                     latestDraws: sorted,
-                    latestTitle: `기간 내 당첨번호 (${sorted.length}회)`,
+                    latestTitle: `최근 ${sorted.length}회차 당첨번호`,
                 });
             })
             .catch(err => {

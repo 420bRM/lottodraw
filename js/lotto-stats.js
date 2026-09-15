@@ -1,4 +1,4 @@
-// 통계 9종 계산 모듈. 홈(전 회차)과 30일 통계 페이지가 같은 함수를 쓴다.
+// 통계 12종 계산 모듈. 홈(전 회차)과 10회차 통계 페이지가 같은 함수를 쓴다.
 // 같은 통계를 페이지마다 따로 계산하면 숫자가 어긋나고, 그 사실을 한참 뒤에 알게 된다.
 // 이 파일에는 DOM 코드가 없다 — Node 로도 그대로 돌려 검증할 수 있게.
 (function (root, factory) {
@@ -30,6 +30,9 @@
         { label: '11명 이상', max: Infinity },
     ];
     const STREAK_LABELS = ['연속 없음', '2연속', '3연속', '4연속', '5연속 이상'];
+    // AC(Arithmetic Complexity): 6개 번호의 두 개씩 차이 15개 중 서로 다른 값의 개수에서
+    // 5를 뺀 값. 0~10 이며 클수록 번호가 고르게 흩어져 있다는 뜻이다.
+    const AC_MAX = 10;
 
     const zeros = n => { const a = []; for (let i = 0; i < n; i++) a.push(0); return a; };
     const asc = (a, b) => a - b;
@@ -52,6 +55,14 @@
         return best;
     }
 
+    function acValue(sorted) {
+        const diffs = new Set();
+        for (let i = 0; i < sorted.length - 1; i++) {
+            for (let j = i + 1; j < sorted.length; j++) diffs.add(sorted[j] - sorted[i]);
+        }
+        return diffs.size - (sorted.length - 1);
+    }
+
     // "YYYY-MM-DD" 를 UTC 자정으로. 로컬 시간대에 따라 하루가 밀리지 않게.
     function parseDay(s) {
         const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || '');
@@ -70,6 +81,18 @@
         return { draws: picked, from: fmt(cutoff), to: fmt(latest) };
     }
 
+    // 최신 회차부터 count 회차. 30일 같은 기간 기준은 추첨이 몇 번 들었는지가 들쭉날쭉해
+    // 표본 수가 회차마다 달라졌다 — 회차 수로 자르면 항상 같은 표본 크기가 된다.
+    function withinDraws(draws, count) {
+        const list = draws.slice().sort((a, b) => b.round - a.round).slice(0, count);
+        if (!list.length) return { draws: [], from: null, to: null };
+        return {
+            draws: list,
+            from: list[list.length - 1].date || null,
+            to: list[0].date || null,
+        };
+    }
+
     function compute(draws, opts) {
         opts = opts || {};
         // 파일은 최신 회차가 앞이지만 순서에 기대지 않는다. 예전 핫/콜드 페이지는 오름차순을
@@ -85,8 +108,14 @@
         const sums = zeros(SUM_BINS.length);
         const winners = zeros(WINNER_BINS.length);
         const pairs = new Map();
+        const ac = zeros(AC_MAX + 1);
+        const tail = zeros(10);          // 인덱스 = 끝자리 0~9
+        // 번호별로 "가장 최근에 나온 회차의 위치". list 는 최신이 0 번이므로
+        // 그 위치가 곧 "몇 회차 전에 나왔나"가 된다. -1 은 아직 안 나옴.
+        const lastSeen = [];
+        for (let x = 0; x <= 45; x++) lastSeen.push(-1);
 
-        list.forEach(d => {
+        list.forEach((d, idx) => {
             const nums = d.numbers.slice().sort(asc);
             let odd = 0, low = 0, total = 0;
             nums.forEach(x => {
@@ -94,7 +123,10 @@
                 if (x % 2) odd++;
                 if (x <= LOW_MAX) low++;
                 total += x;
+                tail[x % 10]++;
+                if (lastSeen[x] === -1) lastSeen[x] = idx;
             });
+            ac[Math.max(0, Math.min(AC_MAX, acValue(nums)))]++;
             bonus[d.bonus]++;
             oddBy[odd]++;
             lowBy[low]++;
@@ -128,6 +160,13 @@
         pairs.forEach((count, key) => pairRows.push({ a: Math.floor(key / 100), b: key % 100, count: count }));
         pairRows.sort((p, q) => q.count - p.count || p.a - q.a || p.b - q.b);
 
+        // 미출현 회차: 아직 한 번도 안 나온 번호는 전체 회차 수로 친다.
+        const gapRows = [];
+        for (let x = 1; x <= 45; x++) {
+            gapRows.push({ number: x, band: bandOf(x), gap: lastSeen[x] === -1 ? n : lastSeen[x] });
+        }
+        gapRows.sort((a, b) => b.gap - a.gap || a.number - b.number);
+
         return {
             rounds: n,
             latestRound: n ? list[0].round : null,
@@ -143,12 +182,27 @@
             winners: WINNER_BINS.map((b, i) => ({ label: b.label, count: winners[i] })),
             trend: { window: window, hot: hot, cold: cold },
             pairs: pairRows.slice(0, opts.pairTop || 10),
+            ac: ac.map((count, v) => ({ label: 'AC ' + v, count: count })),
+            tail: tail.map((count, digit) => {
+                // 끝자리마다 해당하는 번호 개수가 다르다 — 1~5 는 5개(예: 1·11·21·31·41),
+                // 0·6~9 는 4개뿐이다. 횟수를 그대로 그리면 1~5 가 잘 나오는 것처럼 보인다.
+                const candidates = (digit >= 1 && digit <= 5) ? 5 : 4;
+                return {
+                    label: digit + '로 끝',
+                    digit: digit,
+                    candidates: candidates,
+                    count: count,
+                    per: count / candidates,
+                };
+            }),
+            gaps: gapRows,
         };
     }
 
     return {
         compute: compute,
         withinDays: withinDays,
+        withinDraws: withinDraws,
         bandOf: bandOf,
         RECENT_WINDOW: RECENT_WINDOW,
         LOW_MAX: LOW_MAX,

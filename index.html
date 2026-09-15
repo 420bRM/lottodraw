@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" class="home">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>로또 6/45 번호 생성기 · 전 회차 통계 | lottodraw.kr</title>
-    <meta name="description" content="16개 특수 패턴에 걸리는 조합을 걸러내는 로또 6/45 번호 생성기와 전 회차 당첨번호 통계 9종을 한 화면에서 봅니다.">
+    <meta name="description" content="16개 특수 패턴에 걸리는 조합을 걸러내는 로또 6/45 번호 생성기와 전 회차 당첨번호 통계 12종을 한 화면에서 봅니다.">
     <meta name="keywords" content="로또 번호 생성기, 동행복권, 로또 6/45, 로또 통계, 로또 당첨번호, lottodraw">
     <link rel="canonical" href="https://www.lottodraw.kr/">
     <meta property="og:title" content="로또 6/45 번호 생성기 · 전 회차 통계 | lottodraw.kr">
-    <meta property="og:description" content="특수 패턴을 걸러내는 번호 생성기와 전 회차 통계 9종을 한 화면에서.">
+    <meta property="og:description" content="특수 패턴을 걸러내는 번호 생성기와 전 회차 통계 12종을 한 화면에서.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://www.lottodraw.kr/">
     <meta property="og:site_name" content="lottodraw.kr">
@@ -19,7 +19,7 @@
       "@context": "https://schema.org",
       "@type": "Dataset",
       "name": "로또 6/45 전 회차 당첨번호 통계",
-      "description": "동행복권 로또 6/45 회차별 당첨번호, 보너스 번호, 1등 당첨자 수로 계산한 통계 9종",
+      "description": "동행복권 로또 6/45 회차별 당첨번호, 보너스 번호, 1등 당첨자 수로 계산한 통계 12종",
       "url": "https://www.lottodraw.kr/",
       "isAccessibleForFree": true,
       "keywords": "로또 통계, 로또 6/45, 당첨번호"
@@ -35,115 +35,125 @@
         </a>
         <div class="banner-right">
             <p class="latest-callout" id="latest-callout">최신 회차 불러오는 중…</p>
-            <a class="sticker" href="statistics.html">최근 <b>30일</b> 통계</a>
+            <a class="sticker" href="statistics.html">최근 <b>10회차</b> 통계</a>
         </div>
     </header>
 
     <nav class="nav" aria-label="주 메뉴">
         <ul>
             <li><a href="index.html" aria-current="page">생성기 · 통계</a></li>
-            <li><a href="statistics.html">30일 통계 (유료)</a></li>
+            <li><a href="statistics.html">10회차 통계 (유료)</a></li>
             <li><a href="top-prize.html">TOP 50 당첨금</a></li>
             <li><a href="tax.html">실수령액 계산</a></li>
             <li><a href="about.html">ABOUT</a></li>
         </ul>
     </nav>
 
-    <div class="layout">
-        <section class="rail" aria-labelledby="gen-title">
-            <div class="eyebrow bg-olive">
+    <main class="home-main">
+        <section class="snap-section" id="sec-generator" aria-labelledby="gen-title">
+            <div class="eyebrow">
                 <div>
                     <h1 id="gen-title">번호 생성기</h1>
                     <p>16개 특수 패턴에 걸리는 조합을 걸러냅니다</p>
                 </div>
             </div>
 
-            <div class="cta">
-                <h2>이번 번호</h2>
-                <div class="tray" id="result-balls"></div>
-                <p class="result-msg" id="result" role="status" aria-live="polite">버튼을 누르면 위 자리에 번호가 채워집니다.</p>
-                <button type="button" class="btn btn-big" id="generate-btn">번호 생성</button>
+            <div class="gen-hero">
+                <div class="cta">
+                    <h2>이번 번호</h2>
+                    <div class="tray" id="result-balls"></div>
+                    <p class="result-msg" id="result" role="status" aria-live="polite">버튼을 누르면 위 자리에 번호가 채워집니다.</p>
+                    <button type="button" class="btn btn-big" id="generate-btn">번호 생성</button>
+                </div>
+
+                <section class="card" aria-labelledby="picker-title">
+                        <h2 class="card-title" id="picker-title"><span>포함 / 제외 번호</span><small>누를 때마다 순환</small></h2>
+                        <div class="card-body">
+                            <p class="picker-help">
+                                <span class="chip include">포함</span> → <span class="chip exclude">제외</span> → 해제 순으로 바뀝니다. 포함은 최대 6개.
+                            </p>
+                            <div class="number-grid" id="number-grid" role="group" aria-label="포함하거나 제외할 번호 선택"></div>
+                            <p class="picker-summary" id="picker-summary" aria-live="polite">포함 0개 · 제외 0개</p>
+                            <p class="picker-warning" id="picker-warning" role="alert"></p>
+                            <div class="picker-actions">
+                                <button type="button" class="btn btn-secondary" id="reset-picker">선택 초기화</button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="card" aria-labelledby="patterns-title">
+                        <h2 class="card-title" id="patterns-title"><span>배제할 특수 패턴</span><small>16개</small></h2>
+                        <div class="card-body">
+                            <ul class="patterns">
+                                <li><input type="checkbox" id="pattern1"><label for="pattern1">6개 모두 연속 (예: 10~15)</label></li>
+                                <li><input type="checkbox" id="pattern2"><label for="pattern2">모두 1~15 안</label></li>
+                                <li><input type="checkbox" id="pattern3"><label for="pattern3">모두 1~20 안</label></li>
+                                <li><input type="checkbox" id="pattern4"><label for="pattern4">모두 1~31 안</label></li>
+                                <li><input type="checkbox" id="pattern5"><label for="pattern5">모두 3의 배수</label></li>
+                                <li><input type="checkbox" id="pattern6"><label for="pattern6">모두 4의 배수</label></li>
+                                <li><input type="checkbox" id="pattern7"><label for="pattern7">모두 5의 배수</label></li>
+                                <li><input type="checkbox" id="pattern8"><label for="pattern8">모두 31~45 안</label></li>
+                                <li><input type="checkbox" id="pattern9"><label for="pattern9">모두 같은 십의 자리 (예: 10~19)</label></li>
+                                <li><input type="checkbox" id="pattern10"><label for="pattern10">모두 소수</label></li>
+                                <li><input type="checkbox" id="pattern11"><label for="pattern11">모두 홀수</label></li>
+                                <li><input type="checkbox" id="pattern12"><label for="pattern12">모두 짝수</label></li>
+                                <li><input type="checkbox" id="pattern13"><label for="pattern13">합계 50 미만 또는 200 초과</label></li>
+                                <li><input type="checkbox" id="pattern14"><label for="pattern14">합계 50~69 또는 181~200</label></li>
+                                <li><input type="checkbox" id="pattern15"><label for="pattern15">제곱수 4개 이상</label></li>
+                                <li><input type="checkbox" id="pattern16"><label for="pattern16">제곱수 5개 이상</label></li>
+                            </ul>
+                            <div class="patterns-actions">
+                                <button type="button" class="btn btn-secondary" id="patterns-all">모두 체크</button>
+                                <button type="button" class="btn btn-secondary" id="patterns-none">모두 해제</button>
+                            </div>
+                        </div>
+                </section>
+
             </div>
 
-            <section class="card" aria-labelledby="picker-title">
-                <h2 class="card-title" id="picker-title"><span>포함 / 제외 번호</span><small>누를 때마다 순환</small></h2>
-                <div class="card-body">
-                    <p class="picker-help">
-                        <span class="chip include">포함</span> → <span class="chip exclude">제외</span> → 해제 순으로 바뀝니다. 포함은 최대 6개.
-                    </p>
-                    <div class="number-grid" id="number-grid" role="group" aria-label="포함하거나 제외할 번호 선택"></div>
-                    <p class="picker-summary" id="picker-summary" aria-live="polite">포함 0개 · 제외 0개</p>
-                    <p class="picker-warning" id="picker-warning" role="alert"></p>
-                    <div class="picker-actions">
-                        <button type="button" class="btn btn-secondary" id="reset-picker">선택 초기화</button>
-                    </div>
-                </div>
-            </section>
+            <div class="gen-extras">
+                    <section class="card">
+                        <details>
+                            <summary class="card-title"><span>생성 이력 · 과정 로그</span></summary>
+                            <div class="card-body">
+                                <table class="history">
+                                    <caption class="sr-only">오늘 생성한 번호 (최근 20개)</caption>
+                                    <thead><tr><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr></thead>
+                                    <tbody id="history-body"></tbody>
+                                </table>
+                                <p class="muted" id="visitor-count"></p>
+                                <div class="log" id="log"></div>
+                            </div>
+                        </details>
+                    </section>
 
-            <section class="card" aria-labelledby="patterns-title">
-                <h2 class="card-title" id="patterns-title"><span>배제할 특수 패턴</span><small>16개</small></h2>
-                <div class="card-body bg-sage">
-                    <ul class="patterns">
-                        <li><input type="checkbox" id="pattern1"><label for="pattern1">6개 모두 연속 (예: 10~15)</label></li>
-                        <li><input type="checkbox" id="pattern2"><label for="pattern2">모두 1~15 안</label></li>
-                        <li><input type="checkbox" id="pattern3"><label for="pattern3">모두 1~20 안</label></li>
-                        <li><input type="checkbox" id="pattern4"><label for="pattern4">모두 1~31 안</label></li>
-                        <li><input type="checkbox" id="pattern5"><label for="pattern5">모두 3의 배수</label></li>
-                        <li><input type="checkbox" id="pattern6"><label for="pattern6">모두 4의 배수</label></li>
-                        <li><input type="checkbox" id="pattern7"><label for="pattern7">모두 5의 배수</label></li>
-                        <li><input type="checkbox" id="pattern8"><label for="pattern8">모두 31~45 안</label></li>
-                        <li><input type="checkbox" id="pattern9"><label for="pattern9">모두 같은 십의 자리 (예: 10~19)</label></li>
-                        <li><input type="checkbox" id="pattern10"><label for="pattern10">모두 소수</label></li>
-                        <li><input type="checkbox" id="pattern11"><label for="pattern11">모두 홀수</label></li>
-                        <li><input type="checkbox" id="pattern12"><label for="pattern12">모두 짝수</label></li>
-                        <li><input type="checkbox" id="pattern13"><label for="pattern13">합계 50 미만 또는 200 초과</label></li>
-                        <li><input type="checkbox" id="pattern14"><label for="pattern14">합계 50~69 또는 181~200</label></li>
-                        <li><input type="checkbox" id="pattern15"><label for="pattern15">제곱수 4개 이상</label></li>
-                        <li><input type="checkbox" id="pattern16"><label for="pattern16">제곱수 5개 이상</label></li>
-                    </ul>
-                    <div class="patterns-actions">
-                        <button type="button" class="btn btn-secondary" id="patterns-all">모두 체크</button>
-                        <button type="button" class="btn btn-secondary" id="patterns-none">모두 해제</button>
-                    </div>
-                </div>
-            </section>
+                    <section class="card">
+                        <details>
+                            <summary class="card-title"><span>보렐의 법칙과 이 도구의 한계</span></summary>
+                            <div class="card-body">
+                                <p>보렐의 법칙은 "확률이 극도로 낮은 사건은 현실에서 일어나지 않는다고 봐도 된다"는 경험적 원칙으로, 수학자 에밀 보렐이 제안했습니다. 이 사이트는 모든 번호가 소수이거나 제곱수인 조합 같은 특수한 경우를 이 생각으로 걸러냅니다.</p>
+                                <p>45개 중 6개를 고르는 조합은 8,145,060개이고, 16개 패턴을 모두 적용하면 1,561,694개(약 19.17%)가 제외되어 6,583,366개(약 80.83%)가 남습니다.</p>
+                                <p><strong>패턴을 걸러낸다고 당첨 확률이 올라가지는 않습니다.</strong> 추첨은 조합마다 같은 확률이라, 내가 쥔 한 장이 맞을 확률은 1/8,145,060 그대로입니다. 이 도구가 하는 일은 사람이 직접 고르면 몰리기 쉬운 조합을 피하는 것이고, 1등이 갈릴 때 나눠 가질 사람이 줄어들 수 있다는 점에서만 의미가 있습니다.</p>
+                            </div>
+                        </details>
+                    </section>
 
-            <section class="card">
-                <details>
-                    <summary class="card-title"><span>생성 이력 · 과정 로그</span></summary>
-                    <div class="card-body bg-steel">
-                        <table class="history">
-                            <caption class="sr-only">오늘 생성한 번호 (최근 20개)</caption>
-                            <thead><tr><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr></thead>
-                            <tbody id="history-body"></tbody>
-                        </table>
-                        <p class="muted" id="visitor-count"></p>
-                        <div class="log" id="log"></div>
-                    </div>
-                </details>
-            </section>
+                    <section class="card">
+                        <div class="card-body">
+                            <strong>당첨되면 얼마 받을까?</strong> <a href="tax.html">실수령액 계산기</a><br>
+                            <a href="https://dhlottery.co.kr/" rel="noopener">동행복권 홈페이지</a>
+                        </div>
+                    </section>
+            </div>
 
-            <section class="card">
-                <details>
-                    <summary class="card-title"><span>보렐의 법칙과 이 도구의 한계</span></summary>
-                    <div class="card-body bg-sky">
-                        <p>보렐의 법칙은 "확률이 극도로 낮은 사건은 현실에서 일어나지 않는다고 봐도 된다"는 경험적 원칙으로, 수학자 에밀 보렐이 제안했습니다. 이 사이트는 모든 번호가 소수이거나 제곱수인 조합 같은 특수한 경우를 이 생각으로 걸러냅니다.</p>
-                        <p>45개 중 6개를 고르는 조합은 8,145,060개이고, 16개 패턴을 모두 적용하면 1,561,694개(약 19.17%)가 제외되어 6,583,366개(약 80.83%)가 남습니다.</p>
-                        <p><strong>패턴을 걸러낸다고 당첨 확률이 올라가지는 않습니다.</strong> 추첨은 조합마다 같은 확률이라, 내가 쥔 한 장이 맞을 확률은 1/8,145,060 그대로입니다. 이 도구가 하는 일은 사람이 직접 고르면 몰리기 쉬운 조합을 피하는 것이고, 1등이 갈릴 때 나눠 가질 사람이 줄어들 수 있다는 점에서만 의미가 있습니다.</p>
-                    </div>
-                </details>
-            </section>
-
-            <section class="card">
-                <div class="card-body">
-                    <strong>당첨되면 얼마 받을까?</strong> <a href="tax.html">실수령액 계산기</a><br>
-                    <a href="https://dhlottery.co.kr/" rel="noopener">동행복권 홈페이지</a>
-                </div>
-            </section>
+            <button type="button" class="scroll-cue" data-goto="sec-stats">
+                <span>아래에 전 회차 통계 12종</span>
+                <span class="chevron" aria-hidden="true">⌄</span>
+            </button>
         </section>
 
-        <section class="main" aria-labelledby="stats-title">
-            <div class="eyebrow bg-salmon">
+        <section class="snap-section" id="sec-stats" aria-labelledby="stats-title">
+            <div class="eyebrow">
                 <div>
                     <h2 id="stats-title">전 회차 통계</h2>
                     <p id="stats-scope">데이터를 불러오는 중…</p>
@@ -151,23 +161,69 @@
             </div>
             <p class="notice">
                 지나간 추첨 기록을 정리한 것이며 다음 회차를 예측하지 않습니다. 모든 조합의 당첨 확률은 1/8,145,060으로 같습니다.
-                <a href="statistics.html">최근 30일 통계 보기</a>
             </p>
             <div class="stat-grid" id="stat-grid">
                 <p class="stats-loading">통계를 계산하는 중…</p>
             </div>
-        </section>
-    </div>
 
-    <section class="comments" aria-labelledby="comments-title">
-        <h2 id="comments-title">댓글</h2>
-        <livere-comment client-id="5Qnz059feDSs78GOTvi5"></livere-comment>
-    </section>
+            <button type="button" class="scroll-cue" data-goto="sec-recent">
+                <span>아래에 최근 10회차 한눈에 보기</span>
+                <span class="chevron" aria-hidden="true">⌄</span>
+            </button>
+        </section>
+
+        <section class="snap-section" id="sec-recent" aria-labelledby="recent-title">
+            <div class="eyebrow">
+                <div>
+                    <h2 id="recent-title">최근 10회차 한눈에 보기</h2>
+                    <p id="recent-scope">불러오는 중…</p>
+                </div>
+            </div>
+
+            <div class="teaser">
+                <section class="card" aria-labelledby="heat-title">
+                    <h3 class="card-title" id="heat-title"><span>번호를 눌러 보세요</span><small>최근 10회차 출현</small></h3>
+                    <div class="card-body">
+                        <div class="heat-grid" id="heat-grid" role="group" aria-label="최근 10회차 번호별 출현 횟수"></div>
+                        <p class="heat-legend">
+                            <span><i style="background:#fff"></i> 0회</span>
+                            <span><i style="background:#cfe0ff;border-color:#cfe0ff"></i> 1회</span>
+                            <span><i style="background:#7ea9f0;border-color:#7ea9f0"></i> 2회</span>
+                            <span><i style="background:#3d72d6;border-color:#3d72d6"></i> 3회</span>
+                            <span><i style="background:#003087;border-color:#003087"></i> 4회 이상</span>
+                        </p>
+                        <p class="heat-readout" id="heat-readout" aria-live="polite">번호를 누르면 최근 10회차에 몇 번 나왔는지 보여드립니다.</p>
+                    </div>
+                </section>
+
+                <section class="card" aria-labelledby="recent-cta-title">
+                    <h3 class="card-title" id="recent-cta-title"><span>10회차 통계 더 보기</span></h3>
+                    <div class="card-body">
+                        <p>여기서는 최근 10회차에 어떤 번호가 몇 번 나왔는지만 보여줍니다.</p>
+                        <p>같은 10회차를 홀짝·저고·연속·합계·AC값까지 통계 11종으로 쪼개 본 페이지는 이용권으로 제공합니다.</p>
+                        <p class="card-note">10회차는 표본이 작아 우연의 영향이 큽니다. 지난 기록 요약이며 예측이 아닙니다.</p>
+                        <p class="page-actions"><a class="btn" href="statistics.html">10회차 통계 보기</a></p>
+                    </div>
+                </section>
+            </div>
+
+            <section class="comments" aria-labelledby="comments-title">
+                <h2 id="comments-title">댓글</h2>
+                <livere-comment client-id="5Qnz059feDSs78GOTvi5"></livere-comment>
+            </section>
+        </section>
+    </main>
+
+    <nav class="dot-nav" aria-label="화면 구간 이동">
+        <button type="button" data-goto="sec-generator" aria-label="번호 생성기"></button>
+        <button type="button" data-goto="sec-stats" aria-label="전 회차 통계"></button>
+        <button type="button" data-goto="sec-recent" aria-label="최근 10회차"></button>
+    </nav>
 
     <footer class="footer">
         <ul class="footer-nav">
             <li><a href="index.html">HOME</a></li>
-            <li><a href="statistics.html">30일 통계</a></li>
+            <li><a href="statistics.html">10회차 통계</a></li>
             <li><a href="top-prize.html">TOP 50</a></li>
             <li><a href="tax.html">실수령액</a></li>
             <li><a href="about.html">ABOUT</a></li>
@@ -480,6 +536,7 @@
                 document.getElementById('stats-scope').textContent =
                     `${stats.oldestRound}~${stats.latestRound}회 (${LottoStatsView.fmt(stats.rounds)}회 추첨)${period}`;
                 LottoStatsView.render(grid, stats, { latestDraws: sorted.slice(0, 10) });
+                renderRecent(sorted.slice(0, 10));
             })
             .catch(err => {
                 console.error(err);
@@ -489,7 +546,90 @@
                 p.textContent = '통계 데이터를 불러오지 못했습니다. 잠시 뒤 새로고침해 주세요.';
                 grid.appendChild(p);
                 document.getElementById('latest-callout').textContent = '최신 회차 정보를 불러오지 못했습니다';
+                document.getElementById('recent-scope').textContent = '최근 회차를 불러오지 못했습니다';
             });
+    }
+
+    // ---- 최근 10회차 히트 그리드 ----
+    let recentHits = null;
+    function renderRecent(draws) {
+        const hits = new Array(46).fill(0);
+        draws.forEach(d => d.numbers.forEach(n => { hits[n]++; }));
+        recentHits = hits;
+
+        const oldest = draws[draws.length - 1];
+        const newest = draws[0];
+        document.getElementById('recent-scope').textContent =
+            `${oldest.round}~${newest.round}회 · ${oldest.date} ~ ${newest.date}`;
+
+        const grid = document.getElementById('heat-grid');
+        grid.textContent = '';
+        for (let n = 1; n <= 45; n++) {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'heat';
+            b.textContent = n;
+            b.dataset.n = n;
+            b.dataset.hits = Math.min(hits[n], 4);
+            b.setAttribute('aria-pressed', 'false');
+            b.title = `${n}번: 최근 10회차 중 ${hits[n]}회`;
+            grid.appendChild(b);
+        }
+    }
+
+    function initRecent() {
+        const grid = document.getElementById('heat-grid');
+        const readout = document.getElementById('heat-readout');
+        grid.addEventListener('click', e => {
+            const btn = e.target.closest('.heat');
+            if (!btn || !recentHits) return;
+            grid.querySelectorAll('.heat[aria-pressed="true"]').forEach(x => x.setAttribute('aria-pressed', 'false'));
+            btn.setAttribute('aria-pressed', 'true');
+            const n = Number(btn.dataset.n);
+            const hit = recentHits[n];
+            readout.textContent = '';
+            readout.appendChild(document.createTextNode(`${n}번은 최근 10회차에 `));
+            const b = document.createElement('b');
+            b.textContent = `${hit}번`;
+            readout.appendChild(b);
+            readout.appendChild(document.createTextNode(
+                hit === 0 ? ' 나왔습니다. 안 나왔다고 다음에 나올 확률이 올라가지는 않습니다.'
+                          : ' 나왔습니다. 많이 나왔다고 다음에 또 나올 확률이 올라가지는 않습니다.'));
+        });
+    }
+
+    // ---- 구간 이동 ----
+    function initSections() {
+        const ids = ['sec-generator', 'sec-stats', 'sec-recent'];
+        const dots = [...document.querySelectorAll('.dot-nav button')];
+
+        // 첫 구간은 헤더·메뉴 아래부터 시작하므로 그 높이만큼 빼 준다.
+        const chrome = () => {
+            const banner = document.querySelector('.banner');
+            const nav = document.querySelector('.nav');
+            const h = (banner ? banner.offsetHeight : 0) + (nav ? nav.offsetHeight : 0);
+            document.documentElement.style.setProperty('--chrome-h', h + 'px');
+        };
+        chrome();
+        window.addEventListener('resize', chrome);
+
+        document.querySelectorAll('[data-goto]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const t = document.getElementById(btn.dataset.goto);
+                if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
+
+        // 지금 보고 있는 구간을 점에 표시하고, 첫 구간을 지나면 안내 화살표를 감춘다.
+        if (!('IntersectionObserver' in window)) return;
+        const io = new IntersectionObserver(entries => {
+            entries.forEach(en => {
+                if (!en.isIntersecting) return;
+                const i = ids.indexOf(en.target.id);
+                dots.forEach((d, k) => d.setAttribute('aria-current', String(k === i)));
+            });
+        }, { threshold: 0.5 });
+        ids.forEach(id => { const el = document.getElementById(id); if (el) io.observe(el); });
     }
 
     // ---- 초기화 ----
@@ -504,6 +644,8 @@
         document.getElementById('reset-picker').addEventListener('click', resetPicker);
         document.getElementById('patterns-all').addEventListener('click', () => setAllPatterns(true));
         document.getElementById('patterns-none').addEventListener('click', () => setAllPatterns(false));
+        initRecent();
+        initSections();
         loadStats();
     }
     init();
