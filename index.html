@@ -611,9 +611,8 @@
     }
 
     // ---- 구간 이동 ----
-    // 휠 한 번에 한 화면씩 움직인다. CSS 스냅만으로는 안 되는데, 통계 구간이 한 화면보다
-    // 커서 그 안의 중간 지점이 스냅 지점이 아니기 때문이다. 그래서 "설 자리"를 직접 만든다:
-    // 각 구간의 머리, 그리고 한 화면을 넘는 구간이면 그 꼬리(끝이 화면에 닿는 위치)까지.
+    // 스크롤 자체는 건드리지 않는다. 휠을 가로채 한 화면씩 넘기는 건 읽던 자리에서
+    // 튕겨 나가 불편하다. 오른쪽 점과 화살표로 "눌러서" 옮겨 가게만 해 둔다.
     function initSections() {
         const ids = ['sec-generator', 'sec-stats', 'sec-recent'];
         const dots = [...document.querySelectorAll('.dot-nav button')];
@@ -626,27 +625,8 @@
             document.documentElement.style.setProperty('--chrome-h', h + 'px');
         }
 
-        let stops = [];
-        function measure() {
-            chrome();
-            const vh = window.innerHeight;
-            const maxScroll = document.documentElement.scrollHeight - vh;
-            const els = ids.map(id => document.getElementById(id)).filter(Boolean);
-            const list = [];
-            els.forEach((el, i) => {
-                const top = i === 0 ? 0 : el.offsetTop;   // 첫 구간은 헤더가 보이는 문서 맨 위
-                const next = els[i + 1];
-                const bottom = next ? next.offsetTop : document.documentElement.scrollHeight;
-                list.push(top);
-                // 구간이 한 화면보다 뚜렷하게 크면 꼬리에도 설 자리를 둔다
-                if (bottom - top > vh * 1.25) list.push(Math.min(bottom - vh, maxScroll));
-            });
-            stops = [...new Set(list.map(v => Math.max(0, Math.round(v))))].sort((a, b) => a - b);
-        }
-        measure();
-        window.addEventListener('resize', measure);
-        // 통계는 나중에 그려져 구간 높이가 바뀐다 — 처음 잰 값만 들고 있으면 자리가 어긋난다
-        if ('ResizeObserver' in window) new ResizeObserver(measure).observe(document.body);
+        chrome();
+        window.addEventListener('resize', chrome);
 
         function goTo(y) {
             window.scrollTo({ top: y, behavior: smooth ? 'smooth' : 'auto' });
@@ -670,53 +650,6 @@
             ids.forEach(id => { const el = document.getElementById(id); if (el) io.observe(el); });
         }
 
-        // 마우스 휠에서만 가로챈다. 손가락 스크롤(터치)과 좁은 화면은 그대로 둔다.
-        const wheelOK = matchMedia('(min-width: 900px) and (min-height: 700px) and (pointer: fine)');
-        if (!wheelOK.matches) return;
-
-        // JS 가 자리 이동을 맡으므로 CSS 스냅은 끈다 — 켜 두면 구간 중간 자리에서
-        // 스냅이 구간 머리로 도로 잡아당겨 서로 싸운다.
-        document.documentElement.classList.add('js-wheelnav');
-
-        let lock = false;
-        function release() { lock = false; }
-
-        // 안에서 따로 스크롤되는 상자(로그, 접힌 카드 본문, 표) 위에서는 가로채지 않는다
-        function scrollableUnder(node, down) {
-            for (let el = node; el && el !== document.body; el = el.parentElement) {
-                if (!(el instanceof Element)) continue;
-                const oy = getComputedStyle(el).overflowY;
-                if (oy !== 'auto' && oy !== 'scroll') continue;
-                if (el.scrollHeight - el.clientHeight < 4) continue;
-                if (down ? el.scrollTop < el.scrollHeight - el.clientHeight - 2 : el.scrollTop > 2) return true;
-            }
-            return false;
-        }
-
-        window.addEventListener('wheel', e => {
-            if (e.ctrlKey) return;                       // 확대/축소는 건드리지 않는다
-            if (Math.abs(e.deltaY) < 4) return;
-            const down = e.deltaY > 0;
-            if (scrollableUnder(e.target, down)) return;
-
-            if (lock) { e.preventDefault(); return; }
-
-            const y = window.scrollY;
-            const target = down
-                ? stops.find(v => v > y + 4)
-                : [...stops].reverse().find(v => v < y - 4);
-            if (target === undefined) return;            // 더 갈 데가 없으면 평소대로 (푸터까지)
-
-            e.preventDefault();
-            lock = true;
-            goTo(target);
-            if ('onscrollend' in window) {
-                window.addEventListener('scrollend', release, { once: true });
-                setTimeout(release, 1200);               // scrollend 가 안 오는 경우 대비
-            } else {
-                setTimeout(release, 620);
-            }
-        }, { passive: false });
     }
 
     // ---- 초기화 ----
