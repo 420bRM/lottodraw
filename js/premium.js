@@ -125,6 +125,7 @@
                 const stats = LottoStats.compute(sorted, { recentWindow: sorted.length });
                 $('window-scope').textContent =
                     `${w.from} ~ ${w.to} · ${stats.oldestRound}~${stats.latestRound}회 (추첨 ${stats.rounds}회)`;
+                LottoInsights.render(document.getElementById("insight-grid"), stats, sorted);
                 LottoStatsView.render(grid, stats, {
                     scopeLabel: `최근 ${stats.rounds}회차`,
                     trendTitle: '기간 중 많이·적게 나온 번호',
