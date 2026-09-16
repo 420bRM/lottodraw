@@ -93,7 +93,7 @@
         lines.push({
             head: '적게 나온 번호',
             body: listNums(bottom) + ' — ' + min + '회로 기대보다 ' + fmt1(mean - min) + '회 적습니다 (-' + fmt1(zMin) + ' 표준편차).',
-            note: '적게 나왔다고 앞으로 더 나올 이유는 없습니다. 추첨기는 지난 결과를 기억하지 않습니다.',
+            note: '아래쪽 끝도 마찬가지입니다. 45개 중 최솟값은 공평한 추첨에서도 평균 -' + EXPECTED_MAX_Z + ' 표준편차쯤 내려갑니다.',
         });
 
         const missing = stats.frequency.filter(r => r.count === 0).length;
@@ -126,7 +126,7 @@
             lines.push({
                 head: '번호 합계',
                 body: '이번 기간 평균은 ' + fmt1(avg) + '입니다.',
-                note: '이론 평균은 ' + SUM_MEAN + '입니다. 합계는 가운데로 몰리는 값이라 특별한 신호로 읽기 어렵습니다.',
+                note: '이론 평균은 ' + SUM_MEAN + '입니다.',
             });
         }
 
@@ -134,7 +134,7 @@
         lines.push({
             head: '연속 번호',
             body: withStreak + '회에서 연속한 번호가 나왔습니다 (' + fmt1(withStreak / rounds * 100) + '%).',
-            note: '이론값은 ' + fmt1(CONSEC_P * 100) + '%입니다. 연속 번호는 피할 대상이 아니라 절반 가까이 나오는 흔한 형태입니다.',
+            note: '이론값은 ' + fmt1(CONSEC_P * 100) + '%입니다. 절반 넘게 나오는 흔한 형태입니다.',
         });
 
         const pair = stats.pairs[0];
@@ -164,14 +164,12 @@
             title: '많이 나온 번호로 묶기',
             basis: '이번 기간 출현 상위: ' + hot.slice(0, 6).map(r => r.number + '번(' + r.count + '회)').join(', '),
             picks: nums(hot.slice(0, 6)),
-            note: '흐름을 타는 번호가 있다고 보는 방식입니다. 많이 나온 건 기록상 사실이지만, 다음 회차 확률은 다른 번호와 같습니다.',
         });
 
         out.push({
             title: '안 나온 번호 노리기',
             basis: '이번 기간 출현 하위: ' + cold.slice(0, 6).map(r => r.number + '번(' + r.count + '회)').join(', '),
             picks: nums(cold.slice(0, 6)),
-            note: '이제 나올 때가 됐다고 보는 방식입니다. 실제로 그런 순서는 없습니다. 위 전략과 정반대인데 둘 다 확률은 같습니다.',
         });
 
         const topPairs = stats.pairs.slice(0, 3);
@@ -188,7 +186,6 @@
             basis: '동반 출현 상위 쌍: ' + topPairs.map(p => p.a + '·' + p.b + '번(' + p.count + '회)').join(', '),
             pairs: topPairs,
             picks: pairPick.slice(0, 6),
-            note: '쌍을 통째로 넣는 방식입니다. 쌍 ' + PAIR_COUNT + '가지 중 상위가 몇 회씩 겹치는 건 자연스러운 일이라 특별한 궁합은 아닙니다. 확률은 다른 조합과 같습니다.',
         });
 
         // 이번 기간에 가장 잦았던 홀짝·저고 형태에 합계와 AC 범위를 맞춘 조합
@@ -200,14 +197,12 @@
             basis: '이번 기간 최다 형태 ' + oddTop.label + ' · ' + lowTop.label
                 + ' 에 맞춘 조합 (합계 ' + sumOf(shaped) + ' · AC ' + acValue(shaped) + ')',
             picks: shaped,
-            note: '자주 나온 형태에 맞춰 만드는 방식입니다. 형태별로 가능한 조합 수가 달라 흔해 보일 뿐, 조합 하나하나의 확률은 모두 같습니다.',
         });
 
         out.push({
             title: '많이·적게 섞기',
             basis: '출현 상위 3개와 하위 3개를 반씩',
             picks: nums(hot.slice(0, 3)).concat(nums(cold.slice(0, 3))),
-            note: '한쪽에 걸지 않는 절충입니다. 마음은 편하지만 확률은 역시 같습니다.',
         });
 
         return out;
@@ -260,17 +255,13 @@
 
         const list = strategies(stats);
         container.appendChild(el('section', {
-            className: 'card span-2', id: 'insight-strategy', 'aria-labelledby': 'insight-strategy-t',
+            className: 'card', id: 'insight-strategy', 'aria-labelledby': 'insight-strategy-t',
         }, [
             el('h3', { className: 'card-title', id: 'insight-strategy-t' }, [
                 el('span', { text: '이번 주 전략' }),
-                el('small', { text: '확률은 모두 같음' }),
+                el('small', { text: '이번 기간 기록 기준' }),
             ]),
             el('div', { className: 'card-body' }, [
-                el('p', {
-                    className: 'strategy-warn',
-                    text: '아래는 이번 기간 기록으로 번호를 고르는 방식일 뿐입니다. 어떤 6개를 골라도 1등 확률은 1/8,145,060으로 같습니다.',
-                }),
                 el('ol', { className: 'strategy-list' }, list.map(s => el('li', { className: 'strategy' }, [
                     el('h4', { text: s.title }),
                     el('p', { className: 'strategy-basis', text: s.basis }),
@@ -278,7 +269,6 @@
                         ball(p.a), ball(p.b), el('small', { text: p.count + '회' }),
                     ]))) : null,
                     balls(s.picks),
-                    el('p', { className: 'card-note', text: s.note }),
                 ]))),
             ]),
         ]));

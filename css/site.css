@@ -630,13 +630,14 @@ html.home { scroll-behavior: smooth; }
 .footer p { margin: 4px 0; }
 
 /* ───── 이번 기간 리뷰 · 이번 주 전략 (결제 페이지) ───── */
+.insight-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 16px; margin-top: 16px; }
 .insight-list { display: grid; gap: 14px; margin: 0; padding: 0; list-style: none; }
 .insight-list li { display: grid; gap: 2px; }
 .insight-list strong { color: var(--brand); font-size: 13px; }
 .insight-list p { margin: 0; font-size: 14px; }
 .insight-list .card-note { margin: 0; }
 .strategy-warn { margin: 0 0 12px; padding: 8px 10px; background: #eef1f5; border-radius: 6px; color: var(--brand); font-size: 13px; font-weight: bold; line-height: 1.5; }
-.strategy-list { display: grid; gap: 14px; margin: 0; padding: 0 0 0 18px; }
+.strategy-list { display: grid; gap: 16px; margin: 0; padding: 0 0 0 18px; }
 .strategy { padding-left: 2px; }
 .strategy h4 { margin: 0 0 2px; font-size: 14px; color: var(--text); }
 .strategy-basis { margin: 0 0 6px; color: var(--muted); font-size: 12px; line-height: 1.5; }
@@ -644,6 +645,7 @@ html.home { scroll-behavior: smooth; }
 .pair-chip { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px 2px 4px; background: #f2f2f2; border-radius: 12px; }
 .pair-chip small { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
 .strategy-nums { display: flex; flex-wrap: wrap; gap: 4px; }
+.page-disclaimer { margin: 20px 0 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
 .strategy .card-note { margin: 6px 0 0; }
 
 /* ───── 반응형 ───── */
@@ -660,6 +662,7 @@ html.home { scroll-behavior: smooth; }
 }
 @media (max-width: 599px) {
     .stat-grid, .plans { grid-template-columns: minmax(0, 1fr); }
+    .insight-grid { grid-template-columns: minmax(0, 1fr); }
     .layout { gap: 16px; padding: 16px 12px; }
     .banner { padding: 10px 12px; }
     .page > .eyebrow { padding: 16px 12px 8px; }
