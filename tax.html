@@ -3,8 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>실수령액 계산기 | lottodraw.kr</title>
-    <meta name="description" content="로또 6/45 당첨금 세금과 실수령액을 계산해 드려요.">
+    <!-- seo:head:start -->
+    <title>로또 실수령액 계산기 · 당첨금 세금 계산 (22%·33%) | lottodraw.kr</title>
+    <meta name="description" content="로또 당첨금에서 세금을 뗀 실수령액 계산기. 200만 원 이하 비과세, 3억 원까지 22%, 3억 원 초과분만 33%. 역대 1등 평균 26억 5,838만 원의 세후 금액은 약 18억 1,412만 원.">
+    <meta property="og:title" content="로또 실수령액 계산기 · 당첨금 세금 계산 (22%·33%) | lottodraw.kr">
+    <meta property="og:description" content="로또 당첨금에서 세금을 뗀 실수령액 계산기. 200만 원 이하 비과세, 3억 원까지 22%, 3억 원 초과분만 33%. 역대 1등 평균 26억 5,838만 원의 세후 금액은 약 18억 1,412만 원.">
+    <!-- seo:head:end -->
     <meta name="keywords" content="로또 당첨금 세금, 로또 실수령액, 로또 세율">
     <link rel="canonical" href="https://www.lottodraw.kr/tax.html">
     <meta name="google-adsense-account" content="ca-pub-9372871176021283">
@@ -26,6 +30,7 @@
     <nav class="nav" aria-label="주 메뉴">
         <ul>
             <li><a href="index.html">생성기 · 통계</a></li>
+            <li><a href="draws.html">당첨번호</a></li>
             <li><a href="statistics.html">5개월 통계</a></li>
             <li><a href="top-prize.html">TOP 50 당첨금</a></li>
             <li><a href="tax.html" aria-current="page">실수령액 계산</a></li>
@@ -58,7 +63,8 @@
         <ul>
             <li><strong>200만 원 이하</strong>: 세금 0% → 전액 수령</li>
             <li><strong>200만 원 초과 ~ 3억 원 이하</strong>: 22% 세금 (지방소득세 포함)</li>
-            <li><strong>3억 원 초과</strong>: 33% 세금 (지방소득세 포함)</li>
+            <li><strong>3억 원 초과</strong>: 3억 원까지는 22%, <strong>3억 원을 넘는 부분만</strong> 33% (지방소득세 포함)</li>
+            <li>세금은 당첨금에서 구입비 1,000원을 뺀 금액에 매깁니다.</li>
         </ul>
 
         <h3>실제 실수령액 예시</h3>
@@ -68,8 +74,9 @@
                     <tr><th>당첨금 (1인 몫)</th><th>세율</th><th>세금</th><th>실수령액</th></tr>
                 </thead>
                 <tbody>
-                    <tr><td>5억 원</td><td>33%</td><td>1억 6,500만 원</td><td>약 3억 3,500만 원</td></tr>
-                    <tr><td>2억 원</td><td>22%</td><td>4,400만 원</td><td>약 1억 5,600만 원</td></tr>
+                    <tr><td>20억 원</td><td>3억까지 22% + 초과분 33%</td><td>약 6억 2,700만 원</td><td>약 13억 7,300만 원</td></tr>
+                    <tr><td>5억 원</td><td>3억까지 22% + 초과분 33%</td><td>약 1억 3,200만 원</td><td>약 3억 6,800만 원</td></tr>
+                    <tr><td>2억 원</td><td>22%</td><td>약 4,400만 원</td><td>약 1억 5,600만 원</td></tr>
                     <tr><td>1억 원</td><td>22%</td><td>2,200만 원</td><td>약 7,800만 원</td></tr>
                     <tr><td>1,000만 원</td><td>22%</td><td>220만 원</td><td>약 780만 원</td></tr>
                     <tr><td>100만 원</td><td>0%</td><td>0원</td><td>100만 원</td></tr>
@@ -91,6 +98,7 @@
     <footer class="footer">
         <ul class="footer-nav">
             <li><a href="index.html">HOME</a></li>
+            <li><a href="draws.html">당첨번호</a></li>
             <li><a href="statistics.html">5개월 통계</a></li>
             <li><a href="top-prize.html">TOP 50</a></li>
             <li><a href="tax.html">실수령액</a></li>
@@ -118,22 +126,19 @@
         }
         errorBox.textContent = '';
 
-        // 200만 원 이하 비과세 / 3억 원 이하 22% / 초과 33% (지방소득세 포함)
-        let taxRate = 0;
+        // 소득세법 제129조: 200만 원 이하는 비과세. 넘으면 구입비 1,000원을 뺀 금액에
+        // 3억 원까지 22%, 3억 원을 넘는 부분에만 33% (둘 다 지방소득세 포함).
+        // 3억 원이 넘는다고 전체에 33%를 매기지 않는다.
+        let taxRate = '0%';
         let tax = 0;
-        if (prize <= 2000000) {
-            taxRate = 0;
-            tax = 0;
-        } else if (prize <= 300000000) {
-            taxRate = 22;
-            tax = Math.floor(prize * 0.22);
-        } else {
-            taxRate = 33;
-            tax = Math.floor(prize * 0.33);
+        if (prize > 2000000) {
+            const base = Math.max(0, prize - 1000);
+            tax = Math.floor(Math.min(base, 300000000) * 0.22 + Math.max(0, base - 300000000) * 0.33);
+            taxRate = base > 300000000 ? '3억 원까지 22% + 초과분 33%' : '22%';
         }
 
         document.getElementById('prizeAmount').textContent = prize.toLocaleString();
-        document.getElementById('taxRate').textContent = taxRate + '%';
+        document.getElementById('taxRate').textContent = taxRate;
         document.getElementById('taxAmount').textContent = tax.toLocaleString();
         document.getElementById('netAmount').textContent = (prize - tax).toLocaleString();
         resultBox.hidden = false;

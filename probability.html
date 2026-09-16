@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<!-- 이 파일은 tools/build-static-stats.js 가 매주 다시 만든다. 직접 고치면 덮어쓰인다. -->
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로또 확률 계산 · 1등부터 5등까지 등수별 당첨 확률 | lottodraw.kr</title>
+    <meta name="description" content="로또 6/45 1등 확률 1/8,145,060, 2등 1/1,357,510, 3등 1/35,724, 4등 1/733, 5등 1/45. 계산 공식과 자동·수동 확률 차이, 확률을 높이는 방법의 진실.">
+    <link rel="canonical" href="https://www.lottodraw.kr/probability.html">
+    <meta property="og:title" content="로또 확률 계산 · 1등부터 5등까지 등수별 당첨 확률 | lottodraw.kr">
+    <meta property="og:description" content="로또 6/45 1등 확률 1/8,145,060, 2등 1/1,357,510, 3등 1/35,724, 4등 1/733, 5등 1/45. 계산 공식과 자동·수동 확률 차이, 확률을 높이는 방법의 진실.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://www.lottodraw.kr/probability.html">
+    <meta property="og:site_name" content="lottodraw.kr">
+    <meta name="google-adsense-account" content="ca-pub-9372871176021283">
+    <link rel="stylesheet" href="css/site.css">
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://www.lottodraw.kr/"},{"@type":"ListItem","position":2,"name":"로또 통계","item":"https://www.lottodraw.kr/index.html#sec-stats"},{"@type":"ListItem","position":3,"name":"로또 확률","item":"https://www.lottodraw.kr/probability.html"}]}]}</script>
+</head>
+<body>
+<div class="page">
+    <header class="banner">
+        <a class="brand" href="index.html">
+            <span class="brand-name">LOTTODRAW.KR</span>
+            <span class="brand-tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
+        </a>
+        <div class="banner-right">
+            <p class="latest-callout">제1241회 7 13 16 23 24 43 <span class="bonus-sep">+</span> 9</p>
+            <a class="sticker" href="statistics.html">최근 <b>5개월</b> 통계</a>
+        </div>
+    </header>
+
+    <nav class="nav" aria-label="주 메뉴">
+        <ul>
+            <li><a href="index.html">생성기 · 통계</a></li>
+            <li><a href="draws.html">당첨번호</a></li>
+            <li><a href="statistics.html">5개월 통계</a></li>
+            <li><a href="top-prize.html">TOP 50 당첨금</a></li>
+            <li><a href="tax.html">실수령액 계산</a></li>
+            <li><a href="about.html">ABOUT</a></li>
+        </ul>
+    </nav>
+
+    <main class="prose stat-page">
+        <nav class="breadcrumb" aria-label="현재 위치"><a href="index.html">홈</a> › <a href="index.html#sec-stats">로또 통계</a> › <span>로또 확률</span></nav>
+        <h1>로또 확률 · 등수별 당첨 확률</h1>
+        <p class="stat-scope">45개 번호 중 6개를 고르는 조합 수 C(45,6) = 8,145,060 기준</p>
+        <p class="stat-lead">로또 6/45는 1~45 중 6개를 고르는 게임이라 가능한 조합이 <strong>8,145,060가지</strong>입니다. 한 게임(1,000원)으로 1등에 당첨될 확률은 <strong>8,145,060분의 1</strong>입니다.</p>
+
+<h2>등수별 당첨 확률</h2>
+
+<div class="table-scroll">
+<table class="data-table">
+<thead><tr><th scope="col">등수</th><th scope="col">조건</th><th scope="col">해당 조합 수</th><th scope="col">확률</th><th scope="col">백분율</th></tr></thead>
+<tbody>
+<tr><td>1등</td><td>6개 일치</td><td>1</td><td>1 / 8,145,060</td><td>0.000012%</td></tr>
+<tr><td>2등</td><td>5개 + 보너스</td><td>6</td><td>1 / 1,357,510</td><td>0.000074%</td></tr>
+<tr><td>3등</td><td>5개 일치</td><td>228</td><td>1 / 35,724</td><td>0.0028%</td></tr>
+<tr><td>4등</td><td>4개 일치</td><td>11,115</td><td>1 / 733</td><td>0.14%</td></tr>
+<tr><td>5등</td><td>3개 일치</td><td>182,780</td><td>1 / 45</td><td>2.24%</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>한 게임으로 5등 이상 무엇이든 당첨될 확률은 약 1 / 42.0 입니다.</p>
+
+<h2>계산 방법</h2>
+
+<ul>
+
+<li><strong>1등</strong>: 6개를 모두 맞히는 조합은 1가지 → 1 / C(45,6)</li>
+
+<li><strong>2등</strong>: 당첨번호 6개 중 5개 × 보너스 번호 1개 = C(6,5) × 1 = 6가지</li>
+
+<li><strong>3등</strong>: 당첨번호 중 5개 × 당첨·보너스가 아닌 38개 중 1개 = 6 × 38 = 228가지</li>
+
+<li><strong>4등</strong>: 당첨번호 중 4개 × 나머지 39개 중 2개 = 15 × 741 = 11,115가지</li>
+
+<li><strong>5등</strong>: 당첨번호 중 3개 × 나머지 39개 중 3개 = 20 × 9,139 = 182,780가지</li>
+
+</ul>
+
+<h2>얼마나 드문 일일까</h2>
+
+<p>매주 한 게임씩 산다면 1등 조합 수만큼 사는 데 8,145,060주, 약 156,636년이 걸립니다.</p>
+
+<h2>자동과 수동, 확률이 다를까</h2>
+
+<p>같습니다. 자동은 기계가 번호를 고르고 수동은 사람이 고를 뿐, 한 게임이 8,145,060개 조합 중 하나라는 점은 똑같습니다. 많이 나온 번호나 안 나온 번호를 골라도 확률은 달라지지 않습니다.</p>
+
+<h2>확률을 높이는 방법이 있을까</h2>
+
+<p>확률을 올리는 방법은 서로 다른 조합을 더 많이 사는 것뿐이고, 그만큼 비용도 늘어납니다. 다만 번호 선택은 <strong>당첨됐을 때 나눠 가질 사람 수</strong>에 영향을 줍니다. 1·2·3·4·5·6이나 생일 날짜(1~31)처럼 많은 사람이 고르는 조합은 당첨자가 여럿 나와 1인당 금액이 줄어듭니다. <a href="index.html">번호 생성기</a>는 이런 특수 패턴을 걸러냅니다.</p>
+
+<p>관련 통계: <a href="statistics-frequency.html">많이 나온 번호 순위</a> · <a href="statistics-prize.html">1등 당첨자 수</a> · <a href="tax.html">실수령액 계산기</a></p>
+
+        <p class="page-disclaimer">지난 추첨 기록을 정리한 것이며 다음 회차를 예측하지 않습니다. 어떤 6개를 고르든 1등 확률은 1/8,145,060으로 같습니다. 당첨번호 출처: 동행복권.</p>
+    </main>
+
+    <footer class="footer">
+        <ul class="footer-nav">
+            <li><a href="index.html">HOME</a></li>
+            <li><a href="draws.html">당첨번호</a></li>
+            <li><a href="statistics.html">5개월 통계</a></li>
+            <li><a href="top-prize.html">TOP 50</a></li>
+            <li><a href="tax.html">실수령액</a></li>
+            <li><a href="about.html">ABOUT</a></li>
+        </ul>
+        <p><a href="privacy.html">개인정보 처리방침</a> · <a href="terms.html">이용약관</a> · <a href="contact.html">문의</a></p>
+        <p>&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권</p>
+    </footer>
+</div>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9372871176021283" crossorigin="anonymous"></script>
+</body>
+</html>

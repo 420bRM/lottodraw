@@ -687,6 +687,15 @@ html.home { scroll-behavior: smooth; }
 .stat-links a { font-weight: bold; }
 .stat-links span { color: var(--muted); font-size: 12px; }
 .stat-index { margin-top: 20px; }
+.round-balls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0 8px; }
+.round-balls .plus { color: var(--muted); font-size: 20px; font-weight: bold; }
+.row-balls { display: inline-flex; flex-wrap: nowrap; align-items: center; gap: 2px; }
+.row-balls .plus { padding: 0 2px; color: var(--muted); font-weight: bold; }
+.draws-table td { white-space: nowrap; }
+.kv-table td:first-child { font-weight: bold; text-align: left; }
+.kv-table td:last-child { text-align: left; }
+.round-nav { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 8px; }
+.round-nav .btn { margin-top: 0; }
 .stat-index h3 { margin: 0 0 10px; color: var(--brand); font-size: 16px; }
 
 /* ───── 반응형 ───── */

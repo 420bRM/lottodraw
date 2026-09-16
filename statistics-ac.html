@@ -4,17 +4,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>로또 AC값 분포 통계 (1~1241회) | lottodraw.kr</title>
-    <meta name="description" content="로또 6/45 1~1241회 당첨번호의 AC값 분포입니다. 가장 많은 값은 AC 8(34.8%). AC값 계산 방법도 함께 설명합니다.">
+    <title>로또 AC값 통계 · AC값 계산기 (1~1241회) | lottodraw.kr</title>
+    <meta name="description" content="로또 AC값(산술적 복잡도) 계산 방법과 계산기, 역대 1~1241회 AC값 분포. 가장 많은 값은 AC 8(34.8%).">
     <link rel="canonical" href="https://www.lottodraw.kr/statistics-ac.html">
-    <meta property="og:title" content="로또 AC값 분포 통계 (1~1241회) | lottodraw.kr">
-    <meta property="og:description" content="로또 6/45 1~1241회 당첨번호의 AC값 분포입니다. 가장 많은 값은 AC 8(34.8%). AC값 계산 방법도 함께 설명합니다.">
+    <meta property="og:title" content="로또 AC값 통계 · AC값 계산기 (1~1241회) | lottodraw.kr">
+    <meta property="og:description" content="로또 AC값(산술적 복잡도) 계산 방법과 계산기, 역대 1~1241회 AC값 분포. 가장 많은 값은 AC 8(34.8%).">
     <meta property="og:type" content="article">
     <meta property="og:url" content="https://www.lottodraw.kr/statistics-ac.html">
     <meta property="og:site_name" content="lottodraw.kr">
     <meta name="google-adsense-account" content="ca-pub-9372871176021283">
     <link rel="stylesheet" href="css/site.css">
-    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Dataset","name":"로또 AC값 분포 통계 (1~1241회)","description":"로또 6/45 1~1241회 당첨번호의 AC값 분포입니다. 가장 많은 값은 AC 8(34.8%). AC값 계산 방법도 함께 설명합니다.","url":"https://www.lottodraw.kr/statistics-ac.html","isAccessibleForFree":true,"dateModified":"2026-09-12","temporalCoverage":"2002-12-07/2026-09-12","creator":{"@type":"Organization","name":"lottodraw.kr","url":"https://www.lottodraw.kr/"},"keywords":["로또 통계","로또 6/45","AC값"]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://www.lottodraw.kr/"},{"@type":"ListItem","position":2,"name":"로또 통계","item":"https://www.lottodraw.kr/#sec-stats"},{"@type":"ListItem","position":3,"name":"AC값","item":"https://www.lottodraw.kr/statistics-ac.html"}]}]}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Dataset","name":"로또 AC값 통계 · AC값 계산기 (1~1241회)","description":"로또 AC값(산술적 복잡도) 계산 방법과 계산기, 역대 1~1241회 AC값 분포. 가장 많은 값은 AC 8(34.8%).","url":"https://www.lottodraw.kr/statistics-ac.html","isAccessibleForFree":true,"dateModified":"2026-09-12","temporalCoverage":"2002-12-07/2026-09-12","creator":{"@type":"Organization","name":"lottodraw.kr","url":"https://www.lottodraw.kr/"},"keywords":["로또 통계","로또 분석","AC값"]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://www.lottodraw.kr/"},{"@type":"ListItem","position":2,"name":"로또 통계","item":"https://www.lottodraw.kr/index.html#sec-stats"},{"@type":"ListItem","position":3,"name":"AC값","item":"https://www.lottodraw.kr/statistics-ac.html"}]}]}</script>
 </head>
 <body>
 <div class="page">
@@ -32,6 +32,7 @@
     <nav class="nav" aria-label="주 메뉴">
         <ul>
             <li><a href="index.html">생성기 · 통계</a></li>
+            <li><a href="draws.html">당첨번호</a></li>
             <li><a href="statistics.html">5개월 통계</a></li>
             <li><a href="top-prize.html">TOP 50 당첨금</a></li>
             <li><a href="tax.html">실수령액 계산</a></li>
@@ -40,12 +41,21 @@
     </nav>
 
     <main class="prose stat-page">
-        <nav class="breadcrumb" aria-label="현재 위치">
-            <a href="index.html">홈</a> › <a href="index.html#sec-stats">로또 통계</a> › <span>AC값</span>
-        </nav>
-        <h1>로또 AC값(산술적 복잡도) 분포</h1>
+        <nav class="breadcrumb" aria-label="현재 위치"><a href="index.html">홈</a> › <a href="index.html#sec-stats">로또 통계</a> › <span>AC값</span></nav>
+        <h1>로또 AC값 통계와 계산기</h1>
         <p class="stat-scope">1~1241회 · 2002-12-07 ~ 2026-09-12 · 매주 추첨 후 자동 갱신 (마지막 갱신 2026-09-12)</p>
         <p class="stat-lead">AC값은 번호 6개를 두 개씩 뺀 차이 15개 중 서로 다른 값의 개수에서 5를 뺀 값입니다. 0~10 사이이고, 높을수록 번호가 고르게 흩어진 조합입니다. 1~1241회 중 가장 많은 값은 <strong>AC 8</strong>(34.8%)입니다.</p>
+
+<h2>AC값 계산기</h2>
+
+<div class="calc-form">
+    <label for="ac-input">번호 6개</label>
+    <input type="text" id="ac-input" inputmode="numeric" autocomplete="off" placeholder="예: 7 13 16 23 24 43">
+    <button type="button" class="btn" id="ac-btn">계산하기</button>
+</div>
+<p class="calc-result" id="ac-out" role="status" aria-live="polite"></p>
+
+<h2>역대 AC값 분포</h2>
 
 <div class="table-scroll">
 <table class="data-table">
@@ -68,10 +78,13 @@
 
 <p>예를 들어 1·2·3·4·5·6은 차이가 1~5뿐이라 AC값이 0입니다. 무작위로 뽑은 조합 대부분은 AC 7 이상입니다.</p>
 
-        <p><a class="btn" href="index.html#stat-ac">홈에서 그래프로 보기</a></p>
+<p><a class="btn" href="index.html#stat-ac">홈에서 그래프로 보기</a></p>
 
-        <h2>다른 로또 통계</h2>
-        <ul class="stat-links"><li><a href="statistics-frequency.html">번호별 출현 횟수</a><span>최다 34번 186회 · 최소 9번 136회</span></li><li><a href="statistics-bonus.html">보너스 번호</a><span>최다 2번 36회 · 최소 29번 18회</span></li><li><a href="statistics-even-odd.html">홀짝 비율</a><span>최다 홀3 짝3 33.4%</span></li><li><a href="statistics-low-high.html">저고 비율</a><span>최다 저3 고3 33.0%</span></li><li><a href="statistics-consecutive.html">연속번호</a><span>연속번호 포함 51.7% (이론 52.9%)</span></li><li><a href="statistics-sum.html">번호 합계</a><span>평균 138.3 · 최다 구간 120~139</span></li><li><a href="statistics-prize.html">1등 당첨자 수</a><span>이월 14회 · 평균 8.6명</span></li><li><a href="statistics-trend.html">최근 50회 많이·적게</a><span>최다 15번 11회 · 최소 14번 3회</span></li><li><a href="statistics-pair.html">함께 나온 번호 쌍</a><span>1위 11·21번 34회</span></li><li><a href="statistics-gap.html">오래 안 나온 번호</a><span>1위 5번 · 28회차째 미출현</span></li><li><a href="statistics-tail.html">끝자리(끝수)</a><span>번호당 평균 최고 끝수 7 (174.3회)</span></li></ul>
+<h2>다른 로또 통계</h2>
+
+<ul class="stat-links"><li><a href="statistics-frequency.html">많이 나온 번호 순위</a><span>1위 34번 186회 · 최소 9번 136회</span></li><li><a href="statistics-bonus.html">보너스 번호</a><span>최다 2번 36회 · 최소 29번 18회</span></li><li><a href="statistics-even-odd.html">홀짝 비율</a><span>최다 홀3 짝3 33.4%</span></li><li><a href="statistics-low-high.html">저고 비율</a><span>최다 저3 고3 33.0%</span></li><li><a href="statistics-consecutive.html">연속번호</a><span>연속번호 포함 51.7% (이론 52.9%)</span></li><li><a href="statistics-sum.html">번호 합계</a><span>평균 138.3 · 최다 구간 120~139</span></li><li><a href="statistics-prize.html">1등 당첨자 수</a><span>이월 14회 · 평균 8.6명</span></li><li><a href="statistics-trend.html">최근 50회 많이·적게</a><span>최다 15번 11회 · 최소 14번 3회</span></li><li><a href="statistics-pair.html">궁합수 순위</a><span>1위 11·21번 34회</span></li><li><a href="statistics-gap.html">미출수 (장기 미출현)</a><span>1위 5번 · 28회차째 미출현</span></li><li><a href="statistics-tail.html">끝수 · 끝수합</a><span>끝수합 평균 26.0 · 끝수 7 최다</span></li></ul>
+
+<p>함께 보기: <a href="draws.html">회차별 당첨번호 전체 조회</a> · <a href="probability.html">로또 확률</a></p>
 
         <p class="page-disclaimer">지난 추첨 기록을 정리한 것이며 다음 회차를 예측하지 않습니다. 어떤 6개를 고르든 1등 확률은 1/8,145,060으로 같습니다. 당첨번호 출처: 동행복권.</p>
     </main>
@@ -79,6 +92,7 @@
     <footer class="footer">
         <ul class="footer-nav">
             <li><a href="index.html">HOME</a></li>
+            <li><a href="draws.html">당첨번호</a></li>
             <li><a href="statistics.html">5개월 통계</a></li>
             <li><a href="top-prize.html">TOP 50</a></li>
             <li><a href="tax.html">실수령액</a></li>
@@ -88,6 +102,26 @@
         <p>&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권</p>
     </footer>
 </div>
+<script>
+(function () {
+    var input = document.getElementById('ac-input');
+    var out = document.getElementById('ac-out');
+    function run() {
+        var nums = (input.value.match(/[0-9]+/g) || []).map(Number);
+        var uniq = nums.filter(function (v, i, a) { return a.indexOf(v) === i; });
+        if (uniq.length !== 6 || uniq.some(function (n) { return n < 1 || n > 45; })) {
+            out.textContent = '1~45 사이의 서로 다른 번호 6개를 넣어 주세요.';
+            return;
+        }
+        var diffs = {};
+        for (var i = 0; i < 6; i++) for (var j = i + 1; j < 6; j++) diffs[Math.abs(uniq[i] - uniq[j])] = true;
+        var ac = Object.keys(diffs).length - 5;
+        out.textContent = uniq.sort(function (a, b) { return a - b; }).join(', ') + ' 의 AC값은 ' + ac + '입니다.';
+    }
+    document.getElementById('ac-btn').addEventListener('click', run);
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') run(); });
+}());
+</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9372871176021283" crossorigin="anonymous"></script>
 </body>
 </html>
