@@ -669,6 +669,26 @@ html.home { scroll-behavior: smooth; }
 .chart-tools { display: flex; justify-content: flex-end; margin-bottom: 6px; }
 .btn-small { padding: 4px 10px; font-size: 12px; }
 
+/* ───── 정적 통계 페이지 · 통계 링크 ───── */
+.breadcrumb { margin: 0 0 8px; color: var(--muted); font-size: 13px; }
+.breadcrumb a { color: var(--muted); }
+.stat-page h1 { text-align: left; }
+.stat-page h2 { margin: 28px 0 10px; }
+.stat-scope { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+.stat-lead { margin: 0 0 16px; font-size: 16px; line-height: 1.8; }
+.stat-page .data-table { font-variant-numeric: tabular-nums; }
+.stat-page .data-table th, .stat-page .data-table td { padding: 6px 10px; }
+/* 넓은 본문에서 순위 목록이 화면 끝까지 늘어나면 번호와 횟수가 멀어진다 */
+.stat-page .ball-list { max-width: 320px; }
+.stat-page .data-table td .mball { margin: 0 1px; }
+.stat-page .btn { margin-top: 12px; }
+.stat-links { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px 16px; margin: 0; padding: 0; list-style: none; }
+.stat-links li { display: grid; gap: 1px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.stat-links a { font-weight: bold; }
+.stat-links span { color: var(--muted); font-size: 12px; }
+.stat-index { margin-top: 20px; }
+.stat-index h3 { margin: 0 0 10px; color: var(--brand); font-size: 16px; }
+
 /* ───── 반응형 ───── */
 @media (max-width: 1279px) {
     .stat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }

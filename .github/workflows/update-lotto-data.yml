@@ -35,12 +35,17 @@ jobs:
         id: fetch
         run: node tools/update-lotto-data.js
 
+      # 검색엔진이 읽을 정적 통계 페이지·사이트맵·홈 제목을 새 회차로 다시 쓴다
+      - name: 정적 통계 페이지 생성
+        if: steps.fetch.outputs.changed == 'true'
+        run: node tools/build-static-stats.js
+
       - name: 변경분 커밋
         if: steps.fetch.outputs.changed == 'true'
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add lotto-data.json
+          git add lotto-data.json index.html sitemap.xml statistics-*.html
           git commit -m "chore: 로또 ${{ steps.fetch.outputs.latest }}회차까지 반영"
           git push origin HEAD:html
 

@@ -1,12 +1,133 @@
 <!DOCTYPE html>
+<!-- 이 파일은 tools/build-static-stats.js 가 매주 다시 만든다. 직접 고치면 덮어쓰인다. -->
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>보너스 번호 통계 — 홈으로 이동했습니다 | lottodraw.kr</title>
-    <link rel="canonical" href="https://www.lottodraw.kr/">
-    <meta http-equiv="refresh" content="0; url=index.html#stat-bonus">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로또 보너스 번호 통계 (1~1241회) | lottodraw.kr</title>
+    <meta name="description" content="로또 6/45 1~1241회 보너스 번호가 번호별로 몇 번 나왔는지 정리했습니다. 최다 2번 36회, 최소 29번 18회.">
+    <link rel="canonical" href="https://www.lottodraw.kr/statistics-bonus.html">
+    <meta property="og:title" content="로또 보너스 번호 통계 (1~1241회) | lottodraw.kr">
+    <meta property="og:description" content="로또 6/45 1~1241회 보너스 번호가 번호별로 몇 번 나왔는지 정리했습니다. 최다 2번 36회, 최소 29번 18회.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://www.lottodraw.kr/statistics-bonus.html">
+    <meta property="og:site_name" content="lottodraw.kr">
+    <meta name="google-adsense-account" content="ca-pub-9372871176021283">
+    <link rel="stylesheet" href="css/site.css">
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Dataset","name":"로또 보너스 번호 통계 (1~1241회)","description":"로또 6/45 1~1241회 보너스 번호가 번호별로 몇 번 나왔는지 정리했습니다. 최다 2번 36회, 최소 29번 18회.","url":"https://www.lottodraw.kr/statistics-bonus.html","isAccessibleForFree":true,"dateModified":"2026-09-12","temporalCoverage":"2002-12-07/2026-09-12","creator":{"@type":"Organization","name":"lottodraw.kr","url":"https://www.lottodraw.kr/"},"keywords":["로또 통계","로또 6/45","보너스 번호"]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://www.lottodraw.kr/"},{"@type":"ListItem","position":2,"name":"로또 통계","item":"https://www.lottodraw.kr/#sec-stats"},{"@type":"ListItem","position":3,"name":"보너스 번호","item":"https://www.lottodraw.kr/statistics-bonus.html"}]}]}</script>
 </head>
 <body>
-    <p>통계 12종은 이제 홈 화면에서 한 번에 볼 수 있습니다. 자동으로 이동하지 않으면 <a href="index.html#stat-bonus">여기</a>를 눌러 주세요.</p>
+<div class="page">
+    <header class="banner">
+        <a class="brand" href="index.html">
+            <span class="brand-name">LOTTODRAW.KR</span>
+            <span class="brand-tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
+        </a>
+        <div class="banner-right">
+            <p class="latest-callout">제1241회 7 13 16 23 24 43 <span class="bonus-sep">+</span> 9</p>
+            <a class="sticker" href="statistics.html">최근 <b>5개월</b> 통계</a>
+        </div>
+    </header>
+
+    <nav class="nav" aria-label="주 메뉴">
+        <ul>
+            <li><a href="index.html">생성기 · 통계</a></li>
+            <li><a href="statistics.html">5개월 통계</a></li>
+            <li><a href="top-prize.html">TOP 50 당첨금</a></li>
+            <li><a href="tax.html">실수령액 계산</a></li>
+            <li><a href="about.html">ABOUT</a></li>
+        </ul>
+    </nav>
+
+    <main class="prose stat-page">
+        <nav class="breadcrumb" aria-label="현재 위치">
+            <a href="index.html">홈</a> › <a href="index.html#sec-stats">로또 통계</a> › <span>보너스 번호</span>
+        </nav>
+        <h1>로또 보너스 번호 출현 횟수</h1>
+        <p class="stat-scope">1~1241회 · 2002-12-07 ~ 2026-09-12 · 매주 추첨 후 자동 갱신 (마지막 갱신 2026-09-12)</p>
+        <p class="stat-lead">보너스 번호는 한 회차에 하나만 뽑으므로 번호 하나의 기대 출현은 27.6회입니다. 1~1241회 동안 가장 많이 나온 보너스 번호는 <strong>2번(36회)</strong>, 가장 적게 나온 번호는 <strong>29번(18회)</strong>입니다.</p>
+
+<h2>많이 나온 보너스 번호 Top 10</h2>
+
+<ol class="ball-list"><li><span class="lead">1위</span><span class="mball" data-band="1">2</span><span class="tail">36회</span></li><li><span class="lead">2위</span><span class="mball" data-band="1">4</span><span class="tail">35회</span></li><li><span class="lead">3위</span><span class="mball" data-band="5">43</span><span class="tail">35회</span></li><li><span class="lead">4위</span><span class="mball" data-band="1">6</span><span class="tail">34회</span></li><li><span class="lead">5위</span><span class="mball" data-band="4">32</span><span class="tail">34회</span></li><li><span class="lead">6위</span><span class="mball" data-band="1">1</span><span class="tail">33회</span></li><li><span class="lead">7위</span><span class="mball" data-band="2">17</span><span class="tail">33회</span></li><li><span class="lead">8위</span><span class="mball" data-band="3">24</span><span class="tail">33회</span></li><li><span class="lead">9위</span><span class="mball" data-band="3">27</span><span class="tail">33회</span></li><li><span class="lead">10위</span><span class="mball" data-band="1">3</span><span class="tail">32회</span></li></ol>
+
+<h2>보너스 번호별 전체 표</h2>
+
+<div class="table-scroll">
+<table class="data-table">
+<thead><tr><th scope="col">번호</th><th scope="col">출현 횟수</th><th scope="col">회차 대비</th><th scope="col">기대보다</th></tr></thead>
+<tbody>
+<tr><td><span class="mball" data-band="1">1</span></td><td>33회</td><td>2.7%</td><td>+5.4</td></tr>
+<tr><td><span class="mball" data-band="1">2</span></td><td>36회</td><td>2.9%</td><td>+8.4</td></tr>
+<tr><td><span class="mball" data-band="1">3</span></td><td>32회</td><td>2.6%</td><td>+4.4</td></tr>
+<tr><td><span class="mball" data-band="1">4</span></td><td>35회</td><td>2.8%</td><td>+7.4</td></tr>
+<tr><td><span class="mball" data-band="1">5</span></td><td>25회</td><td>2.0%</td><td>-2.6</td></tr>
+<tr><td><span class="mball" data-band="1">6</span></td><td>34회</td><td>2.7%</td><td>+6.4</td></tr>
+<tr><td><span class="mball" data-band="1">7</span></td><td>32회</td><td>2.6%</td><td>+4.4</td></tr>
+<tr><td><span class="mball" data-band="1">8</span></td><td>25회</td><td>2.0%</td><td>-2.6</td></tr>
+<tr><td><span class="mball" data-band="1">9</span></td><td>27회</td><td>2.2%</td><td>-0.6</td></tr>
+<tr><td><span class="mball" data-band="1">10</span></td><td>29회</td><td>2.3%</td><td>+1.4</td></tr>
+<tr><td><span class="mball" data-band="2">11</span></td><td>26회</td><td>2.1%</td><td>-1.6</td></tr>
+<tr><td><span class="mball" data-band="2">12</span></td><td>27회</td><td>2.2%</td><td>-0.6</td></tr>
+<tr><td><span class="mball" data-band="2">13</span></td><td>28회</td><td>2.3%</td><td>+0.4</td></tr>
+<tr><td><span class="mball" data-band="2">14</span></td><td>23회</td><td>1.9%</td><td>-4.6</td></tr>
+<tr><td><span class="mball" data-band="2">15</span></td><td>26회</td><td>2.1%</td><td>-1.6</td></tr>
+<tr><td><span class="mball" data-band="2">16</span></td><td>30회</td><td>2.4%</td><td>+2.4</td></tr>
+<tr><td><span class="mball" data-band="2">17</span></td><td>33회</td><td>2.7%</td><td>+5.4</td></tr>
+<tr><td><span class="mball" data-band="2">18</span></td><td>19회</td><td>1.5%</td><td>-8.6</td></tr>
+<tr><td><span class="mball" data-band="2">19</span></td><td>22회</td><td>1.8%</td><td>-5.6</td></tr>
+<tr><td><span class="mball" data-band="2">20</span></td><td>30회</td><td>2.4%</td><td>+2.4</td></tr>
+<tr><td><span class="mball" data-band="3">21</span></td><td>25회</td><td>2.0%</td><td>-2.6</td></tr>
+<tr><td><span class="mball" data-band="3">22</span></td><td>21회</td><td>1.7%</td><td>-6.6</td></tr>
+<tr><td><span class="mball" data-band="3">23</span></td><td>21회</td><td>1.7%</td><td>-6.6</td></tr>
+<tr><td><span class="mball" data-band="3">24</span></td><td>33회</td><td>2.7%</td><td>+5.4</td></tr>
+<tr><td><span class="mball" data-band="3">25</span></td><td>23회</td><td>1.9%</td><td>-4.6</td></tr>
+<tr><td><span class="mball" data-band="3">26</span></td><td>32회</td><td>2.6%</td><td>+4.4</td></tr>
+<tr><td><span class="mball" data-band="3">27</span></td><td>33회</td><td>2.7%</td><td>+5.4</td></tr>
+<tr><td><span class="mball" data-band="3">28</span></td><td>26회</td><td>2.1%</td><td>-1.6</td></tr>
+<tr><td><span class="mball" data-band="3">29</span></td><td>18회</td><td>1.5%</td><td>-9.6</td></tr>
+<tr><td><span class="mball" data-band="3">30</span></td><td>32회</td><td>2.6%</td><td>+4.4</td></tr>
+<tr><td><span class="mball" data-band="4">31</span></td><td>32회</td><td>2.6%</td><td>+4.4</td></tr>
+<tr><td><span class="mball" data-band="4">32</span></td><td>34회</td><td>2.7%</td><td>+6.4</td></tr>
+<tr><td><span class="mball" data-band="4">33</span></td><td>32회</td><td>2.6%</td><td>+4.4</td></tr>
+<tr><td><span class="mball" data-band="4">34</span></td><td>24회</td><td>1.9%</td><td>-3.6</td></tr>
+<tr><td><span class="mball" data-band="4">35</span></td><td>30회</td><td>2.4%</td><td>+2.4</td></tr>
+<tr><td><span class="mball" data-band="4">36</span></td><td>25회</td><td>2.0%</td><td>-2.6</td></tr>
+<tr><td><span class="mball" data-band="4">37</span></td><td>26회</td><td>2.1%</td><td>-1.6</td></tr>
+<tr><td><span class="mball" data-band="4">38</span></td><td>30회</td><td>2.4%</td><td>+2.4</td></tr>
+<tr><td><span class="mball" data-band="4">39</span></td><td>25회</td><td>2.0%</td><td>-2.6</td></tr>
+<tr><td><span class="mball" data-band="4">40</span></td><td>22회</td><td>1.8%</td><td>-5.6</td></tr>
+<tr><td><span class="mball" data-band="5">41</span></td><td>19회</td><td>1.5%</td><td>-8.6</td></tr>
+<tr><td><span class="mball" data-band="5">42</span></td><td>25회</td><td>2.0%</td><td>-2.6</td></tr>
+<tr><td><span class="mball" data-band="5">43</span></td><td>35회</td><td>2.8%</td><td>+7.4</td></tr>
+<tr><td><span class="mball" data-band="5">44</span></td><td>24회</td><td>1.9%</td><td>-3.6</td></tr>
+<tr><td><span class="mball" data-band="5">45</span></td><td>22회</td><td>1.8%</td><td>-5.6</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>보너스 번호는 2등을 가를 때만 쓰입니다. 회차당 하나라 표본이 본 번호의 6분의 1이고, 그만큼 번호 사이 차이가 크게 보입니다.</p>
+
+        <p><a class="btn" href="index.html#stat-bonus">홈에서 그래프로 보기</a></p>
+
+        <h2>다른 로또 통계</h2>
+        <ul class="stat-links"><li><a href="statistics-frequency.html">번호별 출현 횟수</a><span>최다 34번 186회 · 최소 9번 136회</span></li><li><a href="statistics-even-odd.html">홀짝 비율</a><span>최다 홀3 짝3 33.4%</span></li><li><a href="statistics-low-high.html">저고 비율</a><span>최다 저3 고3 33.0%</span></li><li><a href="statistics-consecutive.html">연속번호</a><span>연속번호 포함 51.7% (이론 52.9%)</span></li><li><a href="statistics-sum.html">번호 합계</a><span>평균 138.3 · 최다 구간 120~139</span></li><li><a href="statistics-prize.html">1등 당첨자 수</a><span>이월 14회 · 평균 8.6명</span></li><li><a href="statistics-trend.html">최근 50회 많이·적게</a><span>최다 15번 11회 · 최소 14번 3회</span></li><li><a href="statistics-pair.html">함께 나온 번호 쌍</a><span>1위 11·21번 34회</span></li><li><a href="statistics-gap.html">오래 안 나온 번호</a><span>1위 5번 · 28회차째 미출현</span></li><li><a href="statistics-ac.html">AC값</a><span>최다 AC 8 34.8%</span></li><li><a href="statistics-tail.html">끝자리(끝수)</a><span>번호당 평균 최고 끝수 7 (174.3회)</span></li></ul>
+
+        <p class="page-disclaimer">지난 추첨 기록을 정리한 것이며 다음 회차를 예측하지 않습니다. 어떤 6개를 고르든 1등 확률은 1/8,145,060으로 같습니다. 당첨번호 출처: 동행복권.</p>
+    </main>
+
+    <footer class="footer">
+        <ul class="footer-nav">
+            <li><a href="index.html">HOME</a></li>
+            <li><a href="statistics.html">5개월 통계</a></li>
+            <li><a href="top-prize.html">TOP 50</a></li>
+            <li><a href="tax.html">실수령액</a></li>
+            <li><a href="about.html">ABOUT</a></li>
+        </ul>
+        <p><a href="privacy.html">개인정보 처리방침</a> · <a href="terms.html">이용약관</a> · <a href="contact.html">문의</a></p>
+        <p>&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권</p>
+    </footer>
+</div>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9372871176021283" crossorigin="anonymous"></script>
 </body>
 </html>

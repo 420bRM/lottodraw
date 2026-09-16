@@ -2,19 +2,91 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
         <loc>https://www.lottodraw.kr/</loc>
-        <lastmod>2026-09-15</lastmod>
+        <lastmod>2026-09-12</lastmod>
         <changefreq>weekly</changefreq>
         <priority>1.0</priority>
     </url>
     <url>
+        <loc>https://www.lottodraw.kr/statistics-frequency.html</loc>
+        <lastmod>2026-09-12</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://www.lottodraw.kr/statistics-bonus.html</loc>
+        <lastmod>2026-09-12</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://www.lottodraw.kr/statistics-even-odd.html</loc>
+        <lastmod>2026-09-12</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://www.lottodraw.kr/statistics-low-high.html</loc>
+        <lastmod>2026-09-12</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://www.lottodraw.kr/statistics-consecutive.html</loc>
+        <lastmod>2026-09-12</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://www.lottodraw.kr/statistics-sum.html</loc>
+        <lastmod>2026-09-12</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://www.lottodraw.kr/statistics-prize.html</loc>
+        <lastmod>2026-09-12</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://www.lottodraw.kr/statistics-trend.html</loc>
+        <lastmod>2026-09-12</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://www.lottodraw.kr/statistics-pair.html</loc>
+        <lastmod>2026-09-12</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://www.lottodraw.kr/statistics-gap.html</loc>
+        <lastmod>2026-09-12</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://www.lottodraw.kr/statistics-ac.html</loc>
+        <lastmod>2026-09-12</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://www.lottodraw.kr/statistics-tail.html</loc>
+        <lastmod>2026-09-12</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
         <loc>https://www.lottodraw.kr/statistics.html</loc>
-        <lastmod>2026-09-15</lastmod>
+        <lastmod>2026-09-12</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
         <loc>https://www.lottodraw.kr/top-prize.html</loc>
-        <lastmod>2026-05-03</lastmod>
+        <lastmod>2026-09-12</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.7</priority>
     </url>
