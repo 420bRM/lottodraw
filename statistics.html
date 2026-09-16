@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>최근 5개월 로또 통계 (이용권) | lottodraw.kr</title>
-    <meta name="description" content="최근 5개월(22회차) 당첨번호로 계산한 통계 11종을 한 화면에서. 1주 $2 · 1개월 $5 · 평생 $10 이용권. 지난 기록 요약이며 예측이 아닙니다.">
+    <meta name="description" content="최근 5개월(22회차) 당첨번호로 계산한 통계 11종을 한 화면에서. 월 구독 $4 · 1주 $2 · 1개월 $5 · 평생 $10 이용권. 지난 기록 요약이며 예측이 아닙니다.">
     <meta name="keywords" content="로또 최근 통계, 로또 5개월 통계, 로또 6/45 통계, lottodraw">
     <link rel="canonical" href="https://www.lottodraw.kr/statistics.html">
     <meta property="og:title" content="최근 5개월 로또 통계 | lottodraw.kr">
@@ -65,7 +65,20 @@
                     <a class="btn" data-plan="week">결제하기</a>
                 </div>
             </section>
-            <section class="plan featured" aria-labelledby="plan-month-t">
+            <section class="plan featured" aria-labelledby="plan-sub-t">
+                <h3 class="card-title" id="plan-sub-t"><span>월 구독</span></h3>
+                <div class="card-body">
+                    <p class="plan-price">$4<small>/월</small></p>
+                    <ul>
+                        <li>매달 자동 갱신</li>
+                        <li>최근 5개월 통계 11종</li>
+                        <li>언제든 해지 가능</li>
+                    </ul>
+                    <a class="btn" data-plan="sub">결제하기</a>
+                    <p class="plan-note">해지할 때까지 매달 $4가 결제됩니다. 해지하면 이미 결제한 기간까지 이용하고 다음 결제부터 청구되지 않습니다.</p>
+                </div>
+            </section>
+            <section class="plan" aria-labelledby="plan-month-t">
                 <h3 class="card-title" id="plan-month-t"><span>1개월 이용권</span></h3>
                 <div class="card-body">
                     <p class="plan-price">$5</p>
@@ -102,7 +115,7 @@
                     </form>
                     <p class="license-status" id="license-status" role="status" aria-live="polite"></p>
                     <p class="card-note">
-                        키는 결제 확인 메일이나 Polar 구매 내역에서 볼 수 있습니다. 입력한 키는 유효한지 확인하기 위해 결제대행사 Polar에만 보내고,
+                        키는 결제 확인 메일에서 볼 수 있습니다. <a data-portal hidden target="_blank" rel="noopener">월 구독 해지와 영수증은 Polar 고객 포털에서 확인하세요.</a> 입력한 키는 유효한지 확인하기 위해 결제대행사 Polar에만 보내고,
                         다시 입력하지 않도록 이 브라우저에 저장합니다. 환불 기준은 <a href="terms.html">이용약관</a>, 문제가 있으면 <a href="contact.html">문의</a>로 알려 주세요.
                     </p>
                 </div>
@@ -133,7 +146,10 @@
         <h2 class="sr-only" id="premium-title">최근 5개월 통계</h2>
         <div class="license-bar">
             <span id="license-summary"></span>
-            <button type="button" class="btn btn-secondary" id="license-clear">이 브라우저에서 키 지우기</button>
+            <span class="license-actions">
+                <a class="btn btn-secondary" data-portal hidden target="_blank" rel="noopener">구독 관리 · 영수증</a>
+                <button type="button" class="btn btn-secondary" id="license-clear">이 브라우저에서 키 지우기</button>
+            </span>
         </div>
         <div class="stat-grid" id="stat-grid">
             <p class="stats-loading">통계를 계산하는 중…</p>

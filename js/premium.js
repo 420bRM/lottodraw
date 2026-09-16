@@ -20,9 +20,9 @@
 
     const plans = cfg.plans || {};
     const benefitIds = () => Object.keys(plans).map(p => plans[p].benefitId).filter(Boolean);
-    const planName = id => {
+    const planOf = id => {
         const hit = Object.keys(plans).filter(p => plans[p].benefitId && plans[p].benefitId === id)[0];
-        return hit ? plans[hit].name : '이용권';
+        return hit ? plans[hit] : null;
     };
     const fmtDate = iso => {
         const d = new Date(iso);
@@ -68,7 +68,13 @@
         if (lk.expires_at && Date.parse(lk.expires_at) <= Date.now()) {
             return { ok: false, reason: `${fmtDate(lk.expires_at)}에 기간이 끝난 이용권입니다.` };
         }
-        return { ok: true, expiresAt: lk.expires_at || null, plan: planName(lk.benefit_id) };
+        const plan = planOf(lk.benefit_id);
+        return {
+            ok: true,
+            expiresAt: lk.expires_at || null,
+            plan: plan ? plan.name : '이용권',
+            recurring: !!(plan && plan.recurring),
+        };
     }
 
     async function validate(key) {
@@ -97,9 +103,10 @@
     function unlock(check) {
         $('paywall').hidden = true;
         $('premium').hidden = false;
-        $('license-summary').textContent = check.expiresAt
-            ? `${check.plan} · ${fmtDate(check.expiresAt)}까지 이용 가능`
-            : `${check.plan} · 기간 제한 없음`;
+        const until = check.expiresAt ? `${fmtDate(check.expiresAt)}까지 이용 가능`
+            : check.recurring ? '해지 전까지 이용 가능'
+            : '기간 제한 없음';
+        $('license-summary').textContent = `${check.plan} · ${until}`;
         loadWindowStats();
     }
 
@@ -161,8 +168,22 @@
         }
     }
 
+    // 구독 해지·영수증·키 확인은 Polar 고객 포털에서 한다. 주소가 없으면 링크를 감춘다.
+    function setupPortal() {
+        Array.prototype.forEach.call(document.querySelectorAll('[data-portal]'), a => {
+            if (cfg.portalUrl) {
+                a.href = cfg.portalUrl;
+                a.hidden = false;
+            } else {
+                a.removeAttribute('href');
+                a.hidden = true;
+            }
+        });
+    }
+
     function init() {
         setupPlans();
+        setupPortal();
         $('license-form').addEventListener('submit', e => {
             e.preventDefault();
             const key = $('license-key').value.trim();

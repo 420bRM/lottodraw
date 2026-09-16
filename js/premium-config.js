@@ -8,10 +8,17 @@ window.PREMIUM_CONFIG = {
     // Polar 조직 ID (Settings → General)
     organizationId: '',
 
+    // Polar 고객 포털 (polar.sh/<조직 slug>/portal). 구매자가 구독 해지, 영수증,
+    // 라이선스 키 확인을 하는 곳이다. 비어 있으면 관련 링크가 나오지 않는다.
+    portalUrl: '',
+
     // 상품별 Checkout Link 주소와, 그 상품에 붙인 License Key 혜택(Benefit) ID.
     // benefitId 를 넣으면 이 사이트 이용권이 아닌 키는 거절한다.
+    // recurring: true 는 자동 갱신 구독 상품. 해지하면 Polar 가 키를 회수(revoked)해서
+    // 다음 확인 때 잠긴다. 최대 revalidateHours 만큼 늦게 반영된다.
     plans: {
         week:     { name: '1주 이용권',   checkoutUrl: '', benefitId: '' },
+        sub:      { name: '월 구독',      checkoutUrl: '', benefitId: '', recurring: true },
         month:    { name: '1개월 이용권', checkoutUrl: '', benefitId: '' },
         lifetime: { name: '평생 이용권',  checkoutUrl: '', benefitId: '' },
     },

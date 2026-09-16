@@ -322,7 +322,7 @@ details[open] > summary.card-title { padding-bottom: 0; }
 .stats-loading { padding: 24px 0; color: var(--muted); }
 
 /* ───── 이용권 (30일 통계) ───── */
-.plans { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 16px; }
+.plans { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 16px; }
 .plan {
     display: flex;
     flex-direction: column;
@@ -336,8 +336,11 @@ details[open] > summary.card-title { padding-bottom: 0; }
 .plan .card-title { justify-content: center; }
 .plan .card-body { display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .plan-price { margin: 4px 0 0; color: #000; font-size: 34px; font-weight: bold; line-height: 1.1; }
+.plan-price small { font-size: 15px; font-weight: bold; color: var(--muted); }
 .plan ul { margin: 0; padding: 0; list-style: none; color: var(--muted); font-size: 14px; }
+.plan-note { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
 .plan.featured { border: 2px solid var(--brand); box-shadow: 0 10px 20px rgba(0, 48, 135, 0.15); }
+.license-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .license-form { display: flex; flex-wrap: wrap; gap: 8px; }
 .license-form input {
     flex: 1 1 260px;
