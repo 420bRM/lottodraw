@@ -665,9 +665,7 @@ html.home { scroll-behavior: smooth; }
 .partner-out { display: grid; gap: 6px; }
 .match-out { display: grid; gap: 8px; margin-top: 10px; font-size: 13px; }
 .match-out p { margin: 0; }
-.rank-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 4px 16px; margin: 0; padding: 0; list-style: none; }
-.rank-list li { display: grid; grid-template-columns: 2.6em 24px minmax(0, 1fr) 4.4em; align-items: center; gap: 6px; font-size: 12px; font-variant-numeric: tabular-nums; }
-.rank-no { color: var(--muted); }
+.vaxis-all span { font-size: 9px; letter-spacing: -0.04em; }
 .chart-tools { display: flex; justify-content: flex-end; margin-bottom: 6px; }
 .btn-small { padding: 4px 10px; font-size: 12px; }
 
@@ -685,6 +683,8 @@ html.home { scroll-behavior: smooth; }
 }
 @media (max-width: 599px) {
     .stat-grid, .plans { grid-template-columns: minmax(0, 1fr); }
+    /* 좁은 화면에서 45개 라벨이 붙어 버린다 — 숫자를 세로로 세워 읽히게 한다 */
+    .vaxis-all span { writing-mode: vertical-rl; text-orientation: upright; line-height: 1; letter-spacing: 0; }
     .insight-grid { grid-template-columns: minmax(0, 1fr); }
     .layout { gap: 16px; padding: 16px 12px; }
     .banner { padding: 10px 12px; }
