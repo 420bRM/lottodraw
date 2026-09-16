@@ -67,42 +67,67 @@
         ]);
     }
 
-    function vbars(rows, label, allLabels) {
-        // 막대는 0부터 그린다. 차이가 작아 보이면 실제로 거의 균등하다는 뜻이고,
-        // 축을 잘라 차이를 부풀리면 "잘 나오는 번호"가 있는 것처럼 보인다.
-        const max = Math.max(1, Math.max.apply(null, rows.map(r => r.count)));
-        const chart = el('div', { className: 'vbars', role: 'img', 'aria-label': label }, rows.map(r =>
-            el('span', {
-                className: 'vbar',
-                dataset: { band: r.band },
-                title: `${r.number}번: ${fmt(r.count)}회`,
-                style: { height: (r.count / max * 100) + '%' },
-            })));
-        const axis = el('div', { className: 'vaxis' + (allLabels ? ' vaxis-all' : ''), 'aria-hidden': 'true' }, rows.map(r =>
-            el('span', { text: allLabels || r.number === 1 || r.number % 5 === 0 ? String(r.number) : '' })));
-        return [chart, axis];
-    }
-
-    // 같은 막대그래프를 번호순과 많은순으로 바꿔 그린다. 많은순일 때는 자리마다 번호를
-    // 적는다 — 순서가 번호와 어긋나므로 라벨이 없으면 어떤 막대인지 알 수 없다.
+    // 번호별 막대. 막대는 0부터 그린다 — 축을 자르면 "잘 나오는 번호"가 있는 것처럼 보인다.
+    //
+    // 많은순으로 바꿀 때 막대를 지웠다 다시 그리면 화면이 뚝 끊긴다. 같은 막대를 그대로 두고
+    // 새 자리로 옮긴다 — 어떤 막대가 어디로 갔는지 눈으로 따라갈 수 있어야 정렬이 정보가 된다.
     function chartWithToggle(rows, label) {
-        const view = el('div', { className: 'chart-view' });
+        const max = Math.max(1, Math.max.apply(null, rows.map(r => r.count)));
+        const bars = rows.map(r => el('span', {
+            className: 'vbar',
+            dataset: { band: r.band },
+            title: `${r.number}번: ${fmt(r.count)}회`,
+            style: { height: (r.count / max * 100) + '%' },
+        }));
+        const tags = rows.map(() => el('span'));
+        const chart = el('div', { className: 'vbars', role: 'img', 'aria-label': label }, bars);
+        const axis = el('div', { className: 'vaxis', 'aria-hidden': 'true' }, tags);
         const btn = el('button', { type: 'button', className: 'btn btn-secondary btn-small', text: '많은순으로 보기' });
         let sorted = false;
-        function draw() {
-            view.textContent = '';
-            const data = sorted
-                ? rows.slice().sort((a, b) => b.count - a.count || a.number - b.number)
-                : rows;
-            vbars(data, label + (sorted ? ' (많은순)' : ''), sorted).forEach(n => view.appendChild(n));
+
+        const canMeasure = typeof bars[0].getBoundingClientRect === 'function';
+        const reduceMotion = () => typeof matchMedia === 'function'
+            && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        function place(animate) {
+            const order = rows.map((r, i) => i);
+            if (sorted) order.sort((a, b) => rows[b].count - rows[a].count || rows[a].number - rows[b].number);
+            const slot = [];
+            order.forEach((idx, at) => { slot[idx] = at + 1; });
+
+            const movers = bars.concat(tags);
+            const from = animate && canMeasure ? movers.map(m => m.getBoundingClientRect().left) : null;
+            rows.forEach((r, i) => {
+                bars[i].style.gridColumnStart = String(slot[i]);
+                tags[i].style.gridColumnStart = String(slot[i]);
+                tags[i].textContent = sorted || r.number === 1 || r.number % 5 === 0 ? String(r.number) : '';
+            });
+            axis.className = 'vaxis' + (sorted ? ' vaxis-all' : '');
+            chart.setAttribute('aria-label', label + (sorted ? ' (많은순)' : ''));
+            if (!from) return;
+
+            // FLIP: 옮긴 뒤 원래 자리로 되돌려 놓고, 그 되돌림을 풀며 미끄러지게 한다
+            const to = movers.map(m => m.getBoundingClientRect().left);
+            movers.forEach((m, i) => {
+                const dx = from[i] - to[i];
+                if (!dx) return;
+                m.style.transition = 'none';
+                m.style.transform = 'translateX(' + dx + 'px)';
+            });
+            void chart.offsetWidth;   // 되돌린 자리를 브라우저에 한 번 반영시킨다
+            movers.forEach(m => {
+                m.style.transition = 'transform .5s cubic-bezier(.2, .7, .3, 1)';
+                m.style.transform = '';
+            });
         }
+
         btn.addEventListener('click', () => {
             sorted = !sorted;
             btn.textContent = sorted ? '번호순으로 보기' : '많은순으로 보기';
-            draw();
+            place(!reduceMotion());
         });
-        draw();
-        return [el('div', { className: 'chart-tools' }, [btn]), view];
+        place(false);
+        return [el('div', { className: 'chart-tools' }, [btn]), chart, axis];
     }
 
     function trendGroup(title, rows) {
