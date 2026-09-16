@@ -648,6 +648,29 @@ html.home { scroll-behavior: smooth; }
 .page-disclaimer { margin: 20px 0 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
 .strategy .card-note { margin: 6px 0 0; }
 
+/* ───── 상세 분석 · 잠금 카드 ───── */
+.section-head { margin: 24px 0 10px; color: var(--brand); font-size: 18px; }
+.section-head small { margin-left: 6px; padding: 2px 8px; border-radius: 10px; background: var(--brand); color: #fff; font-size: 11px; font-weight: bold; vertical-align: middle; }
+.locked-card .card-body { display: grid; gap: 10px; justify-items: start; color: var(--muted); font-size: 13px; }
+.lock-mark { padding: 2px 8px; border-radius: 10px; background: var(--head); color: var(--muted); font-size: 11px; font-weight: bold; }
+.detail-lead { margin: 0 0 8px; font-size: 13px; }
+.run-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.run-list li { display: flex; align-items: center; gap: 8px; font-size: 13px; font-variant-numeric: tabular-nums; }
+.run-round { min-width: 4.4em; font-weight: bold; }
+.run-groups { display: flex; flex-wrap: wrap; gap: 6px; }
+.run-group { display: inline-flex; gap: 2px; padding: 2px 6px; background: var(--head); border-radius: 12px; }
+.run-tail { margin-left: auto; color: var(--muted); font-size: 12px; white-space: nowrap; }
+.partner-grid { margin-bottom: 12px; }
+.partner-grid .cell { min-height: 26px; font-size: 12px; }
+.partner-out { display: grid; gap: 6px; }
+.match-out { display: grid; gap: 8px; margin-top: 10px; font-size: 13px; }
+.match-out p { margin: 0; }
+.rank-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 4px 16px; margin: 0; padding: 0; list-style: none; }
+.rank-list li { display: grid; grid-template-columns: 2.6em 24px minmax(0, 1fr) 4.4em; align-items: center; gap: 6px; font-size: 12px; font-variant-numeric: tabular-nums; }
+.rank-no { color: var(--muted); }
+.chart-tools { display: flex; justify-content: flex-end; margin-bottom: 6px; }
+.btn-small { padding: 4px 10px; font-size: 12px; }
+
 /* ───── 반응형 ───── */
 @media (max-width: 1279px) {
     .stat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }

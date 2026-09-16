@@ -160,6 +160,13 @@
                 <p class="stats-loading">통계를 계산하는 중…</p>
             </div>
 
+            <h2 class="section-head" id="detail-head">상세 분석 <small>이용권</small></h2>
+            <p class="notice">
+                아래 네 가지는 이용권으로 열립니다. 이미 키가 있으면 자동으로 열립니다.
+                <a href="statistics.html">이용권 보기</a>
+            </p>
+            <div class="stat-grid" id="detail-grid"></div>
+
             <button type="button" class="scroll-cue" data-goto="sec-recent">
                 <span>아래에 최근 10회차 한눈에 보기</span>
                 <span class="chevron" aria-hidden="true">⌄</span>
@@ -247,6 +254,9 @@
 
 <script src="js/lotto-stats.js"></script>
 <script src="js/stats-render.js"></script>
+<script src="js/details.js"></script>
+<script src="js/premium-config.js"></script>
+<script src="js/license.js"></script>
 <script>
     const today = new Date().toISOString().split('T')[0];
     const clickKey = 'clickCount_' + today;
@@ -549,6 +559,7 @@
                     `${stats.oldestRound}~${stats.latestRound}회 (${LottoStatsView.fmt(stats.rounds)}회 추첨)${period}`;
                 LottoStatsView.render(grid, stats, { latestDraws: sorted.slice(0, 10) });
                 renderRecent(sorted.slice(0, 10));
+                renderDetails(data.draws);
             })
             .catch(err => {
                 console.error(err);
@@ -560,6 +571,21 @@
                 document.getElementById('latest-callout').textContent = '최신 회차 정보를 불러오지 못했습니다';
                 document.getElementById('recent-scope').textContent = '최근 회차를 불러오지 못했습니다';
             });
+    }
+
+    // 상세 분석 카드. 기본은 잠긴 모양이고, 이용권 키가 확인되면 같은 자리에 다시 그린다.
+    // 잠긴 동안에는 수치를 아예 그리지 않는다 — 화면에 없으면 개발자 도구로도 못 본다.
+    function renderDetails(draws) {
+        const box = document.getElementById('detail-grid');
+        if (!box || !window.LottoDetails) return;
+        LottoDetails.render(box, draws, { locked: true });
+        if (!window.LottoLicense || !LottoLicense.savedKey()) return;
+        LottoLicense.unlockState().then(state => {
+            if (!state.unlocked) return;
+            LottoDetails.render(box, draws, { locked: false });
+            const head = document.getElementById('detail-head');
+            if (head) head.textContent = '상세 분석 (열림)';
+        }).catch(err => console.error(err));
     }
 
     // ---- 최근 10회차 히트 그리드 ----

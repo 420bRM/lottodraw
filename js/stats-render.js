@@ -83,6 +83,35 @@
         return [chart, axis];
     }
 
+    // 많은순 줄 세우기. 막대그래프는 번호 자리를 보여주고, 순위표는 "누가 많이 나왔나"를
+    // 바로 답한다. 둘 다 필요해서 토글로 둔다.
+    function rankList(rows, unit) {
+        const sorted = rows.slice().sort((a, b) => b.count - a.count || a.number - b.number);
+        const max = Math.max(1, sorted[0].count);
+        return el('ol', { className: 'rank-list' }, sorted.map((r, i) => el('li', null, [
+            el('span', { className: 'rank-no', text: (i + 1) + '위' }),
+            ball(r.number, r.band),
+            el('span', { className: 'hbar-track', 'aria-hidden': 'true' }, [
+                el('span', { className: 'hbar-fill', style: { width: (r.count / max * 100) + '%', display: 'block' } }),
+            ]),
+            el('span', { className: 'hbar-val', text: fmt(r.count) + unit }),
+        ])));
+    }
+
+    function chartWithToggle(rows, label, unit) {
+        const chart = el('div', { className: 'chart-view' }, vbars(rows, label));
+        const rank = el('div', { className: 'chart-view', hidden: 'hidden' }, [rankList(rows, unit)]);
+        const btn = el('button', { type: 'button', className: 'btn btn-secondary btn-small', text: '많은순으로 보기' });
+        let ranked = false;
+        btn.addEventListener('click', () => {
+            ranked = !ranked;
+            chart.hidden = ranked;
+            rank.hidden = !ranked;
+            btn.textContent = ranked ? '번호순으로 보기' : '많은순으로 보기';
+        });
+        return [el('div', { className: 'chart-tools' }, [btn]), chart, rank];
+    }
+
     function trendGroup(title, rows) {
         return el('div', { className: 'trend-group' }, [
             el('h4', { text: title }),
@@ -131,7 +160,7 @@
         specs.push({
             id: 'stat-frequency', span: true, tint: 'sky',
             title: '번호별 출현 횟수', meta: scope,
-            body: vbars(stats.frequency, '1부터 45까지 번호별 출현 횟수 막대그래프')
+            body: chartWithToggle(stats.frequency, '1부터 45까지 번호별 출현 횟수 막대그래프', '회')
                 .concat([extremes(stats.frequency, '회'),
                     el('p', { className: 'card-note', text: '막대 높이 차이가 작다면 실제로 거의 고르게 나왔다는 뜻입니다.' })]),
         });
@@ -139,7 +168,7 @@
         specs.push({
             id: 'stat-bonus', span: true, tint: 'periwinkle',
             title: '보너스 번호 출현 횟수', meta: scope,
-            body: vbars(stats.bonus, '보너스 번호별 출현 횟수 막대그래프').concat([extremes(stats.bonus, '회')]),
+            body: chartWithToggle(stats.bonus, '보너스 번호별 출현 횟수 막대그래프', '회').concat([extremes(stats.bonus, '회')]),
         });
 
         specs.push({ id: 'stat-even-odd', tint: 'sage', title: '홀짝 비율', meta: scope, body: [hbars(stats.oddEven, total)] });
