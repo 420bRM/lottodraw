@@ -98,6 +98,7 @@ a { color: #0066cc; }
 .notice { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
 .page > .notice { padding: 0 20px; }
 #paywall, #premium { padding: 0 20px 24px; }
+.intro-doubt { display: block; padding: 0 20px 16px; }
 
 /* ───── 번호 생성 결과 ───── */
 .cta {
@@ -647,6 +648,7 @@ html.home { scroll-behavior: smooth; }
     .page > .eyebrow { padding: 16px 12px 8px; }
     .page > .notice { padding: 0 12px; }
     #paywall, #premium { padding: 0 12px 16px; }
+    .intro-doubt { padding: 0 12px 12px; }
     .patterns { grid-template-columns: 1fr; }
     .ball { width: 40px; height: 40px; font-size: 16px; }
     .tray { gap: 5px; }
