@@ -98,8 +98,12 @@
             const movers = bars.concat(tags);
             const from = animate && canMeasure ? movers.map(m => m.getBoundingClientRect().left) : null;
             rows.forEach((r, i) => {
+                // 행까지 고정해야 한다. 열만 지정하면 앞 칸으로 되돌아가는 순간 브라우저가
+                // 줄을 새로 만들어 막대가 계단처럼 흩어진다.
                 bars[i].style.gridColumnStart = String(slot[i]);
+                bars[i].style.gridRowStart = "1";
                 tags[i].style.gridColumnStart = String(slot[i]);
+                tags[i].style.gridRowStart = "1";
                 tags[i].textContent = sorted || r.number === 1 || r.number % 5 === 0 ? String(r.number) : '';
             });
             axis.className = 'vaxis' + (sorted ? ' vaxis-all' : '');
