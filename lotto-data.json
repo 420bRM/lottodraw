@@ -1,7 +1,22 @@
 {
-  "totalDraws": 1241,
-  "lastUpdated": "2026-09-12",
+  "totalDraws": 1242,
+  "lastUpdated": "2026-09-19",
   "draws": [
+    {
+      "round": 1242,
+      "date": "2026-09-19",
+      "numbers": [
+        2,
+        4,
+        10,
+        16,
+        31,
+        41
+      ],
+      "bonus": 9,
+      "firstPrizeWinners": 9,
+      "firstPrizeAmount": 3281029250
+    },
     {
       "round": 1241,
       "date": "2026-09-12",
