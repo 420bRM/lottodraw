@@ -774,7 +774,8 @@ function updateHome() {
         dateModified: UPDATED,
         temporalCoverage: `${stats.oldestDate}/${stats.latestDate}`,
         keywords: '로또 통계, 로또 분석, 로또 많이 나온 번호, 로또 미출수, 로또 궁합수',
-        hasPart: STATS.map(p => ({ '@type': 'Dataset', name: p.title, url: `${SITE}/${p.file}` })),
+        // description 은 구글 데이터세트 필수 항목이다 — 빠지면 Search Console 이 오류로 잡는다
+        hasPart: STATS.map(p => ({ '@type': 'Dataset', name: p.title, description: p.desc, url: `${SITE}/${p.file}` })),
     });
     const latestNums = LATEST.numbers.slice().sort(asc);
     const links = '\n' + [
