@@ -33,6 +33,8 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const SITE = 'https://www.lottodraw.kr';
+// 공유 미리보기 이미지(1200x630). 정적 파일이라 회차와 무관하다.
+const OG_IMAGE = `${SITE}/img/og-default.png`;
 const LottoStats = require(path.join(ROOT, 'js', 'lotto-stats.js'));
 
 const read = f => fs.readFileSync(path.join(ROOT, f), 'utf8');
@@ -187,6 +189,11 @@ function shell(o) {
     <meta property="og:type" content="article">
     <meta property="og:url" content="${SITE}/${o.file}">
     <meta property="og:site_name" content="lottodraw.kr">
+    <meta property="og:image" content="${OG_IMAGE}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="${esc(title)}">
+    <meta name="twitter:description" content="${esc(o.desc)}">
+    <meta name="twitter:image" content="${OG_IMAGE}">
     <meta name="google-adsense-account" content="ca-pub-9372871176021283">
     <link rel="stylesheet" href="${base}css/site.css">
     <script type="application/ld+json">${JSON.stringify(ld)}</script>
@@ -936,14 +943,16 @@ function replaceBetween(file, src, name, content) {
 
 const headBlock = (title, desc) =>
     `\n    <title>${esc(title)}</title>\n    <meta name="description" content="${esc(desc)}">` +
-    `\n    <meta property="og:title" content="${esc(title)}">\n    <meta property="og:description" content="${esc(desc)}">\n    `;
+    `\n    <meta property="og:title" content="${esc(title)}">\n    <meta property="og:description" content="${esc(desc)}">` +
+    `\n    <meta property="og:image" content="${OG_IMAGE}">\n    <meta name="twitter:card" content="summary_large_image">` +
+    `\n    <meta name="twitter:title" content="${esc(title)}">\n    <meta name="twitter:description" content="${esc(desc)}">` +
+    `\n    <meta name="twitter:image" content="${OG_IMAGE}">\n    `;
 
 function updateHome() {
     const title = `로또 통계 분석 · 번호 생성기 (${RANGE}) | lottodraw.kr`;
     const e = extremesOf(stats.frequency);
     const desc = `로또 역대 ${RANGE} 당첨번호 통계 분석 무료. 많이 나온 번호(1위 ${numsText(e.top)} ${e.max}회), 미출수, 궁합수, 홀짝·끝수 통계와 고정수·제외수를 넣는 번호 생성기. 매주 자동 갱신.`;
-    const ld = JSON.stringify({
-        '@context': 'https://schema.org',
+    const dataset = {
         '@type': 'Dataset',
         name: '로또 6/45 전 회차 당첨번호 통계',
         description: `동행복권 로또 6/45 ${RANGE} 회차별 당첨번호, 보너스 번호, 1등 당첨자 수로 계산한 통계 12종`,
@@ -954,9 +963,18 @@ function updateHome() {
         keywords: '로또 통계, 로또 분석, 로또 많이 나온 번호, 로또 미출수, 로또 궁합수',
         // description 은 구글 데이터세트 필수 항목이다 — 빠지면 Search Console 이 오류로 잡는다
         hasPart: STATS.map(p => ({ '@type': 'Dataset', name: p.title, description: p.desc, url: `${SITE}/${p.file}` })),
+    };
+    const ld = JSON.stringify({
+        '@context': 'https://schema.org',
+        '@graph': [
+            { '@type': 'WebSite', '@id': SITE + '/#website', name: 'lottodraw.kr', alternateName: '로또드로우', url: SITE + '/', inLanguage: 'ko-KR' },
+            { '@type': 'Organization', '@id': SITE + '/#org', name: 'lottodraw.kr', url: SITE + '/', email: 'contact@lottodraw.kr' },
+            dataset,
+        ],
     });
     const latestNums = LATEST.numbers.slice().sort(asc);
     const links = '\n' + [
+        `            <p class="stat-lead">로또 6/45 ${RANGE} 전 회차 통계입니다. 가장 많이 나온 번호는 ${numsText(e.top)}(${e.max}회), 가장 적게 나온 번호는 ${numsText(e.bottom)}(${e.min}회)이며, 회차별 당첨번호부터 미출수·궁합수·홀짝·AC값·끝수 통계까지 12종을 매주 추첨 후 갱신합니다.</p>`,
         '            <nav class="stat-index" aria-label="통계별 자세히 보기">',
         '                <h3>통계별 자세히 보기</h3>',
         '                <ul class="stat-links">',
@@ -1030,8 +1048,6 @@ function updateSitemap() {
             '    <url>',
             `        <loc>${e.loc}</loc>`,
             `        <lastmod>${e.lastmod}</lastmod>`,
-            `        <changefreq>${e.changefreq}</changefreq>`,
-            `        <priority>${e.priority}</priority>`,
             '    </url>',
         ].join('\n')).join('\n'),
         '</urlset>',
