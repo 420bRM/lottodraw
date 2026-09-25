@@ -245,18 +245,165 @@ const EXP_BONUS = N / 45;
 const PAIR_EXP = N * 123410 / TOTAL;               // C(43,4)/C(45,6)
 const CONSEC_P = 1 - comb(40, 6) / TOTAL;
 
-function numberTable(rows, expected) {
-    return table(['번호', '출현 횟수', '회차 대비', '기대보다'], rows.map(r => {
+// sd 를 주면 기대에서 몇 표준편차 떨어졌는지 한 칸 더 적는다
+function numberTable(rows, expected, sd) {
+    const signed = v => (v >= 0 ? '+' : '') + v;
+    return table(['번호', '출현 횟수', '회차 대비', '기대보다'].concat(sd ? ['표준편차'] : []), rows.map(r => {
         const diff = r.count - expected;
-        return [ball(r.number), fmt(r.count) + '회', pct(r.count, N), (diff >= 0 ? '+' : '') + f1(diff)];
+        const row = [ball(r.number), fmt(r.count) + '회', pct(r.count, N), signed(f1(diff))];
+        return sd ? row.concat([signed((diff / sd).toFixed(2)) + 'σ']) : row;
     }));
 }
+
+/* ───── 정규분포 그래프 ───── */
+// 홈 카드와 달리 여기서는 SVG 를 미리 그려 넣는다 — JS 없이도 보이고 검색 로봇도 읽는다.
+
+// 표준정규 누적분포. Abramowitz–Stegun 7.1.26 근사, 오차 1.5e-7
+function normCdf(z) {
+    const t = 1 / (1 + 0.3275911 * Math.abs(z) / Math.SQRT2);
+    const erf = 1 - ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-z * z / 2);
+    return z >= 0 ? (1 + erf) / 2 : (1 - erf) / 2;
+}
+const normPdf = z => Math.exp(-z * z / 2) / Math.sqrt(2 * Math.PI);
+
+function niceStep(max, want) {
+    const raw = max / want;
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    return [1, 2, 5, 10].map(k => k * mag).find(s => s >= raw);
+}
+
+// 정수값 히스토그램 + 이론 정규곡선 + 평균±1σ 음영.
+// o.bins: [{ lo, hi, count, numbers? }] — lo~hi 는 정수 구간(양끝 포함), 폭이 모두 같아야 한다.
+// numbers 가 있으면 막대 대신 번호 공을 쌓는다.
+function normalChart(o) {
+    const L = 40, R = 12, T = 22, B = 40;
+    const width = o.bins[0].hi - o.bins[0].lo + 1;
+    const x0 = o.bins[0].lo - 0.5;
+    const x1 = o.bins[o.bins.length - 1].hi + 0.5;
+    // 곡선 높이 = 구간 하나에 기대되는 개수
+    const curveAt = v => o.total * width * normPdf((v - o.mean) / o.sd) / o.sd;
+    const peak = Math.max(curveAt(o.mean), ...o.bins.map(b => b.count));
+    const step = o.numbers ? 1 : niceStep(peak, 5);
+    const yMax = Math.ceil(peak * 1.08 / step) * step;
+    // 공을 쌓는 그래프는 공 한 칸 높이가 먼저 정해져야 번호가 읽힌다
+    const W = o.numbers ? 560 : 680;
+    const H = o.numbers ? T + B + yMax * 24 : 300;
+    const X = v => L + (v - x0) / (x1 - x0) * (W - L - R);
+    const Y = v => H - B - v / yMax * (H - T - B);
+    const r2 = v => Math.round(v * 10) / 10;
+    const out = [];
+
+    const lo1 = Math.max(x0, o.mean - o.sd);
+    const hi1 = Math.min(x1, o.mean + o.sd);
+    out.push(`<rect class="dist-band" x="${r2(X(lo1))}" y="${T}" width="${r2(X(hi1) - X(lo1))}" height="${H - T - B}"/>`);
+    out.push(`<line class="dist-mean" x1="${r2(X(o.mean))}" x2="${r2(X(o.mean))}" y1="${T}" y2="${H - B}"/>`);
+
+    const yStep = o.numbers ? Math.max(1, niceStep(yMax, 5)) : step;
+    for (let v = 0; v <= yMax; v += yStep) {
+        out.push(`<line class="dist-grid" x1="${L}" x2="${W - R}" y1="${r2(Y(v))}" y2="${r2(Y(v))}"/>`);
+        out.push(`<text class="dist-tick" x="${L - 6}" y="${r2(Y(v) + 4)}" text-anchor="end">${fmt(v)}</text>`);
+    }
+
+    // 공은 곡선 위에 얹어 번호가 가려지지 않게, 막대는 곡선 아래에 둔다
+    const pts = [];
+    for (let i = 0; i <= 120; i++) {
+        const v = x0 + (x1 - x0) * i / 120;
+        pts.push(`${r2(X(v))},${r2(Y(curveAt(v)))}`);
+    }
+    const curve = `<polyline class="dist-curve" points="${pts.join(' ')}"/>`;
+    if (o.numbers) out.push(curve);
+
+    const bw = X(width) - X(0);
+    o.bins.forEach(b => {
+        const left = X(b.lo - 0.5);
+        const range = b.lo === b.hi ? `${b.lo}` : `${b.lo}~${b.hi}`;
+        if (o.numbers) {
+            const size = Math.min(bw - 4, Y(0) - Y(1) - 2);
+            b.numbers.forEach((n, i) => {
+                const cy = Y(i + 0.5);
+                out.push(`<g class="dist-ball" data-band="${LottoStats.bandOf(n)}"><title>${n}번: ${fmt(b.counts[i])}회</title>`
+                    + `<circle cx="${r2(left + bw / 2)}" cy="${r2(cy)}" r="${r2(size / 2)}"/>`
+                    + `<text x="${r2(left + bw / 2)}" y="${r2(cy + 4)}" text-anchor="middle">${n}</text></g>`);
+            });
+        } else if (b.count) {
+            out.push(`<rect class="dist-bar" x="${r2(left + 1)}" y="${r2(Y(b.count))}" width="${r2(bw - 2)}" height="${r2(Y(0) - Y(b.count))}"><title>${range}: ${fmt(b.count)}${o.unit} (${pct(b.count, o.total)})</title></rect>`);
+        }
+    });
+    if (!o.numbers) out.push(curve);
+    [[o.mean - o.sd, '−1σ'], [o.mean, '평균'], [o.mean + o.sd, '+1σ']].forEach(([v, name]) => {
+        if (v < x0 || v > x1) return;
+        out.push(`<text class="dist-mark" x="${r2(X(v))}" y="${T - 7}" text-anchor="middle">${name} ${f1(v)}</text>`);
+    });
+
+    out.push(`<line class="dist-axis" x1="${L}" x2="${W - R}" y1="${H - B}" y2="${H - B}"/>`);
+    const every = Math.max(1, Math.ceil(o.bins.length / 12));
+    o.bins.forEach((b, i) => {
+        if (i % every) return;
+        out.push(`<text class="dist-tick" x="${r2(X(b.lo - 0.5))}" y="${H - B + 16}" text-anchor="middle">${b.lo}</text>`);
+    });
+    out.push(`<text class="dist-tick" x="${r2(X(x1))}" y="${H - B + 16}" text-anchor="end">${o.bins[o.bins.length - 1].hi + 1}</text>`);
+    out.push(`<text class="dist-label" x="${r2((L + W - R) / 2)}" y="${H - 4}" text-anchor="middle">${esc(o.xLabel)}</text>`);
+
+    return [
+        `<figure class="dist-figure${o.numbers ? ' is-dots' : ''}">`,
+        `<svg class="dist-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.aria)}">`,
+        out.join('\n'),
+        '</svg>',
+        '<figcaption class="dist-legend">',
+        `<span><i class="key-bar${o.numbers ? ' key-ball' : ''}"></i>${esc(o.barLabel)}</span>`,
+        '<span><i class="key-curve"></i>이론 정규분포</span>',
+        '<span><i class="key-band"></i>평균 ±1σ (약 68%)</span>',
+        '</figcaption>',
+        '</figure>',
+    ].join('\n');
+}
+
+// 값 목록을 폭 width 인 정수 구간으로 나눈다. 시작은 width 의 배수.
+function binsOf(values, width) {
+    const lo = Math.floor(Math.min(...values) / width) * width;
+    const hi = Math.floor(Math.max(...values) / width) * width;
+    const bins = [];
+    for (let s = lo; s <= hi; s += width) bins.push({ lo: s, hi: s + width - 1, count: 0 });
+    values.forEach(v => bins[Math.floor((v - lo) / width)].count++);
+    return bins;
+}
+
+const within = (values, mean, sd, k) => values.filter(v => Math.abs(v - mean) <= k * sd).length;
 
 const STATS = [];
 
 (() => {
     const e = extremesOf(stats.frequency);
     const ranked = stats.frequency.slice().sort((a, b) => b.count - a.count || a.number - b.number);
+
+    // 번호 45개가 각자 몇 번 나왔는지를 하나의 분포로 본다. 공 하나가 번호 하나다.
+    const counts = stats.frequency.map(r => r.count);
+    const bins = binsOf(counts, 5);
+    bins.forEach(b => {
+        const inBin = stats.frequency.filter(r => r.count >= b.lo && r.count <= b.hi).sort((p, q) => p.count - q.count || p.number - q.number);
+        b.numbers = inBin.map(r => r.number);
+        b.counts = inBin.map(r => r.count);
+    });
+    const actualMean = counts.reduce((a, b) => a + b, 0) / counts.length;
+    const actualSd = Math.sqrt(counts.reduce((a, c) => a + (c - actualMean) ** 2, 0) / (counts.length - 1));
+    const in1 = within(counts, EXP_NUM, SD_NUM, 1);
+    const in2 = within(counts, EXP_NUM, SD_NUM, 2);
+    const distBlock = [
+        `<p>번호 하나가 한 회차에 뽑힐 확률은 6/45입니다. ${fmt(N)}회를 추첨하면 번호마다 출현 횟수는 평균 ${f1(EXP_NUM)}회, 표준편차 ${f1(SD_NUM)}회인 정규분포에 가깝게 흩어져야 합니다. 아래 공 하나가 번호 하나입니다.</p>`,
+        normalChart({
+            bins, numbers: true, total: 45, mean: EXP_NUM, sd: SD_NUM, unit: '개',
+            xLabel: '출현 횟수 (5회 단위)', barLabel: '번호 (공 1개 = 번호 1개)',
+            aria: `번호 45개의 출현 횟수 분포. 이론 평균 ${f1(EXP_NUM)}회, 표준편차 ${f1(SD_NUM)}회`,
+        }),
+        table(['항목', '이론 (정규분포)', `실제 (${RANGE})`], [
+            ['평균', f1(EXP_NUM) + '회', f1(actualMean) + '회'],
+            ['표준편차', f1(SD_NUM) + '회', f1(actualSd) + '회'],
+            [`평균 ±1σ (${f1(EXP_NUM - SD_NUM)}~${f1(EXP_NUM + SD_NUM)}회)`, '68.3% · 약 31개', `${pct(in1, 45)} · ${in1}개`],
+            [`평균 ±2σ (${f1(EXP_NUM - 2 * SD_NUM)}~${f1(EXP_NUM + 2 * SD_NUM)}회)`, '95.4% · 약 43개', `${pct(in2, 45)} · ${in2}개`],
+        ], 'kv-table'),
+        `<p>${in2 === 45 ? '45개 번호가 모두' : `45개 중 ${in2}개가`} 평균 ±2σ 안에 있습니다. "많이 나온 번호"도 우연으로 충분히 나올 만큼만 많이 나왔다는 뜻입니다.</p>`,
+    ].join('\n');
+
     STATS.push({
         file: 'statistics-frequency.html', anchor: 'stat-frequency', short: '많이 나온 번호 순위',
         title: `로또 많이 나온 번호 순위 · 번호별 출현 횟수 (${RANGE})`,
@@ -269,8 +416,10 @@ const STATS = [];
             rankList(ranked.slice(0, 10), r => fmt(r.count) + '회'),
             '<h2>적게 나온 번호 Top 10</h2>',
             rankList(ranked.slice(-10).reverse(), r => fmt(r.count) + '회'),
+            '<h2>출현 횟수의 정규분포</h2>',
+            distBlock,
             '<h2>1~45번 번호별 출현 횟수</h2>',
-            numberTable(stats.frequency, EXP_NUM),
+            numberTable(stats.frequency, EXP_NUM, SD_NUM),
             `<p>표준편차는 약 ${f1(SD_NUM)}회입니다. 1위 번호는 기대보다 ${f1(e.max - EXP_NUM)}회(+${f1((e.max - EXP_NUM) / SD_NUM)} 표준편차), 최소 번호는 ${f1(EXP_NUM - e.min)}회(-${f1((EXP_NUM - e.min) / SD_NUM)} 표준편차) 벗어나 있습니다. 번호 45개를 한꺼번에 보면 공평한 추첨에서도 양 끝이 이 정도로 벌어집니다.</p>`,
         ],
     });
@@ -368,6 +517,33 @@ const STATS = [];
     const sums = draws.map(d => d.numbers.reduce((a, b) => a + b, 0));
     const avg = sums.reduce((a, b) => a + b, 0) / sums.length;
     const rows = stats.sum.map(r => [esc(r.label), fmt(r.count) + '회', pct(r.count, N)]);
+
+    // 1~45 에서 6개를 뽑은 합: 평균 6×23, 분산 6·(45²−1)/12·(45−6)/(45−1) (비복원 추출)
+    const MEAN = 6 * 23;
+    const SD = Math.sqrt(6 * (45 * 45 - 1) / 12 * 39 / 44);
+    const sd = Math.sqrt(sums.reduce((a, s) => a + (s - avg) ** 2, 0) / (sums.length - 1));
+    const in1 = within(sums, MEAN, SD, 1);
+    const in2 = within(sums, MEAN, SD, 2);
+    const lo1 = Math.ceil(MEAN - SD), hi1 = Math.floor(MEAN + SD);
+    const lo2 = Math.ceil(MEAN - 2 * SD), hi2 = Math.floor(MEAN + 2 * SD);
+    const theory = (a, b) => normCdf((b + 0.5 - MEAN) / SD) - normCdf((a - 0.5 - MEAN) / SD);
+    const distBlock = [
+        '<h2>합계는 정규분포를 따른다</h2>',
+        `<p>번호 6개를 더한 값은 여러 수를 더한 값이라 가운데로 모이고 좌우가 대칭인 정규분포에 가까워집니다. 1~45에서 6개를 뽑으면 이론상 평균 ${MEAN}, 표준편차 ${f1(SD)}입니다. 막대는 실제 ${RANGE}의 합계를 10 단위로 센 것이고, 곡선은 이론 정규분포입니다.</p>`,
+        normalChart({
+            bins: binsOf(sums, 10), total: N, mean: MEAN, sd: SD, unit: '회',
+            xLabel: '당첨번호 6개의 합계 (10 단위)', barLabel: `실제 ${RANGE}`,
+            aria: `당첨번호 합계 분포. 실제 평균 ${f1(avg)}, 이론 평균 ${MEAN}, 표준편차 ${f1(SD)}`,
+        }),
+        table(['항목', '이론 (정규분포)', `실제 (${RANGE})`], [
+            ['평균', String(MEAN), f1(avg)],
+            ['표준편차', f1(SD), f1(sd)],
+            [`합계 ${lo1}~${hi1} (평균 ±1σ)`, pct(theory(lo1, hi1), 1), `${pct(in1, N)} · ${fmt(in1)}회`],
+            [`합계 ${lo2}~${hi2} (평균 ±2σ)`, pct(theory(lo2, hi2), 1), `${pct(in2, N)} · ${fmt(in2)}회`],
+        ], 'kv-table'),
+        `<p>당첨번호의 약 3분의 2는 합계가 <strong>${lo1}~${hi1}</strong> 사이였고, ${lo2}보다 작거나 ${hi2}보다 큰 합계는 ${fmt(N - in2)}회(${pct(N - in2, N)})뿐이었습니다. 다만 합계가 가운데인 조합은 그만큼 <em>개수가 많을</em> 뿐, 조합 하나하나의 1등 확률은 모두 같습니다.</p>`,
+    ].join('\n');
+
     STATS.push({
         file: 'statistics-sum.html', anchor: 'stat-sum', short: '번호 합계',
         title: `로또 번호 합계 분포 통계 (${RANGE})`,
@@ -376,6 +552,8 @@ const STATS = [];
         fact: `평균 ${f1(avg)} · 최다 구간 ${top.label}`,
         lead: `${RANGE} 당첨번호 합계의 평균은 <strong>${f1(avg)}</strong>이고, 가장 많이 나온 구간은 <strong>${esc(top.label)}</strong>(${pct(top.count, N)})입니다. 이론 평균은 138입니다.`,
         body: [
+            distBlock,
+            '<h2>합계 구간별 나온 횟수</h2>',
             table(['합계 구간', '나온 횟수', '비율'], rows),
             `<p>가장 작은 합계는 ${Math.min.apply(null, sums)}, 가장 큰 합계는 ${Math.max.apply(null, sums)}였습니다. 합계는 가운데로 몰리는 값이라 양 끝 구간은 드물게 나옵니다.</p>`,
         ],

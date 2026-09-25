@@ -725,3 +725,32 @@ html.home { scroll-behavior: smooth; }
     .ball { width: 40px; height: 40px; font-size: 16px; }
     .tray { gap: 5px; }
 }
+
+/* ───── 정적 통계 페이지 · 정규분포 그래프 ───── */
+.dist-figure { margin: 12px 0 14px; }
+.dist-figure.is-dots { max-width: 640px; }
+.dist-chart { display: block; width: 100%; height: auto; font-family: var(--font); }
+.dist-band { fill: var(--brand); opacity: .07; }
+.dist-grid { stroke: #eee; }
+.dist-axis { stroke: #999; }
+.dist-tick { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.dist-label { fill: var(--muted); font-size: 12px; }
+.dist-mark { fill: var(--brand); font-size: 11px; font-weight: bold; }
+.dist-mean { stroke: var(--brand); stroke-dasharray: 3 3; opacity: .6; }
+.dist-bar { fill: var(--brand); opacity: .55; }
+.dist-bar:hover { opacity: .85; }
+.dist-curve { fill: none; stroke: var(--ball-3); stroke-width: 2.5; stroke-linejoin: round; }
+.dist-ball circle { stroke: #fff; stroke-width: 1; }
+.dist-ball text { fill: #fff; font-size: 11px; font-weight: bold; pointer-events: none; }
+.dist-ball[data-band="1"] circle { fill: var(--ball-1); }
+.dist-ball[data-band="2"] circle { fill: var(--ball-2); }
+.dist-ball[data-band="3"] circle { fill: var(--ball-3); }
+.dist-ball[data-band="4"] circle { fill: var(--ball-4); }
+.dist-ball[data-band="5"] circle { fill: var(--ball-5); }
+.dist-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin-top: 4px; color: var(--muted); font-size: 12px; }
+.dist-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.dist-legend i { display: inline-block; width: 14px; height: 10px; }
+.dist-legend .key-bar { background: var(--brand); opacity: .55; }
+.dist-legend .key-ball { width: 10px; border-radius: 50%; background: var(--ball-1); opacity: 1; }
+.dist-legend .key-curve { height: 0; border-top: 2.5px solid var(--ball-3); }
+.dist-legend .key-band { background: var(--brand); opacity: .12; }
