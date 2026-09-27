@@ -450,4 +450,5 @@ window.I18N_DICT = {
                        en: 'The average first prize across all draws is {amount}. Below are the last 20 draws.' },
     'dt.prize.note': { ko: '당첨자가 많으면 1인당 금액이 줄어듭니다. 금액이 낮은 회차는 대개 당첨자가 많았던 회차입니다.',
                        en: 'More winners means a smaller share each. The low-amount draws are usually the ones with many winners.' },
+    'stats.indexAria': { en: 'Each statistic in detail' },
 };
