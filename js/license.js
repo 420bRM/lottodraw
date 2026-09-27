@@ -17,6 +17,9 @@
 
     const cfg = () => (typeof window !== 'undefined' && window.PREMIUM_CONFIG) || {};
 
+    // 이 파일은 Node 에서 require 될 수도 있어 I18N 이 없을 수 있다. 없으면 한국어 그대로.
+    const msg = (key, ko) => (typeof window !== 'undefined' && window.I18N) ? window.I18N.t(key) : ko;
+
     const store = {
         get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
         set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* 프라이빗 모드 */ } },
@@ -42,20 +45,24 @@
     // Polar 응답을 이용 가능 여부로 판정
     function judge(lk) {
         if (lk.status !== 'granted') {
-            return { ok: false, reason: lk.status === 'revoked' ? '환불 또는 취소된 이용권입니다.' : '사용이 중지된 이용권입니다.' };
+            return { ok: false, reason: lk.status === 'revoked'
+                ? msg('lic.revoked', '환불 또는 취소된 이용권입니다.')
+                : msg('lic.disabled', '사용이 중지된 이용권입니다.') };
         }
         const allowed = benefitIds();
         if (allowed.length && allowed.indexOf(lk.benefit_id) === -1) {
-            return { ok: false, reason: '이 사이트의 이용권 키가 아닙니다.' };
+            return { ok: false, reason: msg('lic.wrongSite', '이 사이트의 이용권 키가 아닙니다.') };
         }
         if (lk.expires_at && Date.parse(lk.expires_at) <= Date.now()) {
-            return { ok: false, reason: `${fmtDate(lk.expires_at)}에 기간이 끝난 이용권입니다.` };
+            return { ok: false, reason: (typeof window !== 'undefined' && window.I18N)
+                ? window.I18N.f('lic.expired', { date: fmtDate(lk.expires_at) })
+                : `${fmtDate(lk.expires_at)}에 기간이 끝난 이용권입니다.` };
         }
         const plan = planOf(lk.benefit_id);
         return {
             ok: true,
             expiresAt: lk.expires_at || null,
-            plan: plan ? plan.name : '이용권',
+            plan: plan ? plan.name : msg('lic.pass', '이용권'),
             recurring: !!(plan && plan.recurring),
         };
     }
@@ -66,8 +73,8 @@
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
             body: JSON.stringify({ key: key, organization_id: cfg().organizationId }),
         });
-        if (res.status === 404) return { ok: false, reason: '찾을 수 없는 키입니다. 앞뒤 공백 없이 그대로 붙여 넣었는지 확인해 주세요.' };
-        if (res.status === 422) return { ok: false, reason: '키 형식이 올바르지 않습니다.' };
+        if (res.status === 404) return { ok: false, reason: msg('lic.notFound', '찾을 수 없는 키입니다. 앞뒤 공백 없이 그대로 붙여 넣었는지 확인해 주세요.') };
+        if (res.status === 422) return { ok: false, reason: msg('lic.badFormat', '키 형식이 올바르지 않습니다.') };
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return judge(await res.json());
     }
@@ -117,8 +124,8 @@
     function summary(record) {
         if (!record) return '';
         const until = record.expiresAt ? `${fmtDate(record.expiresAt)}까지 이용 가능`
-            : record.recurring ? '해지 전까지 이용 가능'
-            : '기간 제한 없음';
+            : record.recurring ? msg('lic.untilCancel', '해지 전까지 이용 가능')
+            : msg('lic.noLimit', '기간 제한 없음');
         return `${record.plan} · ${until}`;
     }
 

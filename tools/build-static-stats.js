@@ -147,24 +147,34 @@ function rankList(rows, label) {
 /* ───── 공통 틀 ───── */
 
 const NAV = [
-    ['index.html', '생성기 · 통계'],
-    ['draws.html', '당첨번호'],
-    ['statistics.html', '5개월 통계'],
-    ['top-prize.html', 'TOP 50 당첨금'],
-    ['tax.html', '실수령액 계산'],
-    ['about.html', 'ABOUT'],
+    ['index.html', '생성기 · 통계', 'nav.index'],
+    ['draws.html', '당첨번호', 'nav.draws'],
+    ['statistics.html', '5개월 통계', 'nav.statistics'],
+    ['top-prize.html', 'TOP 50 당첨금', 'nav.topPrize'],
+    ['tax.html', '실수령액 계산', 'nav.tax'],
+    ['about.html', 'ABOUT', 'nav.about'],
 ];
 
+// 언어 전환 단추. 사전과 엔진은 js/i18n-dict.js · js/i18n.js 에 있다.
+const langSwitch = `<div class="lang-switch" role="group" aria-label="Language">
+                <button type="button" data-lang-btn="ko">KO</button><button type="button" data-lang-btn="en">EN</button>
+            </div>`;
+
 const latestCallout = `제${LATEST.round}회 ${LATEST.numbers.join(' ')} <span class="bonus-sep">+</span> ${LATEST.bonus}`;
+const latestCalloutEn = `Draw ${LATEST.round}: ${LATEST.numbers.join(' ')} <span class="bonus-sep">+</span> ${LATEST.bonus}`;
 
 // base: 하위 폴더 페이지에서 쓰는 경로 앞머리 ('' 또는 '../')
 function shell(o) {
     const base = o.base || '';
     const title = `${o.title} | lottodraw.kr`;
-    const crumbs = [['index.html', '홈']].concat(o.crumbs || []);
-    const crumbHtml = crumbs.map(([href, name], i) => i === crumbs.length - 1 && !href
-        ? `<span>${esc(name)}</span>`
-        : `<a href="${base}${href}">${esc(name)}</a>`).join(' › ');
+    const crumbs = [['index.html', '홈', 'crumb.home']].concat(o.crumbs || []);
+    // 마지막 조각은 그 페이지 이름이다. 영문은 en: 으로 같이 받아 data-i18n-en 에 싣는다.
+    const crumbHtml = crumbs.map(([href, name, key, en], i) => {
+        const i18n = key ? ` data-i18n="${key}"` : (en ? ` data-i18n-en="${esc(en)}"` : '');
+        return i === crumbs.length - 1 && !href
+            ? `<span${i18n}>${esc(name)}</span>`
+            : `<a href="${base}${href}"${i18n}>${esc(name)}</a>`;
+    }).join(' › ');
     const ld = {
         '@context': 'https://schema.org',
         '@graph': [].concat(o.ld || [], [{
@@ -196,6 +206,8 @@ function shell(o) {
     <meta name="twitter:image" content="${OG_IMAGE}">
     <meta name="google-adsense-account" content="ca-pub-9372871176021283">
     <link rel="stylesheet" href="${base}css/site.css">
+    <script src="${base}js/i18n-dict.js"></script>
+    <script src="${base}js/i18n.js"></script>
     <script type="application/ld+json">${JSON.stringify(ld)}</script>
 </head>
 <body>
@@ -203,39 +215,41 @@ function shell(o) {
     <header class="banner">
         <a class="brand" href="${base}index.html">
             <span class="brand-name">LOTTODRAW.KR</span>
-            <span class="brand-tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
+            <span class="brand-tag" data-i18n="brand.tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
         </a>
         <div class="banner-right">
-${o.callout === false ? '' : `            <p class="latest-callout">${latestCallout}</p>\n`}            <a class="sticker" href="${base}statistics.html">최근 <b>5개월</b> 통계</a>
+${o.callout === false ? '' : `            <p class="latest-callout" data-i18n-en="${esc(latestCalloutEn)}">${latestCallout}</p>
+`}            <a class="sticker" href="${base}statistics.html" data-i18n-html="header.sticker">최근 <b>5개월</b> 통계</a>
+            ${langSwitch}
         </div>
     </header>
 
-    <nav class="nav" aria-label="주 메뉴">
+    <nav class="nav" aria-label="주 메뉴" data-i18n-attr="aria-label:nav.aria">
         <ul>
-${NAV.map(([href, name]) => `            <li><a href="${base}${href}"${href === o.navCurrent ? ' aria-current="page"' : ''}>${name}</a></li>`).join('\n')}
+${NAV.map(([href, name, key]) => `            <li><a href="${base}${href}"${href === o.navCurrent ? ' aria-current="page"' : ''} data-i18n="${key}">${name}</a></li>`).join('\n')}
         </ul>
     </nav>
 
     <main class="prose stat-page">
-        <nav class="breadcrumb" aria-label="현재 위치">${crumbHtml}</nav>
+        <nav class="breadcrumb" aria-label="현재 위치" data-i18n-attr="aria-label:crumb.aria">${crumbHtml}</nav>
         <h1>${esc(o.h1)}</h1>
 ${o.scope ? `        <p class="stat-scope">${o.scope}</p>\n` : ''}${o.lead ? `        <p class="stat-lead">${o.lead}</p>\n` : ''}
 ${o.body.filter(Boolean).join('\n\n')}
 
-        <p class="page-disclaimer">지난 추첨 기록을 정리한 것이며 다음 회차를 예측하지 않습니다. 어떤 6개를 고르든 1등 확률은 1/8,145,060으로 같습니다. 당첨번호 출처: 동행복권.</p>
+        <p class="page-disclaimer" data-i18n="disclaimer.page">지난 추첨 기록을 정리한 것이며 다음 회차를 예측하지 않습니다. 어떤 6개를 고르든 1등 확률은 1/8,145,060으로 같습니다. 당첨번호 출처: 동행복권.</p>
     </main>
 
     <footer class="footer">
         <ul class="footer-nav">
-            <li><a href="${base}index.html">HOME</a></li>
-            <li><a href="${base}draws.html">당첨번호</a></li>
-            <li><a href="${base}statistics.html">5개월 통계</a></li>
-            <li><a href="${base}top-prize.html">TOP 50</a></li>
-            <li><a href="${base}tax.html">실수령액</a></li>
-            <li><a href="${base}about.html">ABOUT</a></li>
+            <li><a href="${base}index.html" data-i18n="footer.home">HOME</a></li>
+            <li><a href="${base}draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="${base}statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="${base}top-prize.html" data-i18n="footer.top">TOP 50</a></li>
+            <li><a href="${base}tax.html" data-i18n="footer.tax">실수령액</a></li>
+            <li><a href="${base}about.html" data-i18n="nav.about">ABOUT</a></li>
         </ul>
-        <p><a href="${base}privacy.html">개인정보 처리방침</a> · <a href="${base}terms.html">이용약관</a> · <a href="${base}contact.html">문의</a></p>
-        <p>&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권</p>
+        <p><a href="${base}privacy.html" data-i18n="footer.privacy">개인정보 처리방침</a> · <a href="${base}terms.html" data-i18n="footer.terms">이용약관</a> · <a href="${base}contact.html" data-i18n="footer.contact">문의</a></p>
+        <p data-i18n-html="footer.copy">&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권</p>
     </footer>
 </div>
 ${o.script ? `<script>\n${o.script}\n</script>\n` : ''}<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9372871176021283" crossorigin="anonymous"></script>

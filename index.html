@@ -20,6 +20,8 @@
     <meta property="og:site_name" content="lottodraw.kr">
     <meta name="google-adsense-account" content="ca-pub-9372871176021283">
     <link rel="stylesheet" href="css/site.css">
+    <script src="js/i18n-dict.js"></script>
+    <script src="js/i18n.js"></script>
     <!-- seo:ld:start -->
     <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://www.lottodraw.kr/#website","name":"lottodraw.kr","alternateName":"로또드로우","url":"https://www.lottodraw.kr/","inLanguage":"ko-KR"},{"@type":"Organization","@id":"https://www.lottodraw.kr/#org","name":"lottodraw.kr","url":"https://www.lottodraw.kr/","email":"contact@lottodraw.kr"},{"@type":"Dataset","name":"로또 6/45 전 회차 당첨번호 통계","description":"동행복권 로또 6/45 1~1243회 회차별 당첨번호, 보너스 번호, 1등 당첨자 수로 계산한 통계 12종","url":"https://www.lottodraw.kr/","isAccessibleForFree":true,"dateModified":"2026-09-26","temporalCoverage":"2002-12-07/2026-09-26","keywords":"로또 통계, 로또 분석, 로또 많이 나온 번호, 로또 미출수, 로또 궁합수","hasPart":[{"@type":"Dataset","name":"로또 많이 나온 번호 순위 · 번호별 출현 횟수 (1~1243회)","description":"로또 역대 1~1243회 가장 많이 나온 번호 순위와 1~45번 번호별 출현 횟수. 제일 많이 나온 번호는 34번 186회, 가장 적게 나온 번호는 9번 137회.","url":"https://www.lottodraw.kr/statistics-frequency.html"},{"@type":"Dataset","name":"로또 보너스 번호란? 역대 보너스 번호 통계 (1~1243회)","description":"로또 보너스 번호의 의미(2등 판정)와 역대 1~1243회 보너스 번호별 출현 횟수. 가장 많이 나온 보너스 번호는 2번 36회.","url":"https://www.lottodraw.kr/statistics-bonus.html"},{"@type":"Dataset","name":"로또 홀짝 비율 통계 · 홀짝 분석 (1~1243회)","description":"로또 1~1243회 당첨번호 6개의 홀수·짝수 비율을 이론 확률과 나란히 분석했습니다. 가장 많은 형태는 홀3 짝3(33.3%).","url":"https://www.lottodraw.kr/statistics-even-odd.html"},{"@type":"Dataset","name":"로또 저고(고저) 비율 통계 (1~1243회)","description":"로또 1~1243회 당첨번호의 낮은 번호(1~22)와 높은 번호(23~45) 비율을 이론 확률과 함께 정리했습니다. 최다 형태 저3 고3.","url":"https://www.lottodraw.kr/statistics-low-high.html"},{"@type":"Dataset","name":"로또 연속번호 통계 · 연속번호 확률 (1~1243회)","description":"로또 1~1243회 중 연속번호가 포함된 회차는 643회(51.7%)입니다. 연속번호 확률과 2연속·3연속 이상 비율을 정리했습니다.","url":"https://www.lottodraw.kr/statistics-consecutive.html"},{"@type":"Dataset","name":"로또 번호 합계 분포 통계 (1~1243회)","description":"로또 1~1243회 당첨번호 6개의 합계 분포입니다. 평균 138.3, 가장 많은 구간은 120~139(25.0%).","url":"https://www.lottodraw.kr/statistics-sum.html"},{"@type":"Dataset","name":"로또 1등 당첨자 수 통계 · 이월 횟수 (1~1243회)","description":"로또 1~1243회 회차별 1등 당첨자 수 분포입니다. 1등이 없어 이월된 회차 14회, 회차당 평균 8.6명.","url":"https://www.lottodraw.kr/statistics-prize.html"},{"@type":"Dataset","name":"로또 최근 50회 많이 나온 번호 · 적게 나온 번호","description":"로또 최근 50회(1194~1243회) 동안 많이 나온 번호와 적게 나온 번호 Top 10. 최다 15번 11회.","url":"https://www.lottodraw.kr/statistics-trend.html"},{"@type":"Dataset","name":"로또 궁합수 순위 · 함께 나온 번호 Top 20 (1~1243회)","description":"로또 1~1243회 한 회차에 같이 나온 번호 쌍, 궁합수 순위 Top 20. 1위 11·21번 34회.","url":"https://www.lottodraw.kr/statistics-pair.html"},{"@type":"Dataset","name":"로또 미출수 · 장기 미출현 번호 순위 (1243회 기준)","description":"로또 1243회 기준 장기 미출수, 가장 오래 안 나온 번호 순위입니다. 1위 5번은 30회차째 나오지 않았습니다.","url":"https://www.lottodraw.kr/statistics-gap.html"},{"@type":"Dataset","name":"로또 AC값 통계 · AC값 계산기 (1~1243회)","description":"로또 AC값(산술적 복잡도) 계산 방법과 계산기, 역대 1~1243회 AC값 분포. 가장 많은 값은 AC 8(34.8%).","url":"https://www.lottodraw.kr/statistics-ac.html"},{"@type":"Dataset","name":"로또 끝수 통계 · 끝수합 분포 (1~1243회)","description":"로또 1~1243회 끝수(끝자리) 0~9별 출현 횟수와 번호당 평균, 끝수합 분포(평균 26.0). 번호당 평균이 가장 높은 끝수는 7.","url":"https://www.lottodraw.kr/statistics-tail.html"}]}]}</script>
     <!-- seo:ld:end -->
@@ -29,22 +31,25 @@
     <header class="banner">
         <a class="brand" href="index.html">
             <span class="brand-name">LOTTODRAW.KR</span>
-            <span class="brand-tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
+            <span class="brand-tag" data-i18n="brand.tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
         </a>
         <div class="banner-right">
-            <p class="latest-callout" id="latest-callout">최신 회차 불러오는 중…</p>
-            <a class="sticker" href="statistics.html">최근 <b>5개월</b> 통계</a>
+            <p class="latest-callout" id="latest-callout" data-i18n="header.latestLoading">최신 회차 불러오는 중…</p>
+            <a class="sticker" href="statistics.html" data-i18n-html="header.sticker">최근 <b>5개월</b> 통계</a>
+            <div class="lang-switch" role="group" aria-label="Language">
+                <button type="button" data-lang-btn="ko">KO</button><button type="button" data-lang-btn="en">EN</button>
+            </div>
         </div>
     </header>
 
-    <nav class="nav" aria-label="주 메뉴">
+    <nav class="nav" aria-label="주 메뉴" data-i18n-attr="aria-label:nav.aria">
         <ul>
-            <li><a href="index.html" aria-current="page">생성기 · 통계</a></li>
-            <li><a href="draws.html">당첨번호</a></li>
-            <li><a href="statistics.html">5개월 통계</a></li>
-            <li><a href="top-prize.html">TOP 50 당첨금</a></li>
-            <li><a href="tax.html">실수령액 계산</a></li>
-            <li><a href="about.html">ABOUT</a></li>
+            <li><a href="index.html" aria-current="page" data-i18n="nav.index">생성기 · 통계</a></li>
+            <li><a href="draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="top-prize.html" data-i18n="nav.topPrize">TOP 50 당첨금</a></li>
+            <li><a href="tax.html" data-i18n="nav.tax">실수령액 계산</a></li>
+            <li><a href="about.html" data-i18n="nav.about">ABOUT</a></li>
         </ul>
     </nav>
 
@@ -52,58 +57,58 @@
         <section class="snap-section" id="sec-generator" aria-labelledby="gen-title">
             <div class="eyebrow">
                 <div>
-                    <h1 id="gen-title">로또 통계 · 번호 생성기</h1>
-                    <p>16개 특수 패턴에 걸리는 조합을 걸러냅니다</p>
+                    <h1 id="gen-title" data-i18n="gen.h1">로또 통계 · 번호 생성기</h1>
+                    <p data-i18n="gen.sub">16개 특수 패턴에 걸리는 조합을 걸러냅니다</p>
                 </div>
             </div>
 
             <div class="gen-hero">
                 <div class="cta">
-                    <h2>이번 번호</h2>
+                    <h2 data-i18n="gen.thisPick">이번 번호</h2>
                     <div class="tray" id="result-balls"></div>
-                    <p class="result-msg" id="result" role="status" aria-live="polite">버튼을 누르면 위 자리에 번호가 채워집니다.</p>
-                    <button type="button" class="btn btn-big" id="generate-btn">번호 생성</button>
+                    <p class="result-msg" id="result" role="status" aria-live="polite" data-i18n="gen.resultIdle">버튼을 누르면 위 자리에 번호가 채워집니다.</p>
+                    <button type="button" class="btn btn-big" id="generate-btn" data-i18n="gen.go">번호 생성</button>
                 </div>
 
                 <section class="card" aria-labelledby="picker-title">
-                        <h2 class="card-title" id="picker-title"><span>고정수 / 제외수</span><small>누를 때마다 순환</small></h2>
+                        <h2 class="card-title" id="picker-title"><span data-i18n="gen.picker">고정수 / 제외수</span><small data-i18n="gen.pickerSub">누를 때마다 순환</small></h2>
                         <div class="card-body">
                             <p class="picker-help">
-                                <span class="chip include">고정</span> → <span class="chip exclude">제외</span> → 해제 순으로 바뀝니다. 고정수는 반드시 넣을 번호로, 최대 6개입니다.
+                                <span class="chip include" data-i18n="gen.chipInc">고정</span> → <span class="chip exclude" data-i18n="gen.chipExc">제외</span><span data-i18n="gen.pickerHelp"> → 해제 순으로 바뀝니다. 고정수는 반드시 넣을 번호로, 최대 6개입니다.</span>
                             </p>
-                            <div class="number-grid" id="number-grid" role="group" aria-label="고정수나 제외수로 쓸 번호 선택"></div>
-                            <p class="picker-summary" id="picker-summary" aria-live="polite">고정수 0개 · 제외수 0개</p>
+                            <div class="number-grid" id="number-grid" role="group" aria-label="고정수나 제외수로 쓸 번호 선택" data-i18n-attr="aria-label:gen.gridAria"></div>
+                            <p class="picker-summary" id="picker-summary" aria-live="polite" data-i18n="gen.sumIdle">고정수 0개 · 제외수 0개</p>
                             <p class="picker-warning" id="picker-warning" role="alert"></p>
                             <div class="picker-actions">
-                                <button type="button" class="btn btn-secondary" id="reset-picker">선택 초기화</button>
+                                <button type="button" class="btn btn-secondary" id="reset-picker" data-i18n="gen.reset">선택 초기화</button>
                             </div>
                         </div>
                     </section>
 
                     <section class="card" aria-labelledby="patterns-title">
-                        <h2 class="card-title" id="patterns-title"><span>배제할 특수 패턴</span><small>16개</small></h2>
+                        <h2 class="card-title" id="patterns-title"><span data-i18n="gen.patterns">배제할 특수 패턴</span><small data-i18n-en="16 of them">16개</small></h2>
                         <div class="card-body">
                             <ul class="patterns">
-                                <li><input type="checkbox" id="pattern1"><label for="pattern1">6개 모두 연속 (예: 10~15)</label></li>
-                                <li><input type="checkbox" id="pattern2"><label for="pattern2">모두 1~15 안</label></li>
-                                <li><input type="checkbox" id="pattern3"><label for="pattern3">모두 1~20 안</label></li>
-                                <li><input type="checkbox" id="pattern4"><label for="pattern4">모두 1~31 안</label></li>
-                                <li><input type="checkbox" id="pattern5"><label for="pattern5">모두 3의 배수</label></li>
-                                <li><input type="checkbox" id="pattern6"><label for="pattern6">모두 4의 배수</label></li>
-                                <li><input type="checkbox" id="pattern7"><label for="pattern7">모두 5의 배수</label></li>
-                                <li><input type="checkbox" id="pattern8"><label for="pattern8">모두 31~45 안</label></li>
-                                <li><input type="checkbox" id="pattern9"><label for="pattern9">모두 같은 십의 자리 (예: 10~19)</label></li>
-                                <li><input type="checkbox" id="pattern10"><label for="pattern10">모두 소수</label></li>
-                                <li><input type="checkbox" id="pattern11"><label for="pattern11">모두 홀수</label></li>
-                                <li><input type="checkbox" id="pattern12"><label for="pattern12">모두 짝수</label></li>
-                                <li><input type="checkbox" id="pattern13"><label for="pattern13">합계 50 미만 또는 200 초과</label></li>
-                                <li><input type="checkbox" id="pattern14"><label for="pattern14">합계 50~69 또는 181~200</label></li>
-                                <li><input type="checkbox" id="pattern15"><label for="pattern15">제곱수 4개 이상</label></li>
-                                <li><input type="checkbox" id="pattern16"><label for="pattern16">제곱수 5개 이상</label></li>
+                                <li><input type="checkbox" id="pattern1"><label for="pattern1" data-i18n-en="All six consecutive (e.g. 10–15)">6개 모두 연속 (예: 10~15)</label></li>
+                                <li><input type="checkbox" id="pattern2"><label for="pattern2" data-i18n-en="All within 1–15">모두 1~15 안</label></li>
+                                <li><input type="checkbox" id="pattern3"><label for="pattern3" data-i18n-en="All within 1–20">모두 1~20 안</label></li>
+                                <li><input type="checkbox" id="pattern4"><label for="pattern4" data-i18n-en="All within 1–31">모두 1~31 안</label></li>
+                                <li><input type="checkbox" id="pattern5"><label for="pattern5" data-i18n-en="All multiples of 3">모두 3의 배수</label></li>
+                                <li><input type="checkbox" id="pattern6"><label for="pattern6" data-i18n-en="All multiples of 4">모두 4의 배수</label></li>
+                                <li><input type="checkbox" id="pattern7"><label for="pattern7" data-i18n-en="All multiples of 5">모두 5의 배수</label></li>
+                                <li><input type="checkbox" id="pattern8"><label for="pattern8" data-i18n-en="All within 31–45">모두 31~45 안</label></li>
+                                <li><input type="checkbox" id="pattern9"><label for="pattern9" data-i18n-en="All in the same ten (e.g. 10–19)">모두 같은 십의 자리 (예: 10~19)</label></li>
+                                <li><input type="checkbox" id="pattern10"><label for="pattern10" data-i18n-en="All prime">모두 소수</label></li>
+                                <li><input type="checkbox" id="pattern11"><label for="pattern11" data-i18n-en="All odd">모두 홀수</label></li>
+                                <li><input type="checkbox" id="pattern12"><label for="pattern12" data-i18n-en="All even">모두 짝수</label></li>
+                                <li><input type="checkbox" id="pattern13"><label for="pattern13" data-i18n-en="Sum below 50 or above 200">합계 50 미만 또는 200 초과</label></li>
+                                <li><input type="checkbox" id="pattern14"><label for="pattern14" data-i18n-en="Sum 50–69 or 181–200">합계 50~69 또는 181~200</label></li>
+                                <li><input type="checkbox" id="pattern15"><label for="pattern15" data-i18n-en="Four or more perfect squares">제곱수 4개 이상</label></li>
+                                <li><input type="checkbox" id="pattern16"><label for="pattern16" data-i18n-en="Five or more perfect squares">제곱수 5개 이상</label></li>
                             </ul>
                             <div class="patterns-actions">
-                                <button type="button" class="btn btn-secondary" id="patterns-all">모두 체크</button>
-                                <button type="button" class="btn btn-secondary" id="patterns-none">모두 해제</button>
+                                <button type="button" class="btn btn-secondary" id="patterns-all" data-i18n="gen.checkAll">모두 체크</button>
+                                <button type="button" class="btn btn-secondary" id="patterns-none" data-i18n="gen.checkNone">모두 해제</button>
                             </div>
                         </div>
                 </section>
@@ -113,10 +118,10 @@
             <div class="gen-extras">
                 <section class="card">
                     <details>
-                        <summary class="card-title"><span>생성 이력 · 과정 로그</span></summary>
+                        <summary class="card-title"><span data-i18n="gen.history">생성 이력 · 과정 로그</span></summary>
                             <div class="card-body">
                                 <table class="history">
-                                    <caption class="sr-only">오늘 생성한 번호 (최근 20개)</caption>
+                                    <caption class="sr-only" data-i18n="gen.historyCap">오늘 생성한 번호 (최근 20개)</caption>
                                     <thead><tr><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr></thead>
                                     <tbody id="history-body"></tbody>
                                 </table>
@@ -128,11 +133,11 @@
 
                     <section class="card">
                         <details>
-                            <summary class="card-title"><span>보렐의 법칙과 이 도구의 한계</span></summary>
+                            <summary class="card-title"><span data-i18n="gen.borel">보렐의 법칙과 이 도구의 한계</span></summary>
                             <div class="card-body">
-                                <p>보렐의 법칙은 "확률이 극도로 낮은 사건은 현실에서 일어나지 않는다고 봐도 된다"는 경험적 원칙으로, 수학자 에밀 보렐이 제안했습니다. 이 사이트는 모든 번호가 소수이거나 제곱수인 조합 같은 특수한 경우를 이 생각으로 걸러냅니다.</p>
-                                <p>45개 중 6개를 고르는 조합은 8,145,060개이고, 16개 패턴을 모두 적용하면 1,561,694개(약 19.17%)가 제외되어 6,583,366개(약 80.83%)가 남습니다.</p>
-                                <p><strong>패턴을 걸러낸다고 당첨 확률이 올라가지는 않습니다.</strong> 추첨은 조합마다 같은 확률이라, 내가 쥔 한 장이 맞을 확률은 1/8,145,060 그대로입니다. 이 도구가 하는 일은 사람이 직접 고르면 몰리기 쉬운 조합을 피하는 것이고, 1등이 갈릴 때 나눠 가질 사람이 줄어들 수 있다는 점에서만 의미가 있습니다.</p>
+                                <p data-i18n="borel.p1">보렐의 법칙은 "확률이 극도로 낮은 사건은 현실에서 일어나지 않는다고 봐도 된다"는 경험적 원칙으로, 수학자 에밀 보렐이 제안했습니다. 이 사이트는 모든 번호가 소수이거나 제곱수인 조합 같은 특수한 경우를 이 생각으로 걸러냅니다.</p>
+                                <p data-i18n="borel.p2">45개 중 6개를 고르는 조합은 8,145,060개이고, 16개 패턴을 모두 적용하면 1,561,694개(약 19.17%)가 제외되어 6,583,366개(약 80.83%)가 남습니다.</p>
+                                <p data-i18n-html="borel.p3"><strong>패턴을 걸러낸다고 당첨 확률이 올라가지는 않습니다.</strong> 추첨은 조합마다 같은 확률이라, 내가 쥔 한 장이 맞을 확률은 1/8,145,060 그대로입니다. 이 도구가 하는 일은 사람이 직접 고르면 몰리기 쉬운 조합을 피하는 것이고, 1등이 갈릴 때 나눠 가질 사람이 줄어들 수 있다는 점에서만 의미가 있습니다.</p>
                             </div>
                         </details>
                     </section>
@@ -140,7 +145,7 @@
             </div>
 
             <button type="button" class="scroll-cue" data-goto="sec-stats">
-                <span>아래에 전 회차 통계 12종</span>
+                <span data-i18n="gen.cueStats">아래에 전 회차 통계 12종</span>
                 <span class="chevron" aria-hidden="true">⌄</span>
             </button>
         </section>
@@ -148,15 +153,15 @@
         <section class="snap-section" id="sec-stats" aria-labelledby="stats-title">
             <div class="eyebrow">
                 <div>
-                    <h2 id="stats-title">로또 전 회차 통계</h2>
-                    <p id="stats-scope">데이터를 불러오는 중…</p>
+                    <h2 id="stats-title" data-i18n="stats.h2">로또 전 회차 통계</h2>
+                    <p id="stats-scope" data-i18n="stats.loading">데이터를 불러오는 중…</p>
                 </div>
             </div>
             <p class="notice">
-                지나간 추첨 기록을 정리한 것이며 다음 회차를 예측하지 않습니다. 모든 조합의 당첨 확률은 1/8,145,060으로 같습니다.
+                <span data-i18n="stats.notice">지나간 추첨 기록을 정리한 것이며 다음 회차를 예측하지 않습니다. 모든 조합의 당첨 확률은 1/8,145,060으로 같습니다.</span>
             </p>
             <div class="stat-grid" id="stat-grid">
-                <p class="stats-loading">통계를 계산하는 중…</p>
+                <p class="stats-loading" data-i18n="s5.calc">통계를 계산하는 중…</p>
             </div>
 
             <!-- seo:links:start -->
@@ -182,15 +187,15 @@
             </nav>
             <!-- seo:links:end -->
 
-            <h2 class="section-head" id="detail-head">상세 분석 <small>이용권</small></h2>
+            <h2 class="section-head" id="detail-head"><span data-i18n="s5.detail.h">상세 분석</span> <small data-i18n="s5.plans">이용권</small></h2>
             <p class="notice">
-                아래 네 가지는 이용권으로 열립니다. 이미 키가 있으면 자동으로 열립니다.
-                <a href="statistics.html">이용권 보기</a>
+                <span data-i18n="detail.notice">아래 네 가지는 이용권으로 열립니다. 이미 키가 있으면 자동으로 열립니다.</span>
+                <a href="statistics.html" data-i18n="detail.see">이용권 보기</a>
             </p>
             <div class="stat-grid" id="detail-grid"></div>
 
             <button type="button" class="scroll-cue" data-goto="sec-recent">
-                <span>아래에 최근 10회차 한눈에 보기</span>
+                <span data-i18n="gen.cueRecent">아래에 최근 10회차 한눈에 보기</span>
                 <span class="chevron" aria-hidden="true">⌄</span>
             </button>
         </section>
@@ -198,51 +203,51 @@
         <section class="snap-section" id="sec-recent" aria-labelledby="recent-title">
             <div class="eyebrow">
                 <div>
-                    <h2 id="recent-title">최근 10회차 한눈에 보기</h2>
-                    <p id="recent-scope">불러오는 중…</p>
+                    <h2 id="recent-title" data-i18n="recent.h2">최근 10회차 한눈에 보기</h2>
+                    <p id="recent-scope" data-i18n="top.loading">불러오는 중…</p>
                 </div>
             </div>
 
             <div class="teaser">
                 <section class="card" aria-labelledby="heat-title">
-                    <h3 class="card-title" id="heat-title"><span>번호를 눌러 보세요</span><small>최근 10회차 출현</small></h3>
+                    <h3 class="card-title" id="heat-title"><span data-i18n="recent.tap">번호를 눌러 보세요</span><small data-i18n="recent.tapSub">최근 10회차 출현</small></h3>
                     <div class="card-body">
-                        <div class="heat-grid" id="heat-grid" role="group" aria-label="최근 10회차 번호별 출현 횟수"></div>
+                        <div class="heat-grid" id="heat-grid" role="group" aria-label="최근 10회차 번호별 출현 횟수" data-i18n-attr="aria-label:recent.gridAria"></div>
                         <p class="heat-legend">
-                            <span><i style="background:#fff"></i> 0회</span>
-                            <span><i style="background:#cfe0ff;border-color:#cfe0ff"></i> 1회</span>
-                            <span><i style="background:#7ea9f0;border-color:#7ea9f0"></i> 2회</span>
-                            <span><i style="background:#3d72d6;border-color:#3d72d6"></i> 3회</span>
-                            <span><i style="background:#003087;border-color:#003087"></i> 4회 이상</span>
+                            <span><i style="background:#fff"></i> <span data-i18n-en="0">0회</span></span>
+                            <span><i style="background:#cfe0ff;border-color:#cfe0ff"></i> <span data-i18n-en="1">1회</span></span>
+                            <span><i style="background:#7ea9f0;border-color:#7ea9f0"></i> <span data-i18n-en="2">2회</span></span>
+                            <span><i style="background:#3d72d6;border-color:#3d72d6"></i> <span data-i18n-en="3">3회</span></span>
+                            <span><i style="background:#003087;border-color:#003087"></i> <span data-i18n-en="4 or more">4회 이상</span></span>
                         </p>
-                        <p class="heat-readout" id="heat-readout" aria-live="polite">번호를 누르면 최근 10회차에 몇 번 나왔는지 보여드립니다.</p>
+                        <p class="heat-readout" id="heat-readout" aria-live="polite" data-i18n="recent.readoutIdle">번호를 누르면 최근 10회차에 몇 번 나왔는지 보여드립니다.</p>
                     </div>
                 </section>
 
                 <div class="teaser-side">
                     <section class="card sell" aria-labelledby="recent-cta-title">
-                        <h3 class="card-title" id="recent-cta-title"><span>최근 5개월 통계 더 보기</span><small>이용권</small></h3>
+                        <h3 class="card-title" id="recent-cta-title"><span data-i18n="recent.more">최근 5개월 통계 더 보기</span><small data-i18n="s5.plans">이용권</small></h3>
                         <div class="card-body">
-                            <p class="sell-lede">위 그리드는 <strong>최근 10회차</strong>에 어떤 번호가 몇 번 나왔는지만 보여줍니다.</p>
+                            <p class="sell-lede" data-i18n-html="sell.lede">위 그리드는 <strong>최근 10회차</strong>에 어떤 번호가 몇 번 나왔는지만 보여줍니다.</p>
                             <ul class="sell-list">
-                                <li><b>22회차</b>(약 5개월) 치를 통계 <b>11종</b>으로</li>
-                                <li>홀짝 · 저고 · 연속 · 합계 · <b>AC값</b> · 끝자리까지</li>
-                                <li>기간 중 많이 · 적게 나온 번호와 번호 쌍</li>
+                                <li data-i18n-html="sell.f1"><b>22회차</b>(약 5개월) 치를 통계 <b>11종</b>으로</li>
+                                <li data-i18n-html="sell.f2">홀짝 · 저고 · 연속 · 합계 · <b>AC값</b> · 끝자리까지</li>
+                                <li data-i18n="sell.f3">기간 중 많이 · 적게 나온 번호와 번호 쌍</li>
                             </ul>
-                            <p class="sell-price"><b>$2</b>부터 · 평생 이용권 <b>$10</b></p>
-                            <p class="page-actions"><a class="btn btn-big" href="statistics.html">5개월 통계 열어보기</a></p>
-                            <p class="card-note">지난 기록 요약이며 예측이 아닙니다. 어떤 조합이든 1등 확률은 1/8,145,060 입니다.</p>
+                            <p class="sell-price" data-i18n-html="sell.price"><b>$2</b>부터 · 평생 이용권 <b>$10</b></p>
+                            <p class="page-actions"><a class="btn btn-big" href="statistics.html" data-i18n="sell.cta">5개월 통계 열어보기</a></p>
+                            <p class="card-note" data-i18n="sell.note">지난 기록 요약이며 예측이 아닙니다. 어떤 조합이든 1등 확률은 1/8,145,060 입니다.</p>
                         </div>
                     </section>
 
                     <section class="card" aria-labelledby="doubt-title">
-                        <h3 class="card-title" id="doubt-title"><span>정말 우연일까?</span></h3>
+                        <h3 class="card-title" id="doubt-title"><span data-i18n="s5.doubt.h">정말 우연일까?</span></h3>
                         <div class="card-body">
-                            <p>숫자는 독립시행입니다. 1번이 지난주에 나왔든 10년을 쉬었든 이번 주 확률은 같습니다. 그런데 추첨기 안에서 도는 건 숫자가 아니라 <strong>공</strong>입니다.</p>
-                            <p>45개 공이 완전히 똑같을 수 있을까요? 무게가 0.01g 다를 수 있고, 수만 번 부딪히며 표면이 아주 미세하게 눌릴 수도 있습니다. 인쇄된 숫자의 잉크 양마저 번호마다 다릅니다. 이론상 이런 차이는 어떤 공을 조금 더 자주 튀어 오르게 만들 수 있습니다.</p>
-                            <p>실제로 1980년 미국 펜실베이니아 복권에서는 일부 공에 페인트를 주입해 무게를 늘린 조작 사건이 적발됐습니다. <strong>공의 무게가 결과를 바꾼다는 건 이미 증명된 셈입니다.</strong></p>
-                            <p>그럼 우리 기록은 어떨까요? 1,241회 기준 한 번호의 기대 출현은 165회, 표준편차는 약 12회입니다. 가장 많이 나온 <b>34번(186회)</b>은 +1.7, 가장 적게 나온 <b>9번(136회)</b>은 −2.5 표준편차입니다. 번호 45개를 한꺼번에 놓고 보면, 완벽하게 공평한 추첨에서도 늘 이 정도의 최대·최소 차이가 나옵니다.</p>
-                            <p class="card-note">공이 완전히 같지 않다는 건 사실입니다. 다만 지금까지의 기록만으로는 그 차이가 결과를 바꿨다고 말할 수 없습니다. 의심할 이유는 있고, 증거는 아직 없습니다.</p>
+                            <p data-i18n="s5.doubt.p1">숫자는 독립시행입니다. 1번이 지난주에 나왔든 10년을 쉬었든 이번 주 확률은 같습니다. 그런데 추첨기 안에서 도는 건 숫자가 아니라 <strong>공</strong>입니다.</p>
+                            <p data-i18n="s5.doubt.p2">45개 공이 완전히 똑같을 수 있을까요? 무게가 0.01g 다를 수 있고, 수만 번 부딪히며 표면이 아주 미세하게 눌릴 수도 있습니다. 인쇄된 숫자의 잉크 양마저 번호마다 다릅니다. 이론상 이런 차이는 어떤 공을 조금 더 자주 튀어 오르게 만들 수 있습니다.</p>
+                            <p data-i18n-html="s5.doubt.p3">실제로 1980년 미국 펜실베이니아 복권에서는 일부 공에 페인트를 주입해 무게를 늘린 조작 사건이 적발됐습니다. <strong>공의 무게가 결과를 바꾼다는 건 이미 증명된 셈입니다.</strong></p>
+                            <p data-i18n-html="s5.doubt.p4">그럼 우리 기록은 어떨까요? 1,241회 기준 한 번호의 기대 출현은 165회, 표준편차는 약 12회입니다. 가장 많이 나온 <b>34번(186회)</b>은 +1.7, 가장 적게 나온 <b>9번(136회)</b>은 −2.5 표준편차입니다. 번호 45개를 한꺼번에 놓고 보면, 완벽하게 공평한 추첨에서도 늘 이 정도의 최대·최소 차이가 나옵니다.</p>
+                            <p class="card-note" data-i18n="s5.doubt.p5">공이 완전히 같지 않다는 건 사실입니다. 다만 지금까지의 기록만으로는 그 차이가 결과를 바꿨다고 말할 수 없습니다. 의심할 이유는 있고, 증거는 아직 없습니다.</p>
                         </div>
                     </section>
                 </div>
@@ -251,23 +256,23 @@
         </section>
     </main>
 
-    <nav class="dot-nav" aria-label="화면 구간 이동">
-        <button type="button" data-goto="sec-generator" aria-label="번호 생성기"></button>
-        <button type="button" data-goto="sec-stats" aria-label="전 회차 통계"></button>
-        <button type="button" data-goto="sec-recent" aria-label="최근 10회차"></button>
+    <nav class="dot-nav" aria-label="화면 구간 이동" data-i18n-attr="aria-label:dots.aria">
+        <button type="button" data-goto="sec-generator" aria-label="번호 생성기" data-i18n-attr="aria-label:dots.gen"></button>
+        <button type="button" data-goto="sec-stats" aria-label="전 회차 통계" data-i18n-attr="aria-label:dots.stats"></button>
+        <button type="button" data-goto="sec-recent" aria-label="최근 10회차" data-i18n-attr="aria-label:dots.recent"></button>
     </nav>
 
     <footer class="footer">
         <ul class="footer-nav">
-            <li><a href="index.html">HOME</a></li>
-            <li><a href="draws.html">당첨번호</a></li>
-            <li><a href="statistics.html">5개월 통계</a></li>
-            <li><a href="top-prize.html">TOP 50</a></li>
-            <li><a href="tax.html">실수령액</a></li>
-            <li><a href="about.html">ABOUT</a></li>
+            <li><a href="index.html" data-i18n="footer.home">HOME</a></li>
+            <li><a href="draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="top-prize.html" data-i18n="footer.top">TOP 50</a></li>
+            <li><a href="tax.html" data-i18n="footer.tax">실수령액</a></li>
+            <li><a href="about.html" data-i18n="nav.about">ABOUT</a></li>
         </ul>
-        <p><a href="privacy.html">개인정보 처리방침</a> · <a href="terms.html">이용약관</a> · <a href="contact.html">문의</a></p>
-        <p>&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권</p>
+        <p><a href="privacy.html" data-i18n="footer.privacy">개인정보 처리방침</a> · <a href="terms.html" data-i18n="footer.terms">이용약관</a> · <a href="contact.html" data-i18n="footer.contact">문의</a></p>
+        <p data-i18n-html="footer.copy">&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권</p>
     </footer>
 </div>
 
@@ -384,7 +389,7 @@
         } else if (includeSet.size >= MAX_INCLUDE) {
             // 포함이 이미 6개면 포함 단계를 건너뛰고 제외로 간다
             excludeSet.add(n);
-            warning.textContent = `고정수는 최대 ${MAX_INCLUDE}개까지입니다. ${n}번은 제외수로 표시했습니다.`;
+            warning.textContent = I18N.f('gen.maxInclude', { max: MAX_INCLUDE, n: n });
         } else {
             includeSet.add(n);
         }
@@ -396,15 +401,15 @@
             cell.classList.toggle('include', includeSet.has(n));
             cell.classList.toggle('exclude', excludeSet.has(n));
             cell.setAttribute('aria-pressed', includeSet.has(n) ? 'true' : 'false');
-            const state = includeSet.has(n) ? '고정수' : excludeSet.has(n) ? '제외수' : '선택 안 함';
-            cell.setAttribute('aria-label', `${n}번 ${state}`);
+            const state = includeSet.has(n) ? I18N.t('gen.stFixed') : excludeSet.has(n) ? I18N.t('gen.stExcluded') : I18N.t('gen.stNone');
+            cell.setAttribute('aria-label', I18N.f('gen.cellAria', { n: n, state: state }));
         });
         const asc = (a, b) => a - b;
         const inc = [...includeSet].sort(asc);
         const exc = [...excludeSet].sort(asc);
         document.getElementById('picker-summary').textContent =
-            `고정수 ${inc.length}개${inc.length ? ` (${inc.join(', ')})` : ''}` +
-            ` · 제외수 ${exc.length}개${exc.length ? ` (${exc.join(', ')})` : ''}`;
+            I18N.f('gen.sumFixed', { n: inc.length }) + (inc.length ? ` (${inc.join(', ')})` : '') +
+            ' · ' + I18N.f('gen.sumExcluded', { n: exc.length }) + (exc.length ? ` (${exc.join(', ')})` : '');
     }
     function resetPicker() {
         includeSet.clear();
@@ -419,7 +424,7 @@
     }
     function updateDisplay() {
         let clickCount = storageGet(clickKey, '0');
-        document.getElementById('visitor-count').innerText = `오늘 이 브라우저에서 생성한 횟수: ${clickCount}회`;
+        document.getElementById('visitor-count').innerText = I18N.f('gen.todayCount', { n: clickCount });
     }
     function loadHistory() {
         const history = readHistory();
@@ -458,22 +463,22 @@
         const squares = [1, 4, 9, 16, 25, 36];
         const squareCount = sorted.filter(n => squares.includes(n)).length;
         const patterns = [
-            {id: 1, check: () => sorted[5] - sorted[0] === 5, reason: "6개 숫자가 연속적"},
-            {id: 2, check: () => sorted.every(n => n >= 1 && n <= 15), reason: "모든 숫자가 1~15 범위"},
-            {id: 3, check: () => sorted.every(n => n >= 1 && n <= 20), reason: "모든 숫자가 1~20 범위"},
-            {id: 4, check: () => sorted.every(n => n >= 1 && n <= 31), reason: "모든 숫자가 1~31 범위"},
-            {id: 5, check: () => sorted.every(n => n % 3 === 0), reason: "모든 숫자가 3의 배수"},
-            {id: 6, check: () => sorted.every(n => n % 4 === 0), reason: "모든 숫자가 4의 배수"},
-            {id: 7, check: () => sorted.every(n => n % 5 === 0), reason: "모든 숫자가 5의 배수"},
-            {id: 8, check: () => sorted.every(n => n >= 31 && n <= 45), reason: "모든 숫자가 31~45 범위"},
-            {id: 9, check: () => sorted.every(n => Math.floor(n / 10) === Math.floor(sorted[0] / 10)), reason: "모든 숫자가 동일한 자리대"},
-            {id: 10, check: () => sorted.every(isPrime), reason: "모든 숫자가 소수"},
-            {id: 11, check: () => sorted.every(n => n % 2 !== 0), reason: "모든 숫자가 홀수"},
-            {id: 12, check: () => sorted.every(n => n % 2 === 0), reason: "모든 숫자가 짝수"},
-            {id: 13, check: () => sum < 50 || sum > 200, reason: "숫자 합계가 50 미만 또는 200 초과"},
-            {id: 14, check: () => (sum >= 50 && sum <= 69) || (sum >= 181 && sum <= 200), reason: "숫자 합계가 50~69 또는 181~200"},
-            {id: 15, check: () => squareCount >= 4, reason: "제곱수 4개 이상 포함된 경우"},
-            {id: 16, check: () => squareCount >= 5, reason: "제곱수 5개 이상 포함된 경우"}
+            {id: 1, check: () => sorted[5] - sorted[0] === 5, reason: I18N.t('gen.r1')},
+            {id: 2, check: () => sorted.every(n => n >= 1 && n <= 15), reason: I18N.t('gen.r2')},
+            {id: 3, check: () => sorted.every(n => n >= 1 && n <= 20), reason: I18N.t('gen.r3')},
+            {id: 4, check: () => sorted.every(n => n >= 1 && n <= 31), reason: I18N.t('gen.r4')},
+            {id: 5, check: () => sorted.every(n => n % 3 === 0), reason: I18N.t('gen.r5')},
+            {id: 6, check: () => sorted.every(n => n % 4 === 0), reason: I18N.t('gen.r6')},
+            {id: 7, check: () => sorted.every(n => n % 5 === 0), reason: I18N.t('gen.r7')},
+            {id: 8, check: () => sorted.every(n => n >= 31 && n <= 45), reason: I18N.t('gen.r8')},
+            {id: 9, check: () => sorted.every(n => Math.floor(n / 10) === Math.floor(sorted[0] / 10)), reason: I18N.t('gen.r9')},
+            {id: 10, check: () => sorted.every(isPrime), reason: I18N.t('gen.r10')},
+            {id: 11, check: () => sorted.every(n => n % 2 !== 0), reason: I18N.t('gen.r11')},
+            {id: 12, check: () => sorted.every(n => n % 2 === 0), reason: I18N.t('gen.r12')},
+            {id: 13, check: () => sum < 50 || sum > 200, reason: I18N.t('gen.r13')},
+            {id: 14, check: () => (sum >= 50 && sum <= 69) || (sum >= 181 && sum <= 200), reason: I18N.t('gen.r14')},
+            {id: 15, check: () => squareCount >= 4, reason: I18N.t('gen.r15')},
+            {id: 16, check: () => squareCount >= 5, reason: I18N.t('gen.r16')}
         ];
         for (let pattern of patterns) {
             if (checkedPatternIds.has(pattern.id) && pattern.check()) {
@@ -490,8 +495,8 @@
         const logLines = [];
         function renderLog() {
             const shown = logLines.slice(-50);
-            logDiv.innerHTML = '<strong>생성 과정 로그' +
-                (logLines.length > shown.length ? ` (최근 ${shown.length}줄)` : '') +
+            logDiv.innerHTML = '<strong>' + I18N.t('gen.logTitle') +
+                (logLines.length > shown.length ? I18N.f('gen.logTail', { n: shown.length }) : '') +
                 ':</strong><br>' + shown.join('<br>');
             logDiv.scrollTop = logDiv.scrollHeight;
         }
@@ -508,8 +513,7 @@
         if (pool < needed) {
             clearBalls();
             setMessage(
-                `제외한 숫자가 너무 많아 6개를 채울 수 없습니다. ` +
-                `제외를 ${uniqueExclude.size - (needed - pool)}개 이하로 줄여 주세요.`, true);
+                I18N.f('gen.tooManyExcluded', { n: uniqueExclude.size - (needed - pool) }), true);
             return;
         }
         if (includeNums.length === 6) {
@@ -517,8 +521,7 @@
             if (fixedReason) {
                 clearBalls();
                 setMessage(
-                    `고정수로 고른 6개가 그대로 조합이 되는데, ` +
-                    `"${fixedReason}" 패턴에 걸립니다. 해당 패턴 체크를 풀거나 번호를 바꿔 주세요.`, true);
+                    I18N.f('gen.fixedHitsPattern', { reason: fixedReason }), true);
                 return;
             }
         }
@@ -538,12 +541,12 @@
             const numStr = numbers.join(', ');
             const invalidReason = checkInvalidPattern(numbers, checkedPatternIds);
             if (invalidReason) {
-                logLines.push(`시도 ${attempts}: ${numStr} - ${invalidReason} 패턴으로 제외`);
+                logLines.push(I18N.f('gen.logSkip', { i: attempts, nums: numStr, reason: invalidReason }));
                 continue;
             }
             fillBalls(numbers);
-            setMessage(`생성된 번호: ${numStr} — 선택된 특수 패턴을 피했습니다. (${attempts}번째 시도)`);
-            logLines.push(`시도 ${attempts}: ${numStr} - 유효하여 선택됨`);
+            setMessage(I18N.f('gen.done', { nums: numStr, i: attempts }));
+            logLines.push(I18N.f('gen.logKeep', { i: attempts, nums: numStr }));
             renderLog();
             saveHistory(numStr);
             return;
@@ -551,14 +554,13 @@
         renderLog();
         clearBalls();
         setMessage(
-            `${maxAttempts.toLocaleString()}번 시도했지만 조건을 만족하는 조합을 찾지 못했습니다. ` +
-            `배제 패턴을 몇 개 풀거나 고정수·제외수를 줄여 보세요.`, true);
+            I18N.f('gen.giveUp', { n: maxAttempts.toLocaleString() }), true);
     }
 
     // ---- 전 회차 통계 ----
     function renderLatestCallout(draw) {
         const box = document.getElementById('latest-callout');
-        box.textContent = `제${draw.round}회 ${draw.numbers.join(' ')} `;
+        box.textContent = I18N.f('header.latestDraw', { n: draw.round, nums: draw.numbers.join(' ') }) + ' ';
         const sep = document.createElement('span');
         sep.className = 'bonus-sep';
         sep.textContent = '+';
@@ -575,7 +577,7 @@
                 renderLatestCallout(sorted[0]);
                 const period = stats.oldestDate && stats.latestDate ? ` · ${stats.oldestDate} ~ ${stats.latestDate}` : '';
                 document.getElementById('stats-scope').textContent =
-                    `${stats.oldestRound}~${stats.latestRound}회 (${LottoStatsView.fmt(stats.rounds)}회 추첨)${period}`;
+                    I18N.f('stats.scope', { from: stats.oldestRound, to: stats.latestRound, n: LottoStatsView.fmt(stats.rounds) }) + period;
                 LottoStatsView.render(grid, stats, { latestDraws: sorted.slice(0, 10) });
                 renderRecent(sorted.slice(0, 10));
                 renderDetails(data.draws);
@@ -585,10 +587,10 @@
                 grid.textContent = '';
                 const p = document.createElement('p');
                 p.className = 'stats-loading';
-                p.textContent = '통계 데이터를 불러오지 못했습니다. 잠시 뒤 새로고침해 주세요.';
+                p.textContent = I18N.t('stats.loadFail');
                 grid.appendChild(p);
-                document.getElementById('latest-callout').textContent = '최신 회차 정보를 불러오지 못했습니다';
-                document.getElementById('recent-scope').textContent = '최근 회차를 불러오지 못했습니다';
+                document.getElementById('latest-callout').textContent = I18N.t('header.latestFail');
+                document.getElementById('recent-scope').textContent = I18N.t('recent.loadFail');
             });
     }
 
@@ -603,7 +605,7 @@
             if (!state.unlocked) return;
             LottoDetails.render(box, draws, { locked: false });
             const head = document.getElementById('detail-head');
-            if (head) head.textContent = '상세 분석 (열림)';
+            if (head) head.textContent = I18N.t('detail.open');
         }).catch(err => console.error(err));
     }
 
@@ -617,7 +619,7 @@
         const oldest = draws[draws.length - 1];
         const newest = draws[0];
         document.getElementById('recent-scope').textContent =
-            `${oldest.round}~${newest.round}회 · ${oldest.date} ~ ${newest.date}`;
+            I18N.f('recent.scope', { from: oldest.round, to: newest.round }) + ` · ${oldest.date} ~ ${newest.date}`;
 
         const grid = document.getElementById('heat-grid');
         grid.textContent = '';
@@ -629,7 +631,7 @@
             b.dataset.n = n;
             b.dataset.hits = Math.min(hits[n], 4);
             b.setAttribute('aria-pressed', 'false');
-            b.title = `${n}번: 최근 10회차 중 ${hits[n]}회`;
+            b.title = I18N.f('recent.cellTitle', { n: n, hits: hits[n] });
             grid.appendChild(b);
         }
     }
@@ -645,13 +647,12 @@
             const n = Number(btn.dataset.n);
             const hit = recentHits[n];
             readout.textContent = '';
-            readout.appendChild(document.createTextNode(`${n}번은 최근 10회차에 `));
+            readout.appendChild(document.createTextNode(I18N.f('recent.readPre', { n: n })));
             const b = document.createElement('b');
-            b.textContent = `${hit}번`;
+            b.textContent = I18N.f('recent.readHits', { n: hit });
             readout.appendChild(b);
             readout.appendChild(document.createTextNode(
-                hit === 0 ? ' 나왔습니다. 안 나왔다고 다음에 나올 확률이 올라가지는 않습니다.'
-                          : ' 나왔습니다. 많이 나왔다고 다음에 또 나올 확률이 올라가지는 않습니다.'));
+                hit === 0 ? I18N.t('recent.readNone') : I18N.t('recent.readSome')));
         });
     }
 

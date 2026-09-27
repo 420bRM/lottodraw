@@ -18,7 +18,7 @@
     }
 
     function renderLatestCallout(box, draw) {
-        box.textContent = `제${draw.round}회 ${draw.numbers.join(' ')} `;
+        box.textContent = I18N.f('header.latestDraw', { n: draw.round, nums: draw.numbers.join(' ') }) + ' ';
         const sep = document.createElement('span');
         sep.className = 'bonus-sep';
         sep.textContent = '+';
@@ -36,7 +36,7 @@
             })
             .catch(err => {
                 console.error(err);
-                box.textContent = '최신 회차 정보를 불러오지 못했습니다';
+                box.textContent = I18N.t('header.latestFail');
             });
     }
 

@@ -20,18 +20,18 @@
             if (plan && plan.checkoutUrl) {
                 a.href = plan.checkoutUrl;
                 a.removeAttribute('aria-disabled');
-                a.textContent = '결제하기';
+                a.textContent = I18N.t('s5.buy');
             } else {
                 a.removeAttribute('href');
                 a.setAttribute('aria-disabled', 'true');
                 a.classList.add('is-disabled');
-                a.textContent = '결제 준비 중';
+                a.textContent = I18N.t('pay.soon');
             }
         });
         if (!L.configured()) {
             $('license-key').disabled = true;
             $('license-submit').disabled = true;
-            setStatus('결제 연동을 준비하고 있습니다. 조금만 기다려 주세요.');
+            setStatus(I18N.t('pay.preparing'));
         }
     }
 
@@ -78,7 +78,7 @@
                     `${w.from} ~ ${w.to} · ${stats.oldestRound}~${stats.latestRound}회 (추첨 ${stats.rounds}회)`;
                 LottoStatsView.render(grid, stats, {
                     scopeLabel: `최근 ${stats.rounds}회차`,
-                    trendTitle: '기간 중 많이·적게 나온 번호',
+                    trendTitle: I18N.t('pay.trendTitle'),
                     latestDraws: sorted,
                     latestTitle: `최근 ${sorted.length}회차 당첨번호`,
                 });
@@ -89,7 +89,7 @@
             .catch(err => {
                 console.error(err);
                 statsLoaded = false;
-                grid.textContent = '통계 데이터를 불러오지 못했습니다. 잠시 뒤 새로고침해 주세요.';
+                grid.textContent = I18N.t('stats.loadFail');
             });
     }
 
@@ -97,7 +97,7 @@
         const cached = L.cached();
         if (!fromForm && L.fresh(cached, key)) return unlock(cached);
 
-        if (fromForm) setStatus('확인하는 중…');
+        if (fromForm) setStatus(I18N.t('pay.checking'));
         try {
             const result = await L.validate(key);
             if (result.ok) {
@@ -110,7 +110,7 @@
         } catch (err) {
             console.error(err);
             if (L.graceOk(cached, key)) return unlock(cached);
-            lock('결제대행사에 연결하지 못했습니다. 잠시 뒤 다시 시도해 주세요.', true);
+            lock(I18N.t('pay.offline'), true);
         }
     }
 
@@ -120,14 +120,14 @@
         $('license-form').addEventListener('submit', e => {
             e.preventDefault();
             const key = $('license-key').value.trim();
-            if (!key) return setStatus('라이선스 키를 입력해 주세요.', true);
-            if (key.length > 200) return setStatus('키가 너무 깁니다.', true);
+            if (!key) return setStatus(I18N.t('pay.needKey'), true);
+            if (key.length > 200) return setStatus(I18N.t('pay.keyTooLong'), true);
             check(key, true);
         });
         $('license-clear').addEventListener('click', () => {
             L.forget(true);
             $('license-key').value = '';
-            lock('이 브라우저에 저장된 키를 지웠습니다.');
+            lock(I18N.t('pay.cleared'));
         });
         const saved = L.savedKey();
         if (saved && L.configured()) {

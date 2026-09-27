@@ -36,16 +36,21 @@
         }, [title, body]);
     }
 
+    // 계산 모듈(js/lotto-stats.js)이 행마다 영문 라벨을 같이 담아 둔다. Node 에서도
+    // 돌아가야 해서 거기서는 번역하지 않고, 고르는 일만 여기서 한다.
+    const T = (k, v) => (v ? I18N.f(k, v) : I18N.t(k));
+    const lab = r => (I18N.lang === 'en' && r.labelEn) ? r.labelEn : r.label;
+
     // rounds 가 적으면(10회차) 퍼센트가 오히려 오해를 부른다 — 횟수만 쓴다
     function valueText(count, total) {
-        if (total < 20) return fmt(count) + '회';
+        if (total < 20) return T('sr.times', { n: fmt(count) });
         return fmt(count) + ' (' + (count / total * 100).toFixed(1) + '%)';
     }
 
     function hbars(rows, total) {
         const max = Math.max(1, Math.max.apply(null, rows.map(r => r.count)));
         return el('ul', { className: 'hbars' }, rows.map(r => el('li', { className: 'hbar' }, [
-            el('span', { text: r.label }),
+            el('span', { text: lab(r) }),
             el('span', { className: 'hbar-track', 'aria-hidden': 'true' }, [
                 el('span', { className: 'hbar-fill', style: { width: (r.count / max * 100) + '%', display: 'block' } }),
             ]),
@@ -59,11 +64,11 @@
         const min = Math.min.apply(null, counts);
         const pick = v => rows.filter(r => r.count === v).map(r => r.number);
         const list = arr => arr.length > 4
-            ? `${arr.slice(0, 4).join('·')}번 외 ${arr.length - 4}개`
-            : `${arr.join('·')}번`;
+            ? T('sr.numsMore', { nums: arr.slice(0, 4).join('·'), n: arr.length - 4 })
+            : T('sr.nums', { nums: arr.join('·') });
         return el('p', { className: 'extremes' }, [
-            el('strong', { text: `최다 ${fmt(max)}${unit}: ` }), `${list(pick(max))}   `,
-            el('strong', { text: `최소 ${fmt(min)}${unit}: ` }), list(pick(min)),
+            el('strong', { text: T('sr.most', { n: fmt(max) + unit }) }), `${list(pick(max))}   `,
+            el('strong', { text: T('sr.least', { n: fmt(min) + unit }) }), list(pick(min)),
         ]);
     }
 
@@ -76,13 +81,13 @@
         const bars = rows.map(r => el('span', {
             className: 'vbar',
             dataset: { band: r.band },
-            title: `${r.number}번: ${fmt(r.count)}회`,
+            title: T('sr.barTitle', { number: r.number, n: fmt(r.count) }),
             style: { height: (r.count / max * 100) + '%' },
         }));
         const tags = rows.map(() => el('span'));
         const chart = el('div', { className: 'vbars', role: 'img', 'aria-label': label }, bars);
         const axis = el('div', { className: 'vaxis', 'aria-hidden': 'true' }, tags);
-        const btn = el('button', { type: 'button', className: 'btn btn-secondary btn-small', text: '많은순으로 보기' });
+        const btn = el('button', { type: 'button', className: 'btn btn-secondary btn-small', text: T('sr.sortByCount') });
         let sorted = false;
 
         const canMeasure = typeof bars[0].getBoundingClientRect === 'function';
@@ -107,7 +112,7 @@
                 tags[i].textContent = sorted || r.number === 1 || r.number % 5 === 0 ? String(r.number) : '';
             });
             axis.className = 'vaxis' + (sorted ? ' vaxis-all' : '');
-            chart.setAttribute('aria-label', label + (sorted ? ' (많은순)' : ''));
+            chart.setAttribute('aria-label', label + (sorted ? T('sr.sortedSuffix') : ''));
             if (!from) return;
 
             // FLIP: 옮긴 뒤 원래 자리로 되돌려 놓고, 그 되돌림을 풀며 미끄러지게 한다
@@ -127,7 +132,7 @@
 
         btn.addEventListener('click', () => {
             sorted = !sorted;
-            btn.textContent = sorted ? '번호순으로 보기' : '많은순으로 보기';
+            btn.textContent = T(sorted ? 'sr.sortByNumber' : 'sr.sortByCount');
             place(!reduceMotion());
         });
         place(false);
@@ -139,7 +144,7 @@
             el('h4', { text: title }),
             el('div', { className: 'trend-balls' }, rows.map(r => el('figure', null, [
                 ball(r.number, r.band),
-                el('figcaption', { text: fmt(r.recent) + '회' }),
+                el('figcaption', { text: T('sr.times', { n: fmt(r.recent) }) }),
             ]))),
         ]);
     }
@@ -147,16 +152,16 @@
     // 미출현 회차: 공 + "N회차 전". 0 은 바로 지난 회차에 나왔다는 뜻이다.
     function gapList(rows) {
         return el('ol', { className: 'ball-list' }, rows.map((r, i) => el('li', null, [
-            el('span', { className: 'lead', text: (i + 1) + '위' }),
+            el('span', { className: 'lead', text: T('sr.rank', { n: i + 1 }) }),
             ball(r.number, r.band),
-            el('span', { className: 'tail', text: r.gap === 0 ? '지난 회차' : fmt(r.gap) + '회차 전' }),
+            el('span', { className: 'tail', text: r.gap === 0 ? T('sr.lastDraw') : T('sr.drawsAgo', { n: fmt(r.gap) }) }),
         ])));
     }
 
     // AC 는 0~10 이지만 5 이하가 거의 안 나와 줄만 길어진다 — 5 이하를 한 줄로 묶는다.
     function acRows(rows) {
         const low = rows.slice(0, 6).reduce((sum, r) => sum + r.count, 0);
-        return [{ label: 'AC 5 이하', count: low }].concat(
+        return [{ label: 'AC 5 이하', labelEn: 'AC 5 or below', count: low }].concat(
             rows.slice(6).map((r, i) => ({ label: 'AC ' + (i + 6), count: r.count })));
     }
 
@@ -165,53 +170,53 @@
     function tailBars(rows) {
         const max = Math.max.apply(null, rows.map(r => r.per));
         return el('ul', { className: 'hbars' }, rows.map(r => el('li', { className: 'hbar' }, [
-            el('span', { text: r.label }),
+            el('span', { text: lab(r) }),
             el('span', { className: 'hbar-track', 'aria-hidden': 'true' }, [
                 el('span', { className: 'hbar-fill', style: { width: (r.per / max * 100) + '%', display: 'block' } }),
             ]),
-            el('span', { className: 'hbar-val', text: '평균 ' + r.per.toFixed(1) + '회' }),
+            el('span', { className: 'hbar-val', text: T('sr.avgTimes', { n: r.per.toFixed(1) }) }),
         ])));
     }
 
     function render(container, stats, opts) {
         opts = opts || {};
         const total = stats.rounds;
-        const scope = opts.scopeLabel || `${fmt(total)}회`;
+        const scope = opts.scopeLabel || T('sr.drawsN', { n: fmt(total) });
         const specs = [];
 
         specs.push({
             id: 'stat-frequency', span: true, tint: 'sky',
-            title: '번호별 출현 횟수', meta: scope,
-            body: chartWithToggle(stats.frequency, '1부터 45까지 번호별 출현 횟수 막대그래프')
-                .concat([extremes(stats.frequency, '회'),
-                    el('p', { className: 'card-note', text: '막대 높이 차이가 작다면 실제로 거의 고르게 나왔다는 뜻입니다.' })]),
+            title: T('sr.c.freq'), meta: scope,
+            body: chartWithToggle(stats.frequency, T('sr.c.freqAria'))
+                .concat([extremes(stats.frequency, T('sr.unitTimes')),
+                    el('p', { className: 'card-note', text: T('sr.c.freqNote') })]),
         });
 
         specs.push({
             id: 'stat-bonus', span: true, tint: 'periwinkle',
-            title: '보너스 번호 출현 횟수', meta: scope,
-            body: chartWithToggle(stats.bonus, '보너스 번호별 출현 횟수 막대그래프').concat([extremes(stats.bonus, '회')]),
+            title: T('sr.c.bonus'), meta: scope,
+            body: chartWithToggle(stats.bonus, T('sr.c.bonusAria')).concat([extremes(stats.bonus, T('sr.unitTimes'))]),
         });
 
-        specs.push({ id: 'stat-even-odd', tint: 'sage', title: '홀짝 비율', meta: scope, body: [hbars(stats.oddEven, total)] });
-        specs.push({ id: 'stat-low-high', tint: 'salmon', title: '저고 비율', meta: '저 1~22 · 고 23~45', body: [hbars(stats.lowHigh, total)] });
-        specs.push({ id: 'stat-consecutive', tint: 'steel', title: '연속번호', meta: '가장 긴 연속 기준', body: [hbars(stats.consecutive, total)] });
-        specs.push({ id: 'stat-sum', tint: 'lime', title: '번호 합계 분포', meta: scope, body: [hbars(stats.sum, total)] });
-        specs.push({ id: 'stat-prize', tint: 'sky', title: '1등 당첨자 수', meta: '이월 = 1등 없음', body: [hbars(stats.winners, total)] });
+        specs.push({ id: 'stat-even-odd', tint: 'sage', title: T('sr.c.oddEven'), meta: scope, body: [hbars(stats.oddEven, total)] });
+        specs.push({ id: 'stat-low-high', tint: 'salmon', title: T('sr.c.lowHigh'), meta: T('sr.c.lowHighMeta'), body: [hbars(stats.lowHigh, total)] });
+        specs.push({ id: 'stat-consecutive', tint: 'steel', title: T('sr.c.consecutive'), meta: T('sr.c.consecutiveMeta'), body: [hbars(stats.consecutive, total)] });
+        specs.push({ id: 'stat-sum', tint: 'lime', title: T('sr.c.sum'), meta: scope, body: [hbars(stats.sum, total)] });
+        specs.push({ id: 'stat-prize', tint: 'sky', title: T('sr.c.winners'), meta: T('sr.c.winnersMeta'), body: [hbars(stats.winners, total)] });
 
         specs.push({
             id: 'stat-trend', tint: 'peach',
-            title: opts.trendTitle || `최근 ${stats.trend.window}회 많이·적게 나온 번호`,
-            body: [trendGroup('많이 나온 번호', stats.trend.hot), trendGroup('적게 나온 번호', stats.trend.cold)],
+            title: opts.trendTitle || T('sr.c.trend', { n: stats.trend.window }),
+            body: [trendGroup(T('sr.c.hot'), stats.trend.hot), trendGroup(T('sr.c.cold'), stats.trend.cold)],
         });
 
         specs.push({
             id: 'stat-pair', tint: 'lime',
-            title: '함께 나온 번호 쌍 Top 10',
+            title: T('sr.c.pairs'),
             body: [el('ol', { className: 'ball-list' }, stats.pairs.map((p, i) => el('li', null, [
-                el('span', { className: 'lead', text: (i + 1) + '위' }),
+                el('span', { className: 'lead', text: T('sr.rank', { n: i + 1 }) }),
                 ball(p.a, LottoStats.bandOf(p.a)), ball(p.b, LottoStats.bandOf(p.b)),
-                el('span', { className: 'tail', text: fmt(p.count) + '회' }),
+                el('span', { className: 'tail', text: T('sr.times', { n: fmt(p.count) }) }),
             ])))],
         });
 
@@ -219,38 +224,38 @@
         if (stats.gaps && total >= 50) {
             specs.push({
                 id: 'stat-gap', tint: 'salmon',
-                title: '오래 안 나온 번호 Top 10', meta: '마지막 출현 기준',
+                title: T('sr.c.gaps'), meta: T('sr.c.gapsMeta'),
                 body: [gapList(stats.gaps.slice(0, 10)),
-                    el('p', { className: 'card-note', text: '오래 쉬었다고 다음에 나올 확률이 올라가지는 않습니다.' })],
+                    el('p', { className: 'card-note', text: T('sr.c.gapsNote') })],
             });
         }
 
         if (stats.ac) {
             specs.push({
                 id: 'stat-ac', tint: 'steel',
-                title: 'AC값 분포', meta: '높을수록 흩어진 조합',
+                title: T('sr.c.ac'), meta: T('sr.c.acMeta'),
                 body: [hbars(acRows(stats.ac), total),
-                    el('p', { className: 'card-note', text: '번호 6개를 두 개씩 뺀 차이 15개 중 서로 다른 값의 개수 − 5 입니다.' })],
+                    el('p', { className: 'card-note', text: T('sr.c.acNote') })],
             });
         }
 
         if (stats.tail) {
             specs.push({
                 id: 'stat-tail', tint: 'sage',
-                title: '끝자리 분포', meta: '번호 1개당 평균',
+                title: T('sr.c.tail'), meta: T('sr.c.tailMeta'),
                 body: [tailBars(stats.tail),
-                    el('p', { className: 'card-note', text: '끝자리 0·6~9 는 해당 번호가 4개뿐이라 총 횟수 대신 번호당 평균으로 그렸습니다.' })],
+                    el('p', { className: 'card-note', text: T('sr.c.tailNote') })],
             });
         }
 
         if (opts.latestDraws && opts.latestDraws.length) {
             specs.push({
                 id: 'stat-latest', span: true, tint: 'sage', numbered: false,
-                title: opts.latestTitle || `최근 ${opts.latestDraws.length}회 당첨번호`,
+                title: opts.latestTitle || T('sr.c.latest', { n: opts.latestDraws.length }),
                 body: [el('ol', { className: 'ball-list' }, opts.latestDraws.map(d => el('li', null, [
-                    el('span', { className: 'lead', text: d.round + '회' }),
+                    el('span', { className: 'lead', text: T('sr.drawNo', { n: d.round }) }),
                 ].concat(d.numbers.map(n => ball(n, LottoStats.bandOf(n)))).concat([
-                    el('span', { className: 'plus', 'aria-label': '보너스', text: '+' }),
+                    el('span', { className: 'plus', 'aria-label': T('sr.bonus'), text: '+' }),
                     ball(d.bonus, LottoStats.bandOf(d.bonus)),
                 ]))))],
             });

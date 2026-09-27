@@ -754,3 +754,29 @@ html.home { scroll-behavior: smooth; }
 .dist-legend .key-ball { width: 10px; border-radius: 50%; background: var(--ball-1); opacity: 1; }
 .dist-legend .key-curve { height: 0; border-top: 2.5px solid var(--ball-3); }
 .dist-legend .key-band { background: var(--brand); opacity: .12; }
+
+/* ───── 언어 전환 ─────
+   영어로 볼 때만 첫 그림을 잠깐 가린다. 한국어는 가리지 않는다 — 방문자
+   대다수가 한국어라, 그쪽에 빈 화면이 스치게 만들 이유가 없다. */
+.i18n-wait body { visibility: hidden; }
+
+.lang-switch {
+    display: inline-flex;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+    font-size: 13px;
+    font-weight: bold;
+}
+.lang-switch button {
+    margin: 0;
+    padding: 5px 10px;
+    border: 0;
+    background: #fff;
+    color: var(--muted);
+    font: inherit;
+    cursor: pointer;
+}
+.lang-switch button + button { border-left: 1px solid var(--line); }
+.lang-switch button:hover { color: var(--brand); }
+.lang-switch button.is-on { background: var(--brand); color: #fff; }

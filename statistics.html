@@ -18,121 +18,126 @@
     <meta name="twitter:image" content="https://www.lottodraw.kr/img/og-default.png">
     <meta name="google-adsense-account" content="ca-pub-9372871176021283">
     <link rel="stylesheet" href="css/site.css">
+    <script src="js/i18n-dict.js"></script>
+    <script src="js/i18n.js"></script>
 </head>
 <body>
 <div class="page">
     <header class="banner">
         <a class="brand" href="index.html">
             <span class="brand-name">LOTTODRAW.KR</span>
-            <span class="brand-tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
+            <span class="brand-tag" data-i18n="brand.tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
         </a>
         <div class="banner-right">
-            <a class="sticker" href="index.html#stat-frequency">전 회차 통계는 <b>무료</b></a>
+            <a class="sticker" href="index.html#stat-frequency" data-i18n-html="header.stickerFree">전 회차 통계는 <b>무료</b></a>
+            <div class="lang-switch" role="group" aria-label="Language">
+                <button type="button" data-lang-btn="ko">KO</button><button type="button" data-lang-btn="en">EN</button>
+            </div>
         </div>
     </header>
 
-    <nav class="nav" aria-label="주 메뉴">
+    <nav class="nav" aria-label="주 메뉴" data-i18n-attr="aria-label:nav.aria">
         <ul>
-            <li><a href="index.html">생성기 · 통계</a></li>
-            <li><a href="draws.html">당첨번호</a></li>
-            <li><a href="statistics.html" aria-current="page">5개월 통계</a></li>
-            <li><a href="top-prize.html">TOP 50 당첨금</a></li>
-            <li><a href="tax.html">실수령액 계산</a></li>
-            <li><a href="about.html">ABOUT</a></li>
+            <li><a href="index.html" data-i18n="nav.index">생성기 · 통계</a></li>
+            <li><a href="draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="statistics.html" aria-current="page" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="top-prize.html" data-i18n="nav.topPrize">TOP 50 당첨금</a></li>
+            <li><a href="tax.html" data-i18n="nav.tax">실수령액 계산</a></li>
+            <li><a href="about.html" data-i18n="nav.about">ABOUT</a></li>
         </ul>
     </nav>
 
     <div class="eyebrow bg-periwinkle">
         <div>
-            <h1>최근 5개월 통계</h1>
-            <p id="window-scope">기간과 회차는 잠금을 푼 뒤 표시됩니다</p>
+            <h1 data-i18n="s5.h1">최근 5개월 통계</h1>
+            <p id="window-scope" data-i18n="s5.scopeLocked">기간과 회차는 잠금을 푼 뒤 표시됩니다</p>
         </div>
     </div>
     <section class="intro-doubt">
         <section class="card" aria-labelledby="doubt-title">
-            <h2 class="card-title" id="doubt-title"><span>정말 우연일까?</span></h2>
+            <h2 class="card-title" id="doubt-title"><span data-i18n="s5.doubt.h">정말 우연일까?</span></h2>
             <div class="card-body">
-                <p>숫자는 독립시행입니다. 1번이 지난주에 나왔든 10년을 쉬었든 이번 주 확률은 같습니다. 그런데 추첨기 안에서 도는 건 숫자가 아니라 <strong>공</strong>입니다.</p>
-                <p>45개 공이 완전히 똑같을 수 있을까요? 무게가 0.01g 다를 수 있고, 수만 번 부딪히며 표면이 아주 미세하게 눌릴 수도 있습니다. 인쇄된 숫자의 잉크 양마저 번호마다 다릅니다. 이론상 이런 차이는 어떤 공을 조금 더 자주 튀어 오르게 만들 수 있습니다.</p>
-                <p>실제로 1980년 미국 펜실베이니아 복권에서는 일부 공에 페인트를 주입해 무게를 늘린 조작 사건이 적발됐습니다. <strong>공의 무게가 결과를 바꾼다는 건 이미 증명된 셈입니다.</strong></p>
-                <p>그럼 우리 기록은 어떨까요? 1,241회 기준 한 번호의 기대 출현은 165회, 표준편차는 약 12회입니다. 가장 많이 나온 <b>34번(186회)</b>은 +1.7, 가장 적게 나온 <b>9번(136회)</b>은 −2.5 표준편차입니다. 번호 45개를 한꺼번에 놓고 보면, 완벽하게 공평한 추첨에서도 늘 이 정도의 최대·최소 차이가 나옵니다.</p>
-                <p class="card-note">공이 완전히 같지 않다는 건 사실입니다. 다만 지금까지의 기록만으로는 그 차이가 결과를 바꿨다고 말할 수 없습니다. 의심할 이유는 있고, 증거는 아직 없습니다.</p>
+                <p data-i18n="s5.doubt.p1">숫자는 독립시행입니다. 1번이 지난주에 나왔든 10년을 쉬었든 이번 주 확률은 같습니다. 그런데 추첨기 안에서 도는 건 숫자가 아니라 <strong>공</strong>입니다.</p>
+                <p data-i18n="s5.doubt.p2">45개 공이 완전히 똑같을 수 있을까요? 무게가 0.01g 다를 수 있고, 수만 번 부딪히며 표면이 아주 미세하게 눌릴 수도 있습니다. 인쇄된 숫자의 잉크 양마저 번호마다 다릅니다. 이론상 이런 차이는 어떤 공을 조금 더 자주 튀어 오르게 만들 수 있습니다.</p>
+                <p data-i18n-html="s5.doubt.p3">실제로 1980년 미국 펜실베이니아 복권에서는 일부 공에 페인트를 주입해 무게를 늘린 조작 사건이 적발됐습니다. <strong>공의 무게가 결과를 바꾼다는 건 이미 증명된 셈입니다.</strong></p>
+                <p data-i18n-html="s5.doubt.p4">그럼 우리 기록은 어떨까요? 1,241회 기준 한 번호의 기대 출현은 165회, 표준편차는 약 12회입니다. 가장 많이 나온 <b>34번(186회)</b>은 +1.7, 가장 적게 나온 <b>9번(136회)</b>은 −2.5 표준편차입니다. 번호 45개를 한꺼번에 놓고 보면, 완벽하게 공평한 추첨에서도 늘 이 정도의 최대·최소 차이가 나옵니다.</p>
+                <p class="card-note" data-i18n="s5.doubt.p5">공이 완전히 같지 않다는 건 사실입니다. 다만 지금까지의 기록만으로는 그 차이가 결과를 바꿨다고 말할 수 없습니다. 의심할 이유는 있고, 증거는 아직 없습니다.</p>
             </div>
         </section>
     </section>
-    <p class="notice">
+    <p class="notice" data-i18n-html="s5.notice">
         <strong>결제 전에 알아 두세요.</strong>
         최근 5개월은 추첨 22회 분량이라 표본이 작고 우연의 영향이 큽니다.
         이 통계는 지난 기록을 요약할 뿐 다음 회차를 예측하지 않으며, 어떤 조합이든 1등 확률은 1/8,145,060입니다.
     </p>
 
     <section id="paywall" aria-labelledby="plans-title">
-        <h2 class="sr-only" id="plans-title">이용권</h2>
+        <h2 class="sr-only" id="plans-title" data-i18n="s5.plans">이용권</h2>
         <div class="plans">
             <section class="plan" aria-labelledby="plan-week-t">
-                <h3 class="card-title" id="plan-week-t"><span>1주 이용권</span></h3>
+                <h3 class="card-title" id="plan-week-t"><span data-i18n="s5.p.week">1주 이용권</span></h3>
                 <div class="card-body bg-sage">
                     <p class="plan-price">$2</p>
                     <ul>
-                        <li>결제 후 7일 동안</li>
-                        <li>최근 5개월 통계 11종</li>
-                        <li>라이선스 키 1개</li>
+                        <li data-i18n="s5.f.week7">결제 후 7일 동안</li>
+                        <li data-i18n="s5.f.eleven">최근 5개월 통계 11종</li>
+                        <li data-i18n="s5.f.key">라이선스 키 1개</li>
                     </ul>
-                    <a class="btn" data-plan="week">결제하기</a>
+                    <a class="btn" data-plan="week" data-i18n="s5.buy">결제하기</a>
                 </div>
             </section>
             <section class="plan featured" aria-labelledby="plan-sub-t">
-                <h3 class="card-title" id="plan-sub-t"><span>월 구독</span></h3>
+                <h3 class="card-title" id="plan-sub-t"><span data-i18n="s5.p.sub">월 구독</span></h3>
                 <div class="card-body">
-                    <p class="plan-price">$4<small>/월</small></p>
+                    <p class="plan-price">$4<small data-i18n="s5.perMonth">/월</small></p>
                     <ul>
-                        <li>매달 자동 갱신</li>
-                        <li>최근 5개월 통계 11종</li>
-                        <li>언제든 해지 가능</li>
+                        <li data-i18n="s5.f.autorenew">매달 자동 갱신</li>
+                        <li data-i18n="s5.f.eleven">최근 5개월 통계 11종</li>
+                        <li data-i18n="s5.f.cancel">언제든 해지 가능</li>
                     </ul>
-                    <a class="btn" data-plan="sub">결제하기</a>
-                    <p class="plan-note">해지할 때까지 매달 $4가 결제됩니다. 해지하면 이미 결제한 기간까지 이용하고 다음 결제부터 청구되지 않습니다.</p>
+                    <a class="btn" data-plan="sub" data-i18n="s5.buy">결제하기</a>
+                    <p class="plan-note" data-i18n="s5.subNote">해지할 때까지 매달 $4가 결제됩니다. 해지하면 이미 결제한 기간까지 이용하고 다음 결제부터 청구되지 않습니다.</p>
                 </div>
             </section>
             <section class="plan" aria-labelledby="plan-month-t">
-                <h3 class="card-title" id="plan-month-t"><span>1개월 이용권</span></h3>
+                <h3 class="card-title" id="plan-month-t"><span data-i18n="s5.p.month">1개월 이용권</span></h3>
                 <div class="card-body">
                     <p class="plan-price">$5</p>
                     <ul>
-                        <li>결제 후 30일 동안</li>
-                        <li>최근 5개월 통계 11종</li>
-                        <li>라이선스 키 1개</li>
+                        <li data-i18n="s5.f.days30">결제 후 30일 동안</li>
+                        <li data-i18n="s5.f.eleven">최근 5개월 통계 11종</li>
+                        <li data-i18n="s5.f.key">라이선스 키 1개</li>
                     </ul>
-                    <a class="btn" data-plan="month">결제하기</a>
+                    <a class="btn" data-plan="month" data-i18n="s5.buy">결제하기</a>
                 </div>
             </section>
             <section class="plan" aria-labelledby="plan-lifetime-t">
-                <h3 class="card-title" id="plan-lifetime-t"><span>평생 이용권</span></h3>
+                <h3 class="card-title" id="plan-lifetime-t"><span data-i18n="s5.p.lifetime">평생 이용권</span></h3>
                 <div class="card-body bg-lime">
                     <p class="plan-price">$10</p>
                     <ul>
-                        <li>기간 제한 없음 (사이트 운영 기간)</li>
-                        <li>최근 5개월 통계 11종</li>
-                        <li>라이선스 키 1개</li>
+                        <li data-i18n="s5.f.forever">기간 제한 없음 (사이트 운영 기간)</li>
+                        <li data-i18n="s5.f.eleven">최근 5개월 통계 11종</li>
+                        <li data-i18n="s5.f.key">라이선스 키 1개</li>
                     </ul>
-                    <a class="btn" data-plan="lifetime">결제하기</a>
+                    <a class="btn" data-plan="lifetime" data-i18n="s5.buy">결제하기</a>
                 </div>
             </section>
         </div>
 
         <div>
             <section class="card" aria-labelledby="unlock-title">
-                <h3 class="card-title" id="unlock-title"><span>이미 결제했어요</span><small>라이선스 키로 잠금 해제</small></h3>
+                <h3 class="card-title" id="unlock-title"><span data-i18n="s5.have">이미 결제했어요</span><small data-i18n="s5.haveSub">라이선스 키로 잠금 해제</small></h3>
                 <div class="card-body bg-steel">
                     <form class="license-form" id="license-form">
-                        <label class="sr-only" for="license-key">라이선스 키</label>
-                        <input type="text" id="license-key" autocomplete="off" spellcheck="false" maxlength="200" placeholder="결제 메일에 있는 라이선스 키">
-                        <button type="submit" class="btn" id="license-submit">잠금 해제</button>
+                        <label class="sr-only" for="license-key" data-i18n="s5.keyLabel">라이선스 키</label>
+                        <input type="text" id="license-key" autocomplete="off" spellcheck="false" maxlength="200" placeholder="결제 메일에 있는 라이선스 키" data-i18n-attr="placeholder:s5.keyPlaceholder">
+                        <button type="submit" class="btn" id="license-submit" data-i18n="s5.unlock">잠금 해제</button>
                     </form>
                     <p class="license-status" id="license-status" role="status" aria-live="polite"></p>
                     <p class="card-note">
-                        키는 결제 확인 메일에서 볼 수 있습니다. <a data-portal hidden target="_blank" rel="noopener">월 구독 해지와 영수증은 Polar 고객 포털에서 확인하세요.</a> 입력한 키는 유효한지 확인하기 위해 결제대행사 Polar에만 보내고,
-                        다시 입력하지 않도록 이 브라우저에 저장합니다. 환불 기준은 <a href="terms.html">이용약관</a>, 문제가 있으면 <a href="contact.html">문의</a>로 알려 주세요.
+                        키는 결제 확인 메일에서 볼 수 있습니다. <a data-portal hidden target="_blank" rel="noopener" data-i18n="s5.portalLink">월 구독 해지와 영수증은 Polar 고객 포털에서 확인하세요.</a> 입력한 키는 유효한지 확인하기 위해 결제대행사 Polar에만 보내고,
+                        다시 입력하지 않도록 이 브라우저에 저장합니다. 환불 기준은 <a href="terms.html" data-i18n="footer.terms">이용약관</a>, 문제가 있으면 <a href="contact.html" data-i18n="footer.contact">문의</a>로 알려 주세요.
                     </p>
                 </div>
             </section>
@@ -142,38 +147,38 @@
              어긋나면 결제 전에 본 것과 결제 후에 받는 것이 달라진다. -->
         <div class="locked-preview" aria-hidden="true">
             <div class="stat-grid">
-                <section class="card span-2"><h3 class="card-title"><span>1. 번호별 출현 횟수</span></h3><div class="card-body" style="height: 110px;"></div></section>
-                <section class="card span-2"><h3 class="card-title"><span>2. 보너스 번호 출현 횟수</span></h3><div class="card-body" style="height: 110px;"></div></section>
-                <section class="card"><h3 class="card-title"><span>3. 홀짝 비율</span></h3><div class="card-body" style="height: 110px;"></div></section>
-                <section class="card"><h3 class="card-title"><span>4. 저고 비율</span></h3><div class="card-body" style="height: 110px;"></div></section>
-                <section class="card"><h3 class="card-title"><span>5. 연속번호</span></h3><div class="card-body" style="height: 110px;"></div></section>
-                <section class="card"><h3 class="card-title"><span>6. 번호 합계 분포</span></h3><div class="card-body" style="height: 110px;"></div></section>
-                <section class="card"><h3 class="card-title"><span>7. 1등 당첨자 수</span></h3><div class="card-body" style="height: 110px;"></div></section>
-                <section class="card"><h3 class="card-title"><span>8. 기간 중 많이·적게 나온 번호</span></h3><div class="card-body" style="height: 110px;"></div></section>
-                <section class="card"><h3 class="card-title"><span>9. 함께 나온 번호 쌍 Top 10</span></h3><div class="card-body" style="height: 110px;"></div></section>
-                <section class="card"><h3 class="card-title"><span>10. AC값 분포</span></h3><div class="card-body" style="height: 110px;"></div></section>
-                <section class="card"><h3 class="card-title"><span>11. 끝자리 분포</span></h3><div class="card-body" style="height: 110px;"></div></section>
-                <section class="card span-2"><h3 class="card-title"><span>최근 22회차 당첨번호</span></h3><div class="card-body" style="height: 110px;"></div></section>
+                <section class="card span-2"><h3 class="card-title"><span data-i18n-en="1. Number frequency">1. 번호별 출현 횟수</span></h3><div class="card-body" style="height: 110px;"></div></section>
+                <section class="card span-2"><h3 class="card-title"><span data-i18n-en="2. Bonus-ball frequency">2. 보너스 번호 출현 횟수</span></h3><div class="card-body" style="height: 110px;"></div></section>
+                <section class="card"><h3 class="card-title"><span data-i18n-en="3. Odd / even split">3. 홀짝 비율</span></h3><div class="card-body" style="height: 110px;"></div></section>
+                <section class="card"><h3 class="card-title"><span data-i18n-en="4. Low / high split">4. 저고 비율</span></h3><div class="card-body" style="height: 110px;"></div></section>
+                <section class="card"><h3 class="card-title"><span data-i18n-en="5. Consecutive numbers">5. 연속번호</span></h3><div class="card-body" style="height: 110px;"></div></section>
+                <section class="card"><h3 class="card-title"><span data-i18n-en="6. Sum distribution">6. 번호 합계 분포</span></h3><div class="card-body" style="height: 110px;"></div></section>
+                <section class="card"><h3 class="card-title"><span data-i18n-en="7. First-prize winners">7. 1등 당첨자 수</span></h3><div class="card-body" style="height: 110px;"></div></section>
+                <section class="card"><h3 class="card-title"><span data-i18n-en="8. Most and least frequent in the period">8. 기간 중 많이·적게 나온 번호</span></h3><div class="card-body" style="height: 110px;"></div></section>
+                <section class="card"><h3 class="card-title"><span data-i18n-en="9. Top 10 number pairs">9. 함께 나온 번호 쌍 Top 10</span></h3><div class="card-body" style="height: 110px;"></div></section>
+                <section class="card"><h3 class="card-title"><span data-i18n-en="10. AC value distribution">10. AC값 분포</span></h3><div class="card-body" style="height: 110px;"></div></section>
+                <section class="card"><h3 class="card-title"><span data-i18n-en="11. Last-digit distribution">11. 끝자리 분포</span></h3><div class="card-body" style="height: 110px;"></div></section>
+                <section class="card span-2"><h3 class="card-title"><span data-i18n-en="Winning numbers, last 22 draws">최근 22회차 당첨번호</span></h3><div class="card-body" style="height: 110px;"></div></section>
             </div>
         </div>
     </section>
 
     <section id="premium" hidden aria-labelledby="premium-title">
-        <h2 class="sr-only" id="premium-title">최근 5개월 통계</h2>
+        <h2 class="sr-only" id="premium-title" data-i18n="s5.h1">최근 5개월 통계</h2>
         <div class="license-bar">
             <span id="license-summary"></span>
             <span class="license-actions">
-                <a class="btn btn-secondary" data-portal hidden target="_blank" rel="noopener">구독 관리 · 영수증</a>
-                <button type="button" class="btn btn-secondary" id="license-clear">이 브라우저에서 키 지우기</button>
+                <a class="btn btn-secondary" data-portal hidden target="_blank" rel="noopener" data-i18n="s5.portal">구독 관리 · 영수증</a>
+                <button type="button" class="btn btn-secondary" id="license-clear" data-i18n="s5.clear">이 브라우저에서 키 지우기</button>
             </span>
         </div>
         <div class="stat-grid" id="stat-grid">
-            <p class="stats-loading">통계를 계산하는 중…</p>
+            <p class="stats-loading" data-i18n="s5.calc">통계를 계산하는 중…</p>
         </div>
         <div class="insight-grid" id="insight-grid"></div>
-        <h2 class="section-head">상세 분석</h2>
+        <h2 class="section-head" data-i18n="s5.detail.h">상세 분석</h2>
         <div class="stat-grid" id="detail-grid"></div>
-        <p class="page-disclaimer">
+        <p class="page-disclaimer" data-i18n="s5.disclaimer">
             이 페이지의 통계와 조합은 지난 기록을 정리한 것입니다. 어떤 6개를 고르든 1등 확률은 1/8,145,060으로 같고,
             이 사이트는 다음 회차를 예측하지 않습니다.
         </p>
@@ -181,15 +186,15 @@
 
     <footer class="footer">
         <ul class="footer-nav">
-            <li><a href="index.html">HOME</a></li>
-            <li><a href="draws.html">당첨번호</a></li>
-            <li><a href="statistics.html">5개월 통계</a></li>
-            <li><a href="top-prize.html">TOP 50</a></li>
-            <li><a href="tax.html">실수령액</a></li>
-            <li><a href="about.html">ABOUT</a></li>
+            <li><a href="index.html" data-i18n="footer.home">HOME</a></li>
+            <li><a href="draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="top-prize.html" data-i18n="footer.top">TOP 50</a></li>
+            <li><a href="tax.html" data-i18n="footer.tax">실수령액</a></li>
+            <li><a href="about.html" data-i18n="nav.about">ABOUT</a></li>
         </ul>
-        <p><a href="privacy.html">개인정보 처리방침</a> · <a href="terms.html">이용약관</a> · <a href="contact.html">문의</a></p>
-        <p>&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권 · 결제 대행: Polar</p>
+        <p><a href="privacy.html" data-i18n="footer.privacy">개인정보 처리방침</a> · <a href="terms.html" data-i18n="footer.terms">이용약관</a> · <a href="contact.html" data-i18n="footer.contact">문의</a></p>
+        <p data-i18n-html="footer.copyPay">&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권 · 결제 대행: Polar</p>
     </footer>
 </div>
 

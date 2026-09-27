@@ -17,99 +17,104 @@
     <link rel="canonical" href="https://www.lottodraw.kr/tax.html">
     <meta name="google-adsense-account" content="ca-pub-9372871176021283">
     <link rel="stylesheet" href="css/site.css">
+    <script src="js/i18n-dict.js"></script>
+    <script src="js/i18n.js"></script>
 </head>
 <body>
 <div class="page">
     <header class="banner">
         <a class="brand" href="index.html">
             <span class="brand-name">LOTTODRAW.KR</span>
-            <span class="brand-tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
+            <span class="brand-tag" data-i18n="brand.tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
         </a>
         <div class="banner-right">
-            <p class="latest-callout" id="latest-callout">최신 회차 불러오는 중…</p>
-            <a class="sticker" href="statistics.html">최근 <b>5개월</b> 통계</a>
+            <p class="latest-callout" id="latest-callout" data-i18n="header.latestLoading">최신 회차 불러오는 중…</p>
+            <a class="sticker" href="statistics.html" data-i18n-html="header.sticker">최근 <b>5개월</b> 통계</a>
+            <div class="lang-switch" role="group" aria-label="Language">
+                <button type="button" data-lang-btn="ko">KO</button><button type="button" data-lang-btn="en">EN</button>
+            </div>
         </div>
     </header>
 
-    <nav class="nav" aria-label="주 메뉴">
+    <nav class="nav" aria-label="주 메뉴" data-i18n-attr="aria-label:nav.aria">
         <ul>
-            <li><a href="index.html">생성기 · 통계</a></li>
-            <li><a href="draws.html">당첨번호</a></li>
-            <li><a href="statistics.html">5개월 통계</a></li>
-            <li><a href="top-prize.html">TOP 50 당첨금</a></li>
-            <li><a href="tax.html" aria-current="page">실수령액 계산</a></li>
-            <li><a href="about.html">ABOUT</a></li>
+            <li><a href="index.html" data-i18n="nav.index">생성기 · 통계</a></li>
+            <li><a href="draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="top-prize.html" data-i18n="nav.topPrize">TOP 50 당첨금</a></li>
+            <li><a href="tax.html" aria-current="page" data-i18n="nav.tax">실수령액 계산</a></li>
+            <li><a href="about.html" data-i18n="nav.about">ABOUT</a></li>
         </ul>
     </nav>
 
     <main class="prose">
-        <h1>실수령액 계산기</h1>
-        <p class="intro">당첨금액을 입력하면 세금과 실수령액을 바로 계산해 드려요.</p>
+        <h1 data-i18n="tax.h1">실수령액 계산기</h1>
+        <p class="intro" data-i18n="tax.intro">당첨금액을 입력하면 세금과 실수령액을 바로 계산해 드려요.</p>
 
         <div class="calc-form">
-            <label for="prizeInput">당첨금액 (원)</label>
-            <input type="number" id="prizeInput" placeholder="예: 200000000" min="0" inputmode="numeric">
-            <button type="button" class="btn" id="calc-btn">계산하기</button>
+            <label for="prizeInput" data-i18n="tax.label">당첨금액 (원)</label>
+            <input type="number" id="prizeInput" placeholder="예: 200000000" min="0" inputmode="numeric" data-i18n-attr="placeholder:tax.placeholder">
+            <button type="button" class="btn" id="calc-btn" data-i18n="tax.calc">계산하기</button>
         </div>
         <p class="calc-error" id="calc-error" role="alert"></p>
 
         <div class="calc-result" id="resultBox" hidden aria-live="polite">
-            <p><strong>당첨금액:</strong> <span id="prizeAmount"></span> 원</p>
-            <p><strong>세율:</strong> <span id="taxRate"></span></p>
-            <p><strong>세금:</strong> <span id="taxAmount"></span> 원</p>
-            <p><strong>실수령액:</strong> <span class="calc-net" id="netAmount"></span> 원</p>
+            <p><strong data-i18n="tax.r.prize">당첨금액:</strong> <span id="prizeAmount"></span> <span data-i18n="tax.won">원</span></p>
+            <p><strong data-i18n="tax.r.rate">세율:</strong> <span id="taxRate"></span></p>
+            <p><strong data-i18n="tax.r.tax">세금:</strong> <span id="taxAmount"></span> <span data-i18n="tax.won">원</span></p>
+            <p><strong data-i18n="tax.r.net">실수령액:</strong> <span class="calc-net" id="netAmount"></span> <span data-i18n="tax.won">원</span></p>
         </div>
 
-        <h2>로또 1등 당첨금, 세금은 얼마나 낼까?</h2>
-        <p>로또 6/45 1등에 당첨되면 꿈같은 거액이 들어오지만, 세금을 빼고 나면 실수령액이 생각보다 적을 수 있습니다.</p>
+        <h2 data-i18n="tax.h2">로또 1등 당첨금, 세금은 얼마나 낼까?</h2>
+        <p data-i18n="tax.lead">로또 6/45 1등에 당첨되면 꿈같은 거액이 들어오지만, 세금을 빼고 나면 실수령액이 생각보다 적을 수 있습니다.</p>
 
-        <h3>당첨금 세율 정리</h3>
+        <h3 data-i18n="tax.rates.h">당첨금 세율 정리</h3>
         <ul>
-            <li><strong>200만 원 이하</strong>: 세금 0% → 전액 수령</li>
-            <li><strong>200만 원 초과 ~ 3억 원 이하</strong>: 22% 세금 (지방소득세 포함)</li>
-            <li><strong>3억 원 초과</strong>: 3억 원까지는 22%, <strong>3억 원을 넘는 부분만</strong> 33% (지방소득세 포함)</li>
-            <li>세금은 당첨금에서 구입비 1,000원을 뺀 금액에 매깁니다.</li>
+            <li data-i18n-html="tax.rate1"><strong>200만 원 이하</strong>: 세금 0% → 전액 수령</li>
+            <li data-i18n-html="tax.rate2"><strong>200만 원 초과 ~ 3억 원 이하</strong>: 22% 세금 (지방소득세 포함)</li>
+            <li data-i18n-html="tax.rate3"><strong>3억 원 초과</strong>: 3억 원까지는 22%, <strong>3억 원을 넘는 부분만</strong> 33% (지방소득세 포함)</li>
+            <li data-i18n="tax.rate4">세금은 당첨금에서 구입비 1,000원을 뺀 금액에 매깁니다.</li>
         </ul>
 
-        <h3>실제 실수령액 예시</h3>
+        <h3 data-i18n="tax.ex.h">실제 실수령액 예시</h3>
         <div class="table-scroll">
             <table class="data-table">
                 <thead>
-                    <tr><th>당첨금 (1인 몫)</th><th>세율</th><th>세금</th><th>실수령액</th></tr>
+                    <tr><th data-i18n="tax.th.prize">당첨금 (1인 몫)</th><th data-i18n="tax.th.rate">세율</th><th data-i18n="tax.th.tax">세금</th><th data-i18n="tax.th.net">실수령액</th></tr>
                 </thead>
                 <tbody>
-                    <tr><td>20억 원</td><td>3억까지 22% + 초과분 33%</td><td>약 6억 2,700만 원</td><td>약 13억 7,300만 원</td></tr>
-                    <tr><td>5억 원</td><td>3억까지 22% + 초과분 33%</td><td>약 1억 3,200만 원</td><td>약 3억 6,800만 원</td></tr>
-                    <tr><td>2억 원</td><td>22%</td><td>약 4,400만 원</td><td>약 1억 5,600만 원</td></tr>
-                    <tr><td>1억 원</td><td>22%</td><td>2,200만 원</td><td>약 7,800만 원</td></tr>
-                    <tr><td>1,000만 원</td><td>22%</td><td>220만 원</td><td>약 780만 원</td></tr>
-                    <tr><td>100만 원</td><td>0%</td><td>0원</td><td>100만 원</td></tr>
+                    <tr><td data-i18n-en="2.0 bn KRW">20억 원</td><td data-i18n-en="22% up to 300m + 33% above">3억까지 22% + 초과분 33%</td><td data-i18n-en="approx. 627m KRW">약 6억 2,700만 원</td><td data-i18n-en="approx. 1.373 bn KRW">약 13억 7,300만 원</td></tr>
+                    <tr><td data-i18n-en="500m KRW">5억 원</td><td data-i18n-en="22% up to 300m + 33% above">3억까지 22% + 초과분 33%</td><td data-i18n-en="approx. 132m KRW">약 1억 3,200만 원</td><td data-i18n-en="approx. 368m KRW">약 3억 6,800만 원</td></tr>
+                    <tr><td data-i18n-en="200m KRW">2억 원</td><td data-i18n-en="22%">22%</td><td data-i18n-en="approx. 44m KRW">약 4,400만 원</td><td data-i18n-en="approx. 156m KRW">약 1억 5,600만 원</td></tr>
+                    <tr><td data-i18n-en="100m KRW">1억 원</td><td data-i18n-en="22%">22%</td><td data-i18n-en="22m KRW">2,200만 원</td><td data-i18n-en="approx. 78m KRW">약 7,800만 원</td></tr>
+                    <tr><td data-i18n-en="10m KRW">1,000만 원</td><td data-i18n-en="22%">22%</td><td data-i18n-en="2.2m KRW">220만 원</td><td data-i18n-en="approx. 7.8m KRW">약 780만 원</td></tr>
+                    <tr><td data-i18n-en="1m KRW">100만 원</td><td data-i18n-en="0%">0%</td><td data-i18n-en="0">0원</td><td data-i18n-en="1m KRW">100만 원</td></tr>
                 </tbody>
             </table>
         </div>
-        <p class="note">* 위 금액은 대략적인 계산치이며, 정확한 실수령액은 세무서나 동행복권에 문의하세요.</p>
+        <p class="note" data-i18n="tax.note">* 위 금액은 대략적인 계산치이며, 정확한 실수령액은 세무서나 동행복권에 문의하세요.</p>
 
-        <h3>추가 팁</h3>
+        <h3 data-i18n="tax.tip.h">추가 팁</h3>
         <ul>
-            <li>당첨금은 1년 이내에 수령해야 합니다. 미수령 시 복권기금으로 귀속됩니다.</li>
-            <li>1등 당첨 시 세금은 자동 공제되므로, 받는 금액이 이미 세후 금액입니다.</li>
-            <li>세율은 매년 변동될 수 있으니 최신 정보는 국세청 홈페이지를 확인하세요.</li>
+            <li data-i18n="tax.tip1">당첨금은 1년 이내에 수령해야 합니다. 미수령 시 복권기금으로 귀속됩니다.</li>
+            <li data-i18n="tax.tip2">1등 당첨 시 세금은 자동 공제되므로, 받는 금액이 이미 세후 금액입니다.</li>
+            <li data-i18n="tax.tip3">세율은 매년 변동될 수 있으니 최신 정보는 국세청 홈페이지를 확인하세요.</li>
         </ul>
 
-        <p class="page-actions"><a class="btn" href="index.html">홈으로 돌아가기</a></p>
+        <p class="page-actions"><a class="btn" href="index.html" data-i18n="about.back">홈으로 돌아가기</a></p>
     </main>
 
     <footer class="footer">
         <ul class="footer-nav">
-            <li><a href="index.html">HOME</a></li>
-            <li><a href="draws.html">당첨번호</a></li>
-            <li><a href="statistics.html">5개월 통계</a></li>
-            <li><a href="top-prize.html">TOP 50</a></li>
-            <li><a href="tax.html">실수령액</a></li>
-            <li><a href="about.html">ABOUT</a></li>
+            <li><a href="index.html" data-i18n="footer.home">HOME</a></li>
+            <li><a href="draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="top-prize.html" data-i18n="footer.top">TOP 50</a></li>
+            <li><a href="tax.html" data-i18n="footer.tax">실수령액</a></li>
+            <li><a href="about.html" data-i18n="nav.about">ABOUT</a></li>
         </ul>
-        <p><a href="privacy.html">개인정보 처리방침</a> · <a href="terms.html">이용약관</a> · <a href="contact.html">문의</a></p>
-        <p>&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권</p>
+        <p><a href="privacy.html" data-i18n="footer.privacy">개인정보 처리방침</a> · <a href="terms.html" data-i18n="footer.terms">이용약관</a> · <a href="contact.html" data-i18n="footer.contact">문의</a></p>
+        <p data-i18n-html="footer.copy">&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권</p>
     </footer>
 </div>
 
@@ -124,7 +129,7 @@
         const prize = Number(input);
 
         if (!input || !isFinite(prize) || prize <= 0) {
-            errorBox.textContent = '올바른 당첨금액을 숫자로 입력해 주세요.';
+            errorBox.textContent = I18N.t('tax.err');
             resultBox.hidden = true;
             return;
         }
@@ -138,7 +143,7 @@
         if (prize > 2000000) {
             const base = Math.max(0, prize - 1000);
             tax = Math.floor(Math.min(base, 300000000) * 0.22 + Math.max(0, base - 300000000) * 0.33);
-            taxRate = base > 300000000 ? '3억 원까지 22% + 초과분 33%' : '22%';
+            taxRate = base > 300000000 ? I18N.t('tax.rate.split') : '22%';
         }
 
         document.getElementById('prizeAmount').textContent = prize.toLocaleString();

@@ -17,69 +17,74 @@
     <link rel="canonical" href="https://www.lottodraw.kr/top-prize.html">
     <meta name="google-adsense-account" content="ca-pub-9372871176021283">
     <link rel="stylesheet" href="css/site.css">
+    <script src="js/i18n-dict.js"></script>
+    <script src="js/i18n.js"></script>
 </head>
 <body>
 <div class="page">
     <header class="banner">
         <a class="brand" href="index.html">
             <span class="brand-name">LOTTODRAW.KR</span>
-            <span class="brand-tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
+            <span class="brand-tag" data-i18n="brand.tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
         </a>
         <div class="banner-right">
-            <p class="latest-callout" id="latest-callout">최신 회차 불러오는 중…</p>
-            <a class="sticker" href="statistics.html">최근 <b>5개월</b> 통계</a>
+            <p class="latest-callout" id="latest-callout" data-i18n="header.latestLoading">최신 회차 불러오는 중…</p>
+            <a class="sticker" href="statistics.html" data-i18n-html="header.sticker">최근 <b>5개월</b> 통계</a>
+            <div class="lang-switch" role="group" aria-label="Language">
+                <button type="button" data-lang-btn="ko">KO</button><button type="button" data-lang-btn="en">EN</button>
+            </div>
         </div>
     </header>
 
-    <nav class="nav" aria-label="주 메뉴">
+    <nav class="nav" aria-label="주 메뉴" data-i18n-attr="aria-label:nav.aria">
         <ul>
-            <li><a href="index.html">생성기 · 통계</a></li>
-            <li><a href="draws.html">당첨번호</a></li>
-            <li><a href="statistics.html">5개월 통계</a></li>
-            <li><a href="top-prize.html" aria-current="page">TOP 50 당첨금</a></li>
-            <li><a href="tax.html">실수령액 계산</a></li>
-            <li><a href="about.html">ABOUT</a></li>
+            <li><a href="index.html" data-i18n="nav.index">생성기 · 통계</a></li>
+            <li><a href="draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="top-prize.html" aria-current="page" data-i18n="nav.topPrize">TOP 50 당첨금</a></li>
+            <li><a href="tax.html" data-i18n="nav.tax">실수령액 계산</a></li>
+            <li><a href="about.html" data-i18n="nav.about">ABOUT</a></li>
         </ul>
     </nav>
 
     <main class="prose wide">
-        <h1>역대 로또 6/45 1등 당첨금 TOP 50</h1>
-        <p class="intro" id="subtitle" aria-live="polite">불러오는 중…</p>
+        <h1 data-i18n="top.h1">역대 로또 6/45 1등 당첨금 TOP 50</h1>
+        <p class="intro" id="subtitle" aria-live="polite" data-i18n="top.loading">불러오는 중…</p>
 
         <div class="table-scroll">
             <table class="data-table" id="topPrizeTable">
                 <thead>
                     <tr>
-                        <th>순위</th>
-                        <th>회차</th>
-                        <th>1인당 당첨금 (약)</th>
-                        <th>당첨자 수</th>
-                        <th>총 1등 당첨금 (정확)</th>
+                        <th data-i18n="top.th.rank">순위</th>
+                        <th data-i18n="top.th.round">회차</th>
+                        <th data-i18n="top.th.each">1인당 당첨금 (약)</th>
+                        <th data-i18n="top.th.winners">당첨자 수</th>
+                        <th data-i18n="top.th.total">총 1등 당첨금 (정확)</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
             </table>
         </div>
 
-        <p class="note">
+        <p class="note" data-i18n-html="top.note">
             * 1인당 당첨금은 가독성을 위해 “억 원” 단위로 표시합니다.<br>
             * 총 1등 당첨금은 1원 단위까지 정확한 금액입니다.
         </p>
 
-        <p class="page-actions"><a class="btn" href="index.html">번호 생성하러 돌아가기</a></p>
+        <p class="page-actions"><a class="btn" href="index.html" data-i18n="top.back">번호 생성하러 돌아가기</a></p>
     </main>
 
     <footer class="footer">
         <ul class="footer-nav">
-            <li><a href="index.html">HOME</a></li>
-            <li><a href="draws.html">당첨번호</a></li>
-            <li><a href="statistics.html">5개월 통계</a></li>
-            <li><a href="top-prize.html">TOP 50</a></li>
-            <li><a href="tax.html">실수령액</a></li>
-            <li><a href="about.html">ABOUT</a></li>
+            <li><a href="index.html" data-i18n="footer.home">HOME</a></li>
+            <li><a href="draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="top-prize.html" data-i18n="footer.top">TOP 50</a></li>
+            <li><a href="tax.html" data-i18n="footer.tax">실수령액</a></li>
+            <li><a href="about.html" data-i18n="nav.about">ABOUT</a></li>
         </ul>
-        <p><a href="privacy.html">개인정보 처리방침</a> · <a href="terms.html">이용약관</a> · <a href="contact.html">문의</a></p>
-        <p>&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권</p>
+        <p><a href="privacy.html" data-i18n="footer.privacy">개인정보 처리방침</a> · <a href="terms.html" data-i18n="footer.terms">이용약관</a> · <a href="contact.html" data-i18n="footer.contact">문의</a></p>
+        <p data-i18n-html="footer.copy">&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권</p>
     </footer>
 </div>
 
@@ -91,7 +96,9 @@
         .then(data => {
             const totalRounds = data.draws.length;
             subtitle.innerHTML =
-                `(1인당 실수령액 기준 / 최신 <strong>${totalRounds}</strong>회차까지 자동 업데이트)`;
+                I18N.lang === 'ko'
+                    ? `(1인당 실수령액 기준 / 최신 <strong>${totalRounds}</strong>회차까지 자동 업데이트)`
+                    : `(amount per winner / updated automatically through draw <strong>${totalRounds}</strong>)`;
 
             const sorted = [...data.draws]
                 .sort((a, b) => b.firstPrizeAmount - a.firstPrizeAmount)
@@ -108,17 +115,21 @@
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td><strong>${index + 1}</strong></td>
-                    <td>${draw.round}회</td>
-                    <td>${(onePerson / 100000000).toFixed(0)}억 원</td>
-                    <td>${winners}명</td>
-                    <td style="font-weight:bold;">${totalPrize.toLocaleString()} 원</td>
+                    <td>${I18N.lang === 'ko' ? draw.round + '회' : '#' + draw.round}</td>
+                    <td>${I18N.lang === 'ko'
+                        ? (onePerson / 100000000).toFixed(0) + '억 원'
+                        : onePerson >= 1e9
+                            ? (onePerson / 1e9).toFixed(2) + ' bn KRW'
+                            : Math.round(onePerson / 1e6) + 'm KRW'}</td>
+                    <td>${winners}${I18N.t('top.people')}</td>
+                    <td style="font-weight:bold;">${totalPrize.toLocaleString()} ${I18N.t('tax.won')}</td>
                 `;
                 tbody.appendChild(tr);
             });
         })
         .catch(err => {
             console.error(err);
-            subtitle.textContent = '데이터를 불러오지 못했습니다. 잠시 뒤 새로고침해 주세요.';
+            subtitle.textContent = I18N.t('top.loadFail');
             subtitle.classList.add('error');
         });
 </script>

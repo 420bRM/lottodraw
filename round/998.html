@@ -19,6 +19,8 @@
     <meta name="twitter:image" content="https://www.lottodraw.kr/img/og-default.png">
     <meta name="google-adsense-account" content="ca-pub-9372871176021283">
     <link rel="stylesheet" href="../css/site.css">
+    <script src="../js/i18n-dict.js"></script>
+    <script src="../js/i18n.js"></script>
     <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://www.lottodraw.kr/"},{"@type":"ListItem","position":2,"name":"회차별 당첨번호","item":"https://www.lottodraw.kr/draws.html"},{"@type":"ListItem","position":3,"name":"998회","item":"https://www.lottodraw.kr/round/998.html"}]}]}</script>
 </head>
 <body>
@@ -26,26 +28,29 @@
     <header class="banner">
         <a class="brand" href="../index.html">
             <span class="brand-name">LOTTODRAW.KR</span>
-            <span class="brand-tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
+            <span class="brand-tag" data-i18n="brand.tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
         </a>
         <div class="banner-right">
-            <a class="sticker" href="../statistics.html">최근 <b>5개월</b> 통계</a>
+            <a class="sticker" href="../statistics.html" data-i18n-html="header.sticker">최근 <b>5개월</b> 통계</a>
+            <div class="lang-switch" role="group" aria-label="Language">
+                <button type="button" data-lang-btn="ko">KO</button><button type="button" data-lang-btn="en">EN</button>
+            </div>
         </div>
     </header>
 
-    <nav class="nav" aria-label="주 메뉴">
+    <nav class="nav" aria-label="주 메뉴" data-i18n-attr="aria-label:nav.aria">
         <ul>
-            <li><a href="../index.html">생성기 · 통계</a></li>
-            <li><a href="../draws.html" aria-current="page">당첨번호</a></li>
-            <li><a href="../statistics.html">5개월 통계</a></li>
-            <li><a href="../top-prize.html">TOP 50 당첨금</a></li>
-            <li><a href="../tax.html">실수령액 계산</a></li>
-            <li><a href="../about.html">ABOUT</a></li>
+            <li><a href="../index.html" data-i18n="nav.index">생성기 · 통계</a></li>
+            <li><a href="../draws.html" aria-current="page" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="../statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="../top-prize.html" data-i18n="nav.topPrize">TOP 50 당첨금</a></li>
+            <li><a href="../tax.html" data-i18n="nav.tax">실수령액 계산</a></li>
+            <li><a href="../about.html" data-i18n="nav.about">ABOUT</a></li>
         </ul>
     </nav>
 
     <main class="prose stat-page">
-        <nav class="breadcrumb" aria-label="현재 위치"><a href="../index.html">홈</a> › <a href="../draws.html">회차별 당첨번호</a> › <span>998회</span></nav>
+        <nav class="breadcrumb" aria-label="현재 위치" data-i18n-attr="aria-label:crumb.aria"><a href="../index.html" data-i18n="crumb.home">홈</a> › <a href="../draws.html">회차별 당첨번호</a> › <span>998회</span></nav>
         <h1>로또 998회 당첨번호</h1>
         <p class="stat-scope">2022-01-15 추첨</p>
 
@@ -94,20 +99,20 @@
 
 <p>세후 금액은 구입비 1,000원을 뺀 뒤 3억 원까지 22%, 초과분 33%를 적용한 추정치입니다. <a href="../tax.html">실수령액 계산기</a>에서 금액을 바꿔 계산해 볼 수 있습니다.</p>
 
-        <p class="page-disclaimer">지난 추첨 기록을 정리한 것이며 다음 회차를 예측하지 않습니다. 어떤 6개를 고르든 1등 확률은 1/8,145,060으로 같습니다. 당첨번호 출처: 동행복권.</p>
+        <p class="page-disclaimer" data-i18n="disclaimer.page">지난 추첨 기록을 정리한 것이며 다음 회차를 예측하지 않습니다. 어떤 6개를 고르든 1등 확률은 1/8,145,060으로 같습니다. 당첨번호 출처: 동행복권.</p>
     </main>
 
     <footer class="footer">
         <ul class="footer-nav">
-            <li><a href="../index.html">HOME</a></li>
-            <li><a href="../draws.html">당첨번호</a></li>
-            <li><a href="../statistics.html">5개월 통계</a></li>
-            <li><a href="../top-prize.html">TOP 50</a></li>
-            <li><a href="../tax.html">실수령액</a></li>
-            <li><a href="../about.html">ABOUT</a></li>
+            <li><a href="../index.html" data-i18n="footer.home">HOME</a></li>
+            <li><a href="../draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="../statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="../top-prize.html" data-i18n="footer.top">TOP 50</a></li>
+            <li><a href="../tax.html" data-i18n="footer.tax">실수령액</a></li>
+            <li><a href="../about.html" data-i18n="nav.about">ABOUT</a></li>
         </ul>
-        <p><a href="../privacy.html">개인정보 처리방침</a> · <a href="../terms.html">이용약관</a> · <a href="../contact.html">문의</a></p>
-        <p>&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권</p>
+        <p><a href="../privacy.html" data-i18n="footer.privacy">개인정보 처리방침</a> · <a href="../terms.html" data-i18n="footer.terms">이용약관</a> · <a href="../contact.html" data-i18n="footer.contact">문의</a></p>
+        <p data-i18n-html="footer.copy">&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권</p>
     </footer>
 </div>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9372871176021283" crossorigin="anonymous"></script>

@@ -22,14 +22,20 @@
     ];
     // 0명(이월)을 따로 둔다. 예전 페이지는 `winners || 1` 로 이월 회차를 1명으로 셌다.
     const WINNER_BINS = [
-        { label: '0명 (이월)', max: 0 },
-        { label: '1명', max: 1 },
-        { label: '2명', max: 2 },
-        { label: '3~5명', max: 5 },
-        { label: '6~10명', max: 10 },
-        { label: '11명 이상', max: Infinity },
+        { label: '0명 (이월)', en: 'none (rollover)', max: 0 },
+        { label: '1명', en: '1 winner', max: 1 },
+        { label: '2명', en: '2 winners', max: 2 },
+        { label: '3~5명', en: '3–5 winners', max: 5 },
+        { label: '6~10명', en: '6–10 winners', max: 10 },
+        { label: '11명 이상', en: '11 or more', max: Infinity },
     ];
-    const STREAK_LABELS = ['연속 없음', '2연속', '3연속', '4연속', '5연속 이상'];
+    const STREAK_LABELS = [
+        { label: '연속 없음', en: 'none' },
+        { label: '2연속', en: '2 in a row' },
+        { label: '3연속', en: '3 in a row' },
+        { label: '4연속', en: '4 in a row' },
+        { label: '5연속 이상', en: '5 or more' },
+    ];
     // AC(Arithmetic Complexity): 6개 번호의 두 개씩 차이 15개 중 서로 다른 값의 개수에서
     // 5를 뺀 값. 0~10 이며 클수록 번호가 고르게 흩어져 있다는 뜻이다.
     const AC_MAX = 10;
@@ -175,11 +181,11 @@
             oldestDate: n ? list[n - 1].date || null : null,
             frequency: numberRows(freq),
             bonus: numberRows(bonus),
-            oddEven: [6, 5, 4, 3, 2, 1, 0].map(o => ({ label: `홀${o} 짝${6 - o}`, count: oddBy[o] })),
-            lowHigh: [6, 5, 4, 3, 2, 1, 0].map(l => ({ label: `저${l} 고${6 - l}`, count: lowBy[l] })),
-            consecutive: STREAK_LABELS.map((label, i) => ({ label: label, count: streak[i] })),
+            oddEven: [6, 5, 4, 3, 2, 1, 0].map(o => ({ label: `홀${o} 짝${6 - o}`, labelEn: `${o} odd / ${6 - o} even`, count: oddBy[o] })),
+            lowHigh: [6, 5, 4, 3, 2, 1, 0].map(l => ({ label: `저${l} 고${6 - l}`, labelEn: `${l} low / ${6 - l} high`, count: lowBy[l] })),
+            consecutive: STREAK_LABELS.map((b, i) => ({ label: b.label, labelEn: b.en, count: streak[i] })),
             sum: SUM_BINS.map((b, i) => ({ label: b.label, count: sums[i] })),
-            winners: WINNER_BINS.map((b, i) => ({ label: b.label, count: winners[i] })),
+            winners: WINNER_BINS.map((b, i) => ({ label: b.label, labelEn: b.en, count: winners[i] })),
             trend: { window: window, hot: hot, cold: cold },
             pairs: pairRows.slice(0, opts.pairTop || 10),
             ac: ac.map((count, v) => ({ label: 'AC ' + v, count: count })),
@@ -189,6 +195,7 @@
                 const candidates = (digit >= 1 && digit <= 5) ? 5 : 4;
                 return {
                     label: digit + '로 끝',
+                    labelEn: 'ends in ' + digit,
                     digit: digit,
                     candidates: candidates,
                     count: count,
