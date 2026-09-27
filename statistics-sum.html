@@ -51,12 +51,12 @@
     </nav>
 
     <main class="prose stat-page">
-        <nav class="breadcrumb" aria-label="현재 위치" data-i18n-attr="aria-label:crumb.aria"><a href="index.html" data-i18n="crumb.home">홈</a> › <a href="index.html#sec-stats">로또 통계</a> › <span>번호 합계</span></nav>
-        <h1>로또 당첨번호 합계 분포</h1>
-        <p class="stat-scope">1~1243회 · 2002-12-07 ~ 2026-09-26 · 매주 추첨 후 자동 갱신 (마지막 갱신 2026-09-26)</p>
-        <p class="stat-lead">1~1243회 당첨번호 합계의 평균은 <strong>138.3</strong>이고, 가장 많이 나온 구간은 <strong>120~139</strong>(25.0%)입니다. 이론 평균은 138입니다.</p>
+        <nav class="breadcrumb" aria-label="현재 위치" data-i18n-attr="aria-label:crumb.aria"><a href="index.html" data-i18n="crumb.home">홈</a> › <a href="index.html#sec-stats" data-i18n-en="Lotto statistics">로또 통계</a> › <span data-i18n-en="Sum of numbers">번호 합계</span></nav>
+        <h1 data-i18n-en="Distribution of the Sum of Winning Numbers">로또 당첨번호 합계 분포</h1>
+        <p class="stat-scope"><span data-i18n-en="Draws 1–1243 · 2002-12-07 ~ 2026-09-26 · updated automatically after each draw (last update 2026-09-26)">1~1243회 · 2002-12-07 ~ 2026-09-26 · 매주 추첨 후 자동 갱신 (마지막 갱신 2026-09-26)</span></p>
+        <p class="stat-lead"><span data-i18n-en="Across draws 1–1243 the winning numbers add up to &lt;strong&gt;138.3&lt;/strong&gt; on average, and the most common band is &lt;strong&gt;120~139&lt;/strong&gt; (25.0%). The theoretical average is 138.">1~1243회 당첨번호 합계의 평균은 <strong>138.3</strong>이고, 가장 많이 나온 구간은 <strong>120~139</strong>(25.0%)입니다. 이론 평균은 138입니다.</span></p>
 
-<h2>합계는 정규분포를 따른다</h2>
+<h2 data-i18n-en="The sum follows a normal distribution">합계는 정규분포를 따른다</h2>
 <p>번호 6개를 더한 값은 여러 수를 더한 값이라 가운데로 모이고 좌우가 대칭인 정규분포에 가까워집니다. 1~45에서 6개를 뽑으면 이론상 평균 138, 표준편차 29.9입니다. 막대는 실제 1~1243회의 합계를 10 단위로 센 것이고, 곡선은 이론 정규분포입니다.</p>
 <figure class="dist-figure">
 <svg class="dist-chart" viewBox="0 0 680 300" role="img" aria-label="당첨번호 합계 분포. 실제 평균 138.3, 이론 평균 138, 표준편차 29.9">
@@ -129,7 +129,7 @@
 </div>
 <p>당첨번호의 약 3분의 2는 합계가 <strong>109~167</strong> 사이였고, 79보다 작거나 197보다 큰 합계는 61회(4.9%)뿐이었습니다. 다만 합계가 가운데인 조합은 그만큼 <em>개수가 많을</em> 뿐, 조합 하나하나의 1등 확률은 모두 같습니다.</p>
 
-<h2>합계 구간별 나온 횟수</h2>
+<h2 data-i18n-en="How often each sum band came up">합계 구간별 나온 횟수</h2>
 
 <div class="table-scroll">
 <table class="data-table">
@@ -148,13 +148,13 @@
 
 <p>가장 작은 합계는 48, 가장 큰 합계는 238였습니다. 합계는 가운데로 몰리는 값이라 양 끝 구간은 드물게 나옵니다.</p>
 
-<p><a class="btn" href="index.html#stat-sum">홈에서 그래프로 보기</a></p>
+<p><a class="btn" href="index.html#stat-sum" data-i18n-en="See the chart on the home page">홈에서 그래프로 보기</a></p>
 
-<h2>다른 로또 통계</h2>
+<h2 data-i18n-en="Other statistics">다른 로또 통계</h2>
 
-<ul class="stat-links"><li><a href="statistics-frequency.html">많이 나온 번호 순위</a><span>1위 34번 186회 · 최소 9번 137회</span></li><li><a href="statistics-bonus.html">보너스 번호</a><span>최다 2번 36회 · 최소 29번 18회</span></li><li><a href="statistics-even-odd.html">홀짝 비율</a><span>최다 홀3 짝3 33.3%</span></li><li><a href="statistics-low-high.html">저고 비율</a><span>최다 저3 고3 33.0%</span></li><li><a href="statistics-consecutive.html">연속번호</a><span>연속번호 포함 51.7% (이론 52.9%)</span></li><li><a href="statistics-prize.html">1등 당첨자 수</a><span>이월 14회 · 평균 8.6명</span></li><li><a href="statistics-trend.html">최근 50회 많이·적게</a><span>최다 15번 11회 · 최소 14번 3회</span></li><li><a href="statistics-pair.html">궁합수 순위</a><span>1위 11·21번 34회</span></li><li><a href="statistics-gap.html">미출수 (장기 미출현)</a><span>1위 5번 · 30회차째 미출현</span></li><li><a href="statistics-ac.html">AC값</a><span>최다 AC 8 34.8%</span></li><li><a href="statistics-tail.html">끝수 · 끝수합</a><span>끝수합 평균 26.0 · 끝수 7 최다</span></li></ul>
+<ul class="stat-links"><li><a href="statistics-frequency.html" data-i18n-en="Most frequent numbers">많이 나온 번호 순위</a><span data-i18n-en="top 34 186× · lowest 9 137×">1위 34번 186회 · 최소 9번 137회</span></li><li><a href="statistics-bonus.html" data-i18n-en="Bonus ball">보너스 번호</a><span data-i18n-en="most 2 36× · fewest 29 18×">최다 2번 36회 · 최소 29번 18회</span></li><li><a href="statistics-even-odd.html" data-i18n-en="Odd / even split">홀짝 비율</a><span data-i18n-en="most common 3 odd / 3 even 33.3%">최다 홀3 짝3 33.3%</span></li><li><a href="statistics-low-high.html" data-i18n-en="Low / high split">저고 비율</a><span data-i18n-en="most common 3 low / 3 high 33.0%">최다 저3 고3 33.0%</span></li><li><a href="statistics-consecutive.html" data-i18n-en="Consecutive numbers">연속번호</a><span data-i18n-en="with a run 51.7% (theory 52.9%)">연속번호 포함 51.7% (이론 52.9%)</span></li><li><a href="statistics-prize.html" data-i18n-en="First-prize winners">1등 당첨자 수</a><span data-i18n-en="14 rollovers · 8.6 winners on average">이월 14회 · 평균 8.6명</span></li><li><a href="statistics-trend.html" data-i18n-en="Hot and cold, last 50 draws">최근 50회 많이·적게</a><span data-i18n-en="most 15 (11×) · fewest 14 (3×)">최다 15번 11회 · 최소 14번 3회</span></li><li><a href="statistics-pair.html" data-i18n-en="Number pairs">궁합수 순위</a><span data-i18n-en="top pair 11·21, 34×">1위 11·21번 34회</span></li><li><a href="statistics-gap.html" data-i18n-en="Longest absences">미출수 (장기 미출현)</a><span data-i18n-en="5 — absent for 30 draws">1위 5번 · 30회차째 미출현</span></li><li><a href="statistics-ac.html" data-i18n-en="AC value">AC값</a><span>최다 AC 8 34.8%</span></li><li><a href="statistics-tail.html" data-i18n-en="Last digits">끝수 · 끝수합</a><span data-i18n-en="last-digit sum averages 26.0 · digit 7 most frequent">끝수합 평균 26.0 · 끝수 7 최다</span></li></ul>
 
-<p>함께 보기: <a href="draws.html">회차별 당첨번호 전체 조회</a> · <a href="probability.html">로또 확률</a></p>
+<p><span data-i18n-en="See also:">함께 보기:</span> <a href="draws.html" data-i18n-en="All winning numbers by draw">회차별 당첨번호 전체 조회</a> · <a href="probability.html" data-i18n-en="Lotto probability">로또 확률</a></p>
 
         <p class="page-disclaimer" data-i18n="disclaimer.page">지난 추첨 기록을 정리한 것이며 다음 회차를 예측하지 않습니다. 어떤 6개를 고르든 1등 확률은 1/8,145,060으로 같습니다. 당첨번호 출처: 동행복권.</p>
     </main>

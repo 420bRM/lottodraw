@@ -68,6 +68,12 @@ const comb = (n, k) => {
     return Math.round(r);
 };
 
+// 한국어 문장 옆에 영문을 같이 싣는다. 화면의 KO/EN 단추가 이 속성을 읽어 바꿔 끼운다.
+// 회차마다 값이 달라지는 문장이라 사전(js/i18n-dict.js)에 키로 둘 수 없다.
+const en = (ko, english) => `<span data-i18n-en="${esc(english)}">${ko}</span>`;
+const pEn = (ko, english, cls) => `<p${cls ? ` class="${cls}"` : ''} data-i18n-en="${esc(english)}">${ko}</p>`;
+const h2En = (ko, english) => `<h2 data-i18n-en="${esc(english)}">${ko}</h2>`;
+
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const fmt = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 const pct = (a, b) => (b ? (a / b * 100).toFixed(1) : '0.0') + '%';
@@ -232,7 +238,7 @@ ${NAV.map(([href, name, key]) => `            <li><a href="${base}${href}"${href
 
     <main class="prose stat-page">
         <nav class="breadcrumb" aria-label="현재 위치" data-i18n-attr="aria-label:crumb.aria">${crumbHtml}</nav>
-        <h1>${esc(o.h1)}</h1>
+        <h1${o.h1En ? ` data-i18n-en="${esc(o.h1En)}"` : ''}>${esc(o.h1)}</h1>
 ${o.scope ? `        <p class="stat-scope">${o.scope}</p>\n` : ''}${o.lead ? `        <p class="stat-lead">${o.lead}</p>\n` : ''}
 ${o.body.filter(Boolean).join('\n\n')}
 
@@ -426,20 +432,22 @@ const STATS = [];
     ].join('\n');
 
     STATS.push({
-        file: 'statistics-frequency.html', anchor: 'stat-frequency', short: '많이 나온 번호 순위',
+        file: 'statistics-frequency.html', anchor: 'stat-frequency', short: '많이 나온 번호 순위', shortEn: 'Most frequent numbers',
         title: `로또 많이 나온 번호 순위 · 번호별 출현 횟수 (${RANGE})`,
-        h1: '로또 많이 나온 번호 순위',
+        h1: '로또 많이 나온 번호 순위', h1En: 'Most Frequent Lotto Numbers',
         desc: `로또 역대 ${RANGE} 가장 많이 나온 번호 순위와 1~45번 번호별 출현 횟수. 제일 많이 나온 번호는 ${numsText(e.top)} ${e.max}회, 가장 적게 나온 번호는 ${numsText(e.bottom)} ${e.min}회.`,
         fact: `1위 ${numsText(e.top)} ${e.max}회 · 최소 ${numsText(e.bottom)} ${e.min}회`,
+        factEn: `top ${e.top.map(r => r.number).join('·')} ${e.max}× · lowest ${e.bottom.map(r => r.number).join('·')} ${e.min}×`,
         lead: `역대 ${RANGE} 동안 제일 많이 나온 번호는 <strong>${numsText(e.top)}(${e.max}회)</strong>, 가장 적게 나온 번호는 <strong>${numsText(e.bottom)}(${e.min}회)</strong>입니다. 한 회차에 6개를 뽑으므로 번호 하나의 기대 출현은 ${f1(EXP_NUM)}회입니다.`,
+        leadEn: `Across draws 1–${N}, the number drawn most often is <strong>${e.top.map(r => r.number).join('·')} (${e.max} times)</strong> and the one drawn least often is <strong>${e.bottom.map(r => r.number).join('·')} (${e.min} times)</strong>. Six numbers are drawn each time, so a single number is expected to appear ${f1(EXP_NUM)} times.`,
         body: [
-            '<h2>많이 나온 번호 순위 Top 10</h2>',
+            h2En('많이 나온 번호 순위 Top 10', 'Top 10 most frequent numbers'),
             rankList(ranked.slice(0, 10), r => fmt(r.count) + '회'),
-            '<h2>적게 나온 번호 Top 10</h2>',
+            h2En('적게 나온 번호 Top 10', 'Top 10 least frequent numbers'),
             rankList(ranked.slice(-10).reverse(), r => fmt(r.count) + '회'),
-            '<h2>출현 횟수의 정규분포</h2>',
+            h2En('출현 횟수의 정규분포', 'How the counts are distributed'),
             distBlock,
-            '<h2>1~45번 번호별 출현 횟수</h2>',
+            h2En('1~45번 번호별 출현 횟수', 'Appearances for every number, 1 to 45'),
             numberTable(stats.frequency, EXP_NUM, SD_NUM),
             `<p>표준편차는 약 ${f1(SD_NUM)}회입니다. 1위 번호는 기대보다 ${f1(e.max - EXP_NUM)}회(+${f1((e.max - EXP_NUM) / SD_NUM)} 표준편차), 최소 번호는 ${f1(EXP_NUM - e.min)}회(-${f1((EXP_NUM - e.min) / SD_NUM)} 표준편차) 벗어나 있습니다. 번호 45개를 한꺼번에 보면 공평한 추첨에서도 양 끝이 이 정도로 벌어집니다.</p>`,
         ],
@@ -450,14 +458,16 @@ const STATS = [];
     const e = extremesOf(stats.bonus);
     const ranked = stats.bonus.slice().sort((a, b) => b.count - a.count || a.number - b.number);
     STATS.push({
-        file: 'statistics-bonus.html', anchor: 'stat-bonus', short: '보너스 번호',
+        file: 'statistics-bonus.html', anchor: 'stat-bonus', short: '보너스 번호', shortEn: 'Bonus ball',
         title: `로또 보너스 번호란? 역대 보너스 번호 통계 (${RANGE})`,
-        h1: '로또 보너스 번호 통계',
+        h1: '로또 보너스 번호 통계', h1En: 'Bonus Ball Statistics',
         desc: `로또 보너스 번호의 의미(2등 판정)와 역대 ${RANGE} 보너스 번호별 출현 횟수. 가장 많이 나온 보너스 번호는 ${numsText(e.top)} ${e.max}회.`,
         fact: `최다 ${numsText(e.top)} ${e.max}회 · 최소 ${numsText(e.bottom)} ${e.min}회`,
+        factEn: `most ${e.top.map(r => r.number).join('·')} ${e.max}× · fewest ${e.bottom.map(r => r.number).join('·')} ${e.min}×`,
         lead: `보너스 번호는 당첨번호 6개를 뽑은 뒤 하나 더 뽑는 번호입니다. 한 회차에 하나뿐이라 번호 하나의 기대 출현은 ${f1(EXP_BONUS)}회이고, 역대 가장 많이 나온 보너스 번호는 <strong>${numsText(e.top)}(${e.max}회)</strong>입니다.`,
+        leadEn: `The bonus ball is drawn after the six winning numbers. Only one is drawn each time, so a given number is expected to appear ${f1(EXP_BONUS)} times; the most frequent bonus ball so far is <strong>${e.top.map(r => r.number).join('·')} (${e.max} times)</strong>.`,
         body: [
-            '<h2>보너스 번호는 언제 쓰이나</h2>',
+            h2En('보너스 번호는 언제 쓰이나', 'When the bonus ball matters'),
             table(['맞힌 개수', '보너스 번호', '등수'], [
                 ['6개', '상관없음', '1등'],
                 ['5개', '<strong>일치</strong>', '2등'],
@@ -466,9 +476,9 @@ const STATS = [];
                 ['3개', '상관없음', '5등'],
             ]),
             '<p>보너스 번호는 2등과 3등을 가를 때만 봅니다. 당첨번호 4개에 보너스 번호가 맞아도 4등이고, 3개에 보너스가 맞아도 5등입니다.</p>',
-            '<h2>많이 나온 보너스 번호 Top 10</h2>',
+            h2En('많이 나온 보너스 번호 Top 10', 'Top 10 bonus balls'),
             rankList(ranked.slice(0, 10), r => fmt(r.count) + '회'),
-            '<h2>보너스 번호별 전체 표</h2>',
+            h2En('보너스 번호별 전체 표', 'Every bonus ball in one table'),
             numberTable(stats.bonus, EXP_BONUS),
         ],
     });
@@ -482,12 +492,14 @@ const STATS = [];
         return [esc(r.label), fmt(r.count) + '회', pct(r.count, N), (theory * 100).toFixed(1) + '%'];
     });
     STATS.push({
-        file: 'statistics-even-odd.html', anchor: 'stat-even-odd', short: '홀짝 비율',
+        file: 'statistics-even-odd.html', anchor: 'stat-even-odd', short: '홀짝 비율', shortEn: 'Odd / even split',
         title: `로또 홀짝 비율 통계 · 홀짝 분석 (${RANGE})`,
-        h1: '로또 홀짝 비율',
+        h1: '로또 홀짝 비율', h1En: 'Odd / Even Split',
         desc: `로또 ${RANGE} 당첨번호 6개의 홀수·짝수 비율을 이론 확률과 나란히 분석했습니다. 가장 많은 형태는 ${top.label}(${pct(top.count, N)}).`,
         fact: `최다 ${top.label} ${pct(top.count, N)}`,
+        factEn: `most common ${top.labelEn || top.label} ${pct(top.count, N)}`,
         lead: `${RANGE} 중 가장 많이 나온 형태는 <strong>${esc(top.label)}</strong>로 ${fmt(top.count)}회(${pct(top.count, N)})입니다. 1~45에는 홀수 23개, 짝수 22개가 있어 이론상으로도 홀3 짝3이 가장 흔합니다.`,
+        leadEn: `The most common shape across draws 1–${N} is <strong>${esc(top.labelEn || top.label)}</strong>, seen ${fmt(top.count)} times (${pct(top.count, N)}). Of the numbers 1–45, 23 are odd and 22 are even, so three odd and three even is also the most likely shape in theory.`,
         body: [
             table(['형태', '나온 횟수', '비율', '이론 확률'], rows),
             '<p>이론 확률은 45개 중 6개를 뽑을 때 해당 형태가 나올 확률입니다. 실제 비율이 이론값에 가까울수록 추첨이 고르게 이뤄졌다는 뜻입니다.</p>',
@@ -503,12 +515,14 @@ const STATS = [];
         return [esc(r.label), fmt(r.count) + '회', pct(r.count, N), (theory * 100).toFixed(1) + '%'];
     });
     STATS.push({
-        file: 'statistics-low-high.html', anchor: 'stat-low-high', short: '저고 비율',
+        file: 'statistics-low-high.html', anchor: 'stat-low-high', short: '저고 비율', shortEn: 'Low / high split',
         title: `로또 저고(고저) 비율 통계 (${RANGE})`,
-        h1: '로또 저고 비율',
+        h1: '로또 저고 비율', h1En: 'Low / High Split',
         desc: `로또 ${RANGE} 당첨번호의 낮은 번호(1~22)와 높은 번호(23~45) 비율을 이론 확률과 함께 정리했습니다. 최다 형태 ${top.label}.`,
         fact: `최다 ${top.label} ${pct(top.count, N)}`,
+        factEn: `most common ${top.labelEn || top.label} ${pct(top.count, N)}`,
         lead: `1~22를 저번호, 23~45를 고번호로 나눴습니다. ${RANGE} 중 가장 많은 형태는 <strong>${esc(top.label)}</strong>로 ${fmt(top.count)}회(${pct(top.count, N)})입니다.`,
+        leadEn: `Numbers 1–22 count as low and 23–45 as high. The most common shape across draws 1–${N} is <strong>${esc(top.labelEn || top.label)}</strong>, seen ${fmt(top.count)} times (${pct(top.count, N)}).`,
         body: [
             table(['형태', '나온 횟수', '비율', '이론 확률'], rows),
             '<p>저번호 22개, 고번호 23개라 이론상 저3 고3이 가장 흔하고, 한쪽으로 6개가 몰리는 경우는 드뭅니다.</p>',
@@ -520,12 +534,14 @@ const STATS = [];
     const withRun = N - stats.consecutive[0].count;
     const rows = stats.consecutive.map(r => [esc(r.label), fmt(r.count) + '회', pct(r.count, N)]);
     STATS.push({
-        file: 'statistics-consecutive.html', anchor: 'stat-consecutive', short: '연속번호',
+        file: 'statistics-consecutive.html', anchor: 'stat-consecutive', short: '연속번호', shortEn: 'Consecutive numbers',
         title: `로또 연속번호 통계 · 연속번호 확률 (${RANGE})`,
-        h1: '로또 연속번호 통계',
+        h1: '로또 연속번호 통계', h1En: 'Consecutive Numbers',
         desc: `로또 ${RANGE} 중 연속번호가 포함된 회차는 ${fmt(withRun)}회(${pct(withRun, N)})입니다. 연속번호 확률과 2연속·3연속 이상 비율을 정리했습니다.`,
         fact: `연속번호 포함 ${pct(withRun, N)} (이론 ${(CONSEC_P * 100).toFixed(1)}%)`,
+        factEn: `with a run ${pct(withRun, N)} (theory ${(CONSEC_P * 100).toFixed(1)}%)`,
         lead: `${RANGE} 중 <strong>${fmt(withRun)}회(${pct(withRun, N)})</strong>에서 이어지는 번호가 하나 이상 나왔습니다. 6개를 무작위로 뽑을 때 연속번호가 하나라도 섞일 확률은 ${(CONSEC_P * 100).toFixed(1)}%로, 절반이 넘습니다.`,
+        leadEn: `In <strong>${fmt(withRun)} of draws 1–${N} (${pct(withRun, N)})</strong> at least one pair of consecutive numbers came up. Drawing six numbers at random, the chance of any run appearing is ${(CONSEC_P * 100).toFixed(1)}% \u2014 more than half the time.`,
         body: [
             table(['가장 긴 연속', '나온 횟수', '비율'], rows),
             '<p>한 회차에서 가장 길게 이어진 묶음을 기준으로 셉니다. 예를 들어 3·4·5와 20·21이 함께 나오면 3연속으로 셉니다. 각 회차에 어떤 번호가 이어졌는지는 <a href="draws.html">회차별 당첨번호</a>에서 회차를 눌러 볼 수 있습니다.</p>',
@@ -549,7 +565,7 @@ const STATS = [];
     const lo2 = Math.ceil(MEAN - 2 * SD), hi2 = Math.floor(MEAN + 2 * SD);
     const theory = (a, b) => normCdf((b + 0.5 - MEAN) / SD) - normCdf((a - 0.5 - MEAN) / SD);
     const distBlock = [
-        '<h2>합계는 정규분포를 따른다</h2>',
+        h2En('합계는 정규분포를 따른다', 'The sum follows a normal distribution'),
         `<p>번호 6개를 더한 값은 여러 수를 더한 값이라 가운데로 모이고 좌우가 대칭인 정규분포에 가까워집니다. 1~45에서 6개를 뽑으면 이론상 평균 ${MEAN}, 표준편차 ${f1(SD)}입니다. 막대는 실제 ${RANGE}의 합계를 10 단위로 센 것이고, 곡선은 이론 정규분포입니다.</p>`,
         normalChart({
             bins: binsOf(sums, 10), total: N, mean: MEAN, sd: SD, unit: '회',
@@ -566,15 +582,17 @@ const STATS = [];
     ].join('\n');
 
     STATS.push({
-        file: 'statistics-sum.html', anchor: 'stat-sum', short: '번호 합계',
+        file: 'statistics-sum.html', anchor: 'stat-sum', short: '번호 합계', shortEn: 'Sum of numbers',
         title: `로또 번호 합계 분포 통계 (${RANGE})`,
-        h1: '로또 당첨번호 합계 분포',
+        h1: '로또 당첨번호 합계 분포', h1En: 'Distribution of the Sum of Winning Numbers',
         desc: `로또 ${RANGE} 당첨번호 6개의 합계 분포입니다. 평균 ${f1(avg)}, 가장 많은 구간은 ${top.label}(${pct(top.count, N)}).`,
         fact: `평균 ${f1(avg)} · 최다 구간 ${top.label}`,
+        factEn: `average ${f1(avg)} · most common band ${top.label}`,
         lead: `${RANGE} 당첨번호 합계의 평균은 <strong>${f1(avg)}</strong>이고, 가장 많이 나온 구간은 <strong>${esc(top.label)}</strong>(${pct(top.count, N)})입니다. 이론 평균은 138입니다.`,
+        leadEn: `Across draws 1–${N} the winning numbers add up to <strong>${f1(avg)}</strong> on average, and the most common band is <strong>${esc(top.label)}</strong> (${pct(top.count, N)}). The theoretical average is 138.`,
         body: [
             distBlock,
-            '<h2>합계 구간별 나온 횟수</h2>',
+            h2En('합계 구간별 나온 횟수', 'How often each sum band came up'),
             table(['합계 구간', '나온 횟수', '비율'], rows),
             `<p>가장 작은 합계는 ${Math.min.apply(null, sums)}, 가장 큰 합계는 ${Math.max.apply(null, sums)}였습니다. 합계는 가운데로 몰리는 값이라 양 끝 구간은 드물게 나옵니다.</p>`,
         ],
@@ -589,11 +607,12 @@ const STATS = [];
     const most = known.slice().sort((a, b) => b.firstPrizeWinners - a.firstPrizeWinners)[0];
     const rows = stats.winners.map(r => [esc(r.label), fmt(r.count) + '회', pct(r.count, N)]);
     STATS.push({
-        file: 'statistics-prize.html', anchor: 'stat-prize', short: '1등 당첨자 수',
+        file: 'statistics-prize.html', anchor: 'stat-prize', short: '1등 당첨자 수', shortEn: 'First-prize winners',
         title: `로또 1등 당첨자 수 통계 · 이월 횟수 (${RANGE})`,
-        h1: '로또 1등 당첨자 수 통계',
+        h1: '로또 1등 당첨자 수 통계', h1En: 'Number of First-Prize Winners',
         desc: `로또 ${RANGE} 회차별 1등 당첨자 수 분포입니다. 1등이 없어 이월된 회차 ${zero}회, 회차당 평균 ${f1(avg)}명.`,
         fact: `이월 ${zero}회 · 평균 ${f1(avg)}명`,
+        factEn: `${zero} rollovers · ${f1(avg)} winners on average`,
         lead: `${RANGE} 동안 1등 당첨자는 회차당 평균 <strong>${f1(avg)}명</strong>이었습니다. 1등이 한 명도 없어 당첨금이 이월된 회차는 <strong>${zero}회</strong>입니다. 가장 흔한 구간은 ${esc(top.label)}입니다.`,
         body: [
             table(['1등 당첨자 수', '회차 수', '비율'], rows),
@@ -606,16 +625,18 @@ const STATS = [];
     const t = stats.trend;
     const rows = list => list.map((r, i) => [`${i + 1}위`, ball(r.number), fmt(r.recent) + '회', fmt(r.overall) + '회']);
     STATS.push({
-        file: 'statistics-trend.html', anchor: 'stat-trend', short: `최근 ${t.window}회 많이·적게`,
+        file: 'statistics-trend.html', anchor: 'stat-trend', short: `최근 ${t.window}회 많이·적게`, shortEn: `Hot and cold, last ${t.window} draws`,
         title: `로또 최근 ${t.window}회 많이 나온 번호 · 적게 나온 번호`,
         h1: `로또 최근 ${t.window}회 많이 나온 번호와 적게 나온 번호`,
         desc: `로또 최근 ${t.window}회(${stats.latestRound - t.window + 1}~${stats.latestRound}회) 동안 많이 나온 번호와 적게 나온 번호 Top 10. 최다 ${t.hot[0].number}번 ${t.hot[0].recent}회.`,
         fact: `최다 ${t.hot[0].number}번 ${t.hot[0].recent}회 · 최소 ${t.cold[0].number}번 ${t.cold[0].recent}회`,
+        factEn: `most ${t.hot[0].number} (${t.hot[0].recent}×) · fewest ${t.cold[0].number} (${t.cold[0].recent}×)`,
         lead: `${stats.latestRound - t.window + 1}~${stats.latestRound}회 ${t.window}회 동안 가장 많이 나온 번호는 <strong>${t.hot[0].number}번(${t.hot[0].recent}회)</strong>, 가장 적게 나온 번호는 <strong>${t.cold[0].number}번(${t.cold[0].recent}회)</strong>입니다. ${t.window}회 동안 한 번호의 기대 출현은 ${f1(t.window * 6 / 45)}회입니다.`,
+        leadEn: `Over draws ${stats.latestRound - t.window + 1}\u2013${stats.latestRound} (${t.window} draws), the most frequent number is <strong>${t.hot[0].number} (${t.hot[0].recent} times)</strong> and the least frequent is <strong>${t.cold[0].number} (${t.cold[0].recent} times)</strong>. Over ${t.window} draws a number is expected to appear ${f1(t.window * 6 / 45)} times.`,
         body: [
-            '<h2>많이 나온 번호</h2>',
+            h2En('많이 나온 번호', 'Most frequent numbers'),
             table(['순위', '번호', `최근 ${t.window}회`, '전 회차'], rows(t.hot)),
-            '<h2>적게 나온 번호</h2>',
+            h2En('적게 나온 번호', 'Least frequent numbers'),
             table(['순위', '번호', `최근 ${t.window}회`, '전 회차'], rows(t.cold)),
             '<p>최근 기간은 표본이 작아 순위가 매주 크게 바뀝니다. 전 회차 열과 함께 보면 일시적인 쏠림인지 알 수 있습니다.</p>',
         ],
@@ -626,12 +647,14 @@ const STATS = [];
     const p = stats.pairs;
     const rows = p.map((r, i) => [`${i + 1}위`, ball(r.a) + ' ' + ball(r.b), fmt(r.count) + '회']);
     STATS.push({
-        file: 'statistics-pair.html', anchor: 'stat-pair', short: '궁합수 순위',
+        file: 'statistics-pair.html', anchor: 'stat-pair', short: '궁합수 순위', shortEn: 'Number pairs',
         title: `로또 궁합수 순위 · 함께 나온 번호 Top ${p.length} (${RANGE})`,
-        h1: '로또 궁합수 (함께 나온 번호) 순위',
+        h1: '로또 궁합수 (함께 나온 번호) 순위', h1En: 'Numbers That Appear Together',
         desc: `로또 ${RANGE} 한 회차에 같이 나온 번호 쌍, 궁합수 순위 Top ${p.length}. 1위 ${p[0].a}·${p[0].b}번 ${p[0].count}회.`,
         fact: `1위 ${p[0].a}·${p[0].b}번 ${p[0].count}회`,
+        factEn: `top pair ${p[0].a}\u00b7${p[0].b}, ${p[0].count}×`,
         lead: `궁합수는 한 회차에 자주 같이 나온 번호 쌍입니다. ${RANGE} 동안 가장 자주 같이 나온 쌍은 <strong>${p[0].a}번과 ${p[0].b}번(${p[0].count}회)</strong>입니다. 특정 두 번호가 한 회차에 함께 나올 기대 횟수는 ${f1(PAIR_EXP)}회입니다.`,
+        leadEn: `These are the pairs of numbers that have come up together most often. Across draws 1–${N} the most frequent pair is <strong>${p[0].a} and ${p[0].b} (${p[0].count} times)</strong>. Any given pair is expected to appear together ${f1(PAIR_EXP)} times.`,
         body: [
             table(['순위', '번호 쌍', '함께 나온 횟수'], rows),
             '<p>쌍은 모두 990가지라 그중 가장 많은 쌍은 기대값보다 꽤 높게 나오는 게 보통입니다. 번호 하나를 골라 그 번호의 궁합수를 보는 기능은 <a href="index.html#detail-head">홈의 상세 분석</a>(이용권)에 있습니다.</p>',
@@ -647,12 +670,14 @@ const STATS = [];
     };
     const rows = g.map((r, i) => [`${i + 1}위`, ball(r.number), r.gap === 0 ? '지난 회차' : `${r.gap}회차째`, lastSeen(r.number)]);
     STATS.push({
-        file: 'statistics-gap.html', anchor: 'stat-gap', short: '미출수 (장기 미출현)',
+        file: 'statistics-gap.html', anchor: 'stat-gap', short: '미출수 (장기 미출현)', shortEn: 'Longest absences',
         title: `로또 미출수 · 장기 미출현 번호 순위 (${stats.latestRound}회 기준)`,
-        h1: '로또 미출수 (오래 안 나온 번호)',
+        h1: '로또 미출수 (오래 안 나온 번호)', h1En: 'Numbers Absent the Longest',
         desc: `로또 ${stats.latestRound}회 기준 장기 미출수, 가장 오래 안 나온 번호 순위입니다. 1위 ${g[0].number}번은 ${g[0].gap}회차째 나오지 않았습니다.`,
         fact: `1위 ${g[0].number}번 · ${g[0].gap}회차째 미출현`,
+        factEn: `${g[0].number} \u2014 absent for ${g[0].gap} draws`,
         lead: `미출수는 최근에 나오지 않은 번호입니다. ${stats.latestRound}회 기준으로 가장 오래 안 나온 번호는 <strong>${g[0].number}번</strong>으로, ${g[0].gap}회차째 나오지 않았습니다.`,
+        leadEn: `These are the numbers that have not come up recently. As of draw ${stats.latestRound}, the longest absence belongs to <strong>${g[0].number}</strong>, which has not appeared for ${g[0].gap} draws.`,
         body: [
             table(['순위', '번호', '안 나온 기간', '마지막으로 나온 회차'], rows),
             '<p>매 회차 번호가 뽑힐 확률은 이전 결과와 상관없이 같습니다. 오래 쉬었다고 다음에 나올 확률이 올라가지는 않습니다.</p>',
@@ -664,14 +689,15 @@ const STATS = [];
     const top = topBy(stats.ac);
     const rows = stats.ac.map(r => [esc(r.label), fmt(r.count) + '회', pct(r.count, N)]);
     STATS.push({
-        file: 'statistics-ac.html', anchor: 'stat-ac', short: 'AC값',
+        file: 'statistics-ac.html', anchor: 'stat-ac', short: 'AC값', shortEn: 'AC value',
         title: `로또 AC값 통계 · AC값 계산기 (${RANGE})`,
-        h1: '로또 AC값 통계와 계산기',
+        h1: '로또 AC값 통계와 계산기', h1En: 'AC Values, with a Calculator',
         desc: `로또 AC값(산술적 복잡도) 계산 방법과 계산기, 역대 ${RANGE} AC값 분포. 가장 많은 값은 ${top.label}(${pct(top.count, N)}).`,
         fact: `최다 ${top.label} ${pct(top.count, N)}`,
         lead: `AC값은 번호 6개를 두 개씩 뺀 차이 15개 중 서로 다른 값의 개수에서 5를 뺀 값입니다. 0~10 사이이고, 높을수록 번호가 고르게 흩어진 조합입니다. ${RANGE} 중 가장 많은 값은 <strong>${esc(top.label)}</strong>(${pct(top.count, N)})입니다.`,
+        leadEn: `The AC value counts the distinct differences among the 15 pairs formed from six numbers, minus 5. It runs from 0 to 10, and the higher it is, the more spread out the numbers are. Across draws 1–${N} the most common value is <strong>${esc(top.label)}</strong> (${pct(top.count, N)}).`,
         body: [
-            '<h2>AC값 계산기</h2>',
+            h2En('AC값 계산기', 'AC value calculator'),
             [
                 '<div class="calc-form">',
                 '    <label for="ac-input">번호 6개</label>',
@@ -680,7 +706,7 @@ const STATS = [];
                 '</div>',
                 '<p class="calc-result" id="ac-out" role="status" aria-live="polite"></p>',
             ].join('\n'),
-            '<h2>역대 AC값 분포</h2>',
+            h2En('역대 AC값 분포', 'AC values across all draws'),
             table(['AC값', '나온 횟수', '비율'], rows),
             '<p>예를 들어 1·2·3·4·5·6은 차이가 1~5뿐이라 AC값이 0입니다. 무작위로 뽑은 조합 대부분은 AC 7 이상입니다.</p>',
         ],
@@ -719,17 +745,19 @@ const STATS = [];
     }));
     const topBin = topBy(counted).label;
     STATS.push({
-        file: 'statistics-tail.html', anchor: 'stat-tail', short: '끝수 · 끝수합',
+        file: 'statistics-tail.html', anchor: 'stat-tail', short: '끝수 · 끝수합', shortEn: 'Last digits',
         title: `로또 끝수 통계 · 끝수합 분포 (${RANGE})`,
-        h1: '로또 끝수 통계와 끝수합',
+        h1: '로또 끝수 통계와 끝수합', h1En: 'Last Digits and Their Sum',
         desc: `로또 ${RANGE} 끝수(끝자리) 0~9별 출현 횟수와 번호당 평균, 끝수합 분포(평균 ${f1(avg)}). 번호당 평균이 가장 높은 끝수는 ${best.digit}.`,
         fact: `끝수합 평균 ${f1(avg)} · 끝수 ${best.digit} 최다`,
+        factEn: `last-digit sum averages ${f1(avg)} · digit ${best.digit} most frequent`,
         lead: `끝수는 번호의 일의 자리입니다. 끝자리 1~5에는 번호가 5개(예: 1·11·21·31·41), 0과 6~9에는 4개씩 있어서 <strong>번호 1개당 평균</strong>으로 비교합니다. ${RANGE} 기준으로 번호당 평균이 가장 높은 끝수는 <strong>${best.digit}</strong>(${f1(best.per)}회)입니다.`,
+        leadEn: `The last digit is the ones place of a number. Digits 1\u20135 have five numbers each (1\u00b711\u00b721\u00b731\u00b741), while 0 and 6\u20139 have four, so the comparison is made <strong>per number</strong>. Across draws 1–${N} the highest average belongs to digit <strong>${best.digit}</strong> (${f1(best.per)} times).`,
         body: [
-            '<h2>끝수별 출현 횟수</h2>',
+            h2En('끝수별 출현 횟수', 'Appearances by last digit'),
             table(['끝수', '해당 번호 수', '출현 합계', '번호 1개당'], rows),
             '<p>총 횟수만 보면 끝수 1~5가 늘 많아 보입니다. 해당하는 번호가 하나 더 있기 때문이지 더 잘 나와서가 아닙니다.</p>',
-            '<h2>끝수합 분포</h2>',
+            h2En('끝수합 분포', 'Distribution of the last-digit sum'),
             `<p>끝수합은 당첨번호 6개의 끝자리를 모두 더한 값입니다. 예를 들어 7·13·16·23·24·43의 끝수합은 7+3+6+3+4+3 = 26입니다. ${RANGE} 평균은 <strong>${f1(avg)}</strong>, 가장 많은 구간은 <strong>${topBin}</strong>입니다.</p>`,
             table(['끝수합', '나온 횟수', '비율'], counted.map(c => [c.label, fmt(c.count) + '회', pct(c.count, N)])),
         ],
@@ -785,7 +813,7 @@ function roundPage(d) {
         body: [
             `<div class="round-balls" aria-label="당첨번호 ${nums.join(', ')} 보너스 ${d.bonus}">${nums.map(bigBall).join('')}<span class="plus">+</span>${bigBall(d.bonus)}</div>`,
             `<p class="stat-lead">${prizeText}</p>`,
-            '<h2>이 회차 번호 분석</h2>',
+            h2En('이 회차 번호 분석', 'A look at this draw'),
             table(['항목', '값'], [
                 ['홀짝', `홀${odd} 짝${6 - odd}`],
                 ['저고 (1~22 / 23~45)', `저${low} 고${6 - low}`],
@@ -795,7 +823,7 @@ function roundPage(d) {
                 ['끝수합', String(tailSum(nums))],
                 ['번호대', bands],
             ], 'kv-table'),
-            `<h2>${d.round}회까지 번호별 누적 출현</h2>`,
+            h2En(`${d.round}회까지 번호별 누적 출현`, `Cumulative appearances through draw ${d.round}`),
             table(['번호', `1~${d.round}회 출현`], nums.map(n => [ball(n), fmt(cum[n]) + '회'])),
             [
                 '<nav class="round-nav" aria-label="회차 이동">',
@@ -827,7 +855,7 @@ function drawsPage() {
         navCurrent: 'draws.html',
         crumbs: [[null, '회차별 당첨번호']],
         title: `로또 회차별 당첨번호 전체 조회 (${RANGE})`,
-        h1: '로또 회차별 당첨번호 전체 조회',
+        h1: '로또 회차별 당첨번호 전체 조회', h1En: 'Every Winning Number, Draw by Draw',
         desc: `로또 6/45 ${RANGE} 회차별 당첨번호 전체 보기. 최신 ${LATEST.round}회(${LATEST.date}) 당첨번호 ${latestNums.join(', ')} + ${LATEST.bonus}. 회차별 1등 당첨자 수와 1인당 당첨금.`,
         scope: `${RANGE} · ${PERIOD} · 매주 추첨 후 자동 갱신`,
         lead: `최신 <a href="round/${LATEST.round}.html"><strong>${LATEST.round}회</strong></a>(${LATEST.date}) 당첨번호는 <strong>${latestNums.join(', ')}</strong>, 보너스 <strong>${LATEST.bonus}</strong>입니다. 회차를 누르면 그 회차의 번호 분석을 볼 수 있습니다.`,
@@ -879,15 +907,15 @@ function probabilityPage() {
         file: 'probability.html',
         crumbs: [['index.html#sec-stats', '로또 통계'], [null, '로또 확률']],
         title: '로또 확률 계산 · 1등부터 5등까지 등수별 당첨 확률',
-        h1: '로또 확률 · 등수별 당첨 확률',
+        h1: '로또 확률 · 등수별 당첨 확률', h1En: 'Lotto Odds by Prize Tier',
         desc: `로또 6/45 1등 확률 1/${oneIn(1)}, 2등 1/${oneIn(6)}, 3등 1/${oneIn(228)}, 4등 1/${oneIn(11115)}, 5등 1/${oneIn(182780)}. 계산 공식과 자동·수동 확률 차이, 확률을 높이는 방법의 진실.`,
         scope: '45개 번호 중 6개를 고르는 조합 수 C(45,6) = 8,145,060 기준',
         lead: `로또 6/45는 1~45 중 6개를 고르는 게임이라 가능한 조합이 <strong>8,145,060가지</strong>입니다. 한 게임(1,000원)으로 1등에 당첨될 확률은 <strong>8,145,060분의 1</strong>입니다.`,
         body: [
-            '<h2>등수별 당첨 확률</h2>',
+            h2En('등수별 당첨 확률', 'Odds by prize tier'),
             table(['등수', '조건', '해당 조합 수', '확률', '백분율'], rows),
             `<p>한 게임으로 5등 이상 무엇이든 당첨될 확률은 약 1 / ${f1(TOTAL / any)} 입니다.</p>`,
-            '<h2>계산 방법</h2>',
+            h2En('계산 방법', 'How these are calculated'),
             '<ul>',
             '<li><strong>1등</strong>: 6개를 모두 맞히는 조합은 1가지 → 1 / C(45,6)</li>',
             '<li><strong>2등</strong>: 당첨번호 6개 중 5개 × 보너스 번호 1개 = C(6,5) × 1 = 6가지</li>',
@@ -895,11 +923,11 @@ function probabilityPage() {
             '<li><strong>4등</strong>: 당첨번호 중 4개 × 나머지 39개 중 2개 = 15 × 741 = 11,115가지</li>',
             '<li><strong>5등</strong>: 당첨번호 중 3개 × 나머지 39개 중 3개 = 20 × 9,139 = 182,780가지</li>',
             '</ul>',
-            '<h2>얼마나 드문 일일까</h2>',
+            h2En('얼마나 드문 일일까', 'How rare is it, really'),
             `<p>매주 한 게임씩 산다면 1등 조합 수만큼 사는 데 ${fmt(TOTAL)}주, 약 ${fmt(years)}년이 걸립니다.</p>`,
-            '<h2>자동과 수동, 확률이 다를까</h2>',
+            h2En('자동과 수동, 확률이 다를까', 'Quick pick or self-pick: any difference?'),
             '<p>같습니다. 자동은 기계가 번호를 고르고 수동은 사람이 고를 뿐, 한 게임이 8,145,060개 조합 중 하나라는 점은 똑같습니다. 많이 나온 번호나 안 나온 번호를 골라도 확률은 달라지지 않습니다.</p>',
-            '<h2>확률을 높이는 방법이 있을까</h2>',
+            h2En('확률을 높이는 방법이 있을까', 'Is there any way to improve the odds?'),
             '<p>확률을 올리는 방법은 서로 다른 조합을 더 많이 사는 것뿐이고, 그만큼 비용도 늘어납니다. 다만 번호 선택은 <strong>당첨됐을 때 나눠 가질 사람 수</strong>에 영향을 줍니다. 1·2·3·4·5·6이나 생일 날짜(1~31)처럼 많은 사람이 고르는 조합은 당첨자가 여럿 나와 1인당 금액이 줄어듭니다. <a href="index.html">번호 생성기</a>는 이런 특수 패턴을 걸러냅니다.</p>',
             '<p>관련 통계: <a href="statistics-frequency.html">많이 나온 번호 순위</a> · <a href="statistics-prize.html">1등 당첨자 수</a> · <a href="tax.html">실수령액 계산기</a></p>',
         ],
@@ -910,19 +938,22 @@ function probabilityPage() {
 
 function relatedLinks(current) {
     return '<ul class="stat-links">' + STATS.filter(p => p.file !== current).map(p =>
-        `<li><a href="${p.file}">${esc(p.short)}</a><span>${esc(p.fact)}</span></li>`
+        `<li><a href="${p.file}"${p.shortEn ? ` data-i18n-en="${esc(p.shortEn)}"` : ''}>${esc(p.short)}</a>` +
+        `<span${p.factEn ? ` data-i18n-en="${esc(p.factEn)}"` : ''}>${esc(p.fact)}</span></li>`
     ).join('') + '</ul>';
 }
 
 function statPage(p) {
     return shell({
         file: p.file,
-        crumbs: [['index.html#sec-stats', '로또 통계'], [null, p.short]],
+        crumbs: [['index.html#sec-stats', '로또 통계', null, 'Lotto statistics'], [null, p.short, null, p.shortEn]],
         title: p.title,
         h1: p.h1,
+        h1En: p.h1En,
         desc: p.desc,
-        scope: `${RANGE} · ${PERIOD} · 매주 추첨 후 자동 갱신 (마지막 갱신 ${UPDATED})`,
-        lead: p.lead,
+        scope: en(`${RANGE} · ${PERIOD} · 매주 추첨 후 자동 갱신 (마지막 갱신 ${UPDATED})`,
+            `Draws 1–${N} · ${PERIOD} · updated automatically after each draw (last update ${UPDATED})`),
+        lead: p.leadEn ? en(p.lead, p.leadEn) : p.lead,
         ld: [{
             '@type': 'Dataset',
             name: p.title,
@@ -935,10 +966,10 @@ function statPage(p) {
             keywords: ['로또 통계', '로또 분석', p.short],
         }],
         body: p.body.concat([
-            `<p><a class="btn" href="index.html#${p.anchor}">홈에서 그래프로 보기</a></p>`,
-            '<h2>다른 로또 통계</h2>',
+            `<p><a class="btn" href="index.html#${p.anchor}" data-i18n-en="See the chart on the home page">홈에서 그래프로 보기</a></p>`,
+            h2En('다른 로또 통계', 'Other statistics'),
             relatedLinks(p.file),
-            '<p>함께 보기: <a href="draws.html">회차별 당첨번호 전체 조회</a> · <a href="probability.html">로또 확률</a></p>',
+            `<p>${en('함께 보기:', 'See also:')} <a href="draws.html" data-i18n-en="All winning numbers by draw">회차별 당첨번호 전체 조회</a> · <a href="probability.html" data-i18n-en="Lotto probability">로또 확률</a></p>`,
         ]),
         script: p.script,
     });
