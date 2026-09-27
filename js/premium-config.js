@@ -6,21 +6,21 @@ window.PREMIUM_CONFIG = {
     apiBase: 'https://api.polar.sh',
 
     // Polar 조직 ID (Settings → General)
-    organizationId: '',
+    organizationId: '89448545-3a82-4fa3-a25d-57cc1398ae8f',
 
     // Polar 고객 포털 (polar.sh/<조직 slug>/portal). 구매자가 구독 해지, 영수증,
     // 라이선스 키 확인을 하는 곳이다. 비어 있으면 관련 링크가 나오지 않는다.
-    portalUrl: '',
+    portalUrl: 'https://polar.sh/lottodrawkr/portal',
 
     // 상품별 Checkout Link 주소와, 그 상품에 붙인 License Key 혜택(Benefit) ID.
     // benefitId 를 넣으면 이 사이트 이용권이 아닌 키는 거절한다.
     // recurring: true 는 자동 갱신 구독 상품. 해지하면 Polar 가 키를 회수(revoked)해서
     // 다음 확인 때 잠긴다. 최대 revalidateHours 만큼 늦게 반영된다.
     plans: {
-        week:     { name: '1주 이용권',   checkoutUrl: '', benefitId: '' },
-        sub:      { name: '월 구독',      checkoutUrl: '', benefitId: '', recurring: true },
-        month:    { name: '1개월 이용권', checkoutUrl: '', benefitId: '' },
-        lifetime: { name: '평생 이용권',  checkoutUrl: '', benefitId: '' },
+        week:     { name: '1주 이용권',   checkoutUrl: 'https://buy.polar.sh/polar_cl_kGuHn5KSeZXNKhdA3LoXS7yyJuwdffuVaYDMp0ZuDaK', benefitId: 'd9e18b08-85f9-4bfa-a254-69c5eda5ec1b' },
+        sub:      { name: '월 구독',      checkoutUrl: 'https://buy.polar.sh/polar_cl_dOOGiohIK8RLpQsiuNnTAG67OIWqDH8HVlv7E3or9c0', benefitId: '8e7710c7-3ea5-47c6-8d22-8ccc16b81a98', recurring: true },
+        month:    { name: '1개월 이용권', checkoutUrl: 'https://buy.polar.sh/polar_cl_nZ6J9PtUszTrYdfDfpi3En9HlqPueC8l0he1J3QRiC4', benefitId: '4f25845d-2d71-4551-a7ef-cb5c181acea1' },
+        lifetime: { name: '평생 이용권',  checkoutUrl: 'https://buy.polar.sh/polar_cl_4YFfOKW8VD2zeDmyryCkpqUlbSCgNmC52uzzH4WtKDN', benefitId: 'e121d67e-317f-4192-bc46-aa7a586cd879' },
     },
 
     // 통계에 넣을 회차 수. 최신 회차부터 이만큼 거슬러 올라간다.
