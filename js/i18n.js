@@ -55,8 +55,10 @@
     }
 
     // 한국어 원문을 처음 한 번만 붙잡아 둔다. 영어로 갔다가 돌아올 때 쓴다.
+    // dataset 키는 붙임표 뒤에 소문자가 오면 브라우저가 예외를 던진다("aria-label" 등).
+    // 그래서 슬롯 이름에서 영숫자만 남긴다.
     function original(el, slot, current) {
-        const k = 'i18nKo' + slot;
+        const k = 'i18nKo' + String(slot).replace(/[^A-Za-z0-9]/g, '');
         if (el.dataset[k] === undefined) el.dataset[k] = current;
         return el.dataset[k];
     }
@@ -116,12 +118,17 @@
     function init() {
         document.documentElement.setAttribute('lang', lang);
         document.documentElement.setAttribute('data-lang', lang);
-        applyTo(document);
-        paintToggle();
+        // 단추를 먼저 단다. 번역 중에 무엇이 잘못돼도 언어 전환은 살아 있어야 한다.
         document.addEventListener('click', e => {
-            const btn = e.target.closest('[data-lang-btn]');
+            const btn = e.target && e.target.closest && e.target.closest('[data-lang-btn]');
             if (btn) { e.preventDefault(); setLang(btn.dataset.langBtn); }
         });
+        try {
+            applyTo(document);
+        } catch (err) {
+            console.error('i18n: 번역 중 오류', err);
+        }
+        paintToggle();
         // 영어 화면에서 잠깐 한국어가 비치는 것을 막으려고 가려 뒀다 (css 의 .i18n-wait)
         document.documentElement.classList.remove('i18n-wait');
     }
