@@ -8,44 +8,51 @@
     <link rel="canonical" href="https://www.lottodraw.kr/contact.html">
     <meta name="google-adsense-account" content="ca-pub-9372871176021283">
     <link rel="stylesheet" href="css/site.css">
+    <script src="js/i18n-dict.js"></script>
+    <script src="js/i18n.js"></script>
 </head>
 <body>
 <div class="page">
     <header class="banner">
         <a class="brand" href="index.html">
             <span class="brand-name">LOTTODRAW.KR</span>
-            <span class="brand-tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
+            <span class="brand-tag" data-i18n="brand.tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
         </a>
+        <div class="banner-right">
+            <div class="lang-switch" role="group" aria-label="Language">
+                <button type="button" data-lang-btn="ko">KO</button><button type="button" data-lang-btn="en">EN</button>
+            </div>
+        </div>
     </header>
-    <nav class="nav" aria-label="주 메뉴">
+    <nav class="nav" aria-label="주 메뉴" data-i18n-attr="aria-label:nav.aria">
         <ul>
-            <li><a href="index.html">생성기 · 통계</a></li>
-            <li><a href="draws.html">당첨번호</a></li>
-            <li><a href="statistics.html">5개월 통계</a></li>
-            <li><a href="top-prize.html">TOP 50 당첨금</a></li>
-            <li><a href="tax.html">실수령액 계산</a></li>
-            <li><a href="about.html">ABOUT</a></li>
+            <li><a href="index.html" data-i18n="nav.index">생성기 · 통계</a></li>
+            <li><a href="draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="top-prize.html" data-i18n="nav.topPrize">TOP 50 당첨금</a></li>
+            <li><a href="tax.html" data-i18n="nav.tax">실수령액 계산</a></li>
+            <li><a href="about.html" data-i18n="nav.about">ABOUT</a></li>
         </ul>
     </nav>
 
     <main class="prose">
-        <h1>문의</h1>
-        <p>이메일: <a href="mailto:contact@lottodraw.kr">contact@lottodraw.kr</a></p>
-        <p>이용권 관련 문의(키가 작동하지 않음, 중복 결제, 환불 요청)는 결제 확인 메일에 적힌 주문 번호나 라이선스 키 앞자리를 함께 보내 주시면 빨리 확인할 수 있습니다.</p>
+        <h1 data-i18n="ct.h1">문의</h1>
+        <p data-i18n-html="ct.email">이메일: <a href="mailto:contact@lottodraw.kr">contact@lottodraw.kr</a></p>
+        <p data-i18n="ct.p1">이용권 관련 문의(키가 작동하지 않음, 중복 결제, 환불 요청)는 결제 확인 메일에 적힌 주문 번호나 라이선스 키 앞자리를 함께 보내 주시면 빨리 확인할 수 있습니다.</p>
 
-        <h2>메일 앱으로 보내기</h2>
-        <p>아래 내용을 채우고 보내기를 누르면 사용 중인 메일 앱이 열립니다. 이 사이트는 입력 내용을 따로 저장하지 않습니다.</p>
+        <h2 data-i18n="ct.h2">메일 앱으로 보내기</h2>
+        <p data-i18n="ct.p2">아래 내용을 채우고 보내기를 누르면 사용 중인 메일 앱이 열립니다. 이 사이트는 입력 내용을 따로 저장하지 않습니다.</p>
         <form class="contact-form" id="contact-form">
-            <label for="contact-subject">제목</label>
+            <label for="contact-subject" data-i18n="ct.subject">제목</label>
             <input type="text" id="contact-subject" maxlength="100" required>
-            <label for="contact-message">내용</label>
+            <label for="contact-message" data-i18n="ct.message">내용</label>
             <textarea id="contact-message" rows="6" maxlength="2000" required></textarea>
-            <button type="submit" class="btn">메일 앱으로 보내기</button>
+            <button type="submit" class="btn" data-i18n="ct.send">메일 앱으로 보내기</button>
         </form>
     </main>
 
     <footer class="footer">
-        <p><a href="privacy.html">개인정보 처리방침</a> · <a href="terms.html">이용약관</a> · <a href="contact.html">문의</a></p>
+        <p><a href="privacy.html" data-i18n="footer.privacy">개인정보 처리방침</a> · <a href="terms.html" data-i18n="footer.terms">이용약관</a> · <a href="contact.html" data-i18n="footer.contact">문의</a></p>
         <p>&copy; 2026 lottodraw.kr</p>
     </footer>
 </div>
