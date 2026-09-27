@@ -10,15 +10,19 @@
     'use strict';
 
     const asc = (a, b) => a - b;
+    const T = (k, v) => (v ? I18N.f(k, v) : I18N.t(k));
     const fmt = n => Number(n).toLocaleString('ko-KR');
     const bandOf = n => n <= 10 ? 1 : n <= 20 ? 2 : n <= 30 ? 3 : n <= 40 ? 4 : 5;
     const byRoundDesc = (a, b) => b.round - a.round;
 
     // 1,628,391,980 → "16억 2,839만"
     function won(amount) {
-        if (!amount) return '자료 없음';
+        if (!amount) return T('dt.noData');
         const eok = Math.floor(amount / 1e8);
         const man = Math.floor((amount % 1e8) / 1e4);
+        if (I18N.lang === 'en') {
+            return amount >= 1e9 ? (amount / 1e9).toFixed(2) + ' bn KRW' : Math.round(amount / 1e6) + 'm KRW';
+        }
         return eok ? (man ? `${fmt(eok)}억 ${fmt(man)}만` : `${fmt(eok)}억`) : `${fmt(man)}만`;
     }
 
@@ -131,21 +135,21 @@
     function consecutiveCard(draws) {
         const data = consecutiveRounds(draws, 12);
         const body = [
-            el('p', { className: 'detail-lead', text: `전 회차 ${fmt(data.of)}회 중 ${fmt(data.total)}회에서 연속한 번호가 나왔습니다 (${(data.total / data.of * 100).toFixed(1)}%).` }),
+            el('p', { className: 'detail-lead', text: T('dt.runs.lead', { of: fmt(data.of), n: fmt(data.total), pct: (data.total / data.of * 100).toFixed(1) }) }),
             el('ul', { className: 'run-list' }, data.rows.map(r => el('li', null, [
-                el('span', { className: 'run-round', text: r.round + '회' }),
+                el('span', { className: 'run-round', text: T('sr.drawNo', { n: r.round }) }),
                 el('span', { className: 'run-groups' }, r.groups.map(g =>
                     el('span', { className: 'run-group' }, g.map(ball)))),
-                el('span', { className: 'run-tail', text: r.longest >= 3 ? r.longest + '연속' : '2연속' }),
+                el('span', { className: 'run-tail', text: T('dt.runs.inRow', { n: r.longest >= 3 ? r.longest : 2 }) }),
             ]))),
-            el('p', { className: 'card-note', text: '가장 최근 12회차만 보여줍니다. 연속 묶음이 두 개인 회차는 묶음을 나눠 표시합니다.' }),
+            el('p', { className: 'card-note', text: T('dt.runs.note') }),
         ];
-        return card({ id: 'detail-runs', title: '연속번호가 나온 회차', meta: '전 회차', body: body });
+        return card({ id: 'detail-runs', title: T('dt.runs.t'), meta: T('dt.allDraws'), body: body });
     }
 
     function partnerCard(draws) {
         const box = el('div', { className: 'partner-out' });
-        const grid = el('div', { className: 'number-grid partner-grid', role: 'group', 'aria-label': '번호 선택' });
+        const grid = el('div', { className: 'number-grid partner-grid', role: 'group', 'aria-label': T('dt.pickNumber') });
         let current = null;
 
         function show(n) {
@@ -158,16 +162,16 @@
             });
             const p = partners(draws, n, 10);
             box.textContent = '';
-            box.appendChild(el('p', { className: 'detail-lead', text: `${n}번은 전 회차에서 ${fmt(p.appearances)}회 나왔습니다. 그때 함께 나온 번호입니다.` }));
+            box.appendChild(el('p', { className: 'detail-lead', text: T('dt.partner.lead', { n: n, c: fmt(p.appearances) }) }));
             box.appendChild(el('ol', { className: 'ball-list' }, p.top.map((row, i) => el('li', null, [
-                el('span', { className: 'lead', text: (i + 1) + '위' }),
+                el('span', { className: 'lead', text: T('sr.rank', { n: i + 1 }) }),
                 ball(row.number),
-                el('span', { className: 'tail', text: fmt(row.count) + '회' }),
+                el('span', { className: 'tail', text: T('sr.times', { n: fmt(row.count) }) }),
             ]))));
             const recent = p.rounds.slice(0, 3);
             if (recent.length) {
-                box.appendChild(el('p', { className: 'card-note', text: '최근 ' + n + '번이 나온 회차: '
-                    + recent.map(r => r.round + '회(' + r.numbers.join('·') + ')').join(', ') }));
+                box.appendChild(el('p', { className: 'card-note', text: T('dt.partner.recent', { n: n,
+                    list: recent.map(r => T('dt.roundWith', { r: r.round, nums: r.numbers.join('·') })).join(', ') }) }));
             }
         }
 
@@ -182,11 +186,11 @@
         const latest = draws.slice().sort(byRoundDesc)[0];
         const first = latest ? latest.numbers.slice().sort(asc)[0] : 1;
         const body = [
-            el('p', { className: 'picker-help', text: '번호를 누르면 그 번호와 같이 나온 번호를 보여줍니다.' }),
+            el('p', { className: 'picker-help', text: T('dt.partner.help') }),
             grid,
             box,
         ];
-        const c = card({ id: 'detail-partner', title: '번호별 동반 출현', meta: '전 회차', body: body });
+        const c = card({ id: 'detail-partner', title: T('dt.partner.t'), meta: T('dt.allDraws'), body: body });
         show(first);
         return c;
     }
@@ -194,7 +198,7 @@
     function matchCard(draws) {
         const input = el('input', {
             type: 'text', id: 'match-input', inputmode: 'numeric', autocomplete: 'off',
-            maxlength: '30', placeholder: '예: 7 13 16 23 24 43',
+            maxlength: '30', placeholder: T('dt.match.ph'),
         });
         const out = el('div', { className: 'match-out' });
         const status = el('p', { className: 'license-status', id: 'match-status', role: 'status', 'aria-live': 'polite' });
@@ -205,7 +209,7 @@
             status.classList.remove('error');
             out.textContent = '';
             if (uniq.length !== 6 || uniq.some(n => n < 1 || n > 45)) {
-                status.textContent = '1~45 사이의 서로 다른 번호 6개를 넣어 주세요.';
+                status.textContent = T('dt.match.err');
                 status.classList.add('error');
                 return;
             }
@@ -214,69 +218,69 @@
             out.appendChild(el('p', { className: 'detail-lead' }, [
                 el('span', { className: 'strategy-nums' }, m.picks.map(ball)),
             ]));
-            out.appendChild(el('p', { text: `전 회차 ${fmt(m.rounds)}회와 맞춰 본 결과, 가장 많이 겹친 건 ${m.best}개입니다.` }));
+            out.appendChild(el('p', { text: T('dt.match.lead', { n: fmt(m.rounds), best: m.best }) }));
             if (m.bestRows.length) {
                 out.appendChild(el('ul', { className: 'ball-list' }, m.bestRows.map(d => el('li', null, [
-                    el('span', { className: 'lead', text: d.round + '회' }),
+                    el('span', { className: 'lead', text: T('sr.drawNo', { n: d.round }) }),
                     el('span', { className: 'strategy-nums' }, d.numbers.slice().sort(asc).map(ball)),
                 ]))));
             }
             out.appendChild(el('ul', { className: 'hbars' }, [6, 5, 4, 3].map(h => el('li', { className: 'hbar' }, [
-                el('span', { text: h + '개 일치' }),
+                el('span', { text: T('dt.match.hits', { n: h }) }),
                 el('span', { className: 'hbar-track', 'aria-hidden': 'true' }, [
                     el('span', { className: 'hbar-fill', style: 'width:' + (m.dist[h] / Math.max(1, m.dist[3]) * 100) + '%;display:block' }),
                 ]),
-                el('span', { className: 'hbar-val', text: fmt(m.dist[h]) + '회' }),
+                el('span', { className: 'hbar-val', text: T('sr.times', { n: fmt(m.dist[h]) }) }),
             ]))));
-            out.appendChild(el('p', { className: 'card-note', text: '1등(6개)이 0회인 건 당연합니다. 같은 조합이 두 번 나온 적은 없습니다.' }));
+            out.appendChild(el('p', { className: 'card-note', text: T('dt.match.note') }));
         }
 
         const body = [
-            el('p', { className: 'picker-help', text: '번호 6개를 넣으면 지난 회차와 맞춰 봅니다. 생성기에서 뽑은 번호를 그대로 넣어 보세요.' }),
+            el('p', { className: 'picker-help', text: T('dt.match.help') }),
             el('div', { className: 'license-form' }, [
                 input,
-                el('button', { type: 'button', className: 'btn', text: '대조하기', on: { click: run } }),
+                el('button', { type: 'button', className: 'btn', text: T('dt.match.go'), on: { click: run } }),
             ]),
             status,
             out,
         ];
-        return card({ id: 'detail-match', title: '내 번호 과거 대조', meta: '전 회차', body: body });
+        return card({ id: 'detail-match', title: T('dt.match.t'), meta: T('dt.allDraws'), body: body });
     }
 
     function prizeCard(draws) {
         const t = prizeTrend(draws, 20);
         const body = [
-            el('p', { className: 'detail-lead', text: `전 회차 1등 평균 당첨금은 ${won(Math.round(t.avgAll))}입니다. 아래는 최근 20회차입니다.` }),
+            el('p', { className: 'detail-lead', text: T('dt.prize.lead', { amount: won(Math.round(t.avgAll)) }) }),
             el('ul', { className: 'hbars' }, t.rows.map(r => el('li', { className: 'hbar' }, [
-                el('span', { text: r.round + '회' }),
+                el('span', { text: T('sr.drawNo', { n: r.round }) }),
                 el('span', { className: 'hbar-track', 'aria-hidden': 'true' }, [
                     el('span', { className: 'hbar-fill', style: 'width:' + (t.max ? r.amount / t.max * 100 : 0) + '%;display:block' }),
                 ]),
-                el('span', { className: 'hbar-val', text: won(r.amount) + (r.winners ? ` · ${r.winners}명` : '') }),
+                el('span', { className: 'hbar-val', text: won(r.amount) + (r.winners ? ' · ' + T('dt.winners', { n: r.winners }) : '') }),
             ]))),
-            el('p', { className: 'card-note', text: '당첨자가 많으면 1인당 금액이 줄어듭니다. 금액이 낮은 회차는 대개 당첨자가 많았던 회차입니다.' }),
+            el('p', { className: 'card-note', text: T('dt.prize.note') }),
         ];
-        return card({ id: 'detail-prize', title: '1등 당첨금 추이', meta: '최근 20회차', body: body });
+        return card({ id: 'detail-prize', title: T('dt.prize.t'), meta: T('dt.last20'), body: body });
     }
 
     /* ───── 잠금 화면 ───── */
 
     const LOCKED = [
-        { id: 'detail-runs', title: '연속번호가 나온 회차', desc: '어느 회차에서 어떤 번호가 이어졌는지 회차별로 봅니다.' },
-        { id: 'detail-partner', title: '번호별 동반 출현', desc: '번호를 누르면 그 번호와 같이 나온 번호를 순위로 봅니다.' },
-        { id: 'detail-match', title: '내 번호 과거 대조', desc: '번호 6개를 지난 전 회차와 맞춰 최고 몇 개까지 겹쳤는지 봅니다.' },
-        { id: 'detail-prize', title: '1등 당첨금 추이', desc: '회차별 1등 당첨금과 당첨자 수를 함께 봅니다.' },
+        { id: 'detail-runs', key: 'dt.runs' },
+        { id: 'detail-partner', key: 'dt.partner' },
+        { id: 'detail-match', key: 'dt.match' },
+        { id: 'detail-prize', key: 'dt.prize' },
     ];
 
     function lockedCard(spec, href) {
         return el('section', { className: 'card locked-card', id: spec.id, 'aria-labelledby': spec.id + '-t' }, [
             el('h3', { className: 'card-title', id: spec.id + '-t' }, [
-                el('span', { text: spec.title }),
-                el('small', { className: 'lock-mark', text: '잠김' }),
+                el('span', { text: T(spec.key + '.t') }),
+                el('small', { className: 'lock-mark', text: T('dt.locked') }),
             ]),
             el('div', { className: 'card-body' }, [
-                el('p', { text: spec.desc }),
-                el('a', { className: 'btn btn-secondary', href: href || 'statistics.html', text: '이용권으로 열기' }),
+                el('p', { text: T(spec.key + '.desc') }),
+                el('a', { className: 'btn btn-secondary', href: href || 'statistics.html', text: T('dt.openWithPass') }),
             ]),
         ]);
     }

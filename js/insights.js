@@ -47,8 +47,11 @@
 
     const ball = n => el('span', { className: 'mball', dataset: { band: bandOf(n) }, text: String(n) });
     const balls = nums => el('span', { className: 'strategy-nums' }, nums.slice().sort(asc).map(ball));
-    const listNums = rows => rows.slice(0, 4).map(r => r.number).join('·') + '번'
-        + (rows.length > 4 ? ' 외 ' + (rows.length - 4) + '개' : '');
+    const T = (k, v) => (v ? I18N.f(k, v) : I18N.t(k));
+    const lab = r => (I18N.lang === 'en' && r.labelEn) ? r.labelEn : r.label;
+    const listNums = rows => rows.length > 4
+        ? T('in.numsMore', { nums: rows.slice(0, 4).map(r => r.number).join('·'), n: rows.length - 4 })
+        : T('in.nums', { nums: rows.slice(0, 4).map(r => r.number).join('·') });
 
     function acValue(nums) {
         const diffs = {};
@@ -82,68 +85,64 @@
         const lines = [];
 
         lines.push({
-            head: '많이 나온 번호',
-            body: listNums(top) + ' — ' + max + '회. ' + rounds + '회 동안 한 번호의 기대 출현은 '
-                + fmt1(mean) + '회이니 ' + fmt1(max - mean) + '회 많습니다 (+' + fmt1(zMax) + ' 표준편차).',
+            head: T('in.hot.h'),
+            body: T('in.hot.b', { nums: listNums(top), max: max, rounds: rounds, mean: fmt1(mean), diff: fmt1(max - mean), z: fmt1(zMax) }),
             note: zMax <= EXPECTED_MAX_Z + 0.6
-                ? '번호 45개 중 최다 번호는 공평한 추첨에서도 평균 +' + EXPECTED_MAX_Z + ' 표준편차쯤 튑니다. 이 정도는 흔한 값입니다.'
-                : '평균적인 최댓값(+' + EXPECTED_MAX_Z + ' 표준편차)보다 큽니다. 다만 ' + rounds + '회는 매우 작은 표본이라 다음 기간에 쉽게 뒤집힙니다.',
+                ? T('in.hot.n1', { z: EXPECTED_MAX_Z })
+                : T('in.hot.n2', { z: EXPECTED_MAX_Z, rounds: rounds }),
         });
 
         lines.push({
-            head: '적게 나온 번호',
-            body: listNums(bottom) + ' — ' + min + '회로 기대보다 ' + fmt1(mean - min) + '회 적습니다 (-' + fmt1(zMin) + ' 표준편차).',
-            note: '아래쪽 끝도 마찬가지입니다. 45개 중 최솟값은 공평한 추첨에서도 평균 -' + EXPECTED_MAX_Z + ' 표준편차쯤 내려갑니다.',
+            head: T('in.cold.h'),
+            body: T('in.cold.b', { nums: listNums(bottom), min: min, diff: fmt1(mean - min), z: fmt1(zMin) }),
+            note: T('in.cold.n', { z: EXPECTED_MAX_Z }),
         });
 
         const missing = stats.frequency.filter(r => r.count === 0).length;
         const missingExpected = 45 * Math.pow(1 - P, rounds);
         lines.push({
-            head: '한 번도 안 나온 번호',
-            body: missing + '개입니다. ' + rounds + '회라면 평균 ' + fmt1(missingExpected) + '개가 그렇습니다.',
-            note: missing > missingExpected
-                ? '기대보다 많지만, 회차가 적을수록 이런 번호는 늘어납니다.'
-                : '기대 범위 안입니다.',
+            head: T('in.missing.h'),
+            body: T('in.missing.b', { n: missing, rounds: rounds, exp: fmt1(missingExpected) }),
+            note: missing > missingExpected ? T('in.missing.n1') : T('in.missing.n2'),
         });
 
         const best = rows => rows.slice().sort((a, b) => b.count - a.count)[0];
         const oddTop = best(stats.oddEven);
         lines.push({
-            head: '홀짝 형태',
-            body: oddTop.label + ' 이 ' + oddTop.count + '회로 가장 잦았습니다 (' + fmt1(oddTop.count / rounds * 100) + '%).',
-            note: '홀3 짝3 이 이론상 가장 흔한 형태입니다(약 33%). 나머지 형태도 고르게 섞여 나옵니다.',
+            head: T('in.odd.h'),
+            body: T('in.odd.b', { label: lab(oddTop), n: oddTop.count, pct: fmt1(oddTop.count / rounds * 100) }),
+            note: T('in.odd.n'),
         });
 
         const lowTop = best(stats.lowHigh);
         lines.push({
-            head: '저고 형태',
-            body: lowTop.label + ' 이 ' + lowTop.count + '회로 가장 잦았습니다 (저 1~22 · 고 23~45 기준).',
-            note: '저3 고3 역시 이론상 가장 흔한 형태입니다(약 33%).',
+            head: T('in.low.h'),
+            body: T('in.low.b', { label: lab(lowTop), n: lowTop.count }),
+            note: T('in.low.n'),
         });
 
         if (draws && draws.length) {
             const avg = draws.reduce((a, d) => a + sumOf(d.numbers), 0) / draws.length;
             lines.push({
-                head: '번호 합계',
-                body: '이번 기간 평균은 ' + fmt1(avg) + '입니다.',
-                note: '이론 평균은 ' + SUM_MEAN + '입니다.',
+                head: T('in.sum.h'),
+                body: T('in.sum.b', { avg: fmt1(avg) }),
+                note: T('in.sum.n', { mean: SUM_MEAN }),
             });
         }
 
         const withStreak = rounds - stats.consecutive[0].count;
         lines.push({
-            head: '연속 번호',
-            body: withStreak + '회에서 연속한 번호가 나왔습니다 (' + fmt1(withStreak / rounds * 100) + '%).',
-            note: '이론값은 ' + fmt1(CONSEC_P * 100) + '%입니다. 절반 넘게 나오는 흔한 형태입니다.',
+            head: T('in.consec.h'),
+            body: T('in.consec.b', { n: withStreak, pct: fmt1(withStreak / rounds * 100) }),
+            note: T('in.consec.n', { pct: fmt1(CONSEC_P * 100) }),
         });
 
         const pair = stats.pairs[0];
         if (pair) {
             lines.push({
-                head: '가장 많이 함께 나온 쌍',
-                body: pair.a + '번과 ' + pair.b + '번이 ' + pair.count + '회 함께 나왔습니다. 한 쌍의 기대 동반 출현은 '
-                    + fmt1(rounds * PAIR_P) + '회입니다.',
-                note: '쌍은 ' + PAIR_COUNT + '가지나 됩니다. 그중 최댓값이 이 정도인 건 우연으로도 흔합니다.',
+                head: T('in.pair.h'),
+                body: T('in.pair.b', { a: pair.a, b: pair.b, n: pair.count, exp: fmt1(rounds * PAIR_P) }),
+                note: T('in.pair.n', { total: PAIR_COUNT }),
             });
         }
         return lines;
@@ -161,14 +160,14 @@
         const out = [];
 
         out.push({
-            title: '많이 나온 번호로 묶기',
-            basis: '이번 기간 출현 상위: ' + hot.slice(0, 6).map(r => r.number + '번(' + r.count + '회)').join(', '),
+            title: T('in.s.hot'),
+            basis: T('in.s.hotBasis', { list: hot.slice(0, 6).map(r => T('in.numCount', { n: r.number, c: r.count })).join(', ') }),
             picks: nums(hot.slice(0, 6)),
         });
 
         out.push({
-            title: '안 나온 번호 노리기',
-            basis: '이번 기간 출현 하위: ' + cold.slice(0, 6).map(r => r.number + '번(' + r.count + '회)').join(', '),
+            title: T('in.s.cold'),
+            basis: T('in.s.coldBasis', { list: cold.slice(0, 6).map(r => T('in.numCount', { n: r.number, c: r.count })).join(', ') }),
             picks: nums(cold.slice(0, 6)),
         });
 
@@ -182,8 +181,8 @@
             if (pairPick.indexOf(hot[i].number) === -1) pairPick.push(hot[i].number);
         }
         out.push({
-            title: '같이 나온 쌍 잇기',
-            basis: '동반 출현 상위 쌍: ' + topPairs.map(p => p.a + '·' + p.b + '번(' + p.count + '회)').join(', '),
+            title: T('in.s.pair'),
+            basis: T('in.s.pairBasis', { list: topPairs.map(p => T('in.pairCount', { a: p.a, b: p.b, c: p.count })).join(', ') }),
             pairs: topPairs,
             picks: pairPick.slice(0, 6),
         });
@@ -193,15 +192,14 @@
         const lowTop = stats.lowHigh.slice().sort((a, b) => b.count - a.count)[0];
         const shaped = shapePick(rand, digitOf(oddTop.label), digitOf(lowTop.label));
         out.push({
-            title: '가장 흔한 형태 맞추기',
-            basis: '이번 기간 최다 형태 ' + oddTop.label + ' · ' + lowTop.label
-                + ' 에 맞춘 조합 (합계 ' + sumOf(shaped) + ' · AC ' + acValue(shaped) + ')',
+            title: T('in.s.shape'),
+            basis: T('in.s.shapeBasis', { odd: lab(oddTop), low: lab(lowTop), sum: sumOf(shaped), ac: acValue(shaped) }),
             picks: shaped,
         });
 
         out.push({
-            title: '많이·적게 섞기',
-            basis: '출현 상위 3개와 하위 3개를 반씩',
+            title: T('in.s.mix'),
+            basis: T('in.s.mixBasis'),
             picks: nums(hot.slice(0, 3)).concat(nums(cold.slice(0, 3))),
         });
 
@@ -241,8 +239,8 @@
             className: 'card', id: 'insight-review', 'aria-labelledby': 'insight-review-t',
         }, [
             el('h3', { className: 'card-title', id: 'insight-review-t' }, [
-                el('span', { text: '이번 기간 리뷰' }),
-                el('small', { text: '최근 ' + stats.rounds + '회차' }),
+                el('span', { text: T('in.reviewH') }),
+                el('small', { text: T('in.reviewSub', { n: stats.rounds }) }),
             ]),
             el('div', { className: 'card-body' }, [
                 el('ul', { className: 'insight-list' }, lines.map(l => el('li', null, [
@@ -258,15 +256,15 @@
             className: 'card', id: 'insight-strategy', 'aria-labelledby': 'insight-strategy-t',
         }, [
             el('h3', { className: 'card-title', id: 'insight-strategy-t' }, [
-                el('span', { text: '이번 주 전략' }),
-                el('small', { text: '이번 기간 기록 기준' }),
+                el('span', { text: T('in.strategyH') }),
+                el('small', { text: T('in.strategySub') }),
             ]),
             el('div', { className: 'card-body' }, [
                 el('ol', { className: 'strategy-list' }, list.map(s => el('li', { className: 'strategy' }, [
                     el('h4', { text: s.title }),
                     el('p', { className: 'strategy-basis', text: s.basis }),
                     s.pairs ? el('p', { className: 'strategy-pairs' }, s.pairs.map(p => el('span', { className: 'pair-chip' }, [
-                        ball(p.a), ball(p.b), el('small', { text: p.count + '회' }),
+                        ball(p.a), ball(p.b), el('small', { text: T('sr.times', { n: p.count }) }),
                     ]))) : null,
                     balls(s.picks),
                 ]))),
