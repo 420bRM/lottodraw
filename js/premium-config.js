@@ -17,10 +17,10 @@ window.PREMIUM_CONFIG = {
     // recurring: true 는 자동 갱신 구독 상품. 해지하면 Polar 가 키를 회수(revoked)해서
     // 다음 확인 때 잠긴다. 최대 revalidateHours 만큼 늦게 반영된다.
     plans: {
-        week:     { name: '1주 이용권',   checkoutUrl: 'https://buy.polar.sh/polar_cl_kGuHn5KSeZXNKhdA3LoXS7yyJuwdffuVaYDMp0ZuDaK', benefitId: 'd9e18b08-85f9-4bfa-a254-69c5eda5ec1b' },
-        sub:      { name: '월 구독',      checkoutUrl: 'https://buy.polar.sh/polar_cl_dOOGiohIK8RLpQsiuNnTAG67OIWqDH8HVlv7E3or9c0', benefitId: '8e7710c7-3ea5-47c6-8d22-8ccc16b81a98', recurring: true },
-        month:    { name: '1개월 이용권', checkoutUrl: 'https://buy.polar.sh/polar_cl_nZ6J9PtUszTrYdfDfpi3En9HlqPueC8l0he1J3QRiC4', benefitId: '4f25845d-2d71-4551-a7ef-cb5c181acea1' },
-        lifetime: { name: '평생 이용권',  checkoutUrl: 'https://buy.polar.sh/polar_cl_4YFfOKW8VD2zeDmyryCkpqUlbSCgNmC52uzzH4WtKDN', benefitId: 'e121d67e-317f-4192-bc46-aa7a586cd879' },
+        week:     { name: '1주 이용권',   checkoutUrl: '', benefitId: 'd9e18b08-85f9-4bfa-a254-69c5eda5ec1b' },
+        sub:      { name: '월 구독',      checkoutUrl: '', benefitId: '8e7710c7-3ea5-47c6-8d22-8ccc16b81a98', recurring: true },
+        month:    { name: '1개월 이용권', checkoutUrl: '', benefitId: '4f25845d-2d71-4551-a7ef-cb5c181acea1' },
+        lifetime: { name: '평생 이용권',  checkoutUrl: '', benefitId: 'e121d67e-317f-4192-bc46-aa7a586cd879' },
     },
 
     // 통계에 넣을 회차 수. 최신 회차부터 이만큼 거슬러 올라간다.
@@ -33,3 +33,8 @@ window.PREMIUM_CONFIG = {
     revalidateHours: 12,
     graceHours: 72,
 };
+
+// 2026-09-27: Polar 가 "복권 관련 상품"이라는 이유로 결제 승인을 거절했다.
+// (Payment access denied — Gambling and lottery-related products are not supported)
+// 그래서 checkoutUrl 을 비워 결제 버튼을 "결제 준비 중"으로 돌려놨다.
+// 지워둔 결제 링크 4개는 커밋 6017b78 에 그대로 남아 있다.
