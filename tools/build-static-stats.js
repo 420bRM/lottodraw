@@ -36,6 +36,9 @@ const SITE = 'https://www.lottodraw.kr';
 // 공유 미리보기 이미지(1200x630). 정적 파일이라 회차와 무관하다.
 const OG_IMAGE = `${SITE}/img/og-default.png`;
 const LottoStats = require(path.join(ROOT, 'js', 'lotto-stats.js'));
+// Cloudflare Web Analytics 비콘. DNS only(프록시 꺼짐)라 자동 주입이 안 되어 직접 심는다.
+// 손으로 관리하는 페이지(index, about 등)의 </head> 앞에도 같은 줄이 들어 있다.
+const CF_BEACON = `<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "91c08d8a39d944e69c10024f2314b955"}'></script><!-- End Cloudflare Web Analytics -->`;
 
 const read = f => fs.readFileSync(path.join(ROOT, f), 'utf8');
 // 내용이 같으면 쓰지 않는다 — 수정 시각만 바뀌는 일을 막는다
@@ -226,6 +229,7 @@ function shell(o) {
     <script src="${base}js/i18n-dict.js"></script>
     <script src="${base}js/i18n.js"></script>
     <script type="application/ld+json">${JSON.stringify(ld)}</script>
+    ${CF_BEACON}
 </head>
 <body>
 <div class="page">

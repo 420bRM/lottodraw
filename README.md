@@ -62,6 +62,7 @@
 - `ads.txt`: 구글 애드센스 광고 인증 파일
 - `naver….html`: 네이버 서치어드바이저 소유 확인 파일. **지우면 안 된다**
 - `robots.txt` `sitemap.xml`: 검색엔진용 안내 파일
+- **방문자 통계(Cloudflare Web Analytics)**: 모든 페이지 `</head>` 바로 앞에 비콘 스크립트 한 줄이 있다. DNS가 "DNS only"(프록시 꺼짐)라 클라우드플레어가 자동으로 넣어주지 않으므로 직접 심은 것이다. 생성 페이지는 `tools/build-static-stats.js`의 `CF_BEACON`에서, 손으로 관리하는 페이지(`index` `about` `contact` `privacy` `terms` `statistics` `tax` `top-prize`)는 각 파일에 직접 들어 있다. **새 페이지를 손으로 만들면 이 줄도 복사해 넣을 것**
 
 ---
 
@@ -275,6 +276,7 @@ Dropbox `260914 클로드` 폴더의 README와 CLAUDE.md는 **실제로 적용�
 
 | 날짜 | 어디서 | 한 일 |
 |---|---|---|
+| 2026-09-28 | Claude 채팅 | Cloudflare Web Analytics 비콘을 전 페이지(생성 템플릿 + 수동 페이지 8개)에 추가 |
 | 2026-09-28 | 집, VS Code | 애드센스 반려 원인 진단(본문 글자 수 실측). Polar 2차 이의신청 제출. 개인정보·약관·문의 3쪽 영어화 |
 | 2026-09-28 | 집, VS Code | 영어 전환(KO/EN) 추가 — 주요 6쪽, 통계 카드·상세 분석, 통계 12쪽 본문과 표·차트까지. Polar 이의신청용 |
 | 2026-09-27 | 집, VS Code | Polar 연동을 끝까지 진행(상품 4종, 우리은행 정산 계좌, 잠금해제 테스트 통과)했으나 **Go live 심사와 이의신청이 모두 거절**. 결제 링크를 비활성화하고 대안을 정리 |
