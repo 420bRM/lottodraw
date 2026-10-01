@@ -20,6 +20,7 @@
 
     const plans = JSON.parse(JSON.stringify(cfg.plans || {}));
     let methods = { bank: false, payapp: false };
+    let autoConfirm = false;     // 입금 알림 연결이 살아 있어 계좌이체도 몇 분 안에 저절로 열리는가
     let serverReady = null;      // /api/config 를 받아 오는 약속
     let buyable = false;
     let currentPlan = null;
@@ -130,6 +131,8 @@
         if (!api) { setBuyable(false); serverReady = Promise.resolve(false); return serverReady; }
         serverReady = call('/api/config').then(c => {
             methods = Object.assign({ bank: false, payapp: false }, c.methods || {});
+            autoConfirm = !!c.autoConfirm;
+            if (current && current.order) renderOrder();
             Object.keys(c.plans || {}).forEach(id => {
                 if (plans[id]) Object.assign(plans[id], { amount: c.plans[id].amount, days: c.plans[id].days });
             });
@@ -249,7 +252,8 @@
 
         if (o.method === 'bank' && o.bank) {
             const b = o.bank;
-            body.appendChild(el('p', { className: 'ob-lead', text: T('ob.lead', { amount: won(o.amount) }) }));
+            const off = (o.listPrice || o.amount) - o.amount;
+            body.appendChild(el('p', { className: 'ob-lead', text: T(autoConfirm ? 'ob.leadAuto' : 'ob.lead', { amount: won(o.amount) }) }));
             body.appendChild(el('dl', { className: 'ob-bank' }, [
                 row(T('ob.bank'), b.bank),
                 row(T('ob.account'), b.account, b.account.replace(/[^\d-]/g, '')),
@@ -257,11 +261,12 @@
                 row(T('ob.amount'), won(o.amount), String(o.amount)),
                 row(T('ob.name'), o.name),
             ]));
+            if (off > 0) body.appendChild(el('p', { className: 'ob-exact', text: T('ob.exact', { amount: won(o.amount), off: won(off) }) }));
             if (MOBILE && b.tossBank) {
                 const href = `supertoss://send?bank=${encodeURIComponent(b.tossBank)}&accountNo=${b.account.replace(/\D/g, '')}&amount=${o.amount}`;
                 body.appendChild(el('p', { className: 'co-actions' }, [el('a', { className: 'btn', href, text: T('ob.toss') })]));
             }
-            body.appendChild(el('p', { className: 'card-note', text: T('ob.note', { deadline: fmtTime(o.deadline) }) }));
+            body.appendChild(el('p', { className: 'card-note', text: T(autoConfirm ? 'ob.noteAuto' : 'ob.note', { deadline: fmtTime(o.deadline) }) }));
         } else if (o.method === 'payapp') {
             body.appendChild(el('p', { className: 'ob-lead', text: T('ob.cardLead', { amount: won(o.amount) }) }));
             if (current.payurl) {
@@ -337,11 +342,11 @@
         if (!silent) setStatus('plans-status', T('ob.cancelled'));
     }
 
-    // 처음 15분은 15초마다, 두 시간까지는 1분마다, 그 뒤로는 5분마다 묻는다.
+    // 처음 15분은 10초마다, 두 시간까지는 1분마다, 그 뒤로는 5분마다 묻는다.
     // 화면을 안 보고 있으면 쉬었다가 돌아오면 바로 한 번 묻는다.
     function nextDelay() {
         const age = Date.now() - (current ? current.createdAt : Date.now());
-        if (age < 15 * 60000) return 15000;
+        if (age < 15 * 60000) return 10000;
         if (age < 2 * 3600000) return 60000;
         return 300000;
     }
@@ -400,12 +405,60 @@
     function unlock(record, justBought) {
         $('paywall').hidden = true;
         $('premium').hidden = false;
+        unlockedRecord = record;
         $('license-summary').textContent = L.summary(record);
         $('license-code').textContent = record.key;
         $('license-new').hidden = !justBought;
         if (justBought) showKey(true);
         loadWindowStats();
         if (justBought) window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    /* ───── 환불 요청 ───── */
+
+    const REFUND_HOURS = { week: 24, month: 168, lifetime: 168 };   // 이용약관 4조 (서버가 다시 확인한다)
+    let unlockedRecord = null;
+
+    function refundDeadline(record) {
+        const h = REFUND_HOURS[record && record.planId];
+        if (!h || !record.issuedAt) return null;
+        return Date.parse(record.issuedAt) + h * 3600 * 1000;
+    }
+
+    function openRefund() {
+        const box = $('refund-box');
+        const open = box.hidden;
+        box.hidden = !open;
+        $('refund-open').setAttribute('aria-expanded', String(open));
+        if (!open) return;
+        const until = refundDeadline(unlockedRecord);
+        const ok = until && until > Date.now();
+        $('refund-window').textContent = ok ? T('rf.until', { date: fmtTime(until) }) : T('rf.closed');
+        $('refund-form').hidden = !ok;
+        setStatus('refund-status', '');
+    }
+
+    async function submitRefund(e) {
+        e.preventDefault();
+        if (!$('refund-agree').checked) return setStatus('refund-status', T('rf.needAgree'), true);
+        const btn = $('refund-submit');
+        btn.disabled = true;
+        setStatus('refund-status', T('pay.checking'));
+        try {
+            const key = $('license-code').textContent;
+            const r = await call('/api/refunds', { method: 'POST', body: { key, account: $('refund-account').value.trim() } });
+            L.forget(true);
+            store.del(PURCHASED_STORE);
+            $('license-key').value = '';
+            $('refund-box').hidden = true;
+            showKey(false);
+            lock(r.status === 'refunded' ? T('rf.doneCard') : T('rf.doneBank', { amount: won(r.amount) }));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch (err) {
+            setStatus('refund-status', errText(err), true);
+        } finally {
+            btn.disabled = false;
+        }
     }
 
     function showKey(open) {
@@ -491,6 +544,8 @@
         });
         $('license-show').addEventListener('click', () => showKey($('license-reveal').hidden));
         $('license-copy').addEventListener('click', e => copy($('license-code').textContent, e.currentTarget));
+        $('refund-open').addEventListener('click', openRefund);
+        $('refund-form').addEventListener('submit', submitRefund);
         $('license-copy-link').addEventListener('click', e => copy(
             location.origin + location.pathname + '#key=' + $('license-code').textContent, e.currentTarget));
 

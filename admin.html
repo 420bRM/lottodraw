@@ -45,12 +45,46 @@
             <div class="admin-tabs" role="tablist" aria-label="주문 상태">
                 <button type="button" role="tab" data-status="pending" aria-selected="true">입금 대기</button>
                 <button type="button" role="tab" data-status="paid" aria-selected="false">발급 완료</button>
+                <button type="button" role="tab" data-status="refund_requested" aria-selected="false">환불 요청</button>
                 <button type="button" role="tab" data-status="refunded" aria-selected="false">환불</button>
                 <button type="button" role="tab" data-status="cancelled" aria-selected="false">취소</button>
                 <button type="button" role="tab" data-status="all" aria-selected="false">전체</button>
             </div>
             <p class="license-status" id="admin-status" role="status" aria-live="polite"></p>
             <div class="admin-list" id="order-list"></div>
+
+            <section class="card hook-card" aria-labelledby="hook-t">
+                <h2 class="card-title" id="hook-t"><span>입금 알림 연결 (자동 입금 확인)</span><small>한 번만 설정</small></h2>
+                <div class="card-body">
+                    <p class="license-status" id="hook-state" role="status"></p>
+                    <p class="card-note">휴대폰이 은행 입금 알림을 받으면 그 내용을 아래 주소로 그대로 넘겨주게 해 두면, 서버가 금액으로 주문을 찾아 <b>새벽에도 바로</b> 키를 발급합니다. 휴대폰은 켜져 있고 인터넷만 되면 됩니다.</p>
+                    <dl class="ob-bank">
+                        <div class="ob-row"><dt>보낼 주소</dt><dd><code id="hook-url"></code> <button type="button" class="btn btn-secondary btn-mini" id="hook-copy-url">복사</button></dd></div>
+                        <div class="ob-row"><dt>머리글</dt><dd><code>Authorization: Bearer (열쇠)</code></dd></div>
+                        <div class="ob-row"><dt>열쇠</dt><dd><button type="button" class="btn btn-secondary btn-mini" id="hook-copy-secret">열쇠 복사</button> <button type="button" class="btn btn-secondary btn-mini" id="hook-show-secret">보기</button></dd></div>
+                        <div class="ob-row" id="hook-secret-row" hidden><dt></dt><dd><code id="hook-secret"></code></dd></div>
+                    </dl>
+                    <details class="hook-guide">
+                        <summary>안드로이드 (MacroDroid, 무료)</summary>
+                        <ol>
+                            <li>Play 스토어에서 <b>MacroDroid</b> 설치 → 알림 접근 권한 허용, 배터리 최적화에서 제외</li>
+                            <li>매크로 추가 → 트리거: <b>알림 → 알림 수신</b> → 앱: <b>우리WON뱅킹</b>(입금 알림이 오는 앱), 내용에 <b>입금</b> 포함</li>
+                            <li>동작: <b>웹 → HTTP 요청</b> → 방법 POST, URL 은 위 "보낼 주소", 머리글 <code>Authorization</code> 에 <code>Bearer 열쇠</code>, 본문(text/plain)에는 매직 텍스트에서 <b>알림 제목</b>과 <b>알림 텍스트</b>를 넣기</li>
+                            <li>매크로 하나 더: 트리거 <b>날짜/시간 → 정기적 간격 6시간</b>, 동작은 같은 HTTP 요청에 본문만 <code>ping</code></li>
+                        </ol>
+                    </details>
+                    <details class="hook-guide">
+                        <summary>아이폰 (단축어 + 은행 입출금 문자 알림)</summary>
+                        <ol>
+                            <li>은행 앱에서 <b>입출금 문자(SMS) 알림</b> 신청 — 아이폰은 앱 푸시를 넘길 수 없어 문자를 씁니다</li>
+                            <li>단축어 앱 → 자동화 → 새로 만들기 → <b>메시지</b> → 보낸 사람: 은행 번호, 메시지에 <b>입금</b> 포함 → <b>즉시 실행</b></li>
+                            <li>동작: <b>URL 콘텐츠 가져오기</b> → 위 주소, 방법 POST, 헤더 <code>Authorization</code> = <code>Bearer 열쇠</code>, 요청 본문 <b>JSON</b> → 키 <code>text</code> = <b>단축어 입력</b>(받은 메시지)</li>
+                            <li>자동화 하나 더: <b>시간</b> → 매일 여러 번(예: 0·6·12·18시) → 같은 동작에 <code>text</code> 값만 <code>ping</code></li>
+                        </ol>
+                    </details>
+                    <p class="card-note">설정 뒤 1~2분 안에 위 상태가 "연결됨"으로 바뀌면 끝입니다. 끊기면(13시간 신호 없음) 텔레그램으로 알려 드리고, 그동안 구매 화면은 "판매자 확인 뒤 열림"으로 바뀝니다. 다른 입금(월급 등)도 넘어오지만 이용권 금액이 아니면 무시합니다 — 가능하면 판매 전용 계좌를 쓰세요.</p>
+                </div>
+            </section>
 
             <div class="admin-tools">
                 <section class="card" aria-labelledby="issue-t">

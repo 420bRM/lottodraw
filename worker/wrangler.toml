@@ -29,3 +29,7 @@ namespace_id = "1001"
 
 [observability]
 enabled = true
+
+# 한 시간마다 지킴이: 입금 알림 연결(휴대폰)이 끊기면 판매자에게 알린다
+[triggers]
+crons = ["17 * * * *"]

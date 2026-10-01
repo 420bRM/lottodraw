@@ -398,6 +398,9 @@ details[open] > summary.card-title { padding-bottom: 0; }
 .ob-row dt { color: var(--muted); font-size: 13px; }
 .ob-row dd { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; font-weight: bold; font-variant-numeric: tabular-nums; word-break: break-all; }
 .key-new { margin: 0 0 8px; color: var(--brand); font-weight: bold; }
+.ob-exact { margin: 0; padding: 8px 12px; background: #fff7d6; border-radius: 6px; color: var(--text); font-size: 13px; font-weight: bold; }
+.refund-box { display: grid; gap: 10px; margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--line); }
+.refund-box .ob-lead { margin: 0; }
 .key-code {
     display: block;
     margin: 0 0 10px;
@@ -844,3 +847,8 @@ html.home { scroll-behavior: smooth; }
 .lang-switch button + button { border-left: 1px solid var(--line); }
 .lang-switch button:hover { color: var(--brand); }
 .lang-switch button.is-on { background: var(--brand); color: #fff; }
+.hook-card .card-body { display: grid; gap: 10px; }
+.hook-card code { word-break: break-all; }
+.hook-guide { border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; }
+.hook-guide summary { font-weight: bold; cursor: pointer; }
+.hook-guide ol { margin: 8px 0 0; padding-left: 20px; line-height: 1.7; font-size: 13px; }

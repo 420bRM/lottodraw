@@ -112,7 +112,8 @@ test('계좌이체 전체 흐름: 주문 → 입금 대기 → 관리자 확인 
     assert.equal(r.status, 201);
     const { order, token } = r.data;
     assert.match(order.id, /^[0-9A-Z]{8}$/);
-    assert.equal(order.amount, 5900);
+    assert.equal(order.listPrice, 5900);
+    assert.ok(order.amount >= 5801 && order.amount <= 5899, '계좌이체는 끝자리 1~99원 할인된 고유 금액: ' + order.amount);
     assert.equal(order.status, 'pending');
     assert.equal(order.name, '김철수 b', '태그 문자는 걸러진다');
     assert.equal(order.bank.account, '1002-123-456789');
@@ -278,46 +279,209 @@ test('입금 대기 주문은 구매자가 취소할 수 있고, 관리자 목�
     assert.ok(env.DB._m.get('order:' + order.id).ttl > 0, '취소된 주문은 시간이 지나면 지워진다');
 });
 
-test('입금 알림 자동 매칭: 금액+이름이 하나에만 맞을 때만 발급', async () => {
+test('입금 알림 자동 확인: 주문마다 금액 끝자리가 달라 금액만으로 찾는다 (새벽에도 사람 손 없이)', async () => {
     _resetForTests();
     const env = makeEnv({ DEPOSIT_HOOK_SECRET: 'hook-secret-0123456789' });
     await setupKey(env);
-    const a = (await call(env, 'POST', '/api/orders', { body: { plan: 'month', method: 'bank', name: '박민수', agree: true } })).data.order;
-    const b = (await call(env, 'POST', '/api/orders', { body: { plan: 'month', method: 'bank', name: '최지은', agree: true }, headers: { 'CF-Connecting-IP': '2.2.2.2' } })).data.order;
-    // "입금" 이라는 이름으로 주문해 두고 남의 입금에 올라타려는 시도
-    const sneaky = (await call(env, 'POST', '/api/orders', { body: { plan: 'week', method: 'bank', name: '입금', agree: true }, headers: { 'CF-Connecting-IP': '3.3.3.3' } })).data.order;
-    // "김" 한 글자는 아예 주문이 안 된다
-    const short = await call(env, 'POST', '/api/orders', { body: { plan: 'week', method: 'bank', name: '김', agree: true } });
-    assert.equal(short.data.error, 'need_name');
+    const hook = (raw, extra) => call(env, 'POST', '/api/hooks/deposit', { raw, headers: Object.assign({ 'Content-Type': 'text/plain', Authorization: 'Bearer hook-secret-0123456789' }, extra || {}) });
+    const won = n => n.toLocaleString('ko-KR') + '원';
+
+    // 같은 이용권 주문 여러 건도 금액이 전부 다르다
+    const orders = [];
+    for (let i = 0; i < 6; i++) {
+        orders.push((await call(env, 'POST', '/api/orders', { body: { plan: 'month', method: 'bank', name: '구매자' + i, agree: true }, headers: { 'CF-Connecting-IP': '10.0.0.' + i } })).data);
+    }
+    assert.equal(new Set(orders.map(o => o.order.amount)).size, 6, '대기 중인 주문끼리 금액이 겹치지 않는다');
 
     let r = await call(env, 'POST', '/api/hooks/deposit?key=wrong', { raw: 'x', headers: { 'Content-Type': 'text/plain' } });
     assert.equal(r.status, 401);
 
+    const target = orders[3];
     // 출금 알림은 무시
-    r = await call(env, 'POST', '/api/hooks/deposit', { raw: '[우리은행] 출금 5,900원 박민수', headers: { 'Content-Type': 'text/plain', Authorization: 'Bearer hook-secret-0123456789' } });
+    r = await hook(`[우리은행] 출금 ${won(target.order.amount)} 구매자3`);
+    assert.equal(r.data.matched, null);
+    // 정가(할인 전 금액)로 보내면 맞추지 않는다
+    r = await hook(`[우리은행] 입금 5,900원 구매자3`);
     assert.equal(r.data.matched, null);
 
-    // 금액만 맞고 이름이 없으면 발급하지 않는다 (후보 2건)
-    r = await call(env, 'POST', '/api/hooks/deposit', { raw: '[우리은행] 입금 5,900원', headers: { 'Content-Type': 'text/plain', Authorization: 'Bearer hook-secret-0123456789' } });
-    assert.equal(r.data.matched, null);
-    assert.equal(r.data.candidates, 2);
+    // 입금자명이 주문과 달라도(가족 계좌 등) 금액이 맞으면 바로 발급. 잔액 금액은 무시한다
+    r = await hook(`[Web발신]\n우리 10/02 03:12\n*1234\n입금 ${won(target.order.amount)}\n홍엄마\n잔액 ${won(target.order.amount + 1000000)}`);
+    assert.equal(r.data.matched, target.order.id);
+    const got = await call(env, 'GET', `/api/orders/${target.order.id}?token=${target.token}`);
+    assert.equal(got.data.order.status, 'paid');
+    assert.ok(got.data.order.key.startsWith('LD1-'));
 
-    // "박민수" 가 "박민수진" 안에 들어 있어도 낱말이 다르면 맞추지 않는다
-    r = await call(env, 'POST', '/api/hooks/deposit', { raw: '[우리은행] 입금 5,900원 박민수진', headers: { 'Content-Type': 'text/plain', Authorization: 'Bearer hook-secret-0123456789' } });
-    assert.equal(r.data.matched, null);
-
-    r = await call(env, 'POST', '/api/hooks/deposit?key=hook-secret-0123456789', { raw: '[WON] 입금 5,900원 최 지은 잔액 10,000원', headers: { 'Content-Type': 'text/plain' } });
-    assert.equal(r.data.matched, b.id);
-    // 같은 알림이 다시 와도 두 번 처리하지 않는다
-    r = await call(env, 'POST', '/api/hooks/deposit?key=hook-secret-0123456789', { raw: '[WON] 입금 5,900원 최 지은 잔액 10,000원', headers: { 'Content-Type': 'text/plain' } });
+    // 같은 알림이 다시 오면 두 번 처리하지 않는다
+    r = await hook(`[Web발신]\n우리 10/02 03:12\n*1234\n입금 ${won(target.order.amount)}\n홍엄마\n잔액 ${won(target.order.amount + 1000000)}`);
     assert.equal(r.data.reason, 'duplicate');
 
-    // 이름이 "입금" 인 주문은 알림 문장에 "입금" 이 있어도 자동 확인하지 않는다
-    r = await call(env, 'POST', '/api/hooks/deposit?key=hook-secret-0123456789', { raw: '[우리은행] 입금 2,900원 김철수', headers: { 'Content-Type': 'text/plain' } });
-    assert.equal(r.data.matched, null);
+    // JSON 으로 금액·이름을 따로 보내도 된다
+    r = await call(env, 'POST', '/api/hooks/deposit', { body: { amount: String(orders[0].order.amount), name: '아무개' }, headers: { Authorization: 'Bearer hook-secret-0123456789' } });
+    assert.equal(r.data.matched, orders[0].order.id);
 
-    const pending = await call(env, 'GET', '/api/admin/orders?status=pending', { headers: asAdmin });
-    assert.deepEqual(pending.data.orders.map(o => o.id).sort(), [a.id, sneaky.id].sort());
+    // 금액이 같은 대기 주문이 둘이면(기한 지난 옛 주문과 겹침) 이름으로 좁히고, 그래도 애매하면 발급하지 않는다
+    const twin = orders[1].order;
+    const clone = JSON.parse(env.DB._m.get('order:' + twin.id).value);
+    clone.id = 'ZZZZZZZ1'; clone.name = '다른사람'; clone.createdAt -= 80 * 3600 * 1000;
+    await env.DB.put('order:' + clone.id, JSON.stringify(clone), { metadata: { s: 'pending', p: 'month', a: twin.amount, m: 'bank', n: clone.name, c: clone.createdAt } });
+    r = await hook(`입금 ${won(twin.amount)} 제3자`);
+    assert.equal(r.data.matched, null);
+    assert.equal(r.data.candidates, 2);
+    r = await hook(`입금 ${won(twin.amount)} 구매자1 10/02`);
+    assert.equal(r.data.matched, twin.id);
+
+    // 연결 상태가 기록되고, 공개 설정에 "자동 확인 중"으로 나온다
+    const cfg = await call(env, 'GET', '/api/config');
+    assert.equal(cfg.data.autoConfirm, true);
+});
+
+test('입금 알림 연결: 6시간마다 ping, 13시간 조용하면 지킴이가 한 번만 알린다', async () => {
+    _resetForTests();
+    const sent = [];
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async (url, init) => {
+        if (String(url).startsWith('https://api.telegram.org/')) { sent.push(JSON.parse(init.body).text); return new Response('{}'); }
+        return realFetch(url, init);
+    };
+    try {
+        const env = makeEnv({ TELEGRAM_BOT_TOKEN: 't', TELEGRAM_CHAT_ID: '1' });
+        // 연결 전: 자동 확인 아님, 지킴이 조용
+        assert.equal((await call(env, 'GET', '/api/config')).data.autoConfirm, false);
+        // 관리자 페이지에서 열쇠를 만든다 (비밀값을 따로 넣지 않아도 되게)
+        let r = await call(env, 'POST', '/api/admin/hook-secret', { headers: asAdmin });
+        const key = r.data.secret;
+        assert.ok(key.length >= 16);
+        assert.equal((await call(env, 'POST', '/api/admin/hook-secret', { headers: asAdmin })).data.secret, key, '두 번 눌러도 같은 열쇠');
+
+        await worker.scheduled({}, env, ctx);
+        await Promise.all(waits);
+        assert.equal(sent.length, 0);
+
+        r = await call(env, 'POST', '/api/hooks/deposit', { raw: 'ping', headers: { 'Content-Type': 'text/plain', Authorization: 'Bearer ' + key } });
+        assert.equal(r.data.pong, true);
+        assert.equal((await call(env, 'GET', '/api/config')).data.autoConfirm, true);
+
+        // 14시간 조용
+        const h = JSON.parse(env.DB._m.get('meta:hook').value);
+        h.lastAt -= 14 * 3600 * 1000;
+        env.DB._m.get('meta:hook').value = JSON.stringify(h);
+        assert.equal((await call(env, 'GET', '/api/config')).data.autoConfirm, false, '끊기면 화면 안내가 "판매자 확인 뒤"로 바뀐다');
+        await worker.scheduled({}, env, ctx); await Promise.all(waits);
+        await worker.scheduled({}, env, ctx); await Promise.all(waits);
+        assert.equal(sent.length, 1, '같은 끊김은 한 번만 알린다');
+        assert.match(sent[0], /입금 알림 연결이 14시간째/);
+
+        // 다시 살아나면 다음 끊김 때 또 알린다
+        await call(env, 'POST', '/api/hooks/deposit', { raw: 'ping', headers: { 'Content-Type': 'text/plain', Authorization: 'Bearer ' + key } });
+        const st = await call(env, 'GET', '/api/admin/status', { headers: asAdmin });
+        assert.equal(st.data.hooks.alive, true);
+        assert.ok(st.data.hooks.state.pingAt);
+    } finally {
+        globalThis.fetch = realFetch;
+    }
+});
+
+test('환불 요청: 기간 안이면 키 즉시 정지, 계좌이체는 판매자에게 송금 요청, 기간 지나면 거절', async () => {
+    _resetForTests();
+    const env = makeEnv({ DEPOSIT_HOOK_SECRET: 'hook-secret-0123456789' });
+    await setupKey(env);
+    const make = async plan => {
+        const { order, token } = (await call(env, 'POST', '/api/orders', { body: { plan, method: 'bank', name: '홍길동', agree: true }, headers: { 'CF-Connecting-IP': plan } })).data;
+        await call(env, 'POST', '/api/hooks/deposit', { raw: `입금 ${order.amount.toLocaleString('ko-KR')}원`, headers: { 'Content-Type': 'text/plain', Authorization: 'Bearer hook-secret-0123456789' } });
+        return (await call(env, 'GET', `/api/orders/${order.id}?token=${token}`)).data.order;
+    };
+    const m = await make('month');
+    assert.equal(m.status, 'paid');
+
+    let r = await call(env, 'POST', '/api/refunds', { body: { key: m.key } });
+    assert.equal(r.data.error, 'need_account', '계좌이체는 돌려받을 계좌가 필요');
+    r = await call(env, 'POST', '/api/refunds', { body: { key: m.key.slice(0, -2) + 'AA', account: '우리 1002-111-222222 홍길동' } });
+    assert.equal(r.status, 400, '가짜 키는 거절');
+    r = await call(env, 'POST', '/api/refunds', { body: { key: m.key, account: '우리 1002-111-222222 홍길동' } });
+    assert.equal(r.data.status, 'refund_requested');
+    const rev = await call(env, 'GET', '/api/revoked');
+    assert.ok(rev.data.ids.includes(parseKey(m.key).id), '키는 바로 정지');
+    // 다시 눌러도 같은 결과
+    assert.equal((await call(env, 'POST', '/api/refunds', { body: { key: m.key, account: 'x' } })).data.status, 'refund_requested');
+    // 판매자: 송금 완료
+    const list = await call(env, 'GET', '/api/admin/orders?status=refund_requested', { headers: asAdmin });
+    assert.equal(list.data.orders.length, 1);
+    r = await call(env, 'POST', `/api/admin/orders/${m.id}/refund-done`, { headers: asAdmin });
+    assert.equal(r.data.order.status, 'refunded');
+    assert.equal(r.data.order.refundAccount, '우리 1002-111-222222 홍길동');
+
+    // 1주 이용권은 24시간이 지나면 거절
+    const w = await make('week');
+    const rec = JSON.parse(env.DB._m.get('order:' + w.id).value);
+    rec.paidAt -= 25 * 3600 * 1000;
+    env.DB._m.get('order:' + w.id).value = JSON.stringify(rec);
+    r = await call(env, 'POST', '/api/refunds', { body: { key: w.key, account: '우리 1002-111-222222 홍길동' } });
+    assert.equal(r.status, 409);
+    assert.equal(r.data.error, 'refund_window');
+});
+
+test('환불 요청: 카드(페이앱) 결제는 결제 취소까지 자동', async () => {
+    _resetForTests();
+    const env = makeEnv({ PAYAPP_USERID: 'seller1', PAYAPP_LINKKEY: 'lk-secret', PAYAPP_LINKVAL: 'lv-secret' });
+    const realFetch = globalThis.fetch;
+    const calls = [];
+    globalThis.fetch = async (url, init) => {
+        if (String(url).startsWith('https://api.payapp.kr/')) {
+            const f = new URLSearchParams(init.body);
+            calls.push(f);
+            if (f.get('cmd') === 'payrequest') return new Response('state=1&mul_no=777&payurl=https%3A%2F%2Fpayapp.kr%2Fp%2F777');
+            if (f.get('cmd') === 'paycancel') return new Response('state=1&errorMessage=');
+        }
+        return realFetch(url, init);
+    };
+    try {
+        await setupKey(env);
+        const { order } = (await call(env, 'POST', '/api/orders', { body: { plan: 'lifetime', method: 'payapp', phone: '01012345678', agree: true } })).data;
+        assert.equal(order.amount, 12900, '카드는 정가');
+        const form = new URLSearchParams({ userid: 'seller1', linkkey: 'lk-secret', linkval: 'lv-secret', mul_no: '777', var1: order.id, price: '12900', pay_state: '4' });
+        await call(env, 'POST', '/api/payapp/feedback', { raw: form.toString(), headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+        const key = (await call(env, 'GET', `/api/admin/orders/${order.id}`, { headers: asAdmin })).data.order.key;
+        const r = await call(env, 'POST', '/api/refunds', { body: { key } });
+        assert.equal(r.data.status, 'refunded');
+        const cancel = calls.find(f => f.get('cmd') === 'paycancel');
+        assert.equal(cancel.get('mul_no'), '777');
+        assert.equal(cancel.get('linkkey'), 'lk-secret');
+    } finally {
+        globalThis.fetch = realFetch;
+    }
+});
+
+test('자동 점검 주문: 알림 없이 돌고, 끝나면 흔적 없이 지워진다', async () => {
+    _resetForTests();
+    const sent = [];
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async (url, init) => {
+        if (String(url).startsWith('https://api.telegram.org/')) { sent.push(init.body); return new Response('{}'); }
+        return realFetch(url, init);
+    };
+    try {
+        const env = makeEnv({ DEPOSIT_HOOK_SECRET: 'hook-secret-0123456789', TELEGRAM_BOT_TOKEN: 't', TELEGRAM_CHAT_ID: '1' });
+        await setupKey(env);
+        const { order, token } = (await call(env, 'POST', '/api/admin/selftest/order', { headers: asAdmin })).data;
+        let r = await call(env, 'POST', '/api/hooks/deposit', { raw: `[자동점검 ${order.id}] 입금 ${order.amount.toLocaleString('ko-KR')}원 자동점검`, headers: { 'Content-Type': 'text/plain', Authorization: 'Bearer hook-secret-0123456789' } });
+        assert.equal(r.data.matched, order.id);
+        assert.equal(env.DB._m.has('meta:hook'), false, '점검은 휴대폰 연결 신호로 치지 않는다');
+        const paid = (await call(env, 'GET', `/api/orders/${order.id}?token=${token}`)).data.order;
+        r = await call(env, 'POST', '/api/refunds', { body: { key: paid.key, account: '자동점검 계좌' } });
+        assert.equal(r.data.status, 'refund_requested');
+        await Promise.all(waits);
+        assert.equal(sent.length, 0, '점검은 판매자에게 알리지 않는다');
+        r = await call(env, 'POST', '/api/admin/selftest/cleanup', { headers: asAdmin, body: { id: order.id } });
+        assert.equal(r.data.cleaned, true);
+        assert.equal(env.DB._m.has('order:' + order.id), false);
+        assert.deepEqual((await call(env, 'GET', '/api/revoked')).data.ids, []);
+        // 진짜 주문은 지우지 않는다
+        const real = (await call(env, 'POST', '/api/orders', { body: { plan: 'week', method: 'bank', name: '홍길동', agree: true } })).data.order;
+        r = await call(env, 'POST', '/api/admin/selftest/cleanup', { headers: asAdmin, body: { id: real.id } });
+        assert.equal(r.status, 409);
+    } finally {
+        globalThis.fetch = realFetch;
+    }
 });
 
 test('페이앱: 결제창 요청 → 통보 확인(키/금액 검증) → 키 발급 → 승인취소 시 정지', async () => {

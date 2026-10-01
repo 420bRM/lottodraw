@@ -1,17 +1,22 @@
 // lottodraw.kr 결제·이용권 서버 (Cloudflare Worker)
 //
-// 하는 일은 세 가지뿐이다.
-//   1) 주문 받기 — 계좌이체(기본) 또는 페이앱 카드결제(설정했을 때만)
-//   2) 입금이 확인되면 서명된 이용권 키 발급 — 관리자 확인, 페이앱 통보, 입금 알림 자동 매칭 중 하나로
-//   3) 환불된 키 번호 목록 공개 — 브라우저가 가끔 받아 가서 해당 키를 잠근다
+// 하는 일
+//   1) 주문 받기 — 계좌이체(기본) 또는 페이앱 카드결제(설정했을 때만).
+//      계좌이체 주문은 금액 끝자리를 주문마다 다르게(1~99원 할인) 매겨, 금액만 보고도 주문을 찾는다.
+//   2) 입금이 확인되면 서명된 이용권 키 자동 발급 — 판매자 휴대폰이 은행 입금 알림을 이 서버로
+//      넘겨주면(입금 알림 연결) 사람 손 없이 바로 발급한다. 새벽에도. 페이앱은 페이앱 통보로.
+//   3) 환불 — 구매자가 결제 페이지에서 요청하면 기간을 확인해 키를 즉시 정지한다.
+//      카드(페이앱)는 결제 취소까지 자동, 계좌이체는 판매자가 송금만 하면 된다.
+//   4) 지킴이 — 한 시간마다 입금 알림 연결이 살아 있는지 보고, 끊기면 판매자에게 알린다.
 //
 // 키 확인은 브라우저가 공개키로 혼자 한다(js/license.js). 이 서버가 멈춰도
 // 이미 산 사람의 잠금은 풀린다. 서버가 필요한 건 "팔 때"뿐이다.
 //
-// 저장소: KV 하나(DB). order:<주문번호> 와 meta:signing-key, meta:revoked.
+// 저장소: KV 하나(DB). order:<주문번호>, keyidx:<키번호>, hook:<알림해시>,
+//         meta:signing-key, meta:revoked, meta:hook, meta:hook-secret.
 // 비밀값과 설정은 README "4. 유료화" 와 worker/wrangler.toml 참고.
 
-import { generateKeyPair, importPrivate, signKey, parseKey, hex32, publicOnly, keyId, b64urlEncode } from './keys.js';
+import { generateKeyPair, importPrivate, importPublic, signKey, verifyKey, parseKey, hex32, publicOnly, keyId, b64urlEncode } from './keys.js';
 import { plansFor } from './plans.js';
 
 const PAYAPP_API = 'https://api.payapp.kr/oapi/apiLoad.html';
@@ -20,6 +25,9 @@ const PENDING_TTL = 14 * 86400;        // 입금 안 된 주문은 14일 뒤 KV 
 const MAX_PENDING = 50;                // 기한 안의 입금 대기 주문이 이만큼 쌓이면 새 주문을 잠시 막는다 (도배 방지)
 const MAX_PENDING_PER_IP = 3;          // 한 곳(IP)에서 기한 안에 걸어 둘 수 있는 입금 대기 주문 수
 const HOOK_DEDUPE_TTL = 30 * 86400;    // 같은 입금 알림을 두 번 처리하지 않도록 기억하는 기간
+const MAX_DISCOUNT = 99;               // 계좌이체 주문 확인용 끝자리 할인 (1~99원)
+const HOOK_SILENCE_HOURS = 13;         // 입금 알림 연결(휴대폰)이 이만큼 조용하면 끊긴 것으로 본다 (6시간마다 신호)
+const REFUND_HOURS = { week: 24, month: 7 * 24, lifetime: 7 * 24 };   // 이용약관 4조
 const MAX_BODY = 4096;
 const CROCKFORD = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 
@@ -28,6 +36,10 @@ class HttpError extends Error {
 }
 
 export default {
+    // 한 시간마다: 입금 알림 연결이 살아 있는지 확인 (wrangler.toml [triggers])
+    async scheduled(event, env, ctx) {
+        ctx.waitUntil(watchdog(env));
+    },
     async fetch(request, env, ctx) {
         try {
             return await route(request, env, ctx || { waitUntil() {} });
@@ -61,6 +73,7 @@ async function route(request, env, ctx) {
     m = path.match(/^\/api\/orders\/([0-9A-Z]{8})\/cancel$/);
     if (m && method === 'POST') return buyerCancel(request, env, m[1]);
 
+    if (path === '/api/refunds' && method === 'POST') return requestRefund(request, env, ctx);
     if (path === '/api/payapp/feedback' && method === 'POST') return payappFeedback(request, env, ctx);
     if (path === '/api/hooks/deposit' && method === 'POST') return depositHook(request, env, ctx, url);
 
@@ -98,11 +111,13 @@ function publicPlans(env) {
     return out;
 }
 
-function getConfig(request, env) {
+async function getConfig(request, env) {
     return json(request, env, {
         methods: methodsOf(env),
         plans: publicPlans(env),
         depositHours: DEPOSIT_HOURS,
+        // 입금 알림 연결이 살아 있으면 계좌이체도 몇 분 안에 저절로 열린다. 화면 안내 문구가 이걸 따른다.
+        autoConfirm: await hookAlive(env),
     }, 200, { 'Cache-Control': 'public, max-age=60' }, true);
 }
 
@@ -142,12 +157,15 @@ async function createOrder(request, env, ctx, url) {
 
     // 기한(72시간)이 지난 대기 주문은 세지 않는다. 버려진 주문이 쌓여 가게가 닫히는 일을 막는다.
     const ipTag = (await sha256('ip:' + ip)).slice(0, 12);
-    const fresh = (await listOrders(env, 'pending')).filter(o => (o.c || 0) > Date.now() - DEPOSIT_HOURS * 3600 * 1000);
+    const allPending = await listOrders(env, 'pending');
+    const fresh = allPending.filter(o => (o.c || 0) > Date.now() - DEPOSIT_HOURS * 3600 * 1000);
     if (fresh.filter(o => o.i === ipTag).length >= MAX_PENDING_PER_IP) {
         throw new HttpError(429, 'too_many_pending', '입금을 기다리는 주문이 이미 있습니다. 먼저 입금하거나 이전 주문을 취소해 주세요.');
     }
     if (fresh.length >= MAX_PENDING) throw new HttpError(503, 'busy', '주문이 밀려 있습니다. 잠시 뒤 다시 시도해 주세요.');
 
+    // 계좌이체는 입금 대기 중인 다른 주문과 겹치지 않는 금액을 매긴다 (정가에서 1~99원 할인)
+    const amount = method === 'bank' ? pickAmount(plan.amount, allPending) : plan.amount;
     const token = b64urlEncode(crypto.getRandomValues(new Uint8Array(16)));
     const now = Date.now();
     const order = {
@@ -155,7 +173,8 @@ async function createOrder(request, env, ctx, url) {
         tokenHash: await sha256(token),
         plan: body.plan,
         planName: plan.name,
-        amount: plan.amount,
+        listPrice: plan.amount,
+        amount,
         method,
         name: name || '',
         contact: contact || '',
@@ -179,13 +198,23 @@ async function createOrder(request, env, ctx, url) {
     }
     await save(env, order);
     ctx.waitUntil(notify(env, [
-        `새 주문 ${order.id}`,
+        `새 주문 ${order.id} (입금되면 자동 발급)`,
         `${order.planName} ${won(order.amount)} · ${method === 'bank' ? '계좌이체' : '카드(페이앱)'}`,
         method === 'bank' ? `입금자명: ${order.name}` : `휴대폰 끝자리: ${order.phoneTail}`,
         `${siteUrl(env)}/admin.html#${order.id}`,
     ].join('\n')));
 
     return json(request, env, { order: publicView(order, env), token, payurl }, 201);
+}
+
+function pickAmount(base, pending) {
+    const taken = new Set(pending.filter(o => o.m === 'bank').map(o => o.a));
+    for (let i = 0; i < 60; i++) {
+        const off = 1 + (crypto.getRandomValues(new Uint8Array(1))[0] % MAX_DISCOUNT);
+        if (!taken.has(base - off)) return base - off;
+    }
+    for (let off = 1; off <= MAX_DISCOUNT; off++) if (!taken.has(base - off)) return base - off;
+    throw new HttpError(503, 'busy', '주문이 밀려 있습니다. 잠시 뒤 다시 시도해 주세요.');
 }
 
 async function getOrder(request, env, id, token) {
@@ -213,6 +242,7 @@ function publicView(order, env) {
         plan: order.plan,
         planName: order.planName,
         amount: order.amount,
+        listPrice: order.listPrice || order.amount,
         method: order.method,
         status: order.status,
         name: order.name,
@@ -280,7 +310,7 @@ async function payappFeedback(request, env, ctx) {
         return text('SUCCESS');
     }
     if (state === '4') {
-        if (order.status === 'refunded') {
+        if (order.status === 'refunded' || order.status === 'refund_requested') {
             ctx.waitUntil(notify(env, `페이앱 통보: 이미 환불된 주문 ${order.id} 에 결제 완료가 왔습니다 — 페이앱 판매자 화면에서 확인 필요`));
             return text('SUCCESS');
         }
@@ -292,7 +322,7 @@ async function payappFeedback(request, env, ctx) {
         await confirm(env, order, 'payapp');
         if (!wasPaid) ctx.waitUntil(notify(env, `카드 결제 완료 ${order.id}\n${order.planName} ${won(order.amount)} · 키 ${order.keyId}`));
     } else if (['9', '64', '70', '71'].indexOf(state) !== -1) {
-        if (order.status === 'paid') {
+        if (order.status === 'paid' || order.status === 'refund_requested') {
             await refund(env, order, 'payapp');
             ctx.waitUntil(notify(env, `카드 결제 취소 ${order.id} → 키 ${order.keyId} 정지`));
         }
@@ -307,15 +337,40 @@ async function payappFeedback(request, env, ctx) {
     return text('SUCCESS');
 }
 
-/* ───── 입금 알림 자동 매칭 (선택) ─────
- * 은행 앱 입금 알림을 휴대폰 자동화 앱(안드로이드 MacroDroid 등)이나 입금확인 서비스가
- * 이 주소로 보내면, 금액과 입금자명이 하나의 대기 주문과 딱 맞을 때만 자동으로 키를 발급한다.
- * 애매하면 아무것도 하지 않고 알림만 보낸다. 비밀값 DEPOSIT_HOOK_SECRET 이 있어야 켜진다.
+/* ───── 입금 알림 연결 (자동 입금 확인) ─────
+ * 판매자 휴대폰이 은행 입금 알림(앱 푸시나 문자)을 이 주소로 넘긴다.
+ *   안드로이드: MacroDroid "알림 수신" → HTTP 요청,  아이폰: 단축어 "메시지 수신" 자동화 → URL 콘텐츠 가져오기
+ * 계좌이체 주문은 금액 끝자리가 주문마다 달라서, 알림 속 금액과 같은 입금 대기 주문이
+ * 하나뿐이면 그 주문으로 보고 바로 키를 발급한다. 금액이 같은 주문이 여럿이면(오래된 대기 주문)
+ * 입금자명으로 한 번 더 좁히고, 그래도 애매하면 발급하지 않고 판매자에게 알린다.
+ * 휴대폰은 6시간마다 "ping" 을 보내 연결이 살아 있음을 알린다 (끊기면 지킴이가 경보).
  */
+async function hookSecrets(env) {
+    const out = [];
+    if ((env.DEPOSIT_HOOK_SECRET || '').length >= 16) out.push(env.DEPOSIT_HOOK_SECRET);
+    const kv = await env.DB.get('meta:hook-secret');
+    if (kv && kv.length >= 16) out.push(kv);
+    return out;
+}
+
+async function hookAlive(env) {
+    if (!(await hookSecrets(env)).length) return false;
+    const h = await env.DB.get('meta:hook', 'json');
+    return !!(h && h.lastAt && Date.now() - h.lastAt < HOOK_SILENCE_HOURS * 3600 * 1000);
+}
+
+async function touchHook(env, kind) {
+    const h = (await env.DB.get('meta:hook', 'json')) || {};
+    const now = Date.now();
+    h.lastAt = now;
+    h[kind + 'At'] = now;
+    await env.DB.put('meta:hook', JSON.stringify(h));
+}
+
 async function depositHook(request, env, ctx, url) {
-    const secret = env.DEPOSIT_HOOK_SECRET || '';
     const given = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/, '') || url.searchParams.get('key') || '';
-    if (secret.length < 16 || !safeEqual(given, secret)) throw new HttpError(401, 'unauthorized', '열쇠가 맞지 않습니다.');
+    const secrets = await hookSecrets(env);
+    if (!secrets.length || !secrets.some(sec => safeEqual(given, sec))) throw new HttpError(401, 'unauthorized', '열쇠가 맞지 않습니다.');
 
     const raw = await readBody(request);
     let data = {};
@@ -323,19 +378,28 @@ async function depositHook(request, env, ctx, url) {
     if (type.indexOf('json') !== -1) { try { data = JSON.parse(raw); } catch (e) { data = {}; } }
     else if (type.indexOf('form') !== -1) { data = Object.fromEntries(new URLSearchParams(raw)); }
     else data = { text: raw };
+    const textBody = String(data.text || '').trim();
 
-    const textBody = String(data.text || '');
-    if (/출금/.test(textBody) && !/입금/.test(textBody)) return json(request, env, { matched: null, reason: 'withdrawal' });
-    const amount = data.amount ? Number(String(data.amount).replace(/\D/g, '')) : amountIn(textBody);
-    if (!amount) return json(request, env, { matched: null, reason: 'no_amount' });
+    // 살아 있다는 신호
+    if (data.ping || /^ping$/i.test(textBody)) {
+        await touchHook(env, 'ping');
+        return json(request, env, { ok: true, pong: true });
+    }
+    if (/출금/.test(textBody) && !/입금/.test(textBody)) {
+        await touchHook(env, 'other');
+        return json(request, env, { matched: null, reason: 'withdrawal' });
+    }
+    const amounts = data.amount ? [Number(String(data.amount).replace(/\D/g, ''))] : amountsIn(textBody);
+    if (!amounts.length) {
+        await touchHook(env, 'other');
+        return json(request, env, { matched: null, reason: 'no_amount' });
+    }
 
     // 같은 알림이 두 번 오면(재전송, 재생) 두 번째는 무시한다
     const seenKey = 'hook:' + await sha256(raw);
     if (await env.DB.get(seenKey)) return json(request, env, { matched: null, reason: 'duplicate' });
     await env.DB.put(seenKey, '1', { expirationTtl: HOOK_DEDUPE_TTL });
 
-    // 이름은 알림 속 낱말과 "통째로" 같아야 한다. 부분 일치를 허용하면 "입금"·"김" 같은 이름으로
-    // 주문해 두고 남의 입금에 올라탈 수 있다.
     const words = wordsOf(textBody);
     const givenName = squash(data.name || '');
     const nameOk = n => {
@@ -343,10 +407,22 @@ async function depositHook(request, env, ctx, url) {
         if (!usableName(k)) return false;
         return givenName ? givenName === k : words.has(k);
     };
-    const pending = (await listOrders(env, 'pending')).filter(o => o.m === 'bank' && o.a === amount);
-    const byName = pending.filter(o => o.n && nameOk(o.n));
-    if (byName.length === 1) {
-        const order = await load(env, byName[0].id);
+    const pendingBank = (await listOrders(env, 'pending')).filter(o => o.m === 'bank');
+
+    let hit = null;
+    let candidates = 0;
+    for (const amount of amounts) {
+        const same = pendingBank.filter(o => o.a === amount);
+        candidates += same.length;
+        if (same.length === 1) { hit = same[0]; break; }
+        if (same.length > 1) {
+            const byName = same.filter(o => o.n && nameOk(o.n));
+            if (byName.length === 1) { hit = byName[0]; break; }
+        }
+    }
+
+    if (hit) {
+        const order = await load(env, hit.id);
         if (order && order.status === 'pending') {
             try {
                 await confirm(env, order, 'deposit-hook');
@@ -354,12 +430,116 @@ async function depositHook(request, env, ctx, url) {
                 await env.DB.delete(seenKey);   // 발급이 실패했으면 같은 알림을 다시 받을 수 있게
                 throw err;
             }
-            ctx.waitUntil(notify(env, `입금 자동 확인 ${order.id}\n${order.name} ${won(amount)} → ${order.planName} 키 ${order.keyId}`));
+            if (!order.test) {
+                await touchHook(env, 'match');
+                ctx.waitUntil(notify(env, `입금 자동 확인 ${order.id}\n${order.name} ${won(order.amount)} → ${order.planName} 키 ${order.keyId}`));
+            }
             return json(request, env, { matched: order.id });
         }
     }
-    ctx.waitUntil(notify(env, `입금 알림을 주문과 맞추지 못했습니다 (${won(amount)}, 후보 ${pending.length}건). 관리자 페이지에서 직접 확인하세요.\n${textBody.slice(0, 120)}`));
-    return json(request, env, { matched: null, candidates: pending.length });
+    await touchHook(env, 'deposit');
+    // 이용권 가격대의 입금만 알린다. 월급 같은 다른 입금까지 알리면 시끄럽다.
+    const prices = Object.values(plansFor(env)).map(p => p.amount);
+    const plausible = amounts.some(a => a >= Math.min(...prices) - MAX_DISCOUNT && a <= Math.max(...prices));
+    if (plausible) {
+        ctx.waitUntil(notify(env, `입금 알림을 주문과 맞추지 못했습니다 (${amounts.map(won).join(', ')}, 후보 ${candidates}건).\n금액이 주문과 다르게 입금됐을 수 있습니다. 관리자 페이지에서 확인하세요.\n${textBody.slice(0, 120)}`));
+    }
+    return json(request, env, { matched: null, candidates });
+}
+
+// 알림 속 금액들. "잔액 10,000원" 같은 잔고 금액은 뺀다.
+function amountsIn(s) {
+    const out = [];
+    const re = /(잔액|잔고)?\s*[:：]?\s*([0-9]{1,3}(?:,[0-9]{3})+|[0-9]{3,})\s*원/g;
+    for (const m of String(s).matchAll(re)) {
+        if (!m[1]) out.push(Number(m[2].replace(/,/g, '')));
+    }
+    return out;
+}
+
+/* ───── 지킴이 (한 시간마다) ───── */
+async function watchdog(env) {
+    if (!(await hookSecrets(env)).length) return;
+    const h = await env.DB.get('meta:hook', 'json');
+    if (!h || !h.lastAt) return;   // 아직 한 번도 연결된 적이 없으면 조용히 있는다
+    const silentMs = Date.now() - h.lastAt;
+    if (silentMs < HOOK_SILENCE_HOURS * 3600 * 1000) return;
+    if (h.alertedAt && h.alertedAt > h.lastAt) return;   // 이번 끊김은 이미 알렸다
+    await notify(env, `입금 알림 연결이 ${Math.floor(silentMs / 3600000)}시간째 조용합니다.\n휴대폰 전원·데이터·알림 앱(MacroDroid/단축어)을 확인해 주세요.\n그동안 계좌이체 주문은 자동으로 열리지 않고, 결제 화면은 "판매자 확인 뒤 발급"으로 안내됩니다.`);
+    h.alertedAt = Date.now();
+    await env.DB.put('meta:hook', JSON.stringify(h));
+}
+
+/* ───── 환불 요청 (구매자) ─────
+ * 결제 페이지의 "환불 요청"이 키를 들고 온다. 이용약관 4조 기간 안이면 키를 즉시 정지하고,
+ * 카드(페이앱)는 결제 취소까지 자동으로 한다. 계좌이체는 판매자에게 "이 계좌로 보내 달라"고 알린다.
+ */
+async function requestRefund(request, env, ctx) {
+    const body = await readJson(request);
+    const s = await signer(env);
+    if (!s) throw new HttpError(503, 'no_signing_key', '잠시 뒤 다시 시도해 주세요.');
+    const p = await verifyKey(await importPublic(s.publicJwk), String(body.key || ''));
+    if (!p) throw new HttpError(400, 'bad_key', '이 사이트에서 발급한 키가 아닙니다.');
+    const orderId = await env.DB.get('keyidx:' + p.id);
+    const order = orderId ? await load(env, orderId) : null;
+    if (!order) throw new HttpError(404, 'no_order', '이 키의 주문을 찾을 수 없습니다. 문의로 알려 주세요.');
+    if (order.status === 'refund_requested' || order.status === 'refunded') {
+        return json(request, env, { status: order.status, method: order.method, amount: order.amount });
+    }
+    if (order.status !== 'paid') throw new HttpError(409, 'not_paid', '환불할 수 있는 상태가 아닙니다. 문의로 알려 주세요.');
+    if (order.method === 'manual') throw new HttpError(409, 'manual', '직접 발급된 이용권은 문의로 요청해 주세요.');
+    const hours = REFUND_HOURS[order.plan] || 0;
+    if (Date.now() - (order.paidAt || 0) > hours * 3600 * 1000) {
+        throw new HttpError(409, 'refund_window', '환불 기간이 지났습니다 (이용약관 4조). 키가 작동하지 않는 등 문제가 있으면 문의로 알려 주세요.');
+    }
+    const account = cleanText(body.account, 100);
+    if (order.method === 'bank' && account.length < 6) {
+        throw new HttpError(400, 'need_account', '돌려받을 계좌(은행·계좌번호·예금주)를 적어 주세요.');
+    }
+
+    const now = Date.now();
+    await revoke(env, order.keyId);   // 키부터 멈춘다
+    order.status = 'refund_requested';
+    order.refundRequestedAt = now;
+    order.refundAccount = account;
+    order.log.push({ at: now, what: 'refund_requested', by: 'buyer' });
+
+    if (order.method === 'payapp') {
+        const r = await payappCancel(env, order);
+        if (r.ok) {
+            order.status = 'refunded';
+            order.refundedAt = Date.now();
+            order.log.push({ at: order.refundedAt, what: 'refunded', by: 'payapp-cancel' });
+            if (!order.test) ctx.waitUntil(notify(env, `카드 결제 자동 취소 ${order.id} (${won(order.amount)}) — 구매자 환불 요청`));
+        } else if (!order.test) {
+            ctx.waitUntil(notify(env, `환불 요청 ${order.id}: 페이앱 자동 취소 실패(${r.message}). 페이앱 판매자 화면에서 취소해 주세요. 키는 이미 정지됐습니다.`));
+        }
+    } else if (!order.test) {
+        ctx.waitUntil(notify(env, [
+            `환불 요청 ${order.id} — 키는 이미 정지됐습니다`,
+            `${won(order.amount)} 를 아래 계좌로 보내 주세요:`,
+            account,
+            `보낸 뒤 관리자 → 환불 요청 → "송금 완료"`,
+            `${siteUrl(env)}/admin.html#${order.id}`,
+        ].join('\n')));
+    }
+    await save(env, order);
+    return json(request, env, { status: order.status, method: order.method, amount: order.amount });
+}
+
+async function payappCancel(env, order) {
+    if (!order.payapp || !order.payapp.mulNo || !methodsOf(env).payapp) return { ok: false, message: '결제요청번호 없음' };
+    const form = new URLSearchParams({
+        cmd: 'paycancel', userid: env.PAYAPP_USERID, linkkey: env.PAYAPP_LINKKEY,
+        mul_no: String(order.payapp.mulNo), cancelmemo: '구매자 환불 요청 (lottodraw.kr)',
+    });
+    try {
+        const res = await fetch(PAYAPP_API, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: form.toString() });
+        const r = new URLSearchParams(await res.text());
+        return r.get('state') === '1' ? { ok: true } : { ok: false, message: r.get('errorMessage') || `HTTP ${res.status}` };
+    } catch (e) {
+        return { ok: false, message: '페이앱 연결 실패' };
+    }
 }
 
 // 은행 알림에 늘 나오는 말과 은행 이름. 이런 입금자명은 자동 매칭하지 않는다(사람이 확인).
@@ -377,11 +557,6 @@ function wordsOf(s) {
     const set = new Set(parts);
     for (let i = 0; i + 1 < parts.length; i++) set.add(parts[i] + parts[i + 1]);
     return set;
-}
-
-function amountIn(s) {
-    const m = String(s).match(/([0-9]{1,3}(?:,[0-9]{3})+|[0-9]{4,})\s*원/);
-    return m ? Number(m[1].replace(/,/g, '')) : 0;
 }
 
 /* ───── 관리자 ───── */
@@ -402,7 +577,13 @@ async function admin(request, env, sub, method, url) {
         return json(request, env, {
             kid: s ? s.kid : null, publicJwk: s ? s.publicJwk : null, keySource: s ? s.source : null,
             methods: methodsOf(env), plans: publicPlans(env),
-            counts, hooks: { deposit: (env.DEPOSIT_HOOK_SECRET || '').length >= 16 },
+            counts,
+            hooks: {
+                deposit: (await hookSecrets(env)).length > 0,
+                alive: await hookAlive(env),
+                state: (await env.DB.get('meta:hook', 'json')) || null,
+                url: apiOrigin(env, url) + '/api/hooks/deposit',
+            },
             notify: { telegram: !!(env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID), url: !!env.NOTIFY_URL },
         });
     }
@@ -421,6 +602,48 @@ async function admin(request, env, sub, method, url) {
         const rec = await env.DB.get('meta:signing-key', 'json');
         if (!rec) throw new HttpError(404, 'no_key', '서명 키가 아직 없습니다.');
         return json(request, env, { privateJwk: rec.privateJwk });
+    }
+    // 입금 알림 연결용 열쇠. 비밀값 DEPOSIT_HOOK_SECRET 을 따로 넣지 않아도 여기서 한 번 만들면 된다.
+    if (sub === '/hook-secret' && (method === 'GET' || method === 'POST')) {
+        if ((env.DEPOSIT_HOOK_SECRET || '').length >= 16) return json(request, env, { secret: env.DEPOSIT_HOOK_SECRET, source: 'secret' });
+        let sec = await env.DB.get('meta:hook-secret');
+        if (!sec && method === 'POST') {
+            sec = b64urlEncode(crypto.getRandomValues(new Uint8Array(24)));
+            await env.DB.put('meta:hook-secret', sec);
+        }
+        return json(request, env, { secret: sec || null, source: sec ? 'kv' : null });
+    }
+    // 자동 점검용 주문. 판매자 알림을 보내지 않고, 점검이 끝나면 지운다.
+    if (sub === '/selftest/order' && method === 'POST') {
+        const plans = plansFor(env);
+        const allPending = await listOrders(env, 'pending');
+        const token = b64urlEncode(crypto.getRandomValues(new Uint8Array(16)));
+        const now = Date.now();
+        const order = {
+            id: await freshId(env), tokenHash: await sha256(token), plan: 'week', planName: plans.week.name,
+            listPrice: plans.week.amount, amount: pickAmount(plans.week.amount, allPending), method: 'bank',
+            name: '자동점검', contact: '', status: 'pending', createdAt: now, deadline: now + 3600 * 1000,
+            agreedAt: now, test: true, log: [{ at: now, what: 'created', by: 'selftest' }],
+        };
+        await save(env, order);
+        return json(request, env, { order: publicView(order, env), token }, 201);
+    }
+    if (sub === '/selftest/cleanup' && method === 'POST') {
+        const body = await readJson(request);
+        const order = await load(env, String(body.id || ''));
+        if (!order) return json(request, env, { cleaned: false });
+        if (!order.test) throw new HttpError(409, 'not_test', '자동 점검 주문이 아닙니다.');
+        await env.DB.delete('order:' + order.id);
+        if (order.keyId) {
+            await env.DB.delete('keyidx:' + order.keyId);
+            const r = await revokedList(env);
+            if (r.ids.indexOf(order.keyId) !== -1) {
+                r.ids = r.ids.filter(x => x !== order.keyId);
+                r.updatedAt = Date.now();
+                await env.DB.put('meta:revoked', JSON.stringify(r));
+            }
+        }
+        return json(request, env, { cleaned: true });
     }
     if (sub === '/orders' && method === 'GET') {
         const status = url.searchParams.get('status') || 'pending';
@@ -462,7 +685,7 @@ async function admin(request, env, sub, method, url) {
         return json(request, env, { unrevoked: id, count: r.ids.length });
     }
 
-    const m = sub.match(/^\/orders\/([0-9A-Z]{8})(?:\/(confirm|cancel|refund))?$/);
+    const m = sub.match(/^\/orders\/([0-9A-Z]{8})(?:\/(confirm|cancel|refund|refund-done))?$/);
     if (m) {
         const order = await load(env, m[1]);
         if (!order) throw new HttpError(404, 'no_order', '주문을 찾을 수 없습니다.');
@@ -470,7 +693,7 @@ async function admin(request, env, sub, method, url) {
         if (!action && method === 'GET') return json(request, env, { order: adminView(order) });
         if (method !== 'POST') throw new HttpError(405, 'method', '허용되지 않는 요청입니다.');
         if (action === 'confirm') {
-            if (order.status === 'refunded') throw new HttpError(409, 'refunded', '이미 환불된 주문입니다.');
+            if (order.status === 'refunded' || order.status === 'refund_requested') throw new HttpError(409, 'refunded', '이미 환불된 주문입니다.');
             await confirm(env, order, 'admin');
         } else if (action === 'cancel') {
             if (order.status !== 'pending') throw new HttpError(409, 'not_pending', '입금 대기 중인 주문만 취소할 수 있습니다.');
@@ -479,8 +702,11 @@ async function admin(request, env, sub, method, url) {
             order.log.push({ at: order.cancelledAt, what: 'cancelled', by: 'admin' });
             await save(env, order);
         } else if (action === 'refund') {
-            if (order.status !== 'paid') throw new HttpError(409, 'not_paid', '키가 발급된 주문만 환불 처리할 수 있습니다.');
+            if (order.status !== 'paid' && order.status !== 'refund_requested') throw new HttpError(409, 'not_paid', '키가 발급된 주문만 환불 처리할 수 있습니다.');
             await refund(env, order, 'admin');
+        } else if (action === 'refund-done') {
+            if (order.status !== 'refund_requested') throw new HttpError(409, 'not_requested', '환불 요청 상태인 주문이 아닙니다.');
+            await refund(env, order, 'admin-sent');
         }
         return json(request, env, { order: adminView(order) });
     }
@@ -505,7 +731,7 @@ function keyIdFrom(v) {
 
 async function confirm(env, order, by) {
     if (order.status === 'paid' && order.key) return order;
-    if (order.status === 'refunded') throw new HttpError(409, 'refunded', '이미 환불된 주문입니다.');
+    if (order.status === 'refunded' || order.status === 'refund_requested') throw new HttpError(409, 'refunded', '이미 환불된 주문입니다.');
     const s = await signer(env);
     if (!s) throw new HttpError(503, 'no_signing_key', '서명 키가 아직 없습니다. 관리자 페이지에서 "서명 키 만들기"를 먼저 눌러 주세요.');
     const plans = plansFor(env);
@@ -522,6 +748,7 @@ async function confirm(env, order, by) {
     order.status = 'paid';
     order.log.push({ at: order.paidAt, what: 'paid', by });
     await save(env, order);
+    await env.DB.put('keyidx:' + order.keyId, order.id);   // 환불 요청 때 키 → 주문 찾기
     return order;
 }
 
@@ -581,7 +808,9 @@ async function signer(env, fresh) {
 /* ───── 저장 ───── */
 
 function meta(order) {
-    return { s: order.status, p: order.plan, a: order.amount, m: order.method, n: order.name || '', c: order.createdAt, k: order.keyId || '', i: order.ipTag || '' };
+    const md = { s: order.status, p: order.plan, a: order.amount, m: order.method, n: order.name || '', c: order.createdAt, k: order.keyId || '', i: order.ipTag || '' };
+    if (order.test) md.t = 1;
+    return md;
 }
 
 async function save(env, order) {

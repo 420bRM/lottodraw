@@ -6,7 +6,7 @@
     const api = String((window.PREMIUM_CONFIG || {}).apiBase || '').replace(/\/+$/, '');
     const TOKEN_STORE = 'lottodraw.admin.token';
     const $ = id => document.getElementById(id);
-    const STATUS = { pending: '입금 대기', paid: '발급 완료', refunded: '환불', cancelled: '취소' };
+    const STATUS = { pending: '입금 대기', paid: '발급 완료', refund_requested: '환불 요청', refunded: '환불', cancelled: '취소' };
     const METHOD = { bank: '계좌이체', payapp: '카드(페이앱)', manual: '직접 발급' };
     const PLAN = { week: '1주', month: '1개월', lifetime: '평생', custom: '기간 지정' };
 
@@ -130,14 +130,16 @@
     function renderSetup() {
         const s = status;
         const c = s.counts || {};
-        $('admin-summary').textContent = `입금 대기 ${c.pending || 0} · 발급 ${c.paid || 0} · 환불 ${c.refunded || 0}`;
+        $('admin-summary').textContent = `입금 대기 ${c.pending || 0} · 발급 ${c.paid || 0}`
+            + (c.refund_requested ? ` · 환불 송금 필요 ${c.refund_requested}` : '') + ` · 환불 ${c.refunded || 0}`;
+        renderHook();
         const list = $('setup-list');
         list.textContent = '';
         const items = [
             [s.methods.bank, '계좌이체', '켜짐', 'BANK_NAME · BANK_ACCOUNT · BANK_HOLDER 비밀값이 필요합니다'],
             [s.methods.payapp, '카드(페이앱)', '켜짐', '페이앱 심사 통과 뒤 PAYAPP_USERID · PAYAPP_LINKKEY · PAYAPP_LINKVAL 을 넣으면 켜집니다'],
             [s.notify.telegram || s.notify.url, '새 주문 알림', s.notify.telegram ? '텔레그램' : '알림 주소', 'TELEGRAM_BOT_TOKEN · TELEGRAM_CHAT_ID 또는 NOTIFY_URL 을 넣으면 휴대폰으로 받습니다'],
-            [s.hooks.deposit, '입금 알림 자동 매칭', '켜짐', '(선택) DEPOSIT_HOOK_SECRET 을 넣으면 켜집니다'],
+            [s.hooks.alive, '입금 자동 확인', '켜짐 (휴대폰 연결 살아 있음)', '꺼짐 — 위 "입금 알림 연결"을 설정하면 새벽에도 자동으로 열립니다'],
         ];
         items.forEach(([on, name, yes, how]) => {
             list.appendChild(el('li', { className: on ? 'on' : 'off' }, [
@@ -197,6 +199,10 @@
             actions.push(el('button', { type: 'button', className: 'btn btn-secondary', text: '키 보기', on: { click: () => showDetail(o, detail) } }));
             actions.push(el('button', { type: 'button', className: 'btn btn-secondary', text: '환불 처리(키 정지)', on: { click: () => act(o, 'refund', detail) } }));
         }
+        if (o.s === 'refund_requested') {
+            actions.push(el('button', { type: 'button', className: 'btn', text: '송금 완료', on: { click: () => act(o, 'refund-done', detail) } }));
+            setTimeout(() => showDetail(o, detail), 0);   // 돌려줄 계좌를 바로 보여 준다
+        }
         if (o.s === 'cancelled') {
             actions.push(el('button', { type: 'button', className: 'btn btn-secondary', text: '늦은 입금 확인 → 키 발급', on: { click: () => act(o, 'confirm', detail) } }));
         }
@@ -229,6 +235,8 @@
             box.textContent = '';
             if (d.key && d.status === 'paid') box.appendChild(keyBox(d));
             const lines = [
+                ['돌려줄 계좌', d.refundAccount],
+                ['정가', d.listPrice && d.listPrice !== d.amount ? `${won(d.listPrice)} (확인용 할인 ${won(d.listPrice - d.amount)})` : ''],
                 ['연락처', d.contact],
                 ['휴대폰 끝자리', d.phoneTail],
                 ['메모', d.note],
@@ -246,6 +254,7 @@
             confirm: `${o.n || '입금자'} 님의 ${won(o.a)} 입금을 통장에서 확인했습니까?\n확인하면 바로 키가 발급되고 구매자 화면이 열립니다.`,
             cancel: `주문 ${o.id} 을 취소합니까? (입금이 없을 때만)`,
             refund: `주문 ${o.id} 을 환불 처리합니까?\n키가 정지됩니다. 돈은 구매자 계좌로 직접 돌려보내야 합니다.`,
+            'refund-done': `${won(o.a)} 을 구매자 계좌로 보냈습니까?\n(키는 구매자가 요청할 때 이미 정지됐습니다)`,
         }[action];
         if (!window.confirm(ask)) return;
         say('admin-status', '처리하는 중…');
@@ -261,6 +270,42 @@
             setTimeout(loadOrders, action === 'confirm' ? 4000 : 300);
         } catch (err) {
             say('admin-status', '실패: ' + err.message, true);
+        }
+    }
+
+    /* ───── 입금 알림 연결 ───── */
+
+    function ago(ms) {
+        if (!ms) return '없음';
+        const m = Math.floor((Date.now() - ms) / 60000);
+        if (m < 1) return '방금';
+        if (m < 60) return m + '분 전';
+        const h = Math.floor(m / 60);
+        return h < 48 ? h + '시간 전' : Math.floor(h / 24) + '일 전';
+    }
+
+    function renderHook() {
+        const h = status.hooks || {};
+        const st = h.state || {};
+        $('hook-state').textContent = !st.lastAt
+            ? '아직 휴대폰에서 신호가 온 적이 없습니다. 아래 순서대로 한 번 설정하면 됩니다.'
+            : (h.alive ? '✔ 연결됨' : '✘ 끊김 (13시간 넘게 신호 없음)')
+              + ` · 마지막 신호 ${ago(st.lastAt)} · 마지막 핑 ${ago(st.pingAt)} · 마지막 자동 확인 ${ago(st.matchAt)}`;
+        $('hook-state').className = 'license-status' + (st.lastAt && !h.alive ? ' error' : '');
+        $('hook-url').textContent = h.url || '';
+    }
+
+    async function hookSecret(reveal, btn) {
+        try {
+            const r = await call('/hook-secret', { method: 'POST' });
+            if (reveal) {
+                $('hook-secret').textContent = r.secret;
+                $('hook-secret-row').hidden = false;
+            } else {
+                await copy(r.secret, btn);
+            }
+        } catch (err) {
+            say('admin-status', '열쇠를 가져오지 못했습니다: ' + err.message, true);
         }
     }
 
@@ -321,6 +366,9 @@
         $('revoke-form').addEventListener('submit', e => { e.preventDefault(); revoke(false); });
         $('unrevoke-btn').addEventListener('click', () => revoke(true));
         $('copy-pubkey').addEventListener('click', e => status && status.publicJwk && copy(JSON.stringify(status.publicJwk), e.currentTarget));
+        $('hook-copy-url').addEventListener('click', e => copy($('hook-url').textContent, e.currentTarget));
+        $('hook-copy-secret').addEventListener('click', e => hookSecret(false, e.currentTarget));
+        $('hook-show-secret').addEventListener('click', () => hookSecret(true));
         $('setup-key-btn').addEventListener('click', async e => {
             const btn = e.currentTarget;
             btn.disabled = true;
