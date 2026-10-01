@@ -14,12 +14,23 @@
     let tab = 'pending';
     let status = null;
     let timer = null;
+    let autoLeft = 30;   // 자동 새로고침 횟수 상한 (KV 목록 조회 하루 한도를 아끼려고)
     const focusId = (location.hash.match(/^#([0-9A-Z]{8})$/) || [])[1] || null;
 
+    // 토큰은 기본으로 이 탭에만(sessionStorage) 둔다. "이 기기에서 기억"을 켰을 때만 localStorage.
+    // localStorage 는 같은 사이트의 다른 페이지(광고·분석 스크립트가 도는 곳)에서도 읽힌다.
     const store = {
-        get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
-        set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* 프라이빗 모드 */ } },
-        del(k) { try { localStorage.removeItem(k); } catch (e) { /* 프라이빗 모드 */ } },
+        get(k) {
+            try { return sessionStorage.getItem(k) || localStorage.getItem(k); } catch (e) { return null; }
+        },
+        set(k, v, remember) {
+            try {
+                sessionStorage.setItem(k, v);
+                if (remember) localStorage.setItem(k, v); else localStorage.removeItem(k);
+            } catch (e) { /* 프라이빗 모드 */ }
+        },
+        del(k) { try { sessionStorage.removeItem(k); localStorage.removeItem(k); } catch (e) { /* 프라이빗 모드 */ } },
+        remembered(k) { try { return !!localStorage.getItem(k); } catch (e) { return false; } },
     };
 
     const won = n => Number(n || 0).toLocaleString('ko-KR') + '원';
@@ -96,7 +107,7 @@
         say('login-status', '확인하는 중…');
         try {
             status = await call('/status');
-            store.set(TOKEN_STORE, token);
+            store.set(TOKEN_STORE, token, $('admin-remember').checked);
             $('login-card').hidden = true;
             $('admin-app').hidden = false;
             renderSetup();
@@ -133,7 +144,13 @@
                 el('b', { text: (on ? '✔ ' : '✘ ') + name }), ' ', el('span', { text: on ? yes : how }),
             ]));
         });
-        list.appendChild(el('li', { className: 'on' }, [el('b', { text: '✔ 서명 키' }), ' ', el('span', { text: 'kid ' + s.kid })]));
+        list.appendChild(el('li', { className: s.kid ? 'on' : 'off' }, [
+            el('b', { text: s.kid ? '✔ 서명 키' : '✘ 서명 키' }), ' ',
+            el('span', { text: s.kid ? `kid ${s.kid}${s.keySource === 'secret' ? ' (비밀값)' : ''}` : '아직 없음 — 아래 "서명 키 만들기"를 누르세요. 없으면 키를 발급할 수 없습니다' }),
+        ]));
+        $('setup-key-box').hidden = !!s.kid;
+        $('key-tools').hidden = !s.kid;
+        $('key-backup-btn').hidden = s.keySource !== 'kv';
         const prices = Object.keys(s.plans).map(id => `${PLAN[id] || id} ${won(s.plans[id].amount)}`).join(' · ');
         list.appendChild(el('li', { className: 'on' }, [el('b', { text: '가격' }), ' ', el('span', { text: prices })]));
     }
@@ -147,7 +164,9 @@
             const r = await call('/orders?status=' + tab);
             renderOrders(r.orders || []);
             say('admin-status', `${STATUS[tab] || '전체'} ${r.orders.length}건 · ${when(Date.now())} 기준`);
-            if (tab === 'pending') timer = setTimeout(() => { if (!document.hidden) loadOrders(); }, 60000);
+            if (tab === 'pending' && autoLeft > 0) {
+                timer = setTimeout(() => { if (!document.hidden) { autoLeft--; loadOrders(); } }, 120000);
+            }
         } catch (err) {
             say('admin-status', '목록을 불러오지 못했습니다: ' + err.message, true);
         }
@@ -183,10 +202,11 @@
         }
         actions.push(el('button', { type: 'button', className: 'btn btn-secondary', text: '자세히', on: { click: () => showDetail(o, detail) } }));
 
+        const late = o.s === 'pending' && o.m === 'bank' && Date.now() - (o.c || 0) > 72 * 3600 * 1000;
         return el('section', { className: 'card admin-order st-' + o.s, id: 'o-' + o.id }, [
             el('h3', { className: 'card-title' }, [
                 el('span', { text: o.id }),
-                el('small', { className: 'badge', text: STATUS[o.s] || o.s }),
+                el('small', { className: 'badge', text: (STATUS[o.s] || o.s) + (late ? ' · 기한 지남' : '') }),
             ]),
             el('div', { className: 'card-body' }, [
                 el('p', { className: 'admin-line' }, [
@@ -300,9 +320,36 @@
         $('issue-form').addEventListener('submit', issue);
         $('revoke-form').addEventListener('submit', e => { e.preventDefault(); revoke(false); });
         $('unrevoke-btn').addEventListener('click', () => revoke(true));
-        $('copy-pubkey').addEventListener('click', e => status && copy(JSON.stringify(status.publicJwk), e.currentTarget));
+        $('copy-pubkey').addEventListener('click', e => status && status.publicJwk && copy(JSON.stringify(status.publicJwk), e.currentTarget));
+        $('setup-key-btn').addEventListener('click', async e => {
+            const btn = e.currentTarget;
+            btn.disabled = true;
+            try {
+                await call('/setup-key', { method: 'POST' });
+                status = await call('/status');
+                renderSetup();
+                say('admin-status', '서명 키를 만들었습니다. 이제 키를 발급할 수 있습니다.');
+            } catch (err) {
+                say('admin-status', '서명 키를 만들지 못했습니다: ' + err.message, true);
+                status = await call('/status').catch(() => status);
+                if (status) renderSetup();
+            } finally {
+                btn.disabled = false;
+            }
+        });
+        $('key-backup-btn').addEventListener('click', async e => {
+            if (!window.confirm('서명 키 백업을 복사합니다. 이 값이 새면 누구나 이용권 키를 만들 수 있습니다. 비밀번호 관리자나 GitHub Secret 에만 붙여 넣으세요.')) return;
+            const btn = e.currentTarget;
+            try {
+                const r = await call('/key-backup', { method: 'POST' });
+                await copy(JSON.stringify(r.privateJwk), btn);
+            } catch (err) {
+                say('admin-status', '백업을 가져오지 못했습니다: ' + err.message, true);
+            }
+        });
         document.addEventListener('visibilitychange', () => { if (!document.hidden && token && tab === 'pending') loadOrders(); });
 
+        $('admin-remember').checked = store.remembered(TOKEN_STORE);
         const saved = store.get(TOKEN_STORE);
         if (saved) login(saved);
     }

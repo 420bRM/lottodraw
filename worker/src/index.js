@@ -17,7 +17,9 @@ import { plansFor } from './plans.js';
 const PAYAPP_API = 'https://api.payapp.kr/oapi/apiLoad.html';
 const DEPOSIT_HOURS = 72;              // 입금 기한 안내용. 지나도 관리자는 확인할 수 있다
 const PENDING_TTL = 14 * 86400;        // 입금 안 된 주문은 14일 뒤 KV 에서 저절로 지워진다
-const MAX_PENDING = 50;                // 입금 대기 주문이 이만큼 쌓이면 새 주문을 잠시 막는다 (도배 방지)
+const MAX_PENDING = 50;                // 기한 안의 입금 대기 주문이 이만큼 쌓이면 새 주문을 잠시 막는다 (도배 방지)
+const MAX_PENDING_PER_IP = 3;          // 한 곳(IP)에서 기한 안에 걸어 둘 수 있는 입금 대기 주문 수
+const HOOK_DEDUPE_TTL = 30 * 86400;    // 같은 입금 알림을 두 번 처리하지 않도록 기억하는 기간
 const MAX_BODY = 4096;
 const CROCKFORD = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 
@@ -105,7 +107,7 @@ function getConfig(request, env) {
 }
 
 async function getPubkey(request, env) {
-    const s = await signer(env, false);
+    const s = await signer(env);
     if (!s) throw new HttpError(404, 'no_key', '아직 서명 키가 없습니다.');
     return json(request, env, { kid: s.kid, jwk: s.publicJwk }, 200, { 'Cache-Control': 'public, max-age=3600' }, true);
 }
@@ -123,21 +125,28 @@ async function createOrder(request, env, ctx, url) {
     }
     const body = await readJson(request);
     const plans = plansFor(env);
+    if (!has(plans, body.plan)) throw new HttpError(400, 'bad_plan', '이용권 종류가 올바르지 않습니다.');
     const plan = plans[body.plan];
-    if (!plan) throw new HttpError(400, 'bad_plan', '이용권 종류가 올바르지 않습니다.');
     const method = body.method;
     const methods = methodsOf(env);
-    if (!methods[method]) throw new HttpError(400, 'bad_method', '지금은 이 결제 방법을 쓸 수 없습니다.');
+    if ((method !== 'bank' && method !== 'payapp') || !methods[method]) {
+        throw new HttpError(400, 'bad_method', '지금은 이 결제 방법을 쓸 수 없습니다.');
+    }
     if (body.agree !== true) throw new HttpError(400, 'need_agree', '환불 기준에 동의해 주세요.');
 
     const name = cleanText(body.name, 20);
     const contact = cleanText(body.contact, 100);
     const phone = String(body.phone || '').replace(/\D/g, '');
-    if (method === 'bank' && !name) throw new HttpError(400, 'need_name', '입금자명을 적어 주세요.');
+    if (method === 'bank' && name.length < 2) throw new HttpError(400, 'need_name', '입금자명을 2자 이상 적어 주세요.');
     if (method === 'payapp' && !/^01\d{8,9}$/.test(phone)) throw new HttpError(400, 'need_phone', '휴대폰 번호를 확인해 주세요.');
 
-    const pending = await listOrders(env, 'pending');
-    if (pending.length >= MAX_PENDING) throw new HttpError(503, 'busy', '주문이 밀려 있습니다. 잠시 뒤 다시 시도해 주세요.');
+    // 기한(72시간)이 지난 대기 주문은 세지 않는다. 버려진 주문이 쌓여 가게가 닫히는 일을 막는다.
+    const ipTag = (await sha256('ip:' + ip)).slice(0, 12);
+    const fresh = (await listOrders(env, 'pending')).filter(o => (o.c || 0) > Date.now() - DEPOSIT_HOURS * 3600 * 1000);
+    if (fresh.filter(o => o.i === ipTag).length >= MAX_PENDING_PER_IP) {
+        throw new HttpError(429, 'too_many_pending', '입금을 기다리는 주문이 이미 있습니다. 먼저 입금하거나 이전 주문을 취소해 주세요.');
+    }
+    if (fresh.length >= MAX_PENDING) throw new HttpError(503, 'busy', '주문이 밀려 있습니다. 잠시 뒤 다시 시도해 주세요.');
 
     const token = b64urlEncode(crypto.getRandomValues(new Uint8Array(16)));
     const now = Date.now();
@@ -151,6 +160,7 @@ async function createOrder(request, env, ctx, url) {
         name: name || '',
         contact: contact || '',
         phoneTail: phone ? phone.slice(-4) : '',
+        ipTag,
         status: 'pending',
         createdAt: now,
         deadline: now + DEPOSIT_HOURS * 3600 * 1000,
@@ -270,6 +280,10 @@ async function payappFeedback(request, env, ctx) {
         return text('SUCCESS');
     }
     if (state === '4') {
+        if (order.status === 'refunded') {
+            ctx.waitUntil(notify(env, `페이앱 통보: 이미 환불된 주문 ${order.id} 에 결제 완료가 왔습니다 — 페이앱 판매자 화면에서 확인 필요`));
+            return text('SUCCESS');
+        }
         if (Number(f.get('price')) !== order.amount) {
             ctx.waitUntil(notify(env, `페이앱 통보: 주문 ${order.id} 금액 불일치 (${f.get('price')}원, 주문 ${order.amount}원) — 확인 필요`));
             return text('SUCCESS');
@@ -314,20 +328,55 @@ async function depositHook(request, env, ctx, url) {
     if (/출금/.test(textBody) && !/입금/.test(textBody)) return json(request, env, { matched: null, reason: 'withdrawal' });
     const amount = data.amount ? Number(String(data.amount).replace(/\D/g, '')) : amountIn(textBody);
     if (!amount) return json(request, env, { matched: null, reason: 'no_amount' });
-    const haystack = squash(String(data.name || '') + ' ' + textBody);
 
+    // 같은 알림이 두 번 오면(재전송, 재생) 두 번째는 무시한다
+    const seenKey = 'hook:' + await sha256(raw);
+    if (await env.DB.get(seenKey)) return json(request, env, { matched: null, reason: 'duplicate' });
+    await env.DB.put(seenKey, '1', { expirationTtl: HOOK_DEDUPE_TTL });
+
+    // 이름은 알림 속 낱말과 "통째로" 같아야 한다. 부분 일치를 허용하면 "입금"·"김" 같은 이름으로
+    // 주문해 두고 남의 입금에 올라탈 수 있다.
+    const words = wordsOf(textBody);
+    const givenName = squash(data.name || '');
+    const nameOk = n => {
+        const k = squash(n);
+        if (!usableName(k)) return false;
+        return givenName ? givenName === k : words.has(k);
+    };
     const pending = (await listOrders(env, 'pending')).filter(o => o.m === 'bank' && o.a === amount);
-    const byName = pending.filter(o => o.n && haystack.indexOf(squash(o.n)) !== -1);
+    const byName = pending.filter(o => o.n && nameOk(o.n));
     if (byName.length === 1) {
         const order = await load(env, byName[0].id);
         if (order && order.status === 'pending') {
-            await confirm(env, order, 'deposit-hook');
+            try {
+                await confirm(env, order, 'deposit-hook');
+            } catch (err) {
+                await env.DB.delete(seenKey);   // 발급이 실패했으면 같은 알림을 다시 받을 수 있게
+                throw err;
+            }
             ctx.waitUntil(notify(env, `입금 자동 확인 ${order.id}\n${order.name} ${won(amount)} → ${order.planName} 키 ${order.keyId}`));
             return json(request, env, { matched: order.id });
         }
     }
     ctx.waitUntil(notify(env, `입금 알림을 주문과 맞추지 못했습니다 (${won(amount)}, 후보 ${pending.length}건). 관리자 페이지에서 직접 확인하세요.\n${textBody.slice(0, 120)}`));
     return json(request, env, { matched: null, candidates: pending.length });
+}
+
+// 은행 알림에 늘 나오는 말과 은행 이름. 이런 입금자명은 자동 매칭하지 않는다(사람이 확인).
+const COMMON_WORDS = new Set(['입금', '출금', '잔액', '원', '이체', '송금', '알림', '계좌', 'web발신', '우리', '우리은행',
+    '국민', '국민은행', '신한', '신한은행', '하나', '하나은행', '농협', '기업', '카카오뱅크', '카카오', '토스', '토스뱅크',
+    '케이뱅크', '새마을', '우체국', 'won', 'krw']);
+
+function usableName(k) {
+    return k.length >= 2 && !COMMON_WORDS.has(k) && !/^\d+$/.test(k);
+}
+
+// 알림 문장을 낱말로 자른다. "최 지은" 처럼 띄어 쓴 이름도 잡히게 붙어 있는 두 낱말을 이어 붙인 것도 넣는다.
+function wordsOf(s) {
+    const parts = String(s).split(/[\s\[\]()<>{}:;,.·|/\\'"!?~*_\-]+/).map(squash).filter(Boolean);
+    const set = new Set(parts);
+    for (let i = 0; i + 1 < parts.length; i++) set.add(parts[i] + parts[i + 1]);
+    return set;
 }
 
 function amountIn(s) {
@@ -346,15 +395,32 @@ function adminOk(request, env) {
 
 async function admin(request, env, sub, method, url) {
     if (sub === '/status' && method === 'GET') {
-        const s = await signer(env, true);
+        const s = await signer(env);
         const all = await listOrders(env, 'all');
         const counts = {};
         all.forEach(o => { counts[o.s] = (counts[o.s] || 0) + 1; });
         return json(request, env, {
-            kid: s.kid, publicJwk: s.publicJwk, methods: methodsOf(env), plans: publicPlans(env),
+            kid: s ? s.kid : null, publicJwk: s ? s.publicJwk : null, keySource: s ? s.source : null,
+            methods: methodsOf(env), plans: publicPlans(env),
             counts, hooks: { deposit: (env.DEPOSIT_HOOK_SECRET || '').length >= 16 },
             notify: { telegram: !!(env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID), url: !!env.NOTIFY_URL },
         });
+    }
+    // 서명 키는 사람이 한 번 눌러서 만든다. 저절로 만들면 동시에 두 개가 생겨 한쪽 키가 무효가 될 수 있다.
+    if (sub === '/setup-key' && method === 'POST') {
+        if (await signer(env)) throw new HttpError(409, 'key_exists', '서명 키가 이미 있습니다. 바꾸면 판매한 키가 모두 무효가 되므로 덮어쓰지 않습니다.');
+        const rec = await generateKeyPair();
+        await env.DB.put('meta:signing-key', JSON.stringify(rec));
+        const s = await signer(env, rec);
+        return json(request, env, { kid: s.kid, publicJwk: s.publicJwk }, 201);
+    }
+    // 서명 키 백업. KV 를 잃어도 판매한 키를 살릴 수 있게, 비밀번호 관리자나 GitHub Secret
+    // LICENSE_PRIVATE_JWK 에 보관하라고 내준다. 이 값이 새면 누구나 키를 만들 수 있다.
+    if (sub === '/key-backup' && method === 'POST') {
+        if (env.LICENSE_PRIVATE_JWK) throw new HttpError(409, 'from_secret', '서명 키가 이미 비밀값(LICENSE_PRIVATE_JWK)에 있습니다.');
+        const rec = await env.DB.get('meta:signing-key', 'json');
+        if (!rec) throw new HttpError(404, 'no_key', '서명 키가 아직 없습니다.');
+        return json(request, env, { privateJwk: rec.privateJwk });
     }
     if (sub === '/orders' && method === 'GET') {
         const status = url.searchParams.get('status') || 'pending';
@@ -365,7 +431,7 @@ async function admin(request, env, sub, method, url) {
         const plans = plansFor(env);
         const days = body.days === undefined || body.days === null || body.days === '' ? null : Number(body.days);
         const plan = body.plan === 'custom' ? 'custom' : body.plan;
-        if (plan !== 'custom' && !plans[plan]) throw new HttpError(400, 'bad_plan', '이용권 종류가 올바르지 않습니다.');
+        if (plan !== 'custom' && !has(plans, plan)) throw new HttpError(400, 'bad_plan', '이용권 종류가 올바르지 않습니다.');
         if (plan === 'custom' && !(Number.isInteger(days) && days >= 0 && days <= 3650)) throw new HttpError(400, 'bad_days', '기간(일)을 0~3650 사이로 적어 주세요. 0은 기간 제한 없음.');
         const now = Date.now();
         const order = {
@@ -424,6 +490,7 @@ async function admin(request, env, sub, method, url) {
 function adminView(order) {
     const v = Object.assign({}, order);
     delete v.tokenHash;
+    delete v.ipTag;
     return v;
 }
 
@@ -438,12 +505,16 @@ function keyIdFrom(v) {
 
 async function confirm(env, order, by) {
     if (order.status === 'paid' && order.key) return order;
-    const s = await signer(env, true);
+    if (order.status === 'refunded') throw new HttpError(409, 'refunded', '이미 환불된 주문입니다.');
+    const s = await signer(env);
+    if (!s) throw new HttpError(503, 'no_signing_key', '서명 키가 아직 없습니다. 관리자 페이지에서 "서명 키 만들기"를 먼저 눌러 주세요.');
     const plans = plansFor(env);
     const now = Math.floor(Date.now() / 1000);
     const days = order.plan === 'custom' ? (order.days || 0) : plans[order.plan].days;
     const expiresAt = days ? now + days * 86400 : 0;
-    const id = crypto.getRandomValues(new Uint32Array(1))[0];
+    // 키 번호는 주문번호에서 정해진다. 확인 버튼과 자동 확인이 겹쳐 키가 두 번 만들어져도
+    // 번호가 같아서, 환불하면 둘 다 정지된다.
+    const id = new DataView(await crypto.subtle.digest('SHA-256', new TextEncoder().encode('key:' + order.id))).getUint32(0);
     order.key = await signKey(s.privateKey, { plan: order.plan, id, issuedAt: now, expiresAt });
     order.keyId = hex32(id);
     order.expiresAt = expiresAt ? expiresAt * 1000 : null;
@@ -479,28 +550,27 @@ async function revoke(env, id) {
 
 /* ───── 서명 키 ─────
  * 비밀값 LICENSE_PRIVATE_JWK 가 있으면 그것을, 없으면 KV 에 저장된 키를 쓴다.
- * 둘 다 없으면 관리자 페이지를 처음 열 때(또는 첫 발급 때) 새로 만들어 KV 에 둔다.
- * 사람이 키를 옮겨 적을 일이 없도록 한 선택이다. 키를 바꾸면 이전 키는 전부 무효가 된다.
+ * 둘 다 없으면 발급하지 않는다. 관리자 페이지의 "서명 키 만들기"로 한 번 만든다.
+ * 키를 바꾸면 이전에 판 키는 전부 무효가 된다.
  */
 let cachedSigner = null;
 
 export function _resetForTests() { cachedSigner = null; }
 
-async function signer(env, create) {
+async function signer(env, fresh) {
     if (cachedSigner) return cachedSigner;
-    let rec = null;
+    let rec = fresh || null;
+    let source = 'kv';
     if (env.LICENSE_PRIVATE_JWK) {
         const priv = JSON.parse(env.LICENSE_PRIVATE_JWK);
         rec = { privateJwk: priv, publicJwk: publicOnly(priv) };
-    } else {
+        source = 'secret';
+    } else if (!rec) {
         rec = await env.DB.get('meta:signing-key', 'json');
     }
-    if (!rec) {
-        if (!create) return null;
-        rec = await generateKeyPair();
-        await env.DB.put('meta:signing-key', JSON.stringify(rec));
-    }
+    if (!rec) return null;   // 없다는 결과는 기억하지 않는다 — 만든 직후 다른 곳에서도 보이게
     cachedSigner = {
+        source,
         kid: rec.kid || await keyId(rec.publicJwk),
         publicJwk: publicOnly(rec.publicJwk),
         privateKey: await importPrivate(rec.privateJwk),
@@ -511,7 +581,7 @@ async function signer(env, create) {
 /* ───── 저장 ───── */
 
 function meta(order) {
-    return { s: order.status, p: order.plan, a: order.amount, m: order.method, n: order.name || '', c: order.createdAt, k: order.keyId || '' };
+    return { s: order.status, p: order.plan, a: order.amount, m: order.method, n: order.name || '', c: order.createdAt, k: order.keyId || '', i: order.ipTag || '' };
 }
 
 async function save(env, order) {
@@ -577,6 +647,7 @@ const siteUrl = env => String(env.SITE_URL || 'https://www.lottodraw.kr').replac
 const apiOrigin = (env, url) => String(env.API_ORIGIN || url.origin).replace(/\/+$/, '');
 const won = n => Number(n).toLocaleString('ko-KR') + '원';
 const squash = s => String(s).replace(/[\s()·.\-_*]/g, '').toLowerCase();
+const has = (obj, k) => typeof k === 'string' && Object.prototype.hasOwnProperty.call(obj, k);
 
 function cleanText(v, max) {
     if (v === undefined || v === null) return '';

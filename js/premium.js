@@ -14,6 +14,8 @@
     const T = (k, v) => (v ? I18N.f(k, v) : I18N.t(k));
     const api = String(cfg.apiBase || '').replace(/\/+$/, '');
     const ORDER_STORE = 'lottodraw.premium.order';
+    // 방금 산 키. 확인이 잠깐 실패해도(네트워크) 잃어버리지 않도록 따로 둔다. 저절로 지우지 않는다.
+    const PURCHASED_STORE = 'lottodraw.premium.purchased';
     const MOBILE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
     const plans = JSON.parse(JSON.stringify(cfg.plans || {}));
@@ -23,6 +25,7 @@
     let currentPlan = null;
     let current = null;          // { id, token, payurl, createdAt, order }
     let pollTimer = null;
+    let pollGen = 0;             // 폴링이 두 줄로 겹치지 않게 하는 세대 번호
     let statsLoaded = false;
 
     const store = {
@@ -181,7 +184,7 @@
         const name = $('co-name').value.trim();
         const phone = $('co-phone').value.replace(/\D/g, '');
         const contact = $('co-contact').value.trim();
-        if (method === 'bank' && !name) return setStatus('co-status', T('err.need_name'), true);
+        if (method === 'bank' && name.length < 2) return setStatus('co-status', T('err.need_name'), true);
         if (method === 'payapp' && !/^01\d{8,9}$/.test(phone)) return setStatus('co-status', T('err.need_phone'), true);
         if (!$('co-agree').checked) return setStatus('co-status', T('err.need_agree'), true);
 
@@ -299,6 +302,9 @@
         const o = current.order;
         if (o.status === 'paid' && o.key) {
             const key = o.key;
+            // 주문 기록을 지우기 전에 키부터 저장한다. 이 뒤에 무엇이 실패해도 키는 남는다.
+            store.set(L.KEY_STORE, key);
+            store.set(PURCHASED_STORE, key);
             clearOrder();
             const st = await L.check(key);
             if (st.unlocked) {
@@ -341,16 +347,20 @@
     }
 
     function stopPolling() {
+        pollGen++;
         if (pollTimer) clearTimeout(pollTimer);
         pollTimer = null;
     }
 
     function startPolling(immediate) {
         stopPolling();
+        const gen = pollGen;
         const tick = async () => {
+            if (gen !== pollGen) return;
             pollTimer = null;
             if (!current || document.hidden) return;
             await refreshOrder(false);
+            if (gen !== pollGen) return;   // 확인하는 사이 새 폴링이 시작됐으면 이 줄은 멈춘다
             if (current && current.order && current.order.status === 'pending') pollTimer = setTimeout(tick, nextDelay());
         };
         pollTimer = setTimeout(tick, immediate ? 0 : nextDelay());
@@ -474,6 +484,7 @@
         $('license-clear').addEventListener('click', () => {
             if (!window.confirm(T('s5.clearConfirm'))) return;
             L.forget(true);
+            store.del(PURCHASED_STORE);
             $('license-key').value = '';
             showKey(false);
             lock(T('pay.cleared'));
@@ -491,6 +502,8 @@
         loadServerConfig();
         const fromLink = keyFromHash();
         const key = fromLink || L.savedKey();
+        const purchased = store.get(PURCHASED_STORE);
+        if (!key && purchased) $('license-key').value = purchased;   // 지워진 경우라도 산 키는 입력칸에 남겨 둔다
         if (key) {
             $('license-key').value = key;
             checkKey(key, !!fromLink).then(ok => { if (!ok) resumeOrder(); });
@@ -500,5 +513,7 @@
         }
     }
 
-    init();
+    // 번역(js/i18n.js)이 화면 문구를 먼저 바꾼 뒤에 시작한다. 거꾸로면 이 파일이 쓴 문구를 번역이 덮는다.
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
 }());

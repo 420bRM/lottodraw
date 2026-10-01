@@ -6,7 +6,8 @@ name: deploy-worker
 # 저장소 Settings → Secrets and variables → Actions 에 넣을 값 (README 4번 참고)
 #   필수: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, ADMIN_TOKEN, BANK_NAME, BANK_ACCOUNT, BANK_HOLDER
 #   선택: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, NOTIFY_URL,
-#         PAYAPP_USERID, PAYAPP_LINKKEY, PAYAPP_LINKVAL, DEPOSIT_HOOK_SECRET, PRICES
+#         PAYAPP_USERID, PAYAPP_LINKKEY, PAYAPP_LINKVAL, DEPOSIT_HOOK_SECRET, PRICES,
+#         LICENSE_PRIVATE_JWK (관리자 페이지의 "서명 키 백업" 값. 넣어 두면 KV 를 잃어도 판매한 키가 산다)
 # CLOUDFLARE_API_TOKEN 이 없으면 테스트만 하고 배포는 건너뛴다(실패로 표시하지 않는다).
 on:
   push:
@@ -65,10 +66,11 @@ jobs:
           PAYAPP_LINKVAL: ${{ secrets.PAYAPP_LINKVAL }}
           DEPOSIT_HOOK_SECRET: ${{ secrets.DEPOSIT_HOOK_SECRET }}
           PRICES: ${{ secrets.PRICES }}
+          LICENSE_PRIVATE_JWK: ${{ secrets.LICENSE_PRIVATE_JWK }}
         run: |
           node -e '
             const names = ["ADMIN_TOKEN","BANK_NAME","BANK_ACCOUNT","BANK_HOLDER","TELEGRAM_BOT_TOKEN","TELEGRAM_CHAT_ID",
-              "NOTIFY_URL","PAYAPP_USERID","PAYAPP_LINKKEY","PAYAPP_LINKVAL","DEPOSIT_HOOK_SECRET","PRICES"];
+              "NOTIFY_URL","PAYAPP_USERID","PAYAPP_LINKKEY","PAYAPP_LINKVAL","DEPOSIT_HOOK_SECRET","PRICES","LICENSE_PRIVATE_JWK"];
             const out = {};
             names.forEach(n => { if (process.env[n]) out[n] = process.env[n]; });
             require("fs").writeFileSync(process.env.RUNNER_TEMP + "/worker-secrets.json", JSON.stringify(out), { mode: 0o600 });

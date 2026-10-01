@@ -27,8 +27,9 @@
                     <input type="password" id="admin-token" autocomplete="current-password" placeholder="Worker 의 ADMIN_TOKEN">
                     <button type="submit" class="btn">들어가기</button>
                 </form>
+                <label class="co-agree"><input type="checkbox" id="admin-remember"> 이 기기에서 기억 (내 휴대폰·PC 에서만 켜세요)</label>
                 <p class="license-status" id="login-status" role="status"></p>
-                <p class="card-note">토큰은 이 브라우저에만 저장됩니다. 남의 기기에서는 쓰고 나서 "나가기"를 누르세요.</p>
+                <p class="card-note">기억하지 않으면 이 탭을 닫을 때 토큰이 지워집니다. 남의 기기에서는 쓰고 나서 "나가기"를 누르세요.</p>
             </div>
         </section>
 
@@ -91,8 +92,18 @@
                     <h2 class="card-title" id="setup-t"><span>설정 상태</span></h2>
                     <div class="card-body">
                         <ul class="admin-checks" id="setup-list"></ul>
-                        <p class="card-note">공개키를 <code>js/premium-config.js</code> 의 <code>publicKeyJwk</code> 에 붙여 넣으면 방문자 브라우저가 공개키를 서버에 묻지 않습니다 (선택).</p>
-                        <p class="co-actions"><button type="button" class="btn btn-secondary" id="copy-pubkey">공개키 복사</button></p>
+                        <div id="setup-key-box" hidden>
+                            <p class="card-note"><b>처음 한 번:</b> 이용권 키에 서명할 키를 만듭니다. 만든 뒤에는 바꾸지 않습니다 — 바꾸면 이미 판 키가 모두 무효가 됩니다.</p>
+                            <p class="co-actions"><button type="button" class="btn" id="setup-key-btn">서명 키 만들기</button></p>
+                        </div>
+                        <div id="key-tools" hidden>
+                            <p class="card-note">공개키를 <code>js/premium-config.js</code> 의 <code>publicKeyJwk</code> 에 붙여 넣으면 방문자 브라우저가 공개키를 서버에 묻지 않습니다 (선택).</p>
+                            <p class="co-actions">
+                                <button type="button" class="btn btn-secondary" id="copy-pubkey">공개키 복사</button>
+                                <button type="button" class="btn btn-secondary" id="key-backup-btn">서명 키 백업 복사</button>
+                            </p>
+                            <p class="card-note">백업 값은 키를 새로 만들 수 있는 <b>비밀</b>입니다. 비밀번호 관리자나 GitHub Secret <code>LICENSE_PRIVATE_JWK</code> 에만 넣으세요. Cloudflare 저장소(KV)를 잃어도 이 값이 있으면 판매한 키가 살아납니다.</p>
+                        </div>
                     </div>
                 </section>
             </div>
