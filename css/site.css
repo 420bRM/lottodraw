@@ -322,8 +322,8 @@ details[open] > summary.card-title { padding-bottom: 0; }
 
 .stats-loading { padding: 24px 0; color: var(--muted); }
 
-/* ───── 이용권 (30일 통계) ───── */
-.plans { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 16px; }
+/* ───── 이용권 (5개월 통계) ───── */
+.plans { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 8px; }
 .plan {
     display: flex;
     flex-direction: column;
@@ -368,6 +368,70 @@ details[open] > summary.card-title { padding-bottom: 0; }
     color: var(--brand);
     font-weight: bold;
 }
+
+/* 주문서 · 입금 안내 · 키 보기 */
+.plans-status { margin: 0 0 12px; text-align: center; color: var(--muted); }
+.checkout, .order-box, .key-reveal { margin-bottom: 16px; }
+.checkout .card-body, .order-box .card-body { display: grid; gap: 12px; }
+.order-form { display: grid; gap: 12px; max-width: 560px; }
+.co-methods { display: grid; gap: 8px; margin: 0; padding: 0; border: 0; }
+.co-methods legend { margin-bottom: 6px; color: var(--text); font-weight: bold; }
+.co-methods label { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
+.co-methods label:has(input:checked) { border-color: var(--brand); background: #f3f6fc; }
+.co-methods small { color: var(--muted); font-size: 12px; }
+.co-field { display: grid; gap: 4px; }
+.co-field label { color: var(--text); font-weight: bold; }
+.co-field small { color: var(--muted); font-weight: normal; }
+.co-field input, .admin-form input, .admin-form select {
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font: 15px var(--font);
+}
+.co-agree { display: flex; gap: 8px; align-items: flex-start; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.co-agree input { margin-top: 3px; }
+.co-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; }
+.btn-mini { padding: 4px 10px; font-size: 12px; }
+.ob-lead { margin: 0; color: var(--text); font-size: 15px; font-weight: bold; }
+.ob-bank { display: grid; gap: 6px; margin: 0; padding: 12px; background: #f6f8fb; border-radius: 8px; }
+.ob-row { display: grid; grid-template-columns: 7em minmax(0, 1fr); gap: 8px; align-items: center; }
+.ob-row dt { color: var(--muted); font-size: 13px; }
+.ob-row dd { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; font-weight: bold; font-variant-numeric: tabular-nums; word-break: break-all; }
+.key-new { margin: 0 0 8px; color: var(--brand); font-weight: bold; }
+.key-code {
+    display: block;
+    margin: 0 0 10px;
+    padding: 10px 12px;
+    background: #f6f8fb;
+    border: 1px dashed var(--line);
+    border-radius: 6px;
+    font: 13px/1.5 ui-monospace, Menlo, Consolas, monospace;
+    word-break: break-all;
+    user-select: all;
+}
+.seller-info { color: var(--muted); font-size: 12px; }
+
+/* 주문 관리 (admin.html) */
+.admin-main { display: grid; gap: 16px; padding: 16px; }
+.admin-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.admin-tabs button { padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px; background: #fff; font: bold 13px var(--font); cursor: pointer; }
+.admin-tabs button[aria-selected="true"] { background: var(--brand); border-color: var(--brand); color: #fff; }
+.admin-list { display: grid; gap: 12px; }
+.admin-order.focus { outline: 3px solid var(--brand); }
+.admin-order .badge { padding: 2px 8px; border-radius: 999px; background: var(--head); color: var(--text); font-weight: bold; }
+.admin-order.st-pending .badge { background: #fff3c4; }
+.admin-order.st-paid .badge { background: #d9f2d9; }
+.admin-order.st-refunded .badge, .admin-order.st-cancelled .badge { background: #f1d9d9; }
+.admin-line { margin: 0 0 6px; }
+.admin-detail:empty { display: none; }
+.admin-detail { margin-top: 10px; }
+.admin-tools { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.admin-form { display: grid; gap: 10px; }
+.admin-form label { display: grid; gap: 4px; color: var(--muted); font-size: 13px; }
+.admin-checks { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 13px; }
+.admin-checks .off { color: var(--muted); }
+.admin-key { margin-top: 10px; }
+@media (max-width: 899px) { .admin-tools { grid-template-columns: minmax(0, 1fr); } }
 
 /* ───── 약관/문의 본문 ───── */
 .prose { max-width: 900px; margin: 0 auto; padding: 24px 20px; line-height: 1.7; }
@@ -701,7 +765,6 @@ html.home { scroll-behavior: smooth; }
 /* ───── 반응형 ───── */
 @media (max-width: 1279px) {
     .stat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .plans { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .span-2 { grid-column: 1 / -1; }
 }
 @media (max-width: 899px) {
@@ -709,6 +772,7 @@ html.home { scroll-behavior: smooth; }
 }
 @media (max-width: 899px) {
     .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .plans { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 599px) {
     .stat-grid, .plans { grid-template-columns: minmax(0, 1fr); }

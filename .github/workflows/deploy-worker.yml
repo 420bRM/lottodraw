@@ -1,0 +1,101 @@
+name: deploy-worker
+
+# 결제·이용권 서버(worker/)를 Cloudflare Workers 에 올린다.
+# html 브랜치에 worker/ 가 바뀌어 들어오면 저절로, 또는 Actions 탭에서 Run workflow 로 돈다.
+#
+# 저장소 Settings → Secrets and variables → Actions 에 넣을 값 (README 4번 참고)
+#   필수: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, ADMIN_TOKEN, BANK_NAME, BANK_ACCOUNT, BANK_HOLDER
+#   선택: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, NOTIFY_URL,
+#         PAYAPP_USERID, PAYAPP_LINKKEY, PAYAPP_LINKVAL, DEPOSIT_HOOK_SECRET, PRICES
+# CLOUDFLARE_API_TOKEN 이 없으면 테스트만 하고 배포는 건너뛴다(실패로 표시하지 않는다).
+on:
+  push:
+    branches: [html]
+    paths:
+      - "worker/**"
+      - ".github/workflows/deploy-worker.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-worker
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: 테스트
+        working-directory: worker
+        run: node --test test/*.test.mjs
+
+      - name: Cloudflare 설정 확인
+        id: check
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$CF_TOKEN" ]; then
+            echo "::warning::CLOUDFLARE_API_TOKEN 이 없어 배포를 건너뜁니다 (README 4번 설치 순서 참고)"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # 비어 있지 않은 값만 Worker 비밀값으로 올린다. 여기서 빠진 값은 Worker 에 있던 것이 그대로 남는다.
+      - name: 비밀값 모으기
+        if: steps.check.outputs.ready == 'true'
+        env:
+          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+          BANK_NAME: ${{ secrets.BANK_NAME }}
+          BANK_ACCOUNT: ${{ secrets.BANK_ACCOUNT }}
+          BANK_HOLDER: ${{ secrets.BANK_HOLDER }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          NOTIFY_URL: ${{ secrets.NOTIFY_URL }}
+          PAYAPP_USERID: ${{ secrets.PAYAPP_USERID }}
+          PAYAPP_LINKKEY: ${{ secrets.PAYAPP_LINKKEY }}
+          PAYAPP_LINKVAL: ${{ secrets.PAYAPP_LINKVAL }}
+          DEPOSIT_HOOK_SECRET: ${{ secrets.DEPOSIT_HOOK_SECRET }}
+          PRICES: ${{ secrets.PRICES }}
+        run: |
+          node -e '
+            const names = ["ADMIN_TOKEN","BANK_NAME","BANK_ACCOUNT","BANK_HOLDER","TELEGRAM_BOT_TOKEN","TELEGRAM_CHAT_ID",
+              "NOTIFY_URL","PAYAPP_USERID","PAYAPP_LINKKEY","PAYAPP_LINKVAL","DEPOSIT_HOOK_SECRET","PRICES"];
+            const out = {};
+            names.forEach(n => { if (process.env[n]) out[n] = process.env[n]; });
+            require("fs").writeFileSync(process.env.RUNNER_TEMP + "/worker-secrets.json", JSON.stringify(out), { mode: 0o600 });
+            console.log("올릴 비밀값:", Object.keys(out).join(", ") || "(없음)");
+            if (!out.ADMIN_TOKEN || out.ADMIN_TOKEN.length < 16) console.log("::warning::ADMIN_TOKEN 이 없거나 16자보다 짧아 관리자 페이지가 열리지 않습니다");
+            if (!(out.BANK_NAME && out.BANK_ACCOUNT && out.BANK_HOLDER)) console.log("::warning::BANK_NAME/BANK_ACCOUNT/BANK_HOLDER 가 모두 있어야 계좌이체 주문이 열립니다");
+          '
+
+      - name: 배포
+        if: steps.check.outputs.ready == 'true'
+        working-directory: worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@4 deploy --secrets-file "$RUNNER_TEMP/worker-secrets.json"
+
+      - name: 비밀값 파일 지우기
+        if: always()
+        run: rm -f "$RUNNER_TEMP/worker-secrets.json"
+
+      # 새 도메인은 인증서가 붙는 데 몇 분 걸릴 수 있어 실패해도 넘어간다
+      - name: 동작 확인
+        if: steps.check.outputs.ready == 'true'
+        continue-on-error: true
+        run: |
+          for i in 1 2 3 4 5 6; do
+            if curl -fsS https://api.lottodraw.kr/api/config; then echo; exit 0; fi
+            sleep 20
+          done
+          echo "::warning::https://api.lottodraw.kr 에 아직 연결되지 않습니다. 몇 분 뒤 다시 확인하거나, Cloudflare 대시보드에서 Worker 의 Custom Domain 을 확인하세요."

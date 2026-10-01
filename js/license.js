@@ -1,94 +1,171 @@
 // 이용권 키 확인. 결제 페이지와 홈의 잠금 카드가 같이 쓴다.
 //
-// 규칙을 한 곳에 둔 이유: 재확인 주기와 결제대행사 장애 유예를 페이지마다 따로 쓰면
-// 한쪽에서만 키가 풀리는 일이 생긴다. 열고 닫는 판단은 전부 여기서 한다.
+// 키는 서버(worker/)가 서명해서 주고, 확인은 이 파일이 공개키로 브라우저 안에서 한다.
+// 그래서 키 확인 때문에 어디로 요청을 보내지 않고, 서버가 멈춰도 이미 산 사람은 열린다.
+// 키 형식은 worker/src/keys.js 첫머리에 적혀 있다 — 두 파일은 같은 규칙을 따라야 한다.
+//
+// 서버에 묻는 것은 두 가지뿐이고 둘 다 키를 보내지 않는다.
+//   · 공개키 (처음 한 번. premium-config.js 에 박아 두면 그것도 안 묻는다)
+//   · 환불된 키 번호 목록 (revalidateHours 마다)
 //
 // 이 잠금은 편의 잠금이다. 원본 데이터와 계산 코드가 공개돼 있어 마음먹은 사람이
-// 직접 계산하는 것까지 막지는 못한다. 키 외의 입력은 어디로도 보내지 않는다.
+// 직접 계산하는 것까지 막지는 못한다.
 (function (root, factory) {
     if (typeof module === 'object' && module.exports) module.exports = factory();
     else root.LottoLicense = factory();
 }(typeof self !== 'undefined' ? self : this, function () {
     'use strict';
 
+    const PREFIX = 'LD1-';
+    const BODY_LEN = 14;
+    const SIG_LEN = 64;
+    const PLAN_BY_CODE = { 1: 'week', 2: 'month', 3: 'lifetime', 9: 'custom' };
     const KEY_STORE = 'lottodraw.premium.key';
     const CHECK_STORE = 'lottodraw.premium.check';
+    const PUB_STORE = 'lottodraw.premium.pubkey';
+    const REVOKED_STORE = 'lottodraw.premium.revoked';
     const HOUR = 60 * 60 * 1000;
+    const ALG = { name: 'ECDSA', namedCurve: 'P-256' };
+    const SIGN_ALG = { name: 'ECDSA', hash: 'SHA-256' };
 
-    const cfg = () => (typeof window !== 'undefined' && window.PREMIUM_CONFIG) || {};
+    const g = typeof window !== 'undefined' ? window : (typeof self !== 'undefined' ? self : globalThis);
+    const cfg = () => g.PREMIUM_CONFIG || {};
+    const apiBase = () => String(cfg().apiBase || '').replace(/\/+$/, '');
 
     // 이 파일은 Node 에서 require 될 수도 있어 I18N 이 없을 수 있다. 없으면 한국어 그대로.
-    const msg = (key, ko) => (typeof window !== 'undefined' && window.I18N) ? window.I18N.t(key) : ko;
+    const msg = (key, ko, vars) => {
+        if (!g.I18N) return vars ? ko.replace(/\{(\w+)\}/g, (_, k) => vars[k]) : ko;
+        return vars ? g.I18N.f(key, vars) : g.I18N.t(key);
+    };
 
     const store = {
-        get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
-        set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* 프라이빗 모드 */ } },
-        del(k) { try { localStorage.removeItem(k); } catch (e) { /* 프라이빗 모드 */ } },
+        get(k) { try { return g.localStorage.getItem(k); } catch (e) { return null; } },
+        set(k, v) { try { g.localStorage.setItem(k, v); } catch (e) { /* 프라이빗 모드 */ } },
+        del(k) { try { g.localStorage.removeItem(k); } catch (e) { /* 프라이빗 모드 */ } },
+    };
+    const readJson = k => { try { return JSON.parse(store.get(k) || 'null'); } catch (e) { return null; } };
+
+    const fmtDate = v => {
+        const d = new Date(v);
+        return isNaN(d) ? String(v) : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     };
 
-    const plans = () => cfg().plans || {};
-    const benefitIds = () => Object.keys(plans()).map(p => plans()[p].benefitId).filter(Boolean);
-    const planOf = id => {
-        const all = plans();
-        const hit = Object.keys(all).filter(p => all[p].benefitId && all[p].benefitId === id)[0];
-        return hit ? all[hit] : null;
-    };
-
-    const fmtDate = iso => {
-        const d = new Date(iso);
-        return isNaN(d) ? iso : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    };
-
-    const configured = () => !!cfg().organizationId;
+    const configured = () => !!(apiBase() || cfg().publicKeyJwk);
     const savedKey = () => store.get(KEY_STORE);
+    const planName = id => msg('plan.' + id, ({ week: '1주 이용권', month: '1개월 이용권', lifetime: '평생 이용권', custom: '이용권' })[id] || '이용권');
 
-    // Polar 응답을 이용 가능 여부로 판정
-    function judge(lk) {
-        if (lk.status !== 'granted') {
-            return { ok: false, reason: lk.status === 'revoked'
-                ? msg('lic.revoked', '환불 또는 취소된 이용권입니다.')
-                : msg('lic.disabled', '사용이 중지된 이용권입니다.') };
-        }
-        const allowed = benefitIds();
-        if (allowed.length && allowed.indexOf(lk.benefit_id) === -1) {
-            return { ok: false, reason: msg('lic.wrongSite', '이 사이트의 이용권 키가 아닙니다.') };
-        }
-        if (lk.expires_at && Date.parse(lk.expires_at) <= Date.now()) {
-            return { ok: false, reason: (typeof window !== 'undefined' && window.I18N)
-                ? window.I18N.f('lic.expired', { date: fmtDate(lk.expires_at) })
-                : `${fmtDate(lk.expires_at)}에 기간이 끝난 이용권입니다.` };
-        }
-        const plan = planOf(lk.benefit_id);
+    function b64urlDecode(str) {
+        const b64 = str.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((str.length + 3) % 4);
+        const bin = atob(b64);
+        const out = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+        return out;
+    }
+
+    // 형식만 본다. 진짜인지는 verify 가 서명으로 판단한다.
+    function parse(key) {
+        if (typeof key !== 'string') return null;
+        const clean = key.replace(/\s+/g, '');
+        if (clean.indexOf(PREFIX) !== 0) return null;
+        let raw;
+        try { raw = b64urlDecode(clean.slice(PREFIX.length)); } catch (e) { return null; }
+        if (raw.length !== BODY_LEN + SIG_LEN || raw[0] !== 1) return null;
+        const body = raw.slice(0, BODY_LEN);
+        const v = new DataView(body.buffer);
+        const exp = v.getUint32(10);
         return {
-            ok: true,
-            expiresAt: lk.expires_at || null,
-            plan: plan ? plan.name : msg('lic.pass', '이용권'),
-            recurring: !!(plan && plan.recurring),
+            key: clean,
+            plan: PLAN_BY_CODE[body[1]] || 'custom',
+            id: v.getUint32(2).toString(16).padStart(8, '0'),
+            issuedAt: v.getUint32(6) * 1000,
+            expiresAt: exp ? exp * 1000 : null,
+            body: body,
+            sig: raw.slice(BODY_LEN),
         };
     }
 
+    function signedBytes(body) {
+        const ctx = [0x4c, 0x44, 0x31]; // 'LD1'
+        const m = new Uint8Array(ctx.length + body.length);
+        m.set(ctx, 0);
+        m.set(body, ctx.length);
+        return m;
+    }
+
+    function withTimeout(promise, ms) {
+        return Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))]);
+    }
+
+    async function fetchJson(path) {
+        const res = await withTimeout(fetch(apiBase() + path, { headers: { Accept: 'application/json' } }), 6000);
+        if (!res.ok) { const e = new Error('HTTP ' + res.status); e.status = res.status; throw e; }
+        return res.json();
+    }
+
+    // 공개키: 설정에 박힌 것 > 이 브라우저에 기억한 것 > 서버에서 받기
+    async function publicJwk(refresh) {
+        if (cfg().publicKeyJwk) return { jwk: cfg().publicKeyJwk, pinned: true };
+        const saved = readJson(PUB_STORE);
+        if (saved && saved.jwk && !refresh) return { jwk: saved.jwk, pinned: false };
+        if (!apiBase()) throw new Error('no api');
+        const got = await fetchJson('/api/pubkey');
+        store.set(PUB_STORE, JSON.stringify({ kid: got.kid, jwk: got.jwk, at: Date.now() }));
+        return { jwk: got.jwk, pinned: false };
+    }
+
+    async function signatureOk(p, jwk) {
+        const pub = await crypto.subtle.importKey('jwk', { kty: jwk.kty, crv: jwk.crv, x: jwk.x, y: jwk.y }, ALG, false, ['verify']);
+        return crypto.subtle.verify(SIGN_ALG, pub, p.sig, signedBytes(p.body));
+    }
+
+    // 환불된 키 번호 목록. 못 받으면 마지막으로 받은 목록을 쓴다.
+    async function revokedIds() {
+        const saved = readJson(REVOKED_STORE);
+        const hours = cfg().revalidateHours || 12;
+        if (saved && Date.now() - saved.at < hours * HOUR) return saved.ids || [];
+        if (!apiBase()) return (saved && saved.ids) || [];
+        try {
+            const got = await fetchJson('/api/revoked');
+            const ids = Array.isArray(got.ids) ? got.ids : [];
+            store.set(REVOKED_STORE, JSON.stringify({ ids: ids, at: Date.now() }));
+            return ids;
+        } catch (e) {
+            return (saved && saved.ids) || [];
+        }
+    }
+
+    // 결과: { ok, final(다시 해도 같은 결과라 키를 지워도 되는가), reason, ... }
+    // 공개키를 한 번도 받지 못했고 받을 수도 없으면 예외를 던진다(오프라인).
     async function validate(key) {
-        const res = await fetch(`${cfg().apiBase}/v1/customer-portal/license-keys/validate`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify({ key: key, organization_id: cfg().organizationId }),
-        });
-        if (res.status === 404) return { ok: false, reason: msg('lic.notFound', '찾을 수 없는 키입니다. 앞뒤 공백 없이 그대로 붙여 넣었는지 확인해 주세요.') };
-        if (res.status === 422) return { ok: false, reason: msg('lic.badFormat', '키 형식이 올바르지 않습니다.') };
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return judge(await res.json());
+        const p = parse(key);
+        if (!p) return { ok: false, final: true, reason: msg('lic.badFormat', '키 형식이 올바르지 않습니다. LD1- 로 시작하는 키 전체를 붙여 넣어 주세요.') };
+
+        let pk = await publicJwk(false);
+        let good = await signatureOk(p, pk.jwk);
+        if (!good && !pk.pinned) {
+            // 서버가 서명 키를 바꿨을 수 있다. 한 번만 새로 받아 다시 본다.
+            try { pk = await publicJwk(true); good = await signatureOk(p, pk.jwk); } catch (e) { /* 기존 판단 유지 */ }
+        }
+        if (!good) return { ok: false, final: true, reason: msg('lic.wrongSite', '이 사이트에서 발급한 키가 아닙니다.') };
+
+        if (p.expiresAt && p.expiresAt <= Date.now()) {
+            return { ok: false, final: true, reason: msg('lic.expired', '{date}에 기간이 끝난 이용권입니다.', { date: fmtDate(p.expiresAt) }) };
+        }
+        const revoked = await revokedIds();
+        if (revoked.indexOf(p.id) !== -1) return { ok: false, final: true, reason: msg('lic.revoked', '환불 또는 취소된 이용권입니다.') };
+
+        return {
+            ok: true,
+            planId: p.plan,
+            plan: planName(p.plan),
+            keyId: p.id,
+            issuedAt: new Date(p.issuedAt).toISOString(),
+            expiresAt: p.expiresAt ? new Date(p.expiresAt).toISOString() : null,
+        };
     }
 
-    function cached() {
-        try { return JSON.parse(store.get(CHECK_STORE) || 'null'); } catch (e) { return null; }
-    }
+    const cached = () => readJson(CHECK_STORE);
     const stillValid = c => !!c && c.ok === true && (!c.expiresAt || Date.parse(c.expiresAt) > Date.now());
-    const within = (c, key, hours) => stillValid(c) && c.key === key && Date.now() - c.checkedAt < hours * HOUR;
-
-    // 최근에 확인한 키는 다시 묻지 않는다
-    const fresh = (c, key) => within(c, key, cfg().revalidateHours || 12);
-    // 결제대행사에 연결하지 못할 때, 이미 결제한 사람이 곧바로 막히지 않도록 두는 유예
-    const graceOk = (c, key) => within(c, key, cfg().graceHours || 72);
 
     function remember(key, result) {
         const record = Object.assign({ key: key, checkedAt: Date.now() }, result);
@@ -102,50 +179,55 @@
         if (alsoKey) store.del(KEY_STORE);
     }
 
-    // 홈처럼 입력칸 없이 "열려 있나"만 알면 되는 화면용.
-    // 네트워크가 막히면 유예 안에서는 열어 두고, 그 밖에는 잠근다.
-    async function unlockState() {
-        const key = savedKey();
-        if (!configured() || !key) return { unlocked: false, record: null };
-        const c = cached();
-        if (fresh(c, key)) return { unlocked: true, record: c };
+    // 키 하나를 판정해 열지 말지 정한다. 네트워크가 막혀 공개키를 못 받는 경우에만
+    // 마지막으로 확인한 결과(기간 안)를 믿는다.
+    async function check(key) {
         try {
             const result = await validate(key);
             if (result.ok) return { unlocked: true, record: remember(key, result) };
-            forget(true);
-            return { unlocked: false, record: null, reason: result.reason };
+            return { unlocked: false, reason: result.reason, final: !!result.final };
         } catch (e) {
-            if (graceOk(c, key)) return { unlocked: true, record: c };
-            return { unlocked: false, record: null, offline: true };
+            const c = cached();
+            if (stillValid(c) && c.key === key) return { unlocked: true, record: c, offline: true };
+            return { unlocked: false, offline: true, reason: msg('pay.offline', '서버에 연결하지 못했습니다. 잠시 뒤 다시 시도해 주세요.') };
         }
+    }
+
+    // 홈처럼 입력칸 없이 "열려 있나"만 알면 되는 화면용
+    async function unlockState() {
+        const key = savedKey();
+        if (!key) return { unlocked: false, record: null };
+        const state = await check(key);
+        if (!state.unlocked && state.final) forget(true);
+        return state;
     }
 
     // 이용권 이름과 남은 기간을 한 줄로
     function summary(record) {
         if (!record) return '';
-        const until = record.expiresAt ? `${fmtDate(record.expiresAt)}까지 이용 가능`
-            : record.recurring ? msg('lic.untilCancel', '해지 전까지 이용 가능')
+        const until = record.expiresAt
+            ? msg('lic.until', '{date}까지 이용 가능', { date: fmtDate(record.expiresAt) })
             : msg('lic.noLimit', '기간 제한 없음');
-        return `${record.plan} · ${until}`;
+        const id = record.keyId ? ' · ' + msg('lic.keyNo', '키 번호 {id}', { id: record.keyId.toUpperCase() }) : '';
+        return `${record.plan} · ${until}${id}`;
     }
 
     return {
+        PREFIX: PREFIX,
         KEY_STORE: KEY_STORE,
         CHECK_STORE: CHECK_STORE,
         configured: configured,
         savedKey: savedKey,
-        plans: plans,
-        planOf: planOf,
-        judge: judge,
+        parse: parse,
         validate: validate,
+        check: check,
         cached: cached,
         stillValid: stillValid,
-        fresh: fresh,
-        graceOk: graceOk,
         remember: remember,
         forget: forget,
         unlockState: unlockState,
         summary: summary,
+        planName: planName,
         fmtDate: fmtDate,
     };
 }));

@@ -1,0 +1,31 @@
+# lottodraw.kr 결제·이용권 서버. 배포는 .github/workflows/deploy-worker.yml 이 한다.
+# 비밀값(계좌, 관리자 토큰 등)은 여기 적지 않는다 — 이 파일은 공개 저장소에 있다.
+name = "lottodraw-api"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+workers_dev = true
+
+# api.lottodraw.kr 로 연결. lottodraw.kr 도메인이 같은 Cloudflare 계정에 있어야 한다.
+routes = [
+  { pattern = "api.lottodraw.kr", custom_domain = true },
+]
+
+[vars]
+SITE_URL = "https://www.lottodraw.kr"
+ALLOWED_ORIGINS = "https://www.lottodraw.kr,https://lottodraw.kr"
+
+# 주문·서명 키·환불 목록 저장소. id 를 비워 두면 첫 배포 때 wrangler 가 알아서 만든다.
+[[kv_namespaces]]
+binding = "DB"
+
+# 같은 IP 에서 1분에 주문 5건까지 (도배 방지)
+[[ratelimits]]
+name = "ORDER_LIMIT"
+namespace_id = "1001"
+
+  [ratelimits.simple]
+  limit = 5
+  period = 60
+
+[observability]
+enabled = true
