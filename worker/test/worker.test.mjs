@@ -142,6 +142,59 @@ test('연락처는 이메일만 받는다 (비워 두는 것은 괜찮다)', asy
     assert.equal(r.status, 201);
 });
 
+test('키 메일: 이메일을 적은 주문은 발급 즉시 키를 메일로, 실패해도 발급은 그대로, 관리자가 다시 보낼 수 있다', async () => {
+    _resetForTests();
+    const sent = [];
+    let mailOk = true;
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async (url, init) => {
+        if (String(url) === 'https://api.resend.com/emails') {
+            sent.push({ auth: init.headers.Authorization, body: JSON.parse(init.body) });
+            return new Response('{}', { status: mailOk ? 200 : 500 });
+        }
+        return realFetch(url, init);
+    };
+    try {
+        const env = makeEnv({ DEPOSIT_HOOK_SECRET: 'hook-secret-0123456789', RESEND_API_KEY: 're_test', MAIL_FROM: 'lottodraw.kr <key@lottodraw.kr>' });
+        await setupKey(env);
+        const pay = async (contact, ip) => {
+            const { order, token } = (await call(env, 'POST', '/api/orders', { body: { plan: 'day', method: 'bank', name: '홍길동', contact, agree: true }, headers: { 'CF-Connecting-IP': ip } })).data;
+            await call(env, 'POST', '/api/hooks/deposit', { raw: `입금 ${order.amount}원 홍길동`, headers: { 'Content-Type': 'text/plain', Authorization: 'Bearer hook-secret-0123456789' } });
+            return (await call(env, 'GET', `/api/orders/${order.id}?token=${token}`)).data.order;
+        };
+        // 이메일을 적었으면 키를 메일로
+        const a = await pay('buyer@example.com', '10.3.0.1');
+        assert.equal(a.status, 'paid');
+        assert.equal(a.mailed, true);
+        assert.equal(sent.length, 1);
+        assert.deepEqual(sent[0].body.to, ['buyer@example.com']);
+        assert.equal(sent[0].auth, 'Bearer re_test');
+        assert.ok(sent[0].body.text.includes(a.key), '메일에 키가 들어 있다');
+        assert.ok(sent[0].body.text.includes('#key=' + a.key), '열기 링크도');
+        // 이메일이 없으면 보내지 않는다
+        const b = await pay('', '10.3.0.2');
+        assert.equal(b.mailed, false);
+        assert.equal(sent.length, 1);
+        // 메일 서버가 실패해도 키는 발급된다
+        mailOk = false;
+        const c = await pay('fail@example.com', '10.3.0.3');
+        assert.equal(c.status, 'paid');
+        assert.equal(c.mailed, false);
+        // 관리자가 다시 보내기
+        mailOk = true;
+        const r = await call(env, 'POST', `/api/admin/orders/${c.id}/mail`, { headers: asAdmin });
+        assert.equal(r.status, 200);
+        assert.ok(r.data.order.mailedAt);
+        assert.equal(sent.at(-1).body.to[0], 'fail@example.com');
+        // 이메일 없는 주문은 다시 보내기도 거절
+        assert.equal((await call(env, 'POST', `/api/admin/orders/${b.id}/mail`, { headers: asAdmin })).data.error, 'no_contact');
+        // 관리자 상태에 메일 발송 켜짐
+        assert.equal((await call(env, 'GET', '/api/admin/status', { headers: asAdmin })).data.mail, true);
+    } finally {
+        globalThis.fetch = realFetch;
+    }
+});
+
 test('PRICES 환경변수로 가격만 바꿀 수 있다', async () => {
     _resetForTests();
     const r = await call(makeEnv({ PRICES: '{"week":3000,"month":500}' }), 'GET', '/api/config');

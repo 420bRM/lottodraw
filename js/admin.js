@@ -143,6 +143,7 @@
             [s.methods.bank, '계좌이체', '켜짐', 'BANK_NAME · BANK_ACCOUNT · BANK_HOLDER 비밀값이 필요합니다'],
             [s.methods.payapp, '카드(페이앱)', '켜짐', '페이앱 심사 통과 뒤 PAYAPP_USERID · PAYAPP_LINKKEY · PAYAPP_LINKVAL 을 넣으면 켜집니다'],
             [s.notify.telegram || s.notify.url, '새 주문 알림', s.notify.telegram ? '텔레그램' : '알림 주소', 'TELEGRAM_BOT_TOKEN · TELEGRAM_CHAT_ID 또는 NOTIFY_URL 을 넣으면 휴대폰으로 받습니다'],
+            [s.mail, '키 메일 발송', '켜짐 — 이메일을 적은 구매자에게 키를 메일로도 보냅니다', 'RESEND_API_KEY · MAIL_FROM 을 넣으면 키를 구매자 이메일로도 보냅니다 (README 4번)'],
             [s.hooks.alive, '입금 자동 확인', '켜짐 (휴대폰 연결 살아 있음)', '꺼짐 — 위 "입금 알림 연결"을 설정하면 새벽에도 자동으로 열립니다'],
         ];
         items.forEach(([on, name, yes, how]) => {
@@ -247,10 +248,16 @@
             const d = r.order;
             box.textContent = '';
             if (d.key && d.status === 'paid') box.appendChild(keyBox(d));
+            if (d.key && d.status === 'paid' && d.contact && status && status.mail) {
+                box.appendChild(el('p', { className: 'co-actions' }, [
+                    el('button', { type: 'button', className: 'btn btn-secondary btn-mini', text: d.mailedAt ? '키 메일 다시 보내기' : '키 메일 보내기', on: { click: () => act(o, 'mail', box) } }),
+                ]));
+            }
             const lines = [
                 ['돌려줄 계좌', d.refundAccount],
                 ['정가', d.listPrice && d.listPrice !== d.amount ? `${won(d.listPrice)} (확인용 할인 ${won(d.listPrice - d.amount)})` : ''],
-                ['연락처', d.contact],
+                ['이메일', d.contact],
+                ['키 메일', d.mailedAt ? when(d.mailedAt) + ' 보냄' : ''],
                 ['휴대폰 끝자리', d.phoneTail],
                 ['메모', d.note],
                 ['입금 기한', d.method === 'bank' ? when(d.deadline) : ''],
@@ -268,12 +275,13 @@
             cancel: `주문 ${o.id} 을 취소합니까? (입금이 없을 때만)`,
             refund: `주문 ${o.id} 을 환불 처리합니까?\n키가 정지됩니다. 돈은 구매자 계좌로 직접 돌려보내야 합니다.`,
             'refund-done': `${won(o.a)} 을 구매자 계좌로 보냈습니까?\n(키는 구매자가 요청할 때 이미 정지됐습니다)`,
+            mail: `주문 ${o.id} 의 키를 구매자가 적은 이메일로 보냅니까?`,
         }[action];
         if (!window.confirm(ask)) return;
         say('admin-status', '처리하는 중…');
         try {
             const r = await call(`/orders/${o.id}/${action}`, { method: 'POST' });
-            say('admin-status', action === 'confirm' ? `${o.id} 키를 발급했습니다. 구매자 화면이 곧 열립니다.` : `${o.id} 처리했습니다.`);
+            say('admin-status', action === 'confirm' ? `${o.id} 키를 발급했습니다. 구매자 화면이 곧 열립니다.` : action === 'mail' ? `${o.id} 키를 메일로 보냈습니다.` : `${o.id} 처리했습니다.`);
             if (action === 'confirm' && r.order.key) {
                 box.textContent = '';
                 box.appendChild(keyBox(r.order));

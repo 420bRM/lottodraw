@@ -315,7 +315,7 @@
             const st = await L.check(key);
             if (st.unlocked) {
                 $('license-key').value = key;
-                unlock(st.record, true);
+                unlock(st.record, true, !!o.mailed);
             } else {
                 // 서명 확인이 안 되는 드문 경우에도 키는 잃지 않게 입력칸에 넣어 둔다
                 $('license-key').value = key;
@@ -403,12 +403,16 @@
         if (message) setStatus('license-status', message, isError);
     }
 
-    function unlock(record, justBought) {
+    function unlock(record, justBought, mailed) {
         $('paywall').hidden = true;
         $('premium').hidden = false;
         $('license-summary').textContent = L.summary(record);
         $('license-code').textContent = record.key;
+        // 막 산 사람에게는 키를 눈에 띄게 보여 준다 — 통계가 바로 열려 키를 못 보고 지나치기 쉽다
         $('license-new').hidden = !justBought;
+        $('license-new-tip').hidden = !justBought;
+        $('license-mailed').hidden = !(justBought && mailed);
+        $('license-reveal').classList.toggle('just-bought', !!justBought);
         if (justBought) showKey(true);
         loadWindowStats();
         if (justBought) window.scrollTo({ top: 0, behavior: 'smooth' });
