@@ -16,6 +16,7 @@
 //   draws.html               회차별 당첨번호 전체 조회
 //   probability.html         등수별 당첨 확률
 //   index.html · tax.html · top-prize.html   <!-- seo:... --> 표식 사이만 고친다
+//   blog/                    블로그 목록과 글 (tools/build-blog.js 를 불러 만든다)
 //   sitemap.xml
 //
 // 결제로 열리는 상세 분석(연속 회차 목록, 번호별 궁합수, 20회 당첨금 추이)은 싣지 않는다.
@@ -172,6 +173,7 @@ const NAV = [
     ['statistics.html', '5개월 통계', 'nav.statistics'],
     ['top-prize.html', 'TOP 50 당첨금', 'nav.topPrize'],
     ['tax.html', '실수령액 계산', 'nav.tax'],
+    ['blog/index.html', '블로그', 'nav.blog'],
     ['about.html', 'ABOUT', 'nav.about'],
 ];
 
@@ -184,6 +186,8 @@ const latestCallout = `제${LATEST.round}회 ${LATEST.numbers.join(' ')} <span c
 const latestCalloutEn = `Draw ${LATEST.round}: ${LATEST.numbers.join(' ')} <span class="bonus-sep">+</span> ${LATEST.bonus}`;
 
 // base: 하위 폴더 페이지에서 쓰는 경로 앞머리 ('' 또는 '../')
+// mainClass: 본문에 더 붙일 클래스 (블로그의 'blog-index' · 'blog-post')
+// note: 맨 위 주석을 바꿀 때 (블로그는 원고에서 만든다)
 function shell(o) {
     const base = o.base || '';
     const title = `${o.title} | lottodraw.kr`;
@@ -206,7 +210,7 @@ function shell(o) {
         }]),
     };
     return `<!DOCTYPE html>
-<!-- 이 파일은 tools/build-static-stats.js 가 매주 다시 만든다. 직접 고치면 덮어쓰인다. -->
+<!-- ${o.note || '이 파일은 tools/build-static-stats.js 가 매주 다시 만든다. 직접 고치면 덮어쓰인다.'} -->
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
@@ -251,7 +255,7 @@ ${NAV.map(([href, name, key]) => `            <li><a href="${base}${href}"${href
         </ul>
     </nav>
 
-    <main class="prose stat-page">
+    <main class="prose stat-page${o.mainClass ? ' ' + o.mainClass : ''}">
         <nav class="breadcrumb" aria-label="현재 위치" data-i18n-attr="aria-label:crumb.aria">${crumbHtml}</nav>
         <h1${o.h1En ? ` data-i18n-en="${esc(o.h1En)}"` : ''}>${esc(o.h1)}</h1>
 ${o.scope ? `        <p class="stat-scope">${o.scope}</p>\n` : ''}${o.lead ? `        <p class="stat-lead">${o.lead}</p>\n` : ''}
@@ -267,6 +271,7 @@ ${o.body.filter(Boolean).join('\n\n')}
             <li><a href="${base}statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
             <li><a href="${base}top-prize.html" data-i18n="footer.top">TOP 50</a></li>
             <li><a href="${base}tax.html" data-i18n="footer.tax">실수령액</a></li>
+            <li><a href="${base}blog/index.html" data-i18n="nav.blog">블로그</a></li>
             <li><a href="${base}about.html" data-i18n="nav.about">ABOUT</a></li>
         </ul>
         <p><a href="${base}privacy.html" data-i18n="footer.privacy">개인정보 처리방침</a> · <a href="${base}terms.html" data-i18n="footer.terms">이용약관</a> · <a href="${base}contact.html" data-i18n="footer.contact">문의</a></p>
@@ -1115,7 +1120,8 @@ function updateTaxAndTop() {
 
 /* ───── 사이트맵 ───── */
 
-function updateSitemap() {
+// blog: build-blog.js 가 돌려준 [{ path, lastmod }]. 글의 날짜를 그대로 lastmod 로 쓴다
+function updateSitemap(blog) {
     const old = read('sitemap.xml');
     const keep = {};
     const re = /<loc>([^<]+)<\/loc>\s*<lastmod>([^<]+)<\/lastmod>/g;
@@ -1139,6 +1145,7 @@ function updateSitemap() {
             entry('/terms.html', kept('/terms.html'), 'yearly', '0.3'),
             entry('/contact.html', kept('/contact.html'), 'yearly', '0.3'),
         ],
+        (blog || []).map(b => entry(b.path, b.lastmod || kept(b.path), 'monthly', '0.6')),
         // 회차 페이지는 추첨 뒤 바뀌지 않는다. 직전 회차만 "다음 회차" 링크가 한 번 붙는다.
         draws.map((d, i) => entry(`/round/${d.round}.html`, i <= 1 ? UPDATED : d.date, i === 0 ? 'weekly' : 'yearly', i < 10 ? '0.8' : '0.5')),
     );
@@ -1166,8 +1173,11 @@ STATS.forEach(p => { if (write(p.file, statPage(p))) changed++; });
 draws.forEach(d => { if (write(`round/${d.round}.html`, roundPage(d))) changed++; });
 if (write('draws.html', drawsPage())) changed++;
 if (write('probability.html', probabilityPage())) changed++;
+// 블로그는 원고(content/blog/)로 만든다. 같은 틀을 쓰고 사이트맵에 같이 넣으려고 여기서 부른다
+const blog = require(path.join(__dirname, 'build-blog.js'))({ shell, write, SITE, OG_IMAGE });
+changed += blog.changed;
 updateHome();
 updateTaxAndTop();
-const urls = updateSitemap();
-console.log(`통계 ${STATS.length}쪽 · 회차 ${draws.length}쪽 · 전체 조회 · 확률 · 사이트맵 ${urls}개 (${RANGE}, 갱신일 ${UPDATED})`);
+const urls = updateSitemap(blog.sitemap);
+console.log(`통계 ${STATS.length}쪽 · 회차 ${draws.length}쪽 · 전체 조회 · 확률 · 블로그 ${blog.posts}편 · 사이트맵 ${urls}개 (${RANGE}, 갱신일 ${UPDATED})`);
 console.log(`바뀐 생성 페이지: ${changed}쪽`);

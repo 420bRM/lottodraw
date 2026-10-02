@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<!-- 이 파일은 tools/build-blog.js 가 content/blog/ 원고로 다시 만든다. 직접 고치면 덮어쓰인다. -->
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로또 세금 완전 정리 — 등수별 실수령액 실제 계산 | lottodraw.kr</title>
+    <meta name="description" content="200만 원 비과세 기준, 22%와 33% 구간, 3등이 갑자기 세금을 내는 경우까지 실제 숫자로 계산합니다.">
+    <link rel="canonical" href="https://www.lottodraw.kr/blog/lotto-tax-guide.html">
+    <meta property="og:title" content="로또 세금 완전 정리 — 등수별 실수령액 실제 계산 | lottodraw.kr">
+    <meta property="og:description" content="200만 원 비과세 기준, 22%와 33% 구간, 3등이 갑자기 세금을 내는 경우까지 실제 숫자로 계산합니다.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://www.lottodraw.kr/blog/lotto-tax-guide.html">
+    <meta property="og:site_name" content="lottodraw.kr">
+    <meta property="og:image" content="https://www.lottodraw.kr/img/og-default.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="로또 세금 완전 정리 — 등수별 실수령액 실제 계산 | lottodraw.kr">
+    <meta name="twitter:description" content="200만 원 비과세 기준, 22%와 33% 구간, 3등이 갑자기 세금을 내는 경우까지 실제 숫자로 계산합니다.">
+    <meta name="twitter:image" content="https://www.lottodraw.kr/img/og-default.png">
+    <meta name="google-adsense-account" content="ca-pub-9372871176021283">
+    <link rel="stylesheet" href="../css/site.css">
+    <script src="../js/i18n-dict.js"></script>
+    <script src="../js/i18n.js"></script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BlogPosting","headline":"로또 세금 완전 정리 — 등수별 실수령액 실제 계산","description":"200만 원 비과세 기준, 22%와 33% 구간, 3등이 갑자기 세금을 내는 경우까지 실제 숫자로 계산합니다.","datePublished":"2026-10-01","dateModified":"2026-10-01","inLanguage":"ko-KR","articleSection":"당첨 이후","url":"https://www.lottodraw.kr/blog/lotto-tax-guide.html","mainEntityOfPage":"https://www.lottodraw.kr/blog/lotto-tax-guide.html","image":"https://www.lottodraw.kr/img/og-default.png","author":{"@type":"Organization","name":"lottodraw.kr","url":"https://www.lottodraw.kr/"},"publisher":{"@type":"Organization","name":"lottodraw.kr","url":"https://www.lottodraw.kr/"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://www.lottodraw.kr/"},{"@type":"ListItem","position":2,"name":"블로그","item":"https://www.lottodraw.kr/blog/index.html"},{"@type":"ListItem","position":3,"name":"로또 세금 완전 정리 — 등수별 실수령액 실제 계산","item":"https://www.lottodraw.kr/blog/lotto-tax-guide.html"}]}]}</script>
+    <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "91c08d8a39d944e69c10024f2314b955"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+<body>
+<div class="page">
+    <header class="banner">
+        <a class="brand" href="../index.html">
+            <span class="brand-name">LOTTODRAW.KR</span>
+            <span class="brand-tag" data-i18n="brand.tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
+        </a>
+        <div class="banner-right">
+            <p class="latest-callout" data-i18n-en="Draw 1243: 9 18 24 38 43 44 &lt;span class=&quot;bonus-sep&quot;&gt;+&lt;/span&gt; 35">제1243회 9 18 24 38 43 44 <span class="bonus-sep">+</span> 35</p>
+            <a class="sticker" href="../statistics.html" data-i18n-html="header.sticker">최근 <b>5개월</b> 통계</a>
+            <div class="lang-switch" role="group" aria-label="Language">
+                <button type="button" data-lang-btn="ko">KO</button><button type="button" data-lang-btn="en">EN</button>
+            </div>
+        </div>
+    </header>
+
+    <nav class="nav" aria-label="주 메뉴" data-i18n-attr="aria-label:nav.aria">
+        <ul>
+            <li><a href="../index.html" data-i18n="nav.index">생성기 · 통계</a></li>
+            <li><a href="../draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="../statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="../top-prize.html" data-i18n="nav.topPrize">TOP 50 당첨금</a></li>
+            <li><a href="../tax.html" data-i18n="nav.tax">실수령액 계산</a></li>
+            <li><a href="../blog/index.html" aria-current="page" data-i18n="nav.blog">블로그</a></li>
+            <li><a href="../about.html" data-i18n="nav.about">ABOUT</a></li>
+        </ul>
+    </nav>
+
+    <main class="prose stat-page blog-post">
+        <nav class="breadcrumb" aria-label="현재 위치" data-i18n-attr="aria-label:crumb.aria"><a href="../index.html" data-i18n="crumb.home">홈</a> › <a href="../blog/index.html" data-i18n="nav.blog">블로그</a> › <span data-i18n-en="Lotto tax explained, with real take-home amounts for each prize rank">로또 세금 완전 정리 — 등수별 실수령액 실제 계산</span></nav>
+        <h1 data-i18n-en="Lotto tax explained, with real take-home amounts for each prize rank">로또 세금 완전 정리 — 등수별 실수령액 실제 계산</h1>
+        <p class="stat-scope"><span class="post-cat"><span class="cat-dot" data-band="1" aria-hidden="true"></span><span data-i18n-en="After a win">당첨 이후</span></span> · <span data-i18n-en="2026-10-01 · 3 min read">2026-10-01 · 3분 읽기</span></p>
+        <p class="stat-lead"><span data-i18n-en="The 2m KRW tax-free threshold, the 22% and 33% brackets, and the case where a 3rd prize is suddenly taxed, all worked out with real numbers.">200만 원 비과세 기준, 22%와 33% 구간, 3등이 갑자기 세금을 내는 경우까지 실제 숫자로 계산합니다.</span></p>
+
+<nav class="toc" aria-label="목차" data-i18n-attr="aria-label:blog.toc"><strong data-i18n="blog.toc">목차</strong><ol><li><a href="#s1" data-i18n-en="Tax rate structure">세율 구조</a></li><li><a href="#s2" data-i18n-en="Common mistake 1: the 2m KRW is not a &amp;quot;deduction&amp;quot;">자주 틀리는 첫 번째: 200만 원은 '공제'가 아닙니다</a></li><li><a href="#s3" data-i18n-en="Common mistake 2: 33% applies only to the part above 300m KRW">자주 틀리는 두 번째: 33%는 전액이 아니라 초과분에만</a></li><li><a href="#s4" data-i18n-en="Take-home examples by prize rank">등수별 실수령액 예시</a></li><li><a href="#s5" data-i18n-en="The calculation at a glance">계산 순서 한눈에 보기</a></li><li><a href="#s6" data-i18n-en="How the Pension Lottery is different">연금복권은 어떻게 다른가</a></li><li><a href="#s7" data-i18n-en="If you bought as a group">공동 구매했다면</a></li><li><a href="#s8" data-i18n-en="Work it out yourself">직접 계산해 보기</a></li></ol></nav>
+
+<p data-i18n-en="Lotto prize tax comes down to two sentences. &lt;strong&gt;Prizes of 2m KRW or less are tax-free. Above that, 22% is taken up to 300m KRW, and 33% on the part above 300m KRW.&lt;/strong&gt; But when you actually do the math, there are a few places where people often go wrong.">로또 당첨금 세금은 두 문장으로 요약됩니다. <strong>200만 원 이하는 세금이 없고, 그보다 크면 3억 원까지 22%, 3억 원 초과분은 33%를 뗍니다.</strong> 하지만 실제로 계산해 보면 사람들이 자주 틀리는 지점이 몇 군데 있습니다.</p>
+<h2 id="s1" data-i18n-en="Tax rate structure">세율 구조</h2>
+<div class="table-scroll"><table class="data-table"><thead><tr><th scope="col" data-i18n-en="Prize">당첨금</th><th scope="col" data-i18n-en="Tax rate">세율</th><th scope="col" data-i18n-en="Breakdown">구성</th></tr></thead><tbody><tr><td data-i18n-en="2m KRW or less">200만 원 이하</td><td data-i18n-en="Tax-free">비과세</td><td data-i18n-en="—">—</td></tr><tr><td data-i18n-en="Over 2m KRW up to 300m KRW">200만 원 초과 ~ 3억 원</td><td data-i18n-en="22%">22%</td><td data-i18n-en="Income tax 20% + local income tax 2%">소득세 20% + 지방소득세 2%</td></tr><tr><td data-i18n-en="Portion over 300m KRW">3억 원 초과분</td><td data-i18n-en="33%">33%</td><td data-i18n-en="Income tax 30% + local income tax 3%">소득세 30% + 지방소득세 3%</td></tr></tbody></table></div>
+<p data-i18n-en="Under tax law, lottery winnings count as &amp;quot;other income&amp;quot;. They fall under separate taxation (final withholding), which means the tax is withheld at source when the prize is paid and nothing more is owed. Winnings are not added to your other income, so the tax is the same whether your salary is high or low.">복권 당첨금은 세법상 '기타소득'이며, 지급할 때 원천징수로 납세가 끝나는 분리과세입니다. 다른 소득과 합산되지 않으므로 연봉이 높든 낮든 세액은 같습니다.</p>
+<p data-i18n-en="The tax-free threshold used to be 50,000 KRW, but it rose to 2m KRW in 2023. So today 4th prize (50,000 KRW) and 5th prize (5,000 KRW), and most 3rd prizes too, are paid with no tax.">과세 최저한은 원래 5만 원이었지만 2023년부터 200만 원으로 올랐습니다. 그래서 지금은 4등(5만 원)과 5등(5천 원)은 물론, 대부분의 3등도 세금 없이 받습니다.</p>
+<h2 id="s2" data-i18n-en="Common mistake 1: the 2m KRW is not a &amp;quot;deduction&amp;quot;">자주 틀리는 첫 번째: 200만 원은 '공제'가 아닙니다</h2>
+<p data-i18n-en="The 2m KRW is not an amount taken off your prize. It is &lt;strong&gt;the threshold that decides whether tax applies at all&lt;/strong&gt;. If a prize is even 1 KRW over 2m KRW, 22% applies to the &lt;strong&gt;full amount&lt;/strong&gt;, not just to the part above 2m KRW.">200만 원은 빼 주는 금액이 아니라 <strong>과세 여부를 가르는 문턱</strong>입니다. 당첨금이 200만 원을 1원이라도 넘으면 200만 원을 뺀 나머지가 아니라 <strong>전액</strong>에 22%가 붙습니다.</p>
+<p data-i18n-en="A 3rd prize is usually between 1.3m and 1.7m KRW, so it is tax-free. But in a draw with unusually few 3rd-prize winners, it can go over 2m KRW. For example, if 3rd prize is 2.1m KRW, 462,000 KRW is taken in tax and you receive 1,638,000 KRW. That is less than you would take home from a 1.9m KRW 3rd prize.">3등 당첨금은 보통 130만~170만 원 사이라서 비과세지만, 3등 당첨자가 유독 적은 회차에는 200만 원을 넘기도 합니다. 예를 들어 3등이 210만 원이라면 46만 2천 원이 세금으로 빠지고 163만 8천 원을 받습니다. 190만 원짜리 3등보다 실수령액이 적어지는 셈입니다.</p>
+<h2 id="s3" data-i18n-en="Common mistake 2: 33% applies only to the part above 300m KRW">자주 틀리는 두 번째: 33%는 전액이 아니라 초과분에만</h2>
+<p data-i18n-en="The 33% rate, on the other hand, is progressive and applies only to the part above 300m KRW. Here is the calculation for a 2.0 bn KRW 1st prize.">반대로 33%는 3억 원을 넘는 부분에만 적용되는 누진 구조입니다. 1등 20억 원으로 계산해 보면 다음과 같습니다.</p>
+<div class="table-scroll"><table class="data-table"><thead><tr><th scope="col" data-i18n-en="Bracket">구간</th><th scope="col" data-i18n-en="Amount">금액</th><th scope="col" data-i18n-en="Tax rate">세율</th><th scope="col" data-i18n-en="Tax">세금</th></tr></thead><tbody><tr><td data-i18n-en="Up to 300m KRW">3억 원까지</td><td data-i18n-en="300m KRW">3억 원</td><td data-i18n-en="22%">22%</td><td data-i18n-en="66m KRW">6,600만 원</td></tr><tr><td data-i18n-en="Portion over 300m KRW">3억 원 초과분</td><td data-i18n-en="1.7 bn KRW">17억 원</td><td data-i18n-en="33%">33%</td><td data-i18n-en="561m KRW">5억 6,100만 원</td></tr><tr><td data-i18n-en="&lt;strong&gt;Total&lt;/strong&gt;"><strong>합계</strong></td><td data-i18n-en="&lt;strong&gt;2.0 bn KRW&lt;/strong&gt;"><strong>20억 원</strong></td><td data-i18n-en="About 31.4%">약 31.4%</td><td data-i18n-en="&lt;strong&gt;627m KRW&lt;/strong&gt;"><strong>6억 2,700만 원</strong></td></tr></tbody></table></div>
+<p data-i18n-en="The take-home amount is &lt;strong&gt;about 1.373 bn KRW&lt;/strong&gt;. Strictly speaking, the tax rate is applied after subtracting the 1,000 KRW ticket price as a necessary expense. This site's calculator works it out that way too, but the difference is only a few hundred KRW.">실수령액은 <strong>약 13억 7,300만 원</strong>입니다. 엄밀히는 복권 구입비 1천 원을 필요경비로 뺀 금액에 세율을 곱합니다. 이 사이트의 계산기도 그렇게 계산하지만, 차이는 수백 원 수준입니다.</p>
+<h2 id="s4" data-i18n-en="Take-home examples by prize rank">등수별 실수령액 예시</h2>
+<div class="table-scroll"><table class="data-table"><thead><tr><th scope="col" data-i18n-en="Rank">등수</th><th scope="col" data-i18n-en="Prize before tax (example)">세전 당첨금(예)</th><th scope="col" data-i18n-en="Tax">세금</th><th scope="col" data-i18n-en="Take-home amount">실수령액</th></tr></thead><tbody><tr><td data-i18n-en="1st prize">1등</td><td data-i18n-en="2.0 bn KRW">20억 원</td><td data-i18n-en="627m KRW">6억 2,700만 원</td><td data-i18n-en="1.373 bn KRW">13억 7,300만 원</td></tr><tr><td data-i18n-en="1st prize">1등</td><td data-i18n-en="3.0 bn KRW">30억 원</td><td data-i18n-en="957m KRW">9억 5,700만 원</td><td data-i18n-en="2.043 bn KRW">20억 4,300만 원</td></tr><tr><td data-i18n-en="2nd prize">2등</td><td data-i18n-en="60m KRW">6,000만 원</td><td data-i18n-en="13.2m KRW">1,320만 원</td><td data-i18n-en="46.8m KRW">4,680만 원</td></tr><tr><td data-i18n-en="3rd prize">3등</td><td data-i18n-en="1.5m KRW">150만 원</td><td data-i18n-en="0 KRW">0원</td><td data-i18n-en="1.5m KRW">150만 원</td></tr><tr><td data-i18n-en="4th prize">4등</td><td data-i18n-en="50,000 KRW">5만 원</td><td data-i18n-en="0 KRW">0원</td><td data-i18n-en="50,000 KRW">5만 원</td></tr></tbody></table></div>
+<p data-i18n-en="The bigger the 1st prize, the closer the effective tax rate gets to 33%. At 1.0 bn KRW it is about 29.7%, and at 5.0 bn KRW about 32.3%.">1등 금액이 커질수록 실효세율은 33%에 가까워집니다. 10억 원이면 약 29.7%, 50억 원이면 약 32.3%입니다.</p>
+<h2 id="s5" data-i18n-en="The calculation at a glance">계산 순서 한눈에 보기</h2>
+<p data-i18n-en="For any amount, these three steps give you the take-home amount.">어떤 금액이든 아래 세 단계를 거치면 실수령액이 나옵니다.</p>
+<ol><li data-i18n-en="Check whether the prize is 2m KRW or less. If it is, the tax is 0 KRW and you are done.">당첨금이 200만 원 이하인지 확인합니다. 이하라면 세금 0원, 끝입니다.</li><li data-i18n-en="If it is over 2m KRW, multiply the part up to 300m KRW by 22%. (If the prize is under 300m KRW, this is the whole prize × 22%.)">200만 원을 넘으면, 3억 원까지는 22%를 곱합니다. (3억 원 미만이면 당첨금 전체 × 22%)</li><li data-i18n-en="Multiply the part above 300m KRW by 33% and add it to the result of step 2.">3억 원을 넘는 부분에는 33%를 곱해 2번 결과에 더합니다.</li></ol>
+<p data-i18n-en="For a 1st prize above 300m KRW, you can also get the tax in one go: &amp;quot;prize × 33% − 33m KRW&amp;quot;. This works because using 22% instead of 33% on the first 300m KRW saves exactly 33m KRW (300m KRW × 11%). For 2.0 bn KRW, that is 660m KRW − 33m KRW = 627m KRW, the same result as the table above.">3억 원을 넘는 1등이라면 '당첨금 × 33% − 3,300만 원'으로 한 번에 구할 수도 있습니다. 3억 원 구간에 33% 대신 22%를 적용해 덜 낸 금액이 정확히 3,300만 원(3억 원 × 11%)이기 때문입니다. 20억 원이면 6억 6천만 원 − 3,300만 원 = 6억 2,700만 원으로, 앞의 표와 같은 결과가 나옵니다.</p>
+<h2 id="s6" data-i18n-en="How the Pension Lottery is different">연금복권은 어떻게 다른가</h2>
+<p data-i18n-en="The Pension Lottery 720+ 1st prize is paid as 7m KRW a month for 20 years. Tax is charged on each monthly payment separately, so no single payment goes over 300m KRW and only the 22% rate ever applies. Each month 1.54m KRW is taken off and 5.46m KRW comes in. The total is smaller than a Lotto 1st prize, but the tax structure is different because it avoids the 33% bracket.">연금복권720+ 1등은 매월 700만 원씩 20년 동안 나눠 받습니다. 세금도 매월 받는 금액에 따로 매겨지므로, 한 번에 받는 금액이 3억 원을 넘지 않아 항상 22%만 적용됩니다. 매달 154만 원이 빠지고 546만 원이 들어옵니다. 총액으로 보면 로또 1등보다 작지만, 33% 구간을 피한다는 점에서 세금 구조가 다릅니다.</p>
+<h2 id="s7" data-i18n-en="If you bought as a group">공동 구매했다면</h2>
+<p data-i18n-en="When a ticket bought with pooled money wins, tax is withheld at source &lt;strong&gt;on the basis of the whole prize&lt;/strong&gt;, not each person's share. So that each person's share is not mistaken for a gift when you split the money later, it is a good idea to keep proof of the group purchase from before you buy. If one representative receives the full amount and then sends money to the others, gift tax problems can arise, so it is safer to tell the bank it is a joint win when you claim and ask for advice.">여러 명이 돈을 모아 산 복권이 당첨되면, 세금은 1인당 몫이 아니라 <strong>당첨금 전체를 기준으로</strong> 원천징수됩니다. 이후 나눠 가질 때 각자 몫이 증여로 오해받지 않으려면 구매 전부터 공동 구매 사실을 증빙해 두는 것이 좋습니다. 대표 한 명이 전액을 받은 뒤 송금하면 증여세 문제가 생길 수 있어, 수령 시 은행에 공동 당첨임을 알리고 상담하는 편이 안전합니다.</p>
+<h2 id="s8" data-i18n-en="Work it out yourself">직접 계산해 보기</h2>
+<p data-i18n-en="Use the &lt;a href=&quot;../tax.html&quot;&gt;after-tax calculator&lt;/a&gt;, which shows the tax and take-home amount under the rules above as soon as you enter a prize. It also reflects the threshold where the full amount is taxed once a prize goes even 1 KRW over 2m KRW, and the subtraction of the 1,000 KRW ticket price.">당첨금을 넣으면 위 규칙대로 세금과 실수령액을 바로 보여 주는 <a href="../tax.html">실수령액 계산기</a>를 함께 쓰십시오. 200만 원을 1원이라도 넘으면 전액 과세되는 경계도, 구입비 1천 원을 빼는 계산도 그대로 반영되어 있습니다.</p>
+<blockquote><p data-i18n-en="This article explains the general structure of the tax rules and is not tax advice. If your situation is specific, such as a joint win or a gift, talk to a tax professional.">이 글은 일반적인 세법 구조를 설명한 것이며 세무 자문이 아닙니다. 공동 당첨이나 증여처럼 개별 사정이 있는 경우에는 세무 전문가와 상의하십시오.</p></blockquote>
+
+<section class="related"><h2 data-i18n="blog.related">이 글과 이어지는 페이지</h2><ul><li><a href="../tax.html" data-i18n-en="After-tax calculator →">실수령액 계산기 →</a><span data-i18n-en="Enter a prize to see the tax and take-home amount">당첨금을 넣으면 세금과 실수령액</span></li></ul></section>
+
+<nav class="post-nav" aria-label="이전 글과 다음 글" data-i18n-attr="aria-label:blog.prevNextAria"><a href="is-number-34-special.html"><small data-i18n="blog.prev">이전 글</small><span data-i18n-en="Is number 34 special for coming up 186 times? Reading draw counts with standard deviation">34번이 186회 나온 게 특별한가 — 표준편차로 읽는 출현 횟수</span></a><a href="how-to-claim-first-prize.html"><small data-i18n="blog.next">다음 글</small><span data-i18n-en="How do you actually claim a 1st prize?">1등에 당첨되면 실제로 어떻게 수령하나</span></a></nav>
+
+        <p class="page-disclaimer" data-i18n="disclaimer.page">지난 추첨 기록을 정리한 것이며 다음 회차를 예측하지 않습니다. 어떤 6개를 고르든 1등 확률은 1/8,145,060으로 같습니다. 당첨번호 출처: 동행복권.</p>
+    </main>
+
+    <footer class="footer">
+        <ul class="footer-nav">
+            <li><a href="../index.html" data-i18n="footer.home">HOME</a></li>
+            <li><a href="../draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="../statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="../top-prize.html" data-i18n="footer.top">TOP 50</a></li>
+            <li><a href="../tax.html" data-i18n="footer.tax">실수령액</a></li>
+            <li><a href="../blog/index.html" data-i18n="nav.blog">블로그</a></li>
+            <li><a href="../about.html" data-i18n="nav.about">ABOUT</a></li>
+        </ul>
+        <p><a href="../privacy.html" data-i18n="footer.privacy">개인정보 처리방침</a> · <a href="../terms.html" data-i18n="footer.terms">이용약관</a> · <a href="../contact.html" data-i18n="footer.contact">문의</a></p>
+        <p data-i18n-html="footer.copy">&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권</p>
+    </footer>
+</div>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9372871176021283" crossorigin="anonymous"></script>
+</body>
+</html>
