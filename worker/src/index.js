@@ -392,6 +392,12 @@ async function depositHook(request, env, ctx, url) {
         await touchHook(env, 'other');
         return json(request, env, { matched: null, reason: 'withdrawal' });
     }
+    // 입금 알림만 다룬다. 카드 승인·광고처럼 금액이 든 다른 알림을 주문과 맞추지 않게.
+    // (은행 앱 알림 전체를 넘겨도 된다: 우리WON "입금 5,866원 …", 카카오뱅크 "입금 5,866원 홍길동 → 통장")
+    if (!data.amount && !/입금/.test(textBody)) {
+        await touchHook(env, 'other');
+        return json(request, env, { matched: null, reason: 'not_deposit' });
+    }
     const amounts = data.amount ? [Number(String(data.amount).replace(/\D/g, ''))] : amountsIn(textBody);
     if (!amounts.length) {
         await touchHook(env, 'other');

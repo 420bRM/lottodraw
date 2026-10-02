@@ -22,11 +22,11 @@ window.PREMIUM_CONFIG = {
     // 판매자 정보 (전자상거래법 표시 의무). 상호나 대표자를 채우면 결제 페이지와 이용약관 아래에 나온다.
     // 사업자등록 전이면 bizNo 는 비워 두고, 간이과세자는 통신판매업 신고가 면제라 mailOrderNo 도 비워도 된다.
     seller: {
-        name: '',          // 상호 (예: 로또드로우)
-        owner: '',         // 대표자
-        bizNo: '',         // 사업자등록번호
-        mailOrderNo: '',   // 통신판매업 신고번호
-        address: '',
+        name: '월데코 코리아',          // 상호
+        owner: '이동찬',               // 대표자
+        bizNo: '226-27-62319',         // 사업자등록번호
+        mailOrderNo: '간이과세자 신고 면제',   // 통신판매업 신고번호 (간이과세자는 면제)
+        address: '경기도 파주시 청석로 268, 807-915호(동패동, 미소시티)',
         phone: '',
         email: 'contact@lottodraw.kr',
     },

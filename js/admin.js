@@ -76,16 +76,20 @@
         return data;
     }
 
+    // 복사가 됐는지 돌려준다. 휴대폰 브라우저는 서버에 다녀온 뒤에는 복사를 막는 일이 있어,
+    // 실패를 "복사했습니다"로 덮지 않는다 (예전 클립보드 값을 잘못 붙여 넣지 않게).
     async function copy(text, btn) {
-        try { await navigator.clipboard.writeText(text); } catch (e) {
+        let ok = false;
+        try { await navigator.clipboard.writeText(text); ok = true; } catch (e) {
             const ta = el('textarea', { style: 'position:fixed;left:-9999px' });
             ta.value = text;
             document.body.appendChild(ta);
             ta.select();
-            try { document.execCommand('copy'); } catch (e2) { /* 무시 */ }
+            try { ok = document.execCommand('copy'); } catch (e2) { ok = false; }
             ta.remove();
         }
-        if (btn) { const old = btn.textContent; btn.textContent = '복사했습니다'; setTimeout(() => { btn.textContent = old; }, 1500); }
+        if (btn) { const old = btn.textContent; btn.textContent = ok ? '복사했습니다' : '복사 안 됨 — 직접 복사'; setTimeout(() => { btn.textContent = old; }, 2500); }
+        return ok;
     }
 
     function keyBox(order) {
@@ -390,10 +394,18 @@
             const btn = e.currentTarget;
             try {
                 const r = await call('/key-backup', { method: 'POST' });
-                await copy(JSON.stringify(r.privateJwk), btn);
+                const text = JSON.stringify(r.privateJwk);
+                $('key-backup-text').value = text;
+                $('key-backup-box').hidden = false;
+                await copy(text, btn);
+                $('key-backup-text').select();
             } catch (err) {
                 say('admin-status', '백업을 가져오지 못했습니다: ' + err.message, true);
             }
+        });
+        $('key-backup-hide').addEventListener('click', () => {
+            $('key-backup-text').value = '';
+            $('key-backup-box').hidden = true;
         });
         document.addEventListener('visibilitychange', () => { if (!document.hidden && token && tab === 'pending') loadOrders(); });
 
