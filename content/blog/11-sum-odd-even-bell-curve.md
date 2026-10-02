@@ -4,6 +4,7 @@ slug: sum-odd-even-bell-curve
 category: 확률 기초
 description: 당첨 번호 합계가 100~175 사이에 몰리는 이유를 주사위 두 개로 시작해 중심극한정리까지 설명합니다. 홀짝·고저 비율의 실제 분포도 함께 계산했습니다.
 date: 2026-10-01
+pick: 1
 related: [sum, even-odd, low-high]
 ---
 

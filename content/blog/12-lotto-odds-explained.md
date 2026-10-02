@@ -4,6 +4,7 @@ slug: lotto-odds-explained
 category: 통계 읽기
 description: 1등부터 5등까지 확률이 어디서 나오는지 조합으로 계산하고, 1천 원짜리 한 게임의 기대값이 얼마인지 따져 봅니다.
 date: 2026-10-01
+pick: 1
 related: [probability, tax]
 ---
 

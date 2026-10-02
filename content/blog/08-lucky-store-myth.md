@@ -4,6 +4,7 @@ slug: lucky-store-myth
 category: 번호 고르기
 description: 1등을 수십 번 배출한 판매점은 운이 좋은 걸까요, 많이 팔았을 뿐일까요. 기준율과 생존자 편향으로 '명당'을 따져 봅니다.
 date: 2026-10-01
+pick: 2
 related: [prize-stats, probability]
 ---
 

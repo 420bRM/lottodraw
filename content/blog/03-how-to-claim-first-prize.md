@@ -4,6 +4,7 @@ slug: how-to-claim-first-prize
 category: 당첨 이후
 description: 지급처, 준비물, 기한, 세금 공제까지. 당첨 확인부터 통장에 돈이 들어오기까지의 실제 절차를 정리했습니다.
 date: 2026-10-01
+pick: 1
 related: [tax, top-prize]
 ---
 
