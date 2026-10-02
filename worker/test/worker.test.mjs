@@ -11,19 +11,25 @@ import { BASE_PLANS } from '../src/plans.js';
 const require = createRequire(import.meta.url);
 
 /* ───── 메모리 KV ───── */
-function memoryKV() {
+// listLag: 실제 KV 처럼 방금 쓴 키가 목록(list)에 늦게 보인다 (settle() 하면 보인다)
+function memoryKV({ listLag = false } = {}) {
     const m = new Map();
+    const fresh = new Set();
     return {
         _m: m,
+        settle() { fresh.clear(); },
         async get(k, type) {
             const e = m.get(k);
             if (!e) return null;
             return type === 'json' ? JSON.parse(e.value) : e.value;
         },
-        async put(k, value, opts) { m.set(k, { value: String(value), metadata: opts && opts.metadata, ttl: opts && opts.expirationTtl }); },
+        async put(k, value, opts) {
+            m.set(k, { value: String(value), metadata: opts && opts.metadata, ttl: opts && opts.expirationTtl });
+            if (listLag) fresh.add(k);
+        },
         async delete(k) { m.delete(k); },
         async list({ prefix }) {
-            const keys = [...m.keys()].filter(k => k.startsWith(prefix || '')).sort()
+            const keys = [...m.keys()].filter(k => k.startsWith(prefix || '') && !fresh.has(k)).sort()
                 .map(name => ({ name, metadata: m.get(name).metadata }));
             return { keys, list_complete: true };
         },
@@ -333,6 +339,39 @@ test('입금 알림 자동 확인: 주문마다 금액 끝자리가 달라 금�
     // 연결 상태가 기록되고, 공개 설정에 "자동 확인 중"으로 나온다
     const cfg = await call(env, 'GET', '/api/config');
     assert.equal(cfg.data.autoConfirm, true);
+});
+
+test('KV 목록이 늦어도: 방금 만든 주문에 바로 입금돼도 맞추고, 연달아 든 주문끼리 금액이 겹치지 않는다', async () => {
+    _resetForTests();
+    const env = makeEnv({ DB: memoryKV({ listLag: true }), DEPOSIT_HOOK_SECRET: 'hook-secret-0123456789' });
+    await setupKey(env);
+    const hook = raw => call(env, 'POST', '/api/hooks/deposit', { raw, headers: { 'Content-Type': 'text/plain', Authorization: 'Bearer hook-secret-0123456789' } });
+
+    // 목록에 아직 안 보이는 주문 10건도 금액이 전부 다르다
+    const orders = [];
+    for (let i = 0; i < 10; i++) {
+        orders.push((await call(env, 'POST', '/api/orders', { body: { plan: 'week', method: 'bank', name: '구매자' + i, agree: true }, headers: { 'CF-Connecting-IP': '10.1.0.' + i } })).data);
+    }
+    assert.equal(new Set(orders.map(o => o.order.amount)).size, 10);
+
+    // 목록에 보이기 전에 입금 알림이 와도 금액 색인으로 찾는다
+    const t = orders[7];
+    let r = await hook(`입금 ${t.order.amount.toLocaleString('ko-KR')}원 아무개`);
+    assert.equal(r.data.matched, t.order.id);
+    assert.equal(env.DB._m.has('amt:' + t.order.amount), false, '입금된 주문의 금액 색인은 지운다');
+
+    // 자동 점검 주문도 같다 (배포 직후 실서버 점검이 이 경우였다)
+    const st = (await call(env, 'POST', '/api/admin/selftest/order', { headers: asAdmin })).data;
+    r = await hook(`[자동점검 ${st.order.id}] 입금 ${st.order.amount.toLocaleString('ko-KR')}원 자동점검`);
+    assert.equal(r.data.matched, st.order.id);
+    r = await call(env, 'POST', '/api/admin/selftest/cleanup', { headers: asAdmin, body: { id: st.order.id } });
+    assert.equal(r.data.cleaned, true);
+
+    // 취소한 주문의 금액 색인도 지운다
+    const c = orders[2];
+    await call(env, 'POST', `/api/orders/${c.order.id}/cancel`, { body: { token: c.token } });
+    env.DB.settle();
+    assert.equal(env.DB._m.has('amt:' + c.order.amount), false);
 });
 
 test('입금 알림 연결: 6시간마다 ping, 13시간 조용하면 지킴이가 한 번만 알린다', async () => {

@@ -26,6 +26,7 @@ const MAX_PENDING = 50;                // 기한 안의 입금 대기 주문이 
 const MAX_PENDING_PER_IP = 3;          // 한 곳(IP)에서 기한 안에 걸어 둘 수 있는 입금 대기 주문 수
 const HOOK_DEDUPE_TTL = 30 * 86400;    // 같은 입금 알림을 두 번 처리하지 않도록 기억하는 기간
 const MAX_DISCOUNT = 99;               // 계좌이체 주문 확인용 끝자리 할인 (1~99원)
+const AMT_PREFIX = 'amt:';             // 입금 대기 중인 계좌이체 주문의 금액 색인 (amt:5866 → 주문번호)
 const HOOK_SILENCE_HOURS = 13;         // 입금 알림 연결(휴대폰)이 이만큼 조용하면 끊긴 것으로 본다 (6시간마다 신호)
 const REFUND_HOURS = { week: 24, month: 7 * 24, lifetime: 7 * 24 };   // 이용약관 4조
 const MAX_BODY = 4096;
@@ -165,7 +166,7 @@ async function createOrder(request, env, ctx, url) {
     if (fresh.length >= MAX_PENDING) throw new HttpError(503, 'busy', '주문이 밀려 있습니다. 잠시 뒤 다시 시도해 주세요.');
 
     // 계좌이체는 입금 대기 중인 다른 주문과 겹치지 않는 금액을 매긴다 (정가에서 1~99원 할인)
-    const amount = method === 'bank' ? pickAmount(plan.amount, allPending) : plan.amount;
+    const amount = method === 'bank' ? await pickAmount(env, plan.amount, allPending) : plan.amount;
     const token = b64urlEncode(crypto.getRandomValues(new Uint8Array(16)));
     const now = Date.now();
     const order = {
@@ -207,13 +208,16 @@ async function createOrder(request, env, ctx, url) {
     return json(request, env, { order: publicView(order, env), token, payurl }, 201);
 }
 
-function pickAmount(base, pending) {
+// KV 목록(list)은 방금 저장한 주문을 곧바로 보여 주지 않는다(최대 1분쯤 늦다). 그래서 목록에 더해
+// 금액 색인(amt:금액 → 주문번호)도 직접 확인한다. 연달아 들어온 주문끼리도 금액이 겹치지 않게.
+async function pickAmount(env, base, pending) {
     const taken = new Set(pending.filter(o => o.m === 'bank').map(o => o.a));
+    const free = async amount => !taken.has(amount) && !(await env.DB.get(AMT_PREFIX + amount));
     for (let i = 0; i < 60; i++) {
         const off = 1 + (crypto.getRandomValues(new Uint8Array(1))[0] % MAX_DISCOUNT);
-        if (!taken.has(base - off)) return base - off;
+        if (await free(base - off)) return base - off;
     }
-    for (let off = 1; off <= MAX_DISCOUNT; off++) if (!taken.has(base - off)) return base - off;
+    for (let off = 1; off <= MAX_DISCOUNT; off++) if (await free(base - off)) return base - off;
     throw new HttpError(503, 'busy', '주문이 밀려 있습니다. 잠시 뒤 다시 시도해 주세요.');
 }
 
@@ -413,6 +417,12 @@ async function depositHook(request, env, ctx, url) {
     let candidates = 0;
     for (const amount of amounts) {
         const same = pendingBank.filter(o => o.a === amount);
+        // 목록에 아직 안 보이는 새 주문은 금액 색인으로 찾는다
+        const idx = await env.DB.get(AMT_PREFIX + amount);
+        if (idx && !same.some(o => o.id === idx)) {
+            const o = await load(env, idx);
+            if (o && o.status === 'pending' && o.method === 'bank' && o.amount === amount) same.push({ id: o.id, a: o.amount, m: o.method, n: o.name || '' });
+        }
         candidates += same.length;
         if (same.length === 1) { hit = same[0]; break; }
         if (same.length > 1) {
@@ -621,7 +631,7 @@ async function admin(request, env, sub, method, url) {
         const now = Date.now();
         const order = {
             id: await freshId(env), tokenHash: await sha256(token), plan: 'week', planName: plans.week.name,
-            listPrice: plans.week.amount, amount: pickAmount(plans.week.amount, allPending), method: 'bank',
+            listPrice: plans.week.amount, amount: await pickAmount(env, plans.week.amount, allPending), method: 'bank',
             name: '자동점검', contact: '', status: 'pending', createdAt: now, deadline: now + 3600 * 1000,
             agreedAt: now, test: true, log: [{ at: now, what: 'created', by: 'selftest' }],
         };
@@ -634,6 +644,7 @@ async function admin(request, env, sub, method, url) {
         if (!order) return json(request, env, { cleaned: false });
         if (!order.test) throw new HttpError(409, 'not_test', '자동 점검 주문이 아닙니다.');
         await env.DB.delete('order:' + order.id);
+        await dropAmount(env, order);
         if (order.keyId) {
             await env.DB.delete('keyidx:' + order.keyId);
             const r = await revokedList(env);
@@ -817,6 +828,14 @@ async function save(env, order) {
     const opts = { metadata: meta(order) };
     if (order.status === 'pending' || order.status === 'cancelled') opts.expirationTtl = PENDING_TTL;
     await env.DB.put('order:' + order.id, JSON.stringify(order), opts);
+    if (order.method !== 'bank') return;
+    if (order.status === 'pending') await env.DB.put(AMT_PREFIX + order.amount, order.id, { expirationTtl: PENDING_TTL });
+    else await dropAmount(env, order);
+}
+
+// 입금 대기에서 벗어난 주문의 금액 색인을 지운다 (다른 주문이 그 금액을 쓰고 있으면 그대로 둔다)
+async function dropAmount(env, order) {
+    if (await env.DB.get(AMT_PREFIX + order.amount) === order.id) await env.DB.delete(AMT_PREFIX + order.amount);
 }
 
 async function load(env, id) {
