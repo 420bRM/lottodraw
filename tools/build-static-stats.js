@@ -1115,6 +1115,24 @@ function updateTaxAndTop() {
     tp = replaceBetween('top-prize.html', tp, 'head', headBlock(
         '역대 로또 1등 당첨금 순위 TOP 50 (1인당) | lottodraw.kr',
         `로또 6/45 역대 1등 당첨금 1인당 금액 순위 TOP 50. 역대 최고는 ${top.round}회 ${won(top.firstPrizeAmount)}, ${RANGE} 1등 평균 당첨금은 ${won(avg)}.`));
+    // 표와 부제는 페이지의 스크립트가 그리는 것과 글자 하나까지 같게 미리 박아 둔다.
+    // 화면은 그대로이고(스크립트가 같은 내용으로 다시 그린다), JS 를 돌리지 않는 검색 로봇도 표를 읽는다.
+    // 페이지 스크립트의 행 모양을 바꾸면 여기도 같이 바꾼다
+    tp = replaceBetween('top-prize.html', tp, 'subtitle',
+        `(1인당 실수령액 기준 / 최신 <strong>${data.draws.length}</strong>회차까지 자동 업데이트)`);
+    const rows = data.draws.slice().sort((a, b) => b.firstPrizeAmount - a.firstPrizeAmount).slice(0, 50).map((d, i) => {
+        const winners = d.firstPrizeWinners || 1;
+        return [
+            '                    <tr>',
+            `                        <td><strong>${i + 1}</strong></td>`,
+            `                        <td>${d.round}회</td>`,
+            `                        <td>${(d.firstPrizeAmount / 100000000).toFixed(0)}억 원</td>`,
+            `                        <td>${winners}명</td>`,
+            `                        <td style="font-weight:bold;">${fmt(d.firstPrizeAmount * winners)} 원</td>`,
+            '                    </tr>',
+        ].join('\n');
+    });
+    tp = replaceBetween('top-prize.html', tp, 'rows', '\n' + rows.join('\n') + '\n                ');
     write('top-prize.html', tp);
 }
 
