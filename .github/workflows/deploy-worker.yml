@@ -3,7 +3,7 @@ name: deploy-worker
 # 결제·이용권 서버(worker/)를 Cloudflare Workers 에 올리고, 실서버를 자동 점검한다.
 #   배포: html 브랜치에 worker/ 가 바뀌어 들어오면 저절로, 또는 Actions 탭에서 Run workflow.
 #   자동 점검: 배포 직후 + 매일 아침 6시 23분(KST). 주문 → 입금 알림 → 키 발급 → 브라우저 확인
-#             → 환불 요청 → 키 정지까지 사람 대신 해 보고 지운다. 실패하면 텔레그램과 GitHub 메일로 알린다.
+#             → 관리자 환불 처리 → 키 정지까지 사람 대신 해 보고 지운다. 실패하면 텔레그램과 GitHub 메일로 알린다.
 #
 # 저장소 Settings → Secrets and variables → Actions 에 넣을 값 (README 4번 참고)
 #   필수: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, ADMIN_TOKEN, BANK_NAME, BANK_ACCOUNT, BANK_HOLDER

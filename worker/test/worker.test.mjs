@@ -11,19 +11,25 @@ import { BASE_PLANS } from '../src/plans.js';
 const require = createRequire(import.meta.url);
 
 /* ───── 메모리 KV ───── */
-function memoryKV() {
+// listLag: 실제 KV 처럼 방금 쓴 키가 목록(list)에 늦게 보인다 (settle() 하면 보인다)
+function memoryKV({ listLag = false } = {}) {
     const m = new Map();
+    const fresh = new Set();
     return {
         _m: m,
+        settle() { fresh.clear(); },
         async get(k, type) {
             const e = m.get(k);
             if (!e) return null;
             return type === 'json' ? JSON.parse(e.value) : e.value;
         },
-        async put(k, value, opts) { m.set(k, { value: String(value), metadata: opts && opts.metadata, ttl: opts && opts.expirationTtl }); },
+        async put(k, value, opts) {
+            m.set(k, { value: String(value), metadata: opts && opts.metadata, ttl: opts && opts.expirationTtl });
+            if (listLag) fresh.add(k);
+        },
         async delete(k) { m.delete(k); },
         async list({ prefix }) {
-            const keys = [...m.keys()].filter(k => k.startsWith(prefix || '')).sort()
+            const keys = [...m.keys()].filter(k => k.startsWith(prefix || '') && !fresh.has(k)).sort()
                 .map(name => ({ name, metadata: m.get(name).metadata }));
             return { keys, list_complete: true };
         },
@@ -335,6 +341,39 @@ test('입금 알림 자동 확인: 주문마다 금액 끝자리가 달라 금�
     assert.equal(cfg.data.autoConfirm, true);
 });
 
+test('KV 목록이 늦어도: 방금 만든 주문에 바로 입금돼도 맞추고, 연달아 든 주문끼리 금액이 겹치지 않는다', async () => {
+    _resetForTests();
+    const env = makeEnv({ DB: memoryKV({ listLag: true }), DEPOSIT_HOOK_SECRET: 'hook-secret-0123456789' });
+    await setupKey(env);
+    const hook = raw => call(env, 'POST', '/api/hooks/deposit', { raw, headers: { 'Content-Type': 'text/plain', Authorization: 'Bearer hook-secret-0123456789' } });
+
+    // 목록에 아직 안 보이는 주문 10건도 금액이 전부 다르다
+    const orders = [];
+    for (let i = 0; i < 10; i++) {
+        orders.push((await call(env, 'POST', '/api/orders', { body: { plan: 'week', method: 'bank', name: '구매자' + i, agree: true }, headers: { 'CF-Connecting-IP': '10.1.0.' + i } })).data);
+    }
+    assert.equal(new Set(orders.map(o => o.order.amount)).size, 10);
+
+    // 목록에 보이기 전에 입금 알림이 와도 금액 색인으로 찾는다
+    const t = orders[7];
+    let r = await hook(`입금 ${t.order.amount.toLocaleString('ko-KR')}원 아무개`);
+    assert.equal(r.data.matched, t.order.id);
+    assert.equal(env.DB._m.has('amt:' + t.order.amount), false, '입금된 주문의 금액 색인은 지운다');
+
+    // 자동 점검 주문도 같다 (배포 직후 실서버 점검이 이 경우였다)
+    const st = (await call(env, 'POST', '/api/admin/selftest/order', { headers: asAdmin })).data;
+    r = await hook(`[자동점검 ${st.order.id}] 입금 ${st.order.amount.toLocaleString('ko-KR')}원 자동점검`);
+    assert.equal(r.data.matched, st.order.id);
+    r = await call(env, 'POST', '/api/admin/selftest/cleanup', { headers: asAdmin, body: { id: st.order.id } });
+    assert.equal(r.data.cleaned, true);
+
+    // 취소한 주문의 금액 색인도 지운다
+    const c = orders[2];
+    await call(env, 'POST', `/api/orders/${c.order.id}/cancel`, { body: { token: c.token } });
+    env.DB.settle();
+    assert.equal(env.DB._m.has('amt:' + c.order.amount), false);
+});
+
 test('입금 알림 연결: 6시간마다 ping, 13시간 조용하면 지킴이가 한 번만 알린다', async () => {
     _resetForTests();
     const sent = [];
@@ -381,46 +420,29 @@ test('입금 알림 연결: 6시간마다 ping, 13시간 조용하면 지킴이�
     }
 });
 
-test('환불 요청: 기간 안이면 키 즉시 정지, 계좌이체는 판매자에게 송금 요청, 기간 지나면 거절', async () => {
+test('셀프 환불은 없다(이용약관 4조): 구매자 요청은 문의로 안내, 판매자가 관리자 페이지에서 환불 처리', async () => {
     _resetForTests();
     const env = makeEnv({ DEPOSIT_HOOK_SECRET: 'hook-secret-0123456789' });
     await setupKey(env);
-    const make = async plan => {
-        const { order, token } = (await call(env, 'POST', '/api/orders', { body: { plan, method: 'bank', name: '홍길동', agree: true }, headers: { 'CF-Connecting-IP': plan } })).data;
-        await call(env, 'POST', '/api/hooks/deposit', { raw: `입금 ${order.amount.toLocaleString('ko-KR')}원`, headers: { 'Content-Type': 'text/plain', Authorization: 'Bearer hook-secret-0123456789' } });
-        return (await call(env, 'GET', `/api/orders/${order.id}?token=${token}`)).data.order;
-    };
-    const m = await make('month');
+    const { order, token } = (await call(env, 'POST', '/api/orders', { body: { plan: 'month', method: 'bank', name: '홍길동', agree: true } })).data;
+    await call(env, 'POST', '/api/hooks/deposit', { raw: `입금 ${order.amount.toLocaleString('ko-KR')}원`, headers: { 'Content-Type': 'text/plain', Authorization: 'Bearer hook-secret-0123456789' } });
+    const m = (await call(env, 'GET', `/api/orders/${order.id}?token=${token}`)).data.order;
     assert.equal(m.status, 'paid');
 
-    let r = await call(env, 'POST', '/api/refunds', { body: { key: m.key } });
-    assert.equal(r.data.error, 'need_account', '계좌이체는 돌려받을 계좌가 필요');
-    r = await call(env, 'POST', '/api/refunds', { body: { key: m.key.slice(0, -2) + 'AA', account: '우리 1002-111-222222 홍길동' } });
-    assert.equal(r.status, 400, '가짜 키는 거절');
-    r = await call(env, 'POST', '/api/refunds', { body: { key: m.key, account: '우리 1002-111-222222 홍길동' } });
-    assert.equal(r.data.status, 'refund_requested');
-    const rev = await call(env, 'GET', '/api/revoked');
-    assert.ok(rev.data.ids.includes(parseKey(m.key).id), '키는 바로 정지');
-    // 다시 눌러도 같은 결과
-    assert.equal((await call(env, 'POST', '/api/refunds', { body: { key: m.key, account: 'x' } })).data.status, 'refund_requested');
-    // 판매자: 송금 완료
-    const list = await call(env, 'GET', '/api/admin/orders?status=refund_requested', { headers: asAdmin });
-    assert.equal(list.data.orders.length, 1);
-    r = await call(env, 'POST', `/api/admin/orders/${m.id}/refund-done`, { headers: asAdmin });
-    assert.equal(r.data.order.status, 'refunded');
-    assert.equal(r.data.order.refundAccount, '우리 1002-111-222222 홍길동');
+    // 예전 화면이 환불 요청을 보내도 키는 그대로, 문의로 안내
+    let r = await call(env, 'POST', '/api/refunds', { body: { key: m.key, account: '우리 1002-111-222222 홍길동' } });
+    assert.equal(r.status, 410);
+    assert.equal(r.data.error, 'refund_contact');
+    assert.deepEqual((await call(env, 'GET', '/api/revoked')).data.ids, [], '키는 정지되지 않는다');
+    assert.equal((await call(env, 'GET', `/api/orders/${order.id}?token=${token}`)).data.order.status, 'paid');
 
-    // 1주 이용권은 24시간이 지나면 거절
-    const w = await make('week');
-    const rec = JSON.parse(env.DB._m.get('order:' + w.id).value);
-    rec.paidAt -= 25 * 3600 * 1000;
-    env.DB._m.get('order:' + w.id).value = JSON.stringify(rec);
-    r = await call(env, 'POST', '/api/refunds', { body: { key: w.key, account: '우리 1002-111-222222 홍길동' } });
-    assert.equal(r.status, 409);
-    assert.equal(r.data.error, 'refund_window');
+    // 판매자가 확인 뒤 환불 처리 → 키 정지
+    r = await call(env, 'POST', `/api/admin/orders/${m.id}/refund`, { headers: asAdmin });
+    assert.equal(r.data.order.status, 'refunded');
+    assert.ok((await call(env, 'GET', '/api/revoked')).data.ids.includes(parseKey(m.key).id));
 });
 
-test('환불 요청: 카드(페이앱) 결제는 결제 취소까지 자동', async () => {
+test('관리자 환불 처리: 카드(페이앱) 결제는 결제 취소까지 자동, 취소가 실패하면 키를 건드리지 않는다', async () => {
     _resetForTests();
     const env = makeEnv({ PAYAPP_USERID: 'seller1', PAYAPP_LINKKEY: 'lk-secret', PAYAPP_LINKVAL: 'lv-secret' });
     const realFetch = globalThis.fetch;
@@ -430,10 +452,11 @@ test('환불 요청: 카드(페이앱) 결제는 결제 취소까지 자동', as
             const f = new URLSearchParams(init.body);
             calls.push(f);
             if (f.get('cmd') === 'payrequest') return new Response('state=1&mul_no=777&payurl=https%3A%2F%2Fpayapp.kr%2Fp%2F777');
-            if (f.get('cmd') === 'paycancel') return new Response('state=1&errorMessage=');
+            if (f.get('cmd') === 'paycancel') return new Response(cancelOk ? 'state=1&errorMessage=' : 'state=0&errorMessage=%EC%8B%A4%ED%8C%A8');
         }
         return realFetch(url, init);
     };
+    let cancelOk = true;
     try {
         await setupKey(env);
         const { order } = (await call(env, 'POST', '/api/orders', { body: { plan: 'lifetime', method: 'payapp', phone: '01012345678', agree: true } })).data;
@@ -441,8 +464,14 @@ test('환불 요청: 카드(페이앱) 결제는 결제 취소까지 자동', as
         const form = new URLSearchParams({ userid: 'seller1', linkkey: 'lk-secret', linkval: 'lv-secret', mul_no: '777', var1: order.id, price: '12900', pay_state: '4' });
         await call(env, 'POST', '/api/payapp/feedback', { raw: form.toString(), headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
         const key = (await call(env, 'GET', `/api/admin/orders/${order.id}`, { headers: asAdmin })).data.order.key;
-        const r = await call(env, 'POST', '/api/refunds', { body: { key } });
-        assert.equal(r.data.status, 'refunded');
+        cancelOk = false;
+        let r = await call(env, 'POST', `/api/admin/orders/${order.id}/refund`, { headers: asAdmin });
+        assert.equal(r.status, 502);
+        assert.deepEqual((await call(env, 'GET', '/api/revoked')).data.ids, [], '취소 실패 시 키는 그대로');
+        cancelOk = true;
+        r = await call(env, 'POST', `/api/admin/orders/${order.id}/refund`, { headers: asAdmin });
+        assert.equal(r.data.order.status, 'refunded');
+        assert.ok((await call(env, 'GET', '/api/revoked')).data.ids.includes(parseKey(key).id));
         const cancel = calls.find(f => f.get('cmd') === 'paycancel');
         assert.equal(cancel.get('mul_no'), '777');
         assert.equal(cancel.get('linkkey'), 'lk-secret');
@@ -467,8 +496,9 @@ test('자동 점검 주문: 알림 없이 돌고, 끝나면 흔적 없이 지워
         assert.equal(r.data.matched, order.id);
         assert.equal(env.DB._m.has('meta:hook'), false, '점검은 휴대폰 연결 신호로 치지 않는다');
         const paid = (await call(env, 'GET', `/api/orders/${order.id}?token=${token}`)).data.order;
-        r = await call(env, 'POST', '/api/refunds', { body: { key: paid.key, account: '자동점검 계좌' } });
-        assert.equal(r.data.status, 'refund_requested');
+        r = await call(env, 'POST', `/api/admin/orders/${order.id}/refund`, { headers: asAdmin });
+        assert.equal(r.data.order.status, 'refunded');
+        assert.ok(paid.key);
         await Promise.all(waits);
         assert.equal(sent.length, 0, '점검은 판매자에게 알리지 않는다');
         r = await call(env, 'POST', '/api/admin/selftest/cleanup', { headers: asAdmin, body: { id: order.id } });

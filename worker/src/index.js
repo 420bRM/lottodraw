@@ -5,14 +5,14 @@
 //      계좌이체 주문은 금액 끝자리를 주문마다 다르게(1~99원 할인) 매겨, 금액만 보고도 주문을 찾는다.
 //   2) 입금이 확인되면 서명된 이용권 키 자동 발급 — 판매자 휴대폰이 은행 입금 알림을 이 서버로
 //      넘겨주면(입금 알림 연결) 사람 손 없이 바로 발급한다. 새벽에도. 페이앱은 페이앱 통보로.
-//   3) 환불 — 구매자가 결제 페이지에서 요청하면 기간을 확인해 키를 즉시 정지한다.
-//      카드(페이앱)는 결제 취소까지 자동, 계좌이체는 판매자가 송금만 하면 된다.
+//   3) 환불 — 키 발급 뒤 단순 변심 환불은 없다(이용약관 4조). 키가 작동하지 않거나 중복 입금한 경우
+//      구매자가 문의하면 판매자가 관리자 페이지에서 "환불 처리"를 누른다: 키 정지, 카드는 결제 취소까지.
 //   4) 지킴이 — 한 시간마다 입금 알림 연결이 살아 있는지 보고, 끊기면 판매자에게 알린다.
 //
 // 키 확인은 브라우저가 공개키로 혼자 한다(js/license.js). 이 서버가 멈춰도
 // 이미 산 사람의 잠금은 풀린다. 서버가 필요한 건 "팔 때"뿐이다.
 //
-// 저장소: KV 하나(DB). order:<주문번호>, keyidx:<키번호>, hook:<알림해시>,
+// 저장소: KV 하나(DB). order:<주문번호>, keyidx:<키번호>, amt:<금액>, hook:<알림해시>,
 //         meta:signing-key, meta:revoked, meta:hook, meta:hook-secret.
 // 비밀값과 설정은 README "4. 유료화" 와 worker/wrangler.toml 참고.
 
@@ -26,8 +26,8 @@ const MAX_PENDING = 50;                // 기한 안의 입금 대기 주문이 
 const MAX_PENDING_PER_IP = 3;          // 한 곳(IP)에서 기한 안에 걸어 둘 수 있는 입금 대기 주문 수
 const HOOK_DEDUPE_TTL = 30 * 86400;    // 같은 입금 알림을 두 번 처리하지 않도록 기억하는 기간
 const MAX_DISCOUNT = 99;               // 계좌이체 주문 확인용 끝자리 할인 (1~99원)
+const AMT_PREFIX = 'amt:';             // 입금 대기 중인 계좌이체 주문의 금액 색인 (amt:5866 → 주문번호)
 const HOOK_SILENCE_HOURS = 13;         // 입금 알림 연결(휴대폰)이 이만큼 조용하면 끊긴 것으로 본다 (6시간마다 신호)
-const REFUND_HOURS = { week: 24, month: 7 * 24, lifetime: 7 * 24 };   // 이용약관 4조
 const MAX_BODY = 4096;
 const CROCKFORD = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 
@@ -73,7 +73,7 @@ async function route(request, env, ctx) {
     m = path.match(/^\/api\/orders\/([0-9A-Z]{8})\/cancel$/);
     if (m && method === 'POST') return buyerCancel(request, env, m[1]);
 
-    if (path === '/api/refunds' && method === 'POST') return requestRefund(request, env, ctx);
+    if (path === '/api/refunds' && method === 'POST') return requestRefund(request);
     if (path === '/api/payapp/feedback' && method === 'POST') return payappFeedback(request, env, ctx);
     if (path === '/api/hooks/deposit' && method === 'POST') return depositHook(request, env, ctx, url);
 
@@ -165,7 +165,7 @@ async function createOrder(request, env, ctx, url) {
     if (fresh.length >= MAX_PENDING) throw new HttpError(503, 'busy', '주문이 밀려 있습니다. 잠시 뒤 다시 시도해 주세요.');
 
     // 계좌이체는 입금 대기 중인 다른 주문과 겹치지 않는 금액을 매긴다 (정가에서 1~99원 할인)
-    const amount = method === 'bank' ? pickAmount(plan.amount, allPending) : plan.amount;
+    const amount = method === 'bank' ? await pickAmount(env, plan.amount, allPending) : plan.amount;
     const token = b64urlEncode(crypto.getRandomValues(new Uint8Array(16)));
     const now = Date.now();
     const order = {
@@ -207,13 +207,16 @@ async function createOrder(request, env, ctx, url) {
     return json(request, env, { order: publicView(order, env), token, payurl }, 201);
 }
 
-function pickAmount(base, pending) {
+// KV 목록(list)은 방금 저장한 주문을 곧바로 보여 주지 않는다(최대 1분쯤 늦다). 그래서 목록에 더해
+// 금액 색인(amt:금액 → 주문번호)도 직접 확인한다. 연달아 들어온 주문끼리도 금액이 겹치지 않게.
+async function pickAmount(env, base, pending) {
     const taken = new Set(pending.filter(o => o.m === 'bank').map(o => o.a));
+    const free = async amount => !taken.has(amount) && !(await env.DB.get(AMT_PREFIX + amount));
     for (let i = 0; i < 60; i++) {
         const off = 1 + (crypto.getRandomValues(new Uint8Array(1))[0] % MAX_DISCOUNT);
-        if (!taken.has(base - off)) return base - off;
+        if (await free(base - off)) return base - off;
     }
-    for (let off = 1; off <= MAX_DISCOUNT; off++) if (!taken.has(base - off)) return base - off;
+    for (let off = 1; off <= MAX_DISCOUNT; off++) if (await free(base - off)) return base - off;
     throw new HttpError(503, 'busy', '주문이 밀려 있습니다. 잠시 뒤 다시 시도해 주세요.');
 }
 
@@ -413,6 +416,12 @@ async function depositHook(request, env, ctx, url) {
     let candidates = 0;
     for (const amount of amounts) {
         const same = pendingBank.filter(o => o.a === amount);
+        // 목록에 아직 안 보이는 새 주문은 금액 색인으로 찾는다
+        const idx = await env.DB.get(AMT_PREFIX + amount);
+        if (idx && !same.some(o => o.id === idx)) {
+            const o = await load(env, idx);
+            if (o && o.status === 'pending' && o.method === 'bank' && o.amount === amount) same.push({ id: o.id, a: o.amount, m: o.method, n: o.name || '' });
+        }
         candidates += same.length;
         if (same.length === 1) { hit = same[0]; break; }
         if (same.length > 1) {
@@ -471,67 +480,18 @@ async function watchdog(env) {
 }
 
 /* ───── 환불 요청 (구매자) ─────
- * 결제 페이지의 "환불 요청"이 키를 들고 온다. 이용약관 4조 기간 안이면 키를 즉시 정지하고,
- * 카드(페이앱)는 결제 취소까지 자동으로 한다. 계좌이체는 판매자에게 "이 계좌로 보내 달라"고 알린다.
+ * 이용약관 4조: 키가 발급된 뒤에는 단순 변심 환불을 하지 않는다. 키가 작동하지 않거나 중복 입금한 경우는
+ * 문의로 받아 판매자가 관리자 페이지에서 "환불 처리"한다. 예전 화면이 이 주소를 부르면 문의로 안내한다.
  */
-async function requestRefund(request, env, ctx) {
-    const body = await readJson(request);
-    const s = await signer(env);
-    if (!s) throw new HttpError(503, 'no_signing_key', '잠시 뒤 다시 시도해 주세요.');
-    const p = await verifyKey(await importPublic(s.publicJwk), String(body.key || ''));
-    if (!p) throw new HttpError(400, 'bad_key', '이 사이트에서 발급한 키가 아닙니다.');
-    const orderId = await env.DB.get('keyidx:' + p.id);
-    const order = orderId ? await load(env, orderId) : null;
-    if (!order) throw new HttpError(404, 'no_order', '이 키의 주문을 찾을 수 없습니다. 문의로 알려 주세요.');
-    if (order.status === 'refund_requested' || order.status === 'refunded') {
-        return json(request, env, { status: order.status, method: order.method, amount: order.amount });
-    }
-    if (order.status !== 'paid') throw new HttpError(409, 'not_paid', '환불할 수 있는 상태가 아닙니다. 문의로 알려 주세요.');
-    if (order.method === 'manual') throw new HttpError(409, 'manual', '직접 발급된 이용권은 문의로 요청해 주세요.');
-    const hours = REFUND_HOURS[order.plan] || 0;
-    if (Date.now() - (order.paidAt || 0) > hours * 3600 * 1000) {
-        throw new HttpError(409, 'refund_window', '환불 기간이 지났습니다 (이용약관 4조). 키가 작동하지 않는 등 문제가 있으면 문의로 알려 주세요.');
-    }
-    const account = cleanText(body.account, 100);
-    if (order.method === 'bank' && account.length < 6) {
-        throw new HttpError(400, 'need_account', '돌려받을 계좌(은행·계좌번호·예금주)를 적어 주세요.');
-    }
-
-    const now = Date.now();
-    await revoke(env, order.keyId);   // 키부터 멈춘다
-    order.status = 'refund_requested';
-    order.refundRequestedAt = now;
-    order.refundAccount = account;
-    order.log.push({ at: now, what: 'refund_requested', by: 'buyer' });
-
-    if (order.method === 'payapp') {
-        const r = await payappCancel(env, order);
-        if (r.ok) {
-            order.status = 'refunded';
-            order.refundedAt = Date.now();
-            order.log.push({ at: order.refundedAt, what: 'refunded', by: 'payapp-cancel' });
-            if (!order.test) ctx.waitUntil(notify(env, `카드 결제 자동 취소 ${order.id} (${won(order.amount)}) — 구매자 환불 요청`));
-        } else if (!order.test) {
-            ctx.waitUntil(notify(env, `환불 요청 ${order.id}: 페이앱 자동 취소 실패(${r.message}). 페이앱 판매자 화면에서 취소해 주세요. 키는 이미 정지됐습니다.`));
-        }
-    } else if (!order.test) {
-        ctx.waitUntil(notify(env, [
-            `환불 요청 ${order.id} — 키는 이미 정지됐습니다`,
-            `${won(order.amount)} 를 아래 계좌로 보내 주세요:`,
-            account,
-            `보낸 뒤 관리자 → 환불 요청 → "송금 완료"`,
-            `${siteUrl(env)}/admin.html#${order.id}`,
-        ].join('\n')));
-    }
-    await save(env, order);
-    return json(request, env, { status: order.status, method: order.method, amount: order.amount });
+async function requestRefund(request) {
+    throw new HttpError(410, 'refund_contact', '환불은 문의로 신청해 주세요 (이용약관 4조).');
 }
 
 async function payappCancel(env, order) {
     if (!order.payapp || !order.payapp.mulNo || !methodsOf(env).payapp) return { ok: false, message: '결제요청번호 없음' };
     const form = new URLSearchParams({
         cmd: 'paycancel', userid: env.PAYAPP_USERID, linkkey: env.PAYAPP_LINKKEY,
-        mul_no: String(order.payapp.mulNo), cancelmemo: '구매자 환불 요청 (lottodraw.kr)',
+        mul_no: String(order.payapp.mulNo), cancelmemo: '환불 (lottodraw.kr)',
     });
     try {
         const res = await fetch(PAYAPP_API, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: form.toString() });
@@ -621,7 +581,7 @@ async function admin(request, env, sub, method, url) {
         const now = Date.now();
         const order = {
             id: await freshId(env), tokenHash: await sha256(token), plan: 'week', planName: plans.week.name,
-            listPrice: plans.week.amount, amount: pickAmount(plans.week.amount, allPending), method: 'bank',
+            listPrice: plans.week.amount, amount: await pickAmount(env, plans.week.amount, allPending), method: 'bank',
             name: '자동점검', contact: '', status: 'pending', createdAt: now, deadline: now + 3600 * 1000,
             agreedAt: now, test: true, log: [{ at: now, what: 'created', by: 'selftest' }],
         };
@@ -634,6 +594,7 @@ async function admin(request, env, sub, method, url) {
         if (!order) return json(request, env, { cleaned: false });
         if (!order.test) throw new HttpError(409, 'not_test', '자동 점검 주문이 아닙니다.');
         await env.DB.delete('order:' + order.id);
+        await dropAmount(env, order);
         if (order.keyId) {
             await env.DB.delete('keyidx:' + order.keyId);
             const r = await revokedList(env);
@@ -703,6 +664,11 @@ async function admin(request, env, sub, method, url) {
             await save(env, order);
         } else if (action === 'refund') {
             if (order.status !== 'paid' && order.status !== 'refund_requested') throw new HttpError(409, 'not_paid', '키가 발급된 주문만 환불 처리할 수 있습니다.');
+            // 카드 결제는 결제 취소까지. 실패하면 페이앱 판매자 화면에서 취소하면 된다(취소 통보가 오면 키가 저절로 정지된다).
+            if (order.method === 'payapp' && order.status === 'paid') {
+                const r = await payappCancel(env, order);
+                if (!r.ok) throw new HttpError(502, 'payapp_cancel_failed', `페이앱 자동 취소 실패(${r.message}). 페이앱 판매자 화면에서 취소하면 키가 저절로 정지됩니다.`);
+            }
             await refund(env, order, 'admin');
         } else if (action === 'refund-done') {
             if (order.status !== 'refund_requested') throw new HttpError(409, 'not_requested', '환불 요청 상태인 주문이 아닙니다.');
@@ -817,6 +783,14 @@ async function save(env, order) {
     const opts = { metadata: meta(order) };
     if (order.status === 'pending' || order.status === 'cancelled') opts.expirationTtl = PENDING_TTL;
     await env.DB.put('order:' + order.id, JSON.stringify(order), opts);
+    if (order.method !== 'bank') return;
+    if (order.status === 'pending') await env.DB.put(AMT_PREFIX + order.amount, order.id, { expirationTtl: PENDING_TTL });
+    else await dropAmount(env, order);
+}
+
+// 입금 대기에서 벗어난 주문의 금액 색인을 지운다 (다른 주문이 그 금액을 쓰고 있으면 그대로 둔다)
+async function dropAmount(env, order) {
+    if (await env.DB.get(AMT_PREFIX + order.amount) === order.id) await env.DB.delete(AMT_PREFIX + order.amount);
 }
 
 async function load(env, id) {
