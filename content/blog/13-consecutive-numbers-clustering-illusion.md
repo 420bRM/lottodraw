@@ -4,6 +4,7 @@ slug: consecutive-numbers-clustering-illusion
 category: 확률 기초
 description: 당첨 번호의 절반 이상에 연번이 들어 있습니다. 2차 대전 런던 폭격 지도와 음악 셔플 기능의 일화로, 사람이 무작위를 어떻게 오해하는지 살펴봅니다.
 date: 2026-10-01
+pick: 2
 related: [consecutive, generator]
 ---
 

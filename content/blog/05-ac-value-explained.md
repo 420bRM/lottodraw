@@ -4,6 +4,7 @@ slug: ac-value-explained
 category: 확률 기초
 description: AC값의 정의부터 815만 조합 전체의 실제 분포, 전파망원경 배치에 쓰이는 골롬 자와의 관계까지. AC값으로 할 수 있는 일과 없는 일을 나눠 봅니다.
 date: 2026-10-01
+pick: 1
 related: [ac, generator]
 ---
 

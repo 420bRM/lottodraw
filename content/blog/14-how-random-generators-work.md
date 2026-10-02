@@ -4,6 +4,7 @@ slug: how-random-generators-work
 category: 확률 기초
 description: 컴퓨터는 어떻게 무작위 번호를 만들까요. 의사난수의 원리, 이 사이트 생성기가 번호를 뽑는 실제 순서, 피셔-예이츠 방식과 거절 샘플링이 공정한 이유를 정리합니다.
 date: 2026-10-01
+pick: 3
 related: [generator, probability]
 ---
 

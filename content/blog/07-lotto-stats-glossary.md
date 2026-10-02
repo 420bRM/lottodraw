@@ -4,6 +4,7 @@ slug: lotto-stats-glossary
 category: 통계 읽기
 description: 통계 페이지에 나오는 용어를 하나씩 정의하고, 각 지표로 알 수 있는 것과 알 수 없는 것을 구분합니다.
 date: 2026-10-01
+pick: 1
 related: [frequency, gap, pair, ac]
 ---
 

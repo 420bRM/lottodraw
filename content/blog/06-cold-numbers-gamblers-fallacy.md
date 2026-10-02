@@ -4,6 +4,7 @@ slug: cold-numbers-gamblers-fallacy
 category: 확률 기초
 description: 1913년 몬테카를로 카지노에서 검은색이 26번 연속 나온 날의 이야기로 시작해, 미출수가 무엇을 말해 주고 무엇을 말해 주지 못하는지 정리합니다.
 date: 2026-10-01
+pick: 3
 related: [gap, frequency]
 ---
 

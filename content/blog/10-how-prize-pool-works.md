@@ -4,6 +4,7 @@ slug: how-prize-pool-works
 category: 당첨 이후
 description: 1등 당첨금이 회차마다 수억 원에서 수십억 원까지 달라지는 이유. 판매액에서 당첨금이 나오는 순서를 따라가 봅니다.
 date: 2026-10-01
+pick: 1
 related: [prize-stats, top-prize, tax]
 ---
 

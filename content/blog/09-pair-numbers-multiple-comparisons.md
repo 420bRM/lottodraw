@@ -4,6 +4,7 @@ slug: pair-numbers-multiple-comparisons
 category: 확률 기초
 description: 함께 자주 나온 번호 쌍은 의미가 있을까요. 생일 문제와 텍사스 명사수의 오류로 '많이 찾으면 반드시 무언가 나온다'는 원리를 설명합니다.
 date: 2026-10-01
+pick: 2
 related: [pair, frequency]
 ---
 

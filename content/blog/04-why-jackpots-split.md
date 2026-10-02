@@ -4,6 +4,7 @@ slug: why-jackpots-split
 category: 번호 고르기
 description: 확률은 모든 조합이 같지만, 기대 당첨금은 같지 않습니다. 1등 50명이 나온 1019회와 2등 664명이 나온 1057회로 설명합니다.
 date: 2026-10-01
+pick: 2
 related: [generator, prize-stats]
 ---
 

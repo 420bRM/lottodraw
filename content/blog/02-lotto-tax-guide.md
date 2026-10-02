@@ -4,6 +4,7 @@ slug: lotto-tax-guide
 category: 당첨 이후
 description: 200만 원 비과세 기준, 22%와 33% 구간, 3등이 갑자기 세금을 내는 경우까지 실제 숫자로 계산합니다.
 date: 2026-10-01
+pick: 1
 related: [tax]
 ---
 
