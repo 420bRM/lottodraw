@@ -430,6 +430,15 @@ async function depositHook(request, env, ctx, url) {
         }
     }
 
+    // 안내 금액과 다르게 보낸 경우(끝자리 할인을 무시하고 정가로 보내는 등): 안내 금액 이상 정가 이하이고
+    // 입금자명이 맞는 대기 주문이 딱 하나면 그 주문으로 본다. 덜 보냈거나 정가보다 많이 보냈으면 판매자가 확인한다.
+    if (!hit) {
+        const plans = plansFor(env);
+        const listPrice = o => (Object.prototype.hasOwnProperty.call(plans, o.p) ? plans[o.p].amount : o.a);
+        const byName = pendingBank.filter(o => o.n && nameOk(o.n) && amounts.some(a => a >= o.a && a <= listPrice(o)));
+        if (byName.length === 1) hit = byName[0];
+    }
+
     if (hit) {
         const order = await load(env, hit.id);
         if (order && order.status === 'pending') {
@@ -446,6 +455,8 @@ async function depositHook(request, env, ctx, url) {
             return json(request, env, { matched: order.id });
         }
     }
+    // 자동 점검이 보낸 흉내 알림은 휴대폰 연결 신호로 치지 않는다 (진짜 휴대폰이 없는데 "자동 확인 중"이 되지 않게)
+    if (textBody.indexOf('[자동점검') !== -1) return json(request, env, { matched: null, candidates });
     await touchHook(env, 'deposit');
     // 이용권 가격대의 입금만 알린다. 월급 같은 다른 입금까지 알리면 시끄럽다.
     const prices = Object.values(plansFor(env)).map(p => p.amount);
