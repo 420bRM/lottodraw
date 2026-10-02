@@ -13,6 +13,7 @@ window.PREMIUM_CONFIG = {
     // 서버가 켜져 있으면 결제 페이지가 서버 값으로 덮어쓴다. 두 곳을 같이 고칠 것
     // (worker 테스트가 둘이 같은지 검사한다).
     plans: {
+        day:      { name: '1일 이용권',   amount: 1500,  days: 1 },
         week:     { name: '1주 이용권',   amount: 2900,  days: 7 },
         month:    { name: '1개월 이용권', amount: 5900,  days: 30 },
         lifetime: { name: '평생 이용권',  amount: 12900, days: 0 },
