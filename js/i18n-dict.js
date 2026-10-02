@@ -31,6 +31,7 @@ window.I18N_DICT = {
     'nav.topPrize':     { ko: 'TOP 50 당첨금', en: 'Top 50 Jackpots' },
     'nav.tax':          { ko: '실수령액 계산', en: 'After-Tax Calculator' },
     'nav.about':        { ko: 'ABOUT', en: 'About' },
+    'nav.blog':         { ko: '블로그', en: 'Blog' },
 
     /* ───── 위치 표시 ───── */
     'crumb.aria':       { ko: '현재 위치', en: 'Breadcrumb' },
@@ -607,4 +608,14 @@ window.I18N_DICT = {
     'ct.subject': { en: 'Subject' },
     'ct.message': { en: 'Message' },
     'ct.send': { en: 'Open in mail app' },
+
+    /* ───── 블로그 (blog/ — tools/build-blog.js 가 만든다) ───── */
+    'blog.all':      { ko: '전체', en: 'All' },
+    'blog.catAria':  { ko: '카테고리', en: 'Categories' },
+    'blog.toc':      { ko: '목차', en: 'Contents' },
+    'blog.related':  { ko: '이 글과 이어지는 페이지', en: 'Related pages on this site' },
+    'blog.prev':     { ko: '이전 글', en: 'Previous' },
+    'blog.next':     { ko: '다음 글', en: 'Next' },
+    'blog.prevNextAria': { ko: '이전 글과 다음 글', en: 'Previous and next articles' },
+    'blog.readMore': { ko: '이어서 읽기 <span class="arrow">→</span>', en: 'Keep reading <span class="arrow">→</span>' },
 };

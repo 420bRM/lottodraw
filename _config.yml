@@ -1,0 +1,10 @@
+# GitHub Pages(Jekyll) 설정. 사이트는 정적 HTML 이라 Jekyll 이 할 일은 거의 없다.
+#
+# 블로그 원고(content/blog/*.md)는 머리말(---)이 있어서 그대로 두면 Jekyll 이
+# /content/blog/…html 이라는 별도 페이지로 바꿔 올린다 — 같은 글이 주소 두 곳에
+# 생긴다. 블로그 페이지는 tools/build-blog.js 가 blog/ 에 만들어 두므로 원고는 뺀다.
+#
+# exclude 를 적으면 GitHub Pages 의 기본값(CNAME 제외)을 덮어쓰므로 CNAME 도 같이 적는다.
+exclude:
+  - CNAME
+  - content

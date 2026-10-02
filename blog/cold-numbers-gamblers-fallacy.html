@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<!-- 이 파일은 tools/build-blog.js 가 content/blog/ 원고로 다시 만든다. 직접 고치면 덮어쓰인다. -->
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>오래 안 나온 번호는 곧 나올까 — 미출수와 도박사의 오류 | lottodraw.kr</title>
+    <meta name="description" content="1913년 몬테카를로 카지노에서 검은색이 26번 연속 나온 날의 이야기로 시작해, 미출수가 무엇을 말해 주고 무엇을 말해 주지 못하는지 정리합니다.">
+    <link rel="canonical" href="https://www.lottodraw.kr/blog/cold-numbers-gamblers-fallacy.html">
+    <meta property="og:title" content="오래 안 나온 번호는 곧 나올까 — 미출수와 도박사의 오류 | lottodraw.kr">
+    <meta property="og:description" content="1913년 몬테카를로 카지노에서 검은색이 26번 연속 나온 날의 이야기로 시작해, 미출수가 무엇을 말해 주고 무엇을 말해 주지 못하는지 정리합니다.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://www.lottodraw.kr/blog/cold-numbers-gamblers-fallacy.html">
+    <meta property="og:site_name" content="lottodraw.kr">
+    <meta property="og:image" content="https://www.lottodraw.kr/img/og-default.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="오래 안 나온 번호는 곧 나올까 — 미출수와 도박사의 오류 | lottodraw.kr">
+    <meta name="twitter:description" content="1913년 몬테카를로 카지노에서 검은색이 26번 연속 나온 날의 이야기로 시작해, 미출수가 무엇을 말해 주고 무엇을 말해 주지 못하는지 정리합니다.">
+    <meta name="twitter:image" content="https://www.lottodraw.kr/img/og-default.png">
+    <meta name="google-adsense-account" content="ca-pub-9372871176021283">
+    <link rel="stylesheet" href="../css/site.css">
+    <script src="../js/i18n-dict.js"></script>
+    <script src="../js/i18n.js"></script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BlogPosting","headline":"오래 안 나온 번호는 곧 나올까 — 미출수와 도박사의 오류","description":"1913년 몬테카를로 카지노에서 검은색이 26번 연속 나온 날의 이야기로 시작해, 미출수가 무엇을 말해 주고 무엇을 말해 주지 못하는지 정리합니다.","datePublished":"2026-10-01","dateModified":"2026-10-01","inLanguage":"ko-KR","articleSection":"확률 기초","url":"https://www.lottodraw.kr/blog/cold-numbers-gamblers-fallacy.html","mainEntityOfPage":"https://www.lottodraw.kr/blog/cold-numbers-gamblers-fallacy.html","image":"https://www.lottodraw.kr/img/og-default.png","author":{"@type":"Organization","name":"lottodraw.kr","url":"https://www.lottodraw.kr/"},"publisher":{"@type":"Organization","name":"lottodraw.kr","url":"https://www.lottodraw.kr/"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://www.lottodraw.kr/"},{"@type":"ListItem","position":2,"name":"블로그","item":"https://www.lottodraw.kr/blog/index.html"},{"@type":"ListItem","position":3,"name":"오래 안 나온 번호는 곧 나올까 — 미출수와 도박사의 오류","item":"https://www.lottodraw.kr/blog/cold-numbers-gamblers-fallacy.html"}]}]}</script>
+    <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "91c08d8a39d944e69c10024f2314b955"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+<body>
+<div class="page">
+    <header class="banner">
+        <a class="brand" href="../index.html">
+            <span class="brand-name">LOTTODRAW.KR</span>
+            <span class="brand-tag" data-i18n="brand.tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
+        </a>
+        <div class="banner-right">
+            <p class="latest-callout" data-i18n-en="Draw 1243: 9 18 24 38 43 44 &lt;span class=&quot;bonus-sep&quot;&gt;+&lt;/span&gt; 35">제1243회 9 18 24 38 43 44 <span class="bonus-sep">+</span> 35</p>
+            <a class="sticker" href="../statistics.html" data-i18n-html="header.sticker">최근 <b>5개월</b> 통계</a>
+            <div class="lang-switch" role="group" aria-label="Language">
+                <button type="button" data-lang-btn="ko">KO</button><button type="button" data-lang-btn="en">EN</button>
+            </div>
+        </div>
+    </header>
+
+    <nav class="nav" aria-label="주 메뉴" data-i18n-attr="aria-label:nav.aria">
+        <ul>
+            <li><a href="../index.html" data-i18n="nav.index">생성기 · 통계</a></li>
+            <li><a href="../draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="../statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="../top-prize.html" data-i18n="nav.topPrize">TOP 50 당첨금</a></li>
+            <li><a href="../tax.html" data-i18n="nav.tax">실수령액 계산</a></li>
+            <li><a href="../blog/index.html" aria-current="page" data-i18n="nav.blog">블로그</a></li>
+            <li><a href="../about.html" data-i18n="nav.about">ABOUT</a></li>
+        </ul>
+    </nav>
+
+    <main class="prose stat-page blog-post">
+        <nav class="breadcrumb" aria-label="현재 위치" data-i18n-attr="aria-label:crumb.aria"><a href="../index.html" data-i18n="crumb.home">홈</a> › <a href="../blog/index.html" data-i18n="nav.blog">블로그</a> › <span data-i18n-en="Will a long-missing number come up soon? Cold numbers and the gambler's fallacy">오래 안 나온 번호는 곧 나올까 — 미출수와 도박사의 오류</span></nav>
+        <h1 data-i18n-en="Will a long-missing number come up soon? Cold numbers and the gambler's fallacy">오래 안 나온 번호는 곧 나올까 — 미출수와 도박사의 오류</h1>
+        <p class="stat-scope"><span class="post-cat"><span class="cat-dot" data-band="5" aria-hidden="true"></span><span data-i18n-en="Probability basics">확률 기초</span></span> · <span data-i18n-en="2026-10-01 · 3 min read">2026-10-01 · 3분 읽기</span></p>
+        <p class="stat-lead"><span data-i18n-en="Starting with the day black came up 26 times in a row at the Monte Carlo Casino in 1913, this post sets out what cold numbers can tell you and what they cannot.">1913년 몬테카를로 카지노에서 검은색이 26번 연속 나온 날의 이야기로 시작해, 미출수가 무엇을 말해 주고 무엇을 말해 주지 못하는지 정리합니다.</span></p>
+
+<nav class="toc" aria-label="목차" data-i18n-attr="aria-label:blog.toc"><strong data-i18n="blog.toc">목차</strong><ol><li><a href="#s1" data-i18n-en="What are cold numbers?">미출수란</a></li><li><a href="#s2" data-i18n-en="The principle: independent draws and 'no memory'">원론: 독립 시행과 '기억 없음'</a></li><li><a href="#s3" data-i18n-en="So why do things even out in the end?">그럼 왜 결국 균형이 맞춰질까</a></li><li><a href="#s4" data-i18n-en="Very long gaps are normal too">아주 긴 공백도 정상입니다</a></li><li><a href="#s5" data-i18n-en="Reading the current cold numbers">지금의 미출수 읽기</a></li><li><a href="#s6" data-i18n-en="An honest way to use cold numbers">미출수를 쓰는 정직한 방법</a></li></ol></nav>
+
+<p data-i18n-en="On 18 August 1913, the ball at one roulette table in the Monte Carlo Casino started landing on black again and again. After about fifteen blacks in a row, a crowd gathered and began betting on red. Their thinking was: &amp;quot;Black has come up for so long that red must be next.&amp;quot; Black came up &lt;strong&gt;26 times&lt;/strong&gt; in a row, and the casino made a lot of money that day.">1913년 8월 18일 몬테카를로 카지노의 한 룰렛 테이블에서 공이 검은색에 연속으로 떨어지기 시작했습니다. 열다섯 번쯤 연속되자 사람들이 몰려들어 빨간색에 돈을 걸었습니다. &quot;이렇게 오래 검은색이 나왔으니 이제 빨간색이 나올 차례&quot;라는 생각이었습니다. 검은색은 <strong>26번</strong> 연속으로 나왔고, 카지노는 그날 큰돈을 벌었습니다.</p>
+<p data-i18n-en="Because of this story, the belief that a result that has not appeared for a long time will appear soon is called the &lt;strong&gt;gambler's fallacy&lt;/strong&gt;, or the Monte Carlo fallacy. In lotto, this fallacy shows up most often with cold numbers (numbers that have not come up for a while).">이 일화 때문에 '오래 안 나온 결과가 곧 나올 것'이라고 믿는 착각을 <strong>도박사의 오류</strong>, 또는 몬테카를로 오류라고 부릅니다. 로또의 미출수는 이 오류가 가장 자주 나타나는 곳입니다.</p>
+<h2 id="s1" data-i18n-en="What are cold numbers?">미출수란</h2>
+<p data-i18n-en="A cold number is &lt;strong&gt;a number that has not come up even once in a recent stretch of draws&lt;/strong&gt;. Let's set the window at the last 10 draws. The chance that a given number does not come up in one draw is 39/45, so the chance that it misses 10 draws in a row is">미출수는 <strong>최근 일정 회차 동안 한 번도 나오지 않은 번호</strong>입니다. 기준을 최근 10회로 잡아 보겠습니다. 한 번호가 한 회차에 나오지 않을 확률은 39/45이므로, 10회 연속 안 나올 확률은</p>
+<blockquote><p data-i18n-en="(39/45)¹⁰ ≈ 23.9%">(39/45)¹⁰ ≈ 23.9%</p></blockquote>
+<p data-i18n-en="This means that, on average, &lt;strong&gt;10.8&lt;/strong&gt; of the 45 numbers are 'cold for 10 draws' at any given time. Having about ten cold numbers is not strange; it is the normal state. In fact, as of draw 1243, &lt;strong&gt;11&lt;/strong&gt; numbers had not come up even once in the last 10 draws.">입니다. 45개 번호 중 평균 <strong>10.8개</strong>가 언제나 '10회 미출' 상태라는 뜻입니다. 미출수가 열 개쯤 있는 것은 이상한 일이 아니라 평범한 상태입니다. 실제로 1243회 기준 최근 10회 동안 한 번도 안 나온 번호는 <strong>11개</strong>였습니다.</p>
+<div class="table-scroll"><table class="data-table"><thead><tr><th scope="col" data-i18n-en="Draws missed in a row">연속 미출 회차</th><th scope="col" data-i18n-en="Chance for one number">한 번호가 그렇게 될 확률</th><th scope="col" data-i18n-en="Expected count out of 45">45개 중 기대 개수</th></tr></thead><tbody><tr><td data-i18n-en="10 draws">10회</td><td data-i18n-en="23.9%">23.9%</td><td data-i18n-en="about 10.8">약 10.8개</td></tr><tr><td data-i18n-en="20 draws">20회</td><td data-i18n-en="5.7%">5.7%</td><td data-i18n-en="about 2.6">약 2.6개</td></tr><tr><td data-i18n-en="30 draws">30회</td><td data-i18n-en="1.4%">1.4%</td><td data-i18n-en="about 0.6">약 0.6개</td></tr></tbody></table></div>
+<h2 id="s2" data-i18n-en="The principle: independent draws and 'no memory'">원론: 독립 시행과 '기억 없음'</h2>
+<p data-i18n-en="Each lotto draw is an &lt;strong&gt;independent trial&lt;/strong&gt;. Which balls came out last week leaves no trace on the balls in the machine this week. In this situation, the number of draws you wait until a number next comes up follows a &lt;strong&gt;geometric distribution&lt;/strong&gt;.">로또 추첨은 매 회차가 <strong>독립 시행</strong>입니다. 지난주에 어떤 공이 나왔는지가 이번 주 추첨기 안의 공에 아무 흔적도 남기지 않습니다. 이런 상황에서 '다음에 나올 때까지 기다리는 횟수'는 <strong>기하분포</strong>를 따릅니다.</p>
+<p data-i18n-en="The geometric distribution has an unusual property: it is &lt;strong&gt;memoryless&lt;/strong&gt;. Whether a number has already been missing for 20 draws or has just come up, the distribution of how many more draws you will wait is exactly the same. The average gap between appearances of a number is 45÷6 = 7.5 draws, and a number that has been missing for 20 draws still has to wait 7.5 more draws on average from now. A number that is behind does not get 'pulled forward'.">기하분포에는 독특한 성질이 있습니다. <strong>무기억성</strong>입니다. 어떤 번호를 이미 20회 기다렸든 방금 나왔든, 앞으로 기다려야 할 횟수의 분포는 똑같습니다. 한 번호의 평균 출현 간격은 45÷6 = 7.5회인데, 20회째 안 나온 번호도 지금부터 평균 7.5회를 더 기다려야 합니다. '밀린 만큼 당겨진다'는 일은 일어나지 않습니다.</p>
+<p data-i18n-en="Our intuition says the opposite because we are used to &lt;strong&gt;drawing without replacement&lt;/strong&gt;. If no hearts have come out of a deck of cards for a while, the share of hearts among the remaining cards really does go up. But in lotto, all 45 balls go back into the machine every week. Each draw is a fresh deck.">직관이 반대로 느끼는 이유는 우리가 <strong>비복원 추출</strong>에 익숙하기 때문입니다. 카드 한 벌에서 하트가 한참 안 나오면 남은 카드 중 하트 비율이 실제로 올라갑니다. 하지만 로또는 매주 45개 공이 모두 추첨기로 돌아갑니다. 매 회차가 새 카드 한 벌입니다.</p>
+<h2 id="s3" data-i18n-en="So why do things even out in the end?">그럼 왜 결국 균형이 맞춰질까</h2>
+<p data-i18n-en="Over 1243 draws, every number's count sits roughly around 165, so it feels as if some force is evening things out. But the law of large numbers works by &lt;strong&gt;dilution&lt;/strong&gt;, not by 'correction'. A 10-draw gap almost disappears from the overall share once another 1,000 draws pile up. The past shortfall is not filled in; it is buried under the normal results that keep arriving. As shown in the &lt;a href=&quot;is-number-34-special.html&quot;&gt;post on how often number 34 has come up&lt;/a&gt;, the differences in counts actually grow as the number of draws increases.">1243회 동안 모든 번호의 출현 횟수가 대체로 165회 근처에 모여 있는 걸 보면, 무언가 균형을 맞추는 힘이 있는 것처럼 느껴집니다. 하지만 큰 수의 법칙은 '보정'이 아니라 <strong>희석</strong>으로 작동합니다. 10회 동안 안 나온 공백은 이후 1,000회가 쌓이면 전체 비율에서 거의 보이지 않게 됩니다. 과거의 부족분을 채워서가 아니라, 새로 쌓이는 정상적인 결과에 묻히는 것입니다. <a href="is-number-34-special.html">34번 출현 횟수 글</a>에서 본 것처럼, 횟수 차이 자체는 회차가 늘수록 오히려 커집니다.</p>
+<h2 id="s4" data-i18n-en="Very long gaps are normal too">아주 긴 공백도 정상입니다</h2>
+<p data-i18n-en="If you simulate 1243 random draws 2,000 times, the longest gap among the 45 numbers usually comes out at about &lt;strong&gt;65 draws&lt;/strong&gt;. The longest gap in the real record was &lt;strong&gt;73 draws&lt;/strong&gt;, for number 5. That is within the 90% range of the random simulations (54–86 draws). In other words, a number going missing for more than a year happens often through randomness alone. In theory there should be about 24 gaps of 40 draws or longer, and in fact there were &lt;strong&gt;25&lt;/strong&gt;. If you spot a long gap and think 'this time it must come up', you are standing in the same place as the Monte Carlo gamblers of 1913.">1243회를 무작위로 2천 번 재현해 보면, 45개 번호 중 가장 긴 공백은 보통 <strong>65회</strong> 정도 나옵니다. 실제 기록에서 가장 긴 공백은 5번의 <strong>73회</strong>였습니다. 무작위 재현의 90% 범위(54~86회) 안에 있는 값입니다. 1년 넘게 한 번호가 안 나오는 일이 무작위만으로도 흔히 생긴다는 뜻입니다. 40회 이상 이어진 공백은 이론상 24번쯤 나와야 하는데, 실제로 <strong>25번</strong> 있었습니다. 긴 공백을 발견하고 '이번엔 꼭 나온다'고 생각하면, 1913년 몬테카를로의 손님들과 같은 자리에 서게 됩니다.</p>
+<h2 id="s5" data-i18n-en="Reading the current cold numbers">지금의 미출수 읽기</h2>
+<p data-i18n-en="This site's &lt;a href=&quot;../statistics-gap.html&quot;&gt;cold numbers page&lt;/a&gt; ranks each number by how many draws it has gone since it last came up. As of draw 1243, number 5 is at the top, 30 draws in. By coincidence, number 5 also holds the record for the longest gap ever (73 draws). Even so, the chance that 5 comes up in the next draw stays at 13.3%. A long rest is only a record of the past, not a mark left on the ball.">이 사이트의 <a href="../statistics-gap.html">미출수 페이지</a>는 번호마다 마지막으로 나온 뒤 몇 회차째 쉬고 있는지를 순위로 보여 줍니다. 1243회 기준 1위는 5번으로 30회차째입니다. 공교롭게도 5번은 역대 최장 공백(73회)의 주인공이기도 합니다. 그렇다고 5번이 다음 회차에 나올 확률이 13.3%에서 달라지지는 않습니다. 오래 쉬었다는 사실은 과거의 기록일 뿐, 공에 남은 흔적이 아닙니다.</p>
+<h2 id="s6" data-i18n-en="An honest way to use cold numbers">미출수를 쓰는 정직한 방법</h2>
+<p data-i18n-en="A cold numbers table is not a forecast; it is &lt;strong&gt;a summary of recent results&lt;/strong&gt;. It does have another use, though. If many people pick cold numbers as 'numbers about to come up', more people will share the prize if those numbers win. On the other hand, few people may pick numbers that have come up often lately and are seen as 'due for a rest'. Either way the odds are the same; the only thing that changes is what people choose.">미출수 표는 예측표가 아니라 <strong>최근 흐름의 요약</strong>입니다. 다만 다른 쓰임은 있습니다. '곧 나올 번호'로 미출수를 고르는 사람이 많다면, 그 번호들은 당첨됐을 때 나눠 가질 사람도 많아집니다. 반대로 최근에 자주 나와서 '이제 쉴 차례'로 여겨지는 번호를 고르는 사람은 적을 수 있습니다. 어느 쪽이든 확률은 같고, 달라지는 것은 사람들의 선택뿐입니다.</p>
+<blockquote><p data-i18n-en="Actual gap records were calculated from this site's data for draws 1–1243. The simulation ran 2,000 sets of an experiment that repeats a draw of 6 numbers out of 45 without replacement 1243 times.">실제 공백 기록은 이 사이트의 1~1243회 데이터로 계산했습니다. 시뮬레이션은 45개 중 6개 비복원 추출을 1243회 반복하는 실험을 2,000세트 수행한 결과입니다.</p></blockquote>
+
+<section class="related"><h2 data-i18n="blog.related">이 글과 이어지는 페이지</h2><ul><li><a href="../statistics-gap.html" data-i18n-en="Cold numbers →">미출수 (장기 미출현) →</a><span data-i18n-en="How many draws each number has been absent">몇 회차째 안 나왔는지 순위</span></li><li><a href="../statistics-frequency.html" data-i18n-en="Most drawn numbers →">많이 나온 번호 순위 →</a><span data-i18n-en="Count per number with standard deviations">번호별 출현 횟수와 표준편차</span></li></ul></section>
+
+<nav class="post-nav" aria-label="이전 글과 다음 글" data-i18n-attr="aria-label:blog.prevNextAria"><a href="ac-value-explained.html"><small data-i18n="blog.prev">이전 글</small><span data-i18n-en="Understanding the AC value, and what the gaps between numbers tell you">AC값 제대로 이해하기 — 숫자 사이의 '차이'가 말해 주는 것</span></a><a href="lotto-stats-glossary.html"><small data-i18n="blog.next">다음 글</small><span data-i18n-en="What do cold numbers, pair numbers and AC value mean? A glossary of lotto statistics">미출수·궁합수·AC값이 무슨 뜻인가 — 로또 통계 용어 정리</span></a></nav>
+
+        <p class="page-disclaimer" data-i18n="disclaimer.page">지난 추첨 기록을 정리한 것이며 다음 회차를 예측하지 않습니다. 어떤 6개를 고르든 1등 확률은 1/8,145,060으로 같습니다. 당첨번호 출처: 동행복권.</p>
+    </main>
+
+    <footer class="footer">
+        <ul class="footer-nav">
+            <li><a href="../index.html" data-i18n="footer.home">HOME</a></li>
+            <li><a href="../draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="../statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="../top-prize.html" data-i18n="footer.top">TOP 50</a></li>
+            <li><a href="../tax.html" data-i18n="footer.tax">실수령액</a></li>
+            <li><a href="../blog/index.html" data-i18n="nav.blog">블로그</a></li>
+            <li><a href="../about.html" data-i18n="nav.about">ABOUT</a></li>
+        </ul>
+        <p><a href="../privacy.html" data-i18n="footer.privacy">개인정보 처리방침</a> · <a href="../terms.html" data-i18n="footer.terms">이용약관</a> · <a href="../contact.html" data-i18n="footer.contact">문의</a></p>
+        <p data-i18n-html="footer.copy">&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권</p>
+    </footer>
+</div>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9372871176021283" crossorigin="anonymous"></script>
+</body>
+</html>

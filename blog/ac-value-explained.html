@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<!-- 이 파일은 tools/build-blog.js 가 content/blog/ 원고로 다시 만든다. 직접 고치면 덮어쓰인다. -->
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AC값 제대로 이해하기 — 숫자 사이의 '차이'가 말해 주는 것 | lottodraw.kr</title>
+    <meta name="description" content="AC값의 정의부터 815만 조합 전체의 실제 분포, 전파망원경 배치에 쓰이는 골롬 자와의 관계까지. AC값으로 할 수 있는 일과 없는 일을 나눠 봅니다.">
+    <link rel="canonical" href="https://www.lottodraw.kr/blog/ac-value-explained.html">
+    <meta property="og:title" content="AC값 제대로 이해하기 — 숫자 사이의 '차이'가 말해 주는 것 | lottodraw.kr">
+    <meta property="og:description" content="AC값의 정의부터 815만 조합 전체의 실제 분포, 전파망원경 배치에 쓰이는 골롬 자와의 관계까지. AC값으로 할 수 있는 일과 없는 일을 나눠 봅니다.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://www.lottodraw.kr/blog/ac-value-explained.html">
+    <meta property="og:site_name" content="lottodraw.kr">
+    <meta property="og:image" content="https://www.lottodraw.kr/img/og-default.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="AC값 제대로 이해하기 — 숫자 사이의 '차이'가 말해 주는 것 | lottodraw.kr">
+    <meta name="twitter:description" content="AC값의 정의부터 815만 조합 전체의 실제 분포, 전파망원경 배치에 쓰이는 골롬 자와의 관계까지. AC값으로 할 수 있는 일과 없는 일을 나눠 봅니다.">
+    <meta name="twitter:image" content="https://www.lottodraw.kr/img/og-default.png">
+    <meta name="google-adsense-account" content="ca-pub-9372871176021283">
+    <link rel="stylesheet" href="../css/site.css">
+    <script src="../js/i18n-dict.js"></script>
+    <script src="../js/i18n.js"></script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BlogPosting","headline":"AC값 제대로 이해하기 — 숫자 사이의 '차이'가 말해 주는 것","description":"AC값의 정의부터 815만 조합 전체의 실제 분포, 전파망원경 배치에 쓰이는 골롬 자와의 관계까지. AC값으로 할 수 있는 일과 없는 일을 나눠 봅니다.","datePublished":"2026-10-01","dateModified":"2026-10-01","inLanguage":"ko-KR","articleSection":"확률 기초","url":"https://www.lottodraw.kr/blog/ac-value-explained.html","mainEntityOfPage":"https://www.lottodraw.kr/blog/ac-value-explained.html","image":"https://www.lottodraw.kr/img/og-default.png","author":{"@type":"Organization","name":"lottodraw.kr","url":"https://www.lottodraw.kr/"},"publisher":{"@type":"Organization","name":"lottodraw.kr","url":"https://www.lottodraw.kr/"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://www.lottodraw.kr/"},{"@type":"ListItem","position":2,"name":"블로그","item":"https://www.lottodraw.kr/blog/index.html"},{"@type":"ListItem","position":3,"name":"AC값 제대로 이해하기 — 숫자 사이의 '차이'가 말해 주는 것","item":"https://www.lottodraw.kr/blog/ac-value-explained.html"}]}]}</script>
+    <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "91c08d8a39d944e69c10024f2314b955"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+<body>
+<div class="page">
+    <header class="banner">
+        <a class="brand" href="../index.html">
+            <span class="brand-name">LOTTODRAW.KR</span>
+            <span class="brand-tag" data-i18n="brand.tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
+        </a>
+        <div class="banner-right">
+            <p class="latest-callout" data-i18n-en="Draw 1243: 9 18 24 38 43 44 &lt;span class=&quot;bonus-sep&quot;&gt;+&lt;/span&gt; 35">제1243회 9 18 24 38 43 44 <span class="bonus-sep">+</span> 35</p>
+            <a class="sticker" href="../statistics.html" data-i18n-html="header.sticker">최근 <b>5개월</b> 통계</a>
+            <div class="lang-switch" role="group" aria-label="Language">
+                <button type="button" data-lang-btn="ko">KO</button><button type="button" data-lang-btn="en">EN</button>
+            </div>
+        </div>
+    </header>
+
+    <nav class="nav" aria-label="주 메뉴" data-i18n-attr="aria-label:nav.aria">
+        <ul>
+            <li><a href="../index.html" data-i18n="nav.index">생성기 · 통계</a></li>
+            <li><a href="../draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="../statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="../top-prize.html" data-i18n="nav.topPrize">TOP 50 당첨금</a></li>
+            <li><a href="../tax.html" data-i18n="nav.tax">실수령액 계산</a></li>
+            <li><a href="../blog/index.html" aria-current="page" data-i18n="nav.blog">블로그</a></li>
+            <li><a href="../about.html" data-i18n="nav.about">ABOUT</a></li>
+        </ul>
+    </nav>
+
+    <main class="prose stat-page blog-post">
+        <nav class="breadcrumb" aria-label="현재 위치" data-i18n-attr="aria-label:crumb.aria"><a href="../index.html" data-i18n="crumb.home">홈</a> › <a href="../blog/index.html" data-i18n="nav.blog">블로그</a> › <span data-i18n-en="Understanding the AC value, and what the gaps between numbers tell you">AC값 제대로 이해하기 — 숫자 사이의 '차이'가 말해 주는 것</span></nav>
+        <h1 data-i18n-en="Understanding the AC value, and what the gaps between numbers tell you">AC값 제대로 이해하기 — 숫자 사이의 '차이'가 말해 주는 것</h1>
+        <p class="stat-scope"><span class="post-cat"><span class="cat-dot" data-band="5" aria-hidden="true"></span><span data-i18n-en="Probability basics">확률 기초</span></span> · <span data-i18n-en="2026-10-01 · 3 min read">2026-10-01 · 3분 읽기</span></p>
+        <p class="stat-lead"><span data-i18n-en="From the definition of the AC value to its actual spread across all 8.15 million combinations and its link to the Golomb rulers used to lay out radio telescopes. We sort out what the AC value can and cannot do.">AC값의 정의부터 815만 조합 전체의 실제 분포, 전파망원경 배치에 쓰이는 골롬 자와의 관계까지. AC값으로 할 수 있는 일과 없는 일을 나눠 봅니다.</span></p>
+
+<nav class="toc" aria-label="목차" data-i18n-attr="aria-label:blog.toc"><strong data-i18n="blog.toc">목차</strong><ol><li><a href="#s1" data-i18n-en="How to calculate it">계산법</a></li><li><a href="#s2" data-i18n-en="The actual spread across all 8.15 million combinations">815만 조합 전체의 실제 분포</a></li><li><a href="#s3" data-i18n-en="What does an AC value of 0 look like?">AC값 0은 어떤 조합인가</a></li><li><a href="#s4" data-i18n-en="What an AC value of 10 really is, a Golomb ruler">AC값 10의 정체: 골롬 자</a></li><li><a href="#s5" data-i18n-en="What the AC value can and cannot do">AC값으로 할 수 있는 일과 없는 일</a></li><li><a href="#s6" data-i18n-en="Summary">정리</a></li></ol></nav>
+
+<p data-i18n-en="The AC value (Arithmetic Complexity) is the most &amp;quot;scientific-sounding&amp;quot; measure in Lotto statistics. The name sounds hard, but the idea is simple. It counts &lt;strong&gt;how varied the gaps between the six numbers are&lt;/strong&gt;.">AC값(Arithmetic Complexity, 산술적 복잡도)은 로또 통계에서 가장 '과학적으로 들리는' 지표입니다. 이름은 어렵지만 원리는 단순합니다. 여섯 숫자 사이의 <strong>간격이 얼마나 다양한가</strong>를 세는 값입니다.</p>
+<h2 id="s1" data-i18n-en="How to calculate it">계산법</h2>
+<ol><li data-i18n-en="Pair up the six numbers in every possible way, and in each pair subtract the smaller from the larger. There are 15 pairs in all.">여섯 숫자에서 두 개씩 짝을 지어 큰 수에서 작은 수를 뺍니다. 짝은 모두 15개입니다.</li><li data-i18n-en="Count how many &lt;strong&gt;different values&lt;/strong&gt; there are among the 15 differences.">15개의 차이 중 <strong>서로 다른 값</strong>이 몇 종류인지 셉니다.</li><li data-i18n-en="Subtract 5 from that count.">그 개수에서 5를 뺍니다.</li></ol>
+<p data-i18n-en="You subtract 5 because any combination always has at least 5 different differences. So the AC value runs from 0 to 10.">5를 빼는 이유는 어떤 조합이든 차이는 최소 5종류가 나오기 때문입니다. 그래서 AC값은 0부터 10까지의 값을 갖습니다.</p>
+<p data-i18n-en="For example, take the winning numbers from the most recent draw, draw 1243: 9, 18, 24, 38, 43, 44. All the differences are 9, 15, 29, 34, 35, 6, 20, 25, 26, 14, 19, 20, 5, 6, 1. Since 20 and 6 each appear twice, there are 13 different values, and the AC value is &lt;strong&gt;8&lt;/strong&gt;.">예를 들어 지난 제1243회 당첨 번호 9, 18, 24, 38, 43, 44의 차이를 모두 구하면 9, 15, 29, 34, 35, 6, 20, 25, 26, 14, 19, 20, 5, 6, 1입니다. 20과 6이 두 번씩 나오므로 서로 다른 값은 13종류, AC값은 <strong>8</strong>입니다.</p>
+<h2 id="s2" data-i18n-en="The actual spread across all 8.15 million combinations">815만 조합 전체의 실제 분포</h2>
+<p data-i18n-en="Here is the distribution worked out over all 8,145,060 possible combinations, side by side with the distribution of actual winning numbers from draws 1–1243.">가능한 8,145,060개 조합을 모두 계산한 분포와, 실제 1~1243회 당첨 번호의 분포를 나란히 놓으면 다음과 같습니다.</p>
+<div class="table-scroll"><table class="data-table"><thead><tr><th scope="col" data-i18n-en="AC value">AC값</th><th scope="col" data-i18n-en="All combinations">전체 조합</th><th scope="col" data-i18n-en="Actual winning numbers">실제 당첨 번호</th></tr></thead><tbody><tr><td data-i18n-en="0–3">0~3</td><td data-i18n-en="0.4%">0.4%</td><td data-i18n-en="0.6% (7 draws)">0.6% (7회)</td></tr><tr><td data-i18n-en="4">4</td><td data-i18n-en="1.3%">1.3%</td><td data-i18n-en="1.9%">1.9%</td></tr><tr><td data-i18n-en="5">5</td><td data-i18n-en="3.0%">3.0%</td><td data-i18n-en="3.3%">3.3%</td></tr><tr><td data-i18n-en="6">6</td><td data-i18n-en="10.1%">10.1%</td><td data-i18n-en="9.5%">9.5%</td></tr><tr><td data-i18n-en="7">7</td><td data-i18n-en="14.1%">14.1%</td><td data-i18n-en="13.9%">13.9%</td></tr><tr><td data-i18n-en="8">8</td><td data-i18n-en="32.9%">32.9%</td><td data-i18n-en="34.8%">34.8%</td></tr><tr><td data-i18n-en="9">9</td><td data-i18n-en="19.8%">19.8%</td><td data-i18n-en="17.7%">17.7%</td></tr><tr><td data-i18n-en="10">10</td><td data-i18n-en="18.5%">18.5%</td><td data-i18n-en="18.3%">18.3%</td></tr></tbody></table></div>
+<p data-i18n-en="Combinations with an AC value of 7 or more make up &lt;strong&gt;85%&lt;/strong&gt; of the total. It is true that &amp;quot;most winning numbers have a high AC value&amp;quot;, but that is not because the draw machine likes high AC values. It is &lt;strong&gt;because 85% of all combinations are like that to begin with&lt;/strong&gt;. Among actual winning numbers, AC values of 7 or more account for &lt;strong&gt;84.7%&lt;/strong&gt;, almost the same as the 85.2% for all combinations. That only confirms the draw is random.">AC값 7 이상이 전체의 <strong>85%</strong>입니다. &quot;당첨 번호는 대부분 AC값이 높다&quot;는 말은 사실이지만, 그건 추첨기가 높은 AC값을 좋아해서가 아니라 <strong>원래 조합의 85%가 그렇기 때문</strong>입니다. 실제 당첨 번호에서도 AC값 7 이상은 <strong>84.7%</strong> 로, 전체 조합의 85.2%와 거의 같습니다. 추첨이 무작위라는 확인일 뿐입니다.</p>
+<h2 id="s3" data-i18n-en="What does an AC value of 0 look like?">AC값 0은 어떤 조합인가</h2>
+<p data-i18n-en="An AC value of 0 means a combination with exactly five different differences, in other words an &lt;strong&gt;arithmetic sequence&lt;/strong&gt;. Examples are 1-2-3-4-5-6, 5-10-15-20-25-30 and 1-8-15-22-29-36. Out of 8.15 million, there are only &lt;strong&gt;180&lt;/strong&gt; of them. Yet these are exactly the combinations people often buy &amp;quot;for fun&amp;quot;. Their odds are the same as any other combination, but if they win, many people share the prize.">AC값 0은 차이가 정확히 다섯 종류뿐인 조합, 즉 <strong>등차수열</strong>입니다. 1-2-3-4-5-6, 5-10-15-20-25-30, 1-8-15-22-29-36 같은 것들입니다. 815만 개 중 단 <strong>180개</strong>뿐입니다. 그런데 바로 이런 조합이 사람들이 '재미로' 많이 사는 조합입니다. 확률은 다른 조합과 같은데 당첨되면 나눠 가질 사람이 많은 조합이죠.</p>
+<h2 id="s4" data-i18n-en="What an AC value of 10 really is, a Golomb ruler">AC값 10의 정체: 골롬 자</h2>
+<p data-i18n-en="An AC value of 10 means the 15 differences are &lt;strong&gt;all different&lt;/strong&gt;. In mathematics, a set like this is called a &lt;strong&gt;Golomb ruler&lt;/strong&gt;. It is a ruler with only a few marks, where no two pairs of marks are the same distance apart, so one ruler can measure many lengths, each in exactly one way.">AC값 10은 15개의 차이가 <strong>모두 다른</strong> 조합입니다. 수학에서는 이런 집합을 <strong>골롬 자(Golomb ruler)</strong> 라고 부릅니다. 눈금 몇 개만 새긴 자로, 어떤 두 눈금 사이의 거리도 겹치지 않아 하나의 자로 여러 길이를 한 번씩만 잴 수 있는 구조입니다.</p>
+<p data-i18n-en="Golomb rulers have real uses. In a radio telescope interferometer, where antennas are placed in a row, spacing them so that no gap repeats gives more information for the same cost. The same idea is used in assigning radio frequencies and in cryptography. Of all Lotto combinations, 18.5% are &amp;quot;perfect rulers&amp;quot; like this.">골롬 자는 실제로 쓰임새가 있습니다. 여러 개의 안테나를 일렬로 배치하는 전파망원경 간섭계에서 안테나 간격이 겹치지 않게 놓으면 같은 비용으로 더 많은 정보를 얻을 수 있습니다. 통신 주파수 배치나 암호 이론에도 같은 원리가 쓰입니다. 로또 조합의 18.5%는 이런 '완벽한 자'입니다.</p>
+<h2 id="s5" data-i18n-en="What the AC value can and cannot do">AC값으로 할 수 있는 일과 없는 일</h2>
+<p data-i18n-en="&lt;strong&gt;What it cannot do&lt;/strong&gt;: change your odds of winning. A combination with an AC value of 10 and a combination with an AC value of 0 have exactly the same 1 in 8,145,060 chance of 1st prize."><strong>할 수 없는 일</strong>: 당첨 확률을 바꾸는 것. AC값 10인 조합 하나와 AC값 0인 조합 하나는 1등 확률이 똑같이 8,145,060분의 1입니다.</p>
+<p data-i18n-en="&lt;strong&gt;What it can do&lt;/strong&gt;: filter out combinations that people picked by a pattern. Combinations with a low AC value are usually picked by following a fixed gap or a shape, so they are more likely to end in a &lt;a href=&quot;why-jackpots-split.html&quot;&gt;split jackpot&lt;/a&gt;. Leaving out AC values of 6 or below removes about 15% of all combinations."><strong>할 수 있는 일</strong>: 사람이 규칙적으로 고른 조합을 걸러 내는 것. AC값이 낮은 조합은 대개 일정한 간격이나 모양을 따라 고른 것이라, <a href="why-jackpots-split.html">분할 당첨</a> 가능성이 커집니다. AC값 6 이하를 빼면 전체의 약 15%를 제외하게 됩니다.</p>
+<p data-i18n-en="This filter is not a cure-all, though. Draw 1019 (1, 4, 13, 17, 34, 39), which had 50 1st-prize winners, had the highest possible AC value, &lt;strong&gt;10&lt;/strong&gt;. Winners piled up in that draw not because of regular gaps, but because many people had picked &amp;quot;frequently drawn numbers&amp;quot;. The AC value catches only one human habit, regular gaps.">다만 이 필터도 만능은 아닙니다. 1등이 50명 나온 제1019회(1, 4, 13, 17, 34, 39)의 AC값은 최고치인 <strong>10</strong>이었습니다. 그 회차에 당첨자가 몰린 이유는 간격의 규칙성이 아니라 '많이 나온 번호'를 고른 사람이 많았기 때문입니다. AC값은 사람의 습관 중 한 가지, 규칙적인 간격만 잡아냅니다.</p>
+<h2 id="s6" data-i18n-en="Summary">정리</h2>
+<p data-i18n-en="The AC value sums up how &amp;quot;irregular&amp;quot; a combination is in a single number. It is used honestly when it is treated not as a prediction tool but as &lt;strong&gt;a tool for spotting combinations that look hand-picked&lt;/strong&gt;. This site's &lt;a href=&quot;../statistics-ac.html&quot;&gt;AC value statistics&lt;/a&gt; page has the full historical distribution and an AC value calculator, so you can check the AC value of your own six numbers right away.">AC값은 조합의 '불규칙한 정도'를 숫자 하나로 요약한 지표입니다. 예측 도구가 아니라 <strong>사람 냄새가 나는 조합을 찾아내는 도구</strong>로 쓸 때 정직해집니다. 이 사이트의 <a href="../statistics-ac.html">AC값 통계</a> 페이지에는 역대 분포와 함께 AC값 계산기가 있어, 내가 고른 여섯 숫자의 AC값을 바로 확인할 수 있습니다.</p>
+<blockquote><p data-i18n-en="The distribution for all combinations is calculated over all 8,145,060 combinations, and the actual distribution uses this site's data for draws 1–1243.">전체 조합 분포는 8,145,060개 조합을 모두 계산한 값이고, 실제 분포는 이 사이트의 1~1243회 데이터입니다.</p></blockquote>
+
+<section class="related"><h2 data-i18n="blog.related">이 글과 이어지는 페이지</h2><ul><li><a href="../statistics-ac.html" data-i18n-en="AC value stats &amp; calculator →">AC값 통계 · 계산기 →</a><span data-i18n-en="Past AC values and a calculator">역대 AC값 분포와 계산기</span></li><li><a href="../index.html#sec-generator" data-i18n-en="Number generator →">번호 생성기 →</a><span data-i18n-en="Fixed and excluded numbers, 16 special patterns">고정수·제외수와 특수 패턴 16가지</span></li></ul></section>
+
+<nav class="post-nav" aria-label="이전 글과 다음 글" data-i18n-attr="aria-label:blog.prevNextAria"><a href="why-jackpots-split.html"><small data-i18n="blog.prev">이전 글</small><span data-i18n-en="Why do jackpots get split when people pick their own numbers? Birthday numbers and shared wins">사람이 직접 고르면 왜 당첨금이 쪼개지나 — 생일 번호와 분할 당첨</span></a><a href="cold-numbers-gamblers-fallacy.html"><small data-i18n="blog.next">다음 글</small><span data-i18n-en="Will a long-missing number come up soon? Cold numbers and the gambler's fallacy">오래 안 나온 번호는 곧 나올까 — 미출수와 도박사의 오류</span></a></nav>
+
+        <p class="page-disclaimer" data-i18n="disclaimer.page">지난 추첨 기록을 정리한 것이며 다음 회차를 예측하지 않습니다. 어떤 6개를 고르든 1등 확률은 1/8,145,060으로 같습니다. 당첨번호 출처: 동행복권.</p>
+    </main>
+
+    <footer class="footer">
+        <ul class="footer-nav">
+            <li><a href="../index.html" data-i18n="footer.home">HOME</a></li>
+            <li><a href="../draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="../statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="../top-prize.html" data-i18n="footer.top">TOP 50</a></li>
+            <li><a href="../tax.html" data-i18n="footer.tax">실수령액</a></li>
+            <li><a href="../blog/index.html" data-i18n="nav.blog">블로그</a></li>
+            <li><a href="../about.html" data-i18n="nav.about">ABOUT</a></li>
+        </ul>
+        <p><a href="../privacy.html" data-i18n="footer.privacy">개인정보 처리방침</a> · <a href="../terms.html" data-i18n="footer.terms">이용약관</a> · <a href="../contact.html" data-i18n="footer.contact">문의</a></p>
+        <p data-i18n-html="footer.copy">&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권</p>
+    </footer>
+</div>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9372871176021283" crossorigin="anonymous"></script>
+</body>
+</html>

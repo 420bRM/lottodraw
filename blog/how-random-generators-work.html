@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<!-- 이 파일은 tools/build-blog.js 가 content/blog/ 원고로 다시 만든다. 직접 고치면 덮어쓰인다. -->
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>번호 생성기의 '랜덤'은 어디서 오나 — 의사난수와 공정한 셔플 | lottodraw.kr</title>
+    <meta name="description" content="컴퓨터는 어떻게 무작위 번호를 만들까요. 의사난수의 원리, 이 사이트 생성기가 번호를 뽑는 실제 순서, 피셔-예이츠 방식과 거절 샘플링이 공정한 이유를 정리합니다.">
+    <link rel="canonical" href="https://www.lottodraw.kr/blog/how-random-generators-work.html">
+    <meta property="og:title" content="번호 생성기의 '랜덤'은 어디서 오나 — 의사난수와 공정한 셔플 | lottodraw.kr">
+    <meta property="og:description" content="컴퓨터는 어떻게 무작위 번호를 만들까요. 의사난수의 원리, 이 사이트 생성기가 번호를 뽑는 실제 순서, 피셔-예이츠 방식과 거절 샘플링이 공정한 이유를 정리합니다.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://www.lottodraw.kr/blog/how-random-generators-work.html">
+    <meta property="og:site_name" content="lottodraw.kr">
+    <meta property="og:image" content="https://www.lottodraw.kr/img/og-default.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="번호 생성기의 '랜덤'은 어디서 오나 — 의사난수와 공정한 셔플 | lottodraw.kr">
+    <meta name="twitter:description" content="컴퓨터는 어떻게 무작위 번호를 만들까요. 의사난수의 원리, 이 사이트 생성기가 번호를 뽑는 실제 순서, 피셔-예이츠 방식과 거절 샘플링이 공정한 이유를 정리합니다.">
+    <meta name="twitter:image" content="https://www.lottodraw.kr/img/og-default.png">
+    <meta name="google-adsense-account" content="ca-pub-9372871176021283">
+    <link rel="stylesheet" href="../css/site.css">
+    <script src="../js/i18n-dict.js"></script>
+    <script src="../js/i18n.js"></script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BlogPosting","headline":"번호 생성기의 '랜덤'은 어디서 오나 — 의사난수와 공정한 셔플","description":"컴퓨터는 어떻게 무작위 번호를 만들까요. 의사난수의 원리, 이 사이트 생성기가 번호를 뽑는 실제 순서, 피셔-예이츠 방식과 거절 샘플링이 공정한 이유를 정리합니다.","datePublished":"2026-10-01","dateModified":"2026-10-01","inLanguage":"ko-KR","articleSection":"확률 기초","url":"https://www.lottodraw.kr/blog/how-random-generators-work.html","mainEntityOfPage":"https://www.lottodraw.kr/blog/how-random-generators-work.html","image":"https://www.lottodraw.kr/img/og-default.png","author":{"@type":"Organization","name":"lottodraw.kr","url":"https://www.lottodraw.kr/"},"publisher":{"@type":"Organization","name":"lottodraw.kr","url":"https://www.lottodraw.kr/"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://www.lottodraw.kr/"},{"@type":"ListItem","position":2,"name":"블로그","item":"https://www.lottodraw.kr/blog/index.html"},{"@type":"ListItem","position":3,"name":"번호 생성기의 '랜덤'은 어디서 오나 — 의사난수와 공정한 셔플","item":"https://www.lottodraw.kr/blog/how-random-generators-work.html"}]}]}</script>
+    <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "91c08d8a39d944e69c10024f2314b955"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+<body>
+<div class="page">
+    <header class="banner">
+        <a class="brand" href="../index.html">
+            <span class="brand-name">LOTTODRAW.KR</span>
+            <span class="brand-tag" data-i18n="brand.tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
+        </a>
+        <div class="banner-right">
+            <p class="latest-callout" data-i18n-en="Draw 1243: 9 18 24 38 43 44 &lt;span class=&quot;bonus-sep&quot;&gt;+&lt;/span&gt; 35">제1243회 9 18 24 38 43 44 <span class="bonus-sep">+</span> 35</p>
+            <a class="sticker" href="../statistics.html" data-i18n-html="header.sticker">최근 <b>5개월</b> 통계</a>
+            <div class="lang-switch" role="group" aria-label="Language">
+                <button type="button" data-lang-btn="ko">KO</button><button type="button" data-lang-btn="en">EN</button>
+            </div>
+        </div>
+    </header>
+
+    <nav class="nav" aria-label="주 메뉴" data-i18n-attr="aria-label:nav.aria">
+        <ul>
+            <li><a href="../index.html" data-i18n="nav.index">생성기 · 통계</a></li>
+            <li><a href="../draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="../statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="../top-prize.html" data-i18n="nav.topPrize">TOP 50 당첨금</a></li>
+            <li><a href="../tax.html" data-i18n="nav.tax">실수령액 계산</a></li>
+            <li><a href="../blog/index.html" aria-current="page" data-i18n="nav.blog">블로그</a></li>
+            <li><a href="../about.html" data-i18n="nav.about">ABOUT</a></li>
+        </ul>
+    </nav>
+
+    <main class="prose stat-page blog-post">
+        <nav class="breadcrumb" aria-label="현재 위치" data-i18n-attr="aria-label:crumb.aria"><a href="../index.html" data-i18n="crumb.home">홈</a> › <a href="../blog/index.html" data-i18n="nav.blog">블로그</a> › <span data-i18n-en="Where does a number generator's &quot;random&quot; come from? Pseudo-random numbers and fair shuffling">번호 생성기의 '랜덤'은 어디서 오나 — 의사난수와 공정한 셔플</span></nav>
+        <h1 data-i18n-en="Where does a number generator's &quot;random&quot; come from? Pseudo-random numbers and fair shuffling">번호 생성기의 '랜덤'은 어디서 오나 — 의사난수와 공정한 셔플</h1>
+        <p class="stat-scope"><span class="post-cat"><span class="cat-dot" data-band="5" aria-hidden="true"></span><span data-i18n-en="Probability basics">확률 기초</span></span> · <span data-i18n-en="2026-10-01 · 4 min read">2026-10-01 · 4분 읽기</span></p>
+        <p class="stat-lead"><span data-i18n-en="How do computers make random numbers? We cover how pseudo-random numbers work, the exact steps this site's generator follows to draw numbers, and why the Fisher–Yates method and rejection sampling are fair.">컴퓨터는 어떻게 무작위 번호를 만들까요. 의사난수의 원리, 이 사이트 생성기가 번호를 뽑는 실제 순서, 피셔-예이츠 방식과 거절 샘플링이 공정한 이유를 정리합니다.</span></p>
+
+<nav class="toc" aria-label="목차" data-i18n-attr="aria-label:blog.toc"><strong data-i18n="blog.toc">목차</strong><ol><li><a href="#s1" data-i18n-en="Computers can't truly make randomness">컴퓨터는 원래 무작위를 못 만듭니다</a></li><li><a href="#s2" data-i18n-en="How this site's generator draws numbers">이 사이트의 생성기는 어떻게 뽑나</a></li><li><a href="#s3" data-i18n-en="Why this method is fair">이 방식이 공정한 이유</a></li><li><a href="#s4" data-i18n-en="Compared with common coding mistakes">흔한 구현 실수와 비교하면</a></li><li><a href="#s5" data-i18n-en="Do you need cryptographic random numbers?">암호학적 난수가 필요할까</a></li><li><a href="#s6" data-i18n-en="The real draw uses physical randomness">실제 추첨은 물리적 무작위</a></li><li><a href="#s7" data-i18n-en="How to judge a good generator">좋은 생성기를 고르는 기준</a></li></ol></nav>
+
+<p data-i18n-en="Among lotto 1st-prize winners, &lt;strong&gt;about 66% used automatic selection&lt;/strong&gt; (since draw 262). Automatic numbers are chosen by the computer in the retailer's terminal. This site's number generator works the same way. But how can a computer, which only follows set instructions, produce &amp;quot;randomness&amp;quot;?">로또 1등 당첨자 중 <strong>약 66%가 자동 선택</strong>이었습니다(제262회 이후 기준). 자동 번호는 판매점 단말기의 컴퓨터가 고릅니다. 이 사이트의 번호 생성기도 마찬가지입니다. 그런데 정해진 명령대로만 움직이는 컴퓨터가 어떻게 '무작위'를 만들어 낼까요?</p>
+<h2 id="s1" data-i18n-en="Computers can't truly make randomness">컴퓨터는 원래 무작위를 못 만듭니다</h2>
+<p data-i18n-en="A computer program always gives the same output for the same input. So most random numbers made by computers are &lt;strong&gt;pseudo-random numbers&lt;/strong&gt;. Start from an initial value (the seed) and apply a fixed formula over and over, and you get a sequence of numbers that looks random. With the same seed, the same sequence repeats exactly.">컴퓨터 프로그램은 같은 입력을 넣으면 항상 같은 결과를 냅니다. 그래서 컴퓨터가 만드는 대부분의 난수는 <strong>의사난수(pseudo-random number)</strong> 입니다. 어떤 시작값(시드)에서 출발해 정해진 수식을 반복 적용하면, 겉보기에는 무작위처럼 보이는 숫자열이 나옵니다. 시드가 같으면 숫자열도 똑같이 반복됩니다.</p>
+<p data-i18n-en="Your web browser's &lt;code&gt;Math.random()&lt;/code&gt; is also pseudo-random. Chrome and other major browsers use a fast algorithm called xorshift128+. It is good enough for games and simulations, but after seeing a few outputs you can guess the next value, so it is not used for security.">웹 브라우저의 <code>Math.random()</code>도 의사난수입니다. 크롬 등 주요 브라우저는 xorshift128+라는 빠른 알고리즘을 씁니다. 게임이나 시뮬레이션에는 충분히 좋지만, 출력 몇 개를 보면 다음 값을 추측할 수 있어 보안 용도로는 쓰지 않습니다.</p>
+<h2 id="s2" data-i18n-en="How this site's generator draws numbers">이 사이트의 생성기는 어떻게 뽑나</h2>
+<p data-i18n-en="This site's &lt;a href=&quot;../index.html#sec-generator&quot;&gt;number generator&lt;/a&gt; also uses the browser's &lt;code&gt;Math.random()&lt;/code&gt;. Here is what the code does, step by step.">이 사이트의 <a href="../index.html#sec-generator">번호 생성기</a>도 브라우저의 <code>Math.random()</code>을 씁니다. 코드가 하는 일을 순서대로 적으면 이렇습니다.</p>
+<ol><li data-i18n-en="It builds a candidate list from 1 to 45, leaving out the &lt;strong&gt;excluded numbers&lt;/strong&gt; and &lt;strong&gt;fixed numbers&lt;/strong&gt;.">1부터 45까지 중 <strong>제외수</strong>와 <strong>고정수</strong>를 뺀 나머지를 후보 목록으로 만듭니다.</li><li data-i18n-en="It picks one slot from the candidate list at random, takes that number out, and removes it from the list.">후보 목록에서 무작위로 한 칸을 골라 꺼내고, 꺼낸 번호는 목록에서 지웁니다.</li><li data-i18n-en="It repeats step 2 until there are six numbers, counting the fixed numbers.">고정수와 합쳐 여섯 개가 될 때까지 2번을 반복합니다.</li><li data-i18n-en="If the finished combination matches any of the &lt;strong&gt;16 special patterns&lt;/strong&gt; you have checked, it throws away the whole combination and starts again from step 1. It tries up to 10,000 times.">완성된 조합이 체크해 둔 <strong>특수 패턴 16가지</strong> 중 하나에 걸리면 조합 전체를 버리고 1번부터 다시 뽑습니다. 최대 1만 번까지 시도합니다.</li></ol>
+<p data-i18n-en="Open the &amp;quot;History · attempt log&amp;quot; panel on screen and you can see exactly which combination was thrown away on which attempt, and because of which pattern.">화면의 '생성 이력 · 과정 로그'를 펼치면 몇 번째 시도에서 어떤 조합이 어떤 패턴 때문에 버려졌는지 그대로 보입니다.</p>
+<h2 id="s3" data-i18n-en="Why this method is fair">이 방식이 공정한 이유</h2>
+<p data-i18n-en="&lt;strong&gt;Step 2 is the Fisher–Yates method as it stands.&lt;/strong&gt; In 1938 the statisticians Ronald Fisher and Frank Yates described a way to make a random order with pencil and paper: pick one of the remaining numbers at random, write it down, cross it off the list, and repeat. In 1964 Richard Durstenfeld adapted this for computers, and that is the &amp;quot;Fisher–Yates shuffle&amp;quot; programmers use today. Because every remaining candidate is equally likely to be picked, all combinations that include your fixed numbers come up with exactly the same probability."><strong>2번 단계는 피셔-예이츠 방식 그대로입니다.</strong> 1938년 통계학자 로널드 피셔와 프랭크 예이츠는 종이와 연필로 무작위 순서를 만드는 법을 소개했습니다. 남은 숫자 중 하나를 무작위로 골라 적고, 그 숫자를 목록에서 지운 뒤 반복하는 방법입니다. 1964년 리처드 더스텐펠드가 이를 컴퓨터용으로 다듬은 것이 오늘날 프로그래머들이 쓰는 '피셔-예이츠 셔플'입니다. 남은 후보가 모두 같은 확률로 뽑히므로, 고정수를 포함하는 조합들은 서로 정확히 같은 확률로 나옵니다.</p>
+<p data-i18n-en="&lt;strong&gt;Step 4 is rejection sampling.&lt;/strong&gt; When a combination matches a pattern, the generator does not just swap one number. It throws out the whole combination and draws again from the start. So even after filtering, &lt;strong&gt;the remaining combinations are still exactly equally likely.&lt;/strong&gt; In other words, the filter does not make the generator favor particular numbers."><strong>4번 단계는 거절 샘플링입니다.</strong> 패턴에 걸린 조합에서 번호 하나만 바꾸는 것이 아니라 조합 전체를 버리고 처음부터 다시 뽑습니다. 그래서 걸러 낸 뒤에도 <strong>남은 조합들끼리는 확률이 여전히 똑같습니다.</strong> 필터가 특정 번호를 편애하게 만들지 않는다는 뜻입니다.</p>
+<h2 id="s4" data-i18n-en="Compared with common coding mistakes">흔한 구현 실수와 비교하면</h2>
+<p data-i18n-en="Even with good random numbers, the wrong drawing method skews the results. Two mistakes come up often.">난수가 좋아도 뽑는 방법이 틀리면 결과가 치우칩니다. 자주 보이는 실수 두 가지가 있습니다.</p>
+<p data-i18n-en="&lt;strong&gt;Mistake 1: random sorting.&lt;/strong&gt; Sorting an array with a &amp;quot;random comparison function&amp;quot; is popular because the code is short, but depending on the sorting algorithm, certain values end up in certain positions more often."><strong>실수 1: 무작위 정렬.</strong> 배열을 '무작위 비교 함수'로 정렬하는 방법은 코드가 짧아서 자주 쓰이지만, 정렬 알고리즘에 따라 특정 위치에 특정 값이 더 자주 남는 편향이 생깁니다.</p>
+<p data-i18n-en="&lt;strong&gt;Mistake 2: modulo bias.&lt;/strong&gt; If you take a random integer from 0 to 255 and use the remainder after dividing by 45, the first 31 numbers come up slightly more often than the rest, because 256 is not evenly divisible by 45 (6/256 versus 5/256)."><strong>실수 2: 나머지 연산 편향.</strong> 0~255 사이 정수 난수를 45로 나눈 나머지를 쓰면, 256이 45로 나누어떨어지지 않기 때문에 앞쪽 31개 번호가 뒤쪽보다 조금 더 자주 나옵니다(6/256 대 5/256).</p>
+<p data-i18n-en="This site's code makes neither mistake. It does not shuffle by sorting but takes numbers out one at a time. It also multiplies the real number from &lt;code&gt;Math.random()&lt;/code&gt; (at least 0 and less than 1) by the number of candidates and rounds down, so there is no modulo bias either. The error that remains is smaller than one in 10 trillion.">이 사이트의 코드는 둘 다 해당하지 않습니다. 정렬로 섞지 않고 한 칸씩 꺼내며, <code>Math.random()</code>이 주는 0 이상 1 미만의 실수에 후보 개수를 곱해 내림하는 방식이라 나머지 연산 편향도 생기지 않습니다. 이때 남는 오차는 10조분의 1보다도 작은 수준입니다.</p>
+<h2 id="s5" data-i18n-en="Do you need cryptographic random numbers?">암호학적 난수가 필요할까</h2>
+<p data-i18n-en="Where security matters, people use a &lt;strong&gt;cryptographically secure random number generator&lt;/strong&gt;. The operating system collects physical entropy, such as hardware noise, to make the seed, and the design makes it impossible to work back from the output to the next value. In the browser, &lt;code&gt;crypto.getRandomValues()&lt;/code&gt; does this job.">보안이 필요한 곳에서는 <strong>암호학적으로 안전한 난수 생성기</strong>를 씁니다. 운영체제가 하드웨어 잡음 같은 물리적 엔트로피를 모아 시드를 만들고, 출력에서 다음 값을 역추적할 수 없도록 설계된 방식입니다. 브라우저에서는 <code>crypto.getRandomValues()</code>가 이 역할을 합니다.</p>
+<p data-i18n-en="&lt;code&gt;Math.random()&lt;/code&gt; has no such guarantee, so it must not be used to make passwords or login tokens. But a number generator has no secret to keep. Nothing is lost if someone guesses your numbers in advance, and every set of numbers has the same chance of 1st prize. What matters is that all 45 numbers come up evenly, and &lt;code&gt;Math.random()&lt;/code&gt; meets that need well."><code>Math.random()</code>은 이런 보장이 없어서 비밀번호나 인증 토큰을 만드는 데는 쓰면 안 됩니다. 하지만 번호 생성기에는 지켜야 할 비밀이 없습니다. 누군가 내가 받은 번호를 미리 짐작한다고 해서 잃을 것이 없고, 어떤 번호든 1등 확률은 같기 때문입니다. 필요한 것은 45개 번호가 고르게 나오는 것이고, <code>Math.random()</code>은 그 조건을 충분히 만족합니다.</p>
+<h2 id="s6" data-i18n-en="The real draw uses physical randomness">실제 추첨은 물리적 무작위</h2>
+<p data-i18n-en="For reference, the Saturday draw each week is done not by computer but by an &lt;strong&gt;air-mix draw machine&lt;/strong&gt;. It mixes the 45 balls with air and draws them out one by one, and the balls' weight and size are checked before the draw. It is physical randomness, with no seed or algorithm at all. As shown in the &lt;a href=&quot;is-number-34-special.html&quot;&gt;post on how often number 34 appears&lt;/a&gt;, the distribution of appearances over 1243 draws also falls within the range expected from chance.">참고로 매주 토요일 추첨은 컴퓨터가 아니라 <strong>공기 혼합식 추첨기</strong>로 합니다. 45개 공을 바람으로 섞어 하나씩 뽑아내는 방식이고, 공의 무게와 크기는 추첨 전에 검사합니다. 시드나 알고리즘 자체가 없는 물리적 무작위입니다. <a href="is-number-34-special.html">34번 출현 횟수 글</a>에서 본 것처럼, 1243회 동안의 출현 분포도 무작위 예상 범위 안에 있습니다.</p>
+<h2 id="s7" data-i18n-en="How to judge a good generator">좋은 생성기를 고르는 기준</h2>
+<div class="table-scroll"><table class="data-table"><thead><tr><th scope="col" data-i18n-en="What to check">확인할 점</th><th scope="col" data-i18n-en="Good practice">좋은 예</th><th scope="col" data-i18n-en="This site">이 사이트</th></tr></thead><tbody><tr><td data-i18n-en="Source of randomness">난수 출처</td><td data-i18n-en="Proven pseudo-random or cryptographic random numbers">검증된 의사난수 또는 암호학적 난수</td><td data-i18n-en="&lt;code&gt;Math.random()&lt;/code&gt;"><code>Math.random()</code></td></tr><tr><td data-i18n-en="Drawing method">뽑는 방식</td><td data-i18n-en="Fisher–Yates method, rejection sampling">피셔-예이츠 방식, 거절 샘플링</td><td data-i18n-en="Uses both">둘 다 사용</td></tr><tr><td data-i18n-en="Transparency">과정 공개</td><td data-i18n-en="Shows discarded combinations and why">버린 조합과 이유를 보여 줌</td><td data-i18n-en="Shows an attempt log">과정 로그 제공</td></tr><tr><td data-i18n-en="Claims about odds">확률에 대한 주장</td><td data-i18n-en="Does not claim to change the odds">확률을 바꾼다고 말하지 않음</td><td data-i18n-en="Pattern filters are about overlap, not odds">패턴 필터는 확률이 아니라 겹침에 관한 것</td></tr></tbody></table></div>
+<p data-i18n-en="Be careful with generators that claim to analyze past data and pick &amp;quot;the numbers that will come up&amp;quot;. As long as the balls have no memory, no generator can raise the chance of 1st prize above 1 in 8,145,060. The only honest things a generator can do are &lt;strong&gt;pick without bias&lt;/strong&gt; and, if you want, &lt;a href=&quot;why-jackpots-split.html&quot;&gt;avoid combinations that many people choose&lt;/a&gt;.">과거 데이터를 분석해 '나올 번호'를 골라 준다고 주장하는 생성기는 조심하는 것이 좋습니다. 공에 기억이 없는 한, 어떤 생성기도 1등 확률을 8,145,060분의 1보다 높일 수 없습니다. 생성기가 할 수 있는 정직한 일은 <strong>편향 없이 고르는 것</strong>, 그리고 원한다면 <a href="why-jackpots-split.html">사람들이 몰리는 조합을 피하는 것</a>뿐입니다.</p>
+<blockquote><p data-i18n-en="The automatic/manual split is quoted from figures published by Donghaeng Lottery (1st prize, draws 262–1209: automatic 65.9%).">자동·수동 비율은 동행복권 발표(제262~1209회 1등 기준, 자동 65.9%)를 인용했습니다.</p></blockquote>
+
+<section class="related"><h2 data-i18n="blog.related">이 글과 이어지는 페이지</h2><ul><li><a href="../index.html#sec-generator" data-i18n-en="Number generator →">번호 생성기 →</a><span data-i18n-en="Fixed and excluded numbers, 16 special patterns">고정수·제외수와 특수 패턴 16가지</span></li><li><a href="../probability.html" data-i18n-en="Lotto odds →">로또 확률 →</a><span data-i18n-en="Odds for each prize tier and how they are worked out">등수별 당첨 확률과 계산 방법</span></li></ul></section>
+
+<nav class="post-nav" aria-label="이전 글과 다음 글" data-i18n-attr="aria-label:blog.prevNextAria"><a href="consecutive-numbers-clustering-illusion.html"><small data-i18n="blog.prev">이전 글</small><span data-i18n-en="Are consecutive numbers really rare? Randomness clumps more than you think">연속 번호는 정말 드물까 — 무작위는 생각보다 뭉쳐 있다</span></a><a href="why-people-buy-lotto.html"><small data-i18n="blog.next">다음 글</small><span data-i18n-en="Why buy when you know you'll lose? Expected value, utility and prospect theory">손해인 줄 알면서 왜 살까 — 기대값, 효용, 그리고 전망 이론</span></a></nav>
+
+        <p class="page-disclaimer" data-i18n="disclaimer.page">지난 추첨 기록을 정리한 것이며 다음 회차를 예측하지 않습니다. 어떤 6개를 고르든 1등 확률은 1/8,145,060으로 같습니다. 당첨번호 출처: 동행복권.</p>
+    </main>
+
+    <footer class="footer">
+        <ul class="footer-nav">
+            <li><a href="../index.html" data-i18n="footer.home">HOME</a></li>
+            <li><a href="../draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="../statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="../top-prize.html" data-i18n="footer.top">TOP 50</a></li>
+            <li><a href="../tax.html" data-i18n="footer.tax">실수령액</a></li>
+            <li><a href="../blog/index.html" data-i18n="nav.blog">블로그</a></li>
+            <li><a href="../about.html" data-i18n="nav.about">ABOUT</a></li>
+        </ul>
+        <p><a href="../privacy.html" data-i18n="footer.privacy">개인정보 처리방침</a> · <a href="../terms.html" data-i18n="footer.terms">이용약관</a> · <a href="../contact.html" data-i18n="footer.contact">문의</a></p>
+        <p data-i18n-html="footer.copy">&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권</p>
+    </footer>
+</div>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9372871176021283" crossorigin="anonymous"></script>
+</body>
+</html>

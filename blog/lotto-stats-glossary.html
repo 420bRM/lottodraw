@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<!-- 이 파일은 tools/build-blog.js 가 content/blog/ 원고로 다시 만든다. 직접 고치면 덮어쓰인다. -->
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>미출수·궁합수·AC값이 무슨 뜻인가 — 로또 통계 용어 정리 | lottodraw.kr</title>
+    <meta name="description" content="통계 페이지에 나오는 용어를 하나씩 정의하고, 각 지표로 알 수 있는 것과 알 수 없는 것을 구분합니다.">
+    <link rel="canonical" href="https://www.lottodraw.kr/blog/lotto-stats-glossary.html">
+    <meta property="og:title" content="미출수·궁합수·AC값이 무슨 뜻인가 — 로또 통계 용어 정리 | lottodraw.kr">
+    <meta property="og:description" content="통계 페이지에 나오는 용어를 하나씩 정의하고, 각 지표로 알 수 있는 것과 알 수 없는 것을 구분합니다.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://www.lottodraw.kr/blog/lotto-stats-glossary.html">
+    <meta property="og:site_name" content="lottodraw.kr">
+    <meta property="og:image" content="https://www.lottodraw.kr/img/og-default.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="미출수·궁합수·AC값이 무슨 뜻인가 — 로또 통계 용어 정리 | lottodraw.kr">
+    <meta name="twitter:description" content="통계 페이지에 나오는 용어를 하나씩 정의하고, 각 지표로 알 수 있는 것과 알 수 없는 것을 구분합니다.">
+    <meta name="twitter:image" content="https://www.lottodraw.kr/img/og-default.png">
+    <meta name="google-adsense-account" content="ca-pub-9372871176021283">
+    <link rel="stylesheet" href="../css/site.css">
+    <script src="../js/i18n-dict.js"></script>
+    <script src="../js/i18n.js"></script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BlogPosting","headline":"미출수·궁합수·AC값이 무슨 뜻인가 — 로또 통계 용어 정리","description":"통계 페이지에 나오는 용어를 하나씩 정의하고, 각 지표로 알 수 있는 것과 알 수 없는 것을 구분합니다.","datePublished":"2026-10-01","dateModified":"2026-10-01","inLanguage":"ko-KR","articleSection":"통계 읽기","url":"https://www.lottodraw.kr/blog/lotto-stats-glossary.html","mainEntityOfPage":"https://www.lottodraw.kr/blog/lotto-stats-glossary.html","image":"https://www.lottodraw.kr/img/og-default.png","author":{"@type":"Organization","name":"lottodraw.kr","url":"https://www.lottodraw.kr/"},"publisher":{"@type":"Organization","name":"lottodraw.kr","url":"https://www.lottodraw.kr/"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://www.lottodraw.kr/"},{"@type":"ListItem","position":2,"name":"블로그","item":"https://www.lottodraw.kr/blog/index.html"},{"@type":"ListItem","position":3,"name":"미출수·궁합수·AC값이 무슨 뜻인가 — 로또 통계 용어 정리","item":"https://www.lottodraw.kr/blog/lotto-stats-glossary.html"}]}]}</script>
+    <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "91c08d8a39d944e69c10024f2314b955"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+<body>
+<div class="page">
+    <header class="banner">
+        <a class="brand" href="../index.html">
+            <span class="brand-name">LOTTODRAW.KR</span>
+            <span class="brand-tag" data-i18n="brand.tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
+        </a>
+        <div class="banner-right">
+            <p class="latest-callout" data-i18n-en="Draw 1243: 9 18 24 38 43 44 &lt;span class=&quot;bonus-sep&quot;&gt;+&lt;/span&gt; 35">제1243회 9 18 24 38 43 44 <span class="bonus-sep">+</span> 35</p>
+            <a class="sticker" href="../statistics.html" data-i18n-html="header.sticker">최근 <b>5개월</b> 통계</a>
+            <div class="lang-switch" role="group" aria-label="Language">
+                <button type="button" data-lang-btn="ko">KO</button><button type="button" data-lang-btn="en">EN</button>
+            </div>
+        </div>
+    </header>
+
+    <nav class="nav" aria-label="주 메뉴" data-i18n-attr="aria-label:nav.aria">
+        <ul>
+            <li><a href="../index.html" data-i18n="nav.index">생성기 · 통계</a></li>
+            <li><a href="../draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="../statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="../top-prize.html" data-i18n="nav.topPrize">TOP 50 당첨금</a></li>
+            <li><a href="../tax.html" data-i18n="nav.tax">실수령액 계산</a></li>
+            <li><a href="../blog/index.html" aria-current="page" data-i18n="nav.blog">블로그</a></li>
+            <li><a href="../about.html" data-i18n="nav.about">ABOUT</a></li>
+        </ul>
+    </nav>
+
+    <main class="prose stat-page blog-post">
+        <nav class="breadcrumb" aria-label="현재 위치" data-i18n-attr="aria-label:crumb.aria"><a href="../index.html" data-i18n="crumb.home">홈</a> › <a href="../blog/index.html" data-i18n="nav.blog">블로그</a> › <span data-i18n-en="What do cold numbers, pair numbers and AC value mean? A glossary of lotto statistics">미출수·궁합수·AC값이 무슨 뜻인가 — 로또 통계 용어 정리</span></nav>
+        <h1 data-i18n-en="What do cold numbers, pair numbers and AC value mean? A glossary of lotto statistics">미출수·궁합수·AC값이 무슨 뜻인가 — 로또 통계 용어 정리</h1>
+        <p class="stat-scope"><span class="post-cat"><span class="cat-dot" data-band="2" aria-hidden="true"></span><span data-i18n-en="Reading the stats">통계 읽기</span></span> · <span data-i18n-en="2026-10-01 · 3 min read">2026-10-01 · 3분 읽기</span></p>
+        <p class="stat-lead"><span data-i18n-en="This post defines the terms used on the statistics pages one by one, and separates what each measure can tell you from what it cannot.">통계 페이지에 나오는 용어를 하나씩 정의하고, 각 지표로 알 수 있는 것과 알 수 없는 것을 구분합니다.</span></p>
+
+<nav class="toc" aria-label="목차" data-i18n-attr="aria-label:blog.toc"><strong data-i18n="blog.toc">목차</strong><ol><li><a href="#s1" data-i18n-en="Appearance count / appearance rate">출현 횟수 / 출현율</a></li><li><a href="#s2" data-i18n-en="Cold numbers (numbers that have not come up for a while)">미출수 (미출현 번호)</a></li><li><a href="#s3" data-i18n-en="Current gap (longest gap)">연속 미출 (최대 공백)</a></li><li><a href="#s4" data-i18n-en="Pair numbers (coming up together)">궁합수 (동반 출현)</a></li><li><a href="#s5" data-i18n-en="AC value (Arithmetic Complexity)">AC값 (Arithmetic Complexity, 산술적 복잡도)</a></li><li><a href="#s6" data-i18n-en="Odd/even ratio / low/high ratio">홀짝 비율 / 고저 비율</a></li><li><a href="#s7" data-i18n-en="Number sum">번호 합계</a></li><li><a href="#s8" data-i18n-en="Last digit / consecutive numbers">끝수 / 연번</a></li><li><a href="#s9" data-i18n-en="In summary">정리하면</a></li></ol></nav>
+
+<p data-i18n-en="Lotto statistics use many words that rarely come up in daily life. This post is a glossary of the terms used on this site's statistics pages. For each term, it notes &lt;strong&gt;what it counts&lt;/strong&gt; and &lt;strong&gt;what that number can tell you&lt;/strong&gt;. To give the conclusion up front: all of these measures are tools for summarizing the past, and none of them can predict the next draw.">로또 통계를 보다 보면 일상에서 쓰지 않는 말이 많이 나옵니다. 이 글은 이 사이트 통계 페이지에 나오는 용어를 정리한 사전입니다. 각 용어마다 <strong>무엇을 세는지</strong>와 <strong>그 숫자로 알 수 있는 것</strong>을 함께 적었습니다. 미리 결론을 말하면, 이 지표들은 모두 과거를 요약하는 도구이고 다음 회차를 예측하지는 못합니다.</p>
+<h2 id="s1" data-i18n-en="Appearance count / appearance rate">출현 횟수 / 출현율</h2>
+<p data-i18n-en="The number of times a given number has come up as a main number so far. As of draw 1243, the average is 165.7 times, with a standard deviation of about 12. The appearance rate is this count divided by the total number of draws, and its theoretical value is 13.3% (6/45). How large a difference in counts is still normal is worked out in &lt;a href=&quot;is-number-34-special.html&quot;&gt;Is it special that number 34 came up 186 times?&lt;/a&gt;.">특정 번호가 지금까지 본번호로 나온 횟수입니다. 1243회 기준 평균은 165.7회이고, 표준편차는 약 12회입니다. 출현율은 이를 전체 회차로 나눈 값으로 이론값은 13.3%(6/45)입니다. 횟수 차이가 어느 정도까지 정상인지는 <a href="is-number-34-special.html">34번이 186회 나온 게 특별한가</a>에서 계산했습니다.</p>
+<h2 id="s2" data-i18n-en="Cold numbers (numbers that have not come up for a while)">미출수 (미출현 번호)</h2>
+<p data-i18n-en="&lt;strong&gt;Numbers that have not come up even once in the last N draws.&lt;/strong&gt; This site's &lt;a href=&quot;../statistics-gap.html&quot;&gt;cold numbers page&lt;/a&gt; ranks each number by how many draws it has gone without appearing since it last came up (as of draw 1243, number 5 is at the top, at 30 draws). If you set the window at the last 10 draws, the chance that a number misses 10 draws in a row is (39/45)¹⁰ ≈ 24%, so at any point there are usually about 10 cold numbers."><strong>최근 N회 동안 한 번도 나오지 않은 번호</strong>입니다. 이 사이트의 <a href="../statistics-gap.html">미출수 페이지</a>는 번호마다 마지막으로 나온 뒤 몇 회차째 안 나왔는지를 순위로 보여 줍니다(1243회 기준 1위는 5번, 30회차째). 기준을 최근 10회로 잡으면, 한 번호가 10회 연속 안 나올 확률은 (39/45)¹⁰ ≈ 24%라서, 어느 시점이든 미출수는 보통 10개 안팎 있습니다.</p>
+<p data-i18n-en="The idea that 'it hasn't come up for a long time, so it will come up soon' is the gambler's fallacy. The chance that a cold number comes up in the next draw is 13.3%, the same as for any other number. An explanation using independent trials and the geometric distribution is in &lt;a href=&quot;cold-numbers-gamblers-fallacy.html&quot;&gt;Will a long-missing number come up soon?&lt;/a&gt;.">'오래 안 나왔으니 곧 나온다'는 생각은 도박사의 오류입니다. 미출수가 다음 회차에 나올 확률도 다른 번호와 같은 13.3%입니다. 독립 시행과 기하분포로 풀어 쓴 설명은 <a href="cold-numbers-gamblers-fallacy.html">오래 안 나온 번호는 곧 나올까</a>에 있습니다.</p>
+<h2 id="s3" data-i18n-en="Current gap (longest gap)">연속 미출 (최대 공백)</h2>
+<p data-i18n-en="The number of draws since a number last came up. The average gap is about 7.5 draws (45/6), and the historical record has several cases of a number going more than 30 draws without appearing.">한 번호가 마지막으로 나온 뒤 지난 회차 수입니다. 평균 공백은 약 7.5회(45/6)이며, 30회 넘게 안 나오는 경우도 역대 기록에 여러 번 있습니다.</p>
+<h2 id="s4" data-i18n-en="Pair numbers (coming up together)">궁합수 (동반 출현)</h2>
+<p data-i18n-en="&lt;strong&gt;The number of times two numbers have come up together in the same draw.&lt;/strong&gt; The chance that two given numbers both come up in one draw is (6×5)/(45×44) ≈ 1.5%, so over 1243 draws a pair is expected to come up together about 18.8 times. The actual top pair is 11 and 21, at 34 times (&lt;a href=&quot;../statistics-pair.html&quot;&gt;pair numbers ranking&lt;/a&gt;). There are as many as 990 possible pairs, so it is natural that a few of them have come up together more than 30 times. The more pairs there are, the more values stand out by chance. The post that explains this with the birthday problem and multiple comparisons is &lt;a href=&quot;pair-numbers-multiple-comparisons.html&quot;&gt;Are pair numbers real?&lt;/a&gt;."><strong>두 번호가 같은 회차에 함께 나온 횟수</strong>입니다. 서로 다른 두 번호가 한 회차에 같이 나올 확률은 (6×5)/(45×44) ≈ 1.5%이므로, 1243회 동안 한 쌍의 기대 동반 횟수는 약 18.8회입니다. 실제 1위는 11번과 21번의 34회입니다(<a href="../statistics-pair.html">궁합수 순위</a>). 가능한 쌍은 990개나 되기 때문에 그중 30회 넘게 함께 나온 쌍이 몇 개 있는 것은 자연스러운 일입니다. 쌍이 많을수록 우연히 튀는 값도 많아집니다. 생일 문제와 다중 비교로 설명한 글은 <a href="pair-numbers-multiple-comparisons.html">궁합수는 진짜 있을까</a>입니다.</p>
+<h2 id="s5" data-i18n-en="AC value (Arithmetic Complexity)">AC값 (Arithmetic Complexity, 산술적 복잡도)</h2>
+<p data-i18n-en="A value that shows how irregularly the six numbers are spread out. It is calculated as follows.">여섯 숫자가 얼마나 불규칙하게 흩어져 있는지를 나타내는 값입니다. 계산 방법은 다음과 같습니다.</p>
+<ol><li data-i18n-en="Take every pair of the six numbers and find the difference within each pair. (15 differences)">여섯 숫자에서 두 개씩 뽑아 차이를 모두 구합니다. (15개)</li><li data-i18n-en="Count how many distinct values there are among those differences.">그중 서로 다른 값의 개수를 셉니다.</li><li data-i18n-en="Subtract 5 from that count.">그 개수에서 5를 뺍니다.</li></ol>
+<p data-i18n-en="For example, 1-2-3-4-5-6 has only five kinds of difference (1 to 5), so its AC value is 0. When the numbers are spread out evenly, the value can go as high as 10.">예를 들어 1-2-3-4-5-6은 차이가 1~5 다섯 종류뿐이라 AC값은 0입니다. 반대로 숫자가 고르게 흩어지면 최대 10까지 올라갑니다.</p>
+<p data-i18n-en="Most actual winning combinations have an AC value of 7 or more (84.7% of draws 1–1243, &lt;a href=&quot;../statistics-ac.html&quot;&gt;AC value statistics&lt;/a&gt;). But this does not mean 'high AC values come up more often'. It is because &lt;strong&gt;most possible combinations have a high AC value to begin with&lt;/strong&gt;. The AC value is useful for something else. A combination with a low AC value is more likely to be one a person picked in a regular pattern, so it can serve as a filter to avoid &lt;a href=&quot;why-jackpots-split.html&quot;&gt;shared jackpots&lt;/a&gt;. The full distribution and the story of the Golomb ruler are covered in &lt;a href=&quot;ac-value-explained.html&quot;&gt;Understanding the AC value properly&lt;/a&gt;.">실제 당첨 번호는 대부분 AC값 7 이상입니다(1~1243회 중 84.7%, <a href="../statistics-ac.html">AC값 통계</a>). 하지만 이것은 '높은 AC값이 잘 나온다'는 뜻이 아니라 <strong>가능한 조합의 대부분이 원래 AC값이 높기 때문</strong>입니다. AC값이 쓸모 있는 곳은 따로 있습니다. 낮은 AC값 조합은 사람이 규칙적으로 고른 조합일 가능성이 커서, <a href="why-jackpots-split.html">분할 당첨</a>을 피하는 필터로 활용할 수 있습니다. 전체 분포와 골롬 자 이야기는 <a href="ac-value-explained.html">AC값 제대로 이해하기</a>에서 다룹니다.</p>
+<h2 id="s6" data-i18n-en="Odd/even ratio / low/high ratio">홀짝 비율 / 고저 비율</h2>
+<p data-i18n-en="The ratio of odd to even numbers, and of low numbers (1–22) to high numbers (23–45), among the six numbers. 3:3 and 4:2 are the most common, and again this is because those combinations are the most numerous to begin with. Combinations with a 3:3 odd/even split make up about 33% of all combinations. (&lt;a href=&quot;sum-odd-even-bell-curve.html&quot;&gt;Why do number sums cluster around 138?&lt;/a&gt;)">여섯 숫자 중 홀수와 짝수, 낮은 수(1~22)와 높은 수(23~45)의 개수 비율입니다. 3:3과 4:2가 가장 흔한데, 이것 역시 그런 조합이 원래 가장 많기 때문입니다. 홀짝 3:3 조합은 전체의 약 33%입니다. (<a href="sum-odd-even-bell-curve.html">번호 합계는 왜 138 근처에 몰릴까</a>)</p>
+<h2 id="s7" data-i18n-en="Number sum">번호 합계</h2>
+<p data-i18n-en="The sum of the six numbers. The possible range runs from 21 (1–6) to 255 (40–45), and the average is 138. The sums of actual winning numbers also mostly fall between 100 and 175. The distribution is bell-shaped because far more combinations produce a sum in the middle than at either end.">여섯 숫자의 합입니다. 가능한 범위는 21(1~6)부터 255(40~45)까지이고 평균은 138입니다. 실제 당첨 번호의 합계도 대부분 100~175 사이에 몰립니다. 종 모양 분포가 나오는 이유는 중간 합계를 만드는 조합의 수가 압도적으로 많기 때문입니다.</p>
+<h2 id="s8" data-i18n-en="Last digit / consecutive numbers">끝수 / 연번</h2>
+<p data-i18n-en="The last digit is the ones digit (for example, 3, 13, 23, 33 and 43 all have last digit 3), and consecutive numbers are two numbers in a row, such as 12-13. More than half of all winning combinations contain at least one pair of consecutive numbers. Many people avoid consecutive numbers on purpose, but combinations with consecutive numbers do not come up any less often. (&lt;a href=&quot;consecutive-numbers-clustering-illusion.html&quot;&gt;Are consecutive numbers really rare?&lt;/a&gt;)">끝수는 일의 자리 숫자(예: 3, 13, 23, 33, 43은 끝수 3)이고, 연번은 12-13처럼 연속된 두 숫자입니다. 당첨 번호의 절반 이상에 연번이 하나 이상 들어 있습니다. 연번을 일부러 피하는 사람이 많지만, 연번이 들어간 조합은 특별히 덜 나오지 않습니다. (<a href="consecutive-numbers-clustering-illusion.html">연속 번호는 정말 드물까</a>)</p>
+<h2 id="s9" data-i18n-en="In summary">정리하면</h2>
+<div class="table-scroll"><table class="data-table"><thead><tr><th scope="col" data-i18n-en="Term">용어</th><th scope="col" data-i18n-en="What it can tell you">알 수 있는 것</th><th scope="col" data-i18n-en="What it cannot tell you">알 수 없는 것</th></tr></thead><tbody><tr><td data-i18n-en="Appearance count">출현 횟수</td><td data-i18n-en="Whether the past distribution is within the range of randomness">과거 분포가 무작위 범위 안인지</td><td data-i18n-en="Which numbers will come up next">다음에 나올 번호</td></tr><tr><td data-i18n-en="Cold numbers">미출수</td><td data-i18n-en="A summary of recent results">최근 흐름의 요약</td><td data-i18n-en="Which numbers will come up soon">곧 나올 번호</td></tr><tr><td data-i18n-en="Pair numbers">궁합수</td><td data-i18n-en="The record of numbers that came up together">함께 나온 기록</td><td data-i18n-en="Which pairs will come up together">함께 나올 쌍</td></tr><tr><td data-i18n-en="AC value, odd/even, sum">AC값·홀짝·합계</td><td data-i18n-en="How 'regular' a hand-picked combination is">사람이 고른 조합의 '규칙성'</td><td data-i18n-en="Any difference in the odds of winning">당첨 확률 차이</td></tr></tbody></table></div>
+<p data-i18n-en="Statistics are at their most honest when you use them to check that the draw is fair and to pick numbers that are less likely to overlap with other people's.">통계는 추첨이 공정한지 확인하고, 다른 사람과 겹치지 않는 번호를 고르는 데 쓸 때 가장 정직한 도구가 됩니다.</p>
+
+<section class="related"><h2 data-i18n="blog.related">이 글과 이어지는 페이지</h2><ul><li><a href="../statistics-frequency.html" data-i18n-en="Most drawn numbers →">많이 나온 번호 순위 →</a><span data-i18n-en="Count per number with standard deviations">번호별 출현 횟수와 표준편차</span></li><li><a href="../statistics-gap.html" data-i18n-en="Cold numbers →">미출수 (장기 미출현) →</a><span data-i18n-en="How many draws each number has been absent">몇 회차째 안 나왔는지 순위</span></li><li><a href="../statistics-pair.html" data-i18n-en="Pair numbers →">궁합수 순위 →</a><span data-i18n-en="Top 20 pairs drawn together">함께 나온 번호 쌍 Top 20</span></li><li><a href="../statistics-ac.html" data-i18n-en="AC value stats &amp; calculator →">AC값 통계 · 계산기 →</a><span data-i18n-en="Past AC values and a calculator">역대 AC값 분포와 계산기</span></li></ul></section>
+
+<nav class="post-nav" aria-label="이전 글과 다음 글" data-i18n-attr="aria-label:blog.prevNextAria"><a href="cold-numbers-gamblers-fallacy.html"><small data-i18n="blog.prev">이전 글</small><span data-i18n-en="Will a long-missing number come up soon? Cold numbers and the gambler's fallacy">오래 안 나온 번호는 곧 나올까 — 미출수와 도박사의 오류</span></a><a href="lucky-store-myth.html"><small data-i18n="blog.next">다음 글</small><span data-i18n-en="Do lucky stores really exist? Dividing 1st-prize wins by sales">로또 명당은 정말 있을까 — 1등 배출 횟수를 판매량으로 나눠 보면</span></a></nav>
+
+        <p class="page-disclaimer" data-i18n="disclaimer.page">지난 추첨 기록을 정리한 것이며 다음 회차를 예측하지 않습니다. 어떤 6개를 고르든 1등 확률은 1/8,145,060으로 같습니다. 당첨번호 출처: 동행복권.</p>
+    </main>
+
+    <footer class="footer">
+        <ul class="footer-nav">
+            <li><a href="../index.html" data-i18n="footer.home">HOME</a></li>
+            <li><a href="../draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="../statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="../top-prize.html" data-i18n="footer.top">TOP 50</a></li>
+            <li><a href="../tax.html" data-i18n="footer.tax">실수령액</a></li>
+            <li><a href="../blog/index.html" data-i18n="nav.blog">블로그</a></li>
+            <li><a href="../about.html" data-i18n="nav.about">ABOUT</a></li>
+        </ul>
+        <p><a href="../privacy.html" data-i18n="footer.privacy">개인정보 처리방침</a> · <a href="../terms.html" data-i18n="footer.terms">이용약관</a> · <a href="../contact.html" data-i18n="footer.contact">문의</a></p>
+        <p data-i18n-html="footer.copy">&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권</p>
+    </footer>
+</div>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9372871176021283" crossorigin="anonymous"></script>
+</body>
+</html>

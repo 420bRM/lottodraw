@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<!-- 이 파일은 tools/build-blog.js 가 content/blog/ 원고로 다시 만든다. 직접 고치면 덮어쓰인다. -->
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로또 명당은 정말 있을까 — 1등 배출 횟수를 판매량으로 나눠 보면 | lottodraw.kr</title>
+    <meta name="description" content="1등을 수십 번 배출한 판매점은 운이 좋은 걸까요, 많이 팔았을 뿐일까요. 기준율과 생존자 편향으로 '명당'을 따져 봅니다.">
+    <link rel="canonical" href="https://www.lottodraw.kr/blog/lucky-store-myth.html">
+    <meta property="og:title" content="로또 명당은 정말 있을까 — 1등 배출 횟수를 판매량으로 나눠 보면 | lottodraw.kr">
+    <meta property="og:description" content="1등을 수십 번 배출한 판매점은 운이 좋은 걸까요, 많이 팔았을 뿐일까요. 기준율과 생존자 편향으로 '명당'을 따져 봅니다.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://www.lottodraw.kr/blog/lucky-store-myth.html">
+    <meta property="og:site_name" content="lottodraw.kr">
+    <meta property="og:image" content="https://www.lottodraw.kr/img/og-default.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="로또 명당은 정말 있을까 — 1등 배출 횟수를 판매량으로 나눠 보면 | lottodraw.kr">
+    <meta name="twitter:description" content="1등을 수십 번 배출한 판매점은 운이 좋은 걸까요, 많이 팔았을 뿐일까요. 기준율과 생존자 편향으로 '명당'을 따져 봅니다.">
+    <meta name="twitter:image" content="https://www.lottodraw.kr/img/og-default.png">
+    <meta name="google-adsense-account" content="ca-pub-9372871176021283">
+    <link rel="stylesheet" href="../css/site.css">
+    <script src="../js/i18n-dict.js"></script>
+    <script src="../js/i18n.js"></script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BlogPosting","headline":"로또 명당은 정말 있을까 — 1등 배출 횟수를 판매량으로 나눠 보면","description":"1등을 수십 번 배출한 판매점은 운이 좋은 걸까요, 많이 팔았을 뿐일까요. 기준율과 생존자 편향으로 '명당'을 따져 봅니다.","datePublished":"2026-10-01","dateModified":"2026-10-01","inLanguage":"ko-KR","articleSection":"번호 고르기","url":"https://www.lottodraw.kr/blog/lucky-store-myth.html","mainEntityOfPage":"https://www.lottodraw.kr/blog/lucky-store-myth.html","image":"https://www.lottodraw.kr/img/og-default.png","author":{"@type":"Organization","name":"lottodraw.kr","url":"https://www.lottodraw.kr/"},"publisher":{"@type":"Organization","name":"lottodraw.kr","url":"https://www.lottodraw.kr/"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://www.lottodraw.kr/"},{"@type":"ListItem","position":2,"name":"블로그","item":"https://www.lottodraw.kr/blog/index.html"},{"@type":"ListItem","position":3,"name":"로또 명당은 정말 있을까 — 1등 배출 횟수를 판매량으로 나눠 보면","item":"https://www.lottodraw.kr/blog/lucky-store-myth.html"}]}]}</script>
+    <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "91c08d8a39d944e69c10024f2314b955"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+<body>
+<div class="page">
+    <header class="banner">
+        <a class="brand" href="../index.html">
+            <span class="brand-name">LOTTODRAW.KR</span>
+            <span class="brand-tag" data-i18n="brand.tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
+        </a>
+        <div class="banner-right">
+            <p class="latest-callout" data-i18n-en="Draw 1243: 9 18 24 38 43 44 &lt;span class=&quot;bonus-sep&quot;&gt;+&lt;/span&gt; 35">제1243회 9 18 24 38 43 44 <span class="bonus-sep">+</span> 35</p>
+            <a class="sticker" href="../statistics.html" data-i18n-html="header.sticker">최근 <b>5개월</b> 통계</a>
+            <div class="lang-switch" role="group" aria-label="Language">
+                <button type="button" data-lang-btn="ko">KO</button><button type="button" data-lang-btn="en">EN</button>
+            </div>
+        </div>
+    </header>
+
+    <nav class="nav" aria-label="주 메뉴" data-i18n-attr="aria-label:nav.aria">
+        <ul>
+            <li><a href="../index.html" data-i18n="nav.index">생성기 · 통계</a></li>
+            <li><a href="../draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="../statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="../top-prize.html" data-i18n="nav.topPrize">TOP 50 당첨금</a></li>
+            <li><a href="../tax.html" data-i18n="nav.tax">실수령액 계산</a></li>
+            <li><a href="../blog/index.html" aria-current="page" data-i18n="nav.blog">블로그</a></li>
+            <li><a href="../about.html" data-i18n="nav.about">ABOUT</a></li>
+        </ul>
+    </nav>
+
+    <main class="prose stat-page blog-post">
+        <nav class="breadcrumb" aria-label="현재 위치" data-i18n-attr="aria-label:crumb.aria"><a href="../index.html" data-i18n="crumb.home">홈</a> › <a href="../blog/index.html" data-i18n="nav.blog">블로그</a> › <span data-i18n-en="Do lucky stores really exist? Dividing 1st-prize wins by sales">로또 명당은 정말 있을까 — 1등 배출 횟수를 판매량으로 나눠 보면</span></nav>
+        <h1 data-i18n-en="Do lucky stores really exist? Dividing 1st-prize wins by sales">로또 명당은 정말 있을까 — 1등 배출 횟수를 판매량으로 나눠 보면</h1>
+        <p class="stat-scope"><span class="post-cat"><span class="cat-dot" data-band="3" aria-hidden="true"></span><span data-i18n-en="Picking numbers">번호 고르기</span></span> · <span data-i18n-en="2026-10-01 · 3 min read">2026-10-01 · 3분 읽기</span></p>
+        <p class="stat-lead"><span data-i18n-en="Is a store that has sold dozens of 1st-prize tickets lucky, or did it simply sell a lot? We look at so-called lucky stores through base rates and survivorship bias.">1등을 수십 번 배출한 판매점은 운이 좋은 걸까요, 많이 팔았을 뿐일까요. 기준율과 생존자 편향으로 '명당'을 따져 봅니다.</span></p>
+
+<nav class="toc" aria-label="목차" data-i18n-attr="aria-label:blog.toc"><strong data-i18n="blog.toc">목차</strong><ol><li><a href="#s1" data-i18n-en="1st prizes follow sales">1등은 판매량을 따라갑니다</a></li><li><a href="#s2" data-i18n-en="A real comparison: 1st prizes per sales">실제 비교: 판매액 대비 1등</a></li><li><a href="#s3" data-i18n-en="Principle 1: survivorship bias">원론 1: 생존자 편향</a></li><li><a href="#s4" data-i18n-en="Principle 2: base rate neglect">원론 2: 기준율 무시</a></li><li><a href="#s5" data-i18n-en="The feedback loop of the lucky store effect">명당 효과가 만드는 되먹임</a></li><li><a href="#s6" data-i18n-en="Summary">정리</a></li></ol></nav>
+
+<p data-i18n-en="Every Saturday there is a long queue outside stores with banners reading '1st prize sold XX times'. It is the same 1,000 KRW ticket, yet people travel a long way to buy it there because they believe the shop is a 'lucky store', the popular Korean term for a shop famous for selling winning tickets. What do lucky stores look like when you check the numbers?">'1등 ○○회 배출'이라는 현수막이 걸린 판매점 앞에는 토요일마다 줄이 깁니다. 같은 1천 원짜리 로또인데 굳이 멀리까지 가서 사는 이유는 그곳이 '명당'이라는 믿음 때문입니다. 숫자로 따져 보면 명당은 어떻게 보일까요?</p>
+<h2 id="s1" data-i18n-en="1st prizes follow sales">1등은 판매량을 따라갑니다</h2>
+<p data-i18n-en="Whichever store you buy from, the chance that one game wins 1st prize is 1 in 8,145,060. A store's terminal only records your numbers; it has no effect on the draw. So the expected number of 1st prizes a store sells is simple to work out.">한 게임이 1등이 될 확률은 어느 판매점에서 사든 8,145,060분의 1입니다. 판매점의 단말기는 번호를 기록할 뿐 추첨에는 아무 영향을 주지 못합니다. 그렇다면 판매점이 배출하는 1등 수의 기댓값은 단순합니다.</p>
+<blockquote><p data-i18n-en="Expected 1st prizes = games sold by the store ÷ 8,145,060">기대 1등 수 = 그 판매점의 판매 게임 수 ÷ 8,145,060</p></blockquote>
+<p data-i18n-en="On average, &lt;strong&gt;one 1st prize comes up for about every 8.1 bn KRW of sales&lt;/strong&gt;. There are about 8,000 stores across the country, and busy ones sell tens of thousands of games a week. If such a store stays open for 20 years, its sales reach tens of billions of KRW, and selling several 1st prizes is in fact what you would expect. A lucky store is &lt;strong&gt;a place that sells a lot, so more winners come from it&lt;/strong&gt;.">평균적으로 <strong>약 81억 원어치가 팔릴 때마다 1등이 한 번</strong> 나오는 셈입니다. 전국 판매점은 약 8,000곳인데, 장사가 잘되는 곳은 한 주에 수만 게임을 팝니다. 이런 곳이 20년 동안 영업하면 판매액이 수백억 원이 되고, 1등을 여러 번 배출하는 것이 오히려 자연스럽습니다. 명당은 <strong>많이 팔아서 많이 나오는 곳</strong>입니다.</p>
+<h2 id="s2" data-i18n-en="A real comparison: 1st prizes per sales">실제 비교: 판매액 대비 1등</h2>
+<p data-i18n-en="In 2015, a newspaper divided the sales of well-known stores by the number of 1st prizes each had sold. A store in Nowon-gu, Seoul, famous for selling the most 1st prizes, had one 1st prize for about every &lt;strong&gt;5.3 bn KRW&lt;/strong&gt; of sales, and a famous store in Busan had one for about every &lt;strong&gt;2.5 bn KRW&lt;/strong&gt;. On the other hand, some small stores that had sold a few 1st prizes had one for about every 500m KRW. Measured against sales, the 'less famous' stores actually did better.">2015년 한 언론이 유명 판매점들의 판매액을 1등 배출 횟수로 나눠 본 적이 있습니다. 1등 최다 배출로 유명한 서울 노원구의 판매점은 약 <strong>53억 원</strong>당 1등 1회, 부산의 유명 판매점은 약 <strong>25억 원</strong>당 1회였습니다. 반면 1등을 몇 번 배출한 작은 판매점 중에는 약 5억 원당 1회인 곳도 있었습니다. 판매액 대비로는 '덜 유명한' 곳이 더 효율이 좋았던 셈입니다.</p>
+<p data-i18n-en="This does not mean those small stores are the real lucky stores. The reason lies in the following principles.">이 숫자가 그 작은 판매점이 진짜 명당이라는 뜻은 아닙니다. 다음 원리 때문입니다.</p>
+<h2 id="s3" data-i18n-en="Principle 1: survivorship bias">원론 1: 생존자 편향</h2>
+<p data-i18n-en="Imagine that all 8,000 stores sell lotto with exactly the same odds. By luck, some sell no 1st prizes, some sell one, and a very small number sell three or four. Those few hang banners and become lucky stores. Nobody remembers the thousands of stores that have never sold a 1st prize.">8,000곳이 모두 같은 확률로 로또를 판다고 상상해 보십시오. 운에 따라 어떤 곳은 1등이 0번, 어떤 곳은 1번, 극히 일부는 3~4번 나옵니다. 그 일부가 현수막을 걸고 명당이 됩니다. 1등이 한 번도 안 나온 수천 곳은 아무도 기억하지 않습니다.</p>
+<p data-i18n-en="Looking for causes &lt;strong&gt;only among the cases that survived&lt;/strong&gt; is an error called survivorship bias. A well-known example comes from World War II: the military wanted to reinforce the parts of returning bombers that had bullet holes, but the statistician Abraham Wald pointed out that &amp;quot;the planes that were hit where there are no bullet holes did not come back.&amp;quot; A list of lucky stores is like a list made only of the bombers that returned.">이렇게 <strong>살아남은 사례만 보고</strong> 원인을 찾는 오류를 생존자 편향이라고 합니다. 2차 대전 때 귀환한 폭격기의 총탄 자국을 보고 그 부위를 보강하려 했지만, 통계학자 에이브러햄 왈드가 &quot;총탄 자국이 없는 곳에 맞은 비행기들은 돌아오지 못했다&quot;고 지적한 일화가 대표적입니다. 명당 목록은 귀환한 폭격기만 모은 목록과 같습니다.</p>
+<h2 id="s4" data-i18n-en="Principle 2: base rate neglect">원론 2: 기준율 무시</h2>
+<p data-i18n-en="You often see analyses like &amp;quot;30% of stores that sold a 1st prize are in large shopping districts in the Seoul area.&amp;quot; But this figure only means something when compared with &lt;strong&gt;how much of total sales is concentrated in those districts&lt;/strong&gt;. If 30% of sales come from there, it is no surprise that 30% of 1st prizes come from there too. Looking only at the result and leaving out the base rate you should compare it with is called &lt;strong&gt;base rate neglect&lt;/strong&gt;.">&quot;1등이 나온 판매점의 30%가 수도권 대형 상권에 있다&quot;는 식의 분석도 자주 보입니다. 하지만 이 숫자는 <strong>판매량이 수도권 대형 상권에 얼마나 몰려 있는지</strong>와 비교해야 의미가 있습니다. 판매량의 30%가 그곳에서 나온다면 1등의 30%가 그곳에서 나오는 건 당연합니다. 비교 대상인 기준율을 빼고 결과만 보는 것을 <strong>기준율 무시</strong>라고 합니다.</p>
+<h2 id="s5" data-i18n-en="The feedback loop of the lucky store effect">명당 효과가 만드는 되먹임</h2>
+<p data-i18n-en="A lucky store does not change the odds, but a reputation as a lucky store does change sales. Once word spreads, customers flock in; as sales go up, 1st prizes come up more often; and then the reputation grows further. A lucky store is not a cause but a result, and that result goes on to produce the next result.">명당이 확률을 바꾸지는 않지만, 명당이라는 소문은 판매량을 바꿉니다. 소문이 나면 손님이 몰리고, 판매량이 늘면 1등이 더 자주 나오고, 그러면 소문이 더 커집니다. 명당은 원인이 아니라 결과이고, 그 결과가 다시 다음 결과를 만드는 구조입니다.</p>
+<h2 id="s6" data-i18n-en="Summary">정리</h2>
+<div class="table-scroll"><table class="data-table"><thead><tr><th scope="col" data-i18n-en="Question">질문</th><th scope="col" data-i18n-en="Answer">답</th></tr></thead><tbody><tr><td data-i18n-en="Does buying at a lucky store raise the chance of winning?">명당에서 사면 당첨 확률이 높은가</td><td data-i18n-en="No. It is the same wherever you buy.">아닙니다. 어디서 사든 같습니다.</td></tr><tr><td data-i18n-en="Why do lucky stores sell so many 1st prizes?">명당에서 1등이 많이 나오는 이유</td><td data-i18n-en="Because they sell a lot of tickets.">판매량이 많기 때문입니다.</td></tr><tr><td data-i18n-en="What about stores that do well relative to their sales?">판매량 대비 효율이 좋은 판매점은</td><td data-i18n-en="It is most likely the luck of a small sample.">작은 표본의 운일 가능성이 큽니다.</td></tr></tbody></table></div>
+<p data-i18n-en="This site does not cover records by store, but you can see how the number of 1st-prize winners is spread across draws in &lt;a href=&quot;../statistics-prize.html&quot;&gt;1st-prize winner statistics&lt;/a&gt;. The time and travel cost of going to a lucky store do not change the odds of winning. Still, if you enjoy the trip, that can be reason enough in itself. It is just better not to mix up the value of that enjoyment with the odds.">판매점별 기록은 이 사이트에서 다루지 않지만, 회차별 1등 당첨자 수가 어떻게 흩어져 있는지는 <a href="../statistics-prize.html">1등 당첨자 수 통계</a>에서 볼 수 있습니다. 명당까지 가는 시간과 교통비는 당첨 확률을 바꾸지 않습니다. 그래도 그 길이 즐겁다면 그 자체로 충분한 이유가 될 수 있습니다. 다만 그 즐거움의 값과 확률을 섞지 않는 것이 좋습니다.</p>
+<blockquote><p data-i18n-en="The number of stores is about 8,000, based on 2026 reports. The sales-per-1st-prize comparison uses figures reported by Seoul Shinmun (31 July 2015). Before 2004 one game cost 2,000 KRW, so sales-based figures for older stores cannot be compared directly.">판매점 수는 2026년 보도 기준 약 8,000곳입니다. 판매액 대비 1등 비교는 서울신문(2015년 7월 31일) 보도 수치입니다. 2004년 이전에는 한 게임이 2,000원이었으므로 오래된 판매점의 판매액 대비 수치는 단순 비교에 한계가 있습니다.</p></blockquote>
+
+<section class="related"><h2 data-i18n="blog.related">이 글과 이어지는 페이지</h2><ul><li><a href="../statistics-prize.html" data-i18n-en="1st-prize winners per draw →">1등 당첨자 수 통계 →</a><span data-i18n-en="How many winners each draw had, and rollovers">회차별 당첨자 수 분포와 이월 횟수</span></li><li><a href="../probability.html" data-i18n-en="Lotto odds →">로또 확률 →</a><span data-i18n-en="Odds for each prize tier and how they are worked out">등수별 당첨 확률과 계산 방법</span></li></ul></section>
+
+<nav class="post-nav" aria-label="이전 글과 다음 글" data-i18n-attr="aria-label:blog.prevNextAria"><a href="lotto-stats-glossary.html"><small data-i18n="blog.prev">이전 글</small><span data-i18n-en="What do cold numbers, pair numbers and AC value mean? A glossary of lotto statistics">미출수·궁합수·AC값이 무슨 뜻인가 — 로또 통계 용어 정리</span></a><a href="pair-numbers-multiple-comparisons.html"><small data-i18n="blog.next">다음 글</small><span data-i18n-en="Are pair numbers real? 990 pairs and the multiple comparisons trap">궁합수는 진짜 있을까 — 990개 쌍과 다중 비교의 함정</span></a></nav>
+
+        <p class="page-disclaimer" data-i18n="disclaimer.page">지난 추첨 기록을 정리한 것이며 다음 회차를 예측하지 않습니다. 어떤 6개를 고르든 1등 확률은 1/8,145,060으로 같습니다. 당첨번호 출처: 동행복권.</p>
+    </main>
+
+    <footer class="footer">
+        <ul class="footer-nav">
+            <li><a href="../index.html" data-i18n="footer.home">HOME</a></li>
+            <li><a href="../draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="../statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="../top-prize.html" data-i18n="footer.top">TOP 50</a></li>
+            <li><a href="../tax.html" data-i18n="footer.tax">실수령액</a></li>
+            <li><a href="../blog/index.html" data-i18n="nav.blog">블로그</a></li>
+            <li><a href="../about.html" data-i18n="nav.about">ABOUT</a></li>
+        </ul>
+        <p><a href="../privacy.html" data-i18n="footer.privacy">개인정보 처리방침</a> · <a href="../terms.html" data-i18n="footer.terms">이용약관</a> · <a href="../contact.html" data-i18n="footer.contact">문의</a></p>
+        <p data-i18n-html="footer.copy">&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권</p>
+    </footer>
+</div>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9372871176021283" crossorigin="anonymous"></script>
+</body>
+</html>

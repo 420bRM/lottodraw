@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<!-- 이 파일은 tools/build-blog.js 가 content/blog/ 원고로 다시 만든다. 직접 고치면 덮어쓰인다. -->
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로또 당첨금은 어떻게 정해지나 — 판매액·배분 비율·이월 | lottodraw.kr</title>
+    <meta name="description" content="1등 당첨금이 회차마다 수억 원에서 수십억 원까지 달라지는 이유. 판매액에서 당첨금이 나오는 순서를 따라가 봅니다.">
+    <link rel="canonical" href="https://www.lottodraw.kr/blog/how-prize-pool-works.html">
+    <meta property="og:title" content="로또 당첨금은 어떻게 정해지나 — 판매액·배분 비율·이월 | lottodraw.kr">
+    <meta property="og:description" content="1등 당첨금이 회차마다 수억 원에서 수십억 원까지 달라지는 이유. 판매액에서 당첨금이 나오는 순서를 따라가 봅니다.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://www.lottodraw.kr/blog/how-prize-pool-works.html">
+    <meta property="og:site_name" content="lottodraw.kr">
+    <meta property="og:image" content="https://www.lottodraw.kr/img/og-default.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="로또 당첨금은 어떻게 정해지나 — 판매액·배분 비율·이월 | lottodraw.kr">
+    <meta name="twitter:description" content="1등 당첨금이 회차마다 수억 원에서 수십억 원까지 달라지는 이유. 판매액에서 당첨금이 나오는 순서를 따라가 봅니다.">
+    <meta name="twitter:image" content="https://www.lottodraw.kr/img/og-default.png">
+    <meta name="google-adsense-account" content="ca-pub-9372871176021283">
+    <link rel="stylesheet" href="../css/site.css">
+    <script src="../js/i18n-dict.js"></script>
+    <script src="../js/i18n.js"></script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BlogPosting","headline":"로또 당첨금은 어떻게 정해지나 — 판매액·배분 비율·이월","description":"1등 당첨금이 회차마다 수억 원에서 수십억 원까지 달라지는 이유. 판매액에서 당첨금이 나오는 순서를 따라가 봅니다.","datePublished":"2026-10-01","dateModified":"2026-10-01","inLanguage":"ko-KR","articleSection":"당첨 이후","url":"https://www.lottodraw.kr/blog/how-prize-pool-works.html","mainEntityOfPage":"https://www.lottodraw.kr/blog/how-prize-pool-works.html","image":"https://www.lottodraw.kr/img/og-default.png","author":{"@type":"Organization","name":"lottodraw.kr","url":"https://www.lottodraw.kr/"},"publisher":{"@type":"Organization","name":"lottodraw.kr","url":"https://www.lottodraw.kr/"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://www.lottodraw.kr/"},{"@type":"ListItem","position":2,"name":"블로그","item":"https://www.lottodraw.kr/blog/index.html"},{"@type":"ListItem","position":3,"name":"로또 당첨금은 어떻게 정해지나 — 판매액·배분 비율·이월","item":"https://www.lottodraw.kr/blog/how-prize-pool-works.html"}]}]}</script>
+    <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "91c08d8a39d944e69c10024f2314b955"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+<body>
+<div class="page">
+    <header class="banner">
+        <a class="brand" href="../index.html">
+            <span class="brand-name">LOTTODRAW.KR</span>
+            <span class="brand-tag" data-i18n="brand.tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
+        </a>
+        <div class="banner-right">
+            <p class="latest-callout" data-i18n-en="Draw 1243: 9 18 24 38 43 44 &lt;span class=&quot;bonus-sep&quot;&gt;+&lt;/span&gt; 35">제1243회 9 18 24 38 43 44 <span class="bonus-sep">+</span> 35</p>
+            <a class="sticker" href="../statistics.html" data-i18n-html="header.sticker">최근 <b>5개월</b> 통계</a>
+            <div class="lang-switch" role="group" aria-label="Language">
+                <button type="button" data-lang-btn="ko">KO</button><button type="button" data-lang-btn="en">EN</button>
+            </div>
+        </div>
+    </header>
+
+    <nav class="nav" aria-label="주 메뉴" data-i18n-attr="aria-label:nav.aria">
+        <ul>
+            <li><a href="../index.html" data-i18n="nav.index">생성기 · 통계</a></li>
+            <li><a href="../draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="../statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="../top-prize.html" data-i18n="nav.topPrize">TOP 50 당첨금</a></li>
+            <li><a href="../tax.html" data-i18n="nav.tax">실수령액 계산</a></li>
+            <li><a href="../blog/index.html" aria-current="page" data-i18n="nav.blog">블로그</a></li>
+            <li><a href="../about.html" data-i18n="nav.about">ABOUT</a></li>
+        </ul>
+    </nav>
+
+    <main class="prose stat-page blog-post">
+        <nav class="breadcrumb" aria-label="현재 위치" data-i18n-attr="aria-label:crumb.aria"><a href="../index.html" data-i18n="crumb.home">홈</a> › <a href="../blog/index.html" data-i18n="nav.blog">블로그</a> › <span data-i18n-en="How is the lotto prize decided? Sales, allocation rates and rollovers">로또 당첨금은 어떻게 정해지나 — 판매액·배분 비율·이월</span></nav>
+        <h1 data-i18n-en="How is the lotto prize decided? Sales, allocation rates and rollovers">로또 당첨금은 어떻게 정해지나 — 판매액·배분 비율·이월</h1>
+        <p class="stat-scope"><span class="post-cat"><span class="cat-dot" data-band="1" aria-hidden="true"></span><span data-i18n-en="After a win">당첨 이후</span></span> · <span data-i18n-en="2026-10-01 · 4 min read">2026-10-01 · 4분 읽기</span></p>
+        <p class="stat-lead"><span data-i18n-en="Why the 1st prize ranges from a few hundred million KRW to several billion KRW from one draw to the next. We follow the steps by which ticket sales turn into prize money.">1등 당첨금이 회차마다 수억 원에서 수십억 원까지 달라지는 이유. 판매액에서 당첨금이 나오는 순서를 따라가 봅니다.</span></p>
+
+<nav class="toc" aria-label="목차" data-i18n-attr="aria-label:blog.toc"><strong data-i18n="blog.toc">목차</strong><ol><li><a href="#s1" data-i18n-en="Step 1: 50% of sales becomes the prize pool">1단계: 판매액의 50%가 당첨금 총액</a></li><li><a href="#s2" data-i18n-en="Step 2: 4th and 5th prizes are paid first">2단계: 4등과 5등을 먼저 지급</a></li><li><a href="#s3" data-i18n-en="Step 3: 1st, 2nd and 3rd prizes share what is left">3단계: 남은 금액을 1·2·3등이 나눔</a></li><li><a href="#s4" data-i18n-en="Rollovers: when there is no 1st-prize winner">이월: 1등이 없으면</a></li><li><a href="#s5" data-i18n-en="Estimating the 1st prize in advance">1등 당첨금을 미리 어림해 보기</a></li><li><a href="#s6" data-i18n-en="The range seen in past records">역대 기록으로 보는 범위</a></li><li><a href="#s7" data-i18n-en="Checking the records draw by draw">회차별 기록 확인하기</a></li></ol></nav>
+
+<p data-i18n-en="Both are 1st prizes, yet in some draws the prize is over 4 bn KRW and in others it stops at around 400m KRW. That is because the lotto prize is not a fixed amount set in advance; it works by &lt;strong&gt;dividing up the money from tickets sold in that draw&lt;/strong&gt;. Let's follow the steps by which sales turn into prize money.">같은 1등인데 어떤 회차는 40억 원이 넘고, 어떤 회차는 4억 원대에 그칩니다. 로또 당첨금은 미리 정해진 상금이 아니라 <strong>그 회차에 팔린 금액을 나누는 방식</strong>이기 때문입니다. 판매액이 당첨금으로 바뀌는 순서를 따라가 보겠습니다.</p>
+<h2 id="s1" data-i18n-en="Step 1: 50% of sales becomes the prize pool">1단계: 판매액의 50%가 당첨금 총액</h2>
+<p data-i18n-en="Half of each draw's sales goes into the prize pool. Sales for 2025 as a whole were 6.2 trillion KRW, or about 119 bn KRW per draw on average. That makes the prize pool roughly 60 bn KRW per draw. The other half goes to the lottery fund, store commissions and operating costs. Cumulative sales from draw 1 to draw 1242 come to about 90 trillion KRW (based on press reports).">한 회차 판매액의 절반이 당첨금 재원이 됩니다. 2025년 한 해 판매액은 6조 2천억 원으로, 회차당 평균 약 1,190억 원어치가 팔렸습니다. 당첨금 총액은 한 회차에 600억 원 안팎인 셈입니다. 나머지 절반은 복권기금과 판매점 수수료, 운영비로 쓰입니다. 1회부터 1242회까지 누적 판매액은 약 90조 원에 이릅니다(언론 보도 기준).</p>
+<h2 id="s2" data-i18n-en="Step 2: 4th and 5th prizes are paid first">2단계: 4등과 5등을 먼저 지급</h2>
+<p data-i18n-en="The 4th prize (50,000 KRW) and 5th prize (5,000 KRW) are fixed amounts. The money owed to all winners at these two ranks is taken out of the prize pool first. A draw usually has more than 2 million winning games at 5th prize, so this part alone can exceed 10 bn KRW.">4등(5만 원)과 5등(5천 원)은 금액이 고정되어 있습니다. 당첨금 총액에서 이 두 등수의 당첨자 수만큼을 먼저 떼어 냅니다. 5등은 한 회차에 보통 200만 게임 이상 나오므로 이 부분만 100억 원을 넘기도 합니다.</p>
+<h2 id="s3" data-i18n-en="Step 3: 1st, 2nd and 3rd prizes share what is left">3단계: 남은 금액을 1·2·3등이 나눔</h2>
+<div class="table-scroll"><table class="data-table"><thead><tr><th scope="col" data-i18n-en="Rank">등수</th><th scope="col" data-i18n-en="Share">배분 비율</th><th scope="col" data-i18n-en="How it is paid">지급 방식</th></tr></thead><tbody><tr><td data-i18n-en="1st">1등</td><td data-i18n-en="75% of the remainder">남은 금액의 75%</td><td data-i18n-en="Split equally among 1st-prize winners">1등 당첨자 수로 균등 분할</td></tr><tr><td data-i18n-en="2nd">2등</td><td data-i18n-en="12.5% of the remainder">남은 금액의 12.5%</td><td data-i18n-en="Split equally among 2nd-prize winners">2등 당첨자 수로 균등 분할</td></tr><tr><td data-i18n-en="3rd">3등</td><td data-i18n-en="12.5% of the remainder">남은 금액의 12.5%</td><td data-i18n-en="Split equally among 3rd-prize winners">3등 당첨자 수로 균등 분할</td></tr><tr><td data-i18n-en="4th">4등</td><td data-i18n-en="Fixed">고정</td><td data-i18n-en="50,000 KRW">50,000원</td></tr><tr><td data-i18n-en="5th">5등</td><td data-i18n-en="Fixed">고정</td><td data-i18n-en="5,000 KRW">5,000원</td></tr></tbody></table></div>
+<p data-i18n-en="So the 1st prize depends on two variables: &lt;strong&gt;sales in that draw&lt;/strong&gt; and &lt;strong&gt;the number of 1st-prize winners&lt;/strong&gt;. Sales do not vary much from draw to draw, so what really moves the amount is the number of winners. That is why two 1st-prize winners can each receive several billion KRW, while 50 winners receive around 400m KRW each.">그래서 1등 당첨금은 두 가지 변수로 결정됩니다. <strong>그 회차 판매액</strong>과 <strong>1등 당첨자 수</strong>입니다. 판매액은 회차마다 크게 다르지 않으니, 실제로 금액을 크게 흔드는 것은 당첨자 수입니다. 1등이 2명이면 1인당 수십억 원, 50명이면 1인당 4억 원대가 되는 이유입니다.</p>
+<p data-i18n-en="In a draw with an unusually large number of 5th-prize winners, less money passes to step 3, so the 1st, 2nd and 3rd prizes all shrink together. Combinations that produce many 4th and 5th-prize winners usually include numbers that many people like to pick.">5등이 유독 많이 나온 회차에는 3단계로 넘어오는 금액이 줄어 1·2·3등 당첨금이 함께 작아지는 일도 생깁니다. 4·5등 당첨이 많아지는 조합은 대개 사람들이 많이 고르는 숫자가 섞인 경우입니다.</p>
+<h2 id="s4" data-i18n-en="Rollovers: when there is no 1st-prize winner">이월: 1등이 없으면</h2>
+<p data-i18n-en="If there is no 1st-prize winner at all, the 1st-prize share &lt;strong&gt;rolls over to the 1st prize of the next draw&lt;/strong&gt;. A rollover makes the next draw's 1st-prize total bigger, and as people hear the news and buy more tickets, sales go up as well. But because a large share of the 8.15 million possible combinations get sold, rollovers are rare in Korean lotto. In draws 1–1243 there were only &lt;strong&gt;14&lt;/strong&gt; rollovers, and most of them came in the early days (draws 1–71), when sales were low. The last rollover was in draw 463.">1등 당첨자가 한 명도 없으면 1등 몫 당첨금은 <strong>다음 회차 1등 당첨금으로 이월</strong>됩니다. 이월이 생기면 다음 회차 1등 총액이 커지고, 소식을 들은 사람들이 더 많이 사면서 판매액도 늘어납니다. 다만 815만 가지 조합 중 상당 부분이 팔리는 구조라 한국 로또에서 이월은 드뭅니다. 1~1243회 중 이월은 <strong>14회</strong>뿐이고, 그나마 대부분 판매량이 적던 초기(1~71회)에 몰려 있습니다. 마지막 이월은 제463회였습니다.</p>
+<h2 id="s5" data-i18n-en="Estimating the 1st prize in advance">1등 당첨금을 미리 어림해 보기</h2>
+<p data-i18n-en="Once you know this structure, you can roughly estimate the 1st prize before the draw. To keep the calculation simple, let's assume sales of 110 bn KRW (about 110 million games) and follow it through.">위 구조만 알면 추첨 전에 1등 당첨금을 대략 가늠할 수 있습니다. 계산을 단순하게 하기 위해 판매액을 1,100억 원(약 1억 1천만 게임)으로 잡고 따라가 보겠습니다.</p>
+<div class="table-scroll"><table class="data-table"><thead><tr><th scope="col" data-i18n-en="Step">단계</th><th scope="col" data-i18n-en="Calculation">계산</th><th scope="col" data-i18n-en="Amount">금액</th></tr></thead><tbody><tr><td data-i18n-en="Prize pool">당첨금 총액</td><td data-i18n-en="110 bn × 50%">1,100억 × 50%</td><td data-i18n-en="55 bn KRW">550억 원</td></tr><tr><td data-i18n-en="5th prize (fixed)">5등 고정분</td><td data-i18n-en="110 million games ÷ 45 × 5,000 KRW">1억 1천만 게임 ÷ 45 × 5천 원</td><td data-i18n-en="about 12.2 bn KRW">약 122억 원</td></tr><tr><td data-i18n-en="4th prize (fixed)">4등 고정분</td><td data-i18n-en="110 million games ÷ 733 × 50,000 KRW">1억 1천만 게임 ÷ 733 × 5만 원</td><td data-i18n-en="about 7.5 bn KRW">약 75억 원</td></tr><tr><td data-i18n-en="1st prize total">1등 총액</td><td data-i18n-en="(55 − 12.2 − 7.5) bn × 75%">(550 − 122 − 75)억 × 75%</td><td data-i18n-en="about 26.5 bn KRW">약 265억 원</td></tr><tr><td data-i18n-en="Expected 1st-prize winners">예상 1등 수</td><td data-i18n-en="110 million ÷ 8,145,060">1억 1천만 ÷ 8,145,060</td><td data-i18n-en="about 13.5">약 13.5명</td></tr><tr><td data-i18n-en="&lt;strong&gt;1st prize per winner&lt;/strong&gt;"><strong>1인당 1등</strong></td><td data-i18n-en="26.5 bn ÷ 13.5">265억 ÷ 13.5</td><td data-i18n-en="&lt;strong&gt;about 1.96 bn KRW&lt;/strong&gt;"><strong>약 19억 6천만 원</strong></td></tr></tbody></table></div>
+<p data-i18n-en="This comes out almost the same as the average 1st prize per winner (about 2.0 bn KRW). In practice, the numbers people pick are not spread evenly, so when a popular combination wins, winners pile up, and when an unpopular combination wins, one or two people take home several billion KRW.">당첨자 1인당 평균 1등 당첨금(약 20억 원)과 거의 같은 값이 나옵니다. 실제로는 사람들이 고른 번호가 고르게 퍼져 있지 않아서, 인기 조합이 당첨되면 당첨자가 몰리고 비인기 조합이 당첨되면 한두 명이 수십억 원을 가져갑니다.</p>
+<h2 id="s6" data-i18n-en="The range seen in past records">역대 기록으로 보는 범위</h2>
+<div class="table-scroll"><table class="data-table"><thead><tr><th scope="col" data-i18n-en="Item">구분</th><th scope="col" data-i18n-en="Details">내용</th></tr></thead><tbody><tr><td data-i18n-en="Total 1st-prize winners">1등 누적 당첨자</td><td data-i18n-en="10,669">1만 669명</td></tr><tr><td data-i18n-en="Average 1st prize (per winner)">1등 평균 당첨금 (당첨자 1인 기준)</td><td data-i18n-en="about 2.012 bn KRW">약 20억 1,185만 원</td></tr><tr><td data-i18n-en="Average 1st prize (per draw)">1등 평균 당첨금 (회차 평균)</td><td data-i18n-en="about 2.659 bn KRW">약 26억 5,884만 원</td></tr><tr><td data-i18n-en="Highest per winner">1인당 최고</td><td data-i18n-en="Draw 19 (2003), 1 winner, about 40.72 bn KRW">제19회 (2003년), 1명, 약 407억 2,296만 원</td></tr><tr><td data-i18n-en="Lowest per winner">1인당 최저</td><td data-i18n-en="Draw 546 (2013), 30 winners, about 406m KRW">제546회 (2013년), 30명, 약 4억 594만 원</td></tr><tr><td data-i18n-en="Draw with the most 1st-prize winners">1등 최다 당첨자 회차</td><td data-i18n-en="Draw 1128 (2024), 63 winners, about 420m KRW each">제1128회 (2024년), 63명, 1인당 약 4억 1,993만 원</td></tr><tr><td data-i18n-en="Draws rolled over with no 1st-prize winner">1등이 없어 이월된 회차</td><td data-i18n-en="14">14회</td></tr></tbody></table></div>
+<p data-i18n-en="There are two averages because of how they are calculated. If you work out the per-winner prize for each draw and then average those, early draws with huge prizes, such as draw 19 at 40.7 bn KRW, each count as one vote and pull the average up a lot. If you average across every individual winner instead, you get about 2.0 bn KRW. The figure of around 2.6 bn KRW in the example on this site's &lt;a href=&quot;../tax.html&quot;&gt;after-tax calculator&lt;/a&gt; is the per-draw average.">평균이 두 가지인 이유는 계산 방식 때문입니다. 회차마다 1인당 당첨금을 구해 평균하면 407억 원짜리 제19회처럼 초기의 거액 회차가 한 표씩 크게 끌어올립니다. 당첨자 한 사람 한 사람을 기준으로 평균하면 약 20억 원이 됩니다. 이 사이트 <a href="../tax.html">실수령액 계산기</a>의 예시에 나오는 26억 원대는 회차 평균입니다.</p>
+<p data-i18n-en="The draws with dozens of 1st-prize winners have one thing in common: the winning numbers contained patterns that people like to pick. For details, see &lt;a href=&quot;why-jackpots-split.html&quot;&gt;Why jackpots get split&lt;/a&gt;.">1등이 수십 명 나온 회차들의 공통점은 사람들이 즐겨 고르는 패턴이 당첨 번호에 들어 있었다는 점입니다. 자세한 내용은 <a href="why-jackpots-split.html">당첨금이 쪼개지는 이유</a>를 참고하십시오.</p>
+<h2 id="s7" data-i18n-en="Checking the records draw by draw">회차별 기록 확인하기</h2>
+<p data-i18n-en="On this site, &lt;a href=&quot;../statistics-prize.html&quot;&gt;1st-prize winner statistics&lt;/a&gt; shows how many 1st-prize winners each draw had and how many rollovers there have been, and &lt;a href=&quot;../top-prize.html&quot;&gt;Top 50 1st prizes of all time&lt;/a&gt; shows the draws with the largest prize per winner. You can then use the &lt;a href=&quot;../tax.html&quot;&gt;after-tax calculator&lt;/a&gt; to see how much you would actually receive from a prize.">이 사이트의 <a href="../statistics-prize.html">1등 당첨자 수 통계</a>에서는 회차별 1등 당첨자 수 분포와 이월 횟수를, <a href="../top-prize.html">역대 1등 당첨금 TOP 50</a>에서는 1인당 당첨금이 컸던 회차를 볼 수 있습니다. 당첨금을 받으면 실제로 얼마가 들어오는지는 <a href="../tax.html">실수령액 계산기</a>로 이어서 확인할 수 있습니다.</p>
+<blockquote><p data-i18n-en="The allocation rates follow the Lottery and Lottery Fund Act and Donghaeng Lottery's operating rules. The 1st-prize records were calculated from this site's data for draws 1–1243 (published by Donghaeng Lottery), and sales figures are from press reports.">배분 비율은 복권 및 복권기금법과 동행복권 운영 규정에 따른 것입니다. 1등 기록은 이 사이트의 1~1243회 데이터(동행복권 공개 자료)로 계산했고, 판매액은 언론 보도 수치입니다.</p></blockquote>
+
+<section class="related"><h2 data-i18n="blog.related">이 글과 이어지는 페이지</h2><ul><li><a href="../statistics-prize.html" data-i18n-en="1st-prize winners per draw →">1등 당첨자 수 통계 →</a><span data-i18n-en="How many winners each draw had, and rollovers">회차별 당첨자 수 분포와 이월 횟수</span></li><li><a href="../top-prize.html" data-i18n-en="Top 50 jackpots →">역대 1등 당첨금 TOP 50 →</a><span data-i18n-en="Draws with the largest prize per winner">1인당 당첨금이 컸던 회차</span></li><li><a href="../tax.html" data-i18n-en="After-tax calculator →">실수령액 계산기 →</a><span data-i18n-en="Enter a prize to see the tax and take-home amount">당첨금을 넣으면 세금과 실수령액</span></li></ul></section>
+
+<nav class="post-nav" aria-label="이전 글과 다음 글" data-i18n-attr="aria-label:blog.prevNextAria"><a href="pair-numbers-multiple-comparisons.html"><small data-i18n="blog.prev">이전 글</small><span data-i18n-en="Are pair numbers real? 990 pairs and the multiple comparisons trap">궁합수는 진짜 있을까 — 990개 쌍과 다중 비교의 함정</span></a><a href="sum-odd-even-bell-curve.html"><small data-i18n="blog.next">다음 글</small><span data-i18n-en="Why do lotto sums cluster near 138? Odd/even, low/high and the bell curve">번호 합계는 왜 138 근처에 몰릴까 — 홀짝·고저·합계와 종 모양 분포</span></a></nav>
+
+        <p class="page-disclaimer" data-i18n="disclaimer.page">지난 추첨 기록을 정리한 것이며 다음 회차를 예측하지 않습니다. 어떤 6개를 고르든 1등 확률은 1/8,145,060으로 같습니다. 당첨번호 출처: 동행복권.</p>
+    </main>
+
+    <footer class="footer">
+        <ul class="footer-nav">
+            <li><a href="../index.html" data-i18n="footer.home">HOME</a></li>
+            <li><a href="../draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="../statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="../top-prize.html" data-i18n="footer.top">TOP 50</a></li>
+            <li><a href="../tax.html" data-i18n="footer.tax">실수령액</a></li>
+            <li><a href="../blog/index.html" data-i18n="nav.blog">블로그</a></li>
+            <li><a href="../about.html" data-i18n="nav.about">ABOUT</a></li>
+        </ul>
+        <p><a href="../privacy.html" data-i18n="footer.privacy">개인정보 처리방침</a> · <a href="../terms.html" data-i18n="footer.terms">이용약관</a> · <a href="../contact.html" data-i18n="footer.contact">문의</a></p>
+        <p data-i18n-html="footer.copy">&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권</p>
+    </footer>
+</div>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9372871176021283" crossorigin="anonymous"></script>
+</body>
+</html>
