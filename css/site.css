@@ -836,10 +836,12 @@ html.home { scroll-behavior: smooth; }
 .blog-index .chip-btn .count { opacity: .7; }
 .blog-index .chip-btn[aria-pressed="true"] { border-color: var(--brand); background: var(--brand); color: #fff; }
 .post-list { display: flex; flex-direction: column; gap: 18px; margin: 0; padding: 0; list-style: none; }
-.post-card { position: relative; padding: 18px 20px 0; border: 1px solid #e3e8f2; border-radius: 10px; background: #fff; box-shadow: var(--shadow); transition: border-color .2s, box-shadow .2s; }
+.post-card { position: relative; padding: 18px 20px 0; border: 1px solid #e3e8f2; border-radius: 10px; background: #fff; box-shadow: var(--shadow); transition: border-color .2s, box-shadow .2s, opacity .3s; }
+/* 카테고리 단추를 누르면 다른 카테고리 글은 아래로 내려가며 흐려진다 */
+.post-card.is-dim { opacity: .45; }
+.post-card.is-dim:hover, .post-card.is-dim:focus-within { opacity: 1; }
 .post-card:hover, .post-card:focus-within { border-color: var(--brand); box-shadow: 0 10px 22px rgba(0, 48, 135, .10); }
 .post-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; color: var(--muted); font-size: 12px; }
-.post-meta { color: #888; font-variant-numeric: tabular-nums; }
 .blog-index .post-title { margin: 8px 0 6px; color: #000; font-size: 20px; line-height: 1.45; text-wrap: balance; }
 .post-title a { color: inherit; text-decoration: none; }
 .post-title a::after { content: ""; position: absolute; inset: 0; border-radius: 10px; }   /* 카드 전체를 누를 수 있게 */

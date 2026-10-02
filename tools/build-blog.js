@@ -12,7 +12,8 @@
 //     slug: 주소 (blog/<slug>.html). 빼면 파일 이름에서 번호를 뗀 것
 //     category: 당첨 이후 | 통계 읽기 | 번호 고르기 | 확률 기초
 //     description: 목록과 검색 결과에 나오는 요약
-//     date: 2026-10-01
+//     date: 2026-10-01             화면에는 안 보인다. 사이트맵·검색엔진용
+//     pick: 3                      흥미도 1~3. 클수록 목록 위쪽에 올 가능성이 크다 (빼면 1)
 //     related: [frequency, tax]    글 끝 "이어지는 페이지" — 아래 RELATED 의 이름
 //     updated: 2026-11-01          (선택) 크게 고친 날. 사이트맵·검색엔진에 갱신일로 간다
 //     ---
@@ -66,8 +67,9 @@ const RELATED = {
 // 글자 수가 420자를 넘으면 멈춘다. 그 아래는 CSS 가 흐리게 덮는다.
 const PREVIEW_BLOCKS = 5;
 const PREVIEW_CHARS = 420;
-// 읽는 시간: 공백을 뺀 본문 글자 수를 분당 500자로 나눠 반올림한다
-const CHARS_PER_MIN = 500;
+// 목록 순서: 방문할 때마다 흥미도(pick) + 0~PICK_JITTER 의 무작위 값으로 줄 세운다.
+// 흥미도가 높은 글이 대체로 위에 오되, 이웃한 단계끼리는 섞인다 (의도된 무작위)
+const PICK_JITTER = 1.6;
 
 const BLOG_TITLE = '로또 블로그 · 1등 수령·세금·통계·확률 해설';
 const BLOG_LEAD = '당첨금 수령과 세금, 통계를 읽는 법, 확률의 기본 원리까지. 이 사이트의 회차 데이터로 직접 계산해서 씁니다.';
@@ -230,7 +232,6 @@ function preview(post) {
 const catOf = name => CATEGORIES.find(c => c.name === name) || { name, en: undefined, band: undefined };
 const catDot = c => `<span class="cat-dot"${c.band ? ` data-band="${c.band}"` : ''} aria-hidden="true"></span>`;
 const catBadge = c => `<span class="post-cat">${catDot(c)}<span${tr(c.en && esc(c.en))}>${esc(c.name)}</span></span>`;
-const metaLine = p => `<span data-i18n-en="${esc(`${p.date} · ${p.minutes} min read`)}">${esc(p.date)} · ${p.minutes}분 읽기</span>`;
 
 module.exports = function buildBlog(ctx) {
     const { shell, write, SITE, OG_IMAGE } = ctx;
@@ -284,6 +285,7 @@ module.exports = function buildBlog(ctx) {
             title: m.title || slug,
             description: m.description || '',
             date: m.date || '',
+            pick: Math.min(3, Math.max(1, Number(m.pick) || 1)),
             updated: m.updated || m.date || '',
             category: cat,
             blocks: doc.blocks,
@@ -298,8 +300,8 @@ module.exports = function buildBlog(ctx) {
         warn(`${p.file} 의 slug "${p.slug}" 가 ${slugs[p.slug]} 와 겹친다 — 이 원고는 건너뛴다`);
         posts.splice(i--, 1);
     }
-    // 최근 글이 위로. 날짜가 같으면 파일 번호 순서
-    posts.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : a.order - b.order));
+    // HTML 에 적는 순서(스크립트가 없을 때, 이전·다음 글): 흥미도가 높은 글부터, 같으면 파일 번호 순
+    posts.sort((a, b) => b.pick - a.pick || a.order - b.order);
 
     /* 글마다 본문을 그린다 */
     posts.forEach(p => {
@@ -312,7 +314,6 @@ module.exports = function buildBlog(ctx) {
             p.heads.push({ id, ko: inline(b.text), en: e && inline(e.text) });
             return renderBlock(b, e, id);
         }).join('\n');
-        p.minutes = Math.max(1, Math.round(textOf(p.body).replace(/\s/g, '').length / CHARS_PER_MIN));
     });
 
     const pages = {};
@@ -355,7 +356,7 @@ module.exports = function buildBlog(ctx) {
             h1: p.title,
             h1En: p.en && p.en.title,
             desc: p.description,
-            scope: `${catBadge(p.category)} · ${metaLine(p)}`,
+            scope: catBadge(p.category),
             lead: `<span${tr(p.en && esc(p.en.description))}>${esc(p.description)}</span>`,
             ld: [{
                 '@type': 'BlogPosting',
@@ -386,8 +387,8 @@ module.exports = function buildBlog(ctx) {
         + '</ul>';
     const cards = posts.map(p => {
         const pv = preview(p);
-        return `<li class="post-card" data-cat="${esc(p.category.name)}">`
-            + `<div class="post-head">${catBadge(p.category)}<span class="post-meta">${metaLine(p)}</span></div>`
+        return `<li class="post-card" data-cat="${esc(p.category.name)}" data-pick="${p.pick}">`
+            + `<div class="post-head">${catBadge(p.category)}</div>`
             + `<h2 class="post-title"><a href="${p.slug}.html"${tr(p.en && esc(p.en.title))}>${esc(p.title)}</a></h2>`
             + `<p class="post-desc"${tr(p.en && esc(p.en.description))}>${esc(p.description)}</p>`
             + `<div class="post-preview" aria-hidden="true"${tr(pv.en)}>${pv.ko}</div>`
@@ -419,16 +420,54 @@ module.exports = function buildBlog(ctx) {
             blogPost: posts.map(p => ({ '@type': 'BlogPosting', headline: p.title, url: `${SITE}/${OUT}/${p.slug}.html`, datePublished: p.date })),
         }],
         body: [chips, '<ol class="post-list">' + cards.join('\n') + '</ol>'],
-        // 카테고리 단추. 고른 카테고리가 아닌 카드를 숨긴다
+        // 목록 순서와 카테고리 단추.
+        // 처음: 흥미도(data-pick) + 무작위로 줄 세운다 — 방문할 때마다 조금씩 다르다.
+        // 단추: 그 카테고리 글을 맨 위로 가나다순으로 모으고, 나머지는 흐리게 그 아래에 둔다.
+        // 자리를 옮길 때는 홈의 막대그래프 정렬과 같은 FLIP 애니메이션으로 미끄러지게 한다.
         script: [
             '(function () {',
+            "    var list = document.querySelector('.post-list');",
             "    var chips = document.querySelectorAll('.chip-btn');",
-            "    var cards = document.querySelectorAll('.post-card');",
+            '    var cards = Array.prototype.slice.call(list.children);',
+            '    var score = cards.map(function (c) {',
+            `        return Number(c.getAttribute('data-pick') || 1) + Math.random() * ${PICK_JITTER};`,
+            '    });',
+            '    var base = cards.slice().sort(function (a, b) { return score[cards.indexOf(b)] - score[cards.indexOf(a)]; });',
+            "    var reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;",
+            "    function title(c) { return c.querySelector('.post-title a').textContent; }",
+            '    function place(order, animate) {',
+            '        var from = animate ? order.map(function (c) { return c.getBoundingClientRect().top; }) : null;',
+            '        order.forEach(function (c) { list.appendChild(c); });',
+            '        if (!from) return;',
+            '        // FLIP: 옮긴 뒤 원래 자리로 되돌려 놓고, 그 되돌림을 풀며 미끄러지게 한다',
+            '        var moved = order.filter(function (c, i) {',
+            '            var dy = from[i] - c.getBoundingClientRect().top;',
+            '            if (!dy) return false;',
+            "            c.style.transition = 'none';",
+            "            c.style.transform = 'translateY(' + dy + 'px)';",
+            '            return true;',
+            '        });',
+            '        void list.offsetHeight;',
+            '        moved.forEach(function (c) {',
+            "            c.style.transition = 'transform .5s cubic-bezier(.2, .7, .3, 1), opacity .3s';",
+            "            c.style.transform = '';",
+            '        });',
+            '    }',
+            "    list.addEventListener('transitionend', function (e) {",
+            "        if (e.propertyName === 'transform' && e.target.parentNode === list) e.target.style.transition = '';",
+            '    });',
+            '    place(base, false);',
             '    Array.prototype.forEach.call(chips, function (chip) {',
             "        chip.addEventListener('click', function () {",
             "            var cat = chip.getAttribute('data-cat');",
+            "            var lang = document.documentElement.lang || 'ko';",
+            "            var hit = function (c) { return !cat || c.getAttribute('data-cat') === cat; };",
             "            Array.prototype.forEach.call(chips, function (c) { c.setAttribute('aria-pressed', c === chip ? 'true' : 'false'); });",
-            "            Array.prototype.forEach.call(cards, function (card) { card.hidden = !!cat && card.getAttribute('data-cat') !== cat; });",
+            "            cards.forEach(function (c) { c.classList.toggle('is-dim', !hit(c)); });",
+            '            var order = !cat ? base : cards.filter(hit)',
+            '                .sort(function (a, b) { return title(a).localeCompare(title(b), lang); })',
+            '                .concat(base.filter(function (c) { return !hit(c); }));',
+            '            place(order, !reduce);',
             '        });',
             '    });',
             '}());',

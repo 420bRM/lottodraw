@@ -4,6 +4,7 @@ slug: is-number-34-special
 category: 통계 읽기
 description: 1243회 동안 가장 많이 나온 34번과 가장 적게 나온 9번. 순수한 무작위에서도 이 정도 차이는 당연히 생깁니다. 직접 계산해 봅니다.
 date: 2026-10-01
+pick: 2
 related: [frequency]
 ---
 
