@@ -1,26 +1,33 @@
-// 5개월 통계 이용권 설정. Polar(polar.sh) 대시보드에서 만든 값을 넣는다.
-// 여기 들어가는 값은 전부 공개돼도 되는 값이다 — 비밀 키(API 토큰)는 절대 넣지 않는다.
-// organizationId 나 checkoutUrl 이 비어 있으면 결제 버튼은 "결제 준비 중"으로 보인다.
+// 5개월 통계 이용권 설정. 여기 들어가는 값은 전부 공개돼도 되는 값이다.
+// 계좌번호·관리자 토큰·페이앱 연동키 같은 값은 여기가 아니라 Worker 비밀값에 둔다 (README 4번).
 window.PREMIUM_CONFIG = {
-    // 테스트할 때는 'https://sandbox-api.polar.sh' (샌드박스 조직/상품/키로)
-    apiBase: 'https://api.polar.sh',
+    // 결제·이용권 서버(저장소의 worker/ 폴더, Cloudflare Worker) 주소.
+    // 서버가 아직 없거나 연결이 안 되면 결제 버튼은 "결제 준비 중"으로 보이고, 사이트는 그대로 돈다.
+    apiBase: 'https://api.lottodraw.kr',
 
-    // Polar 조직 ID (Settings → General)
-    organizationId: '89448545-3a82-4fa3-a25d-57cc1398ae8f',
+    // (선택) 이용권 서명 공개키. 비워 두면 서버에서 한 번 받아 이 브라우저에 기억한다.
+    // 관리자 페이지(admin.html) 첫 화면의 "공개키" 값을 그대로 붙여 넣으면 서버에 묻지 않는다.
+    publicKeyJwk: null,
 
-    // Polar 고객 포털 (polar.sh/<조직 slug>/portal). 구매자가 구독 해지, 영수증,
-    // 라이선스 키 확인을 하는 곳이다. 비어 있으면 관련 링크가 나오지 않는다.
-    portalUrl: 'https://polar.sh/lottodrawkr/portal',
-
-    // 상품별 Checkout Link 주소와, 그 상품에 붙인 License Key 혜택(Benefit) ID.
-    // benefitId 를 넣으면 이 사이트 이용권이 아닌 키는 거절한다.
-    // recurring: true 는 자동 갱신 구독 상품. 해지하면 Polar 가 키를 회수(revoked)해서
-    // 다음 확인 때 잠긴다. 최대 revalidateHours 만큼 늦게 반영된다.
+    // 화면에 먼저 보이는 가격. 실제 청구 금액은 서버(worker/src/plans.js)가 정하고,
+    // 서버가 켜져 있으면 결제 페이지가 서버 값으로 덮어쓴다. 두 곳을 같이 고칠 것
+    // (worker 테스트가 둘이 같은지 검사한다).
     plans: {
-        week:     { name: '1주 이용권',   checkoutUrl: '', benefitId: 'd9e18b08-85f9-4bfa-a254-69c5eda5ec1b' },
-        sub:      { name: '월 구독',      checkoutUrl: '', benefitId: '8e7710c7-3ea5-47c6-8d22-8ccc16b81a98', recurring: true },
-        month:    { name: '1개월 이용권', checkoutUrl: '', benefitId: '4f25845d-2d71-4551-a7ef-cb5c181acea1' },
-        lifetime: { name: '평생 이용권',  checkoutUrl: '', benefitId: 'e121d67e-317f-4192-bc46-aa7a586cd879' },
+        week:     { name: '1주 이용권',   amount: 2900,  days: 7 },
+        month:    { name: '1개월 이용권', amount: 5900,  days: 30 },
+        lifetime: { name: '평생 이용권',  amount: 12900, days: 0 },
+    },
+
+    // 판매자 정보 (전자상거래법 표시 의무). 상호나 대표자를 채우면 결제 페이지와 이용약관 아래에 나온다.
+    // 사업자등록 전이면 bizNo 는 비워 두고, 간이과세자는 통신판매업 신고가 면제라 mailOrderNo 도 비워도 된다.
+    seller: {
+        name: '',          // 상호 (예: 로또드로우)
+        owner: '',         // 대표자
+        bizNo: '',         // 사업자등록번호
+        mailOrderNo: '',   // 통신판매업 신고번호
+        address: '',
+        phone: '',
+        email: 'contact@lottodraw.kr',
     },
 
     // 통계에 넣을 회차 수. 최신 회차부터 이만큼 거슬러 올라간다.
@@ -28,13 +35,10 @@ window.PREMIUM_CONFIG = {
     // 21~23회로 들쭉날쭉해 표본 크기가 달라지므로, 회차 수로 고정한다.
     windowDraws: 22,
 
-    // 한 번 확인한 키는 이 시간 동안 다시 묻지 않는다. 결제대행사 장애 때 이미 결제한
-    // 사람이 막히지 않도록, 네트워크 오류 시에는 graceHours 까지 마지막 확인 결과를 믿는다.
+    // 환불된 키 목록을 이 시간마다 다시 받는다.
     revalidateHours: 12,
-    graceHours: 72,
 };
 
-// 2026-09-27: Polar 가 "복권 관련 상품"이라는 이유로 결제 승인을 거절했다.
-// (Payment access denied — Gambling and lottery-related products are not supported)
-// 그래서 checkoutUrl 을 비워 결제 버튼을 "결제 준비 중"으로 돌려놨다.
-// 지워둔 결제 링크 4개는 커밋 6017b78 에 그대로 남아 있다.
+// 2026-09-27: Polar 가 "복권 관련 상품"이라는 이유로 결제를 거절했다.
+// 2026-10-01: 카드사 공통 등록불가 업종에 "로또번호 생성 서비스"가 있어 국내 카드 PG(토스페이먼츠·
+// 카카오페이 등)도 막혀 있음을 확인하고, 계좌이체 직접 판매 + 서명 키 방식으로 바꿨다 (README 4번).

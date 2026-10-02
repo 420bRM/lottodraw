@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>최근 5개월 로또 통계 · 22회차 분석 11종 | lottodraw.kr</title>
-    <meta name="description" content="최근 5개월(22회차) 로또 당첨번호로 계산한 통계 11종을 한 화면에서 확인하세요. 이용권으로 열람하며(1주 $2부터 · 평생 $10), 지난 기록 요약이지 예측이 아닙니다.">
+    <meta name="description" content="최근 5개월(22회차) 로또 당첨번호로 계산한 통계 11종을 한 화면에서 확인하세요. 이용권으로 열람하며(1주 2,900원부터 · 평생 12,900원), 지난 기록 요약이지 예측이 아닙니다.">
     <link rel="canonical" href="https://www.lottodraw.kr/statistics.html">
     <meta property="og:title" content="최근 5개월 로또 통계 · 22회차 분석 11종 | lottodraw.kr">
     <meta property="og:description" content="최근 5개월(22회차) 당첨번호로 계산한 통계 11종. 지난 기록 요약이며 예측이 아닙니다.">
@@ -59,7 +59,7 @@
         <section class="card" aria-labelledby="doubt-title">
             <h2 class="card-title" id="doubt-title"><span data-i18n="s5.doubt.h">정말 우연일까?</span></h2>
             <div class="card-body">
-                <p data-i18n="s5.doubt.p1">숫자는 독립시행입니다. 1번이 지난주에 나왔든 10년을 쉬었든 이번 주 확률은 같습니다. 그런데 추첨기 안에서 도는 건 숫자가 아니라 <strong>공</strong>입니다.</p>
+                <p data-i18n-html="s5.doubt.p1">숫자는 독립시행입니다. 1번이 지난주에 나왔든 10년을 쉬었든 이번 주 확률은 같습니다. 그런데 추첨기 안에서 도는 건 숫자가 아니라 <strong>공</strong>입니다.</p>
                 <p data-i18n="s5.doubt.p2">45개 공이 완전히 똑같을 수 있을까요? 무게가 0.01g 다를 수 있고, 수만 번 부딪히며 표면이 아주 미세하게 눌릴 수도 있습니다. 인쇄된 숫자의 잉크 양마저 번호마다 다릅니다. 이론상 이런 차이는 어떤 공을 조금 더 자주 튀어 오르게 만들 수 있습니다.</p>
                 <p data-i18n-html="s5.doubt.p3">실제로 1980년 미국 펜실베이니아 복권에서는 일부 공에 페인트를 주입해 무게를 늘린 조작 사건이 적발됐습니다. <strong>공의 무게가 결과를 바꾼다는 건 이미 증명된 셈입니다.</strong></p>
                 <p data-i18n-html="s5.doubt.p4">그럼 우리 기록은 어떨까요? 1,241회 기준 한 번호의 기대 출현은 165회, 표준편차는 약 12회입니다. 가장 많이 나온 <b>34번(186회)</b>은 +1.7, 가장 적게 나온 <b>9번(136회)</b>은 −2.5 표준편차입니다. 번호 45개를 한꺼번에 놓고 보면, 완벽하게 공평한 추첨에서도 늘 이 정도의 최대·최소 차이가 나옵니다.</p>
@@ -79,68 +79,90 @@
             <section class="plan" aria-labelledby="plan-week-t">
                 <h3 class="card-title" id="plan-week-t"><span data-i18n="s5.p.week">1주 이용권</span></h3>
                 <div class="card-body bg-sage">
-                    <p class="plan-price">$2</p>
+                    <p class="plan-price" data-price="week">2,900원</p>
                     <ul>
-                        <li data-i18n="s5.f.week7">결제 후 7일 동안</li>
+                        <li data-i18n="s5.f.week7">키를 받은 때부터 7일</li>
                         <li data-i18n="s5.f.eleven">최근 5개월 통계 11종</li>
-                        <li data-i18n="s5.f.key">라이선스 키 1개</li>
+                        <li data-i18n="s5.f.detail">홈의 상세 분석 4종</li>
                     </ul>
-                    <a class="btn" data-plan="week" data-i18n="s5.buy">결제하기</a>
+                    <button type="button" class="btn" data-plan="week" data-i18n="s5.buy">구매하기</button>
                 </div>
             </section>
-            <section class="plan featured" aria-labelledby="plan-sub-t">
-                <h3 class="card-title" id="plan-sub-t"><span data-i18n="s5.p.sub">월 구독</span></h3>
-                <div class="card-body">
-                    <p class="plan-price">$4<small data-i18n="s5.perMonth">/월</small></p>
-                    <ul>
-                        <li data-i18n="s5.f.autorenew">매달 자동 갱신</li>
-                        <li data-i18n="s5.f.eleven">최근 5개월 통계 11종</li>
-                        <li data-i18n="s5.f.cancel">언제든 해지 가능</li>
-                    </ul>
-                    <a class="btn" data-plan="sub" data-i18n="s5.buy">결제하기</a>
-                    <p class="plan-note" data-i18n="s5.subNote">해지할 때까지 매달 $4가 결제됩니다. 해지하면 이미 결제한 기간까지 이용하고 다음 결제부터 청구되지 않습니다.</p>
-                </div>
-            </section>
-            <section class="plan" aria-labelledby="plan-month-t">
+            <section class="plan featured" aria-labelledby="plan-month-t">
                 <h3 class="card-title" id="plan-month-t"><span data-i18n="s5.p.month">1개월 이용권</span></h3>
                 <div class="card-body">
-                    <p class="plan-price">$5</p>
+                    <p class="plan-price" data-price="month">5,900원</p>
                     <ul>
-                        <li data-i18n="s5.f.days30">결제 후 30일 동안</li>
+                        <li data-i18n="s5.f.days30">키를 받은 때부터 30일</li>
                         <li data-i18n="s5.f.eleven">최근 5개월 통계 11종</li>
-                        <li data-i18n="s5.f.key">라이선스 키 1개</li>
+                        <li data-i18n="s5.f.detail">홈의 상세 분석 4종</li>
                     </ul>
-                    <a class="btn" data-plan="month" data-i18n="s5.buy">결제하기</a>
+                    <button type="button" class="btn" data-plan="month" data-i18n="s5.buy">구매하기</button>
+                    <p class="plan-note" data-i18n="s5.noRenew">자동 결제되지 않습니다. 기간이 끝나면 저절로 멈춥니다.</p>
                 </div>
             </section>
             <section class="plan" aria-labelledby="plan-lifetime-t">
                 <h3 class="card-title" id="plan-lifetime-t"><span data-i18n="s5.p.lifetime">평생 이용권</span></h3>
                 <div class="card-body bg-lime">
-                    <p class="plan-price">$10</p>
+                    <p class="plan-price" data-price="lifetime">12,900원</p>
                     <ul>
                         <li data-i18n="s5.f.forever">기간 제한 없음 (사이트 운영 기간)</li>
                         <li data-i18n="s5.f.eleven">최근 5개월 통계 11종</li>
-                        <li data-i18n="s5.f.key">라이선스 키 1개</li>
+                        <li data-i18n="s5.f.detail">홈의 상세 분석 4종</li>
                     </ul>
-                    <a class="btn" data-plan="lifetime" data-i18n="s5.buy">결제하기</a>
+                    <button type="button" class="btn" data-plan="lifetime" data-i18n="s5.buy">구매하기</button>
                 </div>
             </section>
         </div>
+        <p class="license-status plans-status" id="plans-status" role="status" aria-live="polite"></p>
+
+        <section class="card checkout" id="checkout" hidden aria-labelledby="checkout-title">
+            <h3 class="card-title" id="checkout-title"><span data-i18n="co.h">주문하기</span><small id="co-plan"></small></h3>
+            <div class="card-body">
+                <form class="order-form" id="order-form" novalidate>
+                    <fieldset class="co-methods">
+                        <legend data-i18n="co.method">결제 방법</legend>
+                        <label id="co-bank"><input type="radio" name="co-method" value="bank" checked> <b data-i18n="co.bank">계좌이체</b> <small data-i18n="co.bankSub">수수료 없음 · 입금이 확인되면 바로 열림</small></label>
+                        <label id="co-payapp" hidden><input type="radio" name="co-method" value="payapp"> <b data-i18n="co.card">카드 · 간편결제</b> <small data-i18n="co.cardSub">페이앱 결제창 · 결제 즉시 키 발급</small></label>
+                    </fieldset>
+                    <div class="co-field" data-for="bank">
+                        <label for="co-name" data-i18n="co.name">입금자명</label>
+                        <input type="text" id="co-name" maxlength="20" autocomplete="name" placeholder="통장에 찍힐 이름" data-i18n-attr="placeholder:co.namePh">
+                    </div>
+                    <div class="co-field" data-for="payapp" hidden>
+                        <label for="co-phone" data-i18n="co.phone">휴대폰 번호</label>
+                        <input type="tel" id="co-phone" maxlength="13" inputmode="numeric" autocomplete="tel" placeholder="010-0000-0000">
+                    </div>
+                    <div class="co-field">
+                        <label for="co-contact"><span data-i18n="co.contact">연락처</span> <small data-i18n="co.optional">(선택)</small></label>
+                        <input type="text" id="co-contact" maxlength="100" autocomplete="email" placeholder="키를 잃어버렸을 때 다시 보내 드릴 이메일" data-i18n-attr="placeholder:co.contactPh">
+                    </div>
+                    <label class="co-agree"><input type="checkbox" id="co-agree"> <span data-i18n-html="co.agree">이용권은 키를 받는 즉시 제공되는 디지털콘텐츠입니다. <a href="terms.html#refund" target="_blank">환불 기준</a>을 확인했으며, 키를 받은 뒤에는 청약철회가 제한될 수 있음에 동의합니다.</span></label>
+                    <p class="license-status" id="co-status" role="status" aria-live="polite"></p>
+                    <div class="co-actions">
+                        <button type="submit" class="btn" id="co-submit" data-i18n="co.submit">주문하기</button>
+                        <button type="button" class="btn btn-secondary" id="co-close" data-i18n="co.close">닫기</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <section class="card order-box" id="order-box" hidden aria-labelledby="order-title">
+            <h3 class="card-title" id="order-title"><span id="ob-title">입금 안내</span><small id="ob-id"></small></h3>
+            <div class="card-body" id="ob-body" aria-live="polite"></div>
+        </section>
 
         <div>
             <section class="card" aria-labelledby="unlock-title">
-                <h3 class="card-title" id="unlock-title"><span data-i18n="s5.have">이미 결제했어요</span><small data-i18n="s5.haveSub">라이선스 키로 잠금 해제</small></h3>
+                <h3 class="card-title" id="unlock-title"><span data-i18n="s5.have">이미 키가 있어요</span><small data-i18n="s5.haveSub">이용권 키로 잠금 해제</small></h3>
                 <div class="card-body bg-steel">
                     <form class="license-form" id="license-form">
-                        <label class="sr-only" for="license-key" data-i18n="s5.keyLabel">라이선스 키</label>
-                        <input type="text" id="license-key" autocomplete="off" spellcheck="false" maxlength="200" placeholder="결제 메일에 있는 라이선스 키" data-i18n-attr="placeholder:s5.keyPlaceholder">
+                        <label class="sr-only" for="license-key" data-i18n="s5.keyLabel">이용권 키</label>
+                        <input type="text" id="license-key" autocomplete="off" spellcheck="false" maxlength="200" placeholder="LD1- 로 시작하는 이용권 키" data-i18n-attr="placeholder:s5.keyPlaceholder">
                         <button type="submit" class="btn" id="license-submit" data-i18n="s5.unlock">잠금 해제</button>
                     </form>
                     <p class="license-status" id="license-status" role="status" aria-live="polite"></p>
-                    <p class="card-note">
-                        키는 결제 확인 메일에서 볼 수 있습니다. <a data-portal hidden target="_blank" rel="noopener" data-i18n="s5.portalLink">월 구독 해지와 영수증은 Polar 고객 포털에서 확인하세요.</a> 입력한 키는 유효한지 확인하기 위해 결제대행사 Polar에만 보내고,
-                        다시 입력하지 않도록 이 브라우저에 저장합니다. 환불 기준은 <a href="terms.html" data-i18n="footer.terms">이용약관</a>, 문제가 있으면 <a href="contact.html" data-i18n="footer.contact">문의</a>로 알려 주세요.
-                    </p>
+                    <p class="card-note" data-i18n-html="s5.keyNote">키는 이 브라우저 안에서 확인하며 어디로도 보내지 않습니다. 다시 입력하지 않도록 이 브라우저에 저장합니다. 환불 기준은 <a href="terms.html#refund">이용약관</a>, 문제가 있으면 <a href="contact.html">문의</a>로 알려 주세요.</p>
                 </div>
             </section>
         </div>
@@ -170,10 +192,36 @@
         <div class="license-bar">
             <span id="license-summary"></span>
             <span class="license-actions">
-                <a class="btn btn-secondary" data-portal hidden target="_blank" rel="noopener" data-i18n="s5.portal">구독 관리 · 영수증</a>
+                <button type="button" class="btn btn-secondary" id="license-show" aria-expanded="false" aria-controls="license-reveal" data-i18n="s5.showKey">키 보기</button>
                 <button type="button" class="btn btn-secondary" id="license-clear" data-i18n="s5.clear">이 브라우저에서 키 지우기</button>
             </span>
         </div>
+        <section class="card key-reveal" id="license-reveal" hidden aria-labelledby="reveal-title">
+            <h3 class="card-title" id="reveal-title"><span data-i18n="kr.h">이용권 키</span></h3>
+            <div class="card-body">
+                <p class="key-new" id="license-new" hidden data-i18n="kr.new">입금이 확인돼 이용권 키가 발급됐습니다. 이 브라우저에는 저장됐습니다.</p>
+                <code class="key-code" id="license-code"></code>
+                <p class="co-actions">
+                    <button type="button" class="btn" id="license-copy" data-i18n="kr.copy">키 복사</button>
+                    <button type="button" class="btn btn-secondary" id="license-copy-link" data-i18n="kr.copyLink">다른 기기용 링크 복사</button>
+                    <button type="button" class="btn btn-secondary" id="refund-open" aria-expanded="false" aria-controls="refund-box" data-i18n="rf.open">환불 요청</button>
+                </p>
+                <p class="card-note" data-i18n="kr.note">다른 기기나 브라우저에서는 이 키를 붙여 넣거나, 링크를 열면 바로 열립니다. 키는 본인만 쓰고 공유하지 마세요 — 공유된 키는 정지될 수 있습니다.</p>
+                <div class="refund-box" id="refund-box" hidden>
+                    <p class="ob-lead" data-i18n="rf.h">환불 요청</p>
+                    <p class="card-note" id="refund-window"></p>
+                    <form class="order-form" id="refund-form" novalidate>
+                        <div class="co-field">
+                            <label for="refund-account" data-i18n="rf.account">돌려받을 계좌</label>
+                            <input type="text" id="refund-account" maxlength="100" autocomplete="off" placeholder="은행 · 계좌번호 · 예금주 (카드 결제였다면 비워 두세요)" data-i18n-attr="placeholder:rf.accountPh">
+                        </div>
+                        <label class="co-agree"><input type="checkbox" id="refund-agree"> <span data-i18n="rf.agree">환불을 요청하면 이 키는 바로 정지되고 다시 쓸 수 없습니다.</span></label>
+                        <p class="license-status" id="refund-status" role="status" aria-live="polite"></p>
+                        <div class="co-actions"><button type="submit" class="btn" id="refund-submit" data-i18n="rf.submit">환불 요청하기</button></div>
+                    </form>
+                </div>
+            </div>
+        </section>
         <div class="stat-grid" id="stat-grid">
             <p class="stats-loading" data-i18n="s5.calc">통계를 계산하는 중…</p>
         </div>
@@ -197,7 +245,8 @@
             <li><a href="about.html" data-i18n="nav.about">ABOUT</a></li>
         </ul>
         <p><a href="privacy.html" data-i18n="footer.privacy">개인정보 처리방침</a> · <a href="terms.html" data-i18n="footer.terms">이용약관</a> · <a href="contact.html" data-i18n="footer.contact">문의</a></p>
-        <p data-i18n-html="footer.copyPay">&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권 · 결제 대행: Polar</p>
+        <p data-i18n-html="footer.copyPay">&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권</p>
+        <p class="seller-info" data-seller hidden></p>
     </footer>
 </div>
 
@@ -207,6 +256,7 @@
 <script src="js/details.js"></script>
 <script src="js/license.js"></script>
 <script src="js/premium-config.js"></script>
+<script src="js/seller.js"></script>
 <script src="js/premium.js"></script>
 </body>
 </html>

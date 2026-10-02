@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>주문 관리 | lottodraw.kr</title>
+    <link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+<!-- 판매자 전용. 관리자 토큰(Worker 의 ADMIN_TOKEN)이 없으면 아무것도 할 수 없다.
+     검색에 잡히지 않도록 noindex 이고, 사이트맵과 메뉴에도 넣지 않는다. -->
+<div class="page">
+    <header class="banner">
+        <a class="brand" href="index.html">
+            <span class="brand-name">LOTTODRAW.KR</span>
+            <span class="brand-tag">주문 관리 (판매자 전용)</span>
+        </a>
+    </header>
+
+    <main class="admin-main">
+        <section class="card" id="login-card" aria-labelledby="login-t">
+            <h2 class="card-title" id="login-t"><span>관리자 토큰</span></h2>
+            <div class="card-body">
+                <form class="license-form" id="login-form">
+                    <label class="sr-only" for="admin-token">관리자 토큰</label>
+                    <input type="password" id="admin-token" autocomplete="current-password" placeholder="Worker 의 ADMIN_TOKEN">
+                    <button type="submit" class="btn">들어가기</button>
+                </form>
+                <label class="co-agree"><input type="checkbox" id="admin-remember"> 이 기기에서 기억 (내 휴대폰·PC 에서만 켜세요)</label>
+                <p class="license-status" id="login-status" role="status"></p>
+                <p class="card-note">기억하지 않으면 이 탭을 닫을 때 토큰이 지워집니다. 남의 기기에서는 쓰고 나서 "나가기"를 누르세요.</p>
+            </div>
+        </section>
+
+        <div id="admin-app" hidden>
+            <div class="license-bar">
+                <span id="admin-summary">불러오는 중…</span>
+                <span class="license-actions">
+                    <button type="button" class="btn btn-secondary" id="admin-reload">새로고침</button>
+                    <button type="button" class="btn btn-secondary" id="admin-logout">나가기</button>
+                </span>
+            </div>
+
+            <div class="admin-tabs" role="tablist" aria-label="주문 상태">
+                <button type="button" role="tab" data-status="pending" aria-selected="true">입금 대기</button>
+                <button type="button" role="tab" data-status="paid" aria-selected="false">발급 완료</button>
+                <button type="button" role="tab" data-status="refund_requested" aria-selected="false">환불 요청</button>
+                <button type="button" role="tab" data-status="refunded" aria-selected="false">환불</button>
+                <button type="button" role="tab" data-status="cancelled" aria-selected="false">취소</button>
+                <button type="button" role="tab" data-status="all" aria-selected="false">전체</button>
+            </div>
+            <p class="license-status" id="admin-status" role="status" aria-live="polite"></p>
+            <div class="admin-list" id="order-list"></div>
+
+            <section class="card hook-card" aria-labelledby="hook-t">
+                <h2 class="card-title" id="hook-t"><span>입금 알림 연결 (자동 입금 확인)</span><small>한 번만 설정</small></h2>
+                <div class="card-body">
+                    <p class="license-status" id="hook-state" role="status"></p>
+                    <p class="card-note">휴대폰이 은행 입금 알림을 받으면 그 내용을 아래 주소로 그대로 넘겨주게 해 두면, 서버가 금액으로 주문을 찾아 <b>새벽에도 바로</b> 키를 발급합니다. 휴대폰은 켜져 있고 인터넷만 되면 됩니다.</p>
+                    <dl class="ob-bank">
+                        <div class="ob-row"><dt>보낼 주소</dt><dd><code id="hook-url"></code> <button type="button" class="btn btn-secondary btn-mini" id="hook-copy-url">복사</button></dd></div>
+                        <div class="ob-row"><dt>머리글</dt><dd><code>Authorization: Bearer (열쇠)</code></dd></div>
+                        <div class="ob-row"><dt>열쇠</dt><dd><button type="button" class="btn btn-secondary btn-mini" id="hook-copy-secret">열쇠 복사</button> <button type="button" class="btn btn-secondary btn-mini" id="hook-show-secret">보기</button></dd></div>
+                        <div class="ob-row" id="hook-secret-row" hidden><dt></dt><dd><code id="hook-secret"></code></dd></div>
+                    </dl>
+                    <details class="hook-guide">
+                        <summary>안드로이드 (MacroDroid, 무료)</summary>
+                        <ol>
+                            <li>Play 스토어에서 <b>MacroDroid</b> 설치 → 알림 접근 권한 허용, 배터리 최적화에서 제외</li>
+                            <li>매크로 추가 → 트리거: <b>알림 → 알림 수신</b> → 앱: <b>우리WON뱅킹</b>(입금 알림이 오는 앱), 내용에 <b>입금</b> 포함</li>
+                            <li>동작: <b>웹 → HTTP 요청</b> → 방법 POST, URL 은 위 "보낼 주소", 머리글 <code>Authorization</code> 에 <code>Bearer 열쇠</code>, 본문(text/plain)에는 매직 텍스트에서 <b>알림 제목</b>과 <b>알림 텍스트</b>를 넣기</li>
+                            <li>매크로 하나 더: 트리거 <b>날짜/시간 → 정기적 간격 6시간</b>, 동작은 같은 HTTP 요청에 본문만 <code>ping</code></li>
+                        </ol>
+                    </details>
+                    <details class="hook-guide">
+                        <summary>아이폰 (단축어 + 은행 입출금 문자 알림)</summary>
+                        <ol>
+                            <li>은행 앱에서 <b>입출금 문자(SMS) 알림</b> 신청 — 아이폰은 앱 푸시를 넘길 수 없어 문자를 씁니다</li>
+                            <li>단축어 앱 → 자동화 → 새로 만들기 → <b>메시지</b> → 보낸 사람: 은행 번호, 메시지에 <b>입금</b> 포함 → <b>즉시 실행</b></li>
+                            <li>동작: <b>URL 콘텐츠 가져오기</b> → 위 주소, 방법 POST, 헤더 <code>Authorization</code> = <code>Bearer 열쇠</code>, 요청 본문 <b>JSON</b> → 키 <code>text</code> = <b>단축어 입력</b>(받은 메시지)</li>
+                            <li>자동화 하나 더: <b>시간</b> → 매일 여러 번(예: 0·6·12·18시) → 같은 동작에 <code>text</code> 값만 <code>ping</code></li>
+                        </ol>
+                    </details>
+                    <p class="card-note">설정 뒤 1~2분 안에 위 상태가 "연결됨"으로 바뀌면 끝입니다. 끊기면(13시간 신호 없음) 텔레그램으로 알려 드리고, 그동안 구매 화면은 "판매자 확인 뒤 열림"으로 바뀝니다. 다른 입금(월급 등)도 넘어오지만 이용권 금액이 아니면 무시합니다 — 가능하면 판매 전용 계좌를 쓰세요.</p>
+                </div>
+            </section>
+
+            <div class="admin-tools">
+                <section class="card" aria-labelledby="issue-t">
+                    <h2 class="card-title" id="issue-t"><span>키 직접 발급</span><small>다른 곳에서 판 경우, 보상, 테스트</small></h2>
+                    <div class="card-body">
+                        <form class="admin-form" id="issue-form">
+                            <label>종류
+                                <select id="issue-plan">
+                                    <option value="week">1주 이용권</option>
+                                    <option value="month" selected>1개월 이용권</option>
+                                    <option value="lifetime">평생 이용권</option>
+                                    <option value="custom">기간 직접 입력</option>
+                                </select>
+                            </label>
+                            <label id="issue-days-wrap" hidden>기간(일, 0 = 제한 없음) <input type="number" id="issue-days" min="0" max="3650" value="3"></label>
+                            <label>받는 사람 (선택) <input type="text" id="issue-name" maxlength="20"></label>
+                            <label>메모 (선택) <input type="text" id="issue-note" maxlength="200"></label>
+                            <button type="submit" class="btn">발급</button>
+                        </form>
+                        <div id="issue-result" class="admin-key" hidden></div>
+                    </div>
+                </section>
+
+                <section class="card" aria-labelledby="revoke-t">
+                    <h2 class="card-title" id="revoke-t"><span>키 정지 · 정지 해제</span></h2>
+                    <div class="card-body">
+                        <form class="admin-form" id="revoke-form">
+                            <label>키 전체 또는 키 번호 8자리 <input type="text" id="revoke-key" maxlength="200" autocomplete="off" spellcheck="false"></label>
+                            <p class="co-actions">
+                                <button type="submit" class="btn">정지</button>
+                                <button type="button" class="btn btn-secondary" id="unrevoke-btn">정지 해제</button>
+                            </p>
+                        </form>
+                        <p class="card-note">정지한 키는 방문자 브라우저가 다음 확인 때(최대 12시간 안) 잠깁니다. 주문으로 판 키는 위 목록의 "환불 처리"를 쓰면 주문 상태도 같이 바뀝니다.</p>
+                    </div>
+                </section>
+
+                <section class="card" aria-labelledby="setup-t">
+                    <h2 class="card-title" id="setup-t"><span>설정 상태</span></h2>
+                    <div class="card-body">
+                        <ul class="admin-checks" id="setup-list"></ul>
+                        <div id="setup-key-box" hidden>
+                            <p class="card-note"><b>처음 한 번:</b> 이용권 키에 서명할 키를 만듭니다. 만든 뒤에는 바꾸지 않습니다 — 바꾸면 이미 판 키가 모두 무효가 됩니다.</p>
+                            <p class="co-actions"><button type="button" class="btn" id="setup-key-btn">서명 키 만들기</button></p>
+                        </div>
+                        <div id="key-tools" hidden>
+                            <p class="card-note">공개키를 <code>js/premium-config.js</code> 의 <code>publicKeyJwk</code> 에 붙여 넣으면 방문자 브라우저가 공개키를 서버에 묻지 않습니다 (선택).</p>
+                            <p class="co-actions">
+                                <button type="button" class="btn btn-secondary" id="copy-pubkey">공개키 복사</button>
+                                <button type="button" class="btn btn-secondary" id="key-backup-btn">서명 키 백업 복사</button>
+                            </p>
+                            <p class="card-note">백업 값은 키를 새로 만들 수 있는 <b>비밀</b>입니다. 비밀번호 관리자나 GitHub Secret <code>LICENSE_PRIVATE_JWK</code> 에만 넣으세요. Cloudflare 저장소(KV)를 잃어도 이 값이 있으면 판매한 키가 살아납니다.</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="js/premium-config.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>
