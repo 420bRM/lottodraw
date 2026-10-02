@@ -398,6 +398,9 @@ details[open] > summary.card-title { padding-bottom: 0; }
 .ob-row dt { color: var(--muted); font-size: 13px; }
 .ob-row dd { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; font-weight: bold; font-variant-numeric: tabular-nums; word-break: break-all; }
 .key-new { margin: 0 0 8px; color: var(--brand); font-weight: bold; }
+.key-new-tip { margin: 0 0 8px; }
+.key-reveal.just-bought { border: 2px solid var(--brand); box-shadow: 0 0 0 4px rgba(0, 48, 135, .08); }
+.key-reveal.just-bought #license-copy { font-size: 1.05em; padding: 12px 22px; }
 .ob-exact { margin: 0; padding: 8px 12px; background: #fff7d6; border-radius: 6px; color: var(--text); font-size: 13px; font-weight: bold; }
 .key-code {
     display: block;

@@ -154,6 +154,8 @@ async function createOrder(request, env, ctx, url) {
     const phone = String(body.phone || '').replace(/\D/g, '');
     if (method === 'bank' && name.length < 2) throw new HttpError(400, 'need_name', '입금자명을 2자 이상 적어 주세요.');
     if (method === 'payapp' && !/^01\d{8,9}$/.test(phone)) throw new HttpError(400, 'need_phone', '휴대폰 번호를 확인해 주세요.');
+    // 연락은 이메일로만 받는다 (키 재발송·문의 기록이 남게). 비워 두는 것은 괜찮다.
+    if (contact && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact)) throw new HttpError(400, 'bad_contact', '이메일 주소를 적어 주세요. 키를 다시 보내 드릴 때만 씁니다.');
 
     // 기한(72시간)이 지난 대기 주문은 세지 않는다. 버려진 주문이 쌓여 가게가 닫히는 일을 막는다.
     const ipTag = (await sha256('ip:' + ip)).slice(0, 12);
@@ -254,7 +256,7 @@ function publicView(order, env) {
         paidAt: order.paidAt || null,
         expiresAt: order.expiresAt || null,
     };
-    if (order.status === 'paid') v.key = order.key;
+    if (order.status === 'paid') { v.key = order.key; v.mailed = !!order.mailedAt; }
     if (order.method === 'bank' && order.status === 'pending' && methodsOf(env).bank) v.bank = bankInfo(env);
     return v;
 }
@@ -562,6 +564,7 @@ async function admin(request, env, sub, method, url) {
                 url: apiOrigin(env, url) + '/api/hooks/deposit',
             },
             notify: { telegram: !!(env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID), url: !!env.NOTIFY_URL },
+            mail: mailReady(env),
         });
     }
     // 서명 키는 사람이 한 번 눌러서 만든다. 저절로 만들면 동시에 두 개가 생겨 한쪽 키가 무효가 될 수 있다.
@@ -662,7 +665,7 @@ async function admin(request, env, sub, method, url) {
         return json(request, env, { unrevoked: id, count: r.ids.length });
     }
 
-    const m = sub.match(/^\/orders\/([0-9A-Z]{8})(?:\/(confirm|cancel|refund|refund-done))?$/);
+    const m = sub.match(/^\/orders\/([0-9A-Z]{8})(?:\/(confirm|cancel|refund|refund-done|mail))?$/);
     if (m) {
         const order = await load(env, m[1]);
         if (!order) throw new HttpError(404, 'no_order', '주문을 찾을 수 없습니다.');
@@ -686,6 +689,13 @@ async function admin(request, env, sub, method, url) {
                 if (!r.ok) throw new HttpError(502, 'payapp_cancel_failed', `페이앱 자동 취소 실패(${r.message}). 페이앱 판매자 화면에서 취소하면 키가 저절로 정지됩니다.`);
             }
             await refund(env, order, 'admin');
+        } else if (action === 'mail') {
+            if (order.status !== 'paid' || !order.key) throw new HttpError(409, 'not_paid', '키가 발급된 주문만 메일로 보낼 수 있습니다.');
+            if (!order.contact) throw new HttpError(409, 'no_contact', '구매자가 이메일을 적지 않은 주문입니다.');
+            if (!mailReady(env)) throw new HttpError(503, 'no_mail', '메일 발송 설정(RESEND_API_KEY · MAIL_FROM)이 없습니다.');
+            const r = await mailKey(env, order);
+            await save(env, order);
+            if (!r.ok) throw new HttpError(502, 'mail_failed', '메일을 보내지 못했습니다: ' + r.message);
         } else if (action === 'refund-done') {
             if (order.status !== 'refund_requested') throw new HttpError(409, 'not_requested', '환불 요청 상태인 주문이 아닙니다.');
             await refund(env, order, 'admin-sent');
@@ -731,7 +741,61 @@ async function confirm(env, order, by) {
     order.log.push({ at: order.paidAt, what: 'paid', by });
     await save(env, order);
     await env.DB.put('keyidx:' + order.keyId, order.id);   // 환불 요청 때 키 → 주문 찾기
+    if (mailReady(env) && order.contact && !order.test) {
+        await mailKey(env, order);   // 실패해도 발급은 그대로다 (관리자 페이지에서 다시 보낼 수 있다)
+        await save(env, order);
+    }
     return order;
+}
+
+/* ───── 키 메일 (Resend) ─────
+ * 비밀값 RESEND_API_KEY 와 MAIL_FROM(예: "lottodraw.kr <key@lottodraw.kr>")이 있으면, 구매자가 이메일을 적은
+ * 주문은 키가 발급되는 즉시 키를 메일로도 보낸다. 다른 기기에서 열거나 브라우저를 지웠을 때 다시 쓰라고.
+ */
+function mailReady(env) {
+    return !!(env.RESEND_API_KEY && env.MAIL_FROM);
+}
+
+const kst = ms => new Date(ms + 9 * 3600 * 1000).toISOString().slice(0, 16).replace('T', ' ') + ' (한국 시간)';
+
+async function mailKey(env, order) {
+    const link = `${siteUrl(env)}/statistics.html#key=${order.key}`;
+    const text = [
+        `lottodraw.kr ${order.planName}을 구매해 주셔서 감사합니다.`,
+        '',
+        `주문번호: ${order.id}`,
+        `이용 기간: ${order.expiresAt ? kst(order.expiresAt) + '까지' : '기간 제한 없음'}`,
+        '',
+        '이용권 키 (5개월 통계 페이지의 "키 입력"에 붙여 넣으세요):',
+        order.key,
+        '',
+        '아래 링크를 열면 이 기기에서 바로 열립니다:',
+        link,
+        '',
+        '키는 본인만 쓰고 공유하지 마세요. 공유된 키는 정지될 수 있습니다.',
+        `문의: ${siteUrl(env)}/contact.html (이 메일에 답장하지 말고 contact@lottodraw.kr 로 보내 주세요)`,
+    ].join('\n');
+    let result;
+    try {
+        const res = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: { Authorization: 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                from: env.MAIL_FROM,
+                to: [order.contact],
+                reply_to: 'contact@lottodraw.kr',
+                subject: `[lottodraw.kr] ${order.planName} 키 (주문 ${order.id})`,
+                text,
+            }),
+        });
+        result = res.ok ? { ok: true } : { ok: false, message: `메일 서버 응답 ${res.status}` };
+    } catch (e) {
+        result = { ok: false, message: '메일 서버 연결 실패' };
+    }
+    const now = Date.now();
+    if (result.ok) order.mailedAt = now;
+    order.log.push({ at: now, what: result.ok ? 'mailed' : 'mail_failed', by: result.ok ? '' : result.message });
+    return result;
 }
 
 async function refund(env, order, by) {
