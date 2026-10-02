@@ -405,60 +405,12 @@
     function unlock(record, justBought) {
         $('paywall').hidden = true;
         $('premium').hidden = false;
-        unlockedRecord = record;
         $('license-summary').textContent = L.summary(record);
         $('license-code').textContent = record.key;
         $('license-new').hidden = !justBought;
         if (justBought) showKey(true);
         loadWindowStats();
         if (justBought) window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    /* ───── 환불 요청 ───── */
-
-    const REFUND_HOURS = { week: 24, month: 168, lifetime: 168 };   // 이용약관 4조 (서버가 다시 확인한다)
-    let unlockedRecord = null;
-
-    function refundDeadline(record) {
-        const h = REFUND_HOURS[record && record.planId];
-        if (!h || !record.issuedAt) return null;
-        return Date.parse(record.issuedAt) + h * 3600 * 1000;
-    }
-
-    function openRefund() {
-        const box = $('refund-box');
-        const open = box.hidden;
-        box.hidden = !open;
-        $('refund-open').setAttribute('aria-expanded', String(open));
-        if (!open) return;
-        const until = refundDeadline(unlockedRecord);
-        const ok = until && until > Date.now();
-        $('refund-window').textContent = ok ? T('rf.until', { date: fmtTime(until) }) : T('rf.closed');
-        $('refund-form').hidden = !ok;
-        setStatus('refund-status', '');
-    }
-
-    async function submitRefund(e) {
-        e.preventDefault();
-        if (!$('refund-agree').checked) return setStatus('refund-status', T('rf.needAgree'), true);
-        const btn = $('refund-submit');
-        btn.disabled = true;
-        setStatus('refund-status', T('pay.checking'));
-        try {
-            const key = $('license-code').textContent;
-            const r = await call('/api/refunds', { method: 'POST', body: { key, account: $('refund-account').value.trim() } });
-            L.forget(true);
-            store.del(PURCHASED_STORE);
-            $('license-key').value = '';
-            $('refund-box').hidden = true;
-            showKey(false);
-            lock(r.status === 'refunded' ? T('rf.doneCard') : T('rf.doneBank', { amount: won(r.amount) }));
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        } catch (err) {
-            setStatus('refund-status', errText(err), true);
-        } finally {
-            btn.disabled = false;
-        }
     }
 
     function showKey(open) {
@@ -544,8 +496,6 @@
         });
         $('license-show').addEventListener('click', () => showKey($('license-reveal').hidden));
         $('license-copy').addEventListener('click', e => copy($('license-code').textContent, e.currentTarget));
-        $('refund-open').addEventListener('click', openRefund);
-        $('refund-form').addEventListener('submit', submitRefund);
         $('license-copy-link').addEventListener('click', e => copy(
             location.origin + location.pathname + '#key=' + $('license-code').textContent, e.currentTarget));
 

@@ -399,8 +399,6 @@ details[open] > summary.card-title { padding-bottom: 0; }
 .ob-row dd { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; font-weight: bold; font-variant-numeric: tabular-nums; word-break: break-all; }
 .key-new { margin: 0 0 8px; color: var(--brand); font-weight: bold; }
 .ob-exact { margin: 0; padding: 8px 12px; background: #fff7d6; border-radius: 6px; color: var(--text); font-size: 13px; font-weight: bold; }
-.refund-box { display: grid; gap: 10px; margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--line); }
-.refund-box .ob-lead { margin: 0; }
 .key-code {
     display: block;
     margin: 0 0 10px;

@@ -1,4 +1,4 @@
-// 실서버 자동 점검: 주문 → 입금 알림 → 키 발급 → 브라우저 확인 → 환불 요청 → 키 정지 → 뒷정리
+// 실서버 자동 점검: 주문 → 입금 알림 → 키 발급 → 브라우저 확인 → 관리자 환불 처리 → 키 정지 → 뒷정리
 // 사람 대신 이 스크립트가 배포할 때마다, 그리고 매일 아침 한 번 돈다 (.github/workflows/deploy-worker.yml).
 // 돈은 오가지 않는다. 점검용 주문은 판매자 알림을 보내지 않고, 끝나면 흔적 없이 지운다.
 //
@@ -97,8 +97,11 @@ async function main() {
         let v = await L.validate(key);
         step(v.ok === true, `브라우저에서 키 확인 → 잠금 해제 (${v.plan || v.reason})`);
 
-        const ref = await call('POST', '/api/refunds', { body: { key, account: '자동점검 (송금 불필요)' } });
-        step(ref.data && ref.data.status === 'refund_requested', '환불 요청 접수');
+        // 셀프 환불은 없다(이용약관 4조): 구매자 요청은 키를 건드리지 않고 문의로 안내한다
+        const self = await call('POST', '/api/refunds', { body: { key, account: '자동점검' } });
+        step(self.status === 410, '구매자 셀프 환불 막힘 (문의로 안내)');
+        const ref = await call('POST', `/api/admin/orders/${order.id}/refund`, { headers: asAdmin });
+        step(ref.data && ref.data.order && ref.data.order.status === 'refunded', '관리자 환불 처리');
 
         L = browserLicense();   // 정지 목록을 새로 받는 새 브라우저
         v = await L.validate(key);

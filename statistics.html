@@ -137,7 +137,7 @@
                         <label for="co-contact"><span data-i18n="co.contact">연락처</span> <small data-i18n="co.optional">(선택)</small></label>
                         <input type="text" id="co-contact" maxlength="100" autocomplete="email" placeholder="키를 잃어버렸을 때 다시 보내 드릴 이메일" data-i18n-attr="placeholder:co.contactPh">
                     </div>
-                    <label class="co-agree"><input type="checkbox" id="co-agree"> <span data-i18n-html="co.agree">이용권은 키를 받는 즉시 제공되는 디지털콘텐츠입니다. <a href="terms.html#refund" target="_blank">환불 기준</a>을 확인했으며, 키를 받은 뒤에는 청약철회가 제한될 수 있음에 동의합니다.</span></label>
+                    <label class="co-agree"><input type="checkbox" id="co-agree"> <span data-i18n-html="co.agree">이용권은 키를 받는 즉시 제공되는 디지털콘텐츠입니다. <a href="terms.html#refund" target="_blank">환불 기준</a>을 확인했으며, 키를 받은 뒤에는 단순 변심으로 환불되지 않음에 동의합니다.</span></label>
                     <p class="license-status" id="co-status" role="status" aria-live="polite"></p>
                     <div class="co-actions">
                         <button type="submit" class="btn" id="co-submit" data-i18n="co.submit">주문하기</button>
@@ -204,22 +204,9 @@
                 <p class="co-actions">
                     <button type="button" class="btn" id="license-copy" data-i18n="kr.copy">키 복사</button>
                     <button type="button" class="btn btn-secondary" id="license-copy-link" data-i18n="kr.copyLink">다른 기기용 링크 복사</button>
-                    <button type="button" class="btn btn-secondary" id="refund-open" aria-expanded="false" aria-controls="refund-box" data-i18n="rf.open">환불 요청</button>
+                    <a class="btn btn-secondary" href="contact.html" data-i18n="rf.open">환불 문의</a>
                 </p>
                 <p class="card-note" data-i18n="kr.note">다른 기기나 브라우저에서는 이 키를 붙여 넣거나, 링크를 열면 바로 열립니다. 키는 본인만 쓰고 공유하지 마세요 — 공유된 키는 정지될 수 있습니다.</p>
-                <div class="refund-box" id="refund-box" hidden>
-                    <p class="ob-lead" data-i18n="rf.h">환불 요청</p>
-                    <p class="card-note" id="refund-window"></p>
-                    <form class="order-form" id="refund-form" novalidate>
-                        <div class="co-field">
-                            <label for="refund-account" data-i18n="rf.account">돌려받을 계좌</label>
-                            <input type="text" id="refund-account" maxlength="100" autocomplete="off" placeholder="은행 · 계좌번호 · 예금주 (카드 결제였다면 비워 두세요)" data-i18n-attr="placeholder:rf.accountPh">
-                        </div>
-                        <label class="co-agree"><input type="checkbox" id="refund-agree"> <span data-i18n="rf.agree">환불을 요청하면 이 키는 바로 정지되고 다시 쓸 수 없습니다.</span></label>
-                        <p class="license-status" id="refund-status" role="status" aria-live="polite"></p>
-                        <div class="co-actions"><button type="submit" class="btn" id="refund-submit" data-i18n="rf.submit">환불 요청하기</button></div>
-                    </form>
-                </div>
             </div>
         </section>
         <div class="stat-grid" id="stat-grid">
