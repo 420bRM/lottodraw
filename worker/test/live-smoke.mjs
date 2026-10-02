@@ -31,6 +31,17 @@ async function call(method, path, { body, headers, raw } = {}) {
 }
 const asAdmin = { Authorization: 'Bearer ' + ADMIN };
 
+// KV 는 방금 쓴 값을 다른 요청에 최대 1분쯤 늦게 보여 줄 수 있다. 구매자 화면도 10초마다 다시 묻듯이
+// 점검도 결과가 보일 때까지 잠깐 기다린다.
+async function waitFor(fn, ms = 120000, every = 5000) {
+    const until = Date.now() + ms;
+    for (;;) {
+        const v = await fn();
+        if (v || Date.now() > until) return v;
+        await new Promise(r => setTimeout(r, every));
+    }
+}
+
 // 브라우저와 같은 코드(js/license.js)로 키를 확인한다
 function browserLicense() {
     const ls = new Map();
@@ -89,9 +100,13 @@ async function main() {
             console.log('  · 입금 알림 연결이 없어 관리자 확인으로 대신했습니다');
         }
 
-        const paid = await call('GET', `/api/orders/${order.id}?token=${encodeURIComponent(token)}`);
-        if (!step(paid.data.order.status === 'paid' && /^LD1-/.test(paid.data.order.key || ''), '구매자 화면에 키 전달')) return;
-        const key = paid.data.order.key;
+        const t0 = Date.now();
+        const key = await waitFor(async () => {
+            const r = await call('GET', `/api/orders/${order.id}?token=${encodeURIComponent(token)}`);
+            const o = r.data && r.data.order;
+            return o && o.status === 'paid' && /^LD1-/.test(o.key || '') ? o.key : null;
+        });
+        if (!step(!!key, `구매자 화면에 키 전달 (${Math.round((Date.now() - t0) / 1000)}초)`)) return;
 
         let L = browserLicense();
         let v = await L.validate(key);
@@ -100,12 +115,18 @@ async function main() {
         // 셀프 환불은 없다(이용약관 4조): 구매자 요청은 키를 건드리지 않고 문의로 안내한다
         const self = await call('POST', '/api/refunds', { body: { key, account: '자동점검' } });
         step(self.status === 410, '구매자 셀프 환불 막힘 (문의로 안내)');
-        const ref = await call('POST', `/api/admin/orders/${order.id}/refund`, { headers: asAdmin });
-        step(ref.data && ref.data.order && ref.data.order.status === 'refunded', '관리자 환불 처리');
+        const ref = await waitFor(async () => {
+            const r = await call('POST', `/api/admin/orders/${order.id}/refund`, { headers: asAdmin });
+            return r.data && r.data.order && r.data.order.status === 'refunded' ? r : null;
+        });
+        step(!!ref, '관리자 환불 처리');
 
-        L = browserLicense();   // 정지 목록을 새로 받는 새 브라우저
-        v = await L.validate(key);
-        step(v.ok === false, `환불한 키는 다시 잠김 (${v.reason || ''})`);
+        const t1 = Date.now();
+        v = await waitFor(async () => {
+            const w = await browserLicense().validate(key);   // 정지 목록을 새로 받는 새 브라우저
+            return w.ok === false ? w : null;
+        });
+        step(!!v, `환불한 키는 다시 잠김 (${v ? v.reason : '아직 열림'}, ${Math.round((Date.now() - t1) / 1000)}초)`);
     } finally {
         if (order) {
             const c = await call('POST', '/api/admin/selftest/cleanup', { headers: asAdmin, body: { id: order.id } });

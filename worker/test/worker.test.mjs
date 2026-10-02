@@ -495,6 +495,10 @@ test('자동 점검 주문: 알림 없이 돌고, 끝나면 흔적 없이 지워
         let r = await call(env, 'POST', '/api/hooks/deposit', { raw: `[자동점검 ${order.id}] 입금 ${order.amount.toLocaleString('ko-KR')}원 자동점검`, headers: { 'Content-Type': 'text/plain', Authorization: 'Bearer hook-secret-0123456789' } });
         assert.equal(r.data.matched, order.id);
         assert.equal(env.DB._m.has('meta:hook'), false, '점검은 휴대폰 연결 신호로 치지 않는다');
+        // 맞추지 못한 점검 알림도 연결 신호로 치지 않는다
+        r = await call(env, 'POST', '/api/hooks/deposit', { raw: `[자동점검 X] 입금 2,801원 자동점검`, headers: { 'Content-Type': 'text/plain', Authorization: 'Bearer hook-secret-0123456789' } });
+        assert.equal(r.data.matched, null);
+        assert.equal(env.DB._m.has('meta:hook'), false);
         const paid = (await call(env, 'GET', `/api/orders/${order.id}?token=${token}`)).data.order;
         r = await call(env, 'POST', `/api/admin/orders/${order.id}/refund`, { headers: asAdmin });
         assert.equal(r.data.order.status, 'refunded');

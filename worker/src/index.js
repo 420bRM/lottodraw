@@ -446,6 +446,8 @@ async function depositHook(request, env, ctx, url) {
             return json(request, env, { matched: order.id });
         }
     }
+    // 자동 점검이 보낸 흉내 알림은 휴대폰 연결 신호로 치지 않는다 (진짜 휴대폰이 없는데 "자동 확인 중"이 되지 않게)
+    if (textBody.indexOf('[자동점검') !== -1) return json(request, env, { matched: null, candidates });
     await touchHook(env, 'deposit');
     // 이용권 가격대의 입금만 알린다. 월급 같은 다른 입금까지 알리면 시끄럽다.
     const prices = Object.values(plansFor(env)).map(p => p.amount);
