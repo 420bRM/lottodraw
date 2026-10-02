@@ -4,7 +4,7 @@ slug: why-people-buy-lotto
 category: 확률 기초
 description: 1천 원의 기대값은 500원인데 매주 수백만 명이 로또를 삽니다. 베르누이의 효용 이론부터 카너먼의 전망 이론까지, 경제학과 심리학이 내놓은 설명을 정리합니다.
 date: 2026-10-01
-pick: 3
+pick: 1
 related: [probability, tax]
 ---
 
