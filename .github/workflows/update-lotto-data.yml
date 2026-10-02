@@ -35,7 +35,7 @@ jobs:
         id: fetch
         run: node tools/update-lotto-data.js
 
-      # 검색엔진이 읽을 정적 통계 페이지(로또 통계 허브 statistics-all.html 포함)·엑셀(CSV)·사이트맵·홈 제목을 새 회차로 다시 쓴다.
+      # 검색엔진이 읽을 정적 통계 페이지·사이트맵·홈 제목을 새 회차로 다시 쓴다.
       # 블로그(blog/)도 여기서 같이 만든다 — 머리글의 최신 회차가 바뀌고, 원고(content/blog/)를
       # 고치고 생성을 잊었다면 이때 반영된다
       - name: 정적 통계 페이지 생성
@@ -47,7 +47,7 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add lotto-data.json lotto-draws.csv index.html tax.html top-prize.html sitemap.xml statistics-*.html draws.html probability.html round/ blog/
+          git add lotto-data.json index.html tax.html top-prize.html sitemap.xml statistics-*.html draws.html probability.html round/ blog/
           git commit -m "chore: 로또 ${{ steps.fetch.outputs.latest }}회차까지 반영"
           git push origin HEAD:html
 

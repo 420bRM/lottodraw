@@ -1,27 +1,24 @@
 <!DOCTYPE html>
-<!-- 이 파일은 tools/build-static-stats.js 가 매주 다시 만든다. 직접 고치면 덮어쓰인다. -->
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- seo:head:start -->
     <title>역대 로또 1등 당첨금 순위 TOP 50 (1인당) | lottodraw.kr</title>
-    <meta name="description" content="로또 6/45 역대 1등 당첨금 1인당 금액 순위 TOP 50과 가장 적었던 10회. 역대 최고는 19회 407억 2,295만 원, 1~1243회 1등 당첨금 합계 약 21조 4,644억 원, 당첨자 1명당 평균 20억 1,185만 원.">
-    <link rel="canonical" href="https://www.lottodraw.kr/top-prize.html">
+    <meta name="description" content="로또 6/45 역대 1등 당첨금 1인당 금액 순위 TOP 50. 역대 최고는 19회 407억 2,295만 원, 1~1243회 1등 평균 당첨금은 26억 5,884만 원.">
     <meta property="og:title" content="역대 로또 1등 당첨금 순위 TOP 50 (1인당) | lottodraw.kr">
-    <meta property="og:description" content="로또 6/45 역대 1등 당첨금 1인당 금액 순위 TOP 50과 가장 적었던 10회. 역대 최고는 19회 407억 2,295만 원, 1~1243회 1등 당첨금 합계 약 21조 4,644억 원, 당첨자 1명당 평균 20억 1,185만 원.">
-    <meta property="og:type" content="article">
-    <meta property="og:url" content="https://www.lottodraw.kr/top-prize.html">
-    <meta property="og:site_name" content="lottodraw.kr">
+    <meta property="og:description" content="로또 6/45 역대 1등 당첨금 1인당 금액 순위 TOP 50. 역대 최고는 19회 407억 2,295만 원, 1~1243회 1등 평균 당첨금은 26억 5,884만 원.">
     <meta property="og:image" content="https://www.lottodraw.kr/img/og-default.png">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="역대 로또 1등 당첨금 순위 TOP 50 (1인당) | lottodraw.kr">
-    <meta name="twitter:description" content="로또 6/45 역대 1등 당첨금 1인당 금액 순위 TOP 50과 가장 적었던 10회. 역대 최고는 19회 407억 2,295만 원, 1~1243회 1등 당첨금 합계 약 21조 4,644억 원, 당첨자 1명당 평균 20억 1,185만 원.">
+    <meta name="twitter:description" content="로또 6/45 역대 1등 당첨금 1인당 금액 순위 TOP 50. 역대 최고는 19회 407억 2,295만 원, 1~1243회 1등 평균 당첨금은 26억 5,884만 원.">
     <meta name="twitter:image" content="https://www.lottodraw.kr/img/og-default.png">
+    <!-- seo:head:end -->
+    <link rel="canonical" href="https://www.lottodraw.kr/top-prize.html">
     <meta name="google-adsense-account" content="ca-pub-9372871176021283">
     <link rel="stylesheet" href="css/site.css">
     <script src="js/i18n-dict.js"></script>
     <script src="js/i18n.js"></script>
-    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Dataset","name":"역대 로또 1등 당첨금 순위 TOP 50 (1인당)","description":"로또 6/45 1~1243회 회차별 1등 1인당 당첨금 순위와 역대 1등 당첨금 합계","url":"https://www.lottodraw.kr/top-prize.html","isAccessibleForFree":true,"dateModified":"2026-09-26","temporalCoverage":"2002-12-07/2026-09-26","creator":{"@type":"Organization","name":"lottodraw.kr","url":"https://www.lottodraw.kr/"},"keywords":["로또 1등 당첨금","로또 역대 최고 당첨금","로또 당첨금 순위","로또 역대 최저 당첨금"]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://www.lottodraw.kr/"},{"@type":"ListItem","position":2,"name":"로또 통계","item":"https://www.lottodraw.kr/statistics-all.html"},{"@type":"ListItem","position":3,"name":"1등 당첨금 TOP 50","item":"https://www.lottodraw.kr/top-prize.html"}]}]}</script>
     <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "91c08d8a39d944e69c10024f2314b955"}'></script><!-- End Cloudflare Web Analytics -->
 </head>
 <body>
@@ -32,7 +29,7 @@
             <span class="brand-tag" data-i18n="brand.tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
         </a>
         <div class="banner-right">
-            <p class="latest-callout" data-i18n-en="Draw 1243: 9 18 24 38 43 44 &lt;span class=&quot;bonus-sep&quot;&gt;+&lt;/span&gt; 35">제1243회 9 18 24 38 43 44 <span class="bonus-sep">+</span> 35</p>
+            <p class="latest-callout" id="latest-callout" data-i18n="header.latestLoading">최신 회차 불러오는 중…</p>
             <a class="sticker" href="statistics.html" data-i18n-html="header.sticker">최근 <b>5개월</b> 통계</a>
             <div class="lang-switch" role="group" aria-label="Language">
                 <button type="button" data-lang-btn="ko">KO</button><button type="button" data-lang-btn="en">EN</button>
@@ -42,8 +39,7 @@
 
     <nav class="nav" aria-label="주 메뉴" data-i18n-attr="aria-label:nav.aria">
         <ul>
-            <li><a href="index.html" data-i18n="nav.index">번호 생성기</a></li>
-            <li><a href="statistics-all.html" data-i18n="nav.stats">로또 통계</a></li>
+            <li><a href="index.html" data-i18n="nav.index">생성기 · 통계</a></li>
             <li><a href="draws.html" data-i18n="nav.draws">당첨번호</a></li>
             <li><a href="statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
             <li><a href="top-prize.html" aria-current="page" data-i18n="nav.topPrize">TOP 50 당첨금</a></li>
@@ -53,127 +49,36 @@
         </ul>
     </nav>
 
-    <main class="prose stat-page">
-        <nav class="breadcrumb" aria-label="현재 위치" data-i18n-attr="aria-label:crumb.aria"><a href="index.html" data-i18n="crumb.home">홈</a> › <a href="statistics-all.html" data-i18n="nav.stats">로또 통계</a> › <span data-i18n-en="Top 50 jackpots">1등 당첨금 TOP 50</span></nav>
-        <h1 data-i18n-en="The 50 Largest First Prizes">역대 로또 1등 당첨금 순위 TOP 50</h1>
-        <p class="stat-scope"><span data-i18n-en="Draws 1–1243 · 2002-12-07 ~ 2026-09-26 · updated automatically after each draw (last update 2026-09-26)">1~1243회 · 2002-12-07 ~ 2026-09-26 · 매주 추첨 후 자동 갱신 (마지막 갱신 2026-09-26)</span></p>
-        <p class="stat-lead"><span data-i18n-en="The largest first prize per winner was &lt;strong&gt;&lt;a href=&quot;round/19.html&quot;&gt;draw 19&lt;/a&gt; (2003-04-12), 40.72 bn KRW&lt;/strong&gt; (1 winner); the smallest was &lt;strong&gt;&lt;a href=&quot;round/546.html&quot;&gt;draw 546&lt;/a&gt; (2013-05-18), 406m KRW&lt;/strong&gt; (30 winners). Across draws 1–1243, 10,669 people won first prize, 2.01 bn KRW each on average.">역대 1인당 1등 당첨금이 가장 컸던 회차는 <strong><a href="round/19.html" data-i18n-en="Draw 19">19회</a>(2003-04-12) 407억 2,295만 원</strong>(당첨자 1명)이고, 가장 적었던 회차는 <strong><a href="round/546.html" data-i18n-en="Draw 546">546회</a>(2013-05-18) 4억 593만 원</strong>(당첨자 30명)입니다. 1~1243회 1등 당첨자는 모두 10,669명, 1명당 평균 20억 1,185만 원을 받았습니다.</span></p>
+    <main class="prose wide">
+        <h1 data-i18n="top.h1">역대 로또 6/45 1등 당첨금 TOP 50</h1>
+        <p class="intro" id="subtitle" aria-live="polite" data-i18n="top.loading">불러오는 중…</p>
 
-<h2 data-i18n-en="Top 50 by prize per winner">1인당 1등 당첨금 TOP 50</h2>
+        <div class="table-scroll">
+            <table class="data-table" id="topPrizeTable">
+                <thead>
+                    <tr>
+                        <th data-i18n="top.th.rank">순위</th>
+                        <th data-i18n="top.th.round">회차</th>
+                        <th data-i18n="top.th.each">1인당 당첨금 (약)</th>
+                        <th data-i18n="top.th.winners">당첨자 수</th>
+                        <th data-i18n="top.th.total">총 1등 당첨금 (정확)</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
 
-<div class="table-scroll">
-<table class="data-table">
-<thead><tr><th scope="col" data-i18n-en="Rank">순위</th><th scope="col" data-i18n-en="Draw">회차</th><th scope="col" data-i18n-en="Date">추첨일</th><th scope="col" data-i18n-en="Winners">1등 당첨자</th><th scope="col" data-i18n-en="Per winner">1인당 당첨금</th><th scope="col" data-i18n-en="After tax (approx.)">세후 (약)</th></tr></thead>
-<tbody>
-<tr><td><span data-i18n-en="#1">1위</span></td><td><a href="round/19.html" data-i18n-en="Draw 19">19회</a></td><td>2003-04-12</td><td><span data-i18n-en="1">1명</span></td><td><strong><span data-i18n-en="40.72 bn KRW">407억 2,295만 원</span></strong></td><td><span data-i18n-en="27.32 bn KRW">273억 1,738만 원</span></td></tr>
-<tr><td><span data-i18n-en="#2">2위</span></td><td><a href="round/25.html" data-i18n-en="Draw 25">25회</a></td><td>2003-05-24</td><td><span data-i18n-en="2">2명</span></td><td><strong><span data-i18n-en="24.23 bn KRW">242억 2,774만 원</span></strong></td><td><span data-i18n-en="16.27 bn KRW">162억 6,558만 원</span></td></tr>
-<tr><td><span data-i18n-en="#3">3위</span></td><td><a href="round/20.html" data-i18n-en="Draw 20">20회</a></td><td>2003-04-19</td><td><span data-i18n-en="1">1명</span></td><td><strong><span data-i18n-en="19.35 bn KRW">193억 5,221만 원</span></strong></td><td><span data-i18n-en="13.00 bn KRW">129억 9,898만 원</span></td></tr>
-<tr><td><span data-i18n-en="#4">4위</span></td><td><a href="round/43.html" data-i18n-en="Draw 43">43회</a></td><td>2003-09-27</td><td><span data-i18n-en="1">1명</span></td><td><strong><span data-i18n-en="17.75 bn KRW">177억 4,963만 원</span></strong></td><td><span data-i18n-en="11.93 bn KRW">119억 2,525만 원</span></td></tr>
-<tr><td><span data-i18n-en="#5">5위</span></td><td><a href="round/15.html" data-i18n-en="Draw 15">15회</a></td><td>2003-03-15</td><td><span data-i18n-en="1">1명</span></td><td><strong><span data-i18n-en="17.01 bn KRW">170억 1,424만 원</span></strong></td><td><span data-i18n-en="11.43 bn KRW">114억 3,254만 원</span></td></tr>
-<tr><td><span data-i18n-en="#6">6위</span></td><td><a href="round/36.html" data-i18n-en="Draw 36">36회</a></td><td>2003-08-09</td><td><span data-i18n-en="1">1명</span></td><td><strong><span data-i18n-en="16.01 bn KRW">160억 1,447만 원</span></strong></td><td><span data-i18n-en="10.76 bn KRW">107억 6,269만 원</span></td></tr>
-<tr><td><span data-i18n-en="#7">7위</span></td><td><a href="round/62.html" data-i18n-en="Draw 62">62회</a></td><td>2004-02-07</td><td><span data-i18n-en="1">1명</span></td><td><strong><span data-i18n-en="15.82 bn KRW">158억 1,728만 원</span></strong></td><td><span data-i18n-en="10.63 bn KRW">106억 3,058만 원</span></td></tr>
-<tr><td><span data-i18n-en="#8">8위</span></td><td><a href="round/33.html" data-i18n-en="Draw 33">33회</a></td><td>2003-07-19</td><td><span data-i18n-en="1">1명</span></td><td><strong><span data-i18n-en="14.90 bn KRW">149억 351만 원</span></strong></td><td><span data-i18n-en="10.02 bn KRW">100억 1,835만 원</span></td></tr>
-<tr><td><span data-i18n-en="#9">9위</span></td><td><a href="round/82.html" data-i18n-en="Draw 82">82회</a></td><td>2004-06-26</td><td><span data-i18n-en="1">1명</span></td><td><strong><span data-i18n-en="14.56 bn KRW">145억 6,249만 원</span></strong></td><td><span data-i18n-en="9.79 bn KRW">97억 8,987만 원</span></td></tr>
-<tr><td><span data-i18n-en="#10">10위</span></td><td><a href="round/86.html" data-i18n-en="Draw 86">86회</a></td><td>2004-07-24</td><td><span data-i18n-en="1">1명</span></td><td><strong><span data-i18n-en="14.25 bn KRW">142억 5,218만 원</span></strong></td><td><span data-i18n-en="9.58 bn KRW">95억 8,196만 원</span></td></tr>
-<tr><td><span data-i18n-en="#11">11위</span></td><td><a href="round/534.html" data-i18n-en="Draw 534">534회</a></td><td>2013-02-23</td><td><span data-i18n-en="1">1명</span></td><td><strong><span data-i18n-en="14.22 bn KRW">142억 1,576만 원</span></strong></td><td><span data-i18n-en="9.56 bn KRW">95억 5,756만 원</span></td></tr>
-<tr><td><span data-i18n-en="#12">12위</span></td><td><a href="round/80.html" data-i18n-en="Draw 80">80회</a></td><td>2004-06-12</td><td><span data-i18n-en="1">1명</span></td><td><strong><span data-i18n-en="13.81 bn KRW">138억 954만 원</span></strong></td><td><span data-i18n-en="9.29 bn KRW">92억 8,539만 원</span></td></tr>
-<tr><td><span data-i18n-en="#13">13위</span></td><td><a href="round/551.html" data-i18n-en="Draw 551">551회</a></td><td>2013-06-22</td><td><span data-i18n-en="1">1명</span></td><td><strong><span data-i18n-en="13.53 bn KRW">135억 2,697만 원</span></strong></td><td><span data-i18n-en="9.10 bn KRW">90억 9,607만 원</span></td></tr>
-<tr><td><span data-i18n-en="#14">14위</span></td><td><a href="round/515.html" data-i18n-en="Draw 515">515회</a></td><td>2012-10-13</td><td><span data-i18n-en="1">1명</span></td><td><strong><span data-i18n-en="13.20 bn KRW">132억 46만 원</span></strong></td><td><span data-i18n-en="8.88 bn KRW">88억 7,731만 원</span></td></tr>
-<tr><td><span data-i18n-en="#15">15위</span></td><td><a href="round/427.html" data-i18n-en="Draw 427">427회</a></td><td>2011-02-05</td><td><span data-i18n-en="1">1명</span></td><td><strong><span data-i18n-en="12.57 bn KRW">125억 7,144만 원</span></strong></td><td><span data-i18n-en="8.46 bn KRW">84억 5,586만 원</span></td></tr>
-<tr><td><span data-i18n-en="#16">16위</span></td><td><a href="round/1018.html" data-i18n-en="Draw 1018">1018회</a></td><td>2022-06-04</td><td><span data-i18n-en="2">2명</span></td><td><strong><span data-i18n-en="12.36 bn KRW">123억 6,174만 원</span></strong></td><td><span data-i18n-en="8.32 bn KRW">83억 1,536만 원</span></td></tr>
-<tr><td><span data-i18n-en="#17">17위</span></td><td><a href="round/414.html" data-i18n-en="Draw 414">414회</a></td><td>2010-11-06</td><td><span data-i18n-en="1">1명</span></td><td><strong><span data-i18n-en="11.70 bn KRW">117억 383만 원</span></strong></td><td><span data-i18n-en="7.87 bn KRW">78억 7,456만 원</span></td></tr>
-<tr><td><span data-i18n-en="#18">18위</span></td><td><a href="round/365.html" data-i18n-en="Draw 365">365회</a></td><td>2009-11-28</td><td><span data-i18n-en="1">1명</span></td><td><strong><span data-i18n-en="10.70 bn KRW">106억 9,771만 원</span></strong></td><td><span data-i18n-en="7.20 bn KRW">72억 47만 원</span></td></tr>
-<tr><td><span data-i18n-en="#19">19위</span></td><td><a href="round/394.html" data-i18n-en="Draw 394">394회</a></td><td>2010-06-19</td><td><span data-i18n-en="1">1명</span></td><td><strong><span data-i18n-en="10.65 bn KRW">106억 5,434만 원</span></strong></td><td><span data-i18n-en="7.17 bn KRW">71억 7,141만 원</span></td></tr>
-<tr><td><span data-i18n-en="#20">20위</span></td><td><a href="round/391.html" data-i18n-en="Draw 391">391회</a></td><td>2010-05-29</td><td><span data-i18n-en="1">1명</span></td><td><strong><span data-i18n-en="10.51 bn KRW">105억 874만 원</span></strong></td><td><span data-i18n-en="7.07 bn KRW">70억 7,386만 원</span></td></tr>
-<tr><td><span data-i18n-en="#21">21위</span></td><td><a href="round/390.html" data-i18n-en="Draw 390">390회</a></td><td>2010-05-22</td><td><span data-i18n-en="1">1명</span></td><td><strong><span data-i18n-en="10.37 bn KRW">103억 7,399만 원</span></strong></td><td><span data-i18n-en="6.98 bn KRW">69억 8,357만 원</span></td></tr>
-<tr><td><span data-i18n-en="#22">22위</span></td><td><a href="round/308.html" data-i18n-en="Draw 308">308회</a></td><td>2008-10-25</td><td><span data-i18n-en="1">1명</span></td><td><strong><span data-i18n-en="10.23 bn KRW">102억 3,287만 원</span></strong></td><td><span data-i18n-en="6.89 bn KRW">68억 8,902만 원</span></td></tr>
-<tr><td><span data-i18n-en="#23">23위</span></td><td><a href="round/275.html" data-i18n-en="Draw 275">275회</a></td><td>2008-03-08</td><td><span data-i18n-en="1">1명</span></td><td><strong><span data-i18n-en="10.04 bn KRW">100억 4,406만 원</span></strong></td><td><span data-i18n-en="6.76 bn KRW">67억 6,252만 원</span></td></tr>
-<tr><td><span data-i18n-en="#24">24위</span></td><td><a href="round/298.html" data-i18n-en="Draw 298">298회</a></td><td>2008-08-16</td><td><span data-i18n-en="1">1명</span></td><td><strong><span data-i18n-en="9.91 bn KRW">99억 977만 원</span></strong></td><td><span data-i18n-en="6.67 bn KRW">66억 7,255만 원</span></td></tr>
-<tr><td><span data-i18n-en="#25">25위</span></td><td><a href="round/254.html" data-i18n-en="Draw 254">254회</a></td><td>2007-10-13</td><td><span data-i18n-en="1">1명</span></td><td><strong><span data-i18n-en="9.74 bn KRW">97억 4,101만 원</span></strong></td><td><span data-i18n-en="6.56 bn KRW">65억 5,948만 원</span></td></tr>
-<tr><td><span data-i18n-en="#26">26위</span></td><td><a href="round/201.html" data-i18n-en="Draw 201">201회</a></td><td>2006-10-07</td><td><span data-i18n-en="1">1명</span></td><td><strong><span data-i18n-en="9.72 bn KRW">97억 1,946만 원</span></strong></td><td><span data-i18n-en="6.55 bn KRW">65억 4,504만 원</span></td></tr>
-<tr><td><span data-i18n-en="#27">27위</span></td><td><a href="round/27.html" data-i18n-en="Draw 27">27회</a></td><td>2003-06-07</td><td><span data-i18n-en="2">2명</span></td><td><strong><span data-i18n-en="9.54 bn KRW">95억 4,398만 원</span></strong></td><td><span data-i18n-en="6.43 bn KRW">64억 2,746만 원</span></td></tr>
-<tr><td><span data-i18n-en="#28">28위</span></td><td><a href="round/14.html" data-i18n-en="Draw 14">14회</a></td><td>2003-03-08</td><td><span data-i18n-en="4">4명</span></td><td><strong><span data-i18n-en="9.38 bn KRW">93억 7,504만 원</span></strong></td><td><span data-i18n-en="6.31 bn KRW">63억 1,428만 원</span></td></tr>
-<tr><td><span data-i18n-en="#29">29위</span></td><td><a href="round/244.html" data-i18n-en="Draw 244">244회</a></td><td>2007-08-04</td><td><span data-i18n-en="1">1명</span></td><td><strong><span data-i18n-en="9.12 bn KRW">91억 2,158만 원</span></strong></td><td><span data-i18n-en="6.14 bn KRW">61억 4,446만 원</span></td></tr>
-<tr><td><span data-i18n-en="#30">30위</span></td><td><a href="round/30.html" data-i18n-en="Draw 30">30회</a></td><td>2003-06-28</td><td><span data-i18n-en="2">2명</span></td><td><strong><span data-i18n-en="8.73 bn KRW">87억 2,855만 원</span></strong></td><td><span data-i18n-en="5.88 bn KRW">58억 8,113만 원</span></td></tr>
-<tr><td><span data-i18n-en="#31">31위</span></td><td><a href="round/45.html" data-i18n-en="Draw 45">45회</a></td><td>2003-10-11</td><td><span data-i18n-en="2">2명</span></td><td><strong><span data-i18n-en="8.36 bn KRW">83억 5,641만 원</span></strong></td><td><span data-i18n-en="5.63 bn KRW">56억 3,180만 원</span></td></tr>
-<tr><td><span data-i18n-en="#32">32위</span></td><td><a href="round/31.html" data-i18n-en="Draw 31">31회</a></td><td>2003-07-05</td><td><span data-i18n-en="2">2명</span></td><td><strong><span data-i18n-en="8.11 bn KRW">81억 667만 원</span></strong></td><td><span data-i18n-en="5.46 bn KRW">54억 6,447만 원</span></td></tr>
-<tr><td><span data-i18n-en="#33">33위</span></td><td><a href="round/63.html" data-i18n-en="Draw 63">63회</a></td><td>2004-02-14</td><td><span data-i18n-en="2">2명</span></td><td><strong><span data-i18n-en="7.92 bn KRW">79억 2,224만 원</span></strong></td><td><span data-i18n-en="5.34 bn KRW">53억 4,090만 원</span></td></tr>
-<tr><td><span data-i18n-en="#34">34위</span></td><td><a href="round/84.html" data-i18n-en="Draw 84">84회</a></td><td>2004-07-10</td><td><span data-i18n-en="2">2명</span></td><td><strong><span data-i18n-en="7.67 bn KRW">76억 6,977만 원</span></strong></td><td><span data-i18n-en="5.17 bn KRW">51억 7,175만 원</span></td></tr>
-<tr><td><span data-i18n-en="#35">35위</span></td><td><a href="round/76.html" data-i18n-en="Draw 76">76회</a></td><td>2004-05-15</td><td><span data-i18n-en="2">2명</span></td><td><strong><span data-i18n-en="7.45 bn KRW">74억 5,102만 원</span></strong></td><td><span data-i18n-en="5.03 bn KRW">50억 2,518만 원</span></td></tr>
-<tr><td><span data-i18n-en="#36">36위</span></td><td><a href="round/656.html" data-i18n-en="Draw 656">656회</a></td><td>2015-06-27</td><td><span data-i18n-en="2">2명</span></td><td><strong><span data-i18n-en="7.33 bn KRW">73억 3,000만 원</span></strong></td><td><span data-i18n-en="4.94 bn KRW">49억 4,410만 원</span></td></tr>
-<tr><td><span data-i18n-en="#37">37위</span></td><td><a href="round/55.html" data-i18n-en="Draw 55">55회</a></td><td>2003-12-20</td><td><span data-i18n-en="2">2명</span></td><td><strong><span data-i18n-en="7.09 bn KRW">70억 8,879만 원</span></strong></td><td><span data-i18n-en="4.78 bn KRW">47억 8,249만 원</span></td></tr>
-<tr><td><span data-i18n-en="#38">38위</span></td><td><a href="round/83.html" data-i18n-en="Draw 83">83회</a></td><td>2004-07-03</td><td><span data-i18n-en="2">2명</span></td><td><strong><span data-i18n-en="7.09 bn KRW">70억 8,694만 원</span></strong></td><td><span data-i18n-en="4.78 bn KRW">47억 8,125만 원</span></td></tr>
-<tr><td><span data-i18n-en="#39">39위</span></td><td><a href="round/574.html" data-i18n-en="Draw 574">574회</a></td><td>2013-11-30</td><td><span data-i18n-en="2">2명</span></td><td><strong><span data-i18n-en="6.97 bn KRW">69억 6,518만 원</span></strong></td><td><span data-i18n-en="4.70 bn KRW">46억 9,967만 원</span></td></tr>
-<tr><td><span data-i18n-en="#40">40위</span></td><td><a href="round/42.html" data-i18n-en="Draw 42">42회</a></td><td>2003-09-20</td><td><span data-i18n-en="6">6명</span></td><td><strong><span data-i18n-en="6.90 bn KRW">68억 9,928만 원</span></strong></td><td><span data-i18n-en="4.66 bn KRW">46억 5,551만 원</span></td></tr>
-<tr><td><span data-i18n-en="#41">41위</span></td><td><a href="round/121.html" data-i18n-en="Draw 121">121회</a></td><td>2005-03-26</td><td><span data-i18n-en="2">2명</span></td><td><strong><span data-i18n-en="6.84 bn KRW">68억 3,964만 원</span></strong></td><td><span data-i18n-en="4.62 bn KRW">46억 1,556만 원</span></td></tr>
-<tr><td><span data-i18n-en="#42">42위</span></td><td><a href="round/554.html" data-i18n-en="Draw 554">554회</a></td><td>2013-07-13</td><td><span data-i18n-en="2">2명</span></td><td><strong><span data-i18n-en="6.81 bn KRW">68억 1,389만 원</span></strong></td><td><span data-i18n-en="4.60 bn KRW">45억 9,830만 원</span></td></tr>
-<tr><td><span data-i18n-en="#43">43위</span></td><td><a href="round/165.html" data-i18n-en="Draw 165">165회</a></td><td>2006-01-28</td><td><span data-i18n-en="2">2명</span></td><td><strong><span data-i18n-en="6.77 bn KRW">67억 6,742만 원</span></strong></td><td><span data-i18n-en="4.57 bn KRW">45억 6,717만 원</span></td></tr>
-<tr><td><span data-i18n-en="#44">44위</span></td><td><a href="round/107.html" data-i18n-en="Draw 107">107회</a></td><td>2004-12-18</td><td><span data-i18n-en="2">2명</span></td><td><strong><span data-i18n-en="6.68 bn KRW">66억 7,992만 원</span></strong></td><td><span data-i18n-en="4.51 bn KRW">45억 855만 원</span></td></tr>
-<tr><td><span data-i18n-en="#45">45위</span></td><td><a href="round/104.html" data-i18n-en="Draw 104">104회</a></td><td>2004-11-27</td><td><span data-i18n-en="2">2명</span></td><td><strong><span data-i18n-en="6.61 bn KRW">66억 1,074만 원</span></strong></td><td><span data-i18n-en="4.46 bn KRW">44억 6,219만 원</span></td></tr>
-<tr><td><span data-i18n-en="#46">46위</span></td><td><a href="round/6.html" data-i18n-en="Draw 6">6회</a></td><td>2003-01-11</td><td><span data-i18n-en="1">1명</span></td><td><strong><span data-i18n-en="6.57 bn KRW">65억 7,445만 원</span></strong></td><td><span data-i18n-en="4.44 bn KRW">44억 3,788만 원</span></td></tr>
-<tr><td><span data-i18n-en="#47">47위</span></td><td><a href="round/10.html" data-i18n-en="Draw 10">10회</a></td><td>2003-02-08</td><td><span data-i18n-en="13">13명</span></td><td><strong><span data-i18n-en="6.43 bn KRW">64억 3,043만 원</span></strong></td><td><span data-i18n-en="4.34 bn KRW">43억 4,139만 원</span></td></tr>
-<tr><td><span data-i18n-en="#48">48위</span></td><td><a href="round/609.html" data-i18n-en="Draw 609">609회</a></td><td>2014-08-02</td><td><span data-i18n-en="2">2명</span></td><td><strong><span data-i18n-en="6.34 bn KRW">63억 3,931만 원</span></strong></td><td><span data-i18n-en="4.28 bn KRW">42억 8,033만 원</span></td></tr>
-<tr><td><span data-i18n-en="#49">49위</span></td><td><a href="round/778.html" data-i18n-en="Draw 778">778회</a></td><td>2017-10-28</td><td><span data-i18n-en="3">3명</span></td><td><strong><span data-i18n-en="6.26 bn KRW">62억 6,406만 원</span></strong></td><td><span data-i18n-en="4.23 bn KRW">42억 2,992만 원</span></td></tr>
-<tr><td><span data-i18n-en="#50">50위</span></td><td><a href="round/1025.html" data-i18n-en="Draw 1025">1025회</a></td><td>2022-07-23</td><td><span data-i18n-en="4">4명</span></td><td><strong><span data-i18n-en="6.12 bn KRW">61억 1,885만 원</span></strong></td><td><span data-i18n-en="4.13 bn KRW">41억 3,263만 원</span></td></tr>
-</tbody>
-</table>
-</div>
+        <p class="note" data-i18n-html="top.note">
+            * 1인당 당첨금은 가독성을 위해 “억 원” 단위로 표시합니다.<br>
+            * 총 1등 당첨금은 1원 단위까지 정확한 금액입니다.
+        </p>
 
-<p data-i18n-en="16 of the top 50 come from 2002–2003, when a single game cost 2,000 KRW. The largest prize of the past year (52 draws) was &lt;a href=&quot;round/1208.html&quot;&gt;draw 1208&lt;/a&gt;, 5.00 bn KRW, ranked #86 of all time.">TOP 50 가운데 16개가 2002~2003년 회차입니다. 2004년 이전에는 한 게임이 2,000원이었습니다. 최근 1년(52회) 가운데 가장 큰 금액은 <a href="round/1208.html" data-i18n-en="Draw 1208">1208회</a> 50억 171만 원으로 역대 86위입니다.</p>
-
-<p class="note" data-i18n-en="After-tax figures are estimates at today's rates: the 1,000 KRW ticket price is deducted, then 22% is applied up to 300m KRW and 33% to anything above (older draws were taxed under the rules of their day). Try other amounts in &lt;a href=&quot;tax.html&quot;&gt;the after-tax calculator&lt;/a&gt;.">세후 금액은 지금 세율로 계산한 추정치입니다. 구입비 1,000원을 뺀 뒤 3억 원까지 22%, 초과분 33%를 적용했습니다(옛 회차는 당시 세율과 다를 수 있습니다). <a href="tax.html">실수령액 계산기</a>에서 금액을 바꿔 계산해 볼 수 있습니다.</p>
-
-<h2 data-i18n-en="The 10 smallest first prizes per winner">1인당 1등 당첨금이 가장 적었던 10회</h2>
-
-<div class="table-scroll">
-<table class="data-table">
-<thead><tr><th scope="col" data-i18n-en="Rank">순위</th><th scope="col" data-i18n-en="Draw">회차</th><th scope="col" data-i18n-en="Date">추첨일</th><th scope="col" data-i18n-en="Winners">1등 당첨자</th><th scope="col" data-i18n-en="Per winner">1인당 당첨금</th><th scope="col" data-i18n-en="After tax (approx.)">세후 (약)</th></tr></thead>
-<tbody>
-<tr><td><span data-i18n-en="#1">1위</span></td><td><a href="round/546.html" data-i18n-en="Draw 546">546회</a></td><td>2013-05-18</td><td><span data-i18n-en="30">30명</span></td><td><strong><span data-i18n-en="406m KRW">4억 593만 원</span></strong></td><td><span data-i18n-en="305m KRW">3억 498만 원</span></td></tr>
-<tr><td><span data-i18n-en="#2">2위</span></td><td><a href="round/1128.html" data-i18n-en="Draw 1128">1128회</a></td><td>2024-07-13</td><td><span data-i18n-en="63">63명</span></td><td><strong><span data-i18n-en="420m KRW">4억 1,992만 원</span></strong></td><td><span data-i18n-en="314m KRW">3억 1,435만 원</span></td></tr>
-<tr><td><span data-i18n-en="#3">3위</span></td><td><a href="round/1019.html" data-i18n-en="Draw 1019">1019회</a></td><td>2022-06-11</td><td><span data-i18n-en="50">50명</span></td><td><strong><span data-i18n-en="439m KRW">4억 3,856만 원</span></strong></td><td><span data-i18n-en="327m KRW">3억 2,683만 원</span></td></tr>
-<tr><td><span data-i18n-en="#4">4위</span></td><td><a href="round/381.html" data-i18n-en="Draw 381">381회</a></td><td>2010-03-20</td><td><span data-i18n-en="19">19명</span></td><td><strong><span data-i18n-en="566m KRW">5억 6,573만 원</span></strong></td><td><span data-i18n-en="412m KRW">4억 1,204만 원</span></td></tr>
-<tr><td><span data-i18n-en="#5">5위</span></td><td><a href="round/312.html" data-i18n-en="Draw 312">312회</a></td><td>2008-11-22</td><td><span data-i18n-en="15">15명</span></td><td><strong><span data-i18n-en="629m KRW">6억 2,901만 원</span></strong></td><td><span data-i18n-en="454m KRW">4억 5,444만 원</span></td></tr>
-<tr><td><span data-i18n-en="#6">6위</span></td><td><a href="round/292.html" data-i18n-en="Draw 292">292회</a></td><td>2008-07-05</td><td><span data-i18n-en="14">14명</span></td><td><strong><span data-i18n-en="720m KRW">7억 2,037만 원</span></strong></td><td><span data-i18n-en="516m KRW">5억 1,565만 원</span></td></tr>
-<tr><td><span data-i18n-en="#7">7위</span></td><td><a href="round/196.html" data-i18n-en="Draw 196">196회</a></td><td>2006-09-02</td><td><span data-i18n-en="15">15명</span></td><td><strong><span data-i18n-en="728m KRW">7억 2,787만 원</span></strong></td><td><span data-i18n-en="521m KRW">5억 2,067만 원</span></td></tr>
-<tr><td><span data-i18n-en="#8">8위</span></td><td><a href="round/757.html" data-i18n-en="Draw 757">757회</a></td><td>2017-06-03</td><td><span data-i18n-en="21">21명</span></td><td><strong><span data-i18n-en="740m KRW">7억 3,983만 원</span></strong></td><td><span data-i18n-en="529m KRW">5억 2,869만 원</span></td></tr>
-<tr><td><span data-i18n-en="#9">9위</span></td><td><a href="round/745.html" data-i18n-en="Draw 745">745회</a></td><td>2017-03-11</td><td><span data-i18n-en="20">20명</span></td><td><strong><span data-i18n-en="747m KRW">7억 4,682만 원</span></strong></td><td><span data-i18n-en="533m KRW">5억 3,337만 원</span></td></tr>
-<tr><td><span data-i18n-en="#10">10위</span></td><td><a href="round/21.html" data-i18n-en="Draw 21">21회</a></td><td>2003-04-26</td><td><span data-i18n-en="23">23명</span></td><td><strong><span data-i18n-en="797m KRW">7억 9,747만 원</span></strong></td><td><span data-i18n-en="567m KRW">5억 6,730만 원</span></td></tr>
-</tbody>
-</table>
-</div>
-
-<p data-i18n-en="The smallest payouts usually come from draws with many winners, because a draw's first-prize pool is divided among them. See &lt;a href=&quot;statistics-prize.html&quot;&gt;first-prize winners per draw&lt;/a&gt; for the full distribution.">1인당 금액이 작은 회차는 대개 당첨자가 많았던 회차입니다. 한 회차의 1등 몫을 당첨자 수로 나누기 때문입니다. 당첨자 수 분포는 <a href="statistics-prize.html">1등 당첨자 수 통계</a>에 있습니다.</p>
-
-<h2 data-i18n-en="First-prize money in total">역대 1등 당첨금 합계</h2>
-
-<div class="table-scroll">
-<table class="data-table kv-table">
-<thead><tr><th scope="col" data-i18n-en="Measure">항목</th><th scope="col" data-i18n-en="Value">값</th></tr></thead>
-<tbody>
-<tr><td><span data-i18n-en="First-prize winners in total">1등 당첨자 합계</span></td><td><span data-i18n-en="10,669">10,669명</span></td></tr>
-<tr><td><span data-i18n-en="First-prize money in total">1등 당첨금 합계</span></td><td><span data-i18n-en="about 21.46 tn KRW">약 21조 4,644억 원</span></td></tr>
-<tr><td><span data-i18n-en="Average per winner (total ÷ winners)">당첨자 1명당 평균 (합계 ÷ 당첨자 수)</span></td><td><span data-i18n-en="2.01 bn KRW">20억 1,185만 원</span></td></tr>
-<tr><td><span data-i18n-en="Average of the per-winner amount across draws">회차별 1인당 당첨금의 평균</span></td><td><span data-i18n-en="2.66 bn KRW">26억 5,884만 원</span></td></tr>
-<tr><td><span data-i18n-en="Draws with no winner (rolled over)">1등이 없어 이월된 회차</span></td><td><span data-i18n-en="14">14회</span></td></tr>
-</tbody>
-</table>
-</div>
-
-<p class="note" data-i18n-en="The total multiplies each draw's per-winner prize by its number of winners. Per-winner amounts are published rounded down to the won, so the sum can differ from the true total by a few won.">합계는 회차마다 1인당 당첨금에 당첨자 수를 곱해 더한 값입니다. 1인당 금액이 원 단위로 내림되어 발표되므로 실제 총액과 몇 원 차이가 날 수 있습니다.</p>
-
-<h2 data-i18n-en="Further reading">이 통계와 이어지는 글</h2>
-<ul><li><a href="blog/how-to-claim-first-prize.html" data-i18n-en="How do you actually claim a 1st prize?">1등에 당첨되면 실제로 어떻게 수령하나</a></li><li><a href="blog/how-prize-pool-works.html" data-i18n-en="How is the lotto prize decided? Sales, allocation rates and rollovers">로또 당첨금은 어떻게 정해지나 — 판매액·배분 비율·이월</a></li></ul>
-
-<p><span data-i18n-en="See also:">함께 보기:</span> <a href="statistics-all.html" data-i18n-en="All lotto statistics on one page">로또 통계 한눈에 보기</a> · <a href="draws.html" data-i18n-en="All winning numbers by draw">회차별 당첨번호 전체 조회</a> · <a href="tax.html" data-i18n-en="After-tax calculator">실수령액 계산기</a></p>
-
-        <p class="page-disclaimer" data-i18n="disclaimer.page">지난 추첨 기록을 정리한 것이며 다음 회차를 예측하지 않습니다. 어떤 6개를 고르든 1등 확률은 1/8,145,060으로 같습니다. 당첨번호 출처: 동행복권.</p>
+        <p class="page-actions"><a class="btn" href="index.html" data-i18n="top.back">번호 생성하러 돌아가기</a></p>
     </main>
 
     <footer class="footer">
         <ul class="footer-nav">
             <li><a href="index.html" data-i18n="footer.home">HOME</a></li>
-            <li><a href="statistics-all.html" data-i18n="nav.stats">로또 통계</a></li>
             <li><a href="draws.html" data-i18n="nav.draws">당첨번호</a></li>
             <li><a href="statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
             <li><a href="top-prize.html" data-i18n="footer.top">TOP 50</a></li>
@@ -185,6 +90,52 @@
         <p data-i18n-html="footer.copy">&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권</p>
     </footer>
 </div>
+
+<script src="js/site-header.js"></script>
+<script>
+    const subtitle = document.getElementById('subtitle');
+
+    SiteHeader.loadData()
+        .then(data => {
+            const totalRounds = data.draws.length;
+            subtitle.innerHTML =
+                I18N.lang === 'ko'
+                    ? `(1인당 실수령액 기준 / 최신 <strong>${totalRounds}</strong>회차까지 자동 업데이트)`
+                    : `(amount per winner / updated automatically through draw <strong>${totalRounds}</strong>)`;
+
+            const sorted = [...data.draws]
+                .sort((a, b) => b.firstPrizeAmount - a.firstPrizeAmount)
+                .slice(0, 50);
+
+            const tbody = document.querySelector('#topPrizeTable tbody');
+            tbody.innerHTML = '';
+
+            sorted.forEach((draw, index) => {
+                const onePerson = draw.firstPrizeAmount;
+                const winners = draw.firstPrizeWinners || 1;
+                const totalPrize = onePerson * winners;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${index + 1}</strong></td>
+                    <td>${I18N.lang === 'ko' ? draw.round + '회' : '#' + draw.round}</td>
+                    <td>${I18N.lang === 'ko'
+                        ? (onePerson / 100000000).toFixed(0) + '억 원'
+                        : onePerson >= 1e9
+                            ? (onePerson / 1e9).toFixed(2) + ' bn KRW'
+                            : Math.round(onePerson / 1e6) + 'm KRW'}</td>
+                    <td>${winners}${I18N.t('top.people')}</td>
+                    <td style="font-weight:bold;">${totalPrize.toLocaleString()} ${I18N.t('tax.won')}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        })
+        .catch(err => {
+            console.error(err);
+            subtitle.textContent = I18N.t('top.loadFail');
+            subtitle.classList.add('error');
+        });
+</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9372871176021283" crossorigin="anonymous"></script>
 </body>
 </html>

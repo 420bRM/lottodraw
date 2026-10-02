@@ -25,8 +25,7 @@ window.I18N_DICT = {
 
     /* ───── 메뉴 ───── */
     'nav.aria':         { ko: '주 메뉴', en: 'Main menu' },
-    'nav.index':        { ko: '번호 생성기', en: 'Number Generator' },
-    'nav.stats':        { ko: '로또 통계', en: 'Lotto Stats' },
+    'nav.index':        { ko: '생성기 · 통계', en: 'Generator & Stats' },
     'nav.draws':        { ko: '당첨번호', en: 'Past Results' },
     'nav.statistics':   { ko: '5개월 통계', en: '5-Month Stats' },
     'nav.topPrize':     { ko: 'TOP 50 당첨금', en: 'Top 50 Jackpots' },
@@ -112,8 +111,17 @@ window.I18N_DICT = {
     'tax.tip3':      { en: 'Rates can change from year to year; check the National Tax Service for the current figures.' },
 
     /* ───── TOP 50 당첨금 ───── */
-    // top-prize.html 은 생성 페이지가 되어 문장마다 영문을 속성에 단다. 홈의 "최근 10회차"가 이 키를 빌려 쓴다
+    'top.h1':        { en: 'Top 50 Lotto 6/45 First-Prize Payouts' },
     'top.loading':   { en: 'Loading…' },
+    'top.loadFail':  { ko: '데이터를 불러오지 못했습니다. 잠시 뒤 새로고침해 주세요.', en: 'Could not load the data. Please refresh in a moment.' },
+    'top.th.rank':   { en: 'Rank' },
+    'top.th.round':  { en: 'Draw' },
+    'top.th.each':   { en: 'Per winner (approx.)' },
+    'top.th.winners': { en: 'Winners' },
+    'top.th.total':  { en: 'Total first prize (exact)' },
+    'top.people':    { ko: '명', en: '' },
+    'top.note':      { en: '* Amounts per winner are rounded for readability.<br>* Total first-prize figures are exact to the won.' },
+    'top.back':      { en: 'Back to the generator' },
 
     /* ───── 5개월 통계 (결제 페이지) ───── */
     'header.stickerFree': { en: 'All draws, <b>free</b>' },
