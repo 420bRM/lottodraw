@@ -69,7 +69,7 @@
                     <h2 data-i18n="gen.thisPick">이번 번호</h2>
                     <div class="tray" id="result-balls"></div>
                     <p class="result-msg" id="result" role="status" aria-live="polite" data-i18n="gen.resultIdle">버튼을 누르면 위 자리에 번호가 채워집니다.</p>
-                    <p class="result-hint" id="result-hint" data-i18n="gen.hint" hidden>혹시 모르죠, 이 번호가 이번 주 당첨번호일 수도 있습니다.</p>
+                    <p class="result-hint" id="result-hint" data-i18n="gen.hint">혹시 모르죠, 이 번호가 이번 주 당첨번호일 수도 있습니다.</p>
                     <button type="button" class="btn btn-big" id="generate-btn" data-i18n="gen.go">번호 생성</button>
                 </div>
 
@@ -551,7 +551,6 @@
             }
             fillBalls(numbers);
             setMessage(I18N.f('gen.done', { nums: numStr, i: attempts }));
-            document.getElementById('result-hint').hidden = false;
             logLines.push(I18N.f('gen.logKeep', { i: attempts, nums: numStr }));
             renderLog();
             saveHistory(numStr);
@@ -644,7 +643,7 @@
     }
 
     // 최근 10회차 카드 아래에 흘려 두는 사실 하나: 전 회차 기준으로 가장 오래 안 나온 번호.
-    // 지난 기록일 뿐이라 예측처럼 쓰지 않는다 — 질문으로 끝내고 도박사의 오류 글로 잇는다.
+    // 지난 기록일 뿐이라 예측처럼 쓰지 않는다 — 사실만 적고 끝낸다.
     function renderFact(gaps, latestRound) {
         const box = document.getElementById('heat-fact');
         if (!gaps || !gaps.length || gaps[0].gap < 10) return;
@@ -655,11 +654,7 @@
         box.appendChild(b);
         box.appendChild(document.createTextNode(I18N.f('recent.factGap', {
             nums: top.map(g => g.number).join('·'), gap: gaps[0].gap, last: latestRound - gaps[0].gap,
-        }) + ' '));
-        const a = document.createElement('a');
-        a.href = 'blog/cold-numbers-gamblers-fallacy.html';
-        a.textContent = I18N.t('recent.factLink');
-        box.appendChild(a);
+        })));
         box.hidden = false;
     }
 

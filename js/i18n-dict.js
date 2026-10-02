@@ -265,7 +265,6 @@ window.I18N_DICT = {
     'recent.factPre': { ko: '그거 아세요? ', en: 'Did you know? ' },
     'recent.factGap': { ko: '지금 {nums}번은 {gap}회째 나오지 않고 있습니다 (마지막 {last}회).',
                         en: 'Number {nums} has not come up for {gap} draws in a row (last seen in draw {last}).' },
-    'recent.factLink': { ko: '곧 나올 차례일까요? →', en: 'Is it due soon? \u2192' },
     'recent.cellTitle': { ko: '{n}번: 최근 10회차 중 {hits}회', en: 'Number {n}: {hits} of the last 10 draws' },
     'recent.readPre': { ko: '{n}번은 최근 10회차에 ', en: 'Number {n} appeared ' },
     'recent.readHits': { ko: '{n}번', en: '{n} time(s)' },

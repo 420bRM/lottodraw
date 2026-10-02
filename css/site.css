@@ -589,7 +589,6 @@ html.home { scroll-behavior: smooth; }
 /* 전 회차 기준으로 눈에 띄는 사실 하나 (가장 오래 안 나온 번호) */
 .heat-fact { margin: 10px 0 0; padding: 8px 12px; border-left: 3px solid var(--ball-1); border-radius: 0 6px 6px 0; background: #fff8e1; font-size: 13px; line-height: 1.6; }
 .heat-fact b { color: var(--brand); }
-.heat-fact a { white-space: nowrap; font-weight: bold; }
 
 @media (max-width: 1099px) {
     .gen-hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
