@@ -306,8 +306,14 @@ test('입금 알림 자동 확인: 주문마다 금액 끝자리가 달라 금�
     // 출금 알림은 무시
     r = await hook(`[우리은행] 출금 ${won(target.order.amount)} 구매자3`);
     assert.equal(r.data.matched, null);
-    // 정가(할인 전 금액)로 보내면 맞추지 않는다
-    r = await hook(`[우리은행] 입금 5,900원 구매자3`);
+    // 정가(할인 전 금액)로 보냈는데 입금자명도 주문과 다르면 맞추지 않는다 (판매자 확인)
+    r = await hook(`[우리은행] 입금 5,900원 아무개`);
+    assert.equal(r.data.matched, null);
+    // 정가로 보냈어도 입금자명이 맞는 대기 주문이 하나뿐이면 그 주문으로 발급 (사람 손 없이)
+    r = await hook(`[우리은행] 입금 5,900원 구매자4`);
+    assert.equal(r.data.matched, orders[4].order.id);
+    // 안내 금액보다 덜 보냈으면 이름이 맞아도 발급하지 않는다
+    r = await hook(`[우리은행] 입금 3,000원 구매자5`);
     assert.equal(r.data.matched, null);
 
     // 입금자명이 주문과 달라도(가족 계좌 등) 금액이 맞으면 바로 발급. 잔액 금액은 무시한다
