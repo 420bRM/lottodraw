@@ -25,7 +25,7 @@ window.PREMIUM_CONFIG = {
         name: '월데코 코리아',          // 상호
         owner: '이동찬',               // 대표자
         bizNo: '226-27-62319',         // 사업자등록번호
-        mailOrderNo: '간이과세자 신고 면제',   // 통신판매업 신고번호 (간이과세자는 면제)
+        mailOrderNo: '',               // 통신판매업 신고번호 (일반과세자는 신고 필요 — 번호를 받으면 넣는다)
         address: '경기도 파주시 청석로 268, 807-915호(동패동, 미소시티)',
         phone: '',
         email: 'contact@lottodraw.kr',

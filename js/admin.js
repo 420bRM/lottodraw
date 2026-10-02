@@ -154,6 +154,15 @@
             el('b', { text: s.kid ? '✔ 서명 키' : '✘ 서명 키' }), ' ',
             el('span', { text: s.kid ? `kid ${s.kid}${s.keySource === 'secret' ? ' (비밀값)' : ''}` : '아직 없음 — 아래 "서명 키 만들기"를 누르세요. 없으면 키를 발급할 수 없습니다' }),
         ]));
+        if (s.kid) {
+            const b = {
+                ok: [true, '맞음 — GitHub Secret LICENSE_PRIVATE_JWK 가 지금 서명 키와 같습니다'],
+                none: [false, '없음 — 아래 "서명 키 백업 복사" 값을 GitHub Secret LICENSE_PRIVATE_JWK 에 넣어 두세요 (권장)'],
+                invalid: [false, '형식이 잘못됨 — LICENSE_PRIVATE_JWK 를 지우고, 아래 백업 값({"kty":"EC"… 한 줄 전체)을 다시 넣으세요'],
+                mismatch: [false, '다른 키 — LICENSE_PRIVATE_JWK 를 지우고, 아래 백업 값을 다시 넣으세요'],
+            }[s.keyBackup] || [false, '알 수 없음'];
+            list.appendChild(el('li', { className: b[0] ? 'on' : 'off' }, [el('b', { text: (b[0] ? '✔ ' : '✘ ') + '서명 키 백업' }), ' ', el('span', { text: b[1] })]));
+        }
         $('setup-key-box').hidden = !!s.kid;
         $('key-tools').hidden = !s.kid;
         $('key-backup-btn').hidden = s.keySource !== 'kv';

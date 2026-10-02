@@ -552,7 +552,7 @@ async function admin(request, env, sub, method, url) {
         const counts = {};
         all.forEach(o => { counts[o.s] = (counts[o.s] || 0) + 1; });
         return json(request, env, {
-            kid: s ? s.kid : null, publicJwk: s ? s.publicJwk : null, keySource: s ? s.source : null,
+            kid: s ? s.kid : null, publicJwk: s ? s.publicJwk : null, keySource: s ? s.source : null, keyBackup: s ? s.backup : null,
             methods: methodsOf(env), plans: publicPlans(env),
             counts,
             hooks: {
@@ -575,7 +575,6 @@ async function admin(request, env, sub, method, url) {
     // 서명 키 백업. KV 를 잃어도 판매한 키를 살릴 수 있게, 비밀번호 관리자나 GitHub Secret
     // LICENSE_PRIVATE_JWK 에 보관하라고 내준다. 이 값이 새면 누구나 키를 만들 수 있다.
     if (sub === '/key-backup' && method === 'POST') {
-        if (env.LICENSE_PRIVATE_JWK) throw new HttpError(409, 'from_secret', '서명 키가 이미 비밀값(LICENSE_PRIVATE_JWK)에 있습니다.');
         const rec = await env.DB.get('meta:signing-key', 'json');
         if (!rec) throw new HttpError(404, 'no_key', '서명 키가 아직 없습니다.');
         return json(request, env, { privateJwk: rec.privateJwk });
@@ -759,7 +758,8 @@ async function revoke(env, id) {
 }
 
 /* ───── 서명 키 ─────
- * 비밀값 LICENSE_PRIVATE_JWK 가 있으면 그것을, 없으면 KV 에 저장된 키를 쓴다.
+ * KV 에 저장된 키가 원본이다. 비밀값 LICENSE_PRIVATE_JWK 는 KV 를 잃었을 때 되살리는 백업으로만 쓴다
+ * — 잘못 넣은 비밀값(다른 값을 붙여 넣는 등) 때문에 발급이 멈추거나 이미 판 키가 무효가 되지 않게.
  * 둘 다 없으면 발급하지 않는다. 관리자 페이지의 "서명 키 만들기"로 한 번 만든다.
  * 키를 바꾸면 이전에 판 키는 전부 무효가 된다.
  */
@@ -769,19 +769,27 @@ export function _resetForTests() { cachedSigner = null; }
 
 async function signer(env, fresh) {
     if (cachedSigner) return cachedSigner;
-    let rec = fresh || null;
+    let rec = fresh || await env.DB.get('meta:signing-key', 'json');
     let source = 'kv';
+    let backup = null;
     if (env.LICENSE_PRIVATE_JWK) {
-        const priv = JSON.parse(env.LICENSE_PRIVATE_JWK);
-        rec = { privateJwk: priv, publicJwk: publicOnly(priv) };
+        try {
+            const priv = JSON.parse(env.LICENSE_PRIVATE_JWK);
+            if (priv && priv.kty === 'EC' && priv.d && priv.x && priv.y) backup = priv;
+        } catch (e) { backup = null; }
+    }
+    if (!rec && backup) {
+        rec = { privateJwk: backup, publicJwk: publicOnly(backup) };
         source = 'secret';
-    } else if (!rec) {
-        rec = await env.DB.get('meta:signing-key', 'json');
     }
     if (!rec) return null;   // 없다는 결과는 기억하지 않는다 — 만든 직후 다른 곳에서도 보이게
+    const kid = rec.kid || await keyId(rec.publicJwk);
+    let backupState = 'none';   // 관리자 페이지에 보여 줄 백업 상태
+    if (env.LICENSE_PRIVATE_JWK) backupState = !backup ? 'invalid' : (await keyId(publicOnly(backup))) === kid ? 'ok' : 'mismatch';
     cachedSigner = {
         source,
-        kid: rec.kid || await keyId(rec.publicJwk),
+        kid,
+        backup: backupState,
         publicJwk: publicOnly(rec.publicJwk),
         privateKey: await importPrivate(rec.privateJwk),
     };
