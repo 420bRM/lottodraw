@@ -13,8 +13,8 @@
 // 그래서 서버가 멈춰도 이미 산 사람의 잠금은 그대로 풀린다.
 
 export const PREFIX = 'LD1-';
-export const PLAN_CODES = { week: 1, month: 2, lifetime: 3, custom: 9 };
-export const PLAN_BY_CODE = { 1: 'week', 2: 'month', 3: 'lifetime', 9: 'custom' };
+export const PLAN_CODES = { week: 1, month: 2, lifetime: 3, day: 4, custom: 9 };
+export const PLAN_BY_CODE = { 1: 'week', 2: 'month', 3: 'lifetime', 4: 'day', 9: 'custom' };
 
 const CONTEXT = new TextEncoder().encode('LD1');
 const BODY_LEN = 14;

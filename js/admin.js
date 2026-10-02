@@ -8,7 +8,7 @@
     const $ = id => document.getElementById(id);
     const STATUS = { pending: '입금 대기', paid: '발급 완료', refund_requested: '환불 요청', refunded: '환불', cancelled: '취소' };
     const METHOD = { bank: '계좌이체', payapp: '카드(페이앱)', manual: '직접 발급' };
-    const PLAN = { week: '1주', month: '1개월', lifetime: '평생', custom: '기간 지정' };
+    const PLAN = { day: '1일', week: '1주', month: '1개월', lifetime: '평생', custom: '기간 지정' };
 
     let token = null;
     let tab = 'pending';

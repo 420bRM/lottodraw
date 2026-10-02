@@ -65,12 +65,14 @@
                         <div class="ob-row" id="hook-secret-row" hidden><dt></dt><dd><code id="hook-secret"></code></dd></div>
                     </dl>
                     <details class="hook-guide">
-                        <summary>안드로이드 (MacroDroid, 무료)</summary>
+                        <summary>안드로이드 (MacroDroid)</summary>
                         <ol>
-                            <li>Play 스토어에서 <b>MacroDroid</b> 설치 → 알림 접근 권한 허용, 배터리 최적화에서 제외</li>
-                            <li>매크로 추가 → 트리거: <b>알림 → 알림 수신</b> → 앱: <b>우리WON뱅킹</b>(입금 알림이 오는 앱), 내용에 <b>입금</b> 포함</li>
-                            <li>동작: <b>웹 → HTTP 요청</b> → 방법 POST, URL 은 위 "보낼 주소", 머리글 <code>Authorization</code> 에 <code>Bearer 열쇠</code>, 본문(text/plain)에는 매직 텍스트에서 <b>알림 제목</b>과 <b>알림 텍스트</b>를 넣기</li>
-                            <li>매크로 하나 더: 트리거 <b>날짜/시간 → 정기적 간격 6시간</b>, 동작은 같은 HTTP 요청에 본문만 <code>ping</code></li>
+                            <li>Play 스토어에서 <b>MacroDroid</b> 설치 → 알림 접근 권한 허용, 휴대폰 설정 → 애플리케이션 → MacroDroid → 배터리 → <b>제한 없음</b>. 무료 버전은 7일마다 "기간 연장"을 눌러야 해서, 놓치면 자동 확인이 멈춘다 — 프로(1회 결제)를 권장</li>
+                            <li>은행 앱에서 <b>입출금 알림(푸시)</b> 켜기 — 알림에 금액과 보낸 사람 이름이 보여야 한다</li>
+                            <li><b>새 매크로</b> → <b>발동 +</b> → 위 돋보기로 <b>알림</b> 검색 → <b>알림 수신</b> → 앱: 판매 계좌의 은행 앱, 내용에 <b>입금</b> 포함</li>
+                            <li><b>동작 +</b> → 돋보기로 <b>HTTP</b> 검색 → <b>HTTP 요청</b> → 방법 POST, URL 은 위 "보낼 주소", 헤더 <code>Authorization</code> = <code>Bearer 열쇠</code>(한 칸 띄움), 본문 text/plain 에 매직 텍스트 버튼으로 <b>알림 제목</b>과 <b>알림 텍스트</b> 넣기. <b>요건</b>은 비워 두고 저장</li>
+                            <li>매크로 하나 더: <b>발동 +</b> → <b>날짜·시간 → 정기적 간격 6시간</b>, 동작은 같은 HTTP 요청에 본문만 <code>ping</code></li>
+                            <li>ping 매크로를 열고 ⋮ → <b>동작 테스트</b>를 누르면 1~2분 안에 이 카드가 "연결됨"으로 바뀐다</li>
                         </ol>
                     </details>
                     <details class="hook-guide">
@@ -93,6 +95,7 @@
                         <form class="admin-form" id="issue-form">
                             <label>종류
                                 <select id="issue-plan">
+                                    <option value="day">1일 이용권</option>
                                     <option value="week">1주 이용권</option>
                                     <option value="month" selected>1개월 이용권</option>
                                     <option value="lifetime">평생 이용권</option>

@@ -19,7 +19,7 @@
     const PREFIX = 'LD1-';
     const BODY_LEN = 14;
     const SIG_LEN = 64;
-    const PLAN_BY_CODE = { 1: 'week', 2: 'month', 3: 'lifetime', 9: 'custom' };
+    const PLAN_BY_CODE = { 1: 'week', 2: 'month', 3: 'lifetime', 4: 'day', 9: 'custom' };
     const KEY_STORE = 'lottodraw.premium.key';
     const CHECK_STORE = 'lottodraw.premium.check';
     const PUB_STORE = 'lottodraw.premium.pubkey';
@@ -52,7 +52,7 @@
 
     const configured = () => !!(apiBase() || cfg().publicKeyJwk);
     const savedKey = () => store.get(KEY_STORE);
-    const planName = id => msg('plan.' + id, ({ week: '1주 이용권', month: '1개월 이용권', lifetime: '평생 이용권', custom: '이용권' })[id] || '이용권');
+    const planName = id => msg('plan.' + id, ({ day: '1일 이용권', week: '1주 이용권', month: '1개월 이용권', lifetime: '평생 이용권', custom: '이용권' })[id] || '이용권');
 
     function b64urlDecode(str) {
         const b64 = str.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((str.length + 3) % 4);

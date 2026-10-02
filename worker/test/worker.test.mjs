@@ -94,6 +94,22 @@ test('공개 설정: 계좌 정보가 있으면 계좌이체가 켜지고, 페�
     assert.equal(off.data.methods.bank, false);
 });
 
+test('1일 이용권: 1,500원, 입금되면 24시간짜리 키가 발급된다', async () => {
+    _resetForTests();
+    const env = makeEnv({ DEPOSIT_HOOK_SECRET: 'hook-secret-0123456789' });
+    await setupKey(env);
+    const cfg = await call(env, 'GET', '/api/config');
+    assert.equal(cfg.data.plans.day.amount, 1500);
+    const { order, token } = (await call(env, 'POST', '/api/orders', { body: { plan: 'day', method: 'bank', name: '홍길동', agree: true } })).data;
+    assert.ok(order.amount >= 1401 && order.amount <= 1499, '끝자리 할인');
+    const r = await call(env, 'POST', '/api/hooks/deposit', { raw: `입금 ${order.amount.toLocaleString('ko-KR')}원 홍길동`, headers: { 'Content-Type': 'text/plain', Authorization: 'Bearer hook-secret-0123456789' } });
+    assert.equal(r.data.matched, order.id);
+    const paid = (await call(env, 'GET', `/api/orders/${order.id}?token=${token}`)).data.order;
+    const p = parseKey(paid.key);
+    assert.equal(p.plan, 'day');
+    assert.equal(p.expiresAt - p.issuedAt, 86400);
+});
+
 test('PRICES 환경변수로 가격만 바꿀 수 있다', async () => {
     _resetForTests();
     const r = await call(makeEnv({ PRICES: '{"week":3000,"month":500}' }), 'GET', '/api/config');
