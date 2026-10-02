@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<!-- 이 파일은 tools/build-blog.js 가 content/blog/ 원고로 다시 만든다. 직접 고치면 덮어쓰인다. -->
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>34번이 186회 나온 게 특별한가 — 표준편차로 읽는 출현 횟수 | lottodraw.kr</title>
+    <meta name="description" content="1243회 동안 가장 많이 나온 34번과 가장 적게 나온 9번. 순수한 무작위에서도 이 정도 차이는 당연히 생깁니다. 직접 계산해 봅니다.">
+    <link rel="canonical" href="https://www.lottodraw.kr/blog/is-number-34-special.html">
+    <meta property="og:title" content="34번이 186회 나온 게 특별한가 — 표준편차로 읽는 출현 횟수 | lottodraw.kr">
+    <meta property="og:description" content="1243회 동안 가장 많이 나온 34번과 가장 적게 나온 9번. 순수한 무작위에서도 이 정도 차이는 당연히 생깁니다. 직접 계산해 봅니다.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://www.lottodraw.kr/blog/is-number-34-special.html">
+    <meta property="og:site_name" content="lottodraw.kr">
+    <meta property="og:image" content="https://www.lottodraw.kr/img/og-default.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="34번이 186회 나온 게 특별한가 — 표준편차로 읽는 출현 횟수 | lottodraw.kr">
+    <meta name="twitter:description" content="1243회 동안 가장 많이 나온 34번과 가장 적게 나온 9번. 순수한 무작위에서도 이 정도 차이는 당연히 생깁니다. 직접 계산해 봅니다.">
+    <meta name="twitter:image" content="https://www.lottodraw.kr/img/og-default.png">
+    <meta name="google-adsense-account" content="ca-pub-9372871176021283">
+    <link rel="stylesheet" href="../css/site.css">
+    <script src="../js/i18n-dict.js"></script>
+    <script src="../js/i18n.js"></script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BlogPosting","headline":"34번이 186회 나온 게 특별한가 — 표준편차로 읽는 출현 횟수","description":"1243회 동안 가장 많이 나온 34번과 가장 적게 나온 9번. 순수한 무작위에서도 이 정도 차이는 당연히 생깁니다. 직접 계산해 봅니다.","datePublished":"2026-10-01","dateModified":"2026-10-01","inLanguage":"ko-KR","articleSection":"통계 읽기","url":"https://www.lottodraw.kr/blog/is-number-34-special.html","mainEntityOfPage":"https://www.lottodraw.kr/blog/is-number-34-special.html","image":"https://www.lottodraw.kr/img/og-default.png","author":{"@type":"Organization","name":"lottodraw.kr","url":"https://www.lottodraw.kr/"},"publisher":{"@type":"Organization","name":"lottodraw.kr","url":"https://www.lottodraw.kr/"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://www.lottodraw.kr/"},{"@type":"ListItem","position":2,"name":"블로그","item":"https://www.lottodraw.kr/blog/index.html"},{"@type":"ListItem","position":3,"name":"34번이 186회 나온 게 특별한가 — 표준편차로 읽는 출현 횟수","item":"https://www.lottodraw.kr/blog/is-number-34-special.html"}]}]}</script>
+    <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "91c08d8a39d944e69c10024f2314b955"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+<body>
+<div class="page">
+    <header class="banner">
+        <a class="brand" href="../index.html">
+            <span class="brand-name">LOTTODRAW.KR</span>
+            <span class="brand-tag" data-i18n="brand.tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
+        </a>
+        <div class="banner-right">
+            <p class="latest-callout" data-i18n-en="Draw 1243: 9 18 24 38 43 44 &lt;span class=&quot;bonus-sep&quot;&gt;+&lt;/span&gt; 35">제1243회 9 18 24 38 43 44 <span class="bonus-sep">+</span> 35</p>
+            <a class="sticker" href="../statistics.html" data-i18n-html="header.sticker">최근 <b>5개월</b> 통계</a>
+            <div class="lang-switch" role="group" aria-label="Language">
+                <button type="button" data-lang-btn="ko">KO</button><button type="button" data-lang-btn="en">EN</button>
+            </div>
+        </div>
+    </header>
+
+    <nav class="nav" aria-label="주 메뉴" data-i18n-attr="aria-label:nav.aria">
+        <ul>
+            <li><a href="../index.html" data-i18n="nav.index">생성기 · 통계</a></li>
+            <li><a href="../draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="../statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="../top-prize.html" data-i18n="nav.topPrize">TOP 50 당첨금</a></li>
+            <li><a href="../tax.html" data-i18n="nav.tax">실수령액 계산</a></li>
+            <li><a href="../blog/index.html" aria-current="page" data-i18n="nav.blog">블로그</a></li>
+            <li><a href="../about.html" data-i18n="nav.about">ABOUT</a></li>
+        </ul>
+    </nav>
+
+    <main class="prose stat-page blog-post">
+        <nav class="breadcrumb" aria-label="현재 위치" data-i18n-attr="aria-label:crumb.aria"><a href="../index.html" data-i18n="crumb.home">홈</a> › <a href="../blog/index.html" data-i18n="nav.blog">블로그</a> › <span data-i18n-en="Is number 34 special for coming up 186 times? Reading draw counts with standard deviation">34번이 186회 나온 게 특별한가 — 표준편차로 읽는 출현 횟수</span></nav>
+        <h1 data-i18n-en="Is number 34 special for coming up 186 times? Reading draw counts with standard deviation">34번이 186회 나온 게 특별한가 — 표준편차로 읽는 출현 횟수</h1>
+        <p class="stat-scope"><span class="post-cat"><span class="cat-dot" data-band="2" aria-hidden="true"></span><span data-i18n-en="Reading the stats">통계 읽기</span></span> · <span data-i18n-en="2026-10-01 · 4 min read">2026-10-01 · 4분 읽기</span></p>
+        <p class="stat-lead"><span data-i18n-en="Over 1,243 draws, 34 came up most often and 9 least often. A gap this size is normal even under pure chance, and we work it out step by step.">1243회 동안 가장 많이 나온 34번과 가장 적게 나온 9번. 순수한 무작위에서도 이 정도 차이는 당연히 생깁니다. 직접 계산해 봅니다.</span></p>
+
+<nav class="toc" aria-label="목차" data-i18n-attr="aria-label:blog.toc"><strong data-i18n="blog.toc">목차</strong><ol><li><a href="#s1" data-i18n-en="First, find the average">먼저 '평균'을 구합니다</a></li><li><a href="#s2" data-i18n-en="Next, the size of the wobble">다음은 '흔들림의 폭'입니다</a></li><li><a href="#s3" data-i18n-en="Looking at all 45 at once changes the story">45개를 동시에 보면 이야기가 달라집니다</a></li><li><a href="#s4" data-i18n-en="Is 9 an unlucky number?">9번은 운이 나쁜 번호일까</a></li><li><a href="#s5" data-i18n-en="Does the gap shrink as draws pile up?">회차가 쌓이면 차이는 줄어들까</a></li><li><a href="#s6" data-i18n-en="So how should you read these numbers?">그래서 이 숫자를 어떻게 읽어야 하나</a></li></ol></nav>
+
+<p data-i18n-en="Across draws 1–1243, leaving out the bonus number, the number drawn most often is 34, at &lt;strong&gt;186 times&lt;/strong&gt;. The number drawn least often is 9, at &lt;strong&gt;137 times&lt;/strong&gt;. With a gap of 49, it is easy to feel there is something about 34. But is there really?">제1회부터 제1243회까지 보너스 번호를 빼고 가장 많이 나온 번호는 34번으로 <strong>186회</strong>입니다. 가장 적게 나온 9번은 <strong>137회</strong>입니다. 49회나 차이가 나니 34번에 무언가 있다고 느끼는 것도 무리는 아닙니다. 그런데 정말 그럴까요?</p>
+<h2 id="s1" data-i18n-en="First, find the average">먼저 '평균'을 구합니다</h2>
+<p data-i18n-en="Each draw picks 6 of 45 numbers, so the chance that a given number appears in a given draw is 6/45, or about 13.3%. Over 1,243 draws, the expected count for one number is:">한 회차에 45개 중 6개가 뽑히므로, 어떤 번호가 특정 회차에 나올 확률은 6/45, 약 13.3%입니다. 1243회라면 한 번호의 기대 출현 횟수는 다음과 같습니다.</p>
+<blockquote><p data-i18n-en="1243 × 6/45 = &lt;strong&gt;165.7 times&lt;/strong&gt;">1243 × 6/45 = <strong>165.7회</strong></p></blockquote>
+<p data-i18n-en="So 34 is about 20 above the average, and 9 is about 29 below.">34번은 평균보다 약 20회 많고, 9번은 약 29회 적습니다.</p>
+<h2 id="s2" data-i18n-en="Next, the size of the wobble">다음은 '흔들림의 폭'입니다</h2>
+<p data-i18n-en="Toss a coin 100 times and you will rarely get exactly 50 heads. Standard deviation measures how big that wobble is. If we treat each draw as &amp;quot;appeared or did not appear&amp;quot; (a binomial distribution), the standard deviation is">동전을 100번 던져도 정확히 50번 앞면이 나오는 경우는 드뭅니다. 그 흔들림의 크기를 나타내는 것이 표준편차입니다. 각 회차를 '나왔다/안 나왔다'로 보는 이항분포에서 표준편차는</p>
+<blockquote><p data-i18n-en="√(1243 × 6/45 × 39/45) ≈ &lt;strong&gt;12.0 times&lt;/strong&gt;">√(1243 × 6/45 × 39/45) ≈ <strong>12.0회</strong></p></blockquote>
+<p data-i18n-en="In other words, it is normal for one number's count to move around within roughly 165.7 ± 12.">입니다. 즉 한 번호의 출현 횟수는 대략 165.7 ± 12 범위에서 흔들리는 것이 정상입니다.</p>
+<div class="table-scroll"><table class="data-table"><thead><tr><th scope="col" data-i18n-en="Number">번호</th><th scope="col" data-i18n-en="Times drawn">출현 횟수</th><th scope="col" data-i18n-en="Difference from average">평균과의 차이</th><th scope="col" data-i18n-en="Standard deviations">표준편차 단위</th></tr></thead><tbody><tr><td data-i18n-en="34">34번</td><td data-i18n-en="186">186회</td><td data-i18n-en="+20.3">+20.3</td><td data-i18n-en="+1.7σ">+1.7σ</td></tr><tr><td data-i18n-en="13">13번</td><td data-i18n-en="183">183회</td><td data-i18n-en="+17.3">+17.3</td><td data-i18n-en="+1.4σ">+1.4σ</td></tr><tr><td data-i18n-en="9">9번</td><td data-i18n-en="137">137회</td><td data-i18n-en="−28.7">−28.7</td><td data-i18n-en="−2.4σ">−2.4σ</td></tr></tbody></table></div>
+<p data-i18n-en="If you look at one number on its own, +1.7σ is a rare value, roughly in the top 5%. This is where many analyses conclude that &amp;quot;34 comes up significantly more often&amp;quot;. But that reading leaves out one important fact.">+1.7σ는 번호 하나만 놓고 보면 상위 5% 정도의 드문 값입니다. 여기서 많은 분석이 &quot;34번은 통계적으로 유의하게 많이 나온다&quot;고 결론을 내립니다. 하지만 이것은 중요한 사실 하나를 빠뜨린 해석입니다.</p>
+<h2 id="s3" data-i18n-en="Looking at all 45 at once changes the story">45개를 동시에 보면 이야기가 달라집니다</h2>
+<p data-i18n-en="We did not choose 34 in advance and then watch it. We counted all 45 numbers and then &lt;strong&gt;picked out the largest&lt;/strong&gt;. The largest of 45 counts is bound to sit above the average.">우리는 34번을 미리 정해 놓고 관찰한 것이 아닙니다. 45개 번호를 모두 센 뒤 <strong>가장 큰 값을 골라서</strong> 보고 있습니다. 45개 중 최댓값은 당연히 평균보다 클 수밖에 없습니다.</p>
+<p data-i18n-en="So we used a computer to simulate 1,243 draws in exactly the same way as the real draw (6 of 45, without replacement), and repeated this 5,000 times.">그래서 실제 추첨과 똑같은 방식(45개 중 6개 비복원 추출)으로 1243회를 컴퓨터로 5,000번 반복해 봤습니다.</p>
+<div class="table-scroll"><table class="data-table"><thead><tr><th scope="col" data-i18n-en="Item">항목</th><th scope="col" data-i18n-en="Random simulation (median)">무작위 시뮬레이션 (중앙값)</th><th scope="col" data-i18n-en="90% range">90% 범위</th><th scope="col" data-i18n-en="Actual Lotto">실제 로또</th></tr></thead><tbody><tr><td data-i18n-en="Count of the most frequent number">가장 많이 나온 번호의 횟수</td><td data-i18n-en="192">192회</td><td data-i18n-en="185–204">185~204회</td><td data-i18n-en="186">186회</td></tr><tr><td data-i18n-en="Count of the least frequent number">가장 적게 나온 번호의 횟수</td><td data-i18n-en="140">140회</td><td data-i18n-en="130–147">130~147회</td><td data-i18n-en="137">137회</td></tr><tr><td data-i18n-en="Gap between most and least frequent">최다와 최소의 차이</td><td data-i18n-en="53">53회</td><td data-i18n-en="—">—</td><td data-i18n-en="49">49회</td></tr></tbody></table></div>
+<p data-i18n-en="The result is clear. Even under pure chance, the top number usually comes up about 192 times. In &lt;strong&gt;93%&lt;/strong&gt; of the simulations, the most frequent number came up 186 times or more. If anything, the real Lotto's 34 is &lt;strong&gt;ordinary, or slightly less extreme than usual&lt;/strong&gt;. The 49-draw gap between the most and least frequent numbers is also almost the same as the 53 you would expect from chance.">결과는 분명합니다. 완전한 무작위에서도 1등 번호는 보통 192회쯤 나옵니다. 시뮬레이션의 <strong>93%</strong>에서 최다 출현 번호가 186회 이상이었습니다. 실제 로또의 34번은 오히려 <strong>평범하거나 살짝 덜 튀는 편</strong>입니다. 최다와 최소의 차이 49회도 무작위에서 기대되는 53회와 거의 같습니다.</p>
+<h2 id="s4" data-i18n-en="Is 9 an unlucky number?">9번은 운이 나쁜 번호일까</h2>
+<p data-i18n-en="The least frequent number, 9 (−2.4σ), can be read the same way. In the simulations, the least frequent number usually landed around 140, and counts in the 130s were common. Number 9's 137 sits inside that range. One of the 45 numbers has to come last, and over these 1,243 draws it just happened to be 9.">가장 적게 나온 9번(−2.4σ)도 같은 방식으로 읽으면 됩니다. 시뮬레이션에서 최소 출현 번호는 보통 140회 근처였고, 130회대가 나오는 경우도 흔했습니다. 9번의 137회는 그 범위 안에 있습니다. 45개 번호 중 하나는 반드시 꼴찌가 되고, 지금까지 1243회에서는 그게 9번이었을 뿐입니다.</p>
+<h2 id="s5" data-i18n-en="Does the gap shrink as draws pile up?">회차가 쌓이면 차이는 줄어들까</h2>
+<p data-i18n-en="Interestingly, as the number of draws grows, &lt;strong&gt;the gap in counts between the most and least frequent numbers actually gets bigger.&lt;/strong&gt; This is because the standard deviation grows with the square root of the number of draws. On the other hand, &lt;strong&gt;the gap measured as a rate gets smaller.&lt;/strong&gt; Right now 34 appears in 15.0% of draws and 9 in 11.0%, which puts them 1.6 and 2.3 percentage points away from the theoretical 13.3%. After about 5,000 draws, most numbers will sit within 1 percentage point of the theoretical value. This is what the law of large numbers actually says. Numbers that came up less often do not &amp;quot;catch up&amp;quot;. The gap simply gets diluted as the total grows.">흥미롭게도 회차가 늘어날수록 최다와 최소의 <strong>횟수 차이는 오히려 커집니다.</strong> 표준편차가 회차 수의 제곱근에 비례해 자라기 때문입니다. 대신 <strong>비율로 본 차이는 줄어듭니다.</strong> 지금 34번의 출현율은 15.0%, 9번은 11.0%로 이론값 13.3%에서 각각 1.6%포인트, 2.3%포인트 떨어져 있습니다. 5천 회쯤 쌓이면 대부분의 번호가 이론값에서 1%포인트 안쪽으로 모이게 됩니다. 이것이 큰 수의 법칙이 실제로 말하는 내용입니다. 적게 나온 번호가 '따라잡는' 것이 아니라, 전체 횟수가 커지면서 차이가 희석되는 것입니다.</p>
+<h2 id="s6" data-i18n-en="So how should you read these numbers?">그래서 이 숫자를 어떻게 읽어야 하나</h2>
+<ul><li data-i18n-en="&lt;strong&gt;Differences in counts are closer to evidence that the draw machine is fair.&lt;/strong&gt; If all 45 numbers were bunched tightly around 165, that would be the stranger result."><strong>출현 횟수 차이는 추첨기가 공정하다는 증거에 가깝습니다.</strong> 오히려 45개 번호가 모두 165회 근처에 몰려 있었다면 그쪽이 더 이상한 일입니다.</li><li data-i18n-en="&lt;strong&gt;Past counts do not change the next draw.&lt;/strong&gt; The balls have no memory. The chance that 34 comes up next week is 6/45, exactly the same as for 9."><strong>과거 횟수는 다음 회차를 바꾸지 않습니다.</strong> 공에는 기억이 없습니다. 다음 주 34번이 나올 확률은 9번과 똑같이 6/45입니다.</li><li data-i18n-en="&lt;strong&gt;It is true, though, that many people pick &amp;quot;frequently drawn numbers&amp;quot;.&lt;/strong&gt; Draw 1019 in 2022 produced 1, 4, 13, 17, 34, 39. That draw included several of the most frequent numbers, such as 34 and 13, and 50 people won 1st prize. The odds are the same, but more people may end up sharing the prize. This is covered separately in &lt;a href=&quot;why-jackpots-split.html&quot;&gt;Why jackpots get split&lt;/a&gt;."><strong>다만 '많이 나온 번호'를 고르는 사람이 많다는 것은 사실입니다.</strong> 2022년 제1019회는 1, 4, 13, 17, 34, 39가 나왔는데, 34번·13번처럼 출현 상위 번호가 다수 포함된 이 회차에 1등이 50명 쏟아졌습니다. 당첨 확률은 같아도 나눠 가질 사람이 늘어날 수 있다는 뜻입니다. 이 현상은 <a href="why-jackpots-split.html">당첨금이 쪼개지는 이유</a>에서 따로 다룹니다.</li></ul>
+<p data-i18n-en="This is also why the site's &lt;a href=&quot;../statistics-frequency.html&quot;&gt;most frequent numbers ranking&lt;/a&gt; page shows, for each number, both &amp;quot;how many more times than expected&amp;quot; and &amp;quot;how many standard deviations&amp;quot;. The bell curve on that page shows 44 of the 45 numbers within ±2σ of the average. Before looking at how big a count is, first check whether it falls within the range that chance can explain.">이 사이트의 <a href="../statistics-frequency.html">많이 나온 번호 순위</a> 페이지가 번호마다 '기대보다 몇 회 많은지'와 '표준편차 몇 배인지'를 함께 적는 이유도 여기에 있습니다. 그 페이지의 정규분포 그림을 보면 45개 중 44개가 평균 ±2σ 안에 들어 있습니다. 숫자의 크기보다 그 숫자가 '무작위로 설명되는 범위 안인가'를 먼저 보시기 바랍니다.</p>
+<blockquote><p data-i18n-en="Counts cover the 6 main numbers of draws 1–1243 (bonus excluded), from this site's draw data (public data from Donghaeng Lottery). The simulation ran 5,000 sets of an experiment that repeats a 6-of-45 draw without replacement 1,243 times.">출현 횟수 기준: 제1~1243회 본번호 6개(보너스 제외), 이 사이트의 회차 데이터(동행복권 공개 자료). 시뮬레이션은 45개 중 6개 비복원 추출을 1243회 반복하는 실험을 5,000세트 수행한 결과입니다.</p></blockquote>
+
+<section class="related"><h2 data-i18n="blog.related">이 글과 이어지는 페이지</h2><ul><li><a href="../statistics-frequency.html" data-i18n-en="Most drawn numbers →">많이 나온 번호 순위 →</a><span data-i18n-en="Count per number with standard deviations">번호별 출현 횟수와 표준편차</span></li></ul></section>
+
+<nav class="post-nav" aria-label="이전 글과 다음 글" data-i18n-attr="aria-label:blog.prevNextAria"><span></span><a href="lotto-tax-guide.html"><small data-i18n="blog.next">다음 글</small><span data-i18n-en="Lotto tax explained, with real take-home amounts for each prize rank">로또 세금 완전 정리 — 등수별 실수령액 실제 계산</span></a></nav>
+
+        <p class="page-disclaimer" data-i18n="disclaimer.page">지난 추첨 기록을 정리한 것이며 다음 회차를 예측하지 않습니다. 어떤 6개를 고르든 1등 확률은 1/8,145,060으로 같습니다. 당첨번호 출처: 동행복권.</p>
+    </main>
+
+    <footer class="footer">
+        <ul class="footer-nav">
+            <li><a href="../index.html" data-i18n="footer.home">HOME</a></li>
+            <li><a href="../draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="../statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="../top-prize.html" data-i18n="footer.top">TOP 50</a></li>
+            <li><a href="../tax.html" data-i18n="footer.tax">실수령액</a></li>
+            <li><a href="../blog/index.html" data-i18n="nav.blog">블로그</a></li>
+            <li><a href="../about.html" data-i18n="nav.about">ABOUT</a></li>
+        </ul>
+        <p><a href="../privacy.html" data-i18n="footer.privacy">개인정보 처리방침</a> · <a href="../terms.html" data-i18n="footer.terms">이용약관</a> · <a href="../contact.html" data-i18n="footer.contact">문의</a></p>
+        <p data-i18n-html="footer.copy">&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권</p>
+    </footer>
+</div>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9372871176021283" crossorigin="anonymous"></script>
+</body>
+</html>

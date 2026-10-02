@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<!-- 이 파일은 tools/build-blog.js 가 content/blog/ 원고로 다시 만든다. 직접 고치면 덮어쓰인다. -->
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>궁합수는 진짜 있을까 — 990개 쌍과 다중 비교의 함정 | lottodraw.kr</title>
+    <meta name="description" content="함께 자주 나온 번호 쌍은 의미가 있을까요. 생일 문제와 텍사스 명사수의 오류로 '많이 찾으면 반드시 무언가 나온다'는 원리를 설명합니다.">
+    <link rel="canonical" href="https://www.lottodraw.kr/blog/pair-numbers-multiple-comparisons.html">
+    <meta property="og:title" content="궁합수는 진짜 있을까 — 990개 쌍과 다중 비교의 함정 | lottodraw.kr">
+    <meta property="og:description" content="함께 자주 나온 번호 쌍은 의미가 있을까요. 생일 문제와 텍사스 명사수의 오류로 '많이 찾으면 반드시 무언가 나온다'는 원리를 설명합니다.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://www.lottodraw.kr/blog/pair-numbers-multiple-comparisons.html">
+    <meta property="og:site_name" content="lottodraw.kr">
+    <meta property="og:image" content="https://www.lottodraw.kr/img/og-default.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="궁합수는 진짜 있을까 — 990개 쌍과 다중 비교의 함정 | lottodraw.kr">
+    <meta name="twitter:description" content="함께 자주 나온 번호 쌍은 의미가 있을까요. 생일 문제와 텍사스 명사수의 오류로 '많이 찾으면 반드시 무언가 나온다'는 원리를 설명합니다.">
+    <meta name="twitter:image" content="https://www.lottodraw.kr/img/og-default.png">
+    <meta name="google-adsense-account" content="ca-pub-9372871176021283">
+    <link rel="stylesheet" href="../css/site.css">
+    <script src="../js/i18n-dict.js"></script>
+    <script src="../js/i18n.js"></script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BlogPosting","headline":"궁합수는 진짜 있을까 — 990개 쌍과 다중 비교의 함정","description":"함께 자주 나온 번호 쌍은 의미가 있을까요. 생일 문제와 텍사스 명사수의 오류로 '많이 찾으면 반드시 무언가 나온다'는 원리를 설명합니다.","datePublished":"2026-10-01","dateModified":"2026-10-01","inLanguage":"ko-KR","articleSection":"확률 기초","url":"https://www.lottodraw.kr/blog/pair-numbers-multiple-comparisons.html","mainEntityOfPage":"https://www.lottodraw.kr/blog/pair-numbers-multiple-comparisons.html","image":"https://www.lottodraw.kr/img/og-default.png","author":{"@type":"Organization","name":"lottodraw.kr","url":"https://www.lottodraw.kr/"},"publisher":{"@type":"Organization","name":"lottodraw.kr","url":"https://www.lottodraw.kr/"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://www.lottodraw.kr/"},{"@type":"ListItem","position":2,"name":"블로그","item":"https://www.lottodraw.kr/blog/index.html"},{"@type":"ListItem","position":3,"name":"궁합수는 진짜 있을까 — 990개 쌍과 다중 비교의 함정","item":"https://www.lottodraw.kr/blog/pair-numbers-multiple-comparisons.html"}]}]}</script>
+    <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "91c08d8a39d944e69c10024f2314b955"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+<body>
+<div class="page">
+    <header class="banner">
+        <a class="brand" href="../index.html">
+            <span class="brand-name">LOTTODRAW.KR</span>
+            <span class="brand-tag" data-i18n="brand.tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
+        </a>
+        <div class="banner-right">
+            <p class="latest-callout" data-i18n-en="Draw 1243: 9 18 24 38 43 44 &lt;span class=&quot;bonus-sep&quot;&gt;+&lt;/span&gt; 35">제1243회 9 18 24 38 43 44 <span class="bonus-sep">+</span> 35</p>
+            <a class="sticker" href="../statistics.html" data-i18n-html="header.sticker">최근 <b>5개월</b> 통계</a>
+            <div class="lang-switch" role="group" aria-label="Language">
+                <button type="button" data-lang-btn="ko">KO</button><button type="button" data-lang-btn="en">EN</button>
+            </div>
+        </div>
+    </header>
+
+    <nav class="nav" aria-label="주 메뉴" data-i18n-attr="aria-label:nav.aria">
+        <ul>
+            <li><a href="../index.html" data-i18n="nav.index">생성기 · 통계</a></li>
+            <li><a href="../draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="../statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="../top-prize.html" data-i18n="nav.topPrize">TOP 50 당첨금</a></li>
+            <li><a href="../tax.html" data-i18n="nav.tax">실수령액 계산</a></li>
+            <li><a href="../blog/index.html" aria-current="page" data-i18n="nav.blog">블로그</a></li>
+            <li><a href="../about.html" data-i18n="nav.about">ABOUT</a></li>
+        </ul>
+    </nav>
+
+    <main class="prose stat-page blog-post">
+        <nav class="breadcrumb" aria-label="현재 위치" data-i18n-attr="aria-label:crumb.aria"><a href="../index.html" data-i18n="crumb.home">홈</a> › <a href="../blog/index.html" data-i18n="nav.blog">블로그</a> › <span data-i18n-en="Are pair numbers real? 990 pairs and the multiple comparisons trap">궁합수는 진짜 있을까 — 990개 쌍과 다중 비교의 함정</span></nav>
+        <h1 data-i18n-en="Are pair numbers real? 990 pairs and the multiple comparisons trap">궁합수는 진짜 있을까 — 990개 쌍과 다중 비교의 함정</h1>
+        <p class="stat-scope"><span class="post-cat"><span class="cat-dot" data-band="5" aria-hidden="true"></span><span data-i18n-en="Probability basics">확률 기초</span></span> · <span data-i18n-en="2026-10-01 · 3 min read">2026-10-01 · 3분 읽기</span></p>
+        <p class="stat-lead"><span data-i18n-en="Do number pairs that often come up together mean anything? The birthday problem and the Texas sharpshooter fallacy explain why searching hard enough always turns something up.">함께 자주 나온 번호 쌍은 의미가 있을까요. 생일 문제와 텍사스 명사수의 오류로 '많이 찾으면 반드시 무언가 나온다'는 원리를 설명합니다.</span></p>
+
+<nav class="toc" aria-label="목차" data-i18n-attr="aria-label:blog.toc"><strong data-i18n="blog.toc">목차</strong><ol><li><a href="#s1" data-i18n-en="How often a pair should come up together">한 쌍의 기대 동반 횟수</a></li><li><a href="#s2" data-i18n-en="But there are 990 pairs">그런데 쌍은 990개입니다</a></li><li><a href="#s3" data-i18n-en="Principle 1: the birthday problem">원론 1: 생일 문제</a></li><li><a href="#s4" data-i18n-en="Principle 2: multiple comparisons and the Texas sharpshooter">원론 2: 다중 비교와 텍사스 명사수</a></li><li><a href="#s5" data-i18n-en="An honest way to test it">정직한 검증 방법</a></li><li><a href="#s6" data-i18n-en="How to read the pair numbers table">궁합수 표를 보는 법</a></li></ol></nav>
+
+<p data-i18n-en="Pair numbers are &lt;strong&gt;two numbers that have often come up together in the same draw&lt;/strong&gt;. Many statistics sites have tables like &amp;quot;pairs that have come up together most often&amp;quot;, and claims that it pays to play those pairs together are common. To give the conclusion first, the pair at the top of a pair numbers table is &lt;strong&gt;a value that randomness alone is certain to produce&lt;/strong&gt;. Let's see why.">궁합수는 <strong>같은 회차에 함께 자주 나온 두 번호</strong>를 말합니다. 통계 사이트마다 &quot;역대 최다 동반 출현 쌍&quot; 같은 표가 있고, 그 쌍을 함께 넣으면 유리하다는 주장도 흔합니다. 결론부터 말하면 궁합수 표에서 가장 위에 있는 쌍은 <strong>무작위만으로도 반드시 생기는 값</strong>입니다. 왜 그런지 살펴보겠습니다.</p>
+<h2 id="s1" data-i18n-en="How often a pair should come up together">한 쌍의 기대 동반 횟수</h2>
+<p data-i18n-en="The chance that two given numbers come up together in one draw is">서로 다른 두 번호가 한 회차에 함께 나올 확률은</p>
+<blockquote><p data-i18n-en="(6/45) × (5/44) ≈ 1.52%">(6/45) × (5/44) ≈ 1.52%</p></blockquote>
+<p data-i18n-en="Over 1243 draws, then, a pair is expected to come up together about &lt;strong&gt;18.8 times&lt;/strong&gt;, with a standard deviation of about 4.3. Most pairs should fall somewhere between 10 and 27 times.">입니다. 1243회라면 한 쌍의 기대 동반 횟수는 약 <strong>18.8회</strong>, 표준편차는 약 4.3회입니다. 대부분의 쌍은 10회에서 27회 사이에 있을 것으로 예상됩니다.</p>
+<h2 id="s2" data-i18n-en="But there are 990 pairs">그런데 쌍은 990개입니다</h2>
+<p data-i18n-en="The number of pairs you can make from 45 numbers is 45×44÷2 = &lt;strong&gt;990&lt;/strong&gt;. If you count 990 pairs at once, a few of them are bound to stray far from the average. We simulated 1243 draws under the same conditions as the real lotto 2,000 times, with the following results.">45개 번호로 만들 수 있는 쌍은 45×44÷2 = <strong>990개</strong>입니다. 990개를 동시에 세면 그중 몇 개는 평균에서 크게 벗어날 수밖에 없습니다. 실제와 같은 조건으로 1243회 추첨을 2천 번 재현해 보니 다음과 같았습니다.</p>
+<div class="table-scroll"><table class="data-table"><thead><tr><th scope="col" data-i18n-en="Item">항목</th><th scope="col" data-i18n-en="Random simulation (median)">무작위 시뮬레이션 (중앙값)</th><th scope="col" data-i18n-en="90% range">90% 범위</th></tr></thead><tbody><tr><td data-i18n-en="Pair that came up together most often">가장 많이 함께 나온 쌍</td><td data-i18n-en="34 times">34회</td><td data-i18n-en="32–38 times">32~38회</td></tr><tr><td data-i18n-en="Pair that came up together least often">가장 적게 함께 나온 쌍</td><td data-i18n-en="7 times">7회</td><td data-i18n-en="—">—</td></tr><tr><td data-i18n-en="Number of pairs that came up together 30+ times">30회 이상 함께 나온 쌍의 수</td><td data-i18n-en="about 10 pairs">약 10쌍</td><td data-i18n-en="—">—</td></tr></tbody></table></div>
+<p data-i18n-en="In a world where the average is 18.8, 34 is almost double. On its own it would be an extreme value, 3.5 standard deviations out, but as the maximum of 990 pairs it is an ordinary result. What does the real record show? In draws 1–1243, the pair that came up together most often is 11 and 21, at &lt;strong&gt;34 times&lt;/strong&gt;. That is exactly the median of the random simulations. In reality 8 pairs came up together 30 or more times, and the least frequent pair came up together 7 times, which also matches what randomness would lead you to expect. The top of the pair numbers table looks just like the landscape that randomness produces.">평균 18.8회인 세계에서 34회는 거의 두 배입니다. 단독으로 보면 3.5 표준편차 밖의 극단값이지만, 990개 중 최댓값으로는 평범한 결과입니다. 실제 기록은 어떨까요. 1~1243회에서 가장 많이 함께 나온 쌍은 11번과 21번으로 <strong>34회</strong>입니다. 무작위 재현의 중앙값과 정확히 같습니다. 30회 이상 함께 나온 쌍은 실제로 8쌍, 가장 적게 함께 나온 쌍은 7회로 이것도 무작위 예상과 맞아떨어집니다. 궁합수 표 상위권은 무작위가 만들어 내는 풍경 그대로입니다.</p>
+<h2 id="s3" data-i18n-en="Principle 1: the birthday problem">원론 1: 생일 문제</h2>
+<p data-i18n-en="A famous example of the same principle is the &lt;strong&gt;birthday problem&lt;/strong&gt;. How many people do you need in a class for the chance that two of them share a birthday to pass 50%? The answer is &lt;strong&gt;23&lt;/strong&gt;. That seems too few compared with 365 days, but 23 people form as many as 253 pairs. As the number of pairs you compare grows, 'coincidences' quickly become common.">같은 원리를 보여 주는 유명한 예가 <strong>생일 문제</strong>입니다. 한 반에 몇 명이 있으면 생일이 같은 두 사람이 있을 확률이 50%를 넘을까요? 답은 <strong>23명</strong>입니다. 365일에 비해 너무 적어 보이지만, 23명이 만드는 쌍은 253개나 됩니다. 비교하는 쌍이 많아지면 '우연의 일치'는 금세 흔해집니다.</p>
+<p data-i18n-en="The 990 pairs in lotto are far more comparisons than in the birthday problem. If there were no surprising pairs at all, that would be the more surprising thing.">로또의 990쌍은 생일 문제보다 훨씬 많은 비교입니다. 놀라운 쌍이 하나도 없다면 그쪽이 더 놀라운 일입니다.</p>
+<h2 id="s4" data-i18n-en="Principle 2: multiple comparisons and the Texas sharpshooter">원론 2: 다중 비교와 텍사스 명사수</h2>
+<p data-i18n-en="In statistics this is called the &lt;strong&gt;multiple comparisons problem&lt;/strong&gt;. If you run one test at a 5% significance level, there is a 5% chance of wrongly concluding by chance that a result is 'significant'. But if you run 990 tests, about 50 will come out significant by chance even when there is no real effect. So when you make many comparisons, you make the threshold stricter in line with the number of comparisons. With the simplest method, the &lt;strong&gt;Bonferroni correction&lt;/strong&gt;, a result across 990 pairs has to pass a level of 0.05÷990, or about 0.005%, before it counts as meaningful.">통계학에서는 이 현상을 <strong>다중 비교 문제</strong>라고 부릅니다. 유의수준 5%로 검정을 한 번 하면 우연히 '유의하다'고 잘못 결론 낼 확률이 5%입니다. 그런데 검정을 990번 하면 아무 효과가 없어도 50개쯤은 우연히 유의하게 나옵니다. 그래서 여러 번 비교할 때는 기준을 비교 횟수만큼 엄격하게 바꿉니다. 가장 단순한 <strong>본페로니 보정</strong>을 쓰면 990쌍에서는 0.05÷990, 약 0.005% 수준을 넘어야 의미가 있다고 봅니다.</p>
+<p data-i18n-en="A story that illustrates this trap is the &lt;strong&gt;Texas sharpshooter fallacy&lt;/strong&gt;. Someone fires at a barn wall at random, then paints a target where the bullet holes are thickest and claims to be a sharpshooter. A pair numbers table is like looking at all the data first and then painting a target where the overlaps are thickest.">이 함정을 그림으로 설명하는 이야기가 <strong>텍사스 명사수의 오류</strong>입니다. 헛간 벽에 총을 아무렇게나 쏜 뒤, 총알이 몰린 곳에 과녁을 그려 넣고 명사수라고 주장하는 것입니다. 궁합수 표는 데이터를 다 본 뒤에 가장 많이 겹친 곳에 과녁을 그리는 일과 같습니다.</p>
+<h2 id="s5" data-i18n-en="An honest way to test it">정직한 검증 방법</h2>
+<p data-i18n-en="To check whether a pair is really special, the order has to be reversed.">어떤 쌍이 정말 특별한지 확인하려면 순서가 반대여야 합니다.</p>
+<ol><li data-i18n-en="Pick the top pairs from earlier data (draws 1–621) &lt;strong&gt;in advance&lt;/strong&gt;.">과거 데이터(1~621회)에서 궁합수 상위 쌍을 <strong>미리</strong> 정합니다.</li><li data-i18n-en="Check whether those pairs also come up together more often than average in later data (draws 622–1243).">그 쌍이 이후 데이터(622~1243회)에서도 평균보다 자주 나오는지 봅니다.</li></ol>
+<p data-i18n-en="We actually tried this with this site's data. The 10 pairs that came up together most often in the first 621 draws had come up together &lt;strong&gt;18.4 times&lt;/strong&gt; on average. That is close to double the expected value of 9.4 for that period. But over the next 622 draws, the same 10 pairs came up together &lt;strong&gt;8.5 times&lt;/strong&gt; on average, slightly fewer than the expected 9.4. The 'match' did not carry over into the next period. This is &lt;strong&gt;regression to the mean&lt;/strong&gt;. If much of an extreme value was due to chance, that chance does not repeat in new data.">이 사이트의 데이터로 실제로 해 봤습니다. 앞쪽 621회에서 가장 자주 함께 나온 10쌍은 평균 <strong>18.4회</strong> 함께 나왔습니다. 그 기간의 기대값 9.4회의 두 배 가까운 숫자입니다. 그런데 같은 10쌍이 뒤쪽 622회 동안 함께 나온 횟수는 평균 <strong>8.5회</strong>로, 기대값 9.4회보다 오히려 조금 적었습니다. '궁합'은 다음 기간으로 이어지지 않았습니다. 이것이 <strong>평균으로의 회귀</strong>입니다. 극단값의 상당 부분이 우연이었다면, 새 데이터에서는 그 우연이 반복되지 않습니다.</p>
+<h2 id="s6" data-i18n-en="How to read the pair numbers table">궁합수 표를 보는 법</h2>
+<p data-i18n-en="This site's &lt;a href=&quot;../statistics-pair.html&quot;&gt;pair numbers ranking&lt;/a&gt; page lists the top 20 pairs along with the expected number of times any one pair comes up together (18.8). As long as the 34 at the top stays within the range of maximums expected from randomness (32–38), that pair is not a 'match'. It is just the highest roll among 990 rolls of the dice.">이 사이트의 <a href="../statistics-pair.html">궁합수 순위</a> 페이지는 상위 20쌍과 함께 한 쌍의 기대 동반 횟수(18.8회)를 적어 둡니다. 맨 위의 34회가 무작위로 기대되는 최댓값 범위(32~38회) 안에 있는 한, 그 쌍은 '궁합'이 아니라 990번 굴린 주사위 중 가장 크게 나온 눈일 뿐입니다.</p>
+<blockquote><p data-i18n-en="Actual pair counts were calculated from this site's data for draws 1–1243. The simulation ran 2,000 sets of an experiment that repeats a draw of 6 numbers out of 45 without replacement 1243 times.">실제 동반 횟수는 이 사이트의 1~1243회 데이터로 계산했습니다. 시뮬레이션은 45개 중 6개 비복원 추출을 1243회 반복하는 실험을 2,000세트 수행한 결과입니다.</p></blockquote>
+
+<section class="related"><h2 data-i18n="blog.related">이 글과 이어지는 페이지</h2><ul><li><a href="../statistics-pair.html" data-i18n-en="Pair numbers →">궁합수 순위 →</a><span data-i18n-en="Top 20 pairs drawn together">함께 나온 번호 쌍 Top 20</span></li><li><a href="../statistics-frequency.html" data-i18n-en="Most drawn numbers →">많이 나온 번호 순위 →</a><span data-i18n-en="Count per number with standard deviations">번호별 출현 횟수와 표준편차</span></li></ul></section>
+
+<nav class="post-nav" aria-label="이전 글과 다음 글" data-i18n-attr="aria-label:blog.prevNextAria"><a href="lucky-store-myth.html"><small data-i18n="blog.prev">이전 글</small><span data-i18n-en="Do lucky stores really exist? Dividing 1st-prize wins by sales">로또 명당은 정말 있을까 — 1등 배출 횟수를 판매량으로 나눠 보면</span></a><a href="how-prize-pool-works.html"><small data-i18n="blog.next">다음 글</small><span data-i18n-en="How is the lotto prize decided? Sales, allocation rates and rollovers">로또 당첨금은 어떻게 정해지나 — 판매액·배분 비율·이월</span></a></nav>
+
+        <p class="page-disclaimer" data-i18n="disclaimer.page">지난 추첨 기록을 정리한 것이며 다음 회차를 예측하지 않습니다. 어떤 6개를 고르든 1등 확률은 1/8,145,060으로 같습니다. 당첨번호 출처: 동행복권.</p>
+    </main>
+
+    <footer class="footer">
+        <ul class="footer-nav">
+            <li><a href="../index.html" data-i18n="footer.home">HOME</a></li>
+            <li><a href="../draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="../statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="../top-prize.html" data-i18n="footer.top">TOP 50</a></li>
+            <li><a href="../tax.html" data-i18n="footer.tax">실수령액</a></li>
+            <li><a href="../blog/index.html" data-i18n="nav.blog">블로그</a></li>
+            <li><a href="../about.html" data-i18n="nav.about">ABOUT</a></li>
+        </ul>
+        <p><a href="../privacy.html" data-i18n="footer.privacy">개인정보 처리방침</a> · <a href="../terms.html" data-i18n="footer.terms">이용약관</a> · <a href="../contact.html" data-i18n="footer.contact">문의</a></p>
+        <p data-i18n-html="footer.copy">&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권</p>
+    </footer>
+</div>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9372871176021283" crossorigin="anonymous"></script>
+</body>
+</html>

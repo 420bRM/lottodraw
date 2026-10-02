@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<!-- 이 파일은 tools/build-blog.js 가 content/blog/ 원고로 다시 만든다. 직접 고치면 덮어쓰인다. -->
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>번호 합계는 왜 138 근처에 몰릴까 — 홀짝·고저·합계와 종 모양 분포 | lottodraw.kr</title>
+    <meta name="description" content="당첨 번호 합계가 100~175 사이에 몰리는 이유를 주사위 두 개로 시작해 중심극한정리까지 설명합니다. 홀짝·고저 비율의 실제 분포도 함께 계산했습니다.">
+    <link rel="canonical" href="https://www.lottodraw.kr/blog/sum-odd-even-bell-curve.html">
+    <meta property="og:title" content="번호 합계는 왜 138 근처에 몰릴까 — 홀짝·고저·합계와 종 모양 분포 | lottodraw.kr">
+    <meta property="og:description" content="당첨 번호 합계가 100~175 사이에 몰리는 이유를 주사위 두 개로 시작해 중심극한정리까지 설명합니다. 홀짝·고저 비율의 실제 분포도 함께 계산했습니다.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://www.lottodraw.kr/blog/sum-odd-even-bell-curve.html">
+    <meta property="og:site_name" content="lottodraw.kr">
+    <meta property="og:image" content="https://www.lottodraw.kr/img/og-default.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="번호 합계는 왜 138 근처에 몰릴까 — 홀짝·고저·합계와 종 모양 분포 | lottodraw.kr">
+    <meta name="twitter:description" content="당첨 번호 합계가 100~175 사이에 몰리는 이유를 주사위 두 개로 시작해 중심극한정리까지 설명합니다. 홀짝·고저 비율의 실제 분포도 함께 계산했습니다.">
+    <meta name="twitter:image" content="https://www.lottodraw.kr/img/og-default.png">
+    <meta name="google-adsense-account" content="ca-pub-9372871176021283">
+    <link rel="stylesheet" href="../css/site.css">
+    <script src="../js/i18n-dict.js"></script>
+    <script src="../js/i18n.js"></script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BlogPosting","headline":"번호 합계는 왜 138 근처에 몰릴까 — 홀짝·고저·합계와 종 모양 분포","description":"당첨 번호 합계가 100~175 사이에 몰리는 이유를 주사위 두 개로 시작해 중심극한정리까지 설명합니다. 홀짝·고저 비율의 실제 분포도 함께 계산했습니다.","datePublished":"2026-10-01","dateModified":"2026-10-01","inLanguage":"ko-KR","articleSection":"확률 기초","url":"https://www.lottodraw.kr/blog/sum-odd-even-bell-curve.html","mainEntityOfPage":"https://www.lottodraw.kr/blog/sum-odd-even-bell-curve.html","image":"https://www.lottodraw.kr/img/og-default.png","author":{"@type":"Organization","name":"lottodraw.kr","url":"https://www.lottodraw.kr/"},"publisher":{"@type":"Organization","name":"lottodraw.kr","url":"https://www.lottodraw.kr/"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://www.lottodraw.kr/"},{"@type":"ListItem","position":2,"name":"블로그","item":"https://www.lottodraw.kr/blog/index.html"},{"@type":"ListItem","position":3,"name":"번호 합계는 왜 138 근처에 몰릴까 — 홀짝·고저·합계와 종 모양 분포","item":"https://www.lottodraw.kr/blog/sum-odd-even-bell-curve.html"}]}]}</script>
+    <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "91c08d8a39d944e69c10024f2314b955"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+<body>
+<div class="page">
+    <header class="banner">
+        <a class="brand" href="../index.html">
+            <span class="brand-name">LOTTODRAW.KR</span>
+            <span class="brand-tag" data-i18n="brand.tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
+        </a>
+        <div class="banner-right">
+            <p class="latest-callout" data-i18n-en="Draw 1243: 9 18 24 38 43 44 &lt;span class=&quot;bonus-sep&quot;&gt;+&lt;/span&gt; 35">제1243회 9 18 24 38 43 44 <span class="bonus-sep">+</span> 35</p>
+            <a class="sticker" href="../statistics.html" data-i18n-html="header.sticker">최근 <b>5개월</b> 통계</a>
+            <div class="lang-switch" role="group" aria-label="Language">
+                <button type="button" data-lang-btn="ko">KO</button><button type="button" data-lang-btn="en">EN</button>
+            </div>
+        </div>
+    </header>
+
+    <nav class="nav" aria-label="주 메뉴" data-i18n-attr="aria-label:nav.aria">
+        <ul>
+            <li><a href="../index.html" data-i18n="nav.index">생성기 · 통계</a></li>
+            <li><a href="../draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="../statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="../top-prize.html" data-i18n="nav.topPrize">TOP 50 당첨금</a></li>
+            <li><a href="../tax.html" data-i18n="nav.tax">실수령액 계산</a></li>
+            <li><a href="../blog/index.html" aria-current="page" data-i18n="nav.blog">블로그</a></li>
+            <li><a href="../about.html" data-i18n="nav.about">ABOUT</a></li>
+        </ul>
+    </nav>
+
+    <main class="prose stat-page blog-post">
+        <nav class="breadcrumb" aria-label="현재 위치" data-i18n-attr="aria-label:crumb.aria"><a href="../index.html" data-i18n="crumb.home">홈</a> › <a href="../blog/index.html" data-i18n="nav.blog">블로그</a> › <span data-i18n-en="Why do lotto sums cluster near 138? Odd/even, low/high and the bell curve">번호 합계는 왜 138 근처에 몰릴까 — 홀짝·고저·합계와 종 모양 분포</span></nav>
+        <h1 data-i18n-en="Why do lotto sums cluster near 138? Odd/even, low/high and the bell curve">번호 합계는 왜 138 근처에 몰릴까 — 홀짝·고저·합계와 종 모양 분포</h1>
+        <p class="stat-scope"><span class="post-cat"><span class="cat-dot" data-band="5" aria-hidden="true"></span><span data-i18n-en="Probability basics">확률 기초</span></span> · <span data-i18n-en="2026-10-01 · 3 min read">2026-10-01 · 3분 읽기</span></p>
+        <p class="stat-lead"><span data-i18n-en="Why winning-number sums cluster between 100 and 175, explained from two dice up to the central limit theorem. We also worked out the real distribution of odd/even and low/high splits.">당첨 번호 합계가 100~175 사이에 몰리는 이유를 주사위 두 개로 시작해 중심극한정리까지 설명합니다. 홀짝·고저 비율의 실제 분포도 함께 계산했습니다.</span></p>
+
+<nav class="toc" aria-label="목차" data-i18n-attr="aria-label:blog.toc"><strong data-i18n="blog.toc">목차</strong><ol><li><a href="#s1" data-i18n-en="The sum of two dice">주사위 두 개의 합</a></li><li><a href="#s2" data-i18n-en="The real distribution of lotto number sums">로또 번호 합계의 실제 분포</a></li><li><a href="#s3" data-i18n-en="Odd/even split">홀짝 비율</a></li><li><a href="#s4" data-i18n-en="Low/high split">고저 비율</a></li><li><a href="#s5" data-i18n-en="Principle: a common type is not the same as a common combination">원론: '자주 나오는 유형'과 '자주 나오는 조합'은 다릅니다</a></li><li><a href="#s6" data-i18n-en="It is still useful">그래도 쓸모는 있습니다</a></li></ol></nav>
+
+<p data-i18n-en="Lotto statistics pages often give the same advice: &amp;quot;Keep your number sum between 100 and 175&amp;quot; and &amp;quot;An odd/even split of 3:3 or 4:2 is best.&amp;quot; This advice does match the real draw records. But does it raise your chance of winning? Let's start with two dice.">로또 통계 페이지에서 자주 보는 조언이 있습니다. &quot;번호 합계는 100~175 사이로 맞추세요&quot;, &quot;홀짝은 3:3이나 4:2가 좋습니다.&quot; 이 조언들은 실제 당첨 기록과도 맞아떨어집니다. 그런데 이것이 당첨 확률을 높여 주는 걸까요? 주사위 두 개부터 시작해 보겠습니다.</p>
+<h2 id="s1" data-i18n-en="The sum of two dice">주사위 두 개의 합</h2>
+<p data-i18n-en="When you roll two dice, 7 is the most likely sum. That is because 7 has the most ways to happen, six in all: (1,6), (2,5), (3,4), (4,3), (5,2), (6,1). The sums 2 and 12 have only one way each. Each face is equally fair at 1/6, yet the &lt;strong&gt;sum&lt;/strong&gt; clusters in the middle.">주사위 두 개를 던지면 합이 7이 나올 확률이 가장 높습니다. 7을 만드는 방법이 (1,6), (2,5), (3,4), (4,3), (5,2), (6,1) 여섯 가지로 가장 많기 때문입니다. 반면 2와 12는 한 가지 방법뿐입니다. 각각의 눈은 모두 1/6로 공평한데, <strong>합</strong>은 가운데로 몰립니다.</p>
+<p data-i18n-en="The general form of this effect is the &lt;strong&gt;central limit theorem&lt;/strong&gt;. When you add up many independent values, the distribution of the sum gets closer and closer to a &lt;strong&gt;bell shape (normal distribution)&lt;/strong&gt;, whatever each value's own distribution looks like. This is also why results made of many added factors, such as height, test scores and measurement error, take a bell shape.">이 현상을 일반화한 것이 <strong>중심극한정리</strong>입니다. 독립적인 값을 여러 개 더하면, 각 값의 분포가 어떻게 생겼든 합의 분포는 점점 <strong>종 모양(정규분포)</strong> 에 가까워집니다. 키, 시험 점수, 측정 오차처럼 여러 요인이 더해진 결과가 종 모양을 띠는 이유도 같습니다.</p>
+<h2 id="s2" data-i18n-en="The real distribution of lotto number sums">로또 번호 합계의 실제 분포</h2>
+<p data-i18n-en="The sum of six lotto numbers is at least 21 (1–6) and at most 255 (40–45). Working through all 8.15 million combinations gives the following.">로또 여섯 숫자의 합은 최소 21(1~6), 최대 255(40~45)입니다. 815만 개 조합 전체를 계산하면 다음과 같습니다.</p>
+<div class="table-scroll"><table class="data-table"><thead><tr><th scope="col" data-i18n-en="Item">항목</th><th scope="col" data-i18n-en="Value">값</th></tr></thead><tbody><tr><td data-i18n-en="Mean">평균</td><td data-i18n-en="138">138</td></tr><tr><td data-i18n-en="Standard deviation">표준편차</td><td data-i18n-en="about 30">약 30</td></tr><tr><td data-i18n-en="Most common sum">가장 흔한 합계</td><td data-i18n-en="138 (105,690 combinations)">138 (10만 5,690개 조합)</td></tr><tr><td data-i18n-en="Share of combinations with a sum of 100–175">합계 100~175인 조합의 비율</td><td data-i18n-en="79.0%">79.0%</td></tr></tbody></table></div>
+<p data-i18n-en="In real draws 1–1243, the winning-number sums had a mean of &lt;strong&gt;138.3&lt;/strong&gt; and a standard deviation of 30.7, almost the same as theory. The smallest sum was 48 and the largest was 238. A bar chart with the theoretical curve laid over it is on the &lt;a href=&quot;../statistics-sum.html&quot;&gt;number sum distribution&lt;/a&gt; page.">실제 1~1243회 당첨 번호의 합계는 평균 <strong>138.3</strong>, 표준편차 30.7로 이론값과 거의 같습니다. 가장 작은 합계는 48, 가장 큰 합계는 238이었습니다. 막대그래프와 이론 곡선을 겹쳐 그린 그림은 <a href="../statistics-sum.html">번호 합계 분포</a> 페이지에 있습니다.</p>
+<p data-i18n-en="The advice &amp;quot;keep the sum between 100 and 175&amp;quot; really means &lt;strong&gt;pick from 79% of all combinations&lt;/strong&gt;. In fact, &lt;strong&gt;77.6%&lt;/strong&gt; of the winning numbers in draws 1–1243 fell in this range. Most winning numbers land in this range not because the draw machine likes it, but because that range holds so many combinations. A single combination with a sum of 138 and the single combination with a sum of 21 (1-2-3-4-5-6) have exactly the same chance of winning.">&quot;합계 100~175로 맞춰라&quot;는 조언은 결국 <strong>전체 조합의 79%를 고르라</strong>는 말입니다. 실제로 1~1243회 당첨 번호의 <strong>77.6%</strong> 가 이 범위에 들었습니다. 당첨 번호의 대부분이 이 범위에 드는 건 추첨기가 그 범위를 좋아해서가 아니라, 그 범위에 조합이 그만큼 많기 때문입니다. 합계 138인 조합 하나와 합계 21인 조합 하나(1-2-3-4-5-6)의 당첨 확률은 똑같습니다.</p>
+<h2 id="s3" data-i18n-en="Odd/even split">홀짝 비율</h2>
+<p data-i18n-en="From 1 to 45 there are 23 odd numbers and 22 even numbers. Here is the share of combinations by how many of the six numbers are odd.">1~45에는 홀수가 23개, 짝수가 22개 있습니다. 여섯 숫자 중 홀수 개수별 조합 비율은 이렇습니다.</p>
+<div class="table-scroll"><table class="data-table"><thead><tr><th scope="col" data-i18n-en="Odd:even">홀:짝</th><th scope="col" data-i18n-en="All combinations">전체 조합</th><th scope="col" data-i18n-en="Actual, draws 1–1243">실제 1~1243회</th></tr></thead><tbody><tr><td data-i18n-en="6:0">6:0</td><td data-i18n-en="1.2%">1.2%</td><td data-i18n-en="1.5%">1.5%</td></tr><tr><td data-i18n-en="5:1">5:1</td><td data-i18n-en="9.1%">9.1%</td><td data-i18n-en="8.0%">8.0%</td></tr><tr><td data-i18n-en="4:2">4:2</td><td data-i18n-en="25.1%">25.1%</td><td data-i18n-en="26.5%">26.5%</td></tr><tr><td data-i18n-en="3:3">3:3</td><td data-i18n-en="33.5%">33.5%</td><td data-i18n-en="33.3%">33.3%</td></tr><tr><td data-i18n-en="2:4">2:4</td><td data-i18n-en="22.7%">22.7%</td><td data-i18n-en="22.6%">22.6%</td></tr><tr><td data-i18n-en="1:5">1:5</td><td data-i18n-en="7.4%">7.4%</td><td data-i18n-en="6.7%">6.7%</td></tr><tr><td data-i18n-en="0:6">0:6</td><td data-i18n-en="0.9%">0.9%</td><td data-i18n-en="1.4%">1.4%</td></tr></tbody></table></div>
+<p data-i18n-en="Because there is one extra odd number, 4:2 (25.1%) is slightly more common than 2:4 (22.7%). The real records also match theory to within about 1 percentage point (&lt;a href=&quot;../statistics-even-odd.html&quot;&gt;odd/even split&lt;/a&gt;). 3:3 is the most common, but it comes up only about one time in three, and if you insist on matching 3:3 you throw away the other 66.5%.">홀수가 하나 더 많아서 4:2(25.1%)가 2:4(22.7%)보다 조금 더 흔합니다. 실제 기록도 이론값과 1%포인트 안팎으로 맞습니다(<a href="../statistics-even-odd.html">홀짝 비율</a>). 3:3이 가장 흔하지만 셋 중 하나꼴일 뿐이고, 3:3 '맞추기'에 집착하면 나머지 66.5%를 버리게 됩니다.</p>
+<h2 id="s4" data-i18n-en="Low/high split">고저 비율</h2>
+<p data-i18n-en="If you call 1–22 low and 23–45 high, there are 23 high numbers. So the distribution has exactly the same shape as odd/even: four high and two low numbers come up 25.1% of the time, more than the reverse (22.7%). The real records are on the &lt;a href=&quot;../statistics-low-high.html&quot;&gt;low/high split&lt;/a&gt; page.">1~22를 낮은 수, 23~45를 높은 수로 나누면 높은 수가 23개입니다. 그래서 분포는 홀짝과 정확히 같은 모양이고, 높은 수 4개·낮은 수 2개가 25.1%로 그 반대(22.7%)보다 많습니다. 실제 기록은 <a href="../statistics-low-high.html">저고 비율</a>에서 볼 수 있습니다.</p>
+<h2 id="s5" data-i18n-en="Principle: a common type is not the same as a common combination">원론: '자주 나오는 유형'과 '자주 나오는 조합'은 다릅니다</h2>
+<p data-i18n-en="The key here is to separate a &lt;strong&gt;type&lt;/strong&gt; from an &lt;strong&gt;individual combination&lt;/strong&gt;. The type &amp;quot;sum in the 130s&amp;quot; wins often, but only because many combinations belong to it. &lt;strong&gt;Each&lt;/strong&gt; combination within that type has the same chance as every other combination.">여기서 핵심은 <strong>유형</strong>과 <strong>개별 조합</strong>을 구분하는 것입니다. '합계 130대'라는 유형은 자주 당첨되지만, 그건 그 유형에 속한 조합이 많아서입니다. 그 유형 안의 조합 <strong>하나하나</strong>는 다른 모든 조합과 같은 확률을 갖습니다.</p>
+<p data-i18n-en="Here is an analogy. If you pick one student at random from a school, that student is likely to be 160–175 cm tall, because many students are that height. That does not mean each student in that range is more likely to be picked.">비유하자면 이렇습니다. 학교에서 무작위로 학생 한 명을 뽑으면 키가 160~175cm일 가능성이 높습니다. 그 키의 학생이 많기 때문이죠. 그렇다고 그 범위의 학생 한 명 한 명이 뽑힐 확률이 더 높은 것은 아닙니다.</p>
+<h2 id="s6" data-i18n-en="It is still useful">그래도 쓸모는 있습니다</h2>
+<p data-i18n-en="Sum and odd/even filters are useful not for the odds but for &lt;strong&gt;not overlapping with other people&lt;/strong&gt;. Combinations with extreme sums (for example, all single-digit numbers) or a 6:0 split may be chosen by many people who pick by a pattern. On the other hand, if many people pick only the &amp;quot;good ratios&amp;quot; such as 3:3 and sums in the 130s, overlaps can happen there too. For more, see &lt;a href=&quot;why-jackpots-split.html&quot;&gt;why jackpots get split&lt;/a&gt;.">합계나 홀짝 필터의 쓸모는 확률이 아니라 <strong>사람들과 겹치지 않는 것</strong>에 있습니다. 극단적인 합계(예: 모두 한 자릿수)나 6:0 같은 조합은 규칙을 따라 고른 사람이 많을 가능성이 있습니다. 반대로 '좋은 비율'로 알려진 3:3, 합계 130대만 고르는 사람이 많아지면 그 안에서 겹칠 가능성도 생깁니다. 자세한 내용은 <a href="why-jackpots-split.html">당첨금이 쪼개지는 이유</a>를 참고하십시오.</p>
+<blockquote><p data-i18n-en="The theoretical distribution was calculated directly from all 8,145,060 combinations, and the real distribution uses this site's data for draws 1–1243.">이론 분포는 8,145,060개 조합 전체를 직접 계산한 값이고, 실제 분포는 이 사이트의 1~1243회 데이터입니다.</p></blockquote>
+
+<section class="related"><h2 data-i18n="blog.related">이 글과 이어지는 페이지</h2><ul><li><a href="../statistics-sum.html" data-i18n-en="Sum of numbers →">번호 합계 분포 →</a><span data-i18n-en="Actual sums against the normal curve">실제 합계와 이론 정규분포</span></li><li><a href="../statistics-even-odd.html" data-i18n-en="Odd/even split →">홀짝 비율 →</a><span data-i18n-en="Actual splits against theory">실제 비율과 이론 확률</span></li><li><a href="../statistics-low-high.html" data-i18n-en="Low/high split →">저고 비율 →</a><span data-i18n-en="Low (1–22) and high (23–45) numbers">낮은 번호와 높은 번호의 비율</span></li></ul></section>
+
+<nav class="post-nav" aria-label="이전 글과 다음 글" data-i18n-attr="aria-label:blog.prevNextAria"><a href="how-prize-pool-works.html"><small data-i18n="blog.prev">이전 글</small><span data-i18n-en="How is the lotto prize decided? Sales, allocation rates and rollovers">로또 당첨금은 어떻게 정해지나 — 판매액·배분 비율·이월</span></a><a href="lotto-odds-explained.html"><small data-i18n="blog.next">다음 글</small><span data-i18n-en="How small is 1 in 8.14 million? Odds by prize rank and expected value">814만분의 1은 얼마나 작은가 — 등수별 확률과 기대값</span></a></nav>
+
+        <p class="page-disclaimer" data-i18n="disclaimer.page">지난 추첨 기록을 정리한 것이며 다음 회차를 예측하지 않습니다. 어떤 6개를 고르든 1등 확률은 1/8,145,060으로 같습니다. 당첨번호 출처: 동행복권.</p>
+    </main>
+
+    <footer class="footer">
+        <ul class="footer-nav">
+            <li><a href="../index.html" data-i18n="footer.home">HOME</a></li>
+            <li><a href="../draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="../statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="../top-prize.html" data-i18n="footer.top">TOP 50</a></li>
+            <li><a href="../tax.html" data-i18n="footer.tax">실수령액</a></li>
+            <li><a href="../blog/index.html" data-i18n="nav.blog">블로그</a></li>
+            <li><a href="../about.html" data-i18n="nav.about">ABOUT</a></li>
+        </ul>
+        <p><a href="../privacy.html" data-i18n="footer.privacy">개인정보 처리방침</a> · <a href="../terms.html" data-i18n="footer.terms">이용약관</a> · <a href="../contact.html" data-i18n="footer.contact">문의</a></p>
+        <p data-i18n-html="footer.copy">&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권</p>
+    </footer>
+</div>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9372871176021283" crossorigin="anonymous"></script>
+</body>
+</html>
