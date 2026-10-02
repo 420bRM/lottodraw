@@ -129,6 +129,19 @@ test('카카오뱅크 알림 형식: "입금 1,467원 / 이동찬 → 개인사�
     assert.equal(r.data.matched, b.id);
 });
 
+test('연락처는 이메일만 받는다 (비워 두는 것은 괜찮다)', async () => {
+    _resetForTests();
+    const env = makeEnv();
+    const order = contact => call(env, 'POST', '/api/orders', { body: { plan: 'day', method: 'bank', name: '홍길동', contact, agree: true }, headers: { 'CF-Connecting-IP': contact || 'none' } });
+    let r = await order('010-1234-5678');
+    assert.equal(r.status, 400);
+    assert.equal(r.data.error, 'bad_contact');
+    r = await order('buyer@example.com');
+    assert.equal(r.status, 201);
+    r = await order('');
+    assert.equal(r.status, 201);
+});
+
 test('PRICES 환경변수로 가격만 바꿀 수 있다', async () => {
     _resetForTests();
     const r = await call(makeEnv({ PRICES: '{"week":3000,"month":500}' }), 'GET', '/api/config');

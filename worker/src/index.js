@@ -154,6 +154,8 @@ async function createOrder(request, env, ctx, url) {
     const phone = String(body.phone || '').replace(/\D/g, '');
     if (method === 'bank' && name.length < 2) throw new HttpError(400, 'need_name', '입금자명을 2자 이상 적어 주세요.');
     if (method === 'payapp' && !/^01\d{8,9}$/.test(phone)) throw new HttpError(400, 'need_phone', '휴대폰 번호를 확인해 주세요.');
+    // 연락은 이메일로만 받는다 (키 재발송·문의 기록이 남게). 비워 두는 것은 괜찮다.
+    if (contact && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact)) throw new HttpError(400, 'bad_contact', '이메일 주소를 적어 주세요. 키를 다시 보내 드릴 때만 씁니다.');
 
     // 기한(72시간)이 지난 대기 주문은 세지 않는다. 버려진 주문이 쌓여 가게가 닫히는 일을 막는다.
     const ipTag = (await sha256('ip:' + ip)).slice(0, 12);

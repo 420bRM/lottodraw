@@ -189,6 +189,7 @@
         const contact = $('co-contact').value.trim();
         if (method === 'bank' && name.length < 2) return setStatus('co-status', T('err.need_name'), true);
         if (method === 'payapp' && !/^01\d{8,9}$/.test(phone)) return setStatus('co-status', T('err.need_phone'), true);
+        if (contact && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact)) return setStatus('co-status', T('err.bad_contact'), true);
         if (!$('co-agree').checked) return setStatus('co-status', T('err.need_agree'), true);
 
         const btn = $('co-submit');
