@@ -110,6 +110,25 @@ test('1일 이용권: 1,500원, 입금되면 24시간짜리 키가 발급된다'
     assert.equal(p.expiresAt - p.issuedAt, 86400);
 });
 
+test('카카오뱅크 알림 형식: "입금 1,467원 / 이동찬 → 개인사업자통장(2506)" 을 읽고, 입금이 아닌 알림은 무시한다', async () => {
+    _resetForTests();
+    const env = makeEnv({ DEPOSIT_HOOK_SECRET: 'hook-secret-0123456789' });
+    await setupKey(env);
+    const hook = raw => call(env, 'POST', '/api/hooks/deposit', { raw, headers: { 'Content-Type': 'text/plain', Authorization: 'Bearer hook-secret-0123456789' } });
+    const a = (await call(env, 'POST', '/api/orders', { body: { plan: 'day', method: 'bank', name: '이동찬', agree: true }, headers: { 'CF-Connecting-IP': '10.2.0.1' } })).data.order;
+    const b = (await call(env, 'POST', '/api/orders', { body: { plan: 'day', method: 'bank', name: '김민수', agree: true }, headers: { 'CF-Connecting-IP': '10.2.0.2' } })).data.order;
+    const won = n => n.toLocaleString('ko-KR') + '원';
+    // 입금이 아닌 알림(카드 승인 등)은 금액이 같아도 무시
+    let r = await hook(`카드 승인 ${won(a.amount)} 편의점`);
+    assert.equal(r.data.reason, 'not_deposit');
+    // MacroDroid 가 알림 제목과 내용을 이어 보낸 모양 그대로
+    r = await hook(`입금 ${won(a.amount)}\n이동찬 → 개인사업자통장(2506)`);
+    assert.equal(r.data.matched, a.id);
+    // 정가(1,500원)로 보냈어도 입금자명이 맞으면 발급
+    r = await hook(`입금 1,500원\n김민수 → 개인사업자통장(2506)`);
+    assert.equal(r.data.matched, b.id);
+});
+
 test('PRICES 환경변수로 가격만 바꿀 수 있다', async () => {
     _resetForTests();
     const r = await call(makeEnv({ PRICES: '{"week":3000,"month":500}' }), 'GET', '/api/config');
@@ -679,12 +698,37 @@ test('서명 키 백업은 관리자만, KV 에 있을 때만', async () => {
     assert.equal(r.status, 401);
     r = await call(env, 'POST', '/api/admin/key-backup', { headers: asAdmin });
     assert.ok(r.data.privateJwk.d);
-    // 백업을 비밀값으로 넣으면 그 키로 서명한다 (KV 를 잃어도 이전 키가 산다)
+    const backup = r.data.privateJwk;
+    // KV 와 같은 백업을 비밀값으로 넣으면 "맞음"
     _resetForTests();
-    const env2 = makeEnv({ LICENSE_PRIVATE_JWK: JSON.stringify(r.data.privateJwk) });
-    const st = await call(env2, 'GET', '/api/admin/status', { headers: asAdmin });
+    let st = await call(Object.assign({}, env, { LICENSE_PRIVATE_JWK: JSON.stringify(backup) }), 'GET', '/api/admin/status', { headers: asAdmin });
+    assert.equal(st.data.keySource, 'kv');
+    assert.equal(st.data.keyBackup, 'ok');
+    // KV 를 잃으면 백업 비밀값으로 서명한다 (이전에 판 키가 산다)
+    _resetForTests();
+    const env2 = makeEnv({ LICENSE_PRIVATE_JWK: JSON.stringify(backup) });
+    st = await call(env2, 'GET', '/api/admin/status', { headers: asAdmin });
     assert.equal(st.data.keySource, 'secret');
-    assert.equal(st.data.publicJwk.x, r.data.privateJwk.x);
+    assert.equal(st.data.publicJwk.x, backup.x);
+});
+
+test('잘못 넣은 서명 키 백업(다른 값·다른 키)은 무시하고 KV 키로 계속 발급한다', async () => {
+    _resetForTests();
+    const env = makeEnv({ DEPOSIT_HOOK_SECRET: 'hook-secret-0123456789' });
+    await setupKey(env);
+    const kid = (await call(env, 'GET', '/api/admin/status', { headers: asAdmin })).data.kid;
+    const other = (await generateKeyPair()).privateJwk;
+    for (const [value, state] of [['not-a-json-key-0123456789', 'invalid'], [JSON.stringify(other), 'mismatch']]) {
+        _resetForTests();
+        const bad = Object.assign({}, env, { LICENSE_PRIVATE_JWK: value });
+        const st = await call(bad, 'GET', '/api/admin/status', { headers: asAdmin });
+        assert.equal(st.data.kid, kid, '원래 키 그대로');
+        assert.equal(st.data.keyBackup, state);
+        const { order, token } = (await call(bad, 'POST', '/api/orders', { body: { plan: 'day', method: 'bank', name: '홍길동', agree: true }, headers: { 'CF-Connecting-IP': state } })).data;
+        await call(bad, 'POST', '/api/hooks/deposit', { raw: `입금 ${order.amount}원 홍길동`, headers: { 'Content-Type': 'text/plain', Authorization: 'Bearer hook-secret-0123456789' } });
+        const paid = (await call(bad, 'GET', `/api/orders/${order.id}?token=${token}`)).data.order;
+        assert.equal(paid.status, 'paid', '발급은 계속된다');
+    }
 });
 
 test.after(async () => { await Promise.all(waits); });

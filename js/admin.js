@@ -76,16 +76,20 @@
         return data;
     }
 
+    // 복사가 됐는지 돌려준다. 휴대폰 브라우저는 서버에 다녀온 뒤에는 복사를 막는 일이 있어,
+    // 실패를 "복사했습니다"로 덮지 않는다 (예전 클립보드 값을 잘못 붙여 넣지 않게).
     async function copy(text, btn) {
-        try { await navigator.clipboard.writeText(text); } catch (e) {
+        let ok = false;
+        try { await navigator.clipboard.writeText(text); ok = true; } catch (e) {
             const ta = el('textarea', { style: 'position:fixed;left:-9999px' });
             ta.value = text;
             document.body.appendChild(ta);
             ta.select();
-            try { document.execCommand('copy'); } catch (e2) { /* 무시 */ }
+            try { ok = document.execCommand('copy'); } catch (e2) { ok = false; }
             ta.remove();
         }
-        if (btn) { const old = btn.textContent; btn.textContent = '복사했습니다'; setTimeout(() => { btn.textContent = old; }, 1500); }
+        if (btn) { const old = btn.textContent; btn.textContent = ok ? '복사했습니다' : '복사 안 됨 — 직접 복사'; setTimeout(() => { btn.textContent = old; }, 2500); }
+        return ok;
     }
 
     function keyBox(order) {
@@ -150,6 +154,15 @@
             el('b', { text: s.kid ? '✔ 서명 키' : '✘ 서명 키' }), ' ',
             el('span', { text: s.kid ? `kid ${s.kid}${s.keySource === 'secret' ? ' (비밀값)' : ''}` : '아직 없음 — 아래 "서명 키 만들기"를 누르세요. 없으면 키를 발급할 수 없습니다' }),
         ]));
+        if (s.kid) {
+            const b = {
+                ok: [true, '맞음 — GitHub Secret LICENSE_PRIVATE_JWK 가 지금 서명 키와 같습니다'],
+                none: [false, '없음 — 아래 "서명 키 백업 복사" 값을 GitHub Secret LICENSE_PRIVATE_JWK 에 넣어 두세요 (권장)'],
+                invalid: [false, '형식이 잘못됨 — LICENSE_PRIVATE_JWK 를 지우고, 아래 백업 값({"kty":"EC"… 한 줄 전체)을 다시 넣으세요'],
+                mismatch: [false, '다른 키 — LICENSE_PRIVATE_JWK 를 지우고, 아래 백업 값을 다시 넣으세요'],
+            }[s.keyBackup] || [false, '알 수 없음'];
+            list.appendChild(el('li', { className: b[0] ? 'on' : 'off' }, [el('b', { text: (b[0] ? '✔ ' : '✘ ') + '서명 키 백업' }), ' ', el('span', { text: b[1] })]));
+        }
         $('setup-key-box').hidden = !!s.kid;
         $('key-tools').hidden = !s.kid;
         $('key-backup-btn').hidden = s.keySource !== 'kv';
@@ -390,10 +403,18 @@
             const btn = e.currentTarget;
             try {
                 const r = await call('/key-backup', { method: 'POST' });
-                await copy(JSON.stringify(r.privateJwk), btn);
+                const text = JSON.stringify(r.privateJwk);
+                $('key-backup-text').value = text;
+                $('key-backup-box').hidden = false;
+                await copy(text, btn);
+                $('key-backup-text').select();
             } catch (err) {
                 say('admin-status', '백업을 가져오지 못했습니다: ' + err.message, true);
             }
+        });
+        $('key-backup-hide').addEventListener('click', () => {
+            $('key-backup-text').value = '';
+            $('key-backup-box').hidden = true;
         });
         document.addEventListener('visibilitychange', () => { if (!document.hidden && token && tab === 'pending') loadOrders(); });
 

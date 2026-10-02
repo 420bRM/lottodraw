@@ -426,6 +426,7 @@ details[open] > summary.card-title { padding-bottom: 0; }
 .admin-line { margin: 0 0 6px; }
 .admin-detail:empty { display: none; }
 .admin-detail { margin-top: 10px; }
+.key-backup-text { width: 100%; font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; word-break: break-all; }
 .admin-tools { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 .admin-form { display: grid; gap: 10px; }
 .admin-form label { display: grid; gap: 4px; color: var(--muted); font-size: 13px; }

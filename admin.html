@@ -140,6 +140,11 @@
                                 <button type="button" class="btn btn-secondary" id="key-backup-btn">서명 키 백업 복사</button>
                             </p>
                             <p class="card-note">백업 값은 키를 새로 만들 수 있는 <b>비밀</b>입니다. 비밀번호 관리자나 GitHub Secret <code>LICENSE_PRIVATE_JWK</code> 에만 넣으세요. Cloudflare 저장소(KV)를 잃어도 이 값이 있으면 판매한 키가 살아납니다.</p>
+                            <div id="key-backup-box" hidden>
+                                <label class="card-note" for="key-backup-text">서명 키 백업 — <code>{"kty":"EC"</code> 로 시작해 <code>}</code> 로 끝나는 한 줄 전체가 값입니다. 입금 알림 "열쇠"와는 다른 값입니다. 복사가 안 됐으면 칸을 길게 눌러 전체 선택 → 복사하세요.</label>
+                                <textarea id="key-backup-text" class="key-backup-text" rows="5" readonly spellcheck="false"></textarea>
+                                <p class="co-actions"><button type="button" class="btn btn-secondary" id="key-backup-hide">숨기기</button></p>
+                            </div>
                         </div>
                     </div>
                 </section>
