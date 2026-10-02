@@ -113,6 +113,7 @@ a { color: #0066cc; }
 .tray { display: flex; justify-content: center; gap: 8px; }
 .result-msg { min-height: 2.8em; margin: 12px 0; color: var(--muted); font-size: 15px; }
 .result-msg.error { color: var(--error); }
+.result-hint { margin: -6px 0 10px; color: var(--brand); font-size: 13px; font-weight: bold; }
 
 /* ───── 공 ───── */
 .ball {
@@ -585,6 +586,10 @@ html.home { scroll-behavior: smooth; }
 .heat-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--line); vertical-align: -2px; }
 .heat-readout { margin: 10px 0 0; min-height: 3em; font-size: 14px; }
 .heat-readout b { color: var(--brand); font-size: 18px; }
+/* 전 회차 기준으로 눈에 띄는 사실 하나 (가장 오래 안 나온 번호) */
+.heat-fact { margin: 10px 0 0; padding: 8px 12px; border-left: 3px solid var(--ball-1); border-radius: 0 6px 6px 0; background: #fff8e1; font-size: 13px; line-height: 1.6; }
+.heat-fact b { color: var(--brand); }
+.heat-fact a { white-space: nowrap; font-weight: bold; }
 
 @media (max-width: 1099px) {
     .gen-hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
