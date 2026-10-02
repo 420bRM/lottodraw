@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<!-- 이 파일은 tools/build-static-stats.js 가 매주 다시 만든다. 직접 고치면 덮어쓰인다. -->
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로또 통계 · 역대 1~1243회 당첨번호 통계 총정리 | lottodraw.kr</title>
+    <meta name="description" content="로또 6/45 역대 1~1243회 당첨번호 통계 총정리. 많이 나온 번호 34번 186회, 미출수 5번 30회차째, 궁합수 11·21번 34회, 최근 10회 당첨번호와 1~45번 번호별 표까지 매주 자동 갱신.">
+    <link rel="canonical" href="https://www.lottodraw.kr/statistics-all.html">
+    <meta property="og:title" content="로또 통계 · 역대 1~1243회 당첨번호 통계 총정리 | lottodraw.kr">
+    <meta property="og:description" content="로또 6/45 역대 1~1243회 당첨번호 통계 총정리. 많이 나온 번호 34번 186회, 미출수 5번 30회차째, 궁합수 11·21번 34회, 최근 10회 당첨번호와 1~45번 번호별 표까지 매주 자동 갱신.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://www.lottodraw.kr/statistics-all.html">
+    <meta property="og:site_name" content="lottodraw.kr">
+    <meta property="og:image" content="https://www.lottodraw.kr/img/og-default.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="로또 통계 · 역대 1~1243회 당첨번호 통계 총정리 | lottodraw.kr">
+    <meta name="twitter:description" content="로또 6/45 역대 1~1243회 당첨번호 통계 총정리. 많이 나온 번호 34번 186회, 미출수 5번 30회차째, 궁합수 11·21번 34회, 최근 10회 당첨번호와 1~45번 번호별 표까지 매주 자동 갱신.">
+    <meta name="twitter:image" content="https://www.lottodraw.kr/img/og-default.png">
+    <meta name="google-adsense-account" content="ca-pub-9372871176021283">
+    <link rel="stylesheet" href="css/site.css">
+    <script src="js/i18n-dict.js"></script>
+    <script src="js/i18n.js"></script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Dataset","name":"로또 통계 · 역대 1~1243회 당첨번호 통계 총정리","description":"동행복권 로또 6/45 1~1243회 회차별 당첨번호, 보너스 번호, 1등 당첨자 수와 당첨금으로 계산한 통계 모음","url":"https://www.lottodraw.kr/statistics-all.html","isAccessibleForFree":true,"dateModified":"2026-09-26","temporalCoverage":"2002-12-07/2026-09-26","creator":{"@type":"Organization","name":"lottodraw.kr","url":"https://www.lottodraw.kr/"},"keywords":["로또 통계","로또 번호 통계","로또 많이 나온 번호","로또 미출수","로또 궁합수","로또 최근 당첨번호"],"hasPart":[{"@type":"Dataset","name":"로또 많이 나온 번호 순위 · 번호별 출현 횟수 (1~1243회)","description":"로또 역대 1~1243회 가장 많이 나온 번호 순위와 1~45번 번호별 출현 횟수. 제일 많이 나온 번호는 34번 186회, 가장 적게 나온 번호는 9번 137회.","url":"https://www.lottodraw.kr/statistics-frequency.html"},{"@type":"Dataset","name":"로또 보너스 번호란? 역대 보너스 번호 통계 (1~1243회)","description":"로또 보너스 번호의 의미(2등 판정)와 역대 1~1243회 보너스 번호별 출현 횟수. 가장 많이 나온 보너스 번호는 2번 36회.","url":"https://www.lottodraw.kr/statistics-bonus.html"},{"@type":"Dataset","name":"로또 홀짝 비율 통계 · 홀짝 분석 (1~1243회)","description":"로또 1~1243회 당첨번호 6개의 홀수·짝수 비율을 이론 확률과 나란히 분석했습니다. 가장 많은 형태는 홀3 짝3(33.3%).","url":"https://www.lottodraw.kr/statistics-even-odd.html"},{"@type":"Dataset","name":"로또 저고(고저) 비율 통계 (1~1243회)","description":"로또 1~1243회 당첨번호의 낮은 번호(1~22)와 높은 번호(23~45) 비율을 이론 확률과 함께 정리했습니다. 최다 형태 저3 고3.","url":"https://www.lottodraw.kr/statistics-low-high.html"},{"@type":"Dataset","name":"로또 연속번호 통계 · 연속번호 확률 (1~1243회)","description":"로또 1~1243회 중 연속번호가 포함된 회차는 643회(51.7%)입니다. 연속번호 확률과 2연속·3연속 이상 비율을 정리했습니다.","url":"https://www.lottodraw.kr/statistics-consecutive.html"},{"@type":"Dataset","name":"로또 번호 합계 분포 통계 (1~1243회)","description":"로또 1~1243회 당첨번호 6개의 합계 분포입니다. 평균 138.3, 가장 많은 구간은 120~139(25.0%).","url":"https://www.lottodraw.kr/statistics-sum.html"},{"@type":"Dataset","name":"로또 1등 당첨자 수 통계 · 이월 횟수 (1~1243회)","description":"로또 1~1243회 회차별 1등 당첨자 수 분포입니다. 1등이 없어 이월된 회차 14회, 회차당 평균 8.6명.","url":"https://www.lottodraw.kr/statistics-prize.html"},{"@type":"Dataset","name":"로또 최근 50회 많이 나온 번호 · 적게 나온 번호","description":"로또 최근 50회(1194~1243회) 동안 많이 나온 번호와 적게 나온 번호 Top 10. 최다 15번 11회.","url":"https://www.lottodraw.kr/statistics-trend.html"},{"@type":"Dataset","name":"로또 궁합수 순위 · 함께 나온 번호 Top 20 (1~1243회)","description":"로또 1~1243회 한 회차에 같이 나온 번호 쌍, 궁합수 순위 Top 20. 1위 11·21번 34회.","url":"https://www.lottodraw.kr/statistics-pair.html"},{"@type":"Dataset","name":"로또 미출수 · 장기 미출현 번호 순위 (1243회 기준)","description":"로또 1243회 기준 장기 미출수, 가장 오래 안 나온 번호 순위입니다. 1위 5번은 30회차째 나오지 않았습니다.","url":"https://www.lottodraw.kr/statistics-gap.html"},{"@type":"Dataset","name":"로또 AC값 통계 · AC값 계산기 (1~1243회)","description":"로또 AC값(산술적 복잡도) 계산 방법과 계산기, 역대 1~1243회 AC값 분포. 가장 많은 값은 AC 8(34.8%).","url":"https://www.lottodraw.kr/statistics-ac.html"},{"@type":"Dataset","name":"로또 끝수 통계 · 끝수합 분포 (1~1243회)","description":"로또 1~1243회 끝수(끝자리) 0~9별 출현 횟수와 번호당 평균, 끝수합 분포(평균 26.0). 번호당 평균이 가장 높은 끝수는 7.","url":"https://www.lottodraw.kr/statistics-tail.html"}]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://www.lottodraw.kr/"},{"@type":"ListItem","position":2,"name":"로또 통계","item":"https://www.lottodraw.kr/statistics-all.html"}]}]}</script>
+    <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "91c08d8a39d944e69c10024f2314b955"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+<body>
+<div class="page">
+    <header class="banner">
+        <a class="brand" href="index.html">
+            <span class="brand-name">LOTTODRAW.KR</span>
+            <span class="brand-tag" data-i18n="brand.tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
+        </a>
+        <div class="banner-right">
+            <p class="latest-callout" data-i18n-en="Draw 1243: 9 18 24 38 43 44 &lt;span class=&quot;bonus-sep&quot;&gt;+&lt;/span&gt; 35">제1243회 9 18 24 38 43 44 <span class="bonus-sep">+</span> 35</p>
+            <a class="sticker" href="statistics.html" data-i18n-html="header.sticker">최근 <b>5개월</b> 통계</a>
+            <div class="lang-switch" role="group" aria-label="Language">
+                <button type="button" data-lang-btn="ko">KO</button><button type="button" data-lang-btn="en">EN</button>
+            </div>
+        </div>
+    </header>
+
+    <nav class="nav" aria-label="주 메뉴" data-i18n-attr="aria-label:nav.aria">
+        <ul>
+            <li><a href="index.html" data-i18n="nav.index">번호 생성기</a></li>
+            <li><a href="statistics-all.html" aria-current="page" data-i18n="nav.stats">로또 통계</a></li>
+            <li><a href="draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="top-prize.html" data-i18n="nav.topPrize">TOP 50 당첨금</a></li>
+            <li><a href="tax.html" data-i18n="nav.tax">실수령액 계산</a></li>
+            <li><a href="blog/index.html" data-i18n="nav.blog">블로그</a></li>
+            <li><a href="about.html" data-i18n="nav.about">ABOUT</a></li>
+        </ul>
+    </nav>
+
+    <main class="prose stat-page stat-hub">
+        <nav class="breadcrumb" aria-label="현재 위치" data-i18n-attr="aria-label:crumb.aria"><a href="index.html" data-i18n="crumb.home">홈</a> › <span data-i18n="nav.stats">로또 통계</span></nav>
+        <h1 data-i18n-en="Lotto Statistics">로또 통계</h1>
+        <p class="stat-scope"><span data-i18n-en="Draws 1–1243 · 2002-12-07 ~ 2026-09-26 · updated automatically after each draw (last update 2026-09-26)">1~1243회 · 2002-12-07 ~ 2026-09-26 · 매주 추첨 후 자동 갱신 (마지막 갱신 2026-09-26)</span></p>
+        <p class="stat-lead"><span data-i18n-en="Statistics for every Lotto 6/45 draw so far (1–1243), on one page. The number drawn most often is &lt;strong&gt;34 (186 times)&lt;/strong&gt;, the least often &lt;strong&gt;9 (137 times)&lt;/strong&gt;, and the longest absence belongs to &lt;strong&gt;5 (30 draws)&lt;/strong&gt;. The latest draw, &lt;a href=&quot;round/1243.html&quot;&gt;1243&lt;/a&gt; (2026-09-26), came out 9·18·24·38·43·44 + 35.">로또 6/45 1~1243회 전 회차 당첨번호로 계산한 통계를 한 페이지에 모았습니다. 가장 많이 나온 번호는 <strong>34번(186회)</strong>, 가장 적게 나온 번호는 <strong>9번(137회)</strong>, 가장 오래 안 나온 번호는 <strong>5번(30회차째)</strong>입니다. 최신 <a href="round/1243.html" data-i18n-en="Draw 1243">1243회</a>(2026-09-26) 당첨번호는 9·18·24·38·43·44 + 35입니다.</span></p>
+
+<nav class="toc" aria-label="목차" data-i18n-attr="aria-label:blog.toc"><strong data-i18n="blog.toc">목차</strong><ol><li><a href="#recent" data-i18n-en="The last 10 draws">로또 최근 10회 당첨번호</a></li><li><a href="#numbers" data-i18n-en="Every number from 1 to 45">1~45번 번호별 통계</a></li><li><a href="#summary" data-i18n-en="Twelve statistics at a glance">로또 통계 12종 요약</a></li><li><a href="#prize" data-i18n-en="First-prize money so far">역대 1등 당첨금 통계</a></li><li><a href="#reading" data-i18n-en="Reading these numbers">통계를 읽을 때 알아둘 점</a></li><li><a href="#faq" data-i18n-en="Frequently asked questions">자주 묻는 질문</a></li></ol></nav>
+
+<h2 id="recent" data-i18n-en="The last 10 draws">로또 최근 10회 당첨번호</h2>
+
+<div class="table-scroll">
+<table class="data-table draws-table">
+<thead><tr><th scope="col" data-i18n-en="Draw">회차</th><th scope="col" data-i18n-en="Date">추첨일</th><th scope="col" data-i18n-en="Winning numbers + bonus">당첨번호 + 보너스</th><th scope="col" data-i18n-en="First-prize winners">1등</th><th scope="col" data-i18n-en="First prize per winner">1인당 1등 당첨금</th></tr></thead>
+<tbody>
+<tr><td><a href="round/1243.html" data-i18n-en="Draw 1243">1243회</a></td><td>2026-09-26</td><td><span class="row-balls"><span class="mball" data-band="1">9</span><span class="mball" data-band="2">18</span><span class="mball" data-band="3">24</span><span class="mball" data-band="4">38</span><span class="mball" data-band="5">43</span><span class="mball" data-band="5">44</span><span class="plus">+</span><span class="mball" data-band="4">35</span></span></td><td><span data-i18n-en="12">12명</span></td><td><span data-i18n-en="2.59 bn KRW">25억 9,252만 원</span></td></tr>
+<tr><td><a href="round/1242.html" data-i18n-en="Draw 1242">1242회</a></td><td>2026-09-19</td><td><span class="row-balls"><span class="mball" data-band="1">2</span><span class="mball" data-band="1">4</span><span class="mball" data-band="1">10</span><span class="mball" data-band="2">16</span><span class="mball" data-band="4">31</span><span class="mball" data-band="5">41</span><span class="plus">+</span><span class="mball" data-band="1">9</span></span></td><td><span data-i18n-en="9">9명</span></td><td><span data-i18n-en="3.28 bn KRW">32억 8,102만 원</span></td></tr>
+<tr><td><a href="round/1241.html" data-i18n-en="Draw 1241">1241회</a></td><td>2026-09-12</td><td><span class="row-balls"><span class="mball" data-band="1">7</span><span class="mball" data-band="2">13</span><span class="mball" data-band="2">16</span><span class="mball" data-band="3">23</span><span class="mball" data-band="3">24</span><span class="mball" data-band="5">43</span><span class="plus">+</span><span class="mball" data-band="1">9</span></span></td><td><span data-i18n-en="18">18명</span></td><td><span data-i18n-en="1.63 bn KRW">16억 2,839만 원</span></td></tr>
+<tr><td><a href="round/1240.html" data-i18n-en="Draw 1240">1240회</a></td><td>2026-09-05</td><td><span class="row-balls"><span class="mball" data-band="2">11</span><span class="mball" data-band="2">13</span><span class="mball" data-band="2">19</span><span class="mball" data-band="2">20</span><span class="mball" data-band="4">31</span><span class="mball" data-band="5">44</span><span class="plus">+</span><span class="mball" data-band="3">27</span></span></td><td><span data-i18n-en="16">16명</span></td><td><span data-i18n-en="1.79 bn KRW">17억 9,181만 원</span></td></tr>
+<tr><td><a href="round/1239.html" data-i18n-en="Draw 1239">1239회</a></td><td>2026-08-29</td><td><span class="row-balls"><span class="mball" data-band="2">11</span><span class="mball" data-band="2">13</span><span class="mball" data-band="3">22</span><span class="mball" data-band="4">32</span><span class="mball" data-band="4">33</span><span class="mball" data-band="4">36</span><span class="plus">+</span><span class="mball" data-band="1">8</span></span></td><td><span data-i18n-en="13">13명</span></td><td><span data-i18n-en="2.21 bn KRW">22억 1,478만 원</span></td></tr>
+<tr><td><a href="round/1238.html" data-i18n-en="Draw 1238">1238회</a></td><td>2026-08-22</td><td><span class="row-balls"><span class="mball" data-band="1">2</span><span class="mball" data-band="2">13</span><span class="mball" data-band="2">18</span><span class="mball" data-band="4">32</span><span class="mball" data-band="4">38</span><span class="mball" data-band="5">42</span><span class="plus">+</span><span class="mball" data-band="3">22</span></span></td><td><span data-i18n-en="23">23명</span></td><td><span data-i18n-en="1.20 bn KRW">11억 9,725만 원</span></td></tr>
+<tr><td><a href="round/1237.html" data-i18n-en="Draw 1237">1237회</a></td><td>2026-08-15</td><td><span class="row-balls"><span class="mball" data-band="1">10</span><span class="mball" data-band="2">20</span><span class="mball" data-band="3">23</span><span class="mball" data-band="4">34</span><span class="mball" data-band="4">37</span><span class="mball" data-band="4">40</span><span class="plus">+</span><span class="mball" data-band="4">36</span></span></td><td><span data-i18n-en="23">23명</span></td><td><span data-i18n-en="1.21 bn KRW">12억 1,493만 원</span></td></tr>
+<tr><td><a href="round/1236.html" data-i18n-en="Draw 1236">1236회</a></td><td>2026-08-08</td><td><span class="row-balls"><span class="mball" data-band="2">12</span><span class="mball" data-band="2">18</span><span class="mball" data-band="3">21</span><span class="mball" data-band="3">29</span><span class="mball" data-band="4">34</span><span class="mball" data-band="4">38</span><span class="plus">+</span><span class="mball" data-band="1">10</span></span></td><td><span data-i18n-en="11">11명</span></td><td><span data-i18n-en="2.44 bn KRW">24억 4,191만 원</span></td></tr>
+<tr><td><a href="round/1235.html" data-i18n-en="Draw 1235">1235회</a></td><td>2026-08-01</td><td><span class="row-balls"><span class="mball" data-band="1">6</span><span class="mball" data-band="1">7</span><span class="mball" data-band="2">11</span><span class="mball" data-band="2">15</span><span class="mball" data-band="4">39</span><span class="mball" data-band="5">43</span><span class="plus">+</span><span class="mball" data-band="2">20</span></span></td><td><span data-i18n-en="9">9명</span></td><td><span data-i18n-en="3.09 bn KRW">30억 9,096만 원</span></td></tr>
+<tr><td><a href="round/1234.html" data-i18n-en="Draw 1234">1234회</a></td><td>2026-07-25</td><td><span class="row-balls"><span class="mball" data-band="1">1</span><span class="mball" data-band="2">15</span><span class="mball" data-band="2">19</span><span class="mball" data-band="4">31</span><span class="mball" data-band="4">35</span><span class="mball" data-band="5">43</span><span class="plus">+</span><span class="mball" data-band="3">27</span></span></td><td><span data-i18n-en="18">18명</span></td><td><span data-i18n-en="1.60 bn KRW">15억 9,512만 원</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<p data-i18n-en="Earlier draws are in &lt;a href=&quot;draws.html&quot;&gt;the full list of winning numbers&lt;/a&gt;, and you can &lt;a href=&quot;lotto-draws.csv&quot; download&gt;download draws 1–1243 as an Excel (CSV) file&lt;/a&gt;.">그 전 회차는 <a href="draws.html">회차별 당첨번호 전체 조회</a>에서 볼 수 있고, <a href="lotto-draws.csv" download>1~1243회 전체를 엑셀(CSV)로 내려받을</a> 수도 있습니다.</p>
+
+<h2 id="numbers" data-i18n-en="Every number from 1 to 45">1~45번 번호별 통계</h2>
+
+<p data-i18n-en="For each number: how often it has been drawn and its rank, its appearances in the last 50 and last 10 draws, how often it was the bonus ball, and the draw it last appeared in. Six numbers are drawn each time, so a number is expected to appear 165.7 times over all draws, 6.7 times in the last 50 and 1.3 in the last 10.">번호마다 전 회차 출현 횟수와 순위, 최근 50회·최근 10회 출현, 보너스 번호로 나온 횟수, 마지막으로 나온 회차를 정리했습니다. 한 회차에 6개를 뽑으므로 번호 하나가 나올 기대 횟수는 전 회차 165.7회, 최근 50회 6.7회, 최근 10회 1.3회입니다.</p>
+
+<div class="table-scroll">
+<table class="data-table number-table">
+<thead><tr><th scope="col" data-i18n-en="Number">번호</th><th scope="col" data-i18n-en="All draws (rank)">전 회차 (순위)</th><th scope="col" data-i18n-en="Last 50">최근 50회</th><th scope="col" data-i18n-en="Last 10">최근 10회</th><th scope="col" data-i18n-en="As bonus">보너스</th><th scope="col" data-i18n-en="Last drawn">마지막 출현</th><th scope="col" data-i18n-en="Absent for">안 나온 기간</th></tr></thead>
+<tbody>
+<tr><td><span class="mball" data-band="1">1</span></td><td><span data-i18n-en="170 (#18)">170회 (18위)</span></td><td><span data-i18n-en="8×">8회</span></td><td><span data-i18n-en="1×">1회</span></td><td><span data-i18n-en="33×">33회</span></td><td><a href="round/1234.html" data-i18n-en="Draw 1234">1234회</a></td><td><span data-i18n-en="9 draws">9회차째</span></td></tr>
+<tr><td><span class="mball" data-band="1">2</span></td><td><span data-i18n-en="157 (#36)">157회 (36위)</span></td><td><span data-i18n-en="7×">7회</span></td><td><span data-i18n-en="2×">2회</span></td><td><span data-i18n-en="36×">36회</span></td><td><a href="round/1242.html" data-i18n-en="Draw 1242">1242회</a></td><td><span data-i18n-en="1 draws">1회차째</span></td></tr>
+<tr><td><span class="mball" data-band="1">3</span></td><td><span data-i18n-en="172 (#11)">172회 (11위)</span></td><td><span data-i18n-en="7×">7회</span></td><td><span data-i18n-en="0×">0회</span></td><td><span data-i18n-en="32×">32회</span></td><td><a href="round/1230.html" data-i18n-en="Draw 1230">1230회</a></td><td><span data-i18n-en="13 draws">13회차째</span></td></tr>
+<tr><td><span class="mball" data-band="1">4</span></td><td><span data-i18n-en="163 (#30)">163회 (30위)</span></td><td><span data-i18n-en="6×">6회</span></td><td><span data-i18n-en="1×">1회</span></td><td><span data-i18n-en="35×">35회</span></td><td><a href="round/1242.html" data-i18n-en="Draw 1242">1242회</a></td><td><span data-i18n-en="1 draws">1회차째</span></td></tr>
+<tr><td><span class="mball" data-band="1">5</span></td><td><span data-i18n-en="153 (#39)">153회 (39위)</span></td><td><span data-i18n-en="4×">4회</span></td><td><span data-i18n-en="0×">0회</span></td><td><span data-i18n-en="25×">25회</span></td><td><a href="round/1213.html" data-i18n-en="Draw 1213">1213회</a></td><td><span data-i18n-en="30 draws">30회차째</span></td></tr>
+<tr><td><span class="mball" data-band="1">6</span></td><td><span data-i18n-en="166 (#26)">166회 (26위)</span></td><td><span data-i18n-en="5×">5회</span></td><td><span data-i18n-en="1×">1회</span></td><td><span data-i18n-en="34×">34회</span></td><td><a href="round/1235.html" data-i18n-en="Draw 1235">1235회</a></td><td><span data-i18n-en="8 draws">8회차째</span></td></tr>
+<tr><td><span class="mball" data-band="1">7</span></td><td><span data-i18n-en="171 (#14)">171회 (14위)</span></td><td><span data-i18n-en="6×">6회</span></td><td><span data-i18n-en="2×">2회</span></td><td><span data-i18n-en="32×">32회</span></td><td><a href="round/1241.html" data-i18n-en="Draw 1241">1241회</a></td><td><span data-i18n-en="2 draws">2회차째</span></td></tr>
+<tr><td><span class="mball" data-band="1">8</span></td><td><span data-i18n-en="158 (#33)">158회 (33위)</span></td><td><span data-i18n-en="6×">6회</span></td><td><span data-i18n-en="0×">0회</span></td><td><span data-i18n-en="25×">25회</span></td><td><a href="round/1230.html" data-i18n-en="Draw 1230">1230회</a></td><td><span data-i18n-en="13 draws">13회차째</span></td></tr>
+<tr><td><span class="mball" data-band="1">9</span></td><td><span data-i18n-en="137 (#45)">137회 (45위)</span></td><td><span data-i18n-en="6×">6회</span></td><td><span data-i18n-en="1×">1회</span></td><td><span data-i18n-en="28×">28회</span></td><td><a href="round/1243.html" data-i18n-en="Draw 1243">1243회</a></td><td><span data-i18n-en="latest draw">최신 회차</span></td></tr>
+<tr><td><span class="mball" data-band="1">10</span></td><td><span data-i18n-en="163 (#30)">163회 (30위)</span></td><td><span data-i18n-en="6×">6회</span></td><td><span data-i18n-en="2×">2회</span></td><td><span data-i18n-en="29×">29회</span></td><td><a href="round/1242.html" data-i18n-en="Draw 1242">1242회</a></td><td><span data-i18n-en="1 draws">1회차째</span></td></tr>
+<tr><td><span class="mball" data-band="2">11</span></td><td><span data-i18n-en="168 (#21)">168회 (21위)</span></td><td><span data-i18n-en="5×">5회</span></td><td><span data-i18n-en="3×">3회</span></td><td><span data-i18n-en="26×">26회</span></td><td><a href="round/1240.html" data-i18n-en="Draw 1240">1240회</a></td><td><span data-i18n-en="3 draws">3회차째</span></td></tr>
+<tr><td><span class="mball" data-band="2">12</span></td><td><span data-i18n-en="180 (#4)">180회 (4위)</span></td><td><span data-i18n-en="5×">5회</span></td><td><span data-i18n-en="1×">1회</span></td><td><span data-i18n-en="27×">27회</span></td><td><a href="round/1236.html" data-i18n-en="Draw 1236">1236회</a></td><td><span data-i18n-en="7 draws">7회차째</span></td></tr>
+<tr><td><span class="mball" data-band="2">13</span></td><td><span data-i18n-en="183 (#2)">183회 (2위)</span></td><td><span data-i18n-en="10×">10회</span></td><td><span data-i18n-en="4×">4회</span></td><td><span data-i18n-en="28×">28회</span></td><td><a href="round/1241.html" data-i18n-en="Draw 1241">1241회</a></td><td><span data-i18n-en="2 draws">2회차째</span></td></tr>
+<tr><td><span class="mball" data-band="2">14</span></td><td><span data-i18n-en="172 (#11)">172회 (11위)</span></td><td><span data-i18n-en="3×">3회</span></td><td><span data-i18n-en="0×">0회</span></td><td><span data-i18n-en="23×">23회</span></td><td><a href="round/1231.html" data-i18n-en="Draw 1231">1231회</a></td><td><span data-i18n-en="12 draws">12회차째</span></td></tr>
+<tr><td><span class="mball" data-band="2">15</span></td><td><span data-i18n-en="170 (#18)">170회 (18위)</span></td><td><span data-i18n-en="11×">11회</span></td><td><span data-i18n-en="2×">2회</span></td><td><span data-i18n-en="26×">26회</span></td><td><a href="round/1235.html" data-i18n-en="Draw 1235">1235회</a></td><td><span data-i18n-en="8 draws">8회차째</span></td></tr>
+<tr><td><span class="mball" data-band="2">16</span></td><td><span data-i18n-en="170 (#18)">170회 (18위)</span></td><td><span data-i18n-en="8×">8회</span></td><td><span data-i18n-en="2×">2회</span></td><td><span data-i18n-en="30×">30회</span></td><td><a href="round/1242.html" data-i18n-en="Draw 1242">1242회</a></td><td><span data-i18n-en="1 draws">1회차째</span></td></tr>
+<tr><td><span class="mball" data-band="2">17</span></td><td><span data-i18n-en="171 (#14)">171회 (14위)</span></td><td><span data-i18n-en="5×">5회</span></td><td><span data-i18n-en="0×">0회</span></td><td><span data-i18n-en="33×">33회</span></td><td><a href="round/1226.html" data-i18n-en="Draw 1226">1226회</a></td><td><span data-i18n-en="17 draws">17회차째</span></td></tr>
+<tr><td><span class="mball" data-band="2">18</span></td><td><span data-i18n-en="179 (#5)">179회 (5위)</span></td><td><span data-i18n-en="8×">8회</span></td><td><span data-i18n-en="3×">3회</span></td><td><span data-i18n-en="19×">19회</span></td><td><a href="round/1243.html" data-i18n-en="Draw 1243">1243회</a></td><td><span data-i18n-en="latest draw">최신 회차</span></td></tr>
+<tr><td><span class="mball" data-band="2">19</span></td><td><span data-i18n-en="171 (#14)">171회 (14위)</span></td><td><span data-i18n-en="6×">6회</span></td><td><span data-i18n-en="2×">2회</span></td><td><span data-i18n-en="22×">22회</span></td><td><a href="round/1240.html" data-i18n-en="Draw 1240">1240회</a></td><td><span data-i18n-en="3 draws">3회차째</span></td></tr>
+<tr><td><span class="mball" data-band="2">20</span></td><td><span data-i18n-en="172 (#11)">172회 (11위)</span></td><td><span data-i18n-en="7×">7회</span></td><td><span data-i18n-en="2×">2회</span></td><td><span data-i18n-en="30×">30회</span></td><td><a href="round/1240.html" data-i18n-en="Draw 1240">1240회</a></td><td><span data-i18n-en="3 draws">3회차째</span></td></tr>
+<tr><td><span class="mball" data-band="3">21</span></td><td><span data-i18n-en="167 (#24)">167회 (24위)</span></td><td><span data-i18n-en="4×">4회</span></td><td><span data-i18n-en="1×">1회</span></td><td><span data-i18n-en="25×">25회</span></td><td><a href="round/1236.html" data-i18n-en="Draw 1236">1236회</a></td><td><span data-i18n-en="7 draws">7회차째</span></td></tr>
+<tr><td><span class="mball" data-band="3">22</span></td><td><span data-i18n-en="146 (#43)">146회 (43위)</span></td><td><span data-i18n-en="6×">6회</span></td><td><span data-i18n-en="1×">1회</span></td><td><span data-i18n-en="21×">21회</span></td><td><a href="round/1239.html" data-i18n-en="Draw 1239">1239회</a></td><td><span data-i18n-en="4 draws">4회차째</span></td></tr>
+<tr><td><span class="mball" data-band="3">23</span></td><td><span data-i18n-en="149 (#42)">149회 (42위)</span></td><td><span data-i18n-en="5×">5회</span></td><td><span data-i18n-en="2×">2회</span></td><td><span data-i18n-en="21×">21회</span></td><td><a href="round/1241.html" data-i18n-en="Draw 1241">1241회</a></td><td><span data-i18n-en="2 draws">2회차째</span></td></tr>
+<tr><td><span class="mball" data-band="3">24</span></td><td><span data-i18n-en="168 (#21)">168회 (21위)</span></td><td><span data-i18n-en="9×">9회</span></td><td><span data-i18n-en="2×">2회</span></td><td><span data-i18n-en="33×">33회</span></td><td><a href="round/1243.html" data-i18n-en="Draw 1243">1243회</a></td><td><span data-i18n-en="latest draw">최신 회차</span></td></tr>
+<tr><td><span class="mball" data-band="3">25</span></td><td><span data-i18n-en="153 (#39)">153회 (39위)</span></td><td><span data-i18n-en="6×">6회</span></td><td><span data-i18n-en="0×">0회</span></td><td><span data-i18n-en="23×">23회</span></td><td><a href="round/1233.html" data-i18n-en="Draw 1233">1233회</a></td><td><span data-i18n-en="10 draws">10회차째</span></td></tr>
+<tr><td><span class="mball" data-band="3">26</span></td><td><span data-i18n-en="165 (#28)">165회 (28위)</span></td><td><span data-i18n-en="5×">5회</span></td><td><span data-i18n-en="0×">0회</span></td><td><span data-i18n-en="32×">32회</span></td><td><a href="round/1226.html" data-i18n-en="Draw 1226">1226회</a></td><td><span data-i18n-en="17 draws">17회차째</span></td></tr>
+<tr><td><span class="mball" data-band="3">27</span></td><td><span data-i18n-en="181 (#3)">181회 (3위)</span></td><td><span data-i18n-en="10×">10회</span></td><td><span data-i18n-en="0×">0회</span></td><td><span data-i18n-en="33×">33회</span></td><td><a href="round/1224.html" data-i18n-en="Draw 1224">1224회</a></td><td><span data-i18n-en="19 draws">19회차째</span></td></tr>
+<tr><td><span class="mball" data-band="3">28</span></td><td><span data-i18n-en="157 (#36)">157회 (36위)</span></td><td><span data-i18n-en="8×">8회</span></td><td><span data-i18n-en="0×">0회</span></td><td><span data-i18n-en="26×">26회</span></td><td><a href="round/1230.html" data-i18n-en="Draw 1230">1230회</a></td><td><span data-i18n-en="13 draws">13회차째</span></td></tr>
+<tr><td><span class="mball" data-band="3">29</span></td><td><span data-i18n-en="156 (#38)">156회 (38위)</span></td><td><span data-i18n-en="6×">6회</span></td><td><span data-i18n-en="1×">1회</span></td><td><span data-i18n-en="18×">18회</span></td><td><a href="round/1236.html" data-i18n-en="Draw 1236">1236회</a></td><td><span data-i18n-en="7 draws">7회차째</span></td></tr>
+<tr><td><span class="mball" data-band="3">30</span></td><td><span data-i18n-en="158 (#33)">158회 (33위)</span></td><td><span data-i18n-en="7×">7회</span></td><td><span data-i18n-en="0×">0회</span></td><td><span data-i18n-en="32×">32회</span></td><td><a href="round/1228.html" data-i18n-en="Draw 1228">1228회</a></td><td><span data-i18n-en="15 draws">15회차째</span></td></tr>
+<tr><td><span class="mball" data-band="4">31</span></td><td><span data-i18n-en="171 (#14)">171회 (14위)</span></td><td><span data-i18n-en="11×">11회</span></td><td><span data-i18n-en="3×">3회</span></td><td><span data-i18n-en="32×">32회</span></td><td><a href="round/1242.html" data-i18n-en="Draw 1242">1242회</a></td><td><span data-i18n-en="1 draws">1회차째</span></td></tr>
+<tr><td><span class="mball" data-band="4">32</span></td><td><span data-i18n-en="146 (#43)">146회 (43위)</span></td><td><span data-i18n-en="7×">7회</span></td><td><span data-i18n-en="2×">2회</span></td><td><span data-i18n-en="34×">34회</span></td><td><a href="round/1239.html" data-i18n-en="Draw 1239">1239회</a></td><td><span data-i18n-en="4 draws">4회차째</span></td></tr>
+<tr><td><span class="mball" data-band="4">33</span></td><td><span data-i18n-en="175 (#6)">175회 (6위)</span></td><td><span data-i18n-en="7×">7회</span></td><td><span data-i18n-en="1×">1회</span></td><td><span data-i18n-en="32×">32회</span></td><td><a href="round/1239.html" data-i18n-en="Draw 1239">1239회</a></td><td><span data-i18n-en="4 draws">4회차째</span></td></tr>
+<tr><td><span class="mball" data-band="4">34</span></td><td><span data-i18n-en="186 (#1)">186회 (1위)</span></td><td><span data-i18n-en="6×">6회</span></td><td><span data-i18n-en="2×">2회</span></td><td><span data-i18n-en="24×">24회</span></td><td><a href="round/1237.html" data-i18n-en="Draw 1237">1237회</a></td><td><span data-i18n-en="6 draws">6회차째</span></td></tr>
+<tr><td><span class="mball" data-band="4">35</span></td><td><span data-i18n-en="163 (#30)">163회 (30위)</span></td><td><span data-i18n-en="6×">6회</span></td><td><span data-i18n-en="1×">1회</span></td><td><span data-i18n-en="31×">31회</span></td><td><a href="round/1234.html" data-i18n-en="Draw 1234">1234회</a></td><td><span data-i18n-en="9 draws">9회차째</span></td></tr>
+<tr><td><span class="mball" data-band="4">36</span></td><td><span data-i18n-en="165 (#28)">165회 (28위)</span></td><td><span data-i18n-en="7×">7회</span></td><td><span data-i18n-en="1×">1회</span></td><td><span data-i18n-en="25×">25회</span></td><td><a href="round/1239.html" data-i18n-en="Draw 1239">1239회</a></td><td><span data-i18n-en="4 draws">4회차째</span></td></tr>
+<tr><td><span class="mball" data-band="4">37</span></td><td><span data-i18n-en="174 (#8)">174회 (8위)</span></td><td><span data-i18n-en="6×">6회</span></td><td><span data-i18n-en="1×">1회</span></td><td><span data-i18n-en="26×">26회</span></td><td><a href="round/1237.html" data-i18n-en="Draw 1237">1237회</a></td><td><span data-i18n-en="6 draws">6회차째</span></td></tr>
+<tr><td><span class="mball" data-band="4">38</span></td><td><span data-i18n-en="173 (#10)">173회 (10위)</span></td><td><span data-i18n-en="10×">10회</span></td><td><span data-i18n-en="3×">3회</span></td><td><span data-i18n-en="30×">30회</span></td><td><a href="round/1243.html" data-i18n-en="Draw 1243">1243회</a></td><td><span data-i18n-en="latest draw">최신 회차</span></td></tr>
+<tr><td><span class="mball" data-band="4">39</span></td><td><span data-i18n-en="168 (#21)">168회 (21위)</span></td><td><span data-i18n-en="6×">6회</span></td><td><span data-i18n-en="1×">1회</span></td><td><span data-i18n-en="25×">25회</span></td><td><a href="round/1235.html" data-i18n-en="Draw 1235">1235회</a></td><td><span data-i18n-en="8 draws">8회차째</span></td></tr>
+<tr><td><span class="mball" data-band="4">40</span></td><td><span data-i18n-en="174 (#8)">174회 (8위)</span></td><td><span data-i18n-en="5×">5회</span></td><td><span data-i18n-en="1×">1회</span></td><td><span data-i18n-en="22×">22회</span></td><td><a href="round/1237.html" data-i18n-en="Draw 1237">1237회</a></td><td><span data-i18n-en="6 draws">6회차째</span></td></tr>
+<tr><td><span class="mball" data-band="5">41</span></td><td><span data-i18n-en="151 (#41)">151회 (41위)</span></td><td><span data-i18n-en="7×">7회</span></td><td><span data-i18n-en="1×">1회</span></td><td><span data-i18n-en="19×">19회</span></td><td><a href="round/1242.html" data-i18n-en="Draw 1242">1242회</a></td><td><span data-i18n-en="1 draws">1회차째</span></td></tr>
+<tr><td><span class="mball" data-band="5">42</span></td><td><span data-i18n-en="158 (#33)">158회 (33위)</span></td><td><span data-i18n-en="7×">7회</span></td><td><span data-i18n-en="1×">1회</span></td><td><span data-i18n-en="25×">25회</span></td><td><a href="round/1238.html" data-i18n-en="Draw 1238">1238회</a></td><td><span data-i18n-en="5 draws">5회차째</span></td></tr>
+<tr><td><span class="mball" data-band="5">43</span></td><td><span data-i18n-en="167 (#24)">167회 (24위)</span></td><td><span data-i18n-en="6×">6회</span></td><td><span data-i18n-en="4×">4회</span></td><td><span data-i18n-en="35×">35회</span></td><td><a href="round/1243.html" data-i18n-en="Draw 1243">1243회</a></td><td><span data-i18n-en="latest draw">최신 회차</span></td></tr>
+<tr><td><span class="mball" data-band="5">44</span></td><td><span data-i18n-en="166 (#26)">166회 (26위)</span></td><td><span data-i18n-en="8×">8회</span></td><td><span data-i18n-en="2×">2회</span></td><td><span data-i18n-en="24×">24회</span></td><td><a href="round/1243.html" data-i18n-en="Draw 1243">1243회</a></td><td><span data-i18n-en="latest draw">최신 회차</span></td></tr>
+<tr><td><span class="mball" data-band="5">45</span></td><td><span data-i18n-en="175 (#6)">175회 (6위)</span></td><td><span data-i18n-en="6×">6회</span></td><td><span data-i18n-en="0×">0회</span></td><td><span data-i18n-en="22×">22회</span></td><td><a href="round/1224.html" data-i18n-en="Draw 1224">1224회</a></td><td><span data-i18n-en="19 draws">19회차째</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<p data-i18n-en="Numbers with the same count share a rank. To see them in order, use &lt;a href=&quot;statistics-frequency.html&quot;&gt;the most frequent numbers&lt;/a&gt; or &lt;a href=&quot;statistics-gap.html&quot;&gt;the longest absences&lt;/a&gt;.">출현 횟수가 같으면 같은 순위입니다. 많이 나온 순서로는 <a href="statistics-frequency.html">많이 나온 번호 순위</a>, 오래 안 나온 순서로는 <a href="statistics-gap.html">미출수 순위</a>에서 볼 수 있습니다.</p>
+
+<h2 id="summary" data-i18n-en="Twelve statistics at a glance">로또 통계 12종 요약</h2>
+
+<h3><a href="statistics-frequency.html" data-i18n-en="Most frequent numbers">많이 나온 번호 순위</a></h3>
+<p><span data-i18n-en="Across draws 1–1243, the number drawn most often is &lt;strong&gt;34 (186 times)&lt;/strong&gt; and the one drawn least often is &lt;strong&gt;9 (137 times)&lt;/strong&gt;. Six numbers are drawn each time, so a single number is expected to appear 165.7 times.">역대 1~1243회 동안 제일 많이 나온 번호는 <strong>34번(186회)</strong>, 가장 적게 나온 번호는 <strong>9번(137회)</strong>입니다. 한 회차에 6개를 뽑으므로 번호 하나의 기대 출현은 165.7회입니다.</span> <a href="statistics-frequency.html" data-i18n-en="Details →">자세히 →</a></p>
+<h3><a href="statistics-gap.html" data-i18n-en="Longest absences">미출수 (장기 미출현)</a></h3>
+<p><span data-i18n-en="These are the numbers that have not come up recently. As of draw 1243, the longest absence belongs to &lt;strong&gt;5&lt;/strong&gt;, which has not appeared for 30 draws.">미출수는 최근에 나오지 않은 번호입니다. 1243회 기준으로 가장 오래 안 나온 번호는 <strong>5번</strong>으로, 30회차째 나오지 않았습니다.</span> <a href="statistics-gap.html" data-i18n-en="Details →">자세히 →</a></p>
+<h3><a href="statistics-pair.html" data-i18n-en="Number pairs">궁합수 순위</a></h3>
+<p><span data-i18n-en="These are the pairs of numbers that have come up together most often. Across draws 1–1243 the most frequent pair is &lt;strong&gt;11 and 21 (34 times)&lt;/strong&gt;. Any given pair is expected to appear together 18.8 times.">궁합수는 한 회차에 자주 같이 나온 번호 쌍입니다. 1~1243회 동안 가장 자주 같이 나온 쌍은 <strong>11번과 21번(34회)</strong>입니다. 특정 두 번호가 한 회차에 함께 나올 기대 횟수는 18.8회입니다.</span> <a href="statistics-pair.html" data-i18n-en="Details →">자세히 →</a></p>
+<h3><a href="statistics-trend.html" data-i18n-en="Hot and cold, last 50 draws">최근 50회 많이·적게</a></h3>
+<p><span data-i18n-en="Over draws 1194–1243 (50 draws), the most frequent number is &lt;strong&gt;15 (11 times)&lt;/strong&gt; and the least frequent is &lt;strong&gt;14 (3 times)&lt;/strong&gt;. Over 50 draws a number is expected to appear 6.7 times.">1194~1243회 50회 동안 가장 많이 나온 번호는 <strong>15번(11회)</strong>, 가장 적게 나온 번호는 <strong>14번(3회)</strong>입니다. 50회 동안 한 번호의 기대 출현은 6.7회입니다.</span> <a href="statistics-trend.html" data-i18n-en="Details →">자세히 →</a></p>
+<h3><a href="statistics-bonus.html" data-i18n-en="Bonus ball">보너스 번호</a></h3>
+<p><span data-i18n-en="The bonus ball is drawn after the six winning numbers. Only one is drawn each time, so a given number is expected to appear 27.6 times; the most frequent bonus ball so far is &lt;strong&gt;2 (36 times)&lt;/strong&gt;.">보너스 번호는 당첨번호 6개를 뽑은 뒤 하나 더 뽑는 번호입니다. 한 회차에 하나뿐이라 번호 하나의 기대 출현은 27.6회이고, 역대 가장 많이 나온 보너스 번호는 <strong>2번(36회)</strong>입니다.</span> <a href="statistics-bonus.html" data-i18n-en="Details →">자세히 →</a></p>
+<h3><a href="statistics-even-odd.html" data-i18n-en="Odd / even split">홀짝 비율</a></h3>
+<p><span data-i18n-en="The most common shape across draws 1–1243 is &lt;strong&gt;3 odd / 3 even&lt;/strong&gt;, seen 414 times (33.3%). Of the numbers 1–45, 23 are odd and 22 are even, so three odd and three even is also the most likely shape in theory.">1~1243회 중 가장 많이 나온 형태는 <strong>홀3 짝3</strong>로 414회(33.3%)입니다. 1~45에는 홀수 23개, 짝수 22개가 있어 이론상으로도 홀3 짝3이 가장 흔합니다.</span> <a href="statistics-even-odd.html" data-i18n-en="Details →">자세히 →</a></p>
+<h3><a href="statistics-low-high.html" data-i18n-en="Low / high split">저고 비율</a></h3>
+<p><span data-i18n-en="Numbers 1–22 count as low and 23–45 as high. The most common shape across draws 1–1243 is &lt;strong&gt;3 low / 3 high&lt;/strong&gt;, seen 410 times (33.0%).">1~22를 저번호, 23~45를 고번호로 나눴습니다. 1~1243회 중 가장 많은 형태는 <strong>저3 고3</strong>로 410회(33.0%)입니다.</span> <a href="statistics-low-high.html" data-i18n-en="Details →">자세히 →</a></p>
+<h3><a href="statistics-sum.html" data-i18n-en="Sum of numbers">번호 합계</a></h3>
+<p><span data-i18n-en="Across draws 1–1243 the winning numbers add up to &lt;strong&gt;138.3&lt;/strong&gt; on average, and the most common band is &lt;strong&gt;120~139&lt;/strong&gt; (25.0%). The theoretical average is 138.">1~1243회 당첨번호 합계의 평균은 <strong>138.3</strong>이고, 가장 많이 나온 구간은 <strong>120~139</strong>(25.0%)입니다. 이론 평균은 138입니다.</span> <a href="statistics-sum.html" data-i18n-en="Details →">자세히 →</a></p>
+<h3><a href="statistics-consecutive.html" data-i18n-en="Consecutive numbers">연속번호</a></h3>
+<p><span data-i18n-en="In &lt;strong&gt;643 of draws 1–1243 (51.7%)&lt;/strong&gt; at least one pair of consecutive numbers came up. Drawing six numbers at random, the chance of any run appearing is 52.9% — more than half the time.">1~1243회 중 <strong>643회(51.7%)</strong>에서 이어지는 번호가 하나 이상 나왔습니다. 6개를 무작위로 뽑을 때 연속번호가 하나라도 섞일 확률은 52.9%로, 절반이 넘습니다.</span> <a href="statistics-consecutive.html" data-i18n-en="Details →">자세히 →</a></p>
+<h3><a href="statistics-ac.html" data-i18n-en="AC value">AC값</a></h3>
+<p><span data-i18n-en="The AC value counts the distinct differences among the 15 pairs formed from six numbers, minus 5. It runs from 0 to 10, and the higher it is, the more spread out the numbers are. Across draws 1–1243 the most common value is &lt;strong&gt;AC 8&lt;/strong&gt; (34.8%).">AC값은 번호 6개를 두 개씩 뺀 차이 15개 중 서로 다른 값의 개수에서 5를 뺀 값입니다. 0~10 사이이고, 높을수록 번호가 고르게 흩어진 조합입니다. 1~1243회 중 가장 많은 값은 <strong>AC 8</strong>(34.8%)입니다.</span> <a href="statistics-ac.html" data-i18n-en="Details →">자세히 →</a></p>
+<h3><a href="statistics-tail.html" data-i18n-en="Last digits">끝수 · 끝수합</a></h3>
+<p><span data-i18n-en="The last digit is the ones place of a number. Digits 1–5 have five numbers each (1·11·21·31·41), while 0 and 6–9 have four, so the comparison is made &lt;strong&gt;per number&lt;/strong&gt;. Across draws 1–1243 the highest average belongs to digit &lt;strong&gt;7&lt;/strong&gt; (174.3 times).">끝수는 번호의 일의 자리입니다. 끝자리 1~5에는 번호가 5개(예: 1·11·21·31·41), 0과 6~9에는 4개씩 있어서 <strong>번호 1개당 평균</strong>으로 비교합니다. 1~1243회 기준으로 번호당 평균이 가장 높은 끝수는 <strong>7</strong>(174.3회)입니다.</span> <a href="statistics-tail.html" data-i18n-en="Details →">자세히 →</a></p>
+<h3><a href="statistics-prize.html" data-i18n-en="First-prize winners">1등 당첨자 수</a></h3>
+<p><span data-i18n-en="Across draws 1–1243 there were &lt;strong&gt;8.6 first-prize winners&lt;/strong&gt; per draw on average. In &lt;strong&gt;14 draws&lt;/strong&gt; nobody won first prize and the money rolled over. The most common band is 6–10 winners.">1~1243회 동안 1등 당첨자는 회차당 평균 <strong>8.6명</strong>이었습니다. 1등이 한 명도 없어 당첨금이 이월된 회차는 <strong>14회</strong>입니다. 가장 흔한 구간은 6~10명입니다.</span> <a href="statistics-prize.html" data-i18n-en="Details →">자세히 →</a></p>
+
+<h2 id="prize" data-i18n-en="First-prize money so far">역대 1등 당첨금 통계</h2>
+
+<div class="table-scroll">
+<table class="data-table kv-table">
+<thead><tr><th scope="col" data-i18n-en="Measure">항목</th><th scope="col" data-i18n-en="Value">값</th></tr></thead>
+<tbody>
+<tr><td><span data-i18n-en="First-prize winners in total">1등 당첨자 합계</span></td><td><span data-i18n-en="10,669 (14 draws rolled over)">10,669명 (1등이 없어 이월된 회차 14회)</span></td></tr>
+<tr><td><span data-i18n-en="First-prize money in total">1등 당첨금 합계</span></td><td><span data-i18n-en="about 21.46 tn KRW">약 21조 4,644억 원</span></td></tr>
+<tr><td><span data-i18n-en="Average per winner (total ÷ winners)">당첨자 1명당 평균 (합계 ÷ 당첨자 수)</span></td><td><span data-i18n-en="2.01 bn KRW">20억 1,185만 원</span></td></tr>
+<tr><td><span data-i18n-en="Average of the per-winner amount across draws">회차별 1인당 당첨금의 평균</span></td><td><span data-i18n-en="2.66 bn KRW">26억 5,884만 원</span></td></tr>
+<tr><td><span data-i18n-en="Largest per-winner prize">역대 최고 1인당 당첨금</span></td><td><span data-i18n-en="&lt;a href=&quot;round/19.html&quot;&gt;Draw 19&lt;/a&gt;: 40.72 bn KRW (1 winner)"><a href="round/19.html" data-i18n-en="Draw 19">19회</a> 407억 2,295만 원 (1명)</span></td></tr>
+<tr><td><span data-i18n-en="Smallest per-winner prize">역대 최저 1인당 당첨금</span></td><td><span data-i18n-en="&lt;a href=&quot;round/546.html&quot;&gt;Draw 546&lt;/a&gt;: 406m KRW (30 winners)"><a href="round/546.html" data-i18n-en="Draw 546">546회</a> 4억 593만 원 (30명)</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<p data-i18n-en="The largest and smallest payouts are listed in &lt;a href=&quot;top-prize.html&quot;&gt;the Top 50 jackpots&lt;/a&gt;, winners per draw in &lt;a href=&quot;statistics-prize.html&quot;&gt;first-prize winners&lt;/a&gt;, and take-home amounts in &lt;a href=&quot;tax.html&quot;&gt;the after-tax calculator&lt;/a&gt;.">1인당 금액이 컸던 회차와 작았던 회차는 <a href="top-prize.html">역대 1등 당첨금 순위 TOP 50</a>, 회차별 당첨자 수는 <a href="statistics-prize.html">1등 당첨자 수 통계</a>, 세금을 뗀 금액은 <a href="tax.html">실수령액 계산기</a>에서 볼 수 있습니다.</p>
+
+<h2 id="reading" data-i18n-en="Reading these numbers">통계를 읽을 때 알아둘 점</h2>
+
+<p data-i18n-en="Each draw takes six fresh balls out of 45. Whatever came up last time, every number has the same 6-in-45 chance next time, and any six-number combination has the same 1-in-8,145,060 chance of the first prize. The figures on this page record what has happened; they are not a signal about the next draw.">로또는 매 회차 45개 공에서 6개를 새로 뽑습니다. 지난 회차에 무엇이 나왔든 다음 회차에 번호 하나가 뽑힐 확률은 6/45로 같고, 어떤 6개 조합이든 1등 확률은 8,145,060분의 1입니다. 그래서 이 페이지의 숫자는 "지금까지 이렇게 나왔다"는 기록이지 다음 회차를 알려 주는 신호가 아닙니다.</p>
+
+<p data-i18n-en="Even the gap between the most and least frequent numbers (186 against 137) is the kind of spread a fair draw produces. 44 of the 45 numbers sit within two standard deviations of the mean; a fair draw would normally put about 43 of them (95.4%) there.">많이 나온 번호와 적게 나온 번호의 차이(186회와 137회)도 공평한 추첨에서 생길 만한 폭입니다. 45개 중 44개가 평균 ±2 표준편차 안에 있는데, 공평한 추첨이라면 약 43개(95.4%)가 이 안에 드는 것이 보통입니다.</p>
+
+<ul><li><a href="blog/is-number-34-special.html" data-i18n-en="Is number 34 special for coming up 186 times? Reading draw counts with standard deviation">34번이 186회 나온 게 특별한가 — 표준편차로 읽는 출현 횟수</a></li><li><a href="blog/cold-numbers-gamblers-fallacy.html" data-i18n-en="Will a long-missing number come up soon? Cold numbers and the gambler's fallacy">오래 안 나온 번호는 곧 나올까 — 미출수와 도박사의 오류</a></li><li><a href="blog/pair-numbers-multiple-comparisons.html" data-i18n-en="Are pair numbers real? 990 pairs and the multiple comparisons trap">궁합수는 진짜 있을까 — 990개 쌍과 다중 비교의 함정</a></li><li><a href="blog/sum-odd-even-bell-curve.html" data-i18n-en="Why do lotto sums cluster near 138? Odd/even, low/high and the bell curve">번호 합계는 왜 138 근처에 몰릴까 — 홀짝·고저·합계와 종 모양 분포</a></li><li><a href="blog/lotto-stats-glossary.html" data-i18n-en="What do cold numbers, pair numbers and AC value mean? A glossary of lotto statistics">미출수·궁합수·AC값이 무슨 뜻인가 — 로또 통계 용어 정리</a></li></ul>
+
+<h2 id="faq" data-i18n-en="Frequently asked questions">자주 묻는 질문</h2>
+
+<h3 data-i18n-en="Which number has been drawn the most?">로또에서 가장 많이 나온 번호는?</h3>
+
+<p data-i18n-en="Across draws 1–1243 the leaders are 34 (186 times), 13 (183 times), 27 (181 times). The least drawn is 9 (137 times).">1~1243회 기준으로 34번(186회), 13번(183회), 27번(181회) 순으로 많이 나왔습니다. 가장 적게 나온 번호는 9번(137회)입니다.</p>
+
+<h3 data-i18n-en="Which number has been missing the longest?">가장 오래 안 나온 번호는?</h3>
+
+<p data-i18n-en="As of draw 1243, 5 has been absent for 30 draws, followed by 27 (19 draws) and 45 (19 draws).">1243회 기준으로 5번이 30회차째 나오지 않았습니다. 그다음은 27번(19회차째), 45번(19회차째)입니다.</p>
+
+<h3 data-i18n-en="When are these statistics updated?">통계는 언제 갱신되나요?</h3>
+
+<p data-i18n-en="After the Saturday draw, the official results are collected and everything is recalculated automatically on Sunday. The figures currently run through draw 1243 (2026-09-26).">토요일 추첨이 끝나면 동행복권 발표를 받아 일요일에 자동으로 다시 계산합니다. 지금은 1243회(2026-09-26)까지 반영되어 있습니다.</p>
+
+<h3 data-i18n-en="Can statistics improve my chances?">통계로 당첨 확률을 높일 수 있나요?</h3>
+
+<p data-i18n-en="No. Every combination has the same 1-in-8,145,060 chance of the first prize. What does change is how many people you might share with: popular picks such as birthdays or 1·2·3·4·5·6 tend to produce several winners and a smaller share each (&lt;a href=&quot;blog/why-jackpots-split.html&quot;&gt;why jackpots split&lt;/a&gt;). &lt;a href=&quot;index.html&quot;&gt;The number generator&lt;/a&gt; filters out patterns like these.">아니요. 모든 조합의 1등 확률은 1/8,145,060으로 같습니다. 다만 생일 날짜나 1·2·3·4·5·6처럼 많은 사람이 고르는 조합은 당첨자가 여럿 나와 1인당 금액이 줄어듭니다(<a href="blog/why-jackpots-split.html">왜 당첨금이 쪼개지나</a>). <a href="index.html">번호 생성기</a>는 이런 특수 패턴을 걸러냅니다.</p>
+
+<p><span data-i18n-en="See also:">함께 보기:</span> <a href="draws.html" data-i18n-en="All winning numbers by draw">회차별 당첨번호 전체 조회</a> · <a href="probability.html" data-i18n-en="Lotto probability">로또 확률</a> · <a href="top-prize.html" data-i18n-en="Top 50 jackpots">역대 1등 당첨금 TOP 50</a> · <a href="statistics.html" data-i18n-en="Last 5 months (pass)">최근 5개월 통계(이용권)</a></p>
+
+        <p class="page-disclaimer" data-i18n="disclaimer.page">지난 추첨 기록을 정리한 것이며 다음 회차를 예측하지 않습니다. 어떤 6개를 고르든 1등 확률은 1/8,145,060으로 같습니다. 당첨번호 출처: 동행복권.</p>
+    </main>
+
+    <footer class="footer">
+        <ul class="footer-nav">
+            <li><a href="index.html" data-i18n="footer.home">HOME</a></li>
+            <li><a href="statistics-all.html" data-i18n="nav.stats">로또 통계</a></li>
+            <li><a href="draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="top-prize.html" data-i18n="footer.top">TOP 50</a></li>
+            <li><a href="tax.html" data-i18n="footer.tax">실수령액</a></li>
+            <li><a href="blog/index.html" data-i18n="nav.blog">블로그</a></li>
+            <li><a href="about.html" data-i18n="nav.about">ABOUT</a></li>
+        </ul>
+        <p><a href="privacy.html" data-i18n="footer.privacy">개인정보 처리방침</a> · <a href="terms.html" data-i18n="footer.terms">이용약관</a> · <a href="contact.html" data-i18n="footer.contact">문의</a></p>
+        <p data-i18n-html="footer.copy">&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권</p>
+    </footer>
+</div>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9372871176021283" crossorigin="anonymous"></script>
+</body>
+</html>

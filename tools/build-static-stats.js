@@ -11,11 +11,14 @@
 // "함께 나온 쌍"보다 "궁합수", "회차별 당첨번호 조회", "로또 1241회 당첨번호".
 //
 // 만드는 것
+//   statistics-all.html      "로또 통계" 허브. 통계 12종 요약, 번호별 표, 최근 10회 당첨번호
 //   statistics-*.html 12개   통계별 착지 페이지
 //   round/<회차>.html        회차별 당첨번호 페이지 (전 회차)
 //   draws.html               회차별 당첨번호 전체 조회
+//   lotto-draws.csv          전 회차 당첨번호 엑셀(CSV) 파일. draws.html 에서 내려받는다
 //   probability.html         등수별 당첨 확률
-//   index.html · tax.html · top-prize.html   <!-- seo:... --> 표식 사이만 고친다
+//   top-prize.html           역대 1등 당첨금 TOP 50 · 최저 10 · 역대 합계
+//   index.html · tax.html    <!-- seo:... --> 표식 사이만 고친다
 //   blog/                    블로그 목록과 글 (tools/build-blog.js 를 불러 만든다)
 //   sitemap.xml
 //
@@ -99,16 +102,19 @@ const topBy = rows => rows.slice().sort((a, b) => b.count - a.count)[0];
 const ball = n => `<span class="mball" data-band="${LottoStats.bandOf(n)}">${n}</span>`;
 const bigBall = n => `<span class="ball filled" data-band="${LottoStats.bandOf(n)}">${n}</span>`;
 
-// 1,628,391,980 → "16억 2,839만 원"
-// 영문은 억·만 대신 bn/m 으로 적는다
+// 1,628,391,980 → "16억 2,839만 원", 21,464,435,555,515 → "21조 4,644억 원"
+// 영문은 억·만 대신 tn/bn/m 으로 적는다
 function wonEn(amount) {
     if (!amount) return '0';
+    if (amount >= 1e12) return (amount / 1e12).toFixed(2) + ' tn KRW';
     return amount >= 1e9 ? (amount / 1e9).toFixed(2) + ' bn KRW' : Math.round(amount / 1e6) + 'm KRW';
 }
 function won(amount) {
     if (!amount) return '0원';
-    const eok = Math.floor(amount / 1e8);
+    const jo = Math.floor(amount / 1e12);
+    const eok = Math.floor((amount % 1e12) / 1e8);
     const man = Math.floor((amount % 1e8) / 1e4);
+    if (jo) return eok ? `${fmt(jo)}조 ${fmt(eok)}억 원` : `${fmt(jo)}조 원`;
     if (!eok) return `${fmt(man)}만 원`;
     return man ? `${fmt(eok)}억 ${fmt(man)}만 원` : `${fmt(eok)}억 원`;
 }
@@ -167,8 +173,16 @@ function rankList(rows, label) {
 
 /* ───── 공통 틀 ───── */
 
+// "로또 통계" 허브. 메뉴·꼬리말·이동 경로의 "로또 통계"가 모두 이곳을 가리킨다 — 검색엔진이
+// "로또 통계"에 맞는 쪽을 이 주소 하나로 알아보게 하려는 것이다.
+// statistics.html 은 유료(최근 5개월) 결제 페이지라 키 메일·페이앱 주소에 박혀 있어 옮기지 않는다.
+const HUB = 'statistics-all.html';
+
+// 손으로 관리하는 페이지(index, about, contact, privacy, terms, statistics, tax)에도 같은 메뉴가 들어 있다.
+// 여기를 고치면 그 7쪽도 같이 고친다.
 const NAV = [
-    ['index.html', '생성기 · 통계', 'nav.index'],
+    ['index.html', '번호 생성기', 'nav.index'],
+    [HUB, '로또 통계', 'nav.stats'],
     ['draws.html', '당첨번호', 'nav.draws'],
     ['statistics.html', '5개월 통계', 'nav.statistics'],
     ['top-prize.html', 'TOP 50 당첨금', 'nav.topPrize'],
@@ -267,6 +281,7 @@ ${o.body.filter(Boolean).join('\n\n')}
     <footer class="footer">
         <ul class="footer-nav">
             <li><a href="${base}index.html" data-i18n="footer.home">HOME</a></li>
+            <li><a href="${base}${HUB}" data-i18n="nav.stats">로또 통계</a></li>
             <li><a href="${base}draws.html" data-i18n="nav.draws">당첨번호</a></li>
             <li><a href="${base}statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
             <li><a href="${base}top-prize.html" data-i18n="footer.top">TOP 50</a></li>
@@ -889,26 +904,42 @@ function roundPage(d) {
     });
 }
 
+// 회차 · 추첨일 · 당첨번호 · 1등 당첨자 · 1인당 당첨금 한 줄 (전체 조회와 허브의 최근 10회가 같이 쓴다)
+const DRAW_HEAD = [['회차', 'Draw'], ['추첨일', 'Date'], ['당첨번호 + 보너스', 'Winning numbers + bonus'], ['1등', 'First-prize winners'], ['1인당 1등 당첨금', 'First prize per winner']];
+function drawRow(d) {
+    const nums = d.numbers.slice().sort(asc);
+    const w = typeof d.firstPrizeWinners === 'number' ? d.firstPrizeWinners : null;
+    return [
+        `<a href="round/${d.round}.html" data-i18n-en="Draw ${d.round}">${d.round}회</a>`,
+        d.date,
+        `<span class="row-balls">${nums.map(ball).join('')}<span class="plus">+</span>${ball(d.bonus)}</span>`,
+        w === 0 ? en('이월', 'rollover') : w === null ? '-' : en(`${w}명`, `${w}`),
+        w ? en(won(d.firstPrizeAmount), wonEn(d.firstPrizeAmount)) : '-',
+    ];
+}
+
+/* ───── 엑셀(CSV) ───── */
+
+// 엑셀이 한글 머리를 깨뜨리지 않게 UTF-8 BOM 을 붙인다. 오래된 회차부터 적는다(엑셀에서 아래로 갈수록 최신).
+const CSV_FILE = 'lotto-draws.csv';
+function csvFile() {
+    const head = ['회차', '추첨일', '번호1', '번호2', '번호3', '번호4', '번호5', '번호6', '보너스', '1등 당첨자 수', '1등 1인당 당첨금(원)'];
+    const lines = draws.slice().reverse().map(d => [d.round, d.date].concat(d.numbers.slice().sort(asc), [d.bonus,
+        typeof d.firstPrizeWinners === 'number' ? d.firstPrizeWinners : '', d.firstPrizeAmount || 0]).join(','));
+    return '﻿' + [head.join(',')].concat(lines).join('\r\n') + '\r\n';
+}
+const csvLink = base => `<a class="btn btn-secondary" href="${base || ''}${CSV_FILE}" download data-i18n-en="Download every draw (Excel CSV)">전 회차 엑셀(CSV) 내려받기</a>`;
+
 function drawsPage() {
-    const rows = draws.map(d => {
-        const nums = d.numbers.slice().sort(asc);
-        const w = typeof d.firstPrizeWinners === 'number' ? d.firstPrizeWinners : null;
-        return [
-            `<a href="round/${d.round}.html" data-i18n-en="Draw ${d.round}">${d.round}회</a>`,
-            d.date,
-            `<span class="row-balls">${nums.map(ball).join('')}<span class="plus">+</span>${ball(d.bonus)}</span>`,
-            w === 0 ? en('이월', 'rollover') : w === null ? '-' : en(`${w}명`, `${w}`),
-            w ? en(won(d.firstPrizeAmount), wonEn(d.firstPrizeAmount)) : '-',
-        ];
-    });
+    const rows = draws.map(drawRow);
     const latestNums = LATEST.numbers.slice().sort(asc);
     return shell({
         file: 'draws.html',
         navCurrent: 'draws.html',
         crumbs: [[null, '회차별 당첨번호', null, 'All winning numbers']],
-        title: `로또 회차별 당첨번호 전체 조회 (${RANGE})`,
+        title: `로또 회차별 당첨번호 전체 조회 · 엑셀 다운로드 (${RANGE})`,
         h1: '로또 회차별 당첨번호 전체 조회', h1En: 'Every Winning Number, Draw by Draw',
-        desc: `로또 6/45 ${RANGE} 회차별 당첨번호 전체 보기. 최신 ${LATEST.round}회(${LATEST.date}) 당첨번호 ${latestNums.join(', ')} + ${LATEST.bonus}. 회차별 1등 당첨자 수와 1인당 당첨금.`,
+        desc: `로또 6/45 ${RANGE} 회차별 당첨번호 전체 보기와 엑셀(CSV) 다운로드. 최신 ${LATEST.round}회(${LATEST.date}) 당첨번호 ${latestNums.join(', ')} + ${LATEST.bonus}. 회차별 1등 당첨자 수와 1인당 당첨금.`,
         scope: en(`${RANGE} · ${PERIOD} · 매주 추첨 후 자동 갱신`, `Draws 1–${N} · ${PERIOD} · updated automatically after each draw`),
         lead: en(`최신 <a href="round/${LATEST.round}.html"><strong>${LATEST.round}회</strong></a>(${LATEST.date}) 당첨번호는 <strong>${latestNums.join(', ')}</strong>, 보너스 <strong>${LATEST.bonus}</strong>입니다. 회차를 누르면 그 회차의 번호 분석을 볼 수 있습니다.`,
             `The latest draw, <a href="round/${LATEST.round}.html"><strong>${LATEST.round}</strong></a> (${LATEST.date}), came out <strong>${latestNums.join(', ')}</strong> with bonus <strong>${LATEST.bonus}</strong>. Open any draw to see how its numbers break down.`),
@@ -921,7 +952,11 @@ function drawsPage() {
                 '</form>',
                 '<p class="calc-error" id="round-error" role="alert"></p>',
             ].join('\n'),
-            table([['회차', 'Draw'], ['추첨일', 'Date'], ['당첨번호 + 보너스', 'Winning numbers + bonus'], ['1등', 'First-prize winners'], ['1인당 1등 당첨금', 'First prize per winner']], rows, 'draws-table'),
+            `<p>${csvLink()}</p>`,
+            pEn(`엑셀 파일에는 ${RANGE} 회차·추첨일·당첨번호 6개·보너스 번호·1등 당첨자 수·1등 1인당 당첨금이 들어 있습니다. 매주 추첨 뒤 이 표와 함께 갱신됩니다.`,
+                `The file lists every draw from 1 to ${N}: draw number, date, the six winning numbers, the bonus ball, the number of first-prize winners and the first prize per winner. It is refreshed with this table after every draw.`, 'note'),
+            table(DRAW_HEAD, rows, 'draws-table'),
+            `<p>${en('번호별·패턴별 통계는', 'For statistics by number and by pattern, see')} <a href="${HUB}" data-i18n-en="Lotto statistics">로또 통계</a>${en('에 모아 두었습니다.', '.')}</p>`,
         ],
         script: [
             '(function () {',
@@ -958,7 +993,7 @@ function probabilityPage() {
     const years = Math.round(TOTAL / 52);
     return shell({
         file: 'probability.html',
-        crumbs: [['index.html#sec-stats', '로또 통계', null, 'Lotto statistics'], [null, '로또 확률', null, 'Lotto odds']],
+        crumbs: [[HUB, '로또 통계', 'nav.stats'], [null, '로또 확률', null, 'Lotto odds']],
         title: '로또 확률 계산 · 1등부터 5등까지 등수별 당첨 확률',
         h1: '로또 확률 · 등수별 당첨 확률', h1En: 'Lotto Odds by Prize Tier',
         desc: `로또 6/45 1등 확률 1/${oneIn(1)}, 2등 1/${oneIn(6)}, 3등 1/${oneIn(228)}, 4등 1/${oneIn(11115)}, 5등 1/${oneIn(182780)}. 계산 공식과 자동·수동 확률 차이, 확률을 높이는 방법의 진실.`,
@@ -995,6 +1030,17 @@ function probabilityPage() {
 
 /* ───── 통계 페이지 렌더 ───── */
 
+// 블로그 글 목록. 블로그를 먼저 만든 뒤 채운다 (아래 실행 순서)
+let ARTICLES = [];
+
+// 머리말 related 로 이 페이지를 가리키는 블로그 글 (블로그 → 통계의 반대 방향 링크)
+function readsFor(file) {
+    const list = ARTICLES.filter(a => a.pages.indexOf(file) !== -1);
+    if (!list.length) return '';
+    return h2En('이 통계와 이어지는 글', 'Further reading') + '\n<ul>' + list.map(a =>
+        `<li><a href="${a.href}"${a.titleEn ? ` data-i18n-en="${esc(a.titleEn)}"` : ''}>${esc(a.title)}</a></li>`).join('') + '</ul>';
+}
+
 function relatedLinks(current) {
     return '<ul class="stat-links">' + STATS.filter(p => p.file !== current).map(p =>
         `<li><a href="${p.file}"${p.shortEn ? ` data-i18n-en="${esc(p.shortEn)}"` : ''}>${esc(p.short)}</a>` +
@@ -1005,7 +1051,7 @@ function relatedLinks(current) {
 function statPage(p) {
     return shell({
         file: p.file,
-        crumbs: [['index.html#sec-stats', '로또 통계', null, 'Lotto statistics'], [null, p.short, null, p.shortEn]],
+        crumbs: [[HUB, '로또 통계', 'nav.stats'], [null, p.short, null, p.shortEn]],
         title: p.title,
         h1: p.h1,
         h1En: p.h1En,
@@ -1026,11 +1072,248 @@ function statPage(p) {
         }],
         body: p.body.concat([
             `<p><a class="btn" href="index.html#${p.anchor}" data-i18n-en="See the chart on the home page">홈에서 그래프로 보기</a></p>`,
+            readsFor(p.file),
             h2En('다른 로또 통계', 'Other statistics'),
             relatedLinks(p.file),
-            `<p>${en('함께 보기:', 'See also:')} <a href="draws.html" data-i18n-en="All winning numbers by draw">회차별 당첨번호 전체 조회</a> · <a href="probability.html" data-i18n-en="Lotto probability">로또 확률</a></p>`,
+            `<p>${en('함께 보기:', 'See also:')} <a href="${HUB}" data-i18n-en="All lotto statistics on one page">로또 통계 한눈에 보기</a> · <a href="draws.html" data-i18n-en="All winning numbers by draw">회차별 당첨번호 전체 조회</a> · <a href="probability.html" data-i18n-en="Lotto probability">로또 확률</a></p>`,
         ]),
         script: p.script,
+    });
+}
+
+/* ───── 1등 당첨금 집계 (허브 · TOP 50 이 같이 쓴다) ───── */
+
+const PRIZE = (() => {
+    const known = draws.filter(d => d.firstPrizeAmount && d.firstPrizeWinners);
+    const byAmount = known.slice().sort((a, b) => b.firstPrizeAmount - a.firstPrizeAmount || a.round - b.round);
+    const winners = known.reduce((a, d) => a + d.firstPrizeWinners, 0);
+    // 1인당 금액 × 당첨자 수. 동행복권이 1인당 금액을 원 단위로 내림하므로 실제 총액과 몇 원 차이 날 수 있다
+    const total = known.reduce((a, d) => a + d.firstPrizeAmount * d.firstPrizeWinners, 0);
+    return {
+        known, winners, total,
+        top: byAmount,                                              // 1인당 금액이 큰 순
+        low: byAmount.slice().reverse(),                            // 작은 순
+        avg: Math.round(known.reduce((a, d) => a + d.firstPrizeAmount, 0) / Math.max(1, known.length)),   // 회차별 1인당 금액의 평균
+        perWinner: Math.round(total / Math.max(1, winners)),       // 합계 ÷ 당첨자 수
+        rollovers: draws.filter(d => d.firstPrizeWinners === 0).length,
+    };
+})();
+
+const roundLink = (d, base) => `<a href="${base || ''}round/${d.round}.html" data-i18n-en="Draw ${d.round}">${d.round}회</a>`;
+
+/* ───── 로또 통계 허브 ───── */
+
+// "로또 통계"로 찾아온 사람이 닿는 쪽. 통계 12종의 핵심, 1~45번 번호별 표, 최근 10회 당첨번호,
+// 1등 당첨금 합계를 한 쪽에 모으고 각 통계 페이지로 보낸다.
+// 유료(최근 5개월 통계, 상세 분석 4종)에 들어 있는 내용은 싣지 않는다.
+const HUB_ORDER = ['stat-frequency', 'stat-gap', 'stat-pair', 'stat-trend', 'stat-bonus', 'stat-even-odd',
+    'stat-low-high', 'stat-sum', 'stat-consecutive', 'stat-ac', 'stat-tail', 'stat-prize'];
+// "통계를 읽을 때 알아둘 점" 아래에 거는 블로그 글
+const HUB_READS = ['is-number-34-special', 'cold-numbers-gamblers-fallacy', 'pair-numbers-multiple-comparisons',
+    'sum-odd-even-bell-curve', 'lotto-stats-glossary'];
+
+const h2Id = (id, ko, english) => `<h2 id="${id}" data-i18n-en="${esc(english)}">${ko}</h2>`;
+
+function hubPage() {
+    const freq = stats.frequency;                      // 1~45 번호 순
+    const ranked = freq.slice().sort((a, b) => b.count - a.count || a.number - b.number);
+    const rankOf = n => 1 + freq.filter(r => r.count > freq[n - 1].count).length;   // 횟수가 같으면 같은 순위
+    const countIn = k => {
+        const c = new Array(46).fill(0);
+        draws.slice(0, k).forEach(d => d.numbers.forEach(x => { c[x]++; }));
+        return c;
+    };
+    const W = stats.trend.window;
+    const recentW = countIn(W);
+    const recent10 = countIn(10);
+    const gapOf = {};
+    stats.gaps.forEach(r => { gapOf[r.number] = r.gap; });
+    const e = extremesOf(freq);
+    const g = stats.gaps;
+    const pair = stats.pairs[0];
+    const latestNums = LATEST.numbers.slice().sort(asc);
+    const in2 = within(freq.map(r => r.count), EXP_NUM, SD_NUM, 2);
+    const byAnchor = {};
+    STATS.forEach(p => { byAnchor[p.anchor] = p; });
+
+    const numberRows = freq.map(r => {
+        const n = r.number;
+        const gap = gapOf[n];
+        const last = draws[gap];                       // draws 는 최신이 0번이므로 gap 이 곧 그 회차의 자리다
+        return [
+            ball(n),
+            en(`${fmt(r.count)}회 (${rankOf(n)}위)`, `${r.count} (#${rankOf(n)})`),
+            times(recentW[n]),
+            times(recent10[n]),
+            times(stats.bonus[n - 1].count),
+            last ? roundLink(last) : '-',
+            gap === 0 ? en('최신 회차', 'latest draw') : en(`${gap}회차째`, `${gap} draws`),
+        ];
+    });
+
+    const toc = '<nav class="toc" aria-label="목차" data-i18n-attr="aria-label:blog.toc"><strong data-i18n="blog.toc">목차</strong><ol>' + [
+        ['recent', '로또 최근 10회 당첨번호', 'The last 10 draws'],
+        ['numbers', '1~45번 번호별 통계', 'Every number from 1 to 45'],
+        ['summary', '로또 통계 12종 요약', 'Twelve statistics at a glance'],
+        ['prize', '역대 1등 당첨금 통계', 'First-prize money so far'],
+        ['reading', '통계를 읽을 때 알아둘 점', 'Reading these numbers'],
+        ['faq', '자주 묻는 질문', 'Frequently asked questions'],
+    ].map(([id, ko, english]) => `<li><a href="#${id}" data-i18n-en="${esc(english)}">${ko}</a></li>`).join('') + '</ol></nav>';
+
+    const summary = HUB_ORDER.map(a => byAnchor[a]).filter(Boolean).map(p => [
+        `<h3><a href="${p.file}"${p.shortEn ? ` data-i18n-en="${esc(p.shortEn)}"` : ''}>${esc(p.short)}</a></h3>`,
+        `<p>${p.leadEn ? en(p.lead, p.leadEn) : p.lead} <a href="${p.file}" data-i18n-en="Details →">자세히 →</a></p>`,
+    ].join('\n')).join('\n');
+
+    const reads = HUB_READS.map(slug => ARTICLES.find(a => a.slug === slug)).filter(Boolean);
+    const top3 = ranked.slice(0, 3);
+    const gapNext = g.slice(1, 3);
+    const top = PRIZE.top[0];
+    const low = PRIZE.low[0];
+
+    return shell({
+        file: HUB,
+        navCurrent: HUB,
+        mainClass: 'stat-hub',
+        crumbs: [[null, '로또 통계', 'nav.stats']],
+        title: `로또 통계 · 역대 ${RANGE} 당첨번호 통계 총정리`,
+        h1: '로또 통계', h1En: 'Lotto Statistics',
+        desc: `로또 6/45 역대 ${RANGE} 당첨번호 통계 총정리. 많이 나온 번호 ${numsText(e.top)} ${e.max}회, 미출수 ${g[0].number}번 ${g[0].gap}회차째, 궁합수 ${pair.a}·${pair.b}번 ${pair.count}회, 최근 10회 당첨번호와 1~45번 번호별 표까지 매주 자동 갱신.`,
+        scope: en(`${RANGE} · ${PERIOD} · 매주 추첨 후 자동 갱신 (마지막 갱신 ${UPDATED})`,
+            `Draws 1–${N} · ${PERIOD} · updated automatically after each draw (last update ${UPDATED})`),
+        lead: en(`로또 6/45 ${RANGE} 전 회차 당첨번호로 계산한 통계를 한 페이지에 모았습니다. 가장 많이 나온 번호는 <strong>${numsText(e.top)}(${e.max}회)</strong>, 가장 적게 나온 번호는 <strong>${numsText(e.bottom)}(${e.min}회)</strong>, 가장 오래 안 나온 번호는 <strong>${g[0].number}번(${g[0].gap}회차째)</strong>입니다. 최신 ${roundLink(LATEST)}(${LATEST.date}) 당첨번호는 ${latestNums.join('·')} + ${LATEST.bonus}입니다.`,
+            `Statistics for every Lotto 6/45 draw so far (1–${N}), on one page. The number drawn most often is <strong>${e.top.map(r => r.number).join('·')} (${e.max} times)</strong>, the least often <strong>${e.bottom.map(r => r.number).join('·')} (${e.min} times)</strong>, and the longest absence belongs to <strong>${g[0].number} (${g[0].gap} draws)</strong>. The latest draw, <a href="round/${LATEST.round}.html">${LATEST.round}</a> (${LATEST.date}), came out ${latestNums.join('·')} + ${LATEST.bonus}.`),
+        ld: [{
+            '@type': 'Dataset',
+            name: `로또 통계 · 역대 ${RANGE} 당첨번호 통계 총정리`,
+            description: `동행복권 로또 6/45 ${RANGE} 회차별 당첨번호, 보너스 번호, 1등 당첨자 수와 당첨금으로 계산한 통계 모음`,
+            url: `${SITE}/${HUB}`,
+            isAccessibleForFree: true,
+            dateModified: UPDATED,
+            temporalCoverage: `${stats.oldestDate}/${stats.latestDate}`,
+            creator: { '@type': 'Organization', name: 'lottodraw.kr', url: SITE + '/' },
+            keywords: ['로또 통계', '로또 번호 통계', '로또 많이 나온 번호', '로또 미출수', '로또 궁합수', '로또 최근 당첨번호'],
+            hasPart: STATS.map(p => ({ '@type': 'Dataset', name: p.title, description: p.desc, url: `${SITE}/${p.file}` })),
+        }],
+        body: [
+            toc,
+
+            h2Id('recent', '로또 최근 10회 당첨번호', 'The last 10 draws'),
+            table(DRAW_HEAD, draws.slice(0, 10).map(drawRow), 'draws-table'),
+            pEn(`그 전 회차는 <a href="draws.html">회차별 당첨번호 전체 조회</a>에서 볼 수 있고, <a href="${CSV_FILE}" download>${RANGE} 전체를 엑셀(CSV)로 내려받을</a> 수도 있습니다.`,
+                `Earlier draws are in <a href="draws.html">the full list of winning numbers</a>, and you can <a href="${CSV_FILE}" download>download draws 1–${N} as an Excel (CSV) file</a>.`),
+
+            h2Id('numbers', '1~45번 번호별 통계', 'Every number from 1 to 45'),
+            pEn(`번호마다 전 회차 출현 횟수와 순위, 최근 ${W}회·최근 10회 출현, 보너스 번호로 나온 횟수, 마지막으로 나온 회차를 정리했습니다. 한 회차에 6개를 뽑으므로 번호 하나가 나올 기대 횟수는 전 회차 ${f1(EXP_NUM)}회, 최근 ${W}회 ${f1(W * 6 / 45)}회, 최근 10회 ${f1(10 * 6 / 45)}회입니다.`,
+                `For each number: how often it has been drawn and its rank, its appearances in the last ${W} and last 10 draws, how often it was the bonus ball, and the draw it last appeared in. Six numbers are drawn each time, so a number is expected to appear ${f1(EXP_NUM)} times over all draws, ${f1(W * 6 / 45)} times in the last ${W} and ${f1(10 * 6 / 45)} in the last 10.`),
+            table([['번호', 'Number'], ['전 회차 (순위)', 'All draws (rank)'], [`최근 ${W}회`, `Last ${W}`], ['최근 10회', 'Last 10'],
+                ['보너스', 'As bonus'], ['마지막 출현', 'Last drawn'], ['안 나온 기간', 'Absent for']], numberRows, 'number-table'),
+            pEn(`출현 횟수가 같으면 같은 순위입니다. 많이 나온 순서로는 <a href="statistics-frequency.html">많이 나온 번호 순위</a>, 오래 안 나온 순서로는 <a href="statistics-gap.html">미출수 순위</a>에서 볼 수 있습니다.`,
+                `Numbers with the same count share a rank. To see them in order, use <a href="statistics-frequency.html">the most frequent numbers</a> or <a href="statistics-gap.html">the longest absences</a>.`),
+
+            h2Id('summary', '로또 통계 12종 요약', 'Twelve statistics at a glance'),
+            summary,
+
+            h2Id('prize', '역대 1등 당첨금 통계', 'First-prize money so far'),
+            table([['항목', 'Measure'], ['값', 'Value']], [
+                [en('1등 당첨자 합계', 'First-prize winners in total'), en(`${fmt(PRIZE.winners)}명 (1등이 없어 이월된 회차 ${PRIZE.rollovers}회)`, `${fmt(PRIZE.winners)} (${PRIZE.rollovers} draws rolled over)`)],
+                [en('1등 당첨금 합계', 'First-prize money in total'), en(`약 ${won(PRIZE.total)}`, `about ${wonEn(PRIZE.total)}`)],
+                [en('당첨자 1명당 평균 (합계 ÷ 당첨자 수)', 'Average per winner (total ÷ winners)'), en(won(PRIZE.perWinner), wonEn(PRIZE.perWinner))],
+                [en('회차별 1인당 당첨금의 평균', 'Average of the per-winner amount across draws'), en(won(PRIZE.avg), wonEn(PRIZE.avg))],
+                [en('역대 최고 1인당 당첨금', 'Largest per-winner prize'), en(`${roundLink(top)} ${won(top.firstPrizeAmount)} (${top.firstPrizeWinners}명)`, `<a href="round/${top.round}.html">Draw ${top.round}</a>: ${wonEn(top.firstPrizeAmount)} (${top.firstPrizeWinners} winner${top.firstPrizeWinners > 1 ? 's' : ''})`)],
+                [en('역대 최저 1인당 당첨금', 'Smallest per-winner prize'), en(`${roundLink(low)} ${won(low.firstPrizeAmount)} (${low.firstPrizeWinners}명)`, `<a href="round/${low.round}.html">Draw ${low.round}</a>: ${wonEn(low.firstPrizeAmount)} (${low.firstPrizeWinners} winners)`)],
+            ], 'kv-table'),
+            pEn(`1인당 금액이 컸던 회차와 작았던 회차는 <a href="top-prize.html">역대 1등 당첨금 순위 TOP 50</a>, 회차별 당첨자 수는 <a href="statistics-prize.html">1등 당첨자 수 통계</a>, 세금을 뗀 금액은 <a href="tax.html">실수령액 계산기</a>에서 볼 수 있습니다.`,
+                `The largest and smallest payouts are listed in <a href="top-prize.html">the Top 50 jackpots</a>, winners per draw in <a href="statistics-prize.html">first-prize winners</a>, and take-home amounts in <a href="tax.html">the after-tax calculator</a>.`),
+
+            h2Id('reading', '통계를 읽을 때 알아둘 점', 'Reading these numbers'),
+            pEn('로또는 매 회차 45개 공에서 6개를 새로 뽑습니다. 지난 회차에 무엇이 나왔든 다음 회차에 번호 하나가 뽑힐 확률은 6/45로 같고, 어떤 6개 조합이든 1등 확률은 8,145,060분의 1입니다. 그래서 이 페이지의 숫자는 "지금까지 이렇게 나왔다"는 기록이지 다음 회차를 알려 주는 신호가 아닙니다.',
+                'Each draw takes six fresh balls out of 45. Whatever came up last time, every number has the same 6-in-45 chance next time, and any six-number combination has the same 1-in-8,145,060 chance of the first prize. The figures on this page record what has happened; they are not a signal about the next draw.'),
+            pEn(`많이 나온 번호와 적게 나온 번호의 차이(${e.max}회와 ${e.min}회)도 공평한 추첨에서 생길 만한 폭입니다. ${in2 === 45 ? '45개 번호가 모두' : `45개 중 ${in2}개가`} 평균 ±2 표준편차 안에 있는데, 공평한 추첨이라면 약 43개(95.4%)가 이 안에 드는 것이 보통입니다.`,
+                `Even the gap between the most and least frequent numbers (${e.max} against ${e.min}) is the kind of spread a fair draw produces. ${in2 === 45 ? 'All 45 numbers sit' : `${in2} of the 45 numbers sit`} within two standard deviations of the mean; a fair draw would normally put about 43 of them (95.4%) there.`),
+            reads.length ? `<ul>${reads.map(a => `<li><a href="${a.href}"${a.titleEn ? ` data-i18n-en="${esc(a.titleEn)}"` : ''}>${esc(a.title)}</a></li>`).join('')}</ul>` : '',
+
+            h2Id('faq', '자주 묻는 질문', 'Frequently asked questions'),
+            `<h3 data-i18n-en="Which number has been drawn the most?">로또에서 가장 많이 나온 번호는?</h3>`,
+            pEn(`${RANGE} 기준으로 ${top3.map(r => `${r.number}번(${r.count}회)`).join(', ')} 순으로 많이 나왔습니다. 가장 적게 나온 번호는 ${numsText(e.bottom)}(${e.min}회)입니다.`,
+                `Across draws 1–${N} the leaders are ${top3.map(r => `${r.number} (${r.count} times)`).join(', ')}. The least drawn is ${e.bottom.map(r => r.number).join('·')} (${e.min} times).`),
+            `<h3 data-i18n-en="Which number has been missing the longest?">가장 오래 안 나온 번호는?</h3>`,
+            pEn(`${stats.latestRound}회 기준으로 ${g[0].number}번이 ${g[0].gap}회차째 나오지 않았습니다. 그다음은 ${gapNext.map(r => `${r.number}번(${r.gap}회차째)`).join(', ')}입니다.`,
+                `As of draw ${stats.latestRound}, ${g[0].number} has been absent for ${g[0].gap} draws, followed by ${gapNext.map(r => `${r.number} (${r.gap} draws)`).join(' and ')}.`),
+            `<h3 data-i18n-en="When are these statistics updated?">통계는 언제 갱신되나요?</h3>`,
+            pEn(`토요일 추첨이 끝나면 동행복권 발표를 받아 일요일에 자동으로 다시 계산합니다. 지금은 ${LATEST.round}회(${LATEST.date})까지 반영되어 있습니다.`,
+                `After the Saturday draw, the official results are collected and everything is recalculated automatically on Sunday. The figures currently run through draw ${LATEST.round} (${LATEST.date}).`),
+            `<h3 data-i18n-en="Can statistics improve my chances?">통계로 당첨 확률을 높일 수 있나요?</h3>`,
+            pEn('아니요. 모든 조합의 1등 확률은 1/8,145,060으로 같습니다. 다만 생일 날짜나 1·2·3·4·5·6처럼 많은 사람이 고르는 조합은 당첨자가 여럿 나와 1인당 금액이 줄어듭니다(<a href="blog/why-jackpots-split.html">왜 당첨금이 쪼개지나</a>). <a href="index.html">번호 생성기</a>는 이런 특수 패턴을 걸러냅니다.',
+                'No. Every combination has the same 1-in-8,145,060 chance of the first prize. What does change is how many people you might share with: popular picks such as birthdays or 1·2·3·4·5·6 tend to produce several winners and a smaller share each (<a href="blog/why-jackpots-split.html">why jackpots split</a>). <a href="index.html">The number generator</a> filters out patterns like these.'),
+
+            `<p>${en('함께 보기:', 'See also:')} <a href="draws.html" data-i18n-en="All winning numbers by draw">회차별 당첨번호 전체 조회</a> · <a href="probability.html" data-i18n-en="Lotto probability">로또 확률</a> · <a href="top-prize.html" data-i18n-en="Top 50 jackpots">역대 1등 당첨금 TOP 50</a> · <a href="statistics.html" data-i18n-en="Last 5 months (pass)">최근 5개월 통계(이용권)</a></p>`,
+        ],
+    });
+}
+
+/* ───── 역대 1등 당첨금 TOP 50 ───── */
+
+function topPrizePage() {
+    const head = [['순위', 'Rank'], ['회차', 'Draw'], ['추첨일', 'Date'], ['1등 당첨자', 'Winners'], ['1인당 당첨금', 'Per winner'], ['세후 (약)', 'After tax (approx.)']];
+    const row = (d, i) => [
+        rank(i + 1), roundLink(d), d.date, en(`${d.firstPrizeWinners}명`, String(d.firstPrizeWinners)),
+        `<strong>${en(won(d.firstPrizeAmount), wonEn(d.firstPrizeAmount))}</strong>`,
+        en(won(d.firstPrizeAmount - lottoTax(d.firstPrizeAmount)), wonEn(d.firstPrizeAmount - lottoTax(d.firstPrizeAmount))),
+    ];
+    const top50 = PRIZE.top.slice(0, 50);
+    const low10 = PRIZE.low.slice(0, 10);
+    const top = top50[0];
+    const low = low10[0];
+    const early = top50.filter(d => d.date < '2004-01-01').length;
+    const recent = PRIZE.top.findIndex(d => d.round > LATEST.round - 52);   // 최근 1년(52회) 가운데 가장 큰 금액의 순위
+    const best = PRIZE.top[recent];
+    return shell({
+        file: 'top-prize.html',
+        navCurrent: 'top-prize.html',
+        crumbs: [[HUB, '로또 통계', 'nav.stats'], [null, '1등 당첨금 TOP 50', null, 'Top 50 jackpots']],
+        title: '역대 로또 1등 당첨금 순위 TOP 50 (1인당)',
+        h1: '역대 로또 1등 당첨금 순위 TOP 50', h1En: 'The 50 Largest First Prizes',
+        desc: `로또 6/45 역대 1등 당첨금 1인당 금액 순위 TOP 50과 가장 적었던 10회. 역대 최고는 ${top.round}회 ${won(top.firstPrizeAmount)}, ${RANGE} 1등 당첨금 합계 약 ${won(PRIZE.total)}, 당첨자 1명당 평균 ${won(PRIZE.perWinner)}.`,
+        scope: en(`${RANGE} · ${PERIOD} · 매주 추첨 후 자동 갱신 (마지막 갱신 ${UPDATED})`,
+            `Draws 1–${N} · ${PERIOD} · updated automatically after each draw (last update ${UPDATED})`),
+        lead: en(`역대 1인당 1등 당첨금이 가장 컸던 회차는 <strong>${roundLink(top)}(${top.date}) ${won(top.firstPrizeAmount)}</strong>(당첨자 ${top.firstPrizeWinners}명)이고, 가장 적었던 회차는 <strong>${roundLink(low)}(${low.date}) ${won(low.firstPrizeAmount)}</strong>(당첨자 ${low.firstPrizeWinners}명)입니다. ${RANGE} 1등 당첨자는 모두 ${fmt(PRIZE.winners)}명, 1명당 평균 ${won(PRIZE.perWinner)}을 받았습니다.`,
+            `The largest first prize per winner was <strong><a href="round/${top.round}.html">draw ${top.round}</a> (${top.date}), ${wonEn(top.firstPrizeAmount)}</strong> (${top.firstPrizeWinners} winner${top.firstPrizeWinners > 1 ? 's' : ''}); the smallest was <strong><a href="round/${low.round}.html">draw ${low.round}</a> (${low.date}), ${wonEn(low.firstPrizeAmount)}</strong> (${low.firstPrizeWinners} winners). Across draws 1–${N}, ${fmt(PRIZE.winners)} people won first prize, ${wonEn(PRIZE.perWinner)} each on average.`),
+        ld: [{
+            '@type': 'Dataset',
+            name: '역대 로또 1등 당첨금 순위 TOP 50 (1인당)',
+            description: `로또 6/45 ${RANGE} 회차별 1등 1인당 당첨금 순위와 역대 1등 당첨금 합계`,
+            url: `${SITE}/top-prize.html`,
+            isAccessibleForFree: true,
+            dateModified: UPDATED,
+            temporalCoverage: `${stats.oldestDate}/${stats.latestDate}`,
+            creator: { '@type': 'Organization', name: 'lottodraw.kr', url: SITE + '/' },
+            keywords: ['로또 1등 당첨금', '로또 역대 최고 당첨금', '로또 당첨금 순위', '로또 역대 최저 당첨금'],
+        }],
+        body: [
+            h2En('1인당 1등 당첨금 TOP 50', 'Top 50 by prize per winner'),
+            table(head, top50.map(row)),
+            pEn(`TOP 50 가운데 ${early}개가 2002~2003년 회차입니다. 2004년 이전에는 한 게임이 2,000원이었습니다.${best ? ` 최근 1년(52회) 가운데 가장 큰 금액은 ${roundLink(best)} ${won(best.firstPrizeAmount)}으로 역대 ${recent + 1}위입니다.` : ''}`,
+                `${early} of the top 50 come from 2002–2003, when a single game cost 2,000 KRW.${best ? ` The largest prize of the past year (52 draws) was <a href="round/${best.round}.html">draw ${best.round}</a>, ${wonEn(best.firstPrizeAmount)}, ranked #${recent + 1} of all time.` : ''}`),
+            pEn('세후 금액은 지금 세율로 계산한 추정치입니다. 구입비 1,000원을 뺀 뒤 3억 원까지 22%, 초과분 33%를 적용했습니다(옛 회차는 당시 세율과 다를 수 있습니다). <a href="tax.html">실수령액 계산기</a>에서 금액을 바꿔 계산해 볼 수 있습니다.',
+                'After-tax figures are estimates at today\'s rates: the 1,000 KRW ticket price is deducted, then 22% is applied up to 300m KRW and 33% to anything above (older draws were taxed under the rules of their day). Try other amounts in <a href="tax.html">the after-tax calculator</a>.', 'note'),
+            h2En('1인당 1등 당첨금이 가장 적었던 10회', 'The 10 smallest first prizes per winner'),
+            table(head, low10.map(row)),
+            pEn(`1인당 금액이 작은 회차는 대개 당첨자가 많았던 회차입니다. 한 회차의 1등 몫을 당첨자 수로 나누기 때문입니다. 당첨자 수 분포는 <a href="statistics-prize.html">1등 당첨자 수 통계</a>에 있습니다.`,
+                'The smallest payouts usually come from draws with many winners, because a draw\'s first-prize pool is divided among them. See <a href="statistics-prize.html">first-prize winners per draw</a> for the full distribution.'),
+            h2En('역대 1등 당첨금 합계', 'First-prize money in total'),
+            table([['항목', 'Measure'], ['값', 'Value']], [
+                [en('1등 당첨자 합계', 'First-prize winners in total'), en(`${fmt(PRIZE.winners)}명`, fmt(PRIZE.winners))],
+                [en('1등 당첨금 합계', 'First-prize money in total'), en(`약 ${won(PRIZE.total)}`, `about ${wonEn(PRIZE.total)}`)],
+                [en('당첨자 1명당 평균 (합계 ÷ 당첨자 수)', 'Average per winner (total ÷ winners)'), en(won(PRIZE.perWinner), wonEn(PRIZE.perWinner))],
+                [en('회차별 1인당 당첨금의 평균', 'Average of the per-winner amount across draws'), en(won(PRIZE.avg), wonEn(PRIZE.avg))],
+                [en('1등이 없어 이월된 회차', 'Draws with no winner (rolled over)'), en(`${PRIZE.rollovers}회`, String(PRIZE.rollovers))],
+            ], 'kv-table'),
+            pEn('합계는 회차마다 1인당 당첨금에 당첨자 수를 곱해 더한 값입니다. 1인당 금액이 원 단위로 내림되어 발표되므로 실제 총액과 몇 원 차이가 날 수 있습니다.',
+                'The total multiplies each draw\'s per-winner prize by its number of winners. Per-winner amounts are published rounded down to the won, so the sum can differ from the true total by a few won.', 'note'),
+            readsFor('top-prize.html'),
+            `<p>${en('함께 보기:', 'See also:')} <a href="${HUB}" data-i18n-en="All lotto statistics on one page">로또 통계 한눈에 보기</a> · <a href="draws.html" data-i18n-en="All winning numbers by draw">회차별 당첨번호 전체 조회</a> · <a href="tax.html" data-i18n-en="After-tax calculator">실수령액 계산기</a></p>`,
+        ],
     });
 }
 
@@ -1089,6 +1372,7 @@ function updateHome() {
             `<span data-i18n-en="latest: draw ${LATEST.round}, ${latestNums.join(' ')} + ${LATEST.bonus}">최신 ${LATEST.round}회 ${latestNums.join(' ')} + ${LATEST.bonus}</span></li>`,
         '                    <li><a href="probability.html" data-i18n-en="Lotto odds">로또 확률</a><span data-i18n-en="1st 1/8,145,060 · 5th 1/45">1등 1/8,145,060 · 5등 1/45</span></li>',
         '                </ul>',
+        `                <p class="stat-more"><a class="btn" href="${HUB}" data-i18n-en="All lotto statistics on one page →">로또 통계 한눈에 보기 →</a></p>`,
         '            </nav>',
         '            ',
     ].join('\n');
@@ -1100,22 +1384,12 @@ function updateHome() {
     write('index.html', html);
 }
 
-function updateTaxAndTop() {
-    const known = draws.filter(d => d.firstPrizeAmount);
-    const top = known.slice().sort((a, b) => b.firstPrizeAmount - a.firstPrizeAmount)[0];
-    const avg = Math.round(known.reduce((a, d) => a + d.firstPrizeAmount, 0) / Math.max(1, known.length));
-
+function updateTax() {
     let tax = read('tax.html');
     tax = replaceBetween('tax.html', tax, 'head', headBlock(
         '로또 실수령액 계산기 · 당첨금 세금 계산 (22%·33%) | lottodraw.kr',
-        `로또 당첨금에서 세금을 뗀 실수령액 계산기. 200만 원 이하 비과세, 3억 원까지 22%, 3억 원 초과분만 33%. 역대 1등 평균 ${won(avg)}의 세후 금액은 약 ${won(avg - lottoTax(avg))}.`));
+        `로또 당첨금에서 세금을 뗀 실수령액 계산기. 200만 원 이하 비과세, 3억 원까지 22%, 3억 원 초과분만 33%. 역대 1등 평균 ${won(PRIZE.avg)}의 세후 금액은 약 ${won(PRIZE.avg - lottoTax(PRIZE.avg))}.`));
     write('tax.html', tax);
-
-    let tp = read('top-prize.html');
-    tp = replaceBetween('top-prize.html', tp, 'head', headBlock(
-        '역대 로또 1등 당첨금 순위 TOP 50 (1인당) | lottodraw.kr',
-        `로또 6/45 역대 1등 당첨금 1인당 금액 순위 TOP 50. 역대 최고는 ${top.round}회 ${won(top.firstPrizeAmount)}, ${RANGE} 1등 평균 당첨금은 ${won(avg)}.`));
-    write('top-prize.html', tp);
 }
 
 /* ───── 사이트맵 ───── */
@@ -1132,6 +1406,7 @@ function updateSitemap(blog) {
     const kept = p => keep[SITE + p] || UPDATED;
     const entries = [
         entry('/', UPDATED, 'weekly', '1.0'),
+        entry('/' + HUB, UPDATED, 'weekly', '0.9'),
         entry('/draws.html', UPDATED, 'weekly', '0.9'),
     ].concat(
         STATS.map(p => entry('/' + p.file, UPDATED, 'weekly', '0.8')),
@@ -1169,15 +1444,20 @@ function updateSitemap(blog) {
 /* ───── 실행 ───── */
 
 let changed = 0;
-STATS.forEach(p => { if (write(p.file, statPage(p))) changed++; });
-draws.forEach(d => { if (write(`round/${d.round}.html`, roundPage(d))) changed++; });
-if (write('draws.html', drawsPage())) changed++;
-if (write('probability.html', probabilityPage())) changed++;
-// 블로그는 원고(content/blog/)로 만든다. 같은 틀을 쓰고 사이트맵에 같이 넣으려고 여기서 부른다
+// 블로그는 원고(content/blog/)로 만든다. 같은 틀을 쓰고 사이트맵에 같이 넣으려고 여기서 부른다.
+// 통계 페이지가 "이어지는 글"을 달 수 있게 먼저 만든다
 const blog = require(path.join(__dirname, 'build-blog.js'))({ shell, write, SITE, OG_IMAGE });
 changed += blog.changed;
+ARTICLES = blog.articles || [];
+STATS.forEach(p => { if (write(p.file, statPage(p))) changed++; });
+draws.forEach(d => { if (write(`round/${d.round}.html`, roundPage(d))) changed++; });
+if (write(HUB, hubPage())) changed++;
+if (write('draws.html', drawsPage())) changed++;
+if (write(CSV_FILE, csvFile())) changed++;
+if (write('probability.html', probabilityPage())) changed++;
+if (write('top-prize.html', topPrizePage())) changed++;
 updateHome();
-updateTaxAndTop();
+updateTax();
 const urls = updateSitemap(blog.sitemap);
-console.log(`통계 ${STATS.length}쪽 · 회차 ${draws.length}쪽 · 전체 조회 · 확률 · 블로그 ${blog.posts}편 · 사이트맵 ${urls}개 (${RANGE}, 갱신일 ${UPDATED})`);
+console.log(`허브 · 통계 ${STATS.length}쪽 · 회차 ${draws.length}쪽 · 전체 조회 · 엑셀 · 확률 · TOP 50 · 블로그 ${blog.posts}편 · 사이트맵 ${urls}개 (${RANGE}, 갱신일 ${UPDATED})`);
 console.log(`바뀐 생성 페이지: ${changed}쪽`);

@@ -239,7 +239,7 @@ module.exports = function buildBlog(ctx) {
 
     if (!fs.existsSync(SRC)) {
         warn('content/blog/ 가 없어 블로그를 건너뛴다');
-        return { posts: 0, changed: 0, sitemap: [] };
+        return { posts: 0, changed: 0, sitemap: [], articles: [] };
     }
 
     /* 원고 → 글 */
@@ -490,6 +490,11 @@ module.exports = function buildBlog(ctx) {
         changed,
         sitemap: [{ path: `/${OUT}/index.html`, lastmod: newest }]
             .concat(posts.map(p => ({ path: `/${OUT}/${p.slug}.html`, lastmod: p.updated }))),
+        // 통계 페이지가 "이 통계와 이어지는 글"을 거꾸로 달 때 쓴다. pages 는 머리말 related 의 주소들
+        articles: posts.map(p => ({
+            href: `${OUT}/${p.slug}.html`, slug: p.slug, title: p.title, titleEn: p.en && p.en.title,
+            pages: p.related.map(k => RELATED[k][0]),
+        })),
     };
 };
 

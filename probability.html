@@ -21,7 +21,7 @@
     <link rel="stylesheet" href="css/site.css">
     <script src="js/i18n-dict.js"></script>
     <script src="js/i18n.js"></script>
-    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://www.lottodraw.kr/"},{"@type":"ListItem","position":2,"name":"로또 통계","item":"https://www.lottodraw.kr/index.html#sec-stats"},{"@type":"ListItem","position":3,"name":"로또 확률","item":"https://www.lottodraw.kr/probability.html"}]}]}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://www.lottodraw.kr/"},{"@type":"ListItem","position":2,"name":"로또 통계","item":"https://www.lottodraw.kr/statistics-all.html"},{"@type":"ListItem","position":3,"name":"로또 확률","item":"https://www.lottodraw.kr/probability.html"}]}]}</script>
     <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "91c08d8a39d944e69c10024f2314b955"}'></script><!-- End Cloudflare Web Analytics -->
 </head>
 <body>
@@ -42,7 +42,8 @@
 
     <nav class="nav" aria-label="주 메뉴" data-i18n-attr="aria-label:nav.aria">
         <ul>
-            <li><a href="index.html" data-i18n="nav.index">생성기 · 통계</a></li>
+            <li><a href="index.html" data-i18n="nav.index">번호 생성기</a></li>
+            <li><a href="statistics-all.html" data-i18n="nav.stats">로또 통계</a></li>
             <li><a href="draws.html" data-i18n="nav.draws">당첨번호</a></li>
             <li><a href="statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
             <li><a href="top-prize.html" data-i18n="nav.topPrize">TOP 50 당첨금</a></li>
@@ -53,7 +54,7 @@
     </nav>
 
     <main class="prose stat-page">
-        <nav class="breadcrumb" aria-label="현재 위치" data-i18n-attr="aria-label:crumb.aria"><a href="index.html" data-i18n="crumb.home">홈</a> › <a href="index.html#sec-stats" data-i18n-en="Lotto statistics">로또 통계</a> › <span data-i18n-en="Lotto odds">로또 확률</span></nav>
+        <nav class="breadcrumb" aria-label="현재 위치" data-i18n-attr="aria-label:crumb.aria"><a href="index.html" data-i18n="crumb.home">홈</a> › <a href="statistics-all.html" data-i18n="nav.stats">로또 통계</a> › <span data-i18n-en="Lotto odds">로또 확률</span></nav>
         <h1 data-i18n-en="Lotto Odds by Prize Tier">로또 확률 · 등수별 당첨 확률</h1>
         <p class="stat-scope"><span data-i18n-en="Based on C(45,6) = 8,145,060 possible combinations">45개 번호 중 6개를 고르는 조합 수 C(45,6) = 8,145,060 기준</span></p>
         <p class="stat-lead"><span data-i18n-en="Lotto 6/45 asks for six numbers out of 45, which makes &lt;strong&gt;8,145,060&lt;/strong&gt; possible combinations. A single game (1,000 KRW) therefore has a &lt;strong&gt;1 in 8,145,060&lt;/strong&gt; chance of the first prize.">로또 6/45는 1~45 중 6개를 고르는 게임이라 가능한 조합이 <strong>8,145,060가지</strong>입니다. 한 게임(1,000원)으로 1등에 당첨될 확률은 <strong>8,145,060분의 1</strong>입니다.</span></p>
@@ -111,6 +112,7 @@
     <footer class="footer">
         <ul class="footer-nav">
             <li><a href="index.html" data-i18n="footer.home">HOME</a></li>
+            <li><a href="statistics-all.html" data-i18n="nav.stats">로또 통계</a></li>
             <li><a href="draws.html" data-i18n="nav.draws">당첨번호</a></li>
             <li><a href="statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
             <li><a href="top-prize.html" data-i18n="footer.top">TOP 50</a></li>
