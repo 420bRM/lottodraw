@@ -1,8 +1,9 @@
 name: update-lotto-data
 
-# 추첨은 토요일 20:35 KST. 일요일 03:10 KST(토 18:10 UTC)에 받고,
+# 추첨은 토요일 20:35 KST. 토요일 밤에는 draw-night 워크플로가 결과가 나오는 대로 이 워크플로를
+# 실행한다. 아래 예약은 그게 빠졌을 때의 안전망이다 — 일요일 03:10 KST(토 18:10 UTC)에 받고,
 # 1등 금액이 늦게 확정되는 경우를 대비해 월요일 09:10 KST(월 00:10 UTC)에 한 번 더 돈다.
-# 스크립트가 최근 3회차를 매번 다시 확인하므로 두 번째 실행은 늦은 값만 고친다.
+# 스크립트가 최근 3회차를 매번 다시 확인하므로 뒤의 실행은 늦은 값만 고친다.
 #
 # 주의: schedule 은 저장소 기본 브랜치에 있는 워크플로만 실행된다.
 on:
@@ -58,3 +59,16 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh api --method POST "repos/${{ github.repository }}/pages/builds"
+
+      # 바뀐 페이지를 네이버·Bing 에 바로 알린다(IndexNow). 사이트에 반영된 것을 확인한 뒤 보낸다.
+      # 수동 실행(Run workflow)이면 바뀐 게 없어도 최신 회차 페이지들을 다시 알린다.
+      # 반영은 이미 끝났으므로 여기서 실패해도 워크플로를 실패로 만들지 않는다.
+      - name: 네이버·Bing 색인 요청 (IndexNow)
+        if: steps.fetch.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        continue-on-error: true
+        run: |
+          if [ "${{ steps.fetch.outputs.changed }}" = "true" ]; then
+            node tools/indexnow.js $(git diff --name-only HEAD~1 HEAD)
+          else
+            node tools/indexnow.js --latest
+          fi
