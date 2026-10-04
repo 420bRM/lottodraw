@@ -179,4 +179,7 @@ async function main() {
     console.log(`${path.basename(FILE)} 저장.`);
 }
 
-main().catch(e => { console.error(e.message); process.exit(1); });
+// tools/wait-for-draw.js 가 fetchRound 를 빌려 쓴다. 불러 쓸 때는 수집을 돌리지 않는다.
+module.exports = { fetchRound };
+
+if (require.main === module) main().catch(e => { console.error(e.message); process.exit(1); });
