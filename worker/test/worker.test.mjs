@@ -142,20 +142,22 @@ test('연락처는 이메일만 받는다 (비워 두는 것은 괜찮다)', asy
     assert.equal(r.status, 201);
 });
 
-test('키 메일: 이메일을 적은 주문은 발급 즉시 키를 메일로, 실패해도 발급은 그대로, 관리자가 다시 보낼 수 있다', async () => {
+test('키 메일: 이메일을 적은 주문은 발급 즉시 키를 메일로, 실패해도 발급은 그대로(텔레그램 알림), 관리자가 다시 보낼 수 있다', async () => {
     _resetForTests();
     const sent = [];
+    const alerts = [];
     let mailOk = true;
     const realFetch = globalThis.fetch;
     globalThis.fetch = async (url, init) => {
         if (String(url) === 'https://api.resend.com/emails') {
             sent.push({ auth: init.headers.Authorization, body: JSON.parse(init.body) });
-            return new Response('{}', { status: mailOk ? 200 : 500 });
+            return mailOk ? new Response('{}') : new Response(JSON.stringify({ statusCode: 403, message: 'The lottodraw.kr domain is not verified.' }), { status: 403 });
         }
+        if (String(url).startsWith('https://api.telegram.org/')) { alerts.push(JSON.parse(init.body).text); return new Response('{}'); }
         return realFetch(url, init);
     };
     try {
-        const env = makeEnv({ DEPOSIT_HOOK_SECRET: 'hook-secret-0123456789', RESEND_API_KEY: 're_test', MAIL_FROM: 'lottodraw.kr <key@lottodraw.kr>' });
+        const env = makeEnv({ DEPOSIT_HOOK_SECRET: 'hook-secret-0123456789', RESEND_API_KEY: 're_test', MAIL_FROM: 'lottodraw.kr <key@lottodraw.kr>', TELEGRAM_BOT_TOKEN: 'bot-test', TELEGRAM_CHAT_ID: '1' });
         await setupKey(env);
         const pay = async (contact, ip) => {
             const { order, token } = (await call(env, 'POST', '/api/orders', { body: { plan: 'day', method: 'bank', name: '홍길동', contact, agree: true }, headers: { 'CF-Connecting-IP': ip } })).data;
@@ -180,6 +182,11 @@ test('키 메일: 이메일을 적은 주문은 발급 즉시 키를 메일로, 
         const c = await pay('fail@example.com', '10.3.0.3');
         assert.equal(c.status, 'paid');
         assert.equal(c.mailed, false);
+        // 실패하면 텔레그램으로 알린다 (이유 포함)
+        const fail = alerts.find(t => t.includes('키 메일을 보내지 못했습니다'));
+        assert.ok(fail, '메일 실패 알림');
+        assert.ok(fail.includes(c.id) && fail.includes('not verified'), fail);
+        assert.equal(alerts.filter(t => t.includes('키 메일을 보내지 못했습니다')).length, 1, '성공한 메일은 알리지 않는다');
         // 관리자가 다시 보내기
         mailOk = true;
         const r = await call(env, 'POST', `/api/admin/orders/${c.id}/mail`, { headers: asAdmin });
