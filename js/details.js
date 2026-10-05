@@ -272,15 +272,19 @@
         { id: 'detail-prize', key: 'dt.prize' },
     ];
 
-    function lockedCard(spec, href) {
-        return el('section', { className: 'card locked-card', id: spec.id, 'aria-labelledby': spec.id + '-t' }, [
+    // onOpen 이 있으면 이용권이 확인된 상태: 잠금 대신 "열기" 버튼을 보여 주고, 누르면 그때 연다
+    function lockedCard(spec, href, onOpen) {
+        const action = onOpen
+            ? el('button', { type: 'button', className: 'btn', text: T('dt.openNow'), on: { click: onOpen } })
+            : el('a', { className: 'btn btn-secondary', href: href || 'statistics.html', text: T('dt.openWithPass') });
+        return el('section', { className: 'card locked-card' + (onOpen ? ' ready-card' : ''), id: spec.id, 'aria-labelledby': spec.id + '-t' }, [
             el('h3', { className: 'card-title', id: spec.id + '-t' }, [
                 el('span', { text: T(spec.key + '.t') }),
-                el('small', { className: 'lock-mark', text: T('dt.locked') }),
+                el('small', { className: 'lock-mark', text: T(onOpen ? 'dt.ready' : 'dt.locked') }),
             ]),
             el('div', { className: 'card-body' }, [
                 el('p', { text: T(spec.key + '.desc') }),
-                el('a', { className: 'btn btn-secondary', href: href || 'statistics.html', text: T('dt.openWithPass') }),
+                action,
             ]),
         ]);
     }
@@ -288,8 +292,14 @@
     function render(container, draws, opts) {
         opts = opts || {};
         container.textContent = '';
-        if (opts.locked) {
-            LOCKED.forEach(spec => container.appendChild(lockedCard(spec, opts.href)));
+        if (opts.locked || opts.onOpen) {
+            if (opts.onOpen) {
+                container.appendChild(el('div', { className: 'detail-open-bar' }, [
+                    el('p', { text: T('dt.readyLead') }),
+                    el('button', { type: 'button', className: 'btn', text: T('dt.openAll'), on: { click: opts.onOpen } }),
+                ]));
+            }
+            LOCKED.forEach(spec => container.appendChild(lockedCard(spec, opts.href, opts.onOpen)));
             return;
         }
         container.appendChild(consecutiveCard(draws));

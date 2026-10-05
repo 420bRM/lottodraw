@@ -129,7 +129,7 @@ async function getPubkey(request, env) {
 
 async function getRevoked(request, env) {
     const r = await revokedList(env);
-    return json(request, env, { ids: r.ids, updatedAt: r.updatedAt }, 200, { 'Cache-Control': 'public, max-age=300' }, true);
+    return json(request, env, { ids: r.ids, updatedAt: r.updatedAt }, 200, { 'Cache-Control': 'public, max-age=30' }, true);
 }
 
 async function createOrder(request, env, ctx, url) {
@@ -742,8 +742,9 @@ async function confirm(env, order, by) {
     await save(env, order);
     await env.DB.put('keyidx:' + order.keyId, order.id);   // 환불 요청 때 키 → 주문 찾기
     if (mailReady(env) && order.contact && !order.test) {
-        await mailKey(env, order);   // 실패해도 발급은 그대로다 (관리자 페이지에서 다시 보낼 수 있다)
+        const r = await mailKey(env, order);   // 실패해도 발급은 그대로다 (관리자 페이지에서 다시 보낼 수 있다)
         await save(env, order);
+        if (!r.ok) await notify(env, `키 메일을 보내지 못했습니다 ${order.id} (${r.message}).\n키는 발급됐습니다. 관리자 페이지 → 주문 → 자세히 → "키 메일 다시 보내기"`);
     }
     return order;
 }
@@ -788,7 +789,12 @@ async function mailKey(env, order) {
                 text,
             }),
         });
-        result = res.ok ? { ok: true } : { ok: false, message: `메일 서버 응답 ${res.status}` };
+        if (res.ok) result = { ok: true };
+        else {
+            let why = '';
+            try { why = String(JSON.parse(await res.text()).message || '').slice(0, 120); } catch (e) { /* 본문 없음 */ }
+            result = { ok: false, message: `메일 서버 응답 ${res.status}` + (why ? ': ' + why : '') };
+        }
     } catch (e) {
         result = { ok: false, message: '메일 서버 연결 실패' };
     }

@@ -192,7 +192,7 @@
 
             <h2 class="section-head" id="detail-head"><span data-i18n="s5.detail.h">상세 분석</span> <small data-i18n="s5.plans">이용권</small></h2>
             <p class="notice">
-                <span data-i18n="detail.notice">아래 네 가지는 이용권으로 열립니다. 이미 키가 있으면 자동으로 열립니다.</span>
+                <span data-i18n="detail.notice">아래 네 가지는 이용권으로 열립니다. 이미 키가 있으면 "열기"를 누르세요.</span>
                 <a href="statistics.html" data-i18n="detail.see">이용권 보기</a>
             </p>
             <div class="stat-grid" id="detail-grid"></div>
@@ -600,19 +600,38 @@
             });
     }
 
-    // 상세 분석 카드. 기본은 잠긴 모양이고, 이용권 키가 확인되면 같은 자리에 다시 그린다.
-    // 잠긴 동안에는 수치를 아예 그리지 않는다 — 화면에 없으면 개발자 도구로도 못 본다.
+    // 상세 분석 카드. 기본은 잠긴 모양이다. 이용권 키가 확인되면 저절로 열지 않고 "열기" 버튼을 보여 준다
+    // — 눌러서 여는 편이 "이용권으로 열었다"는 느낌이 난다. 잠긴 동안에는 수치를 아예 그리지 않는다.
     function renderDetails(draws) {
         const box = document.getElementById('detail-grid');
         if (!box || !window.LottoDetails) return;
-        LottoDetails.render(box, draws, { locked: true });
+        const head = document.getElementById('detail-head');
+        const headHtml = head ? head.innerHTML : '';
+        const lockAll = () => {
+            LottoDetails.render(box, draws, { locked: true });
+            if (head) head.innerHTML = headHtml;
+        };
+        lockAll();
         if (!window.LottoLicense || !LottoLicense.savedKey()) return;
         LottoLicense.unlockState().then(state => {
             if (!state.unlocked) return;
-            LottoDetails.render(box, draws, { locked: false });
-            const head = document.getElementById('detail-head');
-            if (head) head.textContent = I18N.t('detail.open');
+            LottoDetails.render(box, draws, { onOpen: () => {
+                LottoDetails.render(box, draws, { locked: false });
+                if (head) head.textContent = I18N.t('detail.open');
+                box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } });
         }).catch(err => console.error(err));
+
+        // 환불·정지된 키는 열어 둔 화면에서도 몇 분 안에 다시 잠근다
+        const recheck = () => {
+            if (!LottoLicense.savedKey()) return;
+            LottoLicense.unlockState().then(state => {
+                if (state.unlocked || state.offline) return;
+                lockAll();
+            }).catch(() => {});
+        };
+        setInterval(recheck, 5 * 60 * 1000);
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) recheck(); });
     }
 
     // ---- 최근 10회차 히트 그리드 ----

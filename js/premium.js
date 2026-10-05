@@ -521,6 +521,21 @@
             lock();
             resumeOrder();
         }
+
+        // 열어 둔 화면에서도 환불·정지된 키는 몇 분 안에 잠근다 (탭으로 돌아올 때도 확인)
+        setInterval(recheck, 5 * 60 * 1000);
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) recheck(); });
+    }
+
+    async function recheck() {
+        if ($('premium').hidden) return;
+        const key = L.savedKey();
+        if (!key) return;
+        const st = await L.check(key);
+        if (st.unlocked || !st.final) return;   // 오프라인이면 그대로 둔다
+        L.forget(true);
+        showKey(false);
+        lock(st.reason, true);
     }
 
     // 번역(js/i18n.js)이 화면 문구를 먼저 바꾼 뒤에 시작한다. 거꾸로면 이 파일이 쓴 문구를 번역이 덮는다.

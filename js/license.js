@@ -6,7 +6,7 @@
 //
 // 서버에 묻는 것은 두 가지뿐이고 둘 다 키를 보내지 않는다.
 //   · 공개키 (처음 한 번. premium-config.js 에 박아 두면 그것도 안 묻는다)
-//   · 환불된 키 번호 목록 (revalidateHours 마다)
+//   · 환불된 키 번호 목록 (revalidateMinutes 마다, 기본 5분 — 환불하면 다음 확인 때 바로 잠긴다)
 //
 // 이 잠금은 편의 잠금이다. 원본 데이터와 계산 코드가 공개돼 있어 마음먹은 사람이
 // 직접 계산하는 것까지 막지는 못한다.
@@ -24,7 +24,6 @@
     const CHECK_STORE = 'lottodraw.premium.check';
     const PUB_STORE = 'lottodraw.premium.pubkey';
     const REVOKED_STORE = 'lottodraw.premium.revoked';
-    const HOUR = 60 * 60 * 1000;
     const ALG = { name: 'ECDSA', namedCurve: 'P-256' };
     const SIGN_ALG = { name: 'ECDSA', hash: 'SHA-256' };
 
@@ -96,8 +95,10 @@
         return Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))]);
     }
 
-    async function fetchJson(path) {
-        const res = await withTimeout(fetch(apiBase() + path, { headers: { Accept: 'application/json' } }), 6000);
+    async function fetchJson(path, fresh) {
+        const opts = { headers: { Accept: 'application/json' } };
+        if (fresh) opts.cache = 'no-cache';   // 브라우저에 남은 사본 대신 서버에 다시 묻는다
+        const res = await withTimeout(fetch(apiBase() + path, opts), 6000);
         if (!res.ok) { const e = new Error('HTTP ' + res.status); e.status = res.status; throw e; }
         return res.json();
     }
@@ -118,14 +119,15 @@
         return crypto.subtle.verify(SIGN_ALG, pub, p.sig, signedBytes(p.body));
     }
 
-    // 환불된 키 번호 목록. 못 받으면 마지막으로 받은 목록을 쓴다.
+    // 환불된 키 번호 목록. 몇 분마다 새로 받아 환불한 키가 바로 잠기게 한다.
+    // 못 받으면(오프라인) 마지막으로 받은 목록을 쓴다.
     async function revokedIds() {
         const saved = readJson(REVOKED_STORE);
-        const hours = cfg().revalidateHours || 12;
-        if (saved && Date.now() - saved.at < hours * HOUR) return saved.ids || [];
+        const minutes = cfg().revalidateMinutes || 5;
+        if (saved && Date.now() - saved.at < minutes * 60 * 1000) return saved.ids || [];
         if (!apiBase()) return (saved && saved.ids) || [];
         try {
-            const got = await fetchJson('/api/revoked');
+            const got = await fetchJson('/api/revoked', true);
             const ids = Array.isArray(got.ids) ? got.ids : [];
             store.set(REVOKED_STORE, JSON.stringify({ ids: ids, at: Date.now() }));
             return ids;
