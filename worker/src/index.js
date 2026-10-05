@@ -129,7 +129,7 @@ async function getPubkey(request, env) {
 
 async function getRevoked(request, env) {
     const r = await revokedList(env);
-    return json(request, env, { ids: r.ids, updatedAt: r.updatedAt }, 200, { 'Cache-Control': 'public, max-age=300' }, true);
+    return json(request, env, { ids: r.ids, updatedAt: r.updatedAt }, 200, { 'Cache-Control': 'public, max-age=30' }, true);
 }
 
 async function createOrder(request, env, ctx, url) {

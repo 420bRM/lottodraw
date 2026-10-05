@@ -46,7 +46,7 @@ async function waitFor(fn, ms = 120000, every = 5000) {
 function browserLicense() {
     const ls = new Map();
     globalThis.localStorage = { getItem: k => (ls.has(k) ? ls.get(k) : null), setItem: (k, v) => ls.set(k, String(v)), removeItem: k => ls.delete(k) };
-    globalThis.PREMIUM_CONFIG = { apiBase: API, revalidateHours: 12 };
+    globalThis.PREMIUM_CONFIG = { apiBase: API, revalidateMinutes: 5 };
     const path = require.resolve('../../js/license.js');
     delete require.cache[path];
     return require(path);

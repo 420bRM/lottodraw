@@ -75,7 +75,7 @@ function browserLicense(apiFetch) {
         setItem: (k, v) => ls.set(k, String(v)),
         removeItem: k => ls.delete(k),
     };
-    globalThis.PREMIUM_CONFIG = { apiBase: 'https://api.lottodraw.kr', revalidateHours: 12 };
+    globalThis.PREMIUM_CONFIG = { apiBase: 'https://api.lottodraw.kr', revalidateMinutes: 5 };
     globalThis.fetch = apiFetch;
     delete require.cache[require.resolve('../../js/license.js')];
     return { L: require('../../js/license.js'), ls };
@@ -313,6 +313,13 @@ test('계좌이체 전체 흐름: 주문 → 입금 대기 → 관리자 확인 
     assert.equal(r.data.order.status, 'refunded');
     r = await call(env, 'GET', '/api/revoked');
     assert.deepEqual(r.data.ids, [p.id]);
+
+    // 같은 브라우저도 정지 목록을 몇 분(revalidateMinutes)마다 다시 받아 잠긴다 (예전엔 12시간 동안 열려 있었다)
+    const revokedSaved = JSON.parse(globalThis.localStorage.getItem('lottodraw.premium.revoked'));
+    revokedSaved.at -= 6 * 60 * 1000;
+    globalThis.localStorage.setItem('lottodraw.premium.revoked', JSON.stringify(revokedSaved));
+    st = await L.unlockState();
+    assert.equal(st.unlocked, false, '같은 브라우저도 몇 분 안에 잠긴다');
 
     ({ L } = browserLicense(apiFetch));
     L.remember(key, { ok: true, plan: 'x', expiresAt: null });
