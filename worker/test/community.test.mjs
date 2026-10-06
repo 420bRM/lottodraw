@@ -34,6 +34,11 @@ function memoryDO() {
         },
         async put(k, v) { map.set(k, clone(v)); },
         async delete(k) { return map.delete(k); },
+        async list({ prefix }) {
+            const out = new Map();
+            [...map.keys()].filter(k => k.startsWith(prefix || '')).sort().forEach(k => out.set(k, clone(map.get(k))));
+            return out;
+        },
     };
     const inst = new Community({ storage });
     return { _m: map, idFromName: n => n, get: () => ({ fetch: (url, init) => inst.fetch(new Request(url, init)) }) };
@@ -161,27 +166,63 @@ test('구글 토큰 위조·다른 사이트·만료·미확인 이메일은 거
     assert.equal((await call(env, 'GET', '/api/me', { headers: auth('x'.repeat(43)) })).status, 401);
 });
 
-test('좋아요: 하트·달러를 따로 켜고 끄고, 수는 누구나 보며, 누르려면 로그인', async () => {
+test('좋아요: 하트·달러를 따로 켜고 끄고, 회원은 자기 것만 보고 합계는 관리자만 본다', async () => {
     const env = await fresh();
     const a = (await login(env, { sub: 'A', email: 'a@gmail.com' })).data.session;
     const b = (await login(env, { sub: 'B', email: 'b@gmail.com' })).data.session;
-    const counts = async () => (await call(env, 'GET', '/api/reactions?ids=statistics-sum,blog-ac-value-explained')).data.counts;
-    assert.deepEqual((await counts())['statistics-sum'], { h: 0, d: 0 });
+    const totals = async () => {
+        const r = (await call(env, 'GET', '/api/admin/members', { headers: asAdmin })).data.reactions;
+        return Object.fromEntries(r.map(x => [x.id, { h: x.h, d: x.d }]));
+    };
 
     assert.equal((await call(env, 'POST', '/api/reactions', { body: { id: 'statistics-sum', type: 'h' } })).status, 401);
     const press = (s, id, type) => call(env, 'POST', '/api/reactions', { body: { id, type }, headers: auth(s) });
-    assert.deepEqual((await press(a, 'statistics-sum', 'h')).data, { counts: { h: 1, d: 0 }, mine: 'h' });
-    assert.deepEqual((await press(a, 'statistics-sum', 'd')).data, { counts: { h: 1, d: 1 }, mine: 'hd' });
-    assert.deepEqual((await press(b, 'statistics-sum', 'h')).data, { counts: { h: 2, d: 1 }, mine: 'h' });
-    assert.deepEqual((await press(a, 'statistics-sum', 'h')).data, { counts: { h: 1, d: 1 }, mine: 'd' }, '다시 누르면 취소');
-    assert.deepEqual((await counts())['statistics-sum'], { h: 1, d: 1 });
+    assert.deepEqual((await press(a, 'statistics-sum', 'h')).data, { mine: 'h' }, '합계는 돌려주지 않는다');
+    assert.deepEqual((await press(a, 'statistics-sum', 'd')).data, { mine: 'hd' });
+    assert.deepEqual((await press(b, 'statistics-sum', 'h')).data, { mine: 'h' });
+    assert.deepEqual((await press(a, 'statistics-sum', 'h')).data, { mine: 'd' }, '다시 누르면 취소');
+    assert.deepEqual((await totals())['statistics-sum'], { h: 1, d: 1 });
     assert.deepEqual((await call(env, 'GET', '/api/me', { headers: auth(a) })).data.reactions, { 'statistics-sum': 'd' });
+
+    // 공개 합계 주소는 없다, 관리자 명부는 토큰이 있어야 한다
+    assert.equal((await call(env, 'GET', '/api/reactions?ids=statistics-sum')).status, 404);
+    assert.equal((await call(env, 'GET', '/api/admin/members')).status, 401);
 
     assert.equal((await press(a, 'Bad Id!', 'h')).data.error, 'bad_ids');
     assert.equal((await press(a, 'statistics-sum', 'x')).data.error, 'bad_type');
-    assert.equal((await call(env, 'GET', '/api/reactions?ids=')).data.error, 'bad_ids');
-    const many = Array.from({ length: 31 }, (_, i) => 'p' + i).join(',');
-    assert.equal((await call(env, 'GET', '/api/reactions?ids=' + many)).data.error, 'bad_ids');
+});
+
+test('회원 명부: 별명·이메일·가입일·체험·누른 수를 보고, 별명을 지우거나 회원을 삭제한다', async () => {
+    const env = await fresh();
+    const a = (await login(env, { sub: 'A', email: 'a@gmail.com' })).data;
+    const b = (await login(env, { sub: 'B', email: 'b@gmail.com' })).data;
+    await call(env, 'POST', '/api/me/nickname', { body: { nickname: '바보멍청이' }, headers: auth(a.session) });
+    await call(env, 'POST', '/api/reactions', { body: { id: 'index-stat-sum', type: 'h' }, headers: auth(a.session) });
+    await call(env, 'POST', '/api/reactions', { body: { id: 'index-stat-sum', type: 'd' }, headers: auth(b.session) });
+
+    let list = (await call(env, 'GET', '/api/admin/members', { headers: asAdmin })).data;
+    assert.equal(list.members.length, 2);
+    const ma = list.members.find(m => m.email === 'a@gmail.com');
+    assert.equal(ma.nick, '바보멍청이');
+    assert.equal(ma.hearts, 1);
+    assert.ok(ma.trial && ma.trial.keyId && ma.trial.expiresAt);
+    assert.ok(ma.createdAt && ma.lastAt);
+    assert.deepEqual(list.reactions, [{ id: 'index-stat-sum', h: 1, d: 1 }]);
+    assert.deepEqual(list.meta, { users: 2, trials: 2 });
+
+    // 별명 지우기 → 그 별명은 다시 쓸 수 있다
+    assert.equal((await call(env, 'POST', `/api/admin/members/${ma.sub}/clear-nick`, { headers: asAdmin })).status, 200);
+    assert.equal((await call(env, 'GET', '/api/me', { headers: auth(a.session) })).data.user.nick, null);
+    assert.equal((await call(env, 'POST', '/api/me/nickname', { body: { nickname: '바보멍청이' }, headers: auth(b.session) })).status, 200);
+
+    // 회원 삭제 → 로그인이 끝나고 좋아요 합계에서 빠진다
+    assert.equal((await call(env, 'POST', `/api/admin/members/${ma.sub}/delete`, { headers: asAdmin })).status, 200);
+    assert.equal((await call(env, 'GET', '/api/me', { headers: auth(a.session) })).status, 401);
+    list = (await call(env, 'GET', '/api/admin/members', { headers: asAdmin })).data;
+    assert.equal(list.members.length, 1);
+    assert.deepEqual(list.reactions, [{ id: 'index-stat-sum', h: 0, d: 1 }].filter(x => x.h + x.d > 0));
+    assert.equal((await call(env, 'POST', '/api/admin/members/nobody/delete', { headers: asAdmin })).status, 200, '없는 회원 삭제는 그냥 지나간다');
+    assert.equal((await call(env, 'POST', '/api/admin/members/A/clear-nick', { headers: asAdmin })).data.error, 'no_member');
 });
 
 test('로그아웃하면 세션이 끝나고, 탈퇴하면 계정·좋아요가 지워지며 다시 가입해도 체험은 한 번뿐', async () => {
@@ -200,7 +241,7 @@ test('로그아웃하면 세션이 끝나고, 탈퇴하면 계정·좋아요가 
     assert.equal((await call(env, 'POST', '/api/me/delete', { body: {}, headers: auth(s2) })).data.error, 'need_confirm');
     assert.equal((await call(env, 'POST', '/api/me/delete', { body: { confirm: true }, headers: auth(s2) })).status, 200);
     assert.equal((await call(env, 'GET', '/api/me', { headers: auth(s2) })).status, 401);
-    assert.deepEqual((await call(env, 'GET', '/api/reactions?ids=index')).data.counts.index, { h: 0, d: 0 }, '내 좋아요도 빠진다');
+    assert.deepEqual((await call(env, 'GET', '/api/admin/members', { headers: asAdmin })).data.reactions, [], '내 좋아요도 빠진다');
     assert.ok(![...env.COMMUNITY._m.values()].some(v => JSON.stringify(v).includes('gmail')), '저장소에 이메일이 남지 않는다');
 
     // 다시 가입: 새 계정이지만 체험은 이미 받았다

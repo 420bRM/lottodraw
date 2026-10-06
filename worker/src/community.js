@@ -11,7 +11,7 @@
 //                        sess:  로그인 세션 해시 (최근 5개)
 //   s:<세션 해시>        { sub, exp }  — 30일
 //   t:<계정 번호 해시>   { at }        — 무료 체험을 받은 계정. 탈퇴해도 1년 남겨 다시 가입해 또 받는 것을 막는다
-//   r:<항목>             { h, d }      — 좋아요 수
+//   r:<항목>             { h, d }      — 좋아요 수 (관리자 페이지에서만 본다. 회원에게는 자기가 누른 것만 보인다)
 //   n:<별명 소문자>      계정 번호      — 별명이 겹치지 않게
 //   meta                 { users, trials }
 //
@@ -182,6 +182,36 @@ const OPS = {
 
     async stats() {
         return this.meta();
+    },
+
+    // 관리자 페이지: 회원 명부와 카드별 좋아요 합계
+    async adminList() {
+        const users = await this.storage.list({ prefix: 'u:', limit: 2000 });
+        const members = [];
+        for (const u of users.values()) {
+            const rx = Object.values(u.rx || {});
+            members.push({
+                sub: u.sub, email: u.email, nick: u.nick || null, createdAt: u.createdAt, lastAt: u.lastAt,
+                trial: u.trial && u.trial.keyId ? { keyId: u.trial.keyId, expiresAt: u.trial.expiresAt } : null,
+                hearts: rx.filter(m => m.includes('h')).length, dollars: rx.filter(m => m.includes('d')).length,
+            });
+        }
+        members.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        const rows = await this.storage.list({ prefix: 'r:', limit: 2000 });
+        const reactions = [];
+        for (const [k, c] of rows.entries()) if ((c.h || 0) + (c.d || 0) > 0) reactions.push({ id: k.slice(2), h: c.h || 0, d: c.d || 0 });
+        reactions.sort((a, b) => (b.h + b.d) - (a.h + a.d));
+        return { members, reactions, meta: await this.meta() };
+    },
+
+    // 관리자가 부적절한 별명을 지운다 (이용약관 7조)
+    async clearNick({ sub }) {
+        const user = await this.storage.get('u:' + sub);
+        if (!user) return { error: 'no_user' };
+        if (user.nick) await this.storage.delete('n:' + user.nick.toLowerCase());
+        user.nick = null;
+        await this.storage.put('u:' + sub, user);
+        return { ok: true };
     },
 };
 

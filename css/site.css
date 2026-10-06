@@ -994,15 +994,13 @@ html.home { scroll-behavior: smooth; }
     margin: 0; border: 1px solid var(--line); border-radius: 999px;
     background: #fff; color: var(--text); font: bold 12px/1 var(--font); cursor: pointer;
 }
-.rx-chip { height: 24px; padding: 0 8px 0 6px; }
-.rx-add, .rx-opt { width: 26px; height: 26px; padding: 0; }
+.rx-chip, .rx-add, .rx-opt { width: 26px; height: 26px; padding: 0; }
 .rx-add { color: var(--muted); font-size: 16px; font-weight: normal; }
 .rx-add:hover, .rx-add[aria-expanded="true"] { border-color: var(--brand); color: var(--brand); }
 .rx-ico { width: 14px; height: 14px; fill: currentColor; }
 .rx-opt .rx-ico { width: 16px; height: 16px; }
 .rx .rx-h { color: #e0245e; }
 .rx .rx-d { color: #1a8f3c; }
-.rx .rx-n { color: var(--text); }
 .rx .rx-h:hover, .rx .rx-h[aria-pressed="true"] { border-color: #e0245e; background: #fdeef3; }
 .rx .rx-d:hover, .rx .rx-d[aria-pressed="true"] { border-color: #1a8f3c; background: #eaf7ee; }
 .rx-pick { padding: 2px; border-radius: 999px; background: #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); }
@@ -1012,3 +1010,12 @@ html.home { scroll-behavior: smooth; }
 .acct-hint { margin: 6px 0 8px; color: var(--muted); font-size: 12px; }
 .acct-actions { display: flex; gap: 8px; }
 .acct-actions .btn { flex: 1; }
+.members-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 8px; }
+.members-tools input { flex: 1; min-width: 180px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px; font: 14px var(--font); }
+.table-wrap { overflow-x: auto; }
+.admin-table { font-size: 13px; white-space: nowrap; }
+.admin-table th, .admin-table td { padding: 6px 8px; }
+.admin-row-tools { display: flex; gap: 4px; justify-content: center; }
+.admin-row-tools .danger { color: var(--error); }
+.members-rx { margin-top: 12px; }
+.members-rx summary { font-weight: bold; cursor: pointer; }

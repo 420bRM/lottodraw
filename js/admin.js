@@ -116,6 +116,7 @@
             $('admin-app').hidden = false;
             renderSetup();
             await loadOrders();
+            loadMembers();
         } catch (err) {
             token = null;
             store.del(TOKEN_STORE);
@@ -174,6 +175,77 @@
     }
 
     /* ───── 주문 목록 ───── */
+
+    /* ───── 회원 명부 (구글 로그인을 켰을 때) ───── */
+
+    let members = [];
+
+    async function loadMembers() {
+        const on = !!(status && status.login && !status.login.error);
+        $('members-card').hidden = !on;
+        if (!on) return;
+        say('members-status', '불러오는 중…');
+        try {
+            const r = await call('/members');
+            members = r.members || [];
+            const m = r.meta || {};
+            $('members-sum').textContent = `가입 ${m.users || members.length}명 · 무료 체험 ${m.trials || 0}건`;
+            renderMembers();
+            renderReactionTotals(r.reactions || []);
+            say('members-status', `${when(Date.now())} 기준`);
+        } catch (err) {
+            say('members-status', '회원 명부를 불러오지 못했습니다: ' + err.message, true);
+        }
+    }
+
+    function renderMembers() {
+        const q = $('members-q').value.trim().toLowerCase();
+        const list = q ? members.filter(m => (m.nick || '').toLowerCase().includes(q) || (m.email || '').includes(q)) : members;
+        const table = $('members-table');
+        table.textContent = '';
+        table.appendChild(el('thead', {}, [el('tr', {}, ['별명', '이메일', '가입', '최근 로그인', '무료 체험', '♥', '$', ''].map(h => el('th', { text: h })))]));
+        const body = el('tbody');
+        if (!list.length) body.appendChild(el('tr', {}, [el('td', { colspan: '8', text: q ? '찾는 회원이 없습니다.' : '아직 가입한 회원이 없습니다.' })]));
+        list.forEach(m => {
+            const trial = m.trial ? `${m.trial.keyId.toUpperCase()} · ${m.trial.expiresAt > Date.now() ? when(m.trial.expiresAt) + '까지' : '끝남'}` : '—';
+            const tools = el('td', { className: 'admin-row-tools' }, [
+                m.nick ? el('button', { type: 'button', className: 'btn btn-secondary btn-mini', text: '별명 지우기', on: { click: () => memberAct(m, 'clear-nick') } }) : null,
+                el('button', { type: 'button', className: 'btn btn-secondary btn-mini danger', text: '삭제', on: { click: () => memberAct(m, 'delete') } }),
+            ]);
+            body.appendChild(el('tr', {}, [
+                el('td', { text: m.nick || '—' }), el('td', { text: m.email || '' }), el('td', { text: when(m.createdAt) }),
+                el('td', { text: m.lastAt ? when(m.lastAt) : '' }), el('td', { text: trial }),
+                el('td', { text: String(m.hearts || 0) }), el('td', { text: String(m.dollars || 0) }), tools,
+            ]));
+        });
+        table.appendChild(body);
+    }
+
+    function renderReactionTotals(rows) {
+        const table = $('reactions-table');
+        table.textContent = '';
+        table.appendChild(el('thead', {}, [el('tr', {}, ['카드', '♥ 좋아요', '$ 대박 기원'].map(h => el('th', { text: h })))]));
+        const body = el('tbody');
+        if (!rows.length) body.appendChild(el('tr', {}, [el('td', { colspan: '3', text: '아직 누른 사람이 없습니다.' })]));
+        rows.forEach(r => body.appendChild(el('tr', {}, [el('td', { text: r.id }), el('td', { text: String(r.h) }), el('td', { text: String(r.d) })])));
+        table.appendChild(body);
+    }
+
+    async function memberAct(m, action) {
+        const who = m.nick ? `${m.nick} (${m.email})` : m.email;
+        const ask = action === 'delete'
+            ? `${who} 회원을 삭제합니까?\n계정·별명·로그인·좋아요가 지워집니다. 받은 체험 키는 기간까지 그대로이고, 1년 안에 다시 가입해도 체험은 다시 받지 못합니다.`
+            : `${who} 의 별명 "${m.nick}" 을 지웁니까? 회원은 새 별명을 정할 수 있습니다.`;
+        if (!window.confirm(ask)) return;
+        try {
+            await call(`/members/${encodeURIComponent(m.sub)}/${action}`, { method: 'POST' });
+            say('members-status', action === 'delete' ? `${who} 회원을 삭제했습니다.` : `${who} 의 별명을 지웠습니다.`);
+            status = await call('/status').catch(() => status);
+            await loadMembers();
+        } catch (err) {
+            say('members-status', '처리하지 못했습니다: ' + err.message, true);
+        }
+    }
 
     async function loadOrders() {
         if (timer) clearTimeout(timer);
@@ -378,7 +450,9 @@
             if (t) login(t);
         });
         $('admin-logout').addEventListener('click', logout);
-        $('admin-reload').addEventListener('click', loadOrders);
+        $('admin-reload').addEventListener('click', () => { loadOrders(); loadMembers(); });
+        $('members-reload').addEventListener('click', loadMembers);
+        $('members-q').addEventListener('input', renderMembers);
         document.querySelectorAll('.admin-tabs [data-status]').forEach(b => b.addEventListener('click', () => {
             tab = b.dataset.status;
             document.querySelectorAll('.admin-tabs [data-status]').forEach(x => x.setAttribute('aria-selected', String(x === b)));
