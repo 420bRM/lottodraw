@@ -720,11 +720,13 @@ async function setNickname(request, env) {
     const body = await readJson(request);
     const nick = String(body.nickname || '').normalize('NFC').trim();
     if (!NICK_RE.test(nick)) throw new HttpError(400, 'bad_nick', '별명은 한글·영문·숫자·밑줄(_)로 2~12자입니다.');
-    if (NICK_RESERVED.test(nick)) throw new HttpError(400, 'reserved_nick', '쓸 수 없는 별명입니다. 다른 별명을 골라 주세요.');
+    // 운영자 계정은 "운영자" 같은 별명을 쓸 수 있다
+    if (NICK_RESERVED.test(nick) && !s.user.staff) throw new HttpError(400, 'reserved_nick', '쓸 수 없는 별명입니다. 다른 별명을 골라 주세요.');
     const r = await community(env, 'setNick', { sub: s.sub, nick, key: nick.toLowerCase(), now: Date.now() });
     if (r.error === 'taken') throw new HttpError(409, 'taken_nick', '이미 쓰고 있는 별명입니다.');
+    if (r.error === 'need_points') throw new HttpError(402, 'need_points', `별명을 바꾸려면 ${r.cost}포인트가 필요합니다. (지금 ${r.avail}포인트)`);
     if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
-    return json(request, env, { user: r.user });
+    return json(request, env, { user: r.user, cost: r.cost || 0 });
 }
 
 function reactionIds(raw) {
@@ -845,10 +847,11 @@ async function admin(request, env, sub, method, url) {
         needLogin(env);
         return json(request, env, await community(env, 'adminList'));
     }
-    const mm = sub.match(/^\/members\/([0-9A-Za-z_-]{1,64})\/(clear-nick|delete)$/);
+    const mm = sub.match(/^\/members\/([0-9A-Za-z_-]{1,64})\/(clear-nick|delete|staff|unstaff)$/);
     if (mm && method === 'POST') {
         needLogin(env);
-        const r = await community(env, mm[2] === 'delete' ? 'userDelete' : 'clearNick', { sub: mm[1] });
+        const op = { delete: 'userDelete', 'clear-nick': 'clearNick', staff: 'setStaff', unstaff: 'setStaff' }[mm[2]];
+        const r = await community(env, op, { sub: mm[1], on: mm[2] === 'staff' });
         if (r.error) throw new HttpError(404, 'no_member', '회원을 찾을 수 없습니다.');
         return json(request, env, { ok: true });
     }

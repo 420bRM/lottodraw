@@ -40,7 +40,7 @@ const sha256 = async s => {
     return btoa(String.fromCharCode(...d)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 };
 
-const pub = m => ({ id: m.id, at: m.at, nick: m.nick, text: m.text });
+const pub = m => Object.assign({ id: m.id, at: m.at, nick: m.nick, text: m.text }, m.staff ? { staff: true } : {});
 
 export class ChatRoom {
     constructor(state, env) {
@@ -122,7 +122,7 @@ export class ChatRoom {
             if (!/^[A-Za-z0-9_-]{20,100}$/.test(token)) return say({ t: 'auth', ok: false });
             const got = await community(this.env, 'sessionGet', { hash: await sha256('sess:' + token), now: Date.now() }).catch(() => ({}));
             if (!got.user) return say({ t: 'auth', ok: false });
-            const att = { sub: got.sub, nick: got.user.nick || null };
+            const att = { sub: got.sub, nick: got.user.nick || null, staff: !!got.user.staff };
             ws.serializeAttachment(att);
             return say({ t: 'auth', ok: true, nick: att.nick, banned: !!(await this.storage.get('ban:' + att.sub)) });
         }
@@ -140,6 +140,7 @@ export class ChatRoom {
             ws.serializeAttachment(Object.assign(me, { lastAt: now }));
             const id = String(now).padStart(16, '0') + '-' + Math.random().toString(36).slice(2, 8);
             const m = { id, at: now, nick: me.nick, text: c.text, sub: me.sub };
+            if (me.staff) m.staff = true;   // 운영자 표시
             await this.storage.put('msg:' + id, m);
             this.broadcast({ t: 'msg', m: pub(m) });
             await this.trim();

@@ -284,13 +284,26 @@ test('별명: 정하고 바꾸고, 겹치거나 규칙에 안 맞으면 거절, 
     assert.equal((await nick(b.session, 'LottoDraw1')).data.error, 'reserved_nick');
     assert.equal((await call(env, 'POST', '/api/me/nickname', { body: { nickname: '아무개' } })).status, 401);
 
-    // 바꾸면 옛 별명은 풀린다 (대소문자는 같은 별명으로 본다)
-    assert.equal((await nick(a.session, 'LuckyBear')).data.user.nick, 'LuckyBear');
+    // 바꾸려면 500포인트가 필요하다 (가입한 날 출석 10점뿐이면 안 된다)
+    const short = await nick(a.session, 'LuckyBear');
+    assert.equal(short.status, 402);
+    assert.equal(short.data.error, 'need_points');
+    assert.equal((await nick(a.session, '행운의곰')).data.cost, 0, '같은 별명을 다시 넣는 것은 공짜');
+    const give = (sub, won) => { const u = env.COMMUNITY._m.get('u:' + sub); u.buy = won; env.COMMUNITY._m.set('u:' + sub, u); };
+    give('A', 6000);   // 600점 + 출석 10점
+
+    // 바꾸면 옛 별명은 풀린다 (대소문자는 같은 별명으로 본다), 500포인트를 쓴다
+    const changed = (await nick(a.session, 'LuckyBear')).data;
+    assert.equal(changed.user.nick, 'LuckyBear');
+    assert.equal(changed.cost, 500);
+    assert.deepEqual([changed.user.score.total, changed.user.score.spent, changed.user.score.avail], [610, 500, 110], '랭킹 점수는 그대로, 쓸 수 있는 포인트만 준다');
+    assert.equal((await nick(a.session, '또바꿈')).data.error, 'need_points', '남은 110점으로는 또 못 바꾼다');
     assert.equal((await nick(b.session, 'luckybear')).data.error, 'taken_nick');
     assert.equal((await nick(b.session, '행운의곰')).status, 200);
 
     // 탈퇴하면 별명도 풀린다
     await call(env, 'POST', '/api/me/delete', { body: { confirm: true }, headers: auth(a.session) });
+    give('B', 5000);
     assert.equal((await nick(b.session, 'LuckyBear')).status, 200);
 });
 
@@ -332,7 +345,7 @@ test('랭킹: 출석(하루 한 번)·반응·로그인한 채 산 이용권으�
     let r = (await call(env, 'GET', '/api/ranking')).data;
     assert.deepEqual(r.top, [{ rank: 1, nick: '첫째', points: 10 + 4 + buyPts, days: 1 }], '별명 없는 B 는 공개 목록에 없다');
     assert.equal(r.me, null);
-    assert.deepEqual(r.points, { attend: 10, react: 2, buyPer100: 10 });
+    assert.deepEqual(r.points, { attend: 10, react: 2, buyPer100: 10, nickChange: 500 });
 
     // 내 순위: 별명이 없어도 알려 준다
     r = (await call(env, 'GET', '/api/ranking', { headers: auth(b.session) })).data;
@@ -340,10 +353,34 @@ test('랭킹: 출석(하루 한 번)·반응·로그인한 채 산 이용권으�
     assert.equal(r.me.total, 10);
     assert.equal(r.me.nick, null);
     const meA = (await call(env, 'GET', '/api/me', { headers: auth(a.session) })).data.user.score;
-    assert.deepEqual(meA, { total: 10 + 4 + buyPts, days: 1, reacts: 2, buy: buyPts });
+    assert.deepEqual(meA, { total: 10 + 4 + buyPts, days: 1, reacts: 2, buy: buyPts, spent: 0, avail: 10 + 4 + buyPts });
 
     // 환불하면 구매 점수가 빠진다
     await call(env, 'POST', `/api/admin/orders/${ord.order.id}/refund`, { headers: asAdmin });
     assert.equal((await call(env, 'GET', '/api/me', { headers: auth(a.session) })).data.user.score.buy, 0);
     assert.equal((await call(env, 'GET', '/api/ranking')).data.top[0].points, 14);
+});
+
+test('운영자 계정: 관리자가 지정하면 운영자 별명을 쓰고, 별명 바꾸기는 무료, 랭킹에서 빠진다', async () => {
+    const env = await fresh();
+    const op = (await login(env, { sub: 'OP', email: 'lottodraw.admin@gmail.com' })).data.session;
+    const u = (await login(env, { sub: 'U', email: 'user@gmail.com' })).data.session;
+    const nick = (s, nickname) => call(env, 'POST', '/api/me/nickname', { body: { nickname }, headers: auth(s) });
+    await nick(u, '일반회원');
+    assert.equal((await nick(op, '운영자')).data.error, 'reserved_nick', '지정 전에는 못 쓴다');
+
+    assert.equal((await call(env, 'POST', '/api/admin/members/OP/staff', { headers: asAdmin })).status, 200);
+    assert.equal((await call(env, 'POST', '/api/admin/members/OP/staff')).status, 401, '관리자 토큰 필요');
+    assert.equal((await call(env, 'GET', '/api/me', { headers: auth(op) })).data.user.staff, true);
+    assert.equal((await nick(op, '운영자')).status, 200);
+    const again = (await nick(op, '로또드로우운영자')).data;
+    assert.equal(again.user.nick, '로또드로우운영자');
+    assert.equal(again.cost, 0, '운영자는 별명 바꾸기 무료');
+
+    const r = (await call(env, 'GET', '/api/ranking')).data;
+    assert.deepEqual(r.top.map(x => x.nick), ['일반회원'], '운영자는 랭킹에서 빠진다');
+    assert.equal((await call(env, 'GET', '/api/admin/members', { headers: asAdmin })).data.members.find(m => m.sub === 'OP').staff, true);
+
+    assert.equal((await call(env, 'POST', '/api/admin/members/OP/unstaff', { headers: asAdmin })).status, 200);
+    assert.equal((await call(env, 'GET', '/api/me', { headers: auth(op) })).data.user.staff, false);
 });

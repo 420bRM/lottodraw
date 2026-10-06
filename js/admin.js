@@ -210,11 +210,12 @@
         list.forEach(m => {
             const trial = m.trial ? `${m.trial.keyId.toUpperCase()} · ${m.trial.expiresAt > Date.now() ? when(m.trial.expiresAt) + '까지' : '끝남'}` : '—';
             const tools = el('td', { className: 'admin-row-tools' }, [
+                el('button', { type: 'button', className: 'btn btn-secondary btn-mini', text: m.staff ? '운영자 해제' : '운영자 지정', on: { click: () => memberAct(m, m.staff ? 'unstaff' : 'staff') } }),
                 m.nick ? el('button', { type: 'button', className: 'btn btn-secondary btn-mini', text: '별명 지우기', on: { click: () => memberAct(m, 'clear-nick') } }) : null,
                 el('button', { type: 'button', className: 'btn btn-secondary btn-mini danger', text: '삭제', on: { click: () => memberAct(m, 'delete') } }),
             ]);
             body.appendChild(el('tr', {}, [
-                el('td', { text: m.nick || '—' }), el('td', { text: m.email || '' }), el('td', { text: when(m.createdAt) }),
+                el('td', { text: (m.staff ? '🛡 ' : '') + (m.nick || '—') }), el('td', { text: m.email || '' }), el('td', { text: when(m.createdAt) }),
                 el('td', { text: m.lastAt ? when(m.lastAt) : '' }), el('td', { text: trial }),
                 el('td', { text: String(m.hearts || 0) }), el('td', { text: String(m.dollars || 0) }), el('td', { text: String(m.wons || 0) }),
                 el('td', { title: m.score ? `출석 ${m.score.days}일 · 반응 ${m.score.reacts}개 · 이용권 ${(m.buy || 0).toLocaleString()}원` : '', text: m.score ? String(m.score.total) : '0' }), tools,
@@ -235,13 +236,16 @@
 
     async function memberAct(m, action) {
         const who = m.nick ? `${m.nick} (${m.email})` : m.email;
-        const ask = action === 'delete'
-            ? `${who} 회원을 삭제합니까?\n계정·별명·로그인·좋아요가 지워집니다. 받은 체험 키는 기간까지 그대로이고, 1년 안에 다시 가입해도 체험은 다시 받지 못합니다.`
-            : `${who} 의 별명 "${m.nick}" 을 지웁니까? 회원은 새 별명을 정할 수 있습니다.`;
+        const ask = {
+            delete: `${who} 회원을 삭제합니까?\n계정·별명·로그인·좋아요가 지워집니다. 받은 체험 키는 기간까지 그대로이고, 1년 안에 다시 가입해도 체험은 다시 받지 못합니다.`,
+            'clear-nick': `${who} 의 별명 "${m.nick}" 을 지웁니까? 회원은 새 별명을 정할 수 있습니다.`,
+            staff: `${who} 을(를) 운영자로 지정합니까?\n랭킹에서 빠지고, 채팅에 "운영자" 표시가 붙고, "운영자" 같은 별명을 쓸 수 있습니다.`,
+            unstaff: `${who} 의 운영자 지정을 풉니까?`,
+        }[action];
         if (!window.confirm(ask)) return;
         try {
             await call(`/members/${encodeURIComponent(m.sub)}/${action}`, { method: 'POST' });
-            say('members-status', action === 'delete' ? `${who} 회원을 삭제했습니다.` : `${who} 의 별명을 지웠습니다.`);
+            say('members-status', { delete: `${who} 회원을 삭제했습니다.`, 'clear-nick': `${who} 의 별명을 지웠습니다.`, staff: `${who} 을(를) 운영자로 지정했습니다.`, unstaff: `${who} 의 운영자 지정을 풀었습니다.` }[action]);
             status = await call('/status').catch(() => status);
             await loadMembers();
         } catch (err) {
