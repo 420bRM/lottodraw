@@ -333,6 +333,7 @@
                 const open = menu.hidden;
                 menu.hidden = !open;
                 btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+                if (open) placeMenu(menu, wrap);
             } } }, [(me.user && me.user.nick) || tr('acct.mine', '내 계정')]);
             const trial = me.user && me.user.trial;
             if (me.user && me.user.nick) menu.appendChild(el('p', { className: 'acct-nick', text: me.user.nick }));
@@ -355,6 +356,20 @@
         }
         const langSwitch = host.querySelector('.lang-switch');
         host.insertBefore(wrap, langSwitch || null);
+    }
+
+    // 메뉴가 화면 밖으로 나가지 않게 둔다. 휴대폰에서는 "내 계정" 단추가 왼쪽 끝에 오기도 한다.
+    function placeMenu(menu, wrap) {
+        const gap = 8;
+        const vw = document.documentElement.clientWidth || window.innerWidth;
+        const box = wrap.getBoundingClientRect();
+        const w = Math.min(menu.offsetWidth, vw - gap * 2);
+        // 단추 왼쪽 끝에 맞춰 열고, 오른쪽이 넘치면 그만큼 왼쪽으로, 왼쪽도 화면 안에서 멈춘다
+        let left = 0;
+        if (box.left + w > vw - gap) left = vw - gap - w - box.left;
+        if (box.left + left < gap) left = gap - box.left;
+        menu.style.left = left + 'px';
+        menu.style.right = 'auto';
     }
 
     async function logout() {
