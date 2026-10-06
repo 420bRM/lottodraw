@@ -7,8 +7,8 @@
     const TOKEN_STORE = 'lottodraw.admin.token';
     const $ = id => document.getElementById(id);
     const STATUS = { pending: '입금 대기', paid: '발급 완료', refund_requested: '환불 요청', refunded: '환불', cancelled: '취소' };
-    const METHOD = { bank: '계좌이체', payapp: '카드(페이앱)', manual: '직접 발급' };
-    const PLAN = { day: '1일', week: '1주', month: '1개월', lifetime: '평생', custom: '기간 지정' };
+    const METHOD = { bank: '계좌이체', payapp: '카드(페이앱)', manual: '직접 발급', trial: '가입 무료 체험' };
+    const PLAN = { day: '1일', week: '1주', month: '1개월', lifetime: '평생', trial: '3일 체험', custom: '기간 지정' };
 
     let token = null;
     let tab = 'pending';
@@ -144,6 +144,8 @@
             [s.methods.payapp, '카드(페이앱)', '켜짐', '페이앱 심사 통과 뒤 PAYAPP_USERID · PAYAPP_LINKKEY · PAYAPP_LINKVAL 을 넣으면 켜집니다'],
             [s.notify.telegram || s.notify.url, '새 주문 알림', s.notify.telegram ? '텔레그램' : '알림 주소', 'TELEGRAM_BOT_TOKEN · TELEGRAM_CHAT_ID 또는 NOTIFY_URL 을 넣으면 휴대폰으로 받습니다'],
             [s.mail, '키 메일 발송', '켜짐 — 이메일을 적은 구매자에게 키를 메일로도 보냅니다', 'RESEND_API_KEY · MAIL_FROM 을 넣으면 키를 구매자 이메일로도 보냅니다 (README 4번)'],
+            [s.login && !s.login.error, '구글 로그인 · 무료 체험 · 좋아요', s.login ? `켜짐 — 가입 ${s.login.users || 0}명 · 무료 체험 ${s.login.trials || 0}건` : '',
+                s.login && s.login.error ? '켜 두었지만 회원 저장소에 연결하지 못했습니다 — 잠시 뒤 새로 고쳐 보세요' : 'GOOGLE_CLIENT_ID 를 넣으면 켜집니다 (README 4번 8단계)'],
             [s.hooks.alive, '입금 자동 확인', '켜짐 (휴대폰 연결 살아 있음)', '꺼짐 — 위 "입금 알림 연결"을 설정하면 새벽에도 자동으로 열립니다'],
         ];
         items.forEach(([on, name, yes, how]) => {
@@ -230,7 +232,7 @@
             ]),
             el('div', { className: 'card-body' }, [
                 el('p', { className: 'admin-line' }, [
-                    el('b', { text: `${PLAN[o.p] || o.p} · ${o.m === 'manual' ? '무료' : won(o.a)}` }),
+                    el('b', { text: `${PLAN[o.p] || o.p} · ${o.m === 'manual' || o.m === 'trial' ? '무료' : won(o.a)}` }),
                     ` · ${METHOD[o.m] || o.m} · ${when(o.c)}`,
                 ]),
                 o.n ? el('p', { className: 'admin-line' }, ['입금자명/받는 사람: ', el('b', { text: o.n })]) : null,

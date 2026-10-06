@@ -27,6 +27,34 @@ namespace_id = "1001"
   limit = 5
   period = 60
 
+# 구글 로그인: 같은 IP 에서 1분에 10번까지
+[[ratelimits]]
+name = "LOGIN_LIMIT"
+namespace_id = "1002"
+
+  [ratelimits.simple]
+  limit = 10
+  period = 60
+
+# 좋아요: 한 로그인에서 1분에 30번까지
+[[ratelimits]]
+name = "REACT_LIMIT"
+namespace_id = "1003"
+
+  [ratelimits.simple]
+  limit = 30
+  period = 60
+
+# 회원·로그인 세션·좋아요 저장소 (src/community.js). 결제용 KV 와 나눠 KV 쓰기 한도를 결제에 남긴다.
+# 무료 요금제는 SQLite 저장 방식만 쓸 수 있다.
+[[durable_objects.bindings]]
+name = "COMMUNITY"
+class_name = "Community"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Community"]
+
 [observability]
 enabled = true
 

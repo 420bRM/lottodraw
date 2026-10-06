@@ -8,16 +8,22 @@
 //   3) 환불 — 키 발급 뒤 단순 변심 환불은 없다(이용약관 4조). 키가 작동하지 않거나 중복 입금한 경우
 //      구매자가 문의하면 판매자가 관리자 페이지에서 "환불 처리"를 누른다: 키 정지, 카드는 결제 취소까지.
 //   4) 지킴이 — 한 시간마다 입금 알림 연결이 살아 있는지 보고, 끊기면 판매자에게 알린다.
+//   5) 회원 — 구글 로그인(가입하면 3일 무료 체험 키 1회), 좋아요(하트·달러). 저장은 community.js.
 //
 // 키 확인은 브라우저가 공개키로 혼자 한다(js/license.js). 이 서버가 멈춰도
 // 이미 산 사람의 잠금은 풀린다. 서버가 필요한 건 "팔 때"뿐이다.
 //
 // 저장소: KV 하나(DB). order:<주문번호>, keyidx:<키번호>, amt:<금액>, hook:<알림해시>,
 //         meta:signing-key, meta:revoked, meta:hook, meta:hook-secret.
+//         회원·세션·좋아요는 Durable Object(COMMUNITY, community.js) — KV 쓰기 한도를 결제에 남겨 둔다.
 // 비밀값과 설정은 README "4. 유료화" 와 worker/wrangler.toml 참고.
 
 import { generateKeyPair, importPrivate, importPublic, signKey, verifyKey, parseKey, hex32, publicOnly, keyId, b64urlEncode } from './keys.js';
 import { plansFor } from './plans.js';
+import { community, TRIAL_DAYS, SESSION_DAYS, REACT_TYPES, ITEM_RE } from './community.js';
+import { verifyGoogleToken } from './google.js';
+
+export { Community } from './community.js';
 
 const PAYAPP_API = 'https://api.payapp.kr/oapi/apiLoad.html';
 const DEPOSIT_HOURS = 72;              // 입금 기한 안내용. 지나도 관리자는 확인할 수 있다
@@ -77,6 +83,13 @@ async function route(request, env, ctx) {
     if (path === '/api/payapp/feedback' && method === 'POST') return payappFeedback(request, env, ctx);
     if (path === '/api/hooks/deposit' && method === 'POST') return depositHook(request, env, ctx, url);
 
+    if (path === '/api/auth/google' && method === 'POST') return googleLogin(request, env, ctx);
+    if (path === '/api/auth/logout' && method === 'POST') return logout(request, env);
+    if (path === '/api/me' && method === 'GET') return me(request, env);
+    if (path === '/api/me/delete' && method === 'POST') return deleteMe(request, env, ctx);
+    if (path === '/api/reactions' && method === 'GET') return getReactions(request, env, url);
+    if (path === '/api/reactions' && method === 'POST') return react(request, env);
+
     if (path.startsWith('/api/admin/')) {
         if (!adminOk(request, env)) throw new HttpError(401, 'unauthorized', '관리자 토큰이 맞지 않습니다.');
         return admin(request, env, path.slice('/api/admin'.length), method, url);
@@ -118,6 +131,8 @@ async function getConfig(request, env) {
         depositHours: DEPOSIT_HOURS,
         // 입금 알림 연결이 살아 있으면 계좌이체도 몇 분 안에 저절로 열린다. 화면 안내 문구가 이걸 따른다.
         autoConfirm: await hookAlive(env),
+        // 구글 로그인(가입하면 무료 체험 + 좋아요). 클라이언트 ID 를 넣기 전에는 화면에 로그인 단추가 없다.
+        login: loginReady(env) ? { google: env.GOOGLE_CLIENT_ID, trialDays: TRIAL_DAYS } : null,
     }, 200, { 'Cache-Control': 'public, max-age=60' }, true);
 }
 
@@ -538,6 +553,121 @@ function wordsOf(s) {
     return set;
 }
 
+/* ───── 회원 (구글 로그인 · 무료 체험 · 좋아요) ───── */
+
+function loginReady(env) {
+    return !!(env.GOOGLE_CLIENT_ID && env.COMMUNITY);
+}
+
+function needLogin(env) {
+    if (!loginReady(env)) throw new HttpError(503, 'no_login', '로그인 기능이 아직 꺼져 있습니다.');
+}
+
+async function limited(binding, key) {
+    if (!binding || typeof binding.limit !== 'function') return;
+    const { success } = await binding.limit({ key });
+    if (!success) throw new HttpError(429, 'too_many', '요청이 너무 잦습니다. 1분 뒤 다시 시도해 주세요.');
+}
+
+function bearer(request) {
+    const m = (request.headers.get('Authorization') || '').match(/^Bearer\s+([A-Za-z0-9_-]{20,100})$/);
+    return m ? m[1] : null;
+}
+
+// 로그인 세션 → 계정. 없거나 만료면 401.
+async function sessionUser(request, env) {
+    needLogin(env);
+    const token = bearer(request);
+    if (!token) throw new HttpError(401, 'need_login', '로그인이 필요합니다.');
+    const hash = await sha256('sess:' + token);
+    const got = await community(env, 'sessionGet', { hash, now: Date.now() });
+    if (!got.user) throw new HttpError(401, 'need_login', '로그인이 끝났습니다. 다시 로그인해 주세요.');
+    return { user: got.user, rx: got.rx || {}, sub: got.sub, hash };
+}
+
+async function googleLogin(request, env, ctx) {
+    needLogin(env);
+    await limited(env.LOGIN_LIMIT, request.headers.get('CF-Connecting-IP') || 'local');
+    const body = await readJson(request);
+    const g = await verifyGoogleToken(body.credential, env.GOOGLE_CLIENT_ID);
+    if (!g) throw new HttpError(401, 'bad_credential', '구글 로그인을 확인하지 못했습니다. 다시 시도해 주세요.');
+
+    const now = Date.now();
+    const r = await community(env, 'login', { sub: g.sub, email: g.email, subHash: await sha256('trial:' + g.sub), now });
+    let user = r.user;
+    let trialNew = false;
+    if (r.needTrial) {
+        user = await issueTrial(env, g.sub);
+        trialNew = true;
+        const stats = await community(env, 'stats').catch(() => null);
+        ctx.waitUntil(notify(env, `새 가입 · ${TRIAL_DAYS}일 무료 체험 키 ${user.trial.keyId}` + (stats ? `\n가입 ${stats.users}명 · 체험 ${stats.trials}건` : '')));
+    }
+
+    const token = b64urlEncode(crypto.getRandomValues(new Uint8Array(32)));
+    await community(env, 'sessionCreate', { sub: g.sub, hash: await sha256('sess:' + token), exp: now + SESSION_DAYS * 86400 * 1000 });
+    return json(request, env, { session: token, user, isNew: r.isNew, trialNew }, 200);
+}
+
+// 무료 체험 키는 주문처럼 남긴다(관리자 페이지에서 보이고, 정지·조회가 같은 길로 된다). 0원, 메일은 보내지 않는다.
+// 이메일은 주문에 적지 않는다 — 계정에만 있고 탈퇴하면 지워진다.
+async function issueTrial(env, sub) {
+    const now = Date.now();
+    const order = {
+        id: await freshId(env), tokenHash: '', plan: 'trial', planName: `${TRIAL_DAYS}일 무료 체험`,
+        listPrice: 0, amount: 0, method: 'trial', name: '무료 체험', contact: '', days: TRIAL_DAYS,
+        status: 'pending', createdAt: now, deadline: now, log: [{ at: now, what: 'created', by: 'google' }],
+    };
+    await confirm(env, order, 'google');
+    const r = await community(env, 'setTrial', { sub, trial: { orderId: order.id, keyId: order.keyId, key: order.key, expiresAt: order.expiresAt } });
+    return r.user;
+}
+
+async function me(request, env) {
+    const s = await sessionUser(request, env);
+    return json(request, env, { user: s.user, reactions: s.rx });
+}
+
+async function logout(request, env) {
+    needLogin(env);
+    const token = bearer(request);
+    if (token) await community(env, 'sessionDelete', { hash: await sha256('sess:' + token) });
+    return json(request, env, { ok: true });
+}
+
+// 탈퇴. 계정·세션·좋아요를 지운다. 받은 무료 체험 키는 기간까지 그대로 쓸 수 있다.
+async function deleteMe(request, env, ctx) {
+    const s = await sessionUser(request, env);
+    const body = await readJson(request);
+    if (body.confirm !== true) throw new HttpError(400, 'need_confirm', '탈퇴를 확인해 주세요.');
+    await community(env, 'userDelete', { sub: s.sub });
+    ctx.waitUntil(notify(env, '회원 탈퇴 1건'));
+    return json(request, env, { ok: true });
+}
+
+function reactionIds(raw) {
+    const ids = String(raw || '').split(',').map(s => s.trim()).filter(Boolean);
+    if (!ids.length || ids.length > 30 || !ids.every(i => ITEM_RE.test(i))) throw new HttpError(400, 'bad_ids', '항목 이름이 올바르지 않습니다.');
+    return [...new Set(ids)];
+}
+
+async function getReactions(request, env, url) {
+    needLogin(env);
+    const got = await community(env, 'counts', { items: reactionIds(url.searchParams.get('ids')) });
+    return json(request, env, got, 200, { 'Cache-Control': 'public, max-age=15' }, true);
+}
+
+async function react(request, env) {
+    const s = await sessionUser(request, env);
+    const body = await readJson(request);
+    const item = String(body.id || '');
+    if (!ITEM_RE.test(item)) throw new HttpError(400, 'bad_ids', '항목 이름이 올바르지 않습니다.');
+    if (REACT_TYPES.indexOf(body.type) === -1) throw new HttpError(400, 'bad_type', '좋아요 종류가 올바르지 않습니다.');
+    await limited(env.REACT_LIMIT, s.hash);
+    const r = await community(env, 'react', { sub: s.sub, item, type: body.type });
+    if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
+    return json(request, env, r);
+}
+
 /* ───── 관리자 ───── */
 
 function adminOk(request, env) {
@@ -565,6 +695,7 @@ async function admin(request, env, sub, method, url) {
             },
             notify: { telegram: !!(env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID), url: !!env.NOTIFY_URL },
             mail: mailReady(env),
+            login: loginReady(env) ? await community(env, 'stats').catch(() => ({ error: true })) : null,
         });
     }
     // 서명 키는 사람이 한 번 눌러서 만든다. 저절로 만들면 동시에 두 개가 생겨 한쪽 키가 무효가 될 수 있다.
@@ -728,7 +859,7 @@ async function confirm(env, order, by) {
     if (!s) throw new HttpError(503, 'no_signing_key', '서명 키가 아직 없습니다. 관리자 페이지에서 "서명 키 만들기"를 먼저 눌러 주세요.');
     const plans = plansFor(env);
     const now = Math.floor(Date.now() / 1000);
-    const days = order.plan === 'custom' ? (order.days || 0) : plans[order.plan].days;
+    const days = order.plan === 'custom' || order.plan === 'trial' ? (order.days || 0) : plans[order.plan].days;
     const expiresAt = days ? now + days * 86400 : 0;
     // 키 번호는 주문번호에서 정해진다. 확인 버튼과 자동 확인이 겹쳐 키가 두 번 만들어져도
     // 번호가 같아서, 환불하면 둘 다 정지된다.
