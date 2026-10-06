@@ -18,7 +18,7 @@
     const NOTE_STORE = 'lottodraw.account.note';        // sessionStorage: 새로 고친 뒤 띄울 안내
     const KEY_STORE = 'lottodraw.premium.key';          // js/license.js 와 같은 자리
     const CACHE_MS = 10 * 60 * 1000;
-    const NO_BAR = ['privacy', 'terms', 'contact', 'about', 'admin'];
+    const NO_BAR = ['privacy', 'terms', 'contact', 'about', 'admin', 'ranking'];
 
     const script = document.currentScript;
     const root = script && script.src ? new URL('..', script.src).href : '/';
@@ -96,12 +96,15 @@
             const got = await request('/api/me', { auth: true });
             const v = { at: Date.now(), user: got.user, reactions: got.reactions || {} };
             temp.set(ME_STORE, v);
+            if (got.attended) attendedToday = (got.points && got.points.attend) || 10;
             return v;
         } catch (e) {
             if (e.status === 401) signOutLocal();
             return c || null;
         }
     }
+
+    let attendedToday = 0;   // 오늘 처음 들어와 출석 점수를 받았으면 그 점수
 
     function signOutLocal() {
         local.del(SESSION_STORE);
@@ -333,6 +336,8 @@
             menu.appendChild(el('p', { className: 'acct-trial', text: trial
                 ? (trial.expiresAt > Date.now() ? tr('acct.trialUntil', '무료 체험: {until}까지', { until: fmtDate(trial.expiresAt) }) : tr('acct.trialOver', '무료 체험이 끝났습니다'))
                 : tr('acct.trialNone', '무료 체험은 계정당 한 번입니다') }));
+            const sc = me.user && me.user.score;
+            if (sc) menu.appendChild(el('a', { className: 'acct-score', href: root + 'ranking.html', text: tr('acct.score', '내 점수 {n}점 · 랭킹 보기 →', { n: sc.total }) }));
             menu.appendChild(el('a', { href: root + 'statistics.html', text: tr('acct.goStats', '5개월 통계 보기 →') }));
             menu.appendChild(el('button', { type: 'button', text: me.user && me.user.nick ? tr('acct.nickChange', '별명 바꾸기') : tr('acct.nickSet', '별명 정하기'),
                 on: { click: () => { menu.hidden = true; openNick(false); } } }));
@@ -379,6 +384,7 @@
         d: 'M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z',
     };
     function icon(type) {
+        if (type === 'w') return el('span', { className: 'rx-ico rx-won', 'aria-hidden': 'true', text: '₩' });
         const svg = document.createElementNS(SVG_NS, 'svg');
         svg.setAttribute('viewBox', '0 0 24 24');
         svg.setAttribute('aria-hidden', 'true');
@@ -388,7 +394,8 @@
         svg.appendChild(path);
         return svg;
     }
-    const LABEL = { h: () => tr('react.h', '좋아요'), d: () => tr('react.d', '대박 기원') };
+    const LABEL = { h: () => tr('react.h', '좋아요'), d: () => tr('react.d', '대박 기원'), w: () => tr('react.w', '원화') };
+    const TYPES = ['h', 'd', 'w'];
 
     const ID_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
     const NO_CARD = /^(plan-|order|checkout|unlock|reveal|license|ob-|admin)/;   // 결제·주문 칸에는 달지 않는다
@@ -415,7 +422,7 @@
     function makeWidget(id, extraClass) {
         const box = el('div', { className: 'rx' + (extraClass ? ' ' + extraClass : ''), 'data-rx': id });
         const pick = el('div', { className: 'rx-pick', hidden: '' });
-        ['h', 'd'].forEach(type => {
+        TYPES.forEach(type => {
             pick.appendChild(el('button', { type: 'button', className: 'rx-opt rx-' + type, title: LABEL[type](), 'aria-label': LABEL[type](),
                 on: { click: () => { pick.hidden = true; add.setAttribute('aria-expanded', 'false'); press(id, type); } } }, [icon(type)]));
         });
@@ -447,11 +454,11 @@
     // 숫자가 있는 것만 아이콘+숫자로 보인다. 내가 누른 것은 색이 찬다. 눌러서 바로 취소할 수도 있다.
     function paint(box) {
         const id = box.dataset.rx;
-        const c = counts[id] || { h: 0, d: 0 };
+        const c = counts[id] || { h: 0, d: 0, w: 0 };
         const mine = (me && me.reactions && me.reactions[id]) || '';
         const chips = box.querySelector('.rx-chips');
         chips.textContent = '';
-        ['h', 'd'].forEach(type => {
+        TYPES.forEach(type => {
             const on = mine.indexOf(type) !== -1;
             if (!c[type] && !on) return;
             chips.appendChild(el('button', { type: 'button', className: 'rx-chip rx-' + type, 'aria-pressed': on ? 'true' : 'false',
@@ -459,7 +466,7 @@
                 on: { click: () => press(id, type) } }, [icon(type), el('span', { className: 'rx-n', text: String(c[type] || 0) })]));
         });
         box.querySelectorAll('.rx-opt').forEach(b => {
-            const type = b.classList.contains('rx-h') ? 'h' : 'd';
+            const type = TYPES.find(t => b.classList.contains('rx-' + t)) || 'h';
             b.setAttribute('aria-pressed', mine.indexOf(type) !== -1 ? 'true' : 'false');
         });
     }
@@ -507,7 +514,7 @@
             try {
                 // 방금 누른 수가 브라우저에 남은 옛 응답으로 보이지 않게 늘 서버에 다시 묻는다
                 const got = (await request('/api/reactions?ids=' + encodeURIComponent(ids.join(',')), { cache: 'no-cache' })).counts || {};
-                ids.forEach(i => { counts[i] = got[i] || { h: 0, d: 0 }; repaint(i); });
+                ids.forEach(i => { counts[i] = got[i] || { h: 0, d: 0, w: 0 }; repaint(i); });
             } catch (e) { /* 수를 못 받아도 단추는 쓸 수 있다 */ }
             if (pending.size) flush();
         }, 150);
@@ -543,8 +550,22 @@
         me = await loadMe(false);
         if (me && me.user) applyTrial(me.user.trial);
         renderHeader();
+        addRankingLink();
         showNote();
+        if (attendedToday && !document.getElementById('acct-toast')) toast(tr('acct.attended', '오늘 출석 +{n}점', { n: attendedToday }), { href: root + 'ranking.html', text: tr('acct.goRanking', '랭킹 보기 →') });
         renderReactions();
+    }
+
+    // 머리글 메뉴에 "랭킹" (로그인을 켰을 때만). 페이지 1,300여 개의 메뉴를 고치지 않으려고 여기서 단다.
+    function addRankingLink() {
+        const ul = document.querySelector('.nav ul');
+        if (!ul || ul.querySelector('[data-rank-link]')) return;
+        const here = /(^|\/)ranking\.html$/.test(location.pathname);
+        const a = el('a', { href: root + 'ranking.html', text: tr('nav.ranking', '랭킹') });
+        if (here) a.setAttribute('aria-current', 'page');
+        const li = el('li', { 'data-rank-link': '' }, [a]);
+        const about = ul.querySelector('a[href$="about.html"]');
+        ul.insertBefore(li, about ? about.parentNode : null);
     }
 
     window.LottoAccount = { openLogin: r => (login ? openLogin(r) : null) };

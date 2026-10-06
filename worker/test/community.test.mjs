@@ -171,15 +171,15 @@ test('좋아요: 하트·달러를 따로 켜고 끄고, 누른 수는 누구나
     const a = (await login(env, { sub: 'A', email: 'a@gmail.com' })).data.session;
     const b = (await login(env, { sub: 'B', email: 'b@gmail.com' })).data.session;
     const counts = async () => (await call(env, 'GET', '/api/reactions?ids=statistics-sum,blog-ac-value-explained')).data.counts;
-    assert.deepEqual((await counts())['statistics-sum'], { h: 0, d: 0 });
+    assert.deepEqual((await counts())['statistics-sum'], { h: 0, d: 0, w: 0 });
 
     assert.equal((await call(env, 'POST', '/api/reactions', { body: { id: 'statistics-sum', type: 'h' } })).status, 401);
     const press = (s, id, type) => call(env, 'POST', '/api/reactions', { body: { id, type }, headers: auth(s) });
-    assert.deepEqual((await press(a, 'statistics-sum', 'h')).data, { counts: { h: 1, d: 0 }, mine: 'h' });
-    assert.deepEqual((await press(a, 'statistics-sum', 'd')).data, { counts: { h: 1, d: 1 }, mine: 'hd' });
-    assert.deepEqual((await press(b, 'statistics-sum', 'h')).data, { counts: { h: 2, d: 1 }, mine: 'h' });
-    assert.deepEqual((await press(a, 'statistics-sum', 'h')).data, { counts: { h: 1, d: 1 }, mine: 'd' }, '다시 누르면 취소');
-    assert.deepEqual((await counts())['statistics-sum'], { h: 1, d: 1 });
+    assert.deepEqual((await press(a, 'statistics-sum', 'h')).data, { counts: { h: 1, d: 0, w: 0 }, mine: 'h' });
+    assert.deepEqual((await press(a, 'statistics-sum', 'd')).data, { counts: { h: 1, d: 1, w: 0 }, mine: 'hd' });
+    assert.deepEqual((await press(b, 'statistics-sum', 'h')).data, { counts: { h: 2, d: 1, w: 0 }, mine: 'h' });
+    assert.deepEqual((await press(a, 'statistics-sum', 'h')).data, { counts: { h: 1, d: 1, w: 0 }, mine: 'd' }, '다시 누르면 취소');
+    assert.deepEqual((await counts())['statistics-sum'], { h: 1, d: 1, w: 0 });
     assert.deepEqual((await call(env, 'GET', '/api/me', { headers: auth(a) })).data.reactions, { 'statistics-sum': 'd' });
 
     assert.equal((await press(a, 'Bad Id!', 'h')).data.error, 'bad_ids');
@@ -205,7 +205,7 @@ test('회원 명부: 별명·이메일·가입일·체험·누른 수를 보고,
     assert.equal(ma.hearts, 1);
     assert.ok(ma.trial && ma.trial.keyId && ma.trial.expiresAt);
     assert.ok(ma.createdAt && ma.lastAt);
-    assert.deepEqual(list.reactions, [{ id: 'index-stat-sum', h: 1, d: 1 }]);
+    assert.deepEqual(list.reactions, [{ id: 'index-stat-sum', h: 1, d: 1, w: 0 }]);
     assert.deepEqual(list.meta, { users: 2, trials: 2 });
 
     // 별명 지우기 → 그 별명은 다시 쓸 수 있다
@@ -218,7 +218,7 @@ test('회원 명부: 별명·이메일·가입일·체험·누른 수를 보고,
     assert.equal((await call(env, 'GET', '/api/me', { headers: auth(a.session) })).status, 401);
     list = (await call(env, 'GET', '/api/admin/members', { headers: asAdmin })).data;
     assert.equal(list.members.length, 1);
-    assert.deepEqual(list.reactions, [{ id: 'index-stat-sum', h: 0, d: 1 }].filter(x => x.h + x.d > 0));
+    assert.deepEqual(list.reactions, [{ id: 'index-stat-sum', h: 0, d: 1, w: 0 }].filter(x => x.h + x.d > 0));
     assert.equal((await call(env, 'POST', '/api/admin/members/nobody/delete', { headers: asAdmin })).status, 200, '없는 회원 삭제는 그냥 지나간다');
     assert.equal((await call(env, 'POST', '/api/admin/members/A/clear-nick', { headers: asAdmin })).data.error, 'no_member');
 });
@@ -292,4 +292,57 @@ test('별명: 정하고 바꾸고, 겹치거나 규칙에 안 맞으면 거절, 
     // 탈퇴하면 별명도 풀린다
     await call(env, 'POST', '/api/me/delete', { body: { confirm: true }, headers: auth(a.session) });
     assert.equal((await nick(b.session, 'LuckyBear')).status, 200);
+});
+
+test('₩ 원화 반응도 따로 켜고 끈다', async () => {
+    const env = await fresh();
+    const a = (await login(env, { sub: 'A', email: 'a@gmail.com' })).data.session;
+    const press = (id, type) => call(env, 'POST', '/api/reactions', { body: { id, type }, headers: auth(a) });
+    assert.deepEqual((await press('index-stat-sum', 'w')).data, { counts: { h: 0, d: 0, w: 1 }, mine: 'w' });
+    assert.deepEqual((await press('index-stat-sum', 'h')).data, { counts: { h: 1, d: 0, w: 1 }, mine: 'hw' });
+    assert.deepEqual((await press('index-stat-sum', 'w')).data, { counts: { h: 1, d: 0, w: 0 }, mine: 'h' });
+});
+
+test('랭킹: 출석(하루 한 번)·반응·로그인한 채 산 이용권으로 점수, 별명 있는 회원만 공개, 환불하면 빠진다', async () => {
+    const env = await fresh({ DEPOSIT_HOOK_SECRET: 'hook-secret-0123456789', BANK_NAME: '우리은행', BANK_ACCOUNT: '1002-123-456789', BANK_HOLDER: '홍길동' });
+    const a = (await login(env, { sub: 'A', email: 'a@gmail.com' })).data;
+    const b = (await login(env, { sub: 'B', email: 'b@gmail.com' })).data;
+    assert.equal(a.attended, true, '가입한 날이 첫 출석');
+    assert.equal((await call(env, 'GET', '/api/me', { headers: auth(a.session) })).data.attended, false, '같은 날 두 번은 안 된다');
+    await call(env, 'POST', '/api/me/nickname', { body: { nickname: '첫째' }, headers: auth(a.session) });
+
+    // 반응 2개 → 4점
+    await call(env, 'POST', '/api/reactions', { body: { id: 'index-stat-sum', type: 'h' }, headers: auth(a.session) });
+    await call(env, 'POST', '/api/reactions', { body: { id: 'index-stat-sum', type: 'w' }, headers: auth(a.session) });
+
+    // 로그인한 채 1일 이용권 주문 → 입금 → 결제 금액 100원당 1점
+    const ord = (await call(env, 'POST', '/api/orders', { body: { plan: 'day', method: 'bank', name: '홍길동', contact: '', agree: true }, headers: Object.assign({ 'CF-Connecting-IP': '10.9.0.1' }, auth(a.session)) })).data;
+    assert.ok(ord.order, JSON.stringify(ord));
+    await call(env, 'POST', '/api/hooks/deposit', { body: { text: `입금 ${ord.order.amount}원 홍길동` }, headers: { Authorization: 'Bearer hook-secret-0123456789' } });
+    const paid = (await call(env, 'GET', `/api/admin/orders/${ord.order.id}`, { headers: asAdmin })).data.order;
+    assert.equal(paid.status, 'paid');
+    assert.ok(paid.memberRef && !JSON.stringify(paid).includes('"A"'), '주문에는 계정 번호 대신 참조값만');
+    const buyPts = Math.floor(ord.order.amount / 100);
+
+    // 로그인 없이 산 주문은 점수가 없다
+    const anon = (await call(env, 'POST', '/api/orders', { body: { plan: 'day', method: 'bank', name: '김철수', contact: '', agree: true }, headers: { 'CF-Connecting-IP': '10.9.0.2' } })).data;
+    assert.equal((await call(env, 'GET', `/api/admin/orders/${anon.order.id}`, { headers: asAdmin })).data.order.memberRef, undefined);
+
+    let r = (await call(env, 'GET', '/api/ranking')).data;
+    assert.deepEqual(r.top, [{ rank: 1, nick: '첫째', points: 10 + 4 + buyPts, days: 1 }], '별명 없는 B 는 공개 목록에 없다');
+    assert.equal(r.me, null);
+    assert.deepEqual(r.points, { attend: 10, react: 2, wonPerPoint: 100 });
+
+    // 내 순위: 별명이 없어도 알려 준다
+    r = (await call(env, 'GET', '/api/ranking', { headers: auth(b.session) })).data;
+    assert.equal(r.me.rank, 2);
+    assert.equal(r.me.total, 10);
+    assert.equal(r.me.nick, null);
+    const meA = (await call(env, 'GET', '/api/me', { headers: auth(a.session) })).data.user.score;
+    assert.deepEqual(meA, { total: 10 + 4 + buyPts, days: 1, reacts: 2, buy: buyPts });
+
+    // 환불하면 구매 점수가 빠진다
+    await call(env, 'POST', `/api/admin/orders/${ord.order.id}/refund`, { headers: asAdmin });
+    assert.equal((await call(env, 'GET', '/api/me', { headers: auth(a.session) })).data.user.score.buy, 0);
+    assert.equal((await call(env, 'GET', '/api/ranking')).data.top[0].points, 14);
 });

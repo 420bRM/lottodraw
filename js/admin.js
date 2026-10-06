@@ -203,9 +203,9 @@
         const list = q ? members.filter(m => (m.nick || '').toLowerCase().includes(q) || (m.email || '').includes(q)) : members;
         const table = $('members-table');
         table.textContent = '';
-        table.appendChild(el('thead', {}, [el('tr', {}, ['별명', '이메일', '가입', '최근 로그인', '무료 체험', '♥', '$', ''].map(h => el('th', { text: h })))]));
+        table.appendChild(el('thead', {}, [el('tr', {}, ['별명', '이메일', '가입', '최근 로그인', '무료 체험', '♥', '$', '₩', '점수', ''].map(h => el('th', { text: h })))]));
         const body = el('tbody');
-        if (!list.length) body.appendChild(el('tr', {}, [el('td', { colspan: '8', text: q ? '찾는 회원이 없습니다.' : '아직 가입한 회원이 없습니다.' })]));
+        if (!list.length) body.appendChild(el('tr', {}, [el('td', { colspan: '10', text: q ? '찾는 회원이 없습니다.' : '아직 가입한 회원이 없습니다.' })]));
         list.forEach(m => {
             const trial = m.trial ? `${m.trial.keyId.toUpperCase()} · ${m.trial.expiresAt > Date.now() ? when(m.trial.expiresAt) + '까지' : '끝남'}` : '—';
             const tools = el('td', { className: 'admin-row-tools' }, [
@@ -215,7 +215,8 @@
             body.appendChild(el('tr', {}, [
                 el('td', { text: m.nick || '—' }), el('td', { text: m.email || '' }), el('td', { text: when(m.createdAt) }),
                 el('td', { text: m.lastAt ? when(m.lastAt) : '' }), el('td', { text: trial }),
-                el('td', { text: String(m.hearts || 0) }), el('td', { text: String(m.dollars || 0) }), tools,
+                el('td', { text: String(m.hearts || 0) }), el('td', { text: String(m.dollars || 0) }), el('td', { text: String(m.wons || 0) }),
+                el('td', { title: m.score ? `출석 ${m.score.days}일 · 반응 ${m.score.reacts}개 · 이용권 ${(m.buy || 0).toLocaleString()}원` : '', text: m.score ? String(m.score.total) : '0' }), tools,
             ]));
         });
         table.appendChild(body);
@@ -224,10 +225,10 @@
     function renderReactionTotals(rows) {
         const table = $('reactions-table');
         table.textContent = '';
-        table.appendChild(el('thead', {}, [el('tr', {}, ['카드', '♥ 좋아요', '$ 대박 기원'].map(h => el('th', { text: h })))]));
+        table.appendChild(el('thead', {}, [el('tr', {}, ['카드', '♥ 좋아요', '$ 대박 기원', '₩ 원화'].map(h => el('th', { text: h })))]));
         const body = el('tbody');
-        if (!rows.length) body.appendChild(el('tr', {}, [el('td', { colspan: '3', text: '아직 누른 사람이 없습니다.' })]));
-        rows.forEach(r => body.appendChild(el('tr', {}, [el('td', { text: r.id }), el('td', { text: String(r.h) }), el('td', { text: String(r.d) })])));
+        if (!rows.length) body.appendChild(el('tr', {}, [el('td', { colspan: '4', text: '아직 누른 사람이 없습니다.' })]));
+        rows.forEach(r => body.appendChild(el('tr', {}, [el('td', { text: r.id }), el('td', { text: String(r.h) }), el('td', { text: String(r.d) }), el('td', { text: String(r.w || 0) })])));
         table.appendChild(body);
     }
 

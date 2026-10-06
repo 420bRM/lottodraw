@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회원 랭킹 | lottodraw.kr</title>
+    <meta name="description" content="lottodraw.kr 회원 랭킹 — 출석, 반응, 이용권으로 쌓은 점수 순위.">
+    <meta name="robots" content="noindex">
+    <link rel="canonical" href="https://www.lottodraw.kr/ranking.html">
+    <meta name="google-adsense-account" content="ca-pub-9372871176021283">
+    <link rel="stylesheet" href="css/site.css">
+    <script src="js/i18n-dict.js"></script>
+    <script src="js/premium-config.js"></script>
+    <script src="js/i18n.js"></script>
+    <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "91c08d8a39d944e69c10024f2314b955"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+<body>
+<div class="page">
+    <header class="banner">
+        <a class="brand" href="index.html">
+            <span class="brand-name">LOTTODRAW.KR</span>
+            <span class="brand-tag" data-i18n="brand.tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
+        </a>
+        <div class="banner-right">
+            <p class="latest-callout" id="latest-callout" data-i18n="header.latestLoading">최신 회차 불러오는 중…</p>
+            <a class="sticker" href="statistics.html" data-i18n-html="header.sticker">최근 <b>5개월</b> 통계</a>
+            <div class="lang-switch" role="group" aria-label="Language">
+                <button type="button" data-lang-btn="ko">KO</button><button type="button" data-lang-btn="en">EN</button>
+            </div>
+        </div>
+    </header>
+
+    <nav class="nav" aria-label="주 메뉴" data-i18n-attr="aria-label:nav.aria">
+        <ul>
+            <li><a href="index.html" data-i18n="nav.index">생성기 · 통계</a></li>
+            <li><a href="draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="top-prize.html" data-i18n="nav.topPrize">TOP 50 당첨금</a></li>
+            <li><a href="tax.html" data-i18n="nav.tax">실수령액 계산</a></li>
+            <li><a href="blog/index.html" data-i18n="nav.blog">블로그</a></li>
+            <li><a href="about.html" data-i18n="nav.about">ABOUT</a></li>
+        </ul>
+    </nav>
+
+        <main class="prose rank-page">
+        <h1 data-i18n="rank.h1">회원 랭킹</h1>
+        <p class="stat-lead" data-i18n="rank.lead">출석하고, 카드에 반응을 남기고, 이용권을 쓰면 점수가 쌓입니다. 별명을 정한 회원만 순위에 오릅니다.</p>
+
+        <div class="rank-me" id="rank-me" hidden></div>
+
+        <div class="table-wrap">
+            <table class="data-table rank-table" id="rank-table">
+                <thead><tr><th data-i18n="rank.col.rank">순위</th><th data-i18n="rank.col.nick">별명</th><th data-i18n="rank.col.points">점수</th><th data-i18n="rank.col.days">출석</th></tr></thead>
+                <tbody><tr><td colspan="4" data-i18n="rank.loading">불러오는 중…</td></tr></tbody>
+            </table>
+        </div>
+
+        <h2 data-i18n="rank.how">점수는 이렇게 쌓입니다</h2>
+        <ul id="rank-rules">
+            <li data-i18n="rank.r1">출석: 하루 한 번, 로그인한 채 사이트에 들어오면 +10점</li>
+            <li data-i18n="rank.r2">반응: 카드에 남긴 ♥ · $ · ₩ 하나마다 +2점 (취소하면 빠집니다)</li>
+            <li data-i18n="rank.r3">이용권: 로그인한 채 산 이용권 금액 100원마다 +1점 (환불하면 빠집니다)</li>
+        </ul>
+        <p class="note" data-i18n="rank.note">점수는 순위 표시용입니다. 현금이나 상품으로 바꿀 수 없고, 당첨과도 관계가 없습니다.</p>
+    </main>
+
+    <footer class="footer">
+        <ul class="footer-nav">
+            <li><a href="index.html" data-i18n="footer.home">HOME</a></li>
+            <li><a href="draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="top-prize.html" data-i18n="footer.top">TOP 50</a></li>
+            <li><a href="tax.html" data-i18n="footer.tax">실수령액</a></li>
+            <li><a href="blog/index.html" data-i18n="nav.blog">블로그</a></li>
+            <li><a href="about.html" data-i18n="nav.about">ABOUT</a></li>
+        </ul>
+        <p><a href="privacy.html" data-i18n="footer.privacy">개인정보 처리방침</a> · <a href="terms.html" data-i18n="footer.terms">이용약관</a> · <a href="contact.html" data-i18n="footer.contact">문의</a></p>
+        <p data-i18n-html="footer.copy">&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권</p>
+    </footer>
+</div>
+
+<script src="js/site-header.js"></script>
+<script src="js/ranking.js"></script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9372871176021283" crossorigin="anonymous"></script>
+</body>
+</html>

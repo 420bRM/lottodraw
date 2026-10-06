@@ -72,9 +72,17 @@
         return Promise.race([p, new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))]);
     }
 
+    // 로그인(js/account.js)한 채 주문하면 그 주문을 계정과 이어 랭킹 점수에 넣는다
+    function memberAuth() {
+        try {
+            const s = JSON.parse(localStorage.getItem('lottodraw.account') || 'null');
+            return s && s.session ? { Authorization: 'Bearer ' + s.session } : {};
+        } catch (e) { return {}; }
+    }
+
     async function call(path, opts) {
         opts = opts || {};
-        const init = { method: opts.method || 'GET', headers: { Accept: 'application/json' } };
+        const init = { method: opts.method || 'GET', headers: Object.assign({ Accept: 'application/json' }, opts.headers || {}) };
         if (opts.body !== undefined) {
             init.headers['Content-Type'] = 'application/json';
             init.body = JSON.stringify(opts.body);
@@ -197,7 +205,7 @@
         setStatus('co-status', T('co.creating'));
         try {
             if (current && current.order && current.order.status === 'pending') await cancelOrder(true);
-            const r = await call('/api/orders', { method: 'POST', body: { plan: currentPlan, method, name, phone, contact, agree: true } });
+            const r = await call('/api/orders', { method: 'POST', body: { plan: currentPlan, method, name, phone, contact, agree: true }, headers: memberAuth() });
             current = { id: r.order.id, token: r.token, payurl: r.payurl || null, createdAt: Date.now(), order: r.order };
             saveOrder();
             $('checkout').hidden = true;
