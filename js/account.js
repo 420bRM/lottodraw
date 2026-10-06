@@ -4,8 +4,7 @@
  * 서버(/api/config)가 로그인을 켜 두지 않았으면 아무것도 그리지 않는다.
  *
  *   머리글   "로그인 · 3일 무료" 단추 → 구글 로그인 창. 로그인하면 "내 계정" 메뉴(체험 기간, 로그아웃, 탈퇴)
- *   카드     오른쪽 아래 "+" → ♥(좋아요)·$(대박 기원) 중 고르기. 회원에게는 자기가 누른 아이콘만 보인다
- *            (합계는 관리자 페이지에서만). 누르려면 로그인.
+ *   카드     오른쪽 아래 "+" → ♥(좋아요)·$(대박 기원) 중 고르기. 수는 아이콘+숫자로 누구나 보고, 누르려면 로그인.
  *            카드가 없는 페이지는 본문 끝에 하나(약관·개인정보·문의·소개 페이지는 빼고).
  *   별명     처음 가입하면 정하라고 묻고(건너뛸 수 있음), "내 계정"에서 바꾼다. 머리글 단추에 보인다.
  *   체험 키  처음 가입하면 서버가 3일 무료 체험 키를 준다. 이 브라우저에 더 긴 이용권이 없으면 그 키를 넣는다.
@@ -369,8 +368,7 @@
     }
 
     /* ───── 좋아요 ─────
-     * 카드마다 오른쪽 아래에 "+" 단추. 누르면 ♥(좋아요)와 $(대박 기원) 중에 고른다. 내가 누른 것만 아이콘으로 보인다.
-     * 합계는 회원에게 보여 주지 않는다 — 관리자 페이지 "회원" 칸에서 본다.
+     * 카드마다 오른쪽 아래에 "+" 단추. 누르면 ♥(좋아요)와 $(대박 기원) 중에 고른다. 누른 수는 아이콘 옆 숫자로만.
      * 카드가 없는 페이지(통계 12쪽, 블로그, 회차 …)는 본문 끝에 같은 단추 하나.
      * 카드는 스크립트가 나중에 그리기도 해서(홈 통계·상세 분석) 새로 생기는 카드를 지켜보다가 붙인다.
      */
@@ -394,6 +392,7 @@
 
     const ID_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
     const NO_CARD = /^(plan-|order|checkout|unlock|reveal|license|ob-|admin)/;   // 결제·주문 칸에는 달지 않는다
+    const counts = {};    // 항목 → { h, d }
     const widgets = {};   // 항목 → [위젯 …]
 
     function pageId() {
@@ -445,16 +444,19 @@
         });
     }
 
-    // 내가 누른 것만 아이콘으로 보인다(색이 찬다). 눌러서 바로 취소할 수도 있다.
+    // 숫자가 있는 것만 아이콘+숫자로 보인다. 내가 누른 것은 색이 찬다. 눌러서 바로 취소할 수도 있다.
     function paint(box) {
         const id = box.dataset.rx;
+        const c = counts[id] || { h: 0, d: 0 };
         const mine = (me && me.reactions && me.reactions[id]) || '';
         const chips = box.querySelector('.rx-chips');
         chips.textContent = '';
         ['h', 'd'].forEach(type => {
-            if (mine.indexOf(type) === -1) return;
-            chips.appendChild(el('button', { type: 'button', className: 'rx-chip rx-' + type, 'aria-pressed': 'true',
-                title: LABEL[type](), 'aria-label': LABEL[type](), on: { click: () => press(id, type) } }, [icon(type)]));
+            const on = mine.indexOf(type) !== -1;
+            if (!c[type] && !on) return;
+            chips.appendChild(el('button', { type: 'button', className: 'rx-chip rx-' + type, 'aria-pressed': on ? 'true' : 'false',
+                title: LABEL[type](), 'aria-label': LABEL[type]() + ' ' + (c[type] || 0),
+                on: { click: () => press(id, type) } }, [icon(type), el('span', { className: 'rx-n', text: String(c[type] || 0) })]));
         });
         box.querySelectorAll('.rx-opt').forEach(b => {
             const type = b.classList.contains('rx-h') ? 'h' : 'd';
@@ -472,6 +474,7 @@
             me.reactions = me.reactions || {};
             if (got.mine) me.reactions[id] = got.mine; else delete me.reactions[id];
             temp.set(ME_STORE, Object.assign({ at: Date.now() }, me));
+            counts[id] = got.counts;
             repaint(id);
         } catch (e) {
             if (e.status === 401) { signOutLocal(); renderHeader(); openLogin(tr('acct.expired', '로그인이 끝났습니다. 다시 로그인해 주세요.')); }
@@ -481,7 +484,9 @@
         }
     }
 
-    // 아직 단추가 없는 카드에 붙인다
+    // 아직 단추가 없는 카드에 붙이고, 처음 보는 항목의 수를 한 번에 받는다
+    let pending = new Set();
+    let timer = null;
     function attachCards() {
         document.querySelectorAll('.card').forEach(card => {
             if (card.querySelector(':scope > .rx') || card.closest('.rx')) return;
@@ -489,7 +494,23 @@
             if (!ID_RE.test(id)) return;
             card.classList.add('has-rx');
             card.appendChild(makeWidget(id, 'rx-card'));
+            if (!counts[id]) pending.add(id);
         });
+        flush();
+    }
+    function flush() {
+        clearTimeout(timer);
+        timer = setTimeout(async () => {
+            const ids = Array.from(pending).slice(0, 30);
+            ids.forEach(i => pending.delete(i));
+            if (!ids.length) return;
+            try {
+                // 방금 누른 수가 브라우저에 남은 옛 응답으로 보이지 않게 늘 서버에 다시 묻는다
+                const got = (await request('/api/reactions?ids=' + encodeURIComponent(ids.join(',')), { cache: 'no-cache' })).counts || {};
+                ids.forEach(i => { counts[i] = got[i] || { h: 0, d: 0 }; repaint(i); });
+            } catch (e) { /* 수를 못 받아도 단추는 쓸 수 있다 */ }
+            if (pending.size) flush();
+        }, 150);
     }
 
     function renderReactions() {
@@ -498,6 +519,8 @@
         const id = pageId();
         if (!document.querySelector('.card') && main && NO_BAR.indexOf(id) === -1) {
             main.appendChild(makeWidget(id, 'rx-page'));
+            pending.add(id);
+            flush();
             return;
         }
         attachCards();

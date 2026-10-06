@@ -166,30 +166,28 @@ test('구글 토큰 위조·다른 사이트·만료·미확인 이메일은 거
     assert.equal((await call(env, 'GET', '/api/me', { headers: auth('x'.repeat(43)) })).status, 401);
 });
 
-test('좋아요: 하트·달러를 따로 켜고 끄고, 회원은 자기 것만 보고 합계는 관리자만 본다', async () => {
+test('좋아요: 하트·달러를 따로 켜고 끄고, 누른 수는 누구나 보며, 누르려면 로그인', async () => {
     const env = await fresh();
     const a = (await login(env, { sub: 'A', email: 'a@gmail.com' })).data.session;
     const b = (await login(env, { sub: 'B', email: 'b@gmail.com' })).data.session;
-    const totals = async () => {
-        const r = (await call(env, 'GET', '/api/admin/members', { headers: asAdmin })).data.reactions;
-        return Object.fromEntries(r.map(x => [x.id, { h: x.h, d: x.d }]));
-    };
+    const counts = async () => (await call(env, 'GET', '/api/reactions?ids=statistics-sum,blog-ac-value-explained')).data.counts;
+    assert.deepEqual((await counts())['statistics-sum'], { h: 0, d: 0 });
 
     assert.equal((await call(env, 'POST', '/api/reactions', { body: { id: 'statistics-sum', type: 'h' } })).status, 401);
     const press = (s, id, type) => call(env, 'POST', '/api/reactions', { body: { id, type }, headers: auth(s) });
-    assert.deepEqual((await press(a, 'statistics-sum', 'h')).data, { mine: 'h' }, '합계는 돌려주지 않는다');
-    assert.deepEqual((await press(a, 'statistics-sum', 'd')).data, { mine: 'hd' });
-    assert.deepEqual((await press(b, 'statistics-sum', 'h')).data, { mine: 'h' });
-    assert.deepEqual((await press(a, 'statistics-sum', 'h')).data, { mine: 'd' }, '다시 누르면 취소');
-    assert.deepEqual((await totals())['statistics-sum'], { h: 1, d: 1 });
+    assert.deepEqual((await press(a, 'statistics-sum', 'h')).data, { counts: { h: 1, d: 0 }, mine: 'h' });
+    assert.deepEqual((await press(a, 'statistics-sum', 'd')).data, { counts: { h: 1, d: 1 }, mine: 'hd' });
+    assert.deepEqual((await press(b, 'statistics-sum', 'h')).data, { counts: { h: 2, d: 1 }, mine: 'h' });
+    assert.deepEqual((await press(a, 'statistics-sum', 'h')).data, { counts: { h: 1, d: 1 }, mine: 'd' }, '다시 누르면 취소');
+    assert.deepEqual((await counts())['statistics-sum'], { h: 1, d: 1 });
     assert.deepEqual((await call(env, 'GET', '/api/me', { headers: auth(a) })).data.reactions, { 'statistics-sum': 'd' });
-
-    // 공개 합계 주소는 없다, 관리자 명부는 토큰이 있어야 한다
-    assert.equal((await call(env, 'GET', '/api/reactions?ids=statistics-sum')).status, 404);
-    assert.equal((await call(env, 'GET', '/api/admin/members')).status, 401);
 
     assert.equal((await press(a, 'Bad Id!', 'h')).data.error, 'bad_ids');
     assert.equal((await press(a, 'statistics-sum', 'x')).data.error, 'bad_type');
+    assert.equal((await call(env, 'GET', '/api/reactions?ids=')).data.error, 'bad_ids');
+    const many = Array.from({ length: 31 }, (_, i) => 'p' + i).join(',');
+    assert.equal((await call(env, 'GET', '/api/reactions?ids=' + many)).data.error, 'bad_ids');
+    assert.equal((await call(env, 'GET', '/api/admin/members')).status, 401, '회원 명부는 관리자만');
 });
 
 test('회원 명부: 별명·이메일·가입일·체험·누른 수를 보고, 별명을 지우거나 회원을 삭제한다', async () => {

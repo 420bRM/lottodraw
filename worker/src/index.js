@@ -88,6 +88,7 @@ async function route(request, env, ctx) {
     if (path === '/api/me' && method === 'GET') return me(request, env);
     if (path === '/api/me/delete' && method === 'POST') return deleteMe(request, env, ctx);
     if (path === '/api/me/nickname' && method === 'POST') return setNickname(request, env);
+    if (path === '/api/reactions' && method === 'GET') return getReactions(request, env, url);
     if (path === '/api/reactions' && method === 'POST') return react(request, env);
 
     if (path.startsWith('/api/admin/')) {
@@ -661,6 +662,19 @@ async function setNickname(request, env) {
     return json(request, env, { user: r.user });
 }
 
+function reactionIds(raw) {
+    const ids = String(raw || '').split(',').map(s => s.trim()).filter(Boolean);
+    if (!ids.length || ids.length > 30 || !ids.every(i => ITEM_RE.test(i))) throw new HttpError(400, 'bad_ids', '항목 이름이 올바르지 않습니다.');
+    return [...new Set(ids)];
+}
+
+// 카드별 누른 수. 누구나 본다.
+async function getReactions(request, env, url) {
+    needLogin(env);
+    const got = await community(env, 'counts', { items: reactionIds(url.searchParams.get('ids')) });
+    return json(request, env, got, 200, { 'Cache-Control': 'public, max-age=15' }, true);
+}
+
 async function react(request, env) {
     const s = await sessionUser(request, env);
     const body = await readJson(request);
@@ -670,8 +684,7 @@ async function react(request, env) {
     await limited(env.REACT_LIMIT, s.hash);
     const r = await community(env, 'react', { sub: s.sub, item, type: body.type });
     if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
-    // 합계는 관리자 페이지에서만 본다. 회원에게는 자기가 누른 것만 돌려준다.
-    return json(request, env, { mine: r.mine });
+    return json(request, env, r);
 }
 
 /* ───── 관리자 ───── */

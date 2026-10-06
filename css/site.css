@@ -994,13 +994,15 @@ html.home { scroll-behavior: smooth; }
     margin: 0; border: 1px solid var(--line); border-radius: 999px;
     background: #fff; color: var(--text); font: bold 12px/1 var(--font); cursor: pointer;
 }
-.rx-chip, .rx-add, .rx-opt { width: 26px; height: 26px; padding: 0; }
+.rx-chip { height: 24px; padding: 0 8px 0 6px; }
+.rx-add, .rx-opt { width: 26px; height: 26px; padding: 0; }
 .rx-add { color: var(--muted); font-size: 16px; font-weight: normal; }
 .rx-add:hover, .rx-add[aria-expanded="true"] { border-color: var(--brand); color: var(--brand); }
 .rx-ico { width: 14px; height: 14px; fill: currentColor; }
 .rx-opt .rx-ico { width: 16px; height: 16px; }
 .rx .rx-h { color: #e0245e; }
 .rx .rx-d { color: #1a8f3c; }
+.rx .rx-n { color: var(--text); }
 .rx .rx-h:hover, .rx .rx-h[aria-pressed="true"] { border-color: #e0245e; background: #fdeef3; }
 .rx .rx-d:hover, .rx .rx-d[aria-pressed="true"] { border-color: #1a8f3c; background: #eaf7ee; }
 .rx-pick { padding: 2px; border-radius: 999px; background: #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); }
