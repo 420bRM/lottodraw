@@ -87,6 +87,7 @@ async function route(request, env, ctx) {
     if (path === '/api/auth/logout' && method === 'POST') return logout(request, env);
     if (path === '/api/me' && method === 'GET') return me(request, env);
     if (path === '/api/me/delete' && method === 'POST') return deleteMe(request, env, ctx);
+    if (path === '/api/me/nickname' && method === 'POST') return setNickname(request, env);
     if (path === '/api/reactions' && method === 'GET') return getReactions(request, env, url);
     if (path === '/api/reactions' && method === 'POST') return react(request, env);
 
@@ -642,6 +643,23 @@ async function deleteMe(request, env, ctx) {
     await community(env, 'userDelete', { sub: s.sub });
     ctx.waitUntil(notify(env, '회원 탈퇴 1건'));
     return json(request, env, { ok: true });
+}
+
+// 별명: 한글·영문·숫자·밑줄 2~12자. 운영자로 오해할 만한 이름은 막는다.
+const NICK_RE = /^[가-힣a-zA-Z0-9_]{2,12}$/;
+const NICK_RESERVED = /(admin|관리자|운영자|lottodraw|로또드로우|동행복권|official|공식)/i;
+
+async function setNickname(request, env) {
+    const s = await sessionUser(request, env);
+    await limited(env.REACT_LIMIT, s.hash);
+    const body = await readJson(request);
+    const nick = String(body.nickname || '').normalize('NFC').trim();
+    if (!NICK_RE.test(nick)) throw new HttpError(400, 'bad_nick', '별명은 한글·영문·숫자·밑줄(_)로 2~12자입니다.');
+    if (NICK_RESERVED.test(nick)) throw new HttpError(400, 'reserved_nick', '쓸 수 없는 별명입니다. 다른 별명을 골라 주세요.');
+    const r = await community(env, 'setNick', { sub: s.sub, nick, key: nick.toLowerCase(), now: Date.now() });
+    if (r.error === 'taken') throw new HttpError(409, 'taken_nick', '이미 쓰고 있는 별명입니다.');
+    if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
+    return json(request, env, { user: r.user });
 }
 
 function reactionIds(raw) {

@@ -983,23 +983,32 @@ html.home { scroll-behavior: smooth; }
 }
 .acct-toast a { color: #9cc3ff; font-weight: bold; }
 
-.react-bar {
-    display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px;
-    margin: 18px auto 6px; padding: 10px 12px;
-    border-top: 1px dashed var(--line);
+.card.has-rx { position: relative; padding-bottom: 34px; }
+.rx { display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
+.rx-card { position: absolute; right: 8px; bottom: 6px; }
+.rx-page { margin: 18px 0 6px; padding-top: 10px; border-top: 1px dashed var(--line); }
+.rx.is-busy { opacity: 0.6; pointer-events: none; }
+.rx-chips, .rx-pick { display: inline-flex; gap: 4px; }
+.rx button {
+    display: inline-flex; align-items: center; justify-content: center; gap: 3px;
+    margin: 0; border: 1px solid var(--line); border-radius: 999px;
+    background: #fff; color: var(--text); font: bold 12px/1 var(--font); cursor: pointer;
 }
-.react-bar:empty { display: none; }
-.react-bar.is-busy { opacity: 0.6; pointer-events: none; }
-.react-q { color: var(--muted); font-size: 13px; }
-.react-btn {
-    display: inline-flex; align-items: center; gap: 5px;
-    margin: 0; padding: 5px 12px; border: 1px solid var(--line); border-radius: 999px;
-    background: #fff; color: var(--text); font: 14px/1.3 var(--font); cursor: pointer;
-}
-.react-ico { font-weight: bold; font-size: 15px; }
-.react-h .react-ico { color: #e0245e; }
-.react-d .react-ico { color: #1a8f3c; }
-.react-n { font-weight: bold; min-width: 1ch; }
-.react-h:hover, .react-h[aria-pressed="true"] { border-color: #e0245e; background: #fdeef3; }
-.react-d:hover, .react-d[aria-pressed="true"] { border-color: #1a8f3c; background: #eaf7ee; }
-@media (max-width: 599px) { .react-label { display: none; } }
+.rx-chip { height: 24px; padding: 0 8px 0 6px; }
+.rx-add, .rx-opt { width: 26px; height: 26px; padding: 0; }
+.rx-add { color: var(--muted); font-size: 16px; font-weight: normal; }
+.rx-add:hover, .rx-add[aria-expanded="true"] { border-color: var(--brand); color: var(--brand); }
+.rx-ico { width: 14px; height: 14px; fill: currentColor; }
+.rx-opt .rx-ico { width: 16px; height: 16px; }
+.rx .rx-h { color: #e0245e; }
+.rx .rx-d { color: #1a8f3c; }
+.rx .rx-n { color: var(--text); }
+.rx .rx-h:hover, .rx .rx-h[aria-pressed="true"] { border-color: #e0245e; background: #fdeef3; }
+.rx .rx-d:hover, .rx .rx-d[aria-pressed="true"] { border-color: #1a8f3c; background: #eaf7ee; }
+.rx-pick { padding: 2px; border-radius: 999px; background: #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); }
+.acct-nick { font-weight: bold; font-size: 15px; color: var(--brand); }
+.acct-input { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 6px; font: 16px var(--font); }
+.acct-input:focus { border-color: var(--brand); outline: none; }
+.acct-hint { margin: 6px 0 8px; color: var(--muted); font-size: 12px; }
+.acct-actions { display: flex; gap: 8px; }
+.acct-actions .btn { flex: 1; }

@@ -5,13 +5,14 @@
 // 한 곳에서 차례로 처리해 좋아요 수가 어긋나지 않는다.
 //
 // 저장하는 것 (개인정보 처리방침과 맞출 것)
-//   u:<구글 계정 번호>   { sub, email, createdAt, lastAt, trial, rx, sess }
+//   u:<구글 계정 번호>   { sub, email, nick, createdAt, lastAt, trial, rx, sess }
 //                        trial: { orderId, keyId, key, expiresAt } — 가입 때 한 번 주는 무료 체험 키
 //                        rx:    { 항목: 'h' | 'd' | 'hd' } — 내가 누른 좋아요
 //                        sess:  로그인 세션 해시 (최근 5개)
 //   s:<세션 해시>        { sub, exp }  — 30일
 //   t:<계정 번호 해시>   { at }        — 무료 체험을 받은 계정. 탈퇴해도 1년 남겨 다시 가입해 또 받는 것을 막는다
 //   r:<항목>             { h, d }      — 좋아요 수
+//   n:<별명 소문자>      계정 번호      — 별명이 겹치지 않게
 //   meta                 { users, trials }
 //
 // 이름·사진은 받지 않는다. 이메일은 "로그인한 계정" 표시와 문의 응대에만 쓴다.
@@ -86,6 +87,20 @@ const OPS = {
         return { ok: true, user: view(user) };
     },
 
+    // 별명 정하기·바꾸기. 다른 사람이 쓰는 별명이면 거절한다(대소문자 무시).
+    async setNick({ sub, nick, key, now }) {
+        const user = await this.storage.get('u:' + sub);
+        if (!user) return { error: 'no_user' };
+        const owner = await this.storage.get('n:' + key);
+        if (owner && owner !== sub) return { error: 'taken' };
+        if (user.nick && user.nick.toLowerCase() !== key) await this.storage.delete('n:' + user.nick.toLowerCase());
+        await this.storage.put('n:' + key, sub);
+        user.nick = nick;
+        user.nickAt = now;
+        await this.storage.put('u:' + sub, user);
+        return { ok: true, user: view(user) };
+    },
+
     async sessionCreate({ sub, hash, exp }) {
         const user = await this.storage.get('u:' + sub);
         if (!user) return { ok: false };
@@ -131,6 +146,7 @@ const OPS = {
             await this.storage.put('r:' + item, c);
         }
         for (const h of user.sess || []) await this.storage.delete('s:' + h);
+        if (user.nick) await this.storage.delete('n:' + user.nick.toLowerCase());
         await this.storage.delete('u:' + sub);
         await this.bump('users', -1);
         return { ok: true, trial: user.trial || null };
@@ -171,7 +187,7 @@ const OPS = {
 
 function view(user) {
     const trial = user.trial && user.trial.key ? { key: user.trial.key, keyId: user.trial.keyId, expiresAt: user.trial.expiresAt } : null;
-    return { email: user.email, createdAt: user.createdAt, trial };
+    return { email: user.email, nick: user.nick || null, createdAt: user.createdAt, trial };
 }
 
 function reply(data, status) {
