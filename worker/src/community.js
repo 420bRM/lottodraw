@@ -5,7 +5,9 @@
 // 한 곳에서 차례로 처리해 좋아요 수가 어긋나지 않는다.
 //
 // 저장하는 것 (개인정보 처리방침과 맞출 것)
-//   u:<구글 계정 번호>   { sub, email, nick, createdAt, lastAt, trial, rx, sess }
+//   u:<구글 계정 번호>   { sub, ref, email, nick, createdAt, lastAt, trial, rx, sess, att, buy }
+//                        att: { days, last } — 출석한 날 수와 마지막 출석일(한국 날짜)
+//                        buy: 로그인한 채 산 이용권 금액 합계(원) — 랭킹 점수용
 //                        trial: { orderId, keyId, key, expiresAt } — 가입 때 한 번 주는 무료 체험 키
 //                        rx:    { 항목: 'h' | 'd' | 'hd' } — 내가 누른 좋아요
 //                        sess:  로그인 세션 해시 (최근 5개)
@@ -13,6 +15,7 @@
 //   t:<계정 번호 해시>   { at }        — 무료 체험을 받은 계정. 탈퇴해도 1년 남겨 다시 가입해 또 받는 것을 막는다
 //   r:<항목>             { h, d }      — 좋아요 수 (누구나 본다. 관리자 페이지에는 카드별 합계 표)
 //   n:<별명 소문자>      계정 번호      — 별명이 겹치지 않게
+//   m:<회원 참조값>      계정 번호      — 주문에 남기는 되돌릴 수 없는 참조값(sha256) → 계정. 탈퇴하면 지운다
 //   meta                 { users, trials }
 //
 // 이름·사진은 받지 않는다. 이메일은 "로그인한 계정" 표시와 문의 응대에만 쓴다.
@@ -23,7 +26,28 @@ const TRIAL_MEMORY_DAYS = 365;
 const MAX_SESSIONS = 5;
 const DAY = 86400 * 1000;
 
-export const REACT_TYPES = ['h', 'd'];
+export const REACT_TYPES = ['h', 'd', 'w'];   // ♥ 좋아요, $ 대박 기원, ₩ 원화
+
+// 랭킹 점수. 바꾸려면 여기만 고친다(이용약관 7조 문구도 같이).
+export const POINTS = { attend: 10, react: 2, wonPerPoint: 100 };
+const kstDay = ms => new Date(ms + 9 * 3600 * 1000).toISOString().slice(0, 10);
+
+export function score(user) {
+    const days = (user.att && user.att.days) || 0;
+    const reacts = Object.values(user.rx || {}).reduce((n, m) => n + m.length, 0);
+    const buy = Math.floor((user.buy || 0) / POINTS.wonPerPoint);
+    return { total: days * POINTS.attend + reacts * POINTS.react + buy, days, reacts, buy };
+}
+
+// 오늘(한국 날짜) 처음이면 출석을 하나 올린다. 올렸으면 true.
+function attend(user, now) {
+    const today = kstDay(now);
+    user.att = user.att || { days: 0, last: '' };
+    if (user.att.last === today) return false;
+    user.att.days += 1;
+    user.att.last = today;
+    return true;
+}
 export const ITEM_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
 
 export class Community {
@@ -54,7 +78,7 @@ export class Community {
 
 const OPS = {
     // 구글 로그인 뒤. 처음이면 계정을 만들고, 무료 체험을 줄 수 있는지 알려 준다.
-    async login({ sub, email, subHash, now }) {
+    async login({ sub, email, subHash, ref, now }) {
         let user = await this.storage.get('u:' + sub);
         const isNew = !user;
         if (!user) {
@@ -68,13 +92,15 @@ const OPS = {
         }
         user.email = email;
         user.lastAt = now;
+        if (ref && user.ref !== ref) { user.ref = ref; await this.storage.put('m:' + ref, sub); }
+        const attended = attend(user, now);
         await this.storage.put('u:' + sub, user);
         // 발급은 처음 로그인한 요청이 한다. 단추를 두 번 눌러 겹친 요청은 건너뛰고(키가 두 개 생기지 않게),
         // 발급 도중 실패해 pending 이 1분 넘게 남았으면 다음 로그인 때 다시 발급한다.
         const pending = !!(user.trial && user.trial.pending);
         const needTrial = pending && (isNew || now - (user.trial.at || 0) > 60 * 1000);
         if (needTrial && !isNew) { user.trial.at = now; await this.storage.put('u:' + sub, user); }
-        return { isNew, needTrial, user: view(user) };
+        return { isNew, needTrial, attended, user: view(user) };
     },
 
     async setTrial({ sub, trial }) {
@@ -111,7 +137,8 @@ const OPS = {
         return { ok: true };
     },
 
-    async sessionGet({ hash, now }) {
+    // markAttend: 내 정보 조회(/api/me)일 때만 오늘 출석을 올린다
+    async sessionGet({ hash, now, markAttend }) {
         const s = await this.storage.get('s:' + hash);
         if (!s) return { user: null };
         const user = await this.storage.get('u:' + s.sub);
@@ -119,7 +146,40 @@ const OPS = {
             await this.storage.delete('s:' + hash);
             return { user: null };
         }
-        return { sub: s.sub, user: view(user), rx: user.rx || {} };
+        let attended = false;
+        if (markAttend) {
+            attended = attend(user, now);
+            if (attended) { user.lastAt = now; await this.storage.put('u:' + s.sub, user); }
+        }
+        return { sub: s.sub, user: view(user), rx: user.rx || {}, attended };
+    },
+
+    // 로그인한 채 산 이용권: 결제되면 +금액, 환불되면 -금액 (랭킹 점수용)
+    async credit({ ref, amount }) {
+        const sub = await this.storage.get('m:' + ref);
+        const user = sub && await this.storage.get('u:' + sub);
+        if (!user) return { ok: false };
+        user.buy = Math.max(0, (user.buy || 0) + amount);
+        await this.storage.put('u:' + sub, user);
+        return { ok: true };
+    },
+
+    // 랭킹: 별명을 정한 회원만 공개 목록에 오른다(상위 50명). 내 순위는 별명이 없어도 알려 준다.
+    async ranking({ sub, limit }) {
+        const users = await this.storage.list({ prefix: 'u:', limit: 5000 });
+        const all = [];
+        for (const u of users.values()) all.push({ sub: u.sub, nick: u.nick || null, createdAt: u.createdAt || 0, s: score(u) });
+        all.sort((a, b) => (b.s.total - a.s.total) || (a.createdAt - b.createdAt));
+        const named = all.filter(x => x.nick);
+        const rankOf = (list, x) => list.findIndex(y => y.s.total === x.s.total) + 1;   // 같은 점수는 같은 순위
+        const top = named.slice(0, limit || 50).map(x => ({ rank: rankOf(named, x), nick: x.nick, points: x.s.total, days: x.s.days }));
+        let me = null;
+        const mine = sub && all.find(x => x.sub === sub);
+        if (mine) {
+            const pool = mine.nick ? named : named.concat([mine]).sort((a, b) => (b.s.total - a.s.total) || (a.createdAt - b.createdAt));
+            me = Object.assign({ rank: rankOf(pool, mine), of: pool.length, nick: mine.nick }, mine.s);
+        }
+        return { top, me, total: named.length };
     },
 
     async sessionDelete({ hash }) {
@@ -147,6 +207,7 @@ const OPS = {
         }
         for (const h of user.sess || []) await this.storage.delete('s:' + h);
         if (user.nick) await this.storage.delete('n:' + user.nick.toLowerCase());
+        if (user.ref) await this.storage.delete('m:' + user.ref);
         await this.storage.delete('u:' + sub);
         await this.bump('users', -1);
         return { ok: true, trial: user.trial || null };
@@ -162,11 +223,11 @@ const OPS = {
         const next = REACT_TYPES.filter(t => (t === type ? on : mine.includes(t))).join('');
         if (next) rx[item] = next; else delete rx[item];
         user.rx = rx;
-        const c = (await this.storage.get('r:' + item)) || { h: 0, d: 0 };
+        const c = (await this.storage.get('r:' + item)) || { h: 0, d: 0, w: 0 };
         c[type] = Math.max(0, (c[type] || 0) + (on ? 1 : -1));
         await this.storage.put('r:' + item, c);
         await this.storage.put('u:' + sub, user);
-        return { counts: { h: c.h || 0, d: c.d || 0 }, mine: next };
+        return { counts: { h: c.h || 0, d: c.d || 0, w: c.w || 0 }, mine: next };
     },
 
     async counts({ items }) {
@@ -175,7 +236,7 @@ const OPS = {
         const out = {};
         items.forEach(i => {
             const c = got.get('r:' + i);
-            out[i] = { h: (c && c.h) || 0, d: (c && c.d) || 0 };
+            out[i] = { h: (c && c.h) || 0, d: (c && c.d) || 0, w: (c && c.w) || 0 };
         });
         return { counts: out };
     },
@@ -194,13 +255,14 @@ const OPS = {
                 sub: u.sub, email: u.email, nick: u.nick || null, createdAt: u.createdAt, lastAt: u.lastAt,
                 trial: u.trial && u.trial.keyId ? { keyId: u.trial.keyId, expiresAt: u.trial.expiresAt } : null,
                 hearts: rx.filter(m => m.includes('h')).length, dollars: rx.filter(m => m.includes('d')).length,
+                wons: rx.filter(m => m.includes('w')).length, score: score(u), buy: u.buy || 0,
             });
         }
         members.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
         const rows = await this.storage.list({ prefix: 'r:', limit: 2000 });
         const reactions = [];
-        for (const [k, c] of rows.entries()) if ((c.h || 0) + (c.d || 0) > 0) reactions.push({ id: k.slice(2), h: c.h || 0, d: c.d || 0 });
-        reactions.sort((a, b) => (b.h + b.d) - (a.h + a.d));
+        for (const [k, c] of rows.entries()) if ((c.h || 0) + (c.d || 0) + (c.w || 0) > 0) reactions.push({ id: k.slice(2), h: c.h || 0, d: c.d || 0, w: c.w || 0 });
+        reactions.sort((a, b) => (b.h + b.d + b.w) - (a.h + a.d + a.w));
         return { members, reactions, meta: await this.meta() };
     },
 
@@ -217,7 +279,7 @@ const OPS = {
 
 function view(user) {
     const trial = user.trial && user.trial.key ? { key: user.trial.key, keyId: user.trial.keyId, expiresAt: user.trial.expiresAt } : null;
-    return { email: user.email, nick: user.nick || null, createdAt: user.createdAt, trial };
+    return { email: user.email, nick: user.nick || null, createdAt: user.createdAt, trial, score: score(user) };
 }
 
 function reply(data, status) {

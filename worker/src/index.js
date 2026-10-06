@@ -20,7 +20,7 @@
 
 import { generateKeyPair, importPrivate, importPublic, signKey, verifyKey, parseKey, hex32, publicOnly, keyId, b64urlEncode } from './keys.js';
 import { plansFor } from './plans.js';
-import { community, TRIAL_DAYS, SESSION_DAYS, REACT_TYPES, ITEM_RE } from './community.js';
+import { community, TRIAL_DAYS, SESSION_DAYS, REACT_TYPES, ITEM_RE, POINTS } from './community.js';
 import { verifyGoogleToken } from './google.js';
 
 export { Community } from './community.js';
@@ -89,6 +89,7 @@ async function route(request, env, ctx) {
     if (path === '/api/me/delete' && method === 'POST') return deleteMe(request, env, ctx);
     if (path === '/api/me/nickname' && method === 'POST') return setNickname(request, env);
     if (path === '/api/reactions' && method === 'GET') return getReactions(request, env, url);
+    if (path === '/api/ranking' && method === 'GET') return getRanking(request, env);
     if (path === '/api/reactions' && method === 'POST') return react(request, env);
 
     if (path.startsWith('/api/admin/')) {
@@ -204,6 +205,8 @@ async function createOrder(request, env, ctx, url) {
         agreedAt: now,
         log: [{ at: now, what: 'created' }],
     };
+    const ref = await orderMember(request, env);
+    if (ref) order.memberRef = ref;
 
     let payurl = null;
     if (method === 'payapp') {
@@ -576,14 +579,14 @@ function bearer(request) {
 }
 
 // 로그인 세션 → 계정. 없거나 만료면 401.
-async function sessionUser(request, env) {
+async function sessionUser(request, env, markAttend) {
     needLogin(env);
     const token = bearer(request);
     if (!token) throw new HttpError(401, 'need_login', '로그인이 필요합니다.');
     const hash = await sha256('sess:' + token);
-    const got = await community(env, 'sessionGet', { hash, now: Date.now() });
+    const got = await community(env, 'sessionGet', { hash, now: Date.now(), markAttend: !!markAttend });
     if (!got.user) throw new HttpError(401, 'need_login', '로그인이 끝났습니다. 다시 로그인해 주세요.');
-    return { user: got.user, rx: got.rx || {}, sub: got.sub, hash };
+    return { user: got.user, rx: got.rx || {}, sub: got.sub, hash, attended: !!got.attended };
 }
 
 async function googleLogin(request, env, ctx) {
@@ -594,7 +597,7 @@ async function googleLogin(request, env, ctx) {
     if (!g) throw new HttpError(401, 'bad_credential', '구글 로그인을 확인하지 못했습니다. 다시 시도해 주세요.');
 
     const now = Date.now();
-    const r = await community(env, 'login', { sub: g.sub, email: g.email, subHash: await sha256('trial:' + g.sub), now });
+    const r = await community(env, 'login', { sub: g.sub, email: g.email, subHash: await sha256('trial:' + g.sub), ref: await memberRef(g.sub), now });
     let user = r.user;
     let trialNew = false;
     if (r.needTrial) {
@@ -606,7 +609,7 @@ async function googleLogin(request, env, ctx) {
 
     const token = b64urlEncode(crypto.getRandomValues(new Uint8Array(32)));
     await community(env, 'sessionCreate', { sub: g.sub, hash: await sha256('sess:' + token), exp: now + SESSION_DAYS * 86400 * 1000 });
-    return json(request, env, { session: token, user, isNew: r.isNew, trialNew }, 200);
+    return json(request, env, { session: token, user, isNew: r.isNew, trialNew, attended: !!r.attended, points: POINTS }, 200);
 }
 
 // 무료 체험 키는 주문처럼 남긴다(관리자 페이지에서 보이고, 정지·조회가 같은 길로 된다). 0원, 메일은 보내지 않는다.
@@ -623,9 +626,44 @@ async function issueTrial(env, sub) {
     return r.user;
 }
 
+// 내 정보. 오늘(한국 날짜) 처음 불리면 출석을 하나 올린다.
 async function me(request, env) {
-    const s = await sessionUser(request, env);
-    return json(request, env, { user: s.user, reactions: s.rx });
+    const s = await sessionUser(request, env, true);
+    return json(request, env, { user: s.user, reactions: s.rx, attended: s.attended, points: POINTS });
+}
+
+// 주문·계정을 잇는 되돌릴 수 없는 참조값. 주문 기록(5년 보관)에 구글 계정 번호를 그대로 남기지 않는다.
+const memberRef = sub => sha256('member:' + sub);
+
+// 로그인한 채 주문하면 그 주문을 계정과 잇는다(랭킹 점수). 로그인이 없거나 끝났으면 그냥 넘어간다.
+async function orderMember(request, env) {
+    if (!loginReady(env) || !bearer(request)) return null;
+    try {
+        const got = await community(env, 'sessionGet', { hash: await sha256('sess:' + bearer(request)), now: Date.now() });
+        return got.sub ? await memberRef(got.sub) : null;
+    } catch (e) { return null; }
+}
+
+// 결제되면 +금액, 환불되면 -금액. 실패해도 발급·환불은 그대로 간다.
+async function creditMember(env, order, sign) {
+    if (!order.memberRef || !(order.amount > 0) || !loginReady(env)) return;
+    if (sign > 0 ? order.credited : !order.credited) return;
+    try {
+        const r = await community(env, 'credit', { ref: order.memberRef, amount: sign * order.amount });
+        if (r.ok) order.credited = sign > 0;
+    } catch (e) { console.error('credit', e); }
+}
+
+// 회원 랭킹. 로그인했으면 내 순위도 같이.
+async function getRanking(request, env) {
+    needLogin(env);
+    let sub = null;
+    if (bearer(request)) {
+        const got = await community(env, 'sessionGet', { hash: await sha256('sess:' + bearer(request)), now: Date.now() }).catch(() => ({}));
+        sub = got.sub || null;
+    }
+    const r = await community(env, 'ranking', { sub, limit: 50 });
+    return json(request, env, Object.assign(r, { points: POINTS }), 200, sub ? {} : { 'Cache-Control': 'public, max-age=60' }, !sub);
 }
 
 async function logout(request, env) {
@@ -901,6 +939,7 @@ async function confirm(env, order, by) {
     order.paidAt = Date.now();
     order.status = 'paid';
     order.log.push({ at: order.paidAt, what: 'paid', by });
+    await creditMember(env, order, 1);
     await save(env, order);
     await env.DB.put('keyidx:' + order.keyId, order.id);   // 환불 요청 때 키 → 주문 찾기
     if (mailReady(env) && order.contact && !order.test) {
@@ -971,6 +1010,7 @@ async function refund(env, order, by) {
     order.refundedAt = Date.now();
     order.log.push({ at: order.refundedAt, what: 'refunded', by });
     if (order.keyId) await revoke(env, order.keyId);
+    await creditMember(env, order, -1);
     await save(env, order);
     return order;
 }

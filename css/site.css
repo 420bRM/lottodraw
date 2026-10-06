@@ -1021,3 +1021,11 @@ html.home { scroll-behavior: smooth; }
 .admin-row-tools .danger { color: var(--error); }
 .members-rx { margin-top: 12px; }
 .members-rx summary { font-weight: bold; cursor: pointer; }
+.rx .rx-w { color: #1e5bd8; }
+.rx .rx-w:hover, .rx .rx-w[aria-pressed="true"] { border-color: #1e5bd8; background: #eaf0fd; }
+.rx-won { font: bold 14px/1 var(--font); }
+.acct-score { font-weight: bold; }
+.rank-me { margin: 0 0 14px; padding: 10px 14px; border: 2px solid var(--brand); border-radius: 10px; background: #f3f6fd; }
+.rank-me-line { margin: 0; }
+.rank-table { width: 100%; }
+.rank-table tr.top1 td { font-weight: bold; background: #fff8e1; }
