@@ -354,6 +354,12 @@
                 if (!menu.hidden && !wrap.contains(e.target)) { menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); }
             });
         }
+        // 랭킹은 메뉴가 아니라 계정 단추 옆에 묶어 둔다
+        const rank = el('a', { className: 'acct-rank', href: root + 'ranking.html', title: tr('nav.ranking', '랭킹') }, [
+            el('span', { 'aria-hidden': 'true', text: '🏆' }), ' ', tr('nav.ranking', '랭킹'),
+        ]);
+        if (/(^|\/)ranking\.html$/.test(location.pathname)) rank.setAttribute('aria-current', 'page');
+        wrap.appendChild(rank);
         const langSwitch = host.querySelector('.lang-switch');
         host.insertBefore(wrap, langSwitch || null);
     }
@@ -569,7 +575,6 @@
         me = await loadMe(false);
         if (me && me.user) applyTrial(me.user.trial);
         renderHeader();
-        addRankingLink();
         showNote();
         if (attendedToday && !document.getElementById('acct-toast')) toast(tr('acct.attended', '오늘 출석 +{n}점', { n: attendedToday }), { href: root + 'ranking.html', text: tr('acct.goRanking', '랭킹 보기 →') });
         renderReactions();
@@ -577,17 +582,6 @@
         if (chatOn && !/admin\.html$/.test(location.pathname)) document.head.appendChild(el('script', { src: root + 'js/chat.js', defer: '' }));
     }
 
-    // 머리글 메뉴에 "랭킹" (로그인을 켰을 때만). 페이지 1,300여 개의 메뉴를 고치지 않으려고 여기서 단다.
-    function addRankingLink() {
-        const ul = document.querySelector('.nav ul');
-        if (!ul || ul.querySelector('[data-rank-link]')) return;
-        const here = /(^|\/)ranking\.html$/.test(location.pathname);
-        const a = el('a', { href: root + 'ranking.html', text: tr('nav.ranking', '랭킹') });
-        if (here) a.setAttribute('aria-current', 'page');
-        const li = el('li', { 'data-rank-link': '' }, [a]);
-        const about = ul.querySelector('a[href$="about.html"]');
-        ul.insertBefore(li, about ? about.parentNode : null);
-    }
 
     // js/chat.js 가 쓰는 길
     window.LottoAccount = {
