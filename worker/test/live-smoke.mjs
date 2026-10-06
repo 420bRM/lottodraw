@@ -71,6 +71,17 @@ async function main() {
         st = await call('GET', '/api/admin/status', { headers: asAdmin });
     }
     if (!step(!!st.data.kid, `서명 키 있음 (${st.data.kid})`)) return;
+
+    // 구글 로그인·좋아요 (GOOGLE_CLIENT_ID 를 넣었을 때만). 로그인 자체는 사람 계정이 필요해 여기서 못 한다.
+    if (cfg.data.login) {
+        const rx = await call('GET', '/api/reactions?ids=index');
+        step(rx.status === 200 && rx.data.counts && rx.data.counts.index, '좋아요 수 읽기 (회원 저장소 연결)');
+        step(st.data.login && !st.data.login.error, `회원 저장소 (가입 ${st.data.login ? st.data.login.users : '?'}명)`);
+        const bad = await call('POST', '/api/auth/google', { body: { credential: 'x.y.z' } });
+        step(bad.status === 401, '가짜 구글 로그인 거절');
+    } else {
+        console.log('· 구글 로그인 꺼짐 (GOOGLE_CLIENT_ID 를 넣으면 켜진다)');
+    }
     const sec = await call('POST', '/api/admin/hook-secret', { headers: asAdmin });
     const hookKey = sec.data && sec.data.secret;
     step(!!hookKey, '입금 알림 연결 열쇠 있음');

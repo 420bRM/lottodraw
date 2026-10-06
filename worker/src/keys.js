@@ -3,7 +3,7 @@
 //   LD1-<base64url( 본문 14바이트 + 서명 64바이트 )>
 //
 //   본문  [0]      형식 버전 = 1
-//         [1]      이용권 종류 (1 1주, 2 1개월, 3 평생, 9 직접 발급)
+//         [1]      이용권 종류 (1 1주, 2 1개월, 3 평생, 4 1일, 5 무료 체험, 9 직접 발급)
 //         [2..5]   키 번호 (무작위 32비트) — 환불하면 이 번호를 정지 목록에 올린다
 //         [6..9]   발급 시각 (유닉스 초)
 //         [10..13] 만료 시각 (유닉스 초, 0 이면 기간 제한 없음)
@@ -13,8 +13,8 @@
 // 그래서 서버가 멈춰도 이미 산 사람의 잠금은 그대로 풀린다.
 
 export const PREFIX = 'LD1-';
-export const PLAN_CODES = { week: 1, month: 2, lifetime: 3, day: 4, custom: 9 };
-export const PLAN_BY_CODE = { 1: 'week', 2: 'month', 3: 'lifetime', 4: 'day', 9: 'custom' };
+export const PLAN_CODES = { week: 1, month: 2, lifetime: 3, day: 4, trial: 5, custom: 9 };
+export const PLAN_BY_CODE = { 1: 'week', 2: 'month', 3: 'lifetime', 4: 'day', 5: 'trial', 9: 'custom' };
 
 const CONTEXT = new TextEncoder().encode('LD1');
 const BODY_LEN = 14;
