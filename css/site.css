@@ -53,6 +53,11 @@ a { color: #0066cc; }
 .brand { display: flex; flex-direction: column; color: inherit; text-decoration: none; }
 .brand-name { color: var(--brand); font-size: 22px; font-weight: bold; line-height: 1.2; }
 .brand-tag { color: var(--muted); font-size: 13px; }
+/* 휴대폰에서만: 소개 문구 아래에 PC 권장 한 줄. 페이지 1,300여 개를 고치지 않으려고 CSS 로 단다(영어 화면은 영어로). */
+@media (max-width: 599px) {
+    .brand-tag::after { content: "💻 PC에서 보시면 통계 차트가 더 잘 보입니다"; display: block; margin-top: 2px; color: #8a8a8a; font-size: 11.5px; }
+    html[data-lang="en"] .brand-tag::after { content: "💻 Charts look best on a PC screen"; }
+}
 .banner-right { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
 .latest-callout { margin: 0; color: var(--brand); font-weight: bold; font-variant-numeric: tabular-nums; }
 .latest-callout .bonus-sep { color: var(--muted); }
