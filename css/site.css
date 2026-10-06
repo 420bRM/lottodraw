@@ -1072,6 +1072,12 @@ html.home { scroll-behavior: smooth; }
 @media (max-width: 599px) {
     .chat-fab { right: 12px; bottom: 12px; padding: 10px 12px; }
     .chat-fab-label { display: none; }
-    .chat-panel { right: 0; bottom: 0; width: 100%; height: 70vh; border-radius: 14px 14px 0 0; }
+    /* 휴대폰: 화면을 다 덮지 않게 오른쪽 아래 작은 창으로 (뒤 페이지가 보이고 스크롤된다) */
+    .chat-panel { right: 10px; bottom: 10px; width: min(330px, calc(100vw - 20px)); height: 44vh; height: min(44dvh, 360px); border-radius: 12px; }
+    .chat-rule { font-size: 10px; padding: 4px 10px; }
+    .chat-head { padding: 7px 10px; }
+    .chat-list { padding: 6px 10px; font-size: 13px; }
+    .chat-form { padding: 6px 10px 8px; }
+    .chat-input { padding: 7px 8px; font-size: 16px; }
 }
 .chat-adm-text { white-space: normal; text-align: left; min-width: 200px; word-break: break-word; }
