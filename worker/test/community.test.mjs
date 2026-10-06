@@ -315,14 +315,15 @@ test('랭킹: 출석(하루 한 번)·반응·로그인한 채 산 이용권으�
     await call(env, 'POST', '/api/reactions', { body: { id: 'index-stat-sum', type: 'h' }, headers: auth(a.session) });
     await call(env, 'POST', '/api/reactions', { body: { id: 'index-stat-sum', type: 'w' }, headers: auth(a.session) });
 
-    // 로그인한 채 1일 이용권 주문 → 입금 → 결제 금액 100원당 1점
+    // 로그인한 채 1일 이용권 주문 → 입금 → 결제 금액 100원당 10점
     const ord = (await call(env, 'POST', '/api/orders', { body: { plan: 'day', method: 'bank', name: '홍길동', contact: '', agree: true }, headers: Object.assign({ 'CF-Connecting-IP': '10.9.0.1' }, auth(a.session)) })).data;
     assert.ok(ord.order, JSON.stringify(ord));
     await call(env, 'POST', '/api/hooks/deposit', { body: { text: `입금 ${ord.order.amount}원 홍길동` }, headers: { Authorization: 'Bearer hook-secret-0123456789' } });
     const paid = (await call(env, 'GET', `/api/admin/orders/${ord.order.id}`, { headers: asAdmin })).data.order;
     assert.equal(paid.status, 'paid');
     assert.ok(paid.memberRef && !JSON.stringify(paid).includes('"A"'), '주문에는 계정 번호 대신 참조값만');
-    const buyPts = Math.floor(ord.order.amount / 100);
+    const buyPts = Math.floor(ord.order.amount * 10 / 100);
+    assert.ok(buyPts >= 140 && buyPts <= 150, '1일 이용권(1,401~1,499원) → 140~149점');
 
     // 로그인 없이 산 주문은 점수가 없다
     const anon = (await call(env, 'POST', '/api/orders', { body: { plan: 'day', method: 'bank', name: '김철수', contact: '', agree: true }, headers: { 'CF-Connecting-IP': '10.9.0.2' } })).data;
@@ -331,7 +332,7 @@ test('랭킹: 출석(하루 한 번)·반응·로그인한 채 산 이용권으�
     let r = (await call(env, 'GET', '/api/ranking')).data;
     assert.deepEqual(r.top, [{ rank: 1, nick: '첫째', points: 10 + 4 + buyPts, days: 1 }], '별명 없는 B 는 공개 목록에 없다');
     assert.equal(r.me, null);
-    assert.deepEqual(r.points, { attend: 10, react: 2, wonPerPoint: 100 });
+    assert.deepEqual(r.points, { attend: 10, react: 2, buyPer100: 10 });
 
     // 내 순위: 별명이 없어도 알려 준다
     r = (await call(env, 'GET', '/api/ranking', { headers: auth(b.session) })).data;

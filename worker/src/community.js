@@ -29,13 +29,13 @@ const DAY = 86400 * 1000;
 export const REACT_TYPES = ['h', 'd', 'w'];   // ♥ 좋아요, $ 대박 기원, ₩ 원화
 
 // 랭킹 점수. 바꾸려면 여기만 고친다(이용약관 7조 문구도 같이).
-export const POINTS = { attend: 10, react: 2, wonPerPoint: 100 };
+export const POINTS = { attend: 10, react: 2, buyPer100: 10 };   // buyPer100: 이용권 100원마다 몇 점
 const kstDay = ms => new Date(ms + 9 * 3600 * 1000).toISOString().slice(0, 10);
 
 export function score(user) {
     const days = (user.att && user.att.days) || 0;
     const reacts = Object.values(user.rx || {}).reduce((n, m) => n + m.length, 0);
-    const buy = Math.floor((user.buy || 0) / POINTS.wonPerPoint);
+    const buy = Math.floor((user.buy || 0) * POINTS.buyPer100 / 100);
     return { total: days * POINTS.attend + reacts * POINTS.react + buy, days, reacts, buy };
 }
 
