@@ -76,6 +76,16 @@ a { color: #0066cc; }
 .nav li { margin: 4px 14px; }
 .nav a { display: block; padding: 4px 0; color: #000; font-weight: bold; text-decoration: none; }
 .nav a:hover, .nav a[aria-current="page"] { color: var(--brand); }
+/* 휴대폰: 메뉴 7개가 두 줄 안에 들어가게 (항목은 줄이지 않는다) */
+@media (max-width: 599px) {
+    .nav ul { padding: 4px 4px; gap: 0 2px; }
+    .nav li { margin: 1px 6px; }
+    .nav a { padding: 5px 0; font-size: 14px; letter-spacing: -0.03em; white-space: nowrap; }
+}
+@media (max-width: 359px) {
+    .nav li { margin: 1px 4px; }
+    .nav a { font-size: 13px; }
+}
 
 /* ───── 2단 레이아웃: 좌 생성기 / 우 통계 ───── */
 .layout {
