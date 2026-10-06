@@ -69,6 +69,21 @@ a { color: #0066cc; }
 }
 .sticker:hover { background: var(--brand-dark); }
 .sticker b { font-weight: bold; }
+/* 휴대폰: "최근 5개월 통계"와 언어 단추는 오른쪽 끝으로 (회차·계정 단추는 왼쪽) */
+@media (max-width: 599px) {
+    .banner-right { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 10px; width: 100%; }
+    .banner-right .latest-callout, .banner-right .acct-head { grid-column: 1; justify-self: start; }
+    .banner-right .sticker, .banner-right .lang-switch { grid-column: 2; justify-self: end; }
+}
+@media (max-width: 379px) {
+    .banner-right .latest-callout { font-size: 14px; letter-spacing: -0.02em; }
+    .banner-right .sticker { padding: 6px 10px; font-size: 13px; }
+    .banner-right .acct-btn, .banner-right .acct-rank { padding: 5px 8px; font-size: 12px; }
+}
+@media (max-width: 339px) {
+    .banner-right .latest-callout { font-size: 12.5px; letter-spacing: -0.03em; }
+    .banner-right .sticker { padding: 6px 8px; font-size: 12px; }
+}
 
 /* ───── 내비게이션 ───── */
 .nav { background: #fefefe; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); }
@@ -950,7 +965,7 @@ html.home { scroll-behavior: smooth; }
     margin: 0; padding: 5px 10px;
     border: 1px solid var(--brand); border-radius: 6px;
     background: #fff; color: var(--brand);
-    font: bold 13px/1.4 var(--font); cursor: pointer;
+    font: bold 13px/1.4 var(--font); cursor: pointer; white-space: nowrap;
 }
 .acct-btn:hover { background: #eef3ff; }
 .acct-btn.is-in { border-color: var(--line); color: var(--text); }
