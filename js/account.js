@@ -4,8 +4,9 @@
  * 서버(/api/config)가 로그인을 켜 두지 않았으면 아무것도 그리지 않는다.
  *
  *   머리글   "로그인 · 3일 무료" 단추 → 구글 로그인 창. 로그인하면 "내 계정" 메뉴(체험 기간, 로그아웃, 탈퇴)
- *   본문 끝  좋아요 막대. 수는 누구나 보고, 누르려면 로그인. index.html 처럼 data-react="이름" 칸이 있으면 거기에,
- *            없으면 <main> 끝에 페이지 이름으로 하나 단다(약관·개인정보·문의 페이지는 빼고).
+ *   카드     오른쪽 아래 "+" → ♥(좋아요)·$(대박 기원) 중 고르기. 수는 아이콘+숫자로 누구나 보고, 누르려면 로그인.
+ *            카드가 없는 페이지는 본문 끝에 하나(약관·개인정보·문의·소개 페이지는 빼고).
+ *   별명     처음 가입하면 정하라고 묻고(건너뛸 수 있음), "내 계정"에서 바꾼다. 머리글 단추에 보인다.
  *   체험 키  처음 가입하면 서버가 3일 무료 체험 키를 준다. 이 브라우저에 더 긴 이용권이 없으면 그 키를 넣는다.
  */
 (function () {
@@ -186,7 +187,7 @@
             el('p', { className: 'acct-lead', text: tr('acct.lead', '구글 계정으로 바로 가입됩니다. 처음 가입하면 5개월 통계와 상세 분석 4종을 {days}일 동안 무료로 열어 드립니다.', { days }) }),
             el('ul', { className: 'acct-perks' }, [
                 el('li', { text: tr('acct.perk1', '{days}일 무료 체험 (계정당 한 번)', { days }) }),
-                el('li', { text: tr('acct.perk2', '페이지마다 ♥ 좋아요 · $ 대박 기원 누르기') }),
+                el('li', { text: tr('acct.perk2', '카드마다 ♥ 좋아요 · $ 대박 기원 남기기') }),
                 el('li', { text: tr('acct.perk3', '다른 기기에서 로그인해도 체험 이어 쓰기') }),
             ]),
             slot,
@@ -227,9 +228,9 @@
             temp.del(ME_STORE);   // 새로 고친 뒤 내 정보와 내가 누른 좋아요를 다시 받는다
             const added = applyTrial(got.user.trial);
             if (got.trialNew) {
-                reloadWith({ kind: 'trial', until: got.user.trial && got.user.trial.expiresAt });
+                reloadWith({ kind: 'trial', until: got.user.trial && got.user.trial.expiresAt, askNick: !got.user.nick });
             } else {
-                reloadWith({ kind: added ? 'trialBack' : 'login', until: got.user.trial && got.user.trial.expiresAt });
+                reloadWith({ kind: added ? 'trialBack' : 'login', until: got.user.trial && got.user.trial.expiresAt, askNick: got.isNew && !got.user.nick });
             }
         } catch (e) {
             errBox.textContent = e.code === 'too_many' ? tr('acct.tooMany', '잠시 뒤 다시 시도해 주세요.') : tr('acct.fail', '로그인하지 못했습니다. 다시 시도해 주세요.');
@@ -247,6 +248,63 @@
         else if (n.kind === 'login') toast(tr('acct.loggedIn', '로그인했습니다.'));
         else if (n.kind === 'logout') toast(tr('acct.loggedOut', '로그아웃했습니다.'));
         else if (n.kind === 'deleted') toast(tr('acct.deleted', '탈퇴했습니다. 계정과 좋아요 기록을 지웠습니다.'));
+        if (n.askNick && me) openNick(true);
+    }
+
+    /* ───── 별명 ───── */
+
+    function openNick(first) {
+        closeModal();
+        const input = el('input', { type: 'text', id: 'acct-nick', className: 'acct-input', maxlength: '12', autocomplete: 'nickname',
+            value: (me && me.user && me.user.nick) || '', placeholder: tr('acct.nickPh', '예: 행운의곰') });
+        const err = el('p', { className: 'acct-err', role: 'alert', hidden: '' });
+        const save = el('button', { type: 'submit', className: 'btn', text: tr('acct.nickSave', '저장') });
+        const form = el('form', { className: 'acct-nick-form', on: { submit: async e => {
+            e.preventDefault();
+            const nickname = input.value.trim();
+            err.hidden = true;
+            save.disabled = true;
+            try {
+                const got = await request('/api/me/nickname', { method: 'POST', auth: true, body: { nickname } });
+                me.user = got.user;
+                temp.set(ME_STORE, Object.assign({ at: Date.now() }, me));
+                const s = local.get(SESSION_STORE);
+                if (s) local.set(SESSION_STORE, Object.assign(s, { nick: got.user.nick }));
+                closeModal();
+                renderHeader();
+                toast(tr('acct.nickDone', '별명을 "{nick}"(으)로 정했습니다.', { nick: got.user.nick }));
+            } catch (x) {
+                err.textContent = x.code === 'taken_nick' ? tr('acct.nickTaken', '이미 쓰고 있는 별명입니다. 다른 별명을 골라 주세요.')
+                    : x.code === 'reserved_nick' ? tr('acct.nickReserved', '쓸 수 없는 별명입니다. 다른 별명을 골라 주세요.')
+                    : x.code === 'bad_nick' ? tr('acct.nickRule', '한글·영문·숫자·밑줄(_)로 2~12자, 띄어쓰기 없이 적어 주세요.')
+                    : x.status === 401 ? tr('acct.expired', '로그인이 끝났습니다. 다시 로그인해 주세요.')
+                    : tr('acct.tooMany', '잠시 뒤 다시 시도해 주세요.');
+                err.hidden = false;
+            } finally {
+                save.disabled = false;
+            }
+        } } }, [
+            el('label', { for: 'acct-nick', className: 'sr-only', text: tr('acct.nickTitle', '별명') }),
+            input,
+            el('p', { className: 'acct-hint', text: tr('acct.nickRule', '한글·영문·숫자·밑줄(_)로 2~12자, 띄어쓰기 없이 적어 주세요.') }),
+            err,
+            el('div', { className: 'acct-actions' }, [
+                save,
+                el('button', { type: 'button', className: 'btn btn-secondary', text: first ? tr('acct.later', '나중에') : tr('acct.cancel', '취소'), on: { click: closeModal } }),
+            ]),
+        ]);
+        const box = el('div', { className: 'acct-dialog', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'acct-title' }, [
+            el('button', { type: 'button', className: 'acct-x', 'aria-label': tr('acct.close', '닫기'), text: '×', on: { click: closeModal } }),
+            el('h2', { id: 'acct-title', text: first ? tr('acct.nickFirst', '별명을 정해 주세요') : tr('acct.nickTitle', '별명') }),
+            el('p', { className: 'acct-lead', text: first
+                ? tr('acct.nickLeadFirst', '사이트에서 쓸 별명입니다. 나중에 "내 계정"에서 바꿀 수 있습니다.')
+                : tr('acct.nickLead', '사이트에서 쓸 별명입니다. 다른 사람과 겹치지 않아야 합니다.') }),
+            form,
+        ]);
+        const modal = el('div', { id: 'acct-modal', className: 'acct-modal', on: { click: e => { if (e.target === modal) closeModal(); } } }, [box]);
+        document.body.appendChild(modal);
+        document.addEventListener('keydown', escClose);
+        input.focus();
     }
 
     /* ───── 머리글 단추 ───── */
@@ -268,13 +326,16 @@
                 const open = menu.hidden;
                 menu.hidden = !open;
                 btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-            } } }, [tr('acct.mine', '내 계정')]);
+            } } }, [(me.user && me.user.nick) || tr('acct.mine', '내 계정')]);
             const trial = me.user && me.user.trial;
+            if (me.user && me.user.nick) menu.appendChild(el('p', { className: 'acct-nick', text: me.user.nick }));
             menu.appendChild(el('p', { className: 'acct-email', text: me.user ? me.user.email : '' }));
             menu.appendChild(el('p', { className: 'acct-trial', text: trial
                 ? (trial.expiresAt > Date.now() ? tr('acct.trialUntil', '무료 체험: {until}까지', { until: fmtDate(trial.expiresAt) }) : tr('acct.trialOver', '무료 체험이 끝났습니다'))
                 : tr('acct.trialNone', '무료 체험은 계정당 한 번입니다') }));
             menu.appendChild(el('a', { href: root + 'statistics.html', text: tr('acct.goStats', '5개월 통계 보기 →') }));
+            menu.appendChild(el('button', { type: 'button', text: me.user && me.user.nick ? tr('acct.nickChange', '별명 바꾸기') : tr('acct.nickSet', '별명 정하기'),
+                on: { click: () => { menu.hidden = true; openNick(false); } } }));
             menu.appendChild(el('button', { type: 'button', text: tr('acct.logout', '로그아웃'), on: { click: logout } }));
             menu.appendChild(el('button', { type: 'button', className: 'acct-danger', text: tr('acct.delete', '회원 탈퇴'), on: { click: withdraw } }));
             wrap.appendChild(btn);
@@ -306,66 +367,172 @@
         }
     }
 
-    /* ───── 좋아요 ───── */
+    /* ───── 좋아요 ─────
+     * 카드마다 오른쪽 아래에 "+" 단추. 누르면 ♥(좋아요)와 $(대박 기원) 중에 고른다. 누른 수는 아이콘 옆 숫자로만.
+     * 카드가 없는 페이지(통계 12쪽, 블로그, 회차 …)는 본문 끝에 같은 단추 하나.
+     * 카드는 스크립트가 나중에 그리기도 해서(홈 통계·상세 분석) 새로 생기는 카드를 지켜보다가 붙인다.
+     */
+
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+    const ICONS = {   // Material Icons (Apache 2.0): favorite, attach_money
+        h: 'M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z',
+        d: 'M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z',
+    };
+    function icon(type) {
+        const svg = document.createElementNS(SVG_NS, 'svg');
+        svg.setAttribute('viewBox', '0 0 24 24');
+        svg.setAttribute('aria-hidden', 'true');
+        svg.setAttribute('class', 'rx-ico');
+        const path = document.createElementNS(SVG_NS, 'path');
+        path.setAttribute('d', ICONS[type]);
+        svg.appendChild(path);
+        return svg;
+    }
+    const LABEL = { h: () => tr('react.h', '좋아요'), d: () => tr('react.d', '대박 기원') };
+
+    const ID_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
+    const NO_CARD = /^(plan-|order|checkout|unlock|reveal|license|ob-|admin)/;   // 결제·주문 칸에는 달지 않는다
+    const counts = {};    // 항목 → { h, d }
+    const widgets = {};   // 항목 → [위젯 …]
 
     function pageId() {
         let p = location.pathname.replace(/^\/+/, '').replace(/\.html$/, '').replace(/(^|\/)index$/, '').replace(/\/+$/, '');
         if (!p) p = 'index';
         return p.toLowerCase().replace(/\//g, '-').replace(/[^a-z0-9-]/g, '').replace(/^-+/, '').slice(0, 64) || 'index';
     }
+    const clean = s => String(s || '').toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
 
-    function bars() {
-        let list = Array.from(document.querySelectorAll('[data-react]'));
-        if (!list.length) {
-            const id = pageId();
-            const main = document.querySelector('main');
-            if (!main || NO_BAR.indexOf(id) !== -1) return [];
-            const bar = el('div', { className: 'react-bar', 'data-react': id });
-            main.appendChild(bar);
-            list = [bar];
-        }
-        return list.filter(b => /^[a-z0-9][a-z0-9-]{0,63}$/.test(b.dataset.react));
+    // 카드 이름: data-react > 카드 id > 제목 id(-t, -title 뗌). 페이지 이름을 앞에 붙여 페이지끼리 섞이지 않게.
+    function cardId(card) {
+        if (card.dataset.react) return clean(card.dataset.react).slice(0, 64);
+        const title = card.querySelector('.card-title[id]');
+        const raw = card.id || (title ? title.id.replace(/-(t|title)$/, '') : '') || card.getAttribute('aria-labelledby') || '';
+        const base = clean(raw.replace(/-(t|title)$/, ''));
+        if (!base || NO_CARD.test(base)) return '';
+        return (pageId() + '-' + base).slice(0, 64).replace(/-+$/, '');
     }
 
-    function paintBar(bar, counts, mine) {
-        bar.textContent = '';
-        bar.appendChild(el('span', { className: 'react-q', text: tr('react.q', '마음에 드셨나요?') }));
-        [['h', '♥', tr('react.h', '좋아요')], ['d', '$', tr('react.d', '대박 기원')]].forEach(([type, icon, label]) => {
-            const on = (mine || '').indexOf(type) !== -1;
-            bar.appendChild(el('button', {
-                type: 'button', className: 'react-btn react-' + type, 'aria-pressed': on ? 'true' : 'false', title: label,
-                'aria-label': label + ' ' + (counts[type] || 0),
-                on: { click: () => press(bar, type) },
-            }, [el('span', { className: 'react-ico', 'aria-hidden': 'true', text: icon }), el('span', { className: 'react-label', text: label }), el('span', { className: 'react-n', text: String(counts[type] || 0) })]));
+    function makeWidget(id, extraClass) {
+        const box = el('div', { className: 'rx' + (extraClass ? ' ' + extraClass : ''), 'data-rx': id });
+        const pick = el('div', { className: 'rx-pick', hidden: '' });
+        ['h', 'd'].forEach(type => {
+            pick.appendChild(el('button', { type: 'button', className: 'rx-opt rx-' + type, title: LABEL[type](), 'aria-label': LABEL[type](),
+                on: { click: () => { pick.hidden = true; add.setAttribute('aria-expanded', 'false'); press(id, type); } } }, [icon(type)]));
+        });
+        const add = el('button', { type: 'button', className: 'rx-add', text: '+', title: tr('react.add', '반응 남기기'), 'aria-label': tr('react.add', '반응 남기기'), 'aria-expanded': 'false',
+            on: { click: e => {
+                e.stopPropagation();
+                if (!me) { openLogin(tr('react.needLogin', '좋아요는 로그인하면 누를 수 있습니다.')); return; }
+                closePickers(pick);
+                pick.hidden = !pick.hidden;
+                add.setAttribute('aria-expanded', pick.hidden ? 'false' : 'true');
+            } } });
+        box.appendChild(el('span', { className: 'rx-chips' }));
+        box.appendChild(pick);
+        box.appendChild(add);
+        (widgets[id] = widgets[id] || []).push(box);
+        paint(box);
+        return box;
+    }
+
+    function closePickers(except) {
+        document.querySelectorAll('.rx-pick').forEach(p => {
+            if (p === except) return;
+            p.hidden = true;
+            const b = p.parentNode && p.parentNode.querySelector('.rx-add');
+            if (b) b.setAttribute('aria-expanded', 'false');
         });
     }
 
-    async function press(bar, type) {
+    // 숫자가 있는 것만 아이콘+숫자로 보인다. 내가 누른 것은 색이 찬다. 눌러서 바로 취소할 수도 있다.
+    function paint(box) {
+        const id = box.dataset.rx;
+        const c = counts[id] || { h: 0, d: 0 };
+        const mine = (me && me.reactions && me.reactions[id]) || '';
+        const chips = box.querySelector('.rx-chips');
+        chips.textContent = '';
+        ['h', 'd'].forEach(type => {
+            const on = mine.indexOf(type) !== -1;
+            if (!c[type] && !on) return;
+            chips.appendChild(el('button', { type: 'button', className: 'rx-chip rx-' + type, 'aria-pressed': on ? 'true' : 'false',
+                title: LABEL[type](), 'aria-label': LABEL[type]() + ' ' + (c[type] || 0),
+                on: { click: () => press(id, type) } }, [icon(type), el('span', { className: 'rx-n', text: String(c[type] || 0) })]));
+        });
+        box.querySelectorAll('.rx-opt').forEach(b => {
+            const type = b.classList.contains('rx-h') ? 'h' : 'd';
+            b.setAttribute('aria-pressed', mine.indexOf(type) !== -1 ? 'true' : 'false');
+        });
+    }
+    const repaint = id => (widgets[id] || []).forEach(w => document.body.contains(w) && paint(w));
+
+    async function press(id, type) {
         if (!me) { openLogin(tr('react.needLogin', '좋아요는 로그인하면 누를 수 있습니다.')); return; }
-        const id = bar.dataset.react;
-        bar.classList.add('is-busy');
+        const boxes = widgets[id] || [];
+        boxes.forEach(b => b.classList.add('is-busy'));
         try {
             const got = await request('/api/reactions', { method: 'POST', auth: true, body: { id, type } });
             me.reactions = me.reactions || {};
             if (got.mine) me.reactions[id] = got.mine; else delete me.reactions[id];
             temp.set(ME_STORE, Object.assign({ at: Date.now() }, me));
-            paintBar(bar, got.counts, got.mine);
+            counts[id] = got.counts;
+            repaint(id);
         } catch (e) {
             if (e.status === 401) { signOutLocal(); renderHeader(); openLogin(tr('acct.expired', '로그인이 끝났습니다. 다시 로그인해 주세요.')); }
             else toast(e.code === 'too_many' ? tr('acct.tooMany', '잠시 뒤 다시 시도해 주세요.') : tr('react.fail', '좋아요를 저장하지 못했습니다. 잠시 뒤 다시 눌러 주세요.'));
         } finally {
-            bar.classList.remove('is-busy');
+            boxes.forEach(b => b.classList.remove('is-busy'));
         }
     }
 
-    async function renderBars() {
-        const list = bars();
-        if (!list.length) return;
-        const ids = list.map(b => b.dataset.react);
-        let counts = {};
-        // 방금 누른 수가 브라우저에 남은 옛 응답으로 보이지 않게 늘 서버에 다시 묻는다
-        try { counts = (await request('/api/reactions?ids=' + encodeURIComponent(ids.join(',')), { cache: 'no-cache' })).counts || {}; } catch (e) { counts = {}; }
-        list.forEach(b => paintBar(b, counts[b.dataset.react] || { h: 0, d: 0 }, me && me.reactions ? me.reactions[b.dataset.react] : ''));
+    // 아직 단추가 없는 카드에 붙이고, 처음 보는 항목의 수를 한 번에 받는다
+    let pending = new Set();
+    let timer = null;
+    function attachCards() {
+        document.querySelectorAll('.card').forEach(card => {
+            if (card.querySelector(':scope > .rx') || card.closest('.rx')) return;
+            const id = cardId(card);
+            if (!ID_RE.test(id)) return;
+            card.classList.add('has-rx');
+            card.appendChild(makeWidget(id, 'rx-card'));
+            if (!counts[id]) pending.add(id);
+        });
+        flush();
+    }
+    function flush() {
+        clearTimeout(timer);
+        timer = setTimeout(async () => {
+            const ids = Array.from(pending).slice(0, 30);
+            ids.forEach(i => pending.delete(i));
+            if (!ids.length) return;
+            try {
+                // 방금 누른 수가 브라우저에 남은 옛 응답으로 보이지 않게 늘 서버에 다시 묻는다
+                const got = (await request('/api/reactions?ids=' + encodeURIComponent(ids.join(',')), { cache: 'no-cache' })).counts || {};
+                ids.forEach(i => { counts[i] = got[i] || { h: 0, d: 0 }; repaint(i); });
+            } catch (e) { /* 수를 못 받아도 단추는 쓸 수 있다 */ }
+            if (pending.size) flush();
+        }, 150);
+    }
+
+    function renderReactions() {
+        document.addEventListener('click', e => { if (!e.target.closest || !e.target.closest('.rx')) closePickers(null); });
+        const main = document.querySelector('main');
+        const id = pageId();
+        if (!document.querySelector('.card') && main && NO_BAR.indexOf(id) === -1) {
+            main.appendChild(makeWidget(id, 'rx-page'));
+            pending.add(id);
+            flush();
+            return;
+        }
+        attachCards();
+        // 홈 통계·상세 분석처럼 나중에 그려지는 카드
+        if (window.MutationObserver) {
+            let queued = false;
+            new MutationObserver(() => {
+                if (queued) return;
+                queued = true;
+                requestAnimationFrame(() => { queued = false; attachCards(); });
+            }).observe(document.body, { childList: true, subtree: true });
+        }
     }
 
     /* ───── 시작 ───── */
@@ -377,7 +544,7 @@
         if (me && me.user) applyTrial(me.user.trial);
         renderHeader();
         showNote();
-        renderBars();
+        renderReactions();
     }
 
     window.LottoAccount = { openLogin: r => (login ? openLogin(r) : null) };

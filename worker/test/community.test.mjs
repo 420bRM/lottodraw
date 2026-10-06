@@ -223,3 +223,34 @@ test('가입 단추를 두 번 눌러 요청이 겹쳐도 체험 키는 하나�
     const me = await call(env, 'GET', '/api/me', { headers: auth(b.data.session) });
     assert.ok(me.data.user.trial && me.data.user.trial.key, '겹친 쪽도 다음 조회에서 체험 키가 보인다');
 });
+
+test('별명: 정하고 바꾸고, 겹치거나 규칙에 안 맞으면 거절, 탈퇴하면 다른 사람이 쓸 수 있다', async () => {
+    const env = await fresh();
+    const a = (await login(env, { sub: 'A', email: 'a@gmail.com' })).data;
+    const b = (await login(env, { sub: 'B', email: 'b@gmail.com' })).data;
+    assert.equal(a.user.nick, null);
+    const nick = (s, nickname) => call(env, 'POST', '/api/me/nickname', { body: { nickname }, headers: auth(s) });
+
+    let r = await nick(a.session, '행운의곰');
+    assert.equal(r.status, 200);
+    assert.equal(r.data.user.nick, '행운의곰');
+    assert.equal((await call(env, 'GET', '/api/me', { headers: auth(a.session) })).data.user.nick, '행운의곰');
+    assert.equal((await login(env, { sub: 'A', email: 'a@gmail.com' })).data.user.nick, '행운의곰', '다시 로그인해도 남는다');
+
+    assert.equal((await nick(b.session, '행운의곰')).data.error, 'taken_nick');
+    assert.equal((await nick(b.session, 'a')).data.error, 'bad_nick');
+    assert.equal((await nick(b.session, '띄어 쓰기')).data.error, 'bad_nick');
+    assert.equal((await nick(b.session, '<script>')).data.error, 'bad_nick');
+    assert.equal((await nick(b.session, '관리자님')).data.error, 'reserved_nick');
+    assert.equal((await nick(b.session, 'LottoDraw1')).data.error, 'reserved_nick');
+    assert.equal((await call(env, 'POST', '/api/me/nickname', { body: { nickname: '아무개' } })).status, 401);
+
+    // 바꾸면 옛 별명은 풀린다 (대소문자는 같은 별명으로 본다)
+    assert.equal((await nick(a.session, 'LuckyBear')).data.user.nick, 'LuckyBear');
+    assert.equal((await nick(b.session, 'luckybear')).data.error, 'taken_nick');
+    assert.equal((await nick(b.session, '행운의곰')).status, 200);
+
+    // 탈퇴하면 별명도 풀린다
+    await call(env, 'POST', '/api/me/delete', { body: { confirm: true }, headers: auth(a.session) });
+    assert.equal((await nick(b.session, 'LuckyBear')).status, 200);
+});
