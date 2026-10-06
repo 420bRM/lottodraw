@@ -117,6 +117,7 @@
             renderSetup();
             await loadOrders();
             loadMembers();
+            loadChat();
         } catch (err) {
             token = null;
             store.del(TOKEN_STORE);
@@ -245,6 +246,56 @@
             await loadMembers();
         } catch (err) {
             say('members-status', '처리하지 못했습니다: ' + err.message, true);
+        }
+    }
+
+    /* ───── 실시간 채팅 관리 ───── */
+
+    async function loadChat() {
+        try {
+            const r = await call('/chat');
+            $('chat-card').hidden = false;
+            renderChat(r.messages || [], r.bans || []);
+            say('chat-status', `메시지 ${(r.messages || []).length}개 · 채팅 금지 ${(r.bans || []).length}명 · ${when(Date.now())} 기준`);
+        } catch (err) {
+            $('chat-card').hidden = err.status === 503;
+            if (err.status !== 503) say('chat-status', '채팅을 불러오지 못했습니다: ' + err.message, true);
+        }
+    }
+
+    function renderChat(messages, bans) {
+        const t = $('chat-table');
+        t.textContent = '';
+        t.appendChild(el('thead', {}, [el('tr', {}, ['시각', '별명', '내용', ''].map(h => el('th', { text: h })))]));
+        const body = el('tbody');
+        if (!messages.length) body.appendChild(el('tr', {}, [el('td', { colspan: '4', text: '24시간 안에 쓴 메시지가 없습니다.' })]));
+        messages.slice().reverse().forEach(m => body.appendChild(el('tr', {}, [
+            el('td', { text: when(m.at) }), el('td', { text: m.nick }), el('td', { className: 'chat-adm-text', text: m.text }),
+            el('td', { className: 'admin-row-tools' }, [
+                el('button', { type: 'button', className: 'btn btn-secondary btn-mini', text: '지우기', on: { click: () => chatAct('delete', { id: m.id }, `"${m.text}" 을(를) 지웁니까?`) } }),
+                el('button', { type: 'button', className: 'btn btn-secondary btn-mini danger', text: '채팅 금지', on: { click: () => chatAct('ban', { sub: m.sub, nick: m.nick }, `${m.nick} 님의 채팅을 막습니까? 이 사람이 쓴 메시지도 모두 지워집니다.`) } }),
+            ]),
+        ])));
+        t.appendChild(body);
+        const b = $('ban-table');
+        b.textContent = '';
+        b.appendChild(el('thead', {}, [el('tr', {}, ['별명', '막은 때', ''].map(h => el('th', { text: h })))]));
+        const bb = el('tbody');
+        if (!bans.length) bb.appendChild(el('tr', {}, [el('td', { colspan: '3', text: '없음' })]));
+        bans.forEach(x => bb.appendChild(el('tr', {}, [
+            el('td', { text: x.nick || x.sub }), el('td', { text: when(x.at) }),
+            el('td', {}, [el('button', { type: 'button', className: 'btn btn-secondary btn-mini', text: '해제', on: { click: () => chatAct('unban', { sub: x.sub }, `${x.nick || '이 회원'} 의 채팅 금지를 풉니까?`) } })]),
+        ])));
+        b.appendChild(bb);
+    }
+
+    async function chatAct(action, body, ask) {
+        if (!window.confirm(ask)) return;
+        try {
+            await call('/chat/' + action, { method: 'POST', body });
+            await loadChat();
+        } catch (err) {
+            say('chat-status', '처리하지 못했습니다: ' + err.message, true);
         }
     }
 
@@ -453,6 +504,7 @@
         $('admin-logout').addEventListener('click', logout);
         $('admin-reload').addEventListener('click', () => { loadOrders(); loadMembers(); });
         $('members-reload').addEventListener('click', loadMembers);
+        $('chat-reload').addEventListener('click', loadChat);
         $('members-q').addEventListener('input', renderMembers);
         document.querySelectorAll('.admin-tabs [data-status]').forEach(b => b.addEventListener('click', () => {
             tab = b.dataset.status;
