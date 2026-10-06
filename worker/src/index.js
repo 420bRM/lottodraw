@@ -23,7 +23,10 @@ import { plansFor } from './plans.js';
 import { community, TRIAL_DAYS, SESSION_DAYS, REACT_TYPES, ITEM_RE, POINTS } from './community.js';
 import { verifyGoogleToken } from './google.js';
 
+import { chatStub } from './chat.js';
+
 export { Community } from './community.js';
+export { ChatRoom } from './chat.js';
 
 const PAYAPP_API = 'https://api.payapp.kr/oapi/apiLoad.html';
 const DEPOSIT_HOURS = 72;              // 입금 기한 안내용. 지나도 관리자는 확인할 수 있다
@@ -90,6 +93,8 @@ async function route(request, env, ctx) {
     if (path === '/api/me/nickname' && method === 'POST') return setNickname(request, env);
     if (path === '/api/reactions' && method === 'GET') return getReactions(request, env, url);
     if (path === '/api/ranking' && method === 'GET') return getRanking(request, env);
+    if (path === '/api/chat' && method === 'GET') return chatConnect(request, env);
+    if (path === '/api/chat/info' && method === 'GET') return chatInfo(request, env);
     if (path === '/api/reactions' && method === 'POST') return react(request, env);
 
     if (path.startsWith('/api/admin/')) {
@@ -135,6 +140,7 @@ async function getConfig(request, env) {
         autoConfirm: await hookAlive(env),
         // 구글 로그인(가입하면 무료 체험 + 좋아요). 클라이언트 ID 를 넣기 전에는 화면에 로그인 단추가 없다.
         login: loginReady(env) ? { google: env.GOOGLE_CLIENT_ID, trialDays: TRIAL_DAYS } : null,
+        chat: chatReady(env),
     }, 200, { 'Cache-Control': 'public, max-age=60' }, true);
 }
 
@@ -654,6 +660,27 @@ async function creditMember(env, order, sign) {
     } catch (e) { console.error('credit', e); }
 }
 
+/* ───── 실시간 채팅 (chat.js) ───── */
+
+function chatReady(env) {
+    return loginReady(env) && !!env.CHAT;
+}
+
+// WebSocket 연결. 우리 사이트에서 연 것만 받는다(다른 사이트가 몰래 붙는 것을 막는다).
+async function chatConnect(request, env) {
+    if (!chatReady(env)) throw new HttpError(503, 'no_chat', '채팅이 아직 꺼져 있습니다.');
+    if (request.headers.get('Upgrade') !== 'websocket') throw new HttpError(426, 'need_websocket', 'WebSocket 으로 연결해 주세요.');
+    if (!allowedOrigin(request, env)) throw new HttpError(403, 'bad_origin', '허용되지 않은 곳에서 연결했습니다.');
+    await limited(env.LOGIN_LIMIT, 'chat:' + (request.headers.get('CF-Connecting-IP') || 'local'));
+    return chatStub(env).fetch(request);
+}
+
+async function chatInfo(request, env) {
+    if (!chatReady(env)) throw new HttpError(503, 'no_chat', '채팅이 아직 꺼져 있습니다.');
+    const r = await chatStub(env).fetch('https://chat/info');
+    return json(request, env, await r.json(), 200, { 'Cache-Control': 'public, max-age=15' }, true);
+}
+
 // 회원 랭킹. 로그인했으면 내 순위도 같이.
 async function getRanking(request, env) {
     needLogin(env);
@@ -824,6 +851,19 @@ async function admin(request, env, sub, method, url) {
         const r = await community(env, mm[2] === 'delete' ? 'userDelete' : 'clearNick', { sub: mm[1] });
         if (r.error) throw new HttpError(404, 'no_member', '회원을 찾을 수 없습니다.');
         return json(request, env, { ok: true });
+    }
+    // 채팅 관리: 최근 메시지(누가 썼는지 포함)·채팅 금지 목록, 메시지 지우기, 채팅 금지/해제
+    if (sub === '/chat' && method === 'GET') {
+        if (!chatReady(env)) throw new HttpError(503, 'no_chat', '채팅이 아직 꺼져 있습니다.');
+        return json(request, env, await (await chatStub(env).fetch('https://chat/admin/list')).json());
+    }
+    const cm = sub.match(/^\/chat\/(delete|ban|unban)$/);
+    if (cm && method === 'POST') {
+        if (!chatReady(env)) throw new HttpError(503, 'no_chat', '채팅이 아직 꺼져 있습니다.');
+        const body = await readJson(request);
+        const payload = cm[1] === 'delete' ? { id: String(body.id || '').slice(0, 40) } : { sub: String(body.sub || '').slice(0, 64), nick: cleanText(body.nick, 20) };
+        const r = await chatStub(env).fetch('https://chat/admin/' + cm[1], { method: 'POST', body: JSON.stringify(payload) });
+        return json(request, env, await r.json());
     }
     if (sub === '/orders' && method === 'GET') {
         const status = url.searchParams.get('status') || 'pending';

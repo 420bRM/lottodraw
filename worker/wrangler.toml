@@ -55,6 +55,15 @@ class_name = "Community"
 tag = "v1"
 new_sqlite_classes = ["Community"]
 
+# 실시간 채팅방 (src/chat.js). 메시지는 24시간 뒤 사라진다.
+[[durable_objects.bindings]]
+name = "CHAT"
+class_name = "ChatRoom"
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["ChatRoom"]
+
 [observability]
 enabled = true
 

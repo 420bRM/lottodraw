@@ -79,11 +79,14 @@
     let login = null;      // { google, trialDays }
     let me = null;         // { user, reactions }
 
+    let chatOn = false;   // 서버가 실시간 채팅을 켜 두었는지
+
     async function loadConfig() {
         const c = temp.get(CONFIG_STORE);
-        if (c && Date.now() - c.at < CACHE_MS) return c.login;
+        if (c && Date.now() - c.at < CACHE_MS) { chatOn = !!c.chat; return c.login; }
         const got = await request('/api/config');
-        temp.set(CONFIG_STORE, { at: Date.now(), login: got.login || null });
+        chatOn = !!got.chat;
+        temp.set(CONFIG_STORE, { at: Date.now(), login: got.login || null, chat: chatOn });
         return got.login || null;
     }
 
@@ -275,6 +278,7 @@
                 if (s) local.set(SESSION_STORE, Object.assign(s, { nick: got.user.nick }));
                 closeModal();
                 renderHeader();
+                window.dispatchEvent(new Event('lottodraw:account'));
                 toast(tr('acct.nickDone', '별명을 "{nick}"(으)로 정했습니다.', { nick: got.user.nick }));
             } catch (x) {
                 err.textContent = x.code === 'taken_nick' ? tr('acct.nickTaken', '이미 쓰고 있는 별명입니다. 다른 별명을 골라 주세요.')
@@ -554,6 +558,8 @@
         showNote();
         if (attendedToday && !document.getElementById('acct-toast')) toast(tr('acct.attended', '오늘 출석 +{n}점', { n: attendedToday }), { href: root + 'ranking.html', text: tr('acct.goRanking', '랭킹 보기 →') });
         renderReactions();
+        // 실시간 채팅(js/chat.js) — 서버가 켜 두었을 때만, 관리자 페이지는 빼고
+        if (chatOn && !/admin\.html$/.test(location.pathname)) document.head.appendChild(el('script', { src: root + 'js/chat.js', defer: '' }));
     }
 
     // 머리글 메뉴에 "랭킹" (로그인을 켰을 때만). 페이지 1,300여 개의 메뉴를 고치지 않으려고 여기서 단다.
@@ -568,7 +574,13 @@
         ul.insertBefore(li, about ? about.parentNode : null);
     }
 
-    window.LottoAccount = { openLogin: r => (login ? openLogin(r) : null) };
+    // js/chat.js 가 쓰는 길
+    window.LottoAccount = {
+        openLogin: r => (login ? openLogin(r) : null),
+        openNick: first => (me ? openNick(!!first) : null),
+        session: () => { const s = local.get(SESSION_STORE); return s && s.session; },
+        me: () => me,
+    };
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
     else start();

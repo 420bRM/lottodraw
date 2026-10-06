@@ -79,6 +79,10 @@ async function main() {
         step(st.data.login && !st.data.login.error, `회원 저장소 (가입 ${st.data.login ? st.data.login.users : '?'}명)`);
         const bad = await call('POST', '/api/auth/google', { body: { credential: 'x.y.z' } });
         step(bad.status === 401, '가짜 구글 로그인 거절');
+        if (cfg.data.chat) {
+            const ci = await call('GET', '/api/chat/info');
+            step(ci.status === 200 && typeof ci.data.online === 'number', `채팅방 연결 (지금 ${ci.data && ci.data.online}명)`);
+        }
     } else {
         console.log('· 구글 로그인 꺼짐 (GOOGLE_CLIENT_ID 를 넣으면 켜진다)');
     }
