@@ -1091,3 +1091,6 @@ html.home { scroll-behavior: smooth; }
     .chat-input { padding: 7px 8px; font-size: 16px; }
 }
 .chat-adm-text { white-space: normal; text-align: left; min-width: 200px; word-break: break-word; }
+.acct-staff { color: #1a8f3c; font-weight: bold; }
+.chat-nick.is-staff { color: #1a8f3c; }
+.chat-staff { display: inline-block; margin-right: 6px; padding: 0 5px; border-radius: 4px; background: #1a8f3c; color: #fff; font-size: 10px; font-weight: bold; line-height: 16px; vertical-align: 1px; }

@@ -87,7 +87,8 @@
         if (list.querySelector('[data-id="' + CSS.escape(m.id) + '"]')) return;
         const mine = m.nick && m.nick === myNick();
         list.appendChild(el('li', { className: 'chat-msg' + (mine ? ' is-mine' : ''), 'data-id': m.id }, [
-            el('span', { className: 'chat-nick', text: m.nick }),
+            el('span', { className: 'chat-nick' + (m.staff ? ' is-staff' : ''), text: m.nick }),
+            m.staff ? el('span', { className: 'chat-staff', text: tr('chat.staff', '운영자') }) : null,
             el('span', { className: 'chat-text', text: m.text }),
             el('time', { className: 'chat-time', text: fmt(m.at) }),
         ]));

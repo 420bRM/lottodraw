@@ -197,3 +197,14 @@ test('채팅 연결: 설정·WebSocket 아님·다른 사이트는 거절', asyn
     assert.equal((await call(off, 'GET', '/api/config')).data.chat, false);
     assert.equal((await call(off, 'GET', '/api/chat/info')).status, 503);
 });
+
+test('채팅: 운영자 계정의 메시지에는 운영자 표시가 붙는다', async () => {
+    const { env, room, join } = setup();
+    const ws = join(), viewer = join();
+    const s = await member(env, 'OP');
+    await call(env, 'POST', '/api/admin/members/OP/staff', { headers: asAdmin });
+    await call(env, 'POST', '/api/me/nickname', { body: { nickname: '운영자' }, headers: { Authorization: 'Bearer ' + s } });
+    await send(room, ws, { t: 'auth', session: s });
+    await send(room, ws, { t: 'say', text: '공지: 토요일 밤에 만나요' });
+    assert.deepEqual([viewer.last('msg').m.nick, viewer.last('msg').m.staff], ['운영자', true]);
+});

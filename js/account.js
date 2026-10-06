@@ -97,7 +97,7 @@
         if (!force && c && Date.now() - c.at < CACHE_MS) return c;
         try {
             const got = await request('/api/me', { auth: true });
-            const v = { at: Date.now(), user: got.user, reactions: got.reactions || {} };
+            const v = { at: Date.now(), user: got.user, reactions: got.reactions || {}, points: got.points || null };
             temp.set(ME_STORE, v);
             if (got.attended) attendedToday = (got.points && got.points.attend) || 10;
             return v;
@@ -259,8 +259,14 @@
 
     /* ───── 별명 ───── */
 
+    const nickCost = () => (me && me.points && me.points.nickChange) || 500;
+
     function openNick(first) {
         closeModal();
+        // 이미 별명이 있으면 바꾸는 데 포인트를 쓴다(운영자는 무료)
+        const u = me && me.user;
+        const paid = !!(u && u.nick && !u.staff);
+        const avail = u && u.score ? u.score.avail : 0;
         const input = el('input', { type: 'text', id: 'acct-nick', className: 'acct-input', maxlength: '12', autocomplete: 'nickname',
             value: (me && me.user && me.user.nick) || '', placeholder: tr('acct.nickPh', '예: 행운의곰') });
         const err = el('p', { className: 'acct-err', role: 'alert', hidden: '' });
@@ -279,9 +285,11 @@
                 closeModal();
                 renderHeader();
                 window.dispatchEvent(new Event('lottodraw:account'));
-                toast(tr('acct.nickDone', '별명을 "{nick}"(으)로 정했습니다.', { nick: got.user.nick }));
+                toast(got.cost ? tr('acct.nickDonePaid', '별명을 "{nick}"(으)로 바꿨습니다. {cost}포인트를 썼습니다.', { nick: got.user.nick, cost: got.cost })
+                    : tr('acct.nickDone', '별명을 "{nick}"(으)로 정했습니다.', { nick: got.user.nick }));
             } catch (x) {
-                err.textContent = x.code === 'taken_nick' ? tr('acct.nickTaken', '이미 쓰고 있는 별명입니다. 다른 별명을 골라 주세요.')
+                err.textContent = x.code === 'need_points' ? tr('acct.nickNeedPts', '포인트가 모자랍니다. 별명을 바꾸려면 {cost}포인트가 필요합니다.', { cost: nickCost() })
+                    : x.code === 'taken_nick' ? tr('acct.nickTaken', '이미 쓰고 있는 별명입니다. 다른 별명을 골라 주세요.')
                     : x.code === 'reserved_nick' ? tr('acct.nickReserved', '쓸 수 없는 별명입니다. 다른 별명을 골라 주세요.')
                     : x.code === 'bad_nick' ? tr('acct.nickRule', '한글·영문·숫자·밑줄(_)로 2~12자, 띄어쓰기 없이 적어 주세요.')
                     : x.status === 401 ? tr('acct.expired', '로그인이 끝났습니다. 다시 로그인해 주세요.')
@@ -306,6 +314,7 @@
             el('p', { className: 'acct-lead', text: first
                 ? tr('acct.nickLeadFirst', '사이트에서 쓸 별명입니다. 나중에 "내 계정"에서 바꿀 수 있습니다.')
                 : tr('acct.nickLead', '사이트에서 쓸 별명입니다. 다른 사람과 겹치지 않아야 합니다.') }),
+            paid ? el('p', { className: 'acct-reason', text: tr('acct.nickCost', '별명을 바꾸면 {cost}포인트를 씁니다. 지금 쓸 수 있는 포인트: {avail}', { cost: nickCost(), avail: avail }) }) : null,
             form,
         ]);
         const modal = el('div', { id: 'acct-modal', className: 'acct-modal', on: { click: e => { if (e.target === modal) closeModal(); } } }, [box]);
@@ -342,9 +351,10 @@
                 ? (trial.expiresAt > Date.now() ? tr('acct.trialUntil', '무료 체험: {until}까지', { until: fmtDate(trial.expiresAt) }) : tr('acct.trialOver', '무료 체험이 끝났습니다'))
                 : tr('acct.trialNone', '무료 체험은 계정당 한 번입니다') }));
             const sc = me.user && me.user.score;
-            if (sc) menu.appendChild(el('a', { className: 'acct-score', href: root + 'ranking.html', text: tr('acct.score', '내 점수 {n}점 · 랭킹 보기 →', { n: sc.total }) }));
+            if (me.user && me.user.staff) menu.appendChild(el('p', { className: 'acct-staff', text: tr('acct.staff', '운영자 계정') }));
+            if (sc) menu.appendChild(el('a', { className: 'acct-score', href: root + 'ranking.html', text: tr('acct.score2', '내 점수 {n}점 · 포인트 {avail} · 랭킹 보기 →', { n: sc.total, avail: sc.avail != null ? sc.avail : sc.total }) }));
             menu.appendChild(el('a', { href: root + 'statistics.html', text: tr('acct.goStats', '5개월 통계 보기 →') }));
-            menu.appendChild(el('button', { type: 'button', text: me.user && me.user.nick ? tr('acct.nickChange', '별명 바꾸기') : tr('acct.nickSet', '별명 정하기'),
+            menu.appendChild(el('button', { type: 'button', text: me.user && me.user.nick ? (me.user.staff ? tr('acct.nickChange', '별명 바꾸기') : tr('acct.nickChangePaid', '별명 바꾸기 ({cost}P)', { cost: nickCost() })) : tr('acct.nickSet', '별명 정하기'),
                 on: { click: () => { menu.hidden = true; openNick(false); } } }));
             menu.appendChild(el('button', { type: 'button', text: tr('acct.logout', '로그아웃'), on: { click: logout } }));
             menu.appendChild(el('button', { type: 'button', className: 'acct-danger', text: tr('acct.delete', '회원 탈퇴'), on: { click: withdraw } }));

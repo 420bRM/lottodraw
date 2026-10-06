@@ -42,7 +42,7 @@
         box.appendChild(el('p', { className: 'rank-me-line' }, [
             el('b', { text: me.nick ? tr('rank.meNamed', '{nick} 님은 {rank}위', { nick: me.nick, rank: me.rank }) : tr('rank.meUnnamed', '별명을 정하면 {rank}위로 올라갑니다', { rank: me.rank }) }),
             ' ',
-            el('span', { text: tr('rank.meScore', '{total}점 (출석 {days}일 · 반응 {reacts}개 · 이용권 {buy}점)', me) }),
+            el('span', { text: tr('rank.meScore', '{total}점 (출석 {days}일 · 반응 {reacts}개 · 이용권 {buy}점) · 쓸 수 있는 포인트 {avail}', Object.assign({ avail: me.total }, me)) }),
         ]));
     }
 

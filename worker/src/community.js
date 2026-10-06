@@ -5,7 +5,9 @@
 // 한 곳에서 차례로 처리해 좋아요 수가 어긋나지 않는다.
 //
 // 저장하는 것 (개인정보 처리방침과 맞출 것)
-//   u:<구글 계정 번호>   { sub, ref, email, nick, createdAt, lastAt, trial, rx, sess, att, buy }
+//   u:<구글 계정 번호>   { sub, ref, email, nick, createdAt, lastAt, trial, rx, sess, att, buy, spent, staff }
+//                        spent: 쓴 포인트(별명 바꾸기 등) — 랭킹은 모은 점수(total)로, 쓸 수 있는 포인트는 total - spent
+//                        staff: 운영자 계정 — 랭킹에서 빠지고, 채팅에 "운영자" 표시, 운영자다운 별명 허용, 별명 바꾸기 무료
 //                        att: { days, last } — 출석한 날 수와 마지막 출석일(한국 날짜)
 //                        buy: 로그인한 채 산 이용권 금액 합계(원) — 랭킹 점수용
 //                        trial: { orderId, keyId, key, expiresAt } — 가입 때 한 번 주는 무료 체험 키
@@ -29,14 +31,16 @@ const DAY = 86400 * 1000;
 export const REACT_TYPES = ['h', 'd', 'w'];   // ♥ 좋아요, $ 대박 기원, ₩ 원화
 
 // 랭킹 점수. 바꾸려면 여기만 고친다(이용약관 7조 문구도 같이).
-export const POINTS = { attend: 10, react: 2, buyPer100: 10 };   // buyPer100: 이용권 100원마다 몇 점
+export const POINTS = { attend: 10, react: 2, buyPer100: 10, nickChange: 500 };   // buyPer100: 이용권 100원마다 몇 점, nickChange: 별명 바꾸기에 쓰는 포인트
 const kstDay = ms => new Date(ms + 9 * 3600 * 1000).toISOString().slice(0, 10);
 
 export function score(user) {
     const days = (user.att && user.att.days) || 0;
     const reacts = Object.values(user.rx || {}).reduce((n, m) => n + m.length, 0);
     const buy = Math.floor((user.buy || 0) * POINTS.buyPer100 / 100);
-    return { total: days * POINTS.attend + reacts * POINTS.react + buy, days, reacts, buy };
+    const total = days * POINTS.attend + reacts * POINTS.react + buy;
+    const spent = user.spent || 0;
+    return { total, days, reacts, buy, spent, avail: total - spent };
 }
 
 // 오늘(한국 날짜) 처음이면 출석을 하나 올린다. 올렸으면 true.
@@ -114,17 +118,32 @@ const OPS = {
     },
 
     // 별명 정하기·바꾸기. 다른 사람이 쓰는 별명이면 거절한다(대소문자 무시).
+    // 처음 정할 때(관리자가 지운 뒤 다시 정할 때 포함)는 무료, 바꿀 때는 포인트를 쓴다(운영자는 무료).
     async setNick({ sub, nick, key, now }) {
         const user = await this.storage.get('u:' + sub);
         if (!user) return { error: 'no_user' };
+        if (user.nick === nick) return { ok: true, user: view(user), cost: 0 };
         const owner = await this.storage.get('n:' + key);
         if (owner && owner !== sub) return { error: 'taken' };
+        const cost = user.nick && !user.staff ? POINTS.nickChange : 0;
+        const avail = score(user).avail;
+        if (cost && avail < cost) return { error: 'need_points', cost, avail };
         if (user.nick && user.nick.toLowerCase() !== key) await this.storage.delete('n:' + user.nick.toLowerCase());
         await this.storage.put('n:' + key, sub);
         user.nick = nick;
         user.nickAt = now;
+        user.spent = (user.spent || 0) + cost;
         await this.storage.put('u:' + sub, user);
-        return { ok: true, user: view(user) };
+        return { ok: true, user: view(user), cost };
+    },
+
+    // 관리자가 운영자 계정을 지정하거나 푼다
+    async setStaff({ sub, on }) {
+        const user = await this.storage.get('u:' + sub);
+        if (!user) return { error: 'no_user' };
+        user.staff = !!on;
+        await this.storage.put('u:' + sub, user);
+        return { ok: true };
     },
 
     async sessionCreate({ sub, hash, exp }) {
@@ -168,7 +187,7 @@ const OPS = {
     async ranking({ sub, limit }) {
         const users = await this.storage.list({ prefix: 'u:', limit: 5000 });
         const all = [];
-        for (const u of users.values()) all.push({ sub: u.sub, nick: u.nick || null, createdAt: u.createdAt || 0, s: score(u) });
+        for (const u of users.values()) if (!u.staff) all.push({ sub: u.sub, nick: u.nick || null, createdAt: u.createdAt || 0, s: score(u) });   // 운영자는 순위에서 뺀다
         all.sort((a, b) => (b.s.total - a.s.total) || (a.createdAt - b.createdAt));
         const named = all.filter(x => x.nick);
         const rankOf = (list, x) => list.findIndex(y => y.s.total === x.s.total) + 1;   // 같은 점수는 같은 순위
@@ -255,7 +274,7 @@ const OPS = {
                 sub: u.sub, email: u.email, nick: u.nick || null, createdAt: u.createdAt, lastAt: u.lastAt,
                 trial: u.trial && u.trial.keyId ? { keyId: u.trial.keyId, expiresAt: u.trial.expiresAt } : null,
                 hearts: rx.filter(m => m.includes('h')).length, dollars: rx.filter(m => m.includes('d')).length,
-                wons: rx.filter(m => m.includes('w')).length, score: score(u), buy: u.buy || 0,
+                wons: rx.filter(m => m.includes('w')).length, score: score(u), buy: u.buy || 0, staff: !!u.staff,
             });
         }
         members.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -279,7 +298,7 @@ const OPS = {
 
 function view(user) {
     const trial = user.trial && user.trial.key ? { key: user.trial.key, keyId: user.trial.keyId, expiresAt: user.trial.expiresAt } : null;
-    return { email: user.email, nick: user.nick || null, createdAt: user.createdAt, trial, score: score(user) };
+    return { email: user.email, nick: user.nick || null, createdAt: user.createdAt, trial, score: score(user), staff: !!user.staff };
 }
 
 function reply(data, status) {
