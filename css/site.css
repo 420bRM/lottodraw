@@ -1012,3 +1012,12 @@ html.home { scroll-behavior: smooth; }
 .acct-hint { margin: 6px 0 8px; color: var(--muted); font-size: 12px; }
 .acct-actions { display: flex; gap: 8px; }
 .acct-actions .btn { flex: 1; }
+.members-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 8px; }
+.members-tools input { flex: 1; min-width: 180px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px; font: 14px var(--font); }
+.table-wrap { overflow-x: auto; }
+.admin-table { font-size: 13px; white-space: nowrap; }
+.admin-table th, .admin-table td { padding: 6px 8px; }
+.admin-row-tools { display: flex; gap: 4px; justify-content: center; }
+.admin-row-tools .danger { color: var(--error); }
+.members-rx { margin-top: 12px; }
+.members-rx summary { font-weight: bold; cursor: pointer; }

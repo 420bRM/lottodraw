@@ -53,6 +53,22 @@
             <p class="license-status" id="admin-status" role="status" aria-live="polite"></p>
             <div class="admin-list" id="order-list"></div>
 
+            <section class="card" id="members-card" aria-labelledby="members-t" hidden>
+                <h2 class="card-title" id="members-t"><span>회원 명부</span><small id="members-sum"></small></h2>
+                <div class="card-body">
+                    <p class="members-tools">
+                        <input type="search" id="members-q" placeholder="별명·이메일로 찾기" autocomplete="off">
+                        <button type="button" class="btn btn-secondary btn-mini" id="members-reload">새로고침</button>
+                    </p>
+                    <p class="license-status" id="members-status" role="status"></p>
+                    <div class="table-wrap"><table class="data-table admin-table" id="members-table"></table></div>
+                    <details class="members-rx">
+                        <summary>카드별 좋아요 합계</summary>
+                        <div class="table-wrap"><table class="data-table admin-table" id="reactions-table"></table></div>
+                    </details>
+                </div>
+            </section>
+
             <section class="card hook-card" aria-labelledby="hook-t">
                 <h2 class="card-title" id="hook-t"><span>입금 알림 연결 (자동 입금 확인)</span><small>한 번만 설정</small></h2>
                 <div class="card-body">

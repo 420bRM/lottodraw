@@ -74,8 +74,8 @@ async function main() {
 
     // 구글 로그인·좋아요 (GOOGLE_CLIENT_ID 를 넣었을 때만). 로그인 자체는 사람 계정이 필요해 여기서 못 한다.
     if (cfg.data.login) {
-        const rx = await call('GET', '/api/reactions?ids=index');
-        step(rx.status === 200 && rx.data.counts && rx.data.counts.index, '좋아요 수 읽기 (회원 저장소 연결)');
+        const mem = await call('GET', '/api/admin/members', { headers: asAdmin });
+        step(mem.status === 200 && Array.isArray(mem.data.members), `회원 명부 읽기 (${mem.data && mem.data.members ? mem.data.members.length : '?'}명)`);
         step(st.data.login && !st.data.login.error, `회원 저장소 (가입 ${st.data.login ? st.data.login.users : '?'}명)`);
         const bad = await call('POST', '/api/auth/google', { body: { credential: 'x.y.z' } });
         step(bad.status === 401, '가짜 구글 로그인 거절');

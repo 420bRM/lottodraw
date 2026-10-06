@@ -668,6 +668,7 @@ function reactionIds(raw) {
     return [...new Set(ids)];
 }
 
+// 카드별 누른 수. 누구나 본다.
 async function getReactions(request, env, url) {
     needLogin(env);
     const got = await community(env, 'counts', { items: reactionIds(url.searchParams.get('ids')) });
@@ -773,6 +774,18 @@ async function admin(request, env, sub, method, url) {
             }
         }
         return json(request, env, { cleaned: true });
+    }
+    // 회원 명부 · 카드별 좋아요 합계 (구글 로그인을 켰을 때)
+    if (sub === '/members' && method === 'GET') {
+        needLogin(env);
+        return json(request, env, await community(env, 'adminList'));
+    }
+    const mm = sub.match(/^\/members\/([0-9A-Za-z_-]{1,64})\/(clear-nick|delete)$/);
+    if (mm && method === 'POST') {
+        needLogin(env);
+        const r = await community(env, mm[2] === 'delete' ? 'userDelete' : 'clearNick', { sub: mm[1] });
+        if (r.error) throw new HttpError(404, 'no_member', '회원을 찾을 수 없습니다.');
+        return json(request, env, { ok: true });
     }
     if (sub === '/orders' && method === 'GET') {
         const status = url.searchParams.get('status') || 'pending';
