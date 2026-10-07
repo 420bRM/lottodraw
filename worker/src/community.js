@@ -9,6 +9,7 @@
 //                        spent: 쓴 포인트(별명 바꾸기 등) — 랭킹은 모은 점수(total)로, 쓸 수 있는 포인트는 total - spent
 //                        staff: 운영자 계정 — 랭킹에서 빠지고, 채팅에 "운영자" 표시, 운영자다운 별명 허용, 별명 바꾸기 무료
 //                        att: { days, last } — 출석한 날 수와 마지막 출석일(한국 날짜)
+//                        chat: { n, day, today, h } — (공지하지 않는 규칙) 점수를 받은 채팅 수(전체), 오늘(한국 날짜)의 수, 마지막 메시지 해시(같은 말 반복 거르기)
 //                        buy: 로그인한 채 산 이용권 금액 합계(원) — 랭킹 점수용
 //                        trial: { orderId, keyId, key, expiresAt } — 가입 때 한 번 주는 무료 체험 키
 //                        rx:    { 항목: 'h' | 'd' | 'hd' } — 내가 누른 좋아요
@@ -32,16 +33,24 @@ export const REACT_TYPES = ['h', 'd', 'w'];   // ♥ 좋아요, $ 대박 기원,
 
 // 랭킹 점수. 바꾸려면 여기만 고친다(이용약관 7조 문구도 같이).
 export const POINTS = { attend: 10, react: 2, buyPer100: 10, nickChange: 500 };   // buyPer100: 이용권 100원마다 몇 점, nickChange: 별명 바꾸기에 쓰는 포인트
+// 채팅 점수 — 공지하지 않는 규칙이라 POINTS(회원에게 내려 보내는 값)와 따로 둔다.
+// per: 메시지 하나에 몇 점, daily: 하루에 점수를 받는 메시지 수 상한(50개 = 5점)
+export const CHAT_POINTS = { per: 0.1, daily: 50 };
+const tenth = x => Math.round(x * 10) / 10;   // 채팅 점수(0.1)가 섞여 소수 첫째 자리까지 쓴다
 const kstDay = ms => new Date(ms + 9 * 3600 * 1000).toISOString().slice(0, 10);
 
 export function score(user) {
     const days = (user.att && user.att.days) || 0;
     const reacts = Object.values(user.rx || {}).reduce((n, m) => n + m.length, 0);
     const buy = Math.floor((user.buy || 0) * POINTS.buyPer100 / 100);
-    const total = days * POINTS.attend + reacts * POINTS.react + buy;
+    const chats = (user.chat && user.chat.n) || 0;
+    const total = tenth(days * POINTS.attend + reacts * POINTS.react + buy + chats * CHAT_POINTS.per);
     const spent = user.spent || 0;
-    return { total, days, reacts, buy, spent, avail: total - spent };
+    return { total, days, reacts, buy, chats, spent, avail: tenth(total - spent) };
 }
+
+// 회원에게 보이는 점수: 채팅 점수는 공지하지 않는 규칙이라 항목(chats)을 빼고 합계에만 넣는다. 관리자 명부는 score() 그대로.
+const pubScore = user => { const s = score(user); delete s.chats; return s; };
 
 // 오늘(한국 날짜) 처음이면 출석을 하나 올린다. 올렸으면 true.
 function attend(user, now) {
@@ -173,6 +182,22 @@ const OPS = {
         return { sub: s.sub, user: view(user), rx: user.rx || {}, attended };
     },
 
+    // 채팅 한 마디에 점수. 운영자 제외, 하루 상한, 바로 앞과 같은 말(h: 정규화한 글의 해시)은 세지 않는다.
+    async chatPoint({ sub, now, h }) {
+        const user = await this.storage.get('u:' + sub);
+        if (!user || user.staff) return { counted: false };
+        const today = kstDay(now);
+        const c = user.chat || { n: 0, day: '', today: 0, h: '' };
+        if (c.day !== today) { c.day = today; c.today = 0; }
+        if (c.today >= CHAT_POINTS.daily || (h && c.h === h)) return { counted: false };
+        c.n += 1;
+        c.today += 1;
+        c.h = h || '';
+        user.chat = c;
+        await this.storage.put('u:' + sub, user);
+        return { counted: true, today: c.today };
+    },
+
     // 로그인한 채 산 이용권: 결제되면 +금액, 환불되면 -금액 (랭킹 점수용)
     async credit({ ref, amount }) {
         const sub = await this.storage.get('m:' + ref);
@@ -196,7 +221,8 @@ const OPS = {
         const mine = sub && all.find(x => x.sub === sub);
         if (mine) {
             const pool = mine.nick ? named : named.concat([mine]).sort((a, b) => (b.s.total - a.s.total) || (a.createdAt - b.createdAt));
-            me = Object.assign({ rank: rankOf(pool, mine), of: pool.length, nick: mine.nick }, mine.s);
+            const s = Object.assign({}, mine.s); delete s.chats;
+            me = Object.assign({ rank: rankOf(pool, mine), of: pool.length, nick: mine.nick }, s);
         }
         return { top, me, total: named.length };
     },
@@ -298,7 +324,7 @@ const OPS = {
 
 function view(user) {
     const trial = user.trial && user.trial.key ? { key: user.trial.key, keyId: user.trial.keyId, expiresAt: user.trial.expiresAt } : null;
-    return { email: user.email, nick: user.nick || null, createdAt: user.createdAt, trial, score: score(user), staff: !!user.staff };
+    return { email: user.email, nick: user.nick || null, createdAt: user.createdAt, trial, score: pubScore(user), staff: !!user.staff };
 }
 
 function reply(data, status) {
