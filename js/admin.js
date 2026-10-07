@@ -218,7 +218,7 @@
                 el('td', { text: (m.staff ? '🛡 ' : '') + (m.nick || '—') }), el('td', { text: m.email || '' }), el('td', { text: when(m.createdAt) }),
                 el('td', { text: m.lastAt ? when(m.lastAt) : '' }), el('td', { text: trial }),
                 el('td', { text: String(m.hearts || 0) }), el('td', { text: String(m.dollars || 0) }), el('td', { text: String(m.wons || 0) }),
-                el('td', { title: m.score ? `출석 ${m.score.days}일 · 반응 ${m.score.reacts}개 · 이용권 ${(m.buy || 0).toLocaleString()}원` : '', text: m.score ? String(m.score.total) : '0' }), tools,
+                el('td', { title: m.score ? `출석 ${m.score.days}일 · 반응 ${m.score.reacts}개 · 채팅 ${m.score.chats || 0}개 · 이용권 ${(m.buy || 0).toLocaleString()}원` : '', text: m.score ? String(m.score.total) : '0' }), tools,
             ]));
         });
         table.appendChild(body);

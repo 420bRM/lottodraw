@@ -17,6 +17,7 @@ const HISTORY = 50;           // 들어올 때 보여 주는 최근 메시지 �
 const MAX_KEEP = 300;         // 저장해 두는 최대 개수
 const GAP_MS = 3000;          // 한 사람이 다음 메시지를 쓰기까지
 const MAX_LEN = 200;
+const MIN_POINT_LEN = 2;      // 점수를 받는 최소 글자 수(공백·기호 빼고)
 
 // 홍보·연락처로 보이는 것. 걸리면 보내지 않고 이유를 알려 준다.
 const BLOCKS = [
@@ -144,6 +145,11 @@ export class ChatRoom {
             await this.storage.put('msg:' + id, m);
             this.broadcast({ t: 'msg', m: pub(m) });
             await this.trim();
+            // 랭킹 점수(한 마디 0.1점). 한 글자짜리·같은 말 반복은 세지 않는다 — 판단은 Community 가(하루 상한 포함)
+            const plain = c.text.toLowerCase().replace(/[\s\p{P}\p{S}]+/gu, '');
+            if (!me.staff && plain.length >= MIN_POINT_LEN) {
+                await community(this.env, 'chatPoint', { sub: me.sub, now, h: await sha256('chat:' + plain) }).catch(() => null);
+            }
             return;
         }
     }

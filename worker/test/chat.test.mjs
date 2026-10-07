@@ -208,3 +208,44 @@ test('채팅: 운영자 계정의 메시지에는 운영자 표시가 붙는다'
     await send(room, ws, { t: 'say', text: '공지: 토요일 밤에 만나요' });
     assert.deepEqual([viewer.last('msg').m.nick, viewer.last('msg').m.staff], ['운영자', true]);
 });
+
+test('채팅 점수(공지하지 않는 규칙): 한 마디 0.1점, 같은 말 반복·한 글자·운영자 제외, 하루 50개까지, 회원에게는 항목 없이 합계만', async () => {
+    const { env, room, join } = setup();
+    const ws = join();
+    const s = await member(env, 'C', '수다곰');
+    await send(room, ws, { t: 'auth', session: s });
+    const say = async text => {   // 3초 제한을 건너뛰고 말한다
+        room.last.clear();
+        ws.serializeAttachment(Object.assign(ws.deserializeAttachment(), { lastAt: 0 }));
+        await send(room, ws, { t: 'say', text });
+    };
+    const me = async () => (await call(env, 'GET', '/api/me', { headers: { Authorization: 'Bearer ' + s } })).data.user.score;
+    const before = (await me()).total;
+
+    await say('토요일 기대됩니다');
+    await say('토요일  기대됩니다!');   // 공백·기호만 다른 같은 말
+    await say('ㅋ');                    // 한 글자
+    await say('34번 또 나올까요');
+    let sc = await me();
+    assert.equal(sc.total, Math.round((before + 0.2) * 10) / 10);
+    assert.equal(sc.chats, undefined, '회원에게는 채팅 항목을 보이지 않는다');
+    const rk = (await call(env, 'GET', '/api/ranking', { headers: { Authorization: 'Bearer ' + s } })).data;
+    assert.equal(rk.me.chats, undefined);
+
+    for (let i = 0; i < 60; i++) await say('메시지 ' + i);
+    sc = await me();
+    assert.equal(sc.total, Math.round((before + 5) * 10) / 10, '하루 최대 5점');
+    const list = (await call(env, 'GET', '/api/admin/members', { headers: asAdmin })).data.members;
+    assert.equal(list.find(m => m.nick === '수다곰').score.chats, 50, '관리자는 채팅 수를 본다');
+
+    // 운영자는 점수를 받지 않는다
+    const opWs = join();
+    const so = await member(env, 'OP2');
+    await call(env, 'POST', '/api/admin/members/OP2/staff', { headers: asAdmin });
+    await send(room, opWs, { t: 'auth', session: so });
+    const ob = (await call(env, 'GET', '/api/me', { headers: { Authorization: 'Bearer ' + so } })).data.user.score.total;
+    await call(env, 'POST', '/api/me/nickname', { body: { nickname: '관리팀' }, headers: { Authorization: 'Bearer ' + so } });
+    await send(room, opWs, { t: 'auth', session: so });
+    await send(room, opWs, { t: 'say', text: '안내 말씀 드립니다' });
+    assert.equal((await call(env, 'GET', '/api/me', { headers: { Authorization: 'Bearer ' + so } })).data.user.score.total, ob);
+});
