@@ -20,10 +20,10 @@
 
 import { generateKeyPair, importPrivate, importPublic, signKey, verifyKey, parseKey, hex32, publicOnly, keyId, b64urlEncode } from './keys.js';
 import { plansFor } from './plans.js';
-import { community, TRIAL_DAYS, SESSION_DAYS, REACT_TYPES, ITEM_RE, POINTS } from './community.js';
+import { community, TRIAL_DAYS, SESSION_DAYS, REACT_TYPES, ITEM_RE, POINTS, COMMENT } from './community.js';
 import { verifyGoogleToken } from './google.js';
 
-import { chatStub } from './chat.js';
+import { chatStub, checkText } from './chat.js';
 
 export { Community } from './community.js';
 export { ChatRoom } from './chat.js';
@@ -96,6 +96,9 @@ async function route(request, env, ctx) {
     if (path === '/api/chat' && method === 'GET') return chatConnect(request, env);
     if (path === '/api/chat/info' && method === 'GET') return chatInfo(request, env);
     if (path === '/api/reactions' && method === 'POST') return react(request, env);
+    if (path === '/api/comments' && method === 'GET') return getComments(request, env, url);
+    if (path === '/api/comments' && method === 'POST') return addComment(request, env, ctx);
+    if (path === '/api/comments/delete' && method === 'POST') return deleteComment(request, env);
 
     if (path.startsWith('/api/admin/')) {
         if (!adminOk(request, env)) throw new HttpError(401, 'unauthorized', '관리자 토큰이 맞지 않습니다.');
@@ -754,6 +757,66 @@ async function react(request, env) {
     return json(request, env, r);
 }
 
+/* ───── 블로그 댓글 (js/comments.js) ───── */
+
+const POST_RE = /^[a-z0-9][a-z0-9-]{0,79}$/;   // 블로그 글 파일 이름(.html 뺀 것)
+const COMMENT_ERR = {
+    empty: [400, '내용을 적어 주세요.'], too_long: [400, `${COMMENT.max}자까지 쓸 수 있습니다.`],
+    link: [400, '링크·사이트 주소는 올릴 수 없습니다.'], contact: [400, '연락처·메신저 아이디는 올릴 수 없습니다.'],
+    promo: [400, '홍보성 문구는 올릴 수 없습니다.'], need_nick: [403, '별명을 정하면 댓글을 쓸 수 있습니다.'],
+    banned: [403, '운영 원칙 위반으로 댓글·채팅이 막혀 있습니다.'],
+    slow: [429, '조금 천천히 써 주세요 (15초에 한 번).'], daily: [429, `댓글은 하루 ${COMMENT.daily}개까지 쓸 수 있습니다.`],
+    not_found: [404, '이미 지워진 댓글입니다.'], not_mine: [403, '내가 쓴 댓글만 지울 수 있습니다.'],
+};
+function commentError(code) {
+    const e = COMMENT_ERR[code] || [400, '처리하지 못했습니다.'];
+    return new HttpError(e[0], code, e[1]);
+}
+function postId(v) {
+    const p = String(v || '');
+    if (!POST_RE.test(p)) throw new HttpError(400, 'bad_post', '글 이름이 올바르지 않습니다.');
+    return p;
+}
+
+// 누구나 읽는다. 로그인했으면 내 댓글에 표시(지우기 단추)
+async function getComments(request, env, url) {
+    needLogin(env);
+    const post = postId(url.searchParams.get('post'));
+    let sub = null;
+    if (bearer(request)) {
+        const got = await community(env, 'sessionGet', { hash: await sha256('sess:' + bearer(request)), now: Date.now() }).catch(() => ({}));
+        sub = got.sub || null;
+    }
+    const r = await community(env, 'commentList', { post, sub });
+    return json(request, env, r, 200, sub ? {} : { 'Cache-Control': 'public, max-age=15' }, !sub);
+}
+
+async function addComment(request, env, ctx) {
+    const s = await sessionUser(request, env);
+    await limited(env.REACT_LIMIT, s.hash);
+    const body = await readJson(request);
+    const post = postId(body.post);
+    const c = checkText(body.text, { max: COMMENT.max, multiline: true });
+    if (c.error) throw commentError(c.error);
+    if (env.CHAT) {   // 채팅 금지된 계정은 댓글도 막는다
+        const b = await (await chatStub(env).fetch('https://chat/banned', { method: 'POST', body: JSON.stringify({ sub: s.sub }) })).json().catch(() => ({}));
+        if (b.banned) throw commentError('banned');
+    }
+    const r = await community(env, 'commentAdd', { sub: s.sub, post, text: c.text, now: Date.now() });
+    if (r.error === 'no_user') throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
+    if (r.error) throw commentError(r.error);
+    ctx.waitUntil(notify(env, `블로그 댓글 · ${post}\n${r.comment.nick}: ${c.text.slice(0, 80)}`));
+    return json(request, env, r);
+}
+
+async function deleteComment(request, env) {
+    const s = await sessionUser(request, env);
+    const body = await readJson(request);
+    const r = await community(env, 'commentDelete', { sub: s.sub, post: postId(body.post), id: String(body.id || '').slice(0, 40) });
+    if (r.error) throw commentError(r.error);
+    return json(request, env, { ok: true });
+}
+
 /* ───── 관리자 ───── */
 
 function adminOk(request, env) {
@@ -867,6 +930,18 @@ async function admin(request, env, sub, method, url) {
         const payload = cm[1] === 'delete' ? { id: String(body.id || '').slice(0, 40) } : { sub: String(body.sub || '').slice(0, 64), nick: cleanText(body.nick, 20) };
         const r = await chatStub(env).fetch('https://chat/admin/' + cm[1], { method: 'POST', body: JSON.stringify(payload) });
         return json(request, env, await r.json());
+    }
+    // 블로그 댓글 관리: 최근 댓글(누가 썼는지 포함), 지우기. 막기는 채팅 금지와 같다
+    if (sub === '/comments' && method === 'GET') {
+        needLogin(env);
+        return json(request, env, await community(env, 'adminComments', { limit: 300 }));
+    }
+    if (sub === '/comments/delete' && method === 'POST') {
+        needLogin(env);
+        const body = await readJson(request);
+        const r = await community(env, 'commentDelete', { post: postId(body.post), id: String(body.id || '').slice(0, 40), admin: true });
+        if (r.error) throw commentError(r.error);
+        return json(request, env, { ok: true });
     }
     if (sub === '/orders' && method === 'GET') {
         const status = url.searchParams.get('status') || 'pending';

@@ -1,4 +1,4 @@
-// 실시간 채팅방: 글자 검사, 로그인·별명·금지·속도 제한, 24시간 휘발, 관리자 지우기·금지.
+// 실시간 채팅방(과 블로그 댓글): 글자 검사, 로그인·별명·금지·속도 제한, 24시간 휘발, 관리자 지우기·금지.
 // WebSocket 은 흉내 낸 소켓으로 방의 webSocketMessage 를 바로 부른다.
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -60,7 +60,7 @@ function setup() {
     const room = new ChatRoom({ storage: memoryStorage(), getWebSockets: () => sockets.filter(s => s.readyState === 1), acceptWebSocket: ws => sockets.push(ws) }, env);
     env.CHAT = { idFromName: n => n, get: () => ({ fetch: (u, i) => room.fetch(new Request(u, i)) }) };
     const join = () => { const ws = fakeSocket(); sockets.push(ws); ws.serializeAttachment({}); return ws; };
-    return { env, room, join };
+    return { env, room, join, cStore: cInst.storage };
 }
 
 const call = async (env, method, path, { body, headers } = {}) => {
@@ -248,4 +248,97 @@ test('채팅 점수(공지하지 않는 규칙): 한 마디 0.1점, 같은 말 �
     await send(room, opWs, { t: 'auth', session: so });
     await send(room, opWs, { t: 'say', text: '안내 말씀 드립니다' });
     assert.equal((await call(env, 'GET', '/api/me', { headers: { Authorization: 'Bearer ' + so } })).data.user.score.total, ob);
+});
+
+/* ───── 블로그 댓글 ───── */
+
+const auth = s => ({ Authorization: 'Bearer ' + s });
+// 15초 제한을 건너뛴다
+const unwait = async (cStore, sub) => { const u = await cStore.get('u:' + sub); u.cmAt = 0; await cStore.put('u:' + sub, u); };
+
+test('댓글 글자 검사: 줄바꿈은 남기고(빈 줄 하나까지) 500자, 링크·연락처·홍보는 막는다', () => {
+    assert.deepEqual(checkText('  첫 줄  \r\n\n\n\n  둘째   줄 ', { max: 500, multiline: true }), { text: '첫 줄\n\n둘째 줄' });
+    assert.equal(checkText('가'.repeat(501), { max: 500, multiline: true }).error, 'too_long');
+    assert.equal(checkText('가'.repeat(500), { max: 500, multiline: true }).error, undefined);
+    assert.equal(checkText('여기로\n오픈 카톡 오세요', { max: 500, multiline: true }).error, 'contact');
+    assert.equal(checkText('\n \n', { max: 500, multiline: true }).error, 'empty');
+});
+
+test('댓글: 읽기는 누구나, 쓰기는 로그인+별명, 15초·하루 30개, 내 것만 지우고, 별명을 바꾸면 따라 바뀐다', async () => {
+    const { env, cStore } = setup();
+    const post = 'lotto-odds-explained';
+    const sA = await member(env, 'A', '행운의곰');
+    const sB = await member(env, 'B');   // 별명 없음
+
+    assert.equal((await call(env, 'POST', '/api/comments', { body: { post, text: '좋은 글' } })).status, 401);
+    const noNick = await call(env, 'POST', '/api/comments', { body: { post, text: '좋은 글' }, headers: auth(sB) });
+    assert.deepEqual([noNick.status, noNick.data.error], [403, 'need_nick']);
+    assert.equal((await call(env, 'POST', '/api/comments', { body: { post: '../x', text: '좋은 글' }, headers: auth(sA) })).data.error, 'bad_post');
+    assert.equal((await call(env, 'POST', '/api/comments', { body: { post, text: 'www.abc 오세요' }, headers: auth(sA) })).data.error, 'link');
+
+    const ok = await call(env, 'POST', '/api/comments', { body: { post, text: '815만분의 1\n실감 나네요' }, headers: auth(sA) });
+    assert.equal(ok.status, 200);
+    assert.deepEqual([ok.data.comment.nick, ok.data.comment.text, ok.data.comment.mine], ['행운의곰', '815만분의 1\n실감 나네요', true]);
+    const slow = await call(env, 'POST', '/api/comments', { body: { post, text: '하나 더' }, headers: auth(sA) });
+    assert.deepEqual([slow.status, slow.data.error], [429, 'slow']);
+
+    // 누구나 읽는다(계정 번호는 내보내지 않는다). 내 것에만 mine
+    const pub = await call(env, 'GET', '/api/comments?post=' + post);
+    assert.equal(pub.data.comments.length, 1);
+    assert.equal(pub.data.comments[0].sub, undefined);
+    assert.equal(pub.data.comments[0].mine, undefined);
+    assert.equal((await call(env, 'GET', '/api/comments?post=' + post, { headers: auth(sA) })).data.comments[0].mine, true);
+    assert.equal((await call(env, 'GET', '/api/comments?post=other-post')).data.comments.length, 0, '글마다 따로');
+
+    // 남의 댓글은 못 지운다
+    await call(env, 'POST', '/api/me/nickname', { body: { nickname: '구경꾼' }, headers: auth(sB) });
+    const id = ok.data.comment.id;
+    assert.equal((await call(env, 'POST', '/api/comments/delete', { body: { post, id }, headers: auth(sB) })).data.error, 'not_mine');
+
+    // 별명을 바꾸면(500P 필요 — 점수를 채워 준다) 예전 댓글도 새 별명으로
+    const u = await cStore.get('u:A'); u.buy = 10000; await cStore.put('u:A', u);
+    assert.equal((await call(env, 'POST', '/api/me/nickname', { body: { nickname: '대박곰' }, headers: auth(sA) })).status, 200);
+    assert.equal((await call(env, 'GET', '/api/comments?post=' + post)).data.comments[0].nick, '대박곰');
+
+    assert.equal((await call(env, 'POST', '/api/comments/delete', { body: { post, id }, headers: auth(sA) })).status, 200);
+    assert.equal((await call(env, 'GET', '/api/comments?post=' + post)).data.comments.length, 0);
+
+    // 하루 30개까지
+    for (let i = 0; i < 30; i++) {
+        await unwait(cStore, 'B');
+        assert.equal((await call(env, 'POST', '/api/comments', { body: { post, text: '댓글 ' + i }, headers: auth(sB) })).status, 200, 'n=' + i);
+    }
+    await unwait(cStore, 'B');
+    assert.equal((await call(env, 'POST', '/api/comments', { body: { post, text: '31번째' }, headers: auth(sB) })).data.error, 'daily');
+});
+
+test('댓글 관리: 관리자는 누가 썼는지 보고 지우며, 채팅 금지한 계정은 댓글도 막히고, 탈퇴하면 댓글이 지워진다', async () => {
+    const { env } = setup();
+    const post = 'why-jackpots-split';
+    const s = await member(env, 'X', '말썽꾼');
+    const s2 = await member(env, 'Y', '착한곰');
+    await call(env, 'POST', '/api/comments', { body: { post, text: '첫 댓글' }, headers: auth(s) });
+    await call(env, 'POST', '/api/comments', { body: { post, text: '좋은 글이네요' }, headers: auth(s2) });
+
+    assert.equal((await call(env, 'GET', '/api/admin/comments')).status, 401);
+    const list = (await call(env, 'GET', '/api/admin/comments', { headers: asAdmin })).data;
+    assert.equal(list.total, 2);
+    const mine = list.comments.find(c => c.sub === 'X');
+    assert.deepEqual([mine.post, mine.nick, mine.text], [post, '말썽꾼', '첫 댓글']);
+
+    assert.equal((await call(env, 'POST', '/api/admin/comments/delete', { body: { post, id: mine.id }, headers: asAdmin })).status, 200);
+    assert.equal((await call(env, 'GET', '/api/comments?post=' + post)).data.comments.length, 1);
+
+    await call(env, 'POST', '/api/admin/chat/ban', { body: { sub: 'X', nick: '말썽꾼' }, headers: asAdmin });
+    const banned = await call(env, 'POST', '/api/comments', { body: { post, text: '다시 왔다' }, headers: auth(s) });
+    assert.deepEqual([banned.status, banned.data.error], [403, 'banned']);
+
+    // 관리자가 별명을 지우면 댓글에도 별명이 빠진다
+    await call(env, 'POST', '/api/admin/members/Y/clear-nick', { headers: asAdmin });
+    assert.equal((await call(env, 'GET', '/api/comments?post=' + post)).data.comments[0].nick, null);
+
+    // 탈퇴하면 그 사람 댓글이 지워진다
+    assert.equal((await call(env, 'POST', '/api/me/delete', { body: { confirm: true }, headers: auth(s2) })).status, 200);
+    assert.equal((await call(env, 'GET', '/api/comments?post=' + post)).data.comments.length, 0);
+    assert.equal((await call(env, 'GET', '/api/admin/comments', { headers: asAdmin })).data.total, 0);
 });

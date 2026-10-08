@@ -8,7 +8,7 @@
 //
 // 저장 (이 방의 저장소)
 //   msg:<시각 16자리>-<무작위>  { id, at, nick, text, sub }   — 24시간 뒤 지운다. sub 는 관리자에게만 보인다
-//   ban:<구글 계정 번호>        { at, nick }
+//   ban:<구글 계정 번호>        { at, nick }   — 채팅 금지. 블로그 댓글 쓰기도 함께 막는다
 
 import { community } from './community.js';
 
@@ -28,10 +28,15 @@ const BLOCKS = [
     [/(리딩\s*방|무료\s*번호\s*방|당첨\s*보장|적중률|토토|카지노|바카라|먹튀)/i, 'promo'],
 ];
 
-export function checkText(raw) {
-    const text = String(raw == null ? '' : raw).replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim();
+// max: 글자 수 상한, multiline: 줄바꿈을 남긴다(블로그 댓글 — 빈 줄은 한 줄까지만)
+export function checkText(raw, opts) {
+    const o = opts || {};
+    let text = String(raw == null ? '' : raw).replace(/\r\n?/g, '\n');
+    text = o.multiline
+        ? text.replace(/[\u0000-\u0009\u000b-\u001f\u007f]/g, ' ').replace(/[ \t\u00a0]+/g, ' ').replace(/ *\n */g, '\n').replace(/\n{3,}/g, '\n\n').trim()
+        : text.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim();
     if (!text) return { error: 'empty' };
-    if (text.length > MAX_LEN) return { error: 'too_long' };
+    if (text.length > (o.max || MAX_LEN)) return { error: 'too_long' };
     for (const [re, why] of BLOCKS) if (re.test(text)) return { error: why };
     return { text };
 }
@@ -77,6 +82,7 @@ export class ChatRoom {
             }
             return reply({ ok: true });
         }
+        if (url.pathname === '/banned') return reply({ banned: !!(await this.storage.get('ban:' + body.sub)) });   // 블로그 댓글도 같은 금지를 따른다
         if (url.pathname === '/admin/unban') {
             await this.storage.delete('ban:' + body.sub);
             return reply({ ok: true });
