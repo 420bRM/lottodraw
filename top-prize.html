@@ -53,6 +53,13 @@
         <h1 data-i18n="top.h1">역대 로또 6/45 1등 당첨금 TOP 50</h1>
         <p class="intro" id="subtitle" aria-live="polite" data-i18n="top.loading"><!-- seo:subtitle:start -->(1인당 실수령액 기준 / 최신 <strong>1244</strong>회차까지 자동 업데이트)<!-- seo:subtitle:end --></p>
 
+        <section class="pchart" id="prize-chart" aria-labelledby="pchart-title">
+            <h2 id="pchart-title" data-i18n="pc.h2">회차별 1등 당첨금 그래프</h2>
+            <p class="pchart-lead" data-i18n="pc.lead">가로는 회차, 세로는 고른 지표입니다. 그래프를 짚으면 그 회차의 값이 나옵니다.</p>
+            <div id="pchart-mount"><p class="pchart-loading" data-i18n="pc.loading">그래프를 불러오는 중…</p></div>
+        </section>
+
+        <h2 class="top-table-h" data-i18n="top.h2">1인당 당첨금 순위 TOP 50</h2>
         <div class="table-scroll">
             <table class="data-table" id="topPrizeTable">
                 <thead>
@@ -443,8 +450,34 @@
 </div>
 
 <script src="js/site-header.js"></script>
+<script src="js/premium-config.js"></script>
+<script src="js/license.js"></script>
+<script src="js/prize-chart.js"></script>
 <script>
     const subtitle = document.getElementById('subtitle');
+
+    // 회차별 그래프. 보조지표·그림도구는 이용권이 확인되면 켜고, 환불·만료되면 몇 분 안에 다시 잠근다.
+    function mountChart(draws) {
+        const box = document.getElementById('pchart-mount');
+        let chart;
+        try {
+            chart = PrizeChart.mount(box, draws);
+        } catch (err) {
+            console.error(err);
+            box.textContent = I18N.t('top.loadFail');
+            return;
+        }
+        const check = () => {
+            if (!window.LottoLicense || !LottoLicense.savedKey()) { chart.setUnlocked(false); return; }
+            LottoLicense.unlockState().then(state => {
+                if (state.unlocked) chart.setUnlocked(true);
+                else if (!state.offline) chart.setUnlocked(false);
+            }).catch(err => console.error(err));
+        };
+        check();
+        setInterval(check, 5 * 60 * 1000);
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
+    }
 
     SiteHeader.loadData()
         .then(data => {
@@ -480,6 +513,8 @@
                 `;
                 tbody.appendChild(tr);
             });
+
+            mountChart(data.draws);
         })
         .catch(err => {
             console.error(err);
