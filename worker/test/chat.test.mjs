@@ -342,3 +342,52 @@ test('댓글 관리: 관리자는 누가 썼는지 보고 지우며, 채팅 금�
     assert.equal((await call(env, 'GET', '/api/comments?post=' + post)).data.comments.length, 0);
     assert.equal((await call(env, 'GET', '/api/admin/comments', { headers: asAdmin })).data.total, 0);
 });
+
+test('댓글 점수(공지하지 않는 규칙): 하나에 1점·하루 5개, 짧은 글·같은 말·운영자 제외, 지우면 빠지고, 회원에게는 항목 없이 합계만', async () => {
+    const { env, cStore } = setup();
+    const post = 'lotto-tax-guide';
+    const s = await member(env, 'P', '글쟁이');
+    const total = async () => (await call(env, 'GET', '/api/me', { headers: auth(s) })).data.user.score;
+    const write = async text => { await unwait(cStore, 'P'); return (await call(env, 'POST', '/api/comments', { body: { post, text }, headers: auth(s) })).data; };
+    const before = (await total()).total;
+
+    const first = await write('세금 계산이 이렇게 되는 줄 몰랐습니다');
+    assert.equal(first.comment.pt, undefined, '점수 표시는 내보내지 않는다');
+    await write('세금 계산이 이렇게 되는 줄 몰랐습니다!!');   // 같은 말
+    await write('좋아요 ㅎㅎ');                              // 10자 미만
+    let sc = await total();
+    assert.equal(sc.total, before + 1);
+    assert.equal(sc.comments, undefined, '회원에게는 댓글 항목을 보이지 않는다');
+    assert.equal((await call(env, 'GET', '/api/ranking', { headers: auth(s) })).data.me.comments, undefined);
+
+    for (let i = 0; i < 6; i++) await write(`실수령액 계산기로 확인해 봤어요 ${i}번째`);
+    assert.equal((await total()).total, before + 5, '하루 5점까지');
+    assert.equal((await call(env, 'GET', '/api/admin/members', { headers: asAdmin })).data.members.find(m => m.nick === '글쟁이').score.comments, 5);
+
+    // 점수를 받은 댓글을 지우면 빠진다(본인), 관리자가 지워도 빠진다
+    await call(env, 'POST', '/api/comments/delete', { body: { post, id: first.comment.id }, headers: auth(s) });
+    assert.equal((await total()).total, before + 4);
+    const all = (await call(env, 'GET', '/api/admin/comments', { headers: asAdmin })).data.comments;
+    const scored = all.find(c => c.pt);
+    await call(env, 'POST', '/api/admin/comments/delete', { body: { post, id: scored.id }, headers: asAdmin });
+    assert.equal((await total()).total, before + 3);
+    // 점수 없는 댓글은 지워도 그대로
+    await call(env, 'POST', '/api/admin/comments/delete', { body: { post, id: all.find(c => !c.pt).id }, headers: asAdmin });
+    assert.equal((await total()).total, before + 3);
+});
+
+test('관리자 주문 목록: 로그인한 채 산 주문에 회원 참조값(앞 12자)이 붙고, 회원 명부에도 같은 값이 있다', async () => {
+    const { env } = setup();
+    const s = await member(env, 'Q', '구매곰');
+    env.BANK_NAME = '우리은행'; env.BANK_ACCOUNT = '1'; env.BANK_HOLDER = '홍길동';
+    const o = await call(env, 'POST', '/api/orders', { body: { plan: 'day', method: 'bank', name: '홍길동', agree: true }, headers: auth(s) });
+    assert.equal(o.status, 201, JSON.stringify(o.data));
+    const list = (await call(env, 'GET', '/api/admin/orders?status=all', { headers: asAdmin })).data.orders;
+    const row = list.find(x => x.id === o.data.order.id);
+    const m = (await call(env, 'GET', '/api/admin/members', { headers: asAdmin })).data.members.find(x => x.nick === '구매곰');
+    assert.ok(row.r && m.ref);
+    assert.equal(row.r, m.ref.slice(0, 12));
+    // 무료 체험 주문은 회원 명부의 체험 키 번호로 찾는다
+    const trial = list.find(x => x.m === 'trial');
+    assert.equal(trial.k.toLowerCase(), m.trial.keyId.toLowerCase());
+});

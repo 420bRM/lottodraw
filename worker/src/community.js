@@ -15,6 +15,7 @@
 //                        rx:    { 항목: 'h' | 'd' | 'hd' } — 내가 누른 좋아요
 //                        sess:  로그인 세션 해시 (최근 5개)
 //                        cm:    내가 쓴 블로그 댓글 키, cmAt: 마지막으로 쓴 시각, cmDay: { day, n } 오늘 쓴 수
+//                        cmPt:  { n, day, today, h } — (공지하지 않는 규칙) 점수를 받은 댓글 수, 오늘 받은 수, 마지막으로 받은 댓글 해시
 //   s:<세션 해시>        { sub, exp }  — 30일
 //   t:<계정 번호 해시>   { at }        — 무료 체험을 받은 계정. 탈퇴해도 1년 남겨 다시 가입해 또 받는 것을 막는다
 //   r:<항목>             { h, d }      — 좋아요 수 (누구나 본다. 관리자 페이지에는 카드별 합계 표)
@@ -38,6 +39,9 @@ export const POINTS = { attend: 10, react: 2, buyPer100: 10, nickChange: 500 }; 
 // 채팅 점수 — 공지하지 않는 규칙이라 POINTS(회원에게 내려 보내는 값)와 따로 둔다.
 // per: 메시지 하나에 몇 점, daily: 하루에 점수를 받는 메시지 수 상한(50개 = 5점)
 export const CHAT_POINTS = { per: 0.1, daily: 50 };
+// 블로그 댓글 점수 — 역시 공지하지 않는다. 댓글 하나에 1점, 하루 5개(5점)까지, 공백·기호 빼고 10자 이상, 바로 앞 댓글과 같은 말은 빼고.
+// 댓글이 지워지면(본인·관리자) 그 점수도 뺀다.
+export const COMMENT_POINTS = { per: 1, daily: 5, minLen: 10 };
 const tenth = x => Math.round(x * 10) / 10;   // 채팅 점수(0.1)가 섞여 소수 첫째 자리까지 쓴다
 const kstDay = ms => new Date(ms + 9 * 3600 * 1000).toISOString().slice(0, 10);
 
@@ -46,13 +50,15 @@ export function score(user) {
     const reacts = Object.values(user.rx || {}).reduce((n, m) => n + m.length, 0);
     const buy = Math.floor((user.buy || 0) * POINTS.buyPer100 / 100);
     const chats = (user.chat && user.chat.n) || 0;
-    const total = tenth(days * POINTS.attend + reacts * POINTS.react + buy + chats * CHAT_POINTS.per);
+    const comments = (user.cmPt && user.cmPt.n) || 0;
+    const total = tenth(days * POINTS.attend + reacts * POINTS.react + buy + chats * CHAT_POINTS.per + comments * COMMENT_POINTS.per);
     const spent = user.spent || 0;
-    return { total, days, reacts, buy, chats, spent, avail: tenth(total - spent) };
+    return { total, days, reacts, buy, chats, comments, spent, avail: tenth(total - spent) };
 }
 
-// 회원에게 보이는 점수: 채팅 점수는 공지하지 않는 규칙이라 항목(chats)을 빼고 합계에만 넣는다. 관리자 명부는 score() 그대로.
-const pubScore = user => { const s = score(user); delete s.chats; return s; };
+// 회원에게 보이는 점수: 채팅·댓글 점수는 공지하지 않는 규칙이라 항목(chats·comments)을 빼고 합계에만 넣는다. 관리자 명부는 score() 그대로.
+const pubScore = user => hideSecret(score(user));
+function hideSecret(sc) { const s = Object.assign({}, sc); delete s.chats; delete s.comments; return s; }
 
 // 오늘(한국 날짜) 처음이면 출석을 하나 올린다. 올렸으면 true.
 function attend(user, now) {
@@ -68,6 +74,22 @@ export const ITEM_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
 // 블로그 댓글
 export const COMMENT = { max: 500, gapMs: 15000, daily: 30, list: 200 };   // 글자 수, 다음 댓글까지, 하루 최대, 한 글에 보여 주는 수
 const pubComment = (c, sub) => Object.assign({ id: c.id, at: c.at, nick: c.nick, text: c.text }, c.staff ? { staff: true } : {}, sub && c.sub === sub ? { mine: true } : {});
+
+// 댓글 점수(공지하지 않는 규칙, COMMENT_POINTS). 받았으면 true
+async function commentPoint(user, text, day) {
+    const plain = text.toLowerCase().replace(/[\s\p{P}\p{S}]+/gu, '');
+    if (plain.length < COMMENT_POINTS.minLen) return false;
+    const d = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode('cm:' + plain)));
+    const h = btoa(String.fromCharCode(...d.slice(0, 12)));
+    const p = user.cmPt || { n: 0, day: '', today: 0, h: '' };
+    if (p.day !== day) { p.day = day; p.today = 0; }
+    if (p.today >= COMMENT_POINTS.daily || p.h === h) return false;
+    p.n += 1;
+    p.today += 1;
+    p.h = h;
+    user.cmPt = p;
+    return true;
+}
 
 // 내가 쓴 댓글의 별명을 한꺼번에 바꾼다(별명을 바꾸거나 관리자가 지웠을 때)
 async function renameComments(storage, user) {
@@ -236,8 +258,7 @@ const OPS = {
         const mine = sub && all.find(x => x.sub === sub);
         if (mine) {
             const pool = mine.nick ? named : named.concat([mine]).sort((a, b) => (b.s.total - a.s.total) || (a.createdAt - b.createdAt));
-            const s = Object.assign({}, mine.s); delete s.chats;
-            me = Object.assign({ rank: rankOf(pool, mine), of: pool.length, nick: mine.nick }, s);
+            me = Object.assign({ rank: rankOf(pool, mine), of: pool.length, nick: mine.nick }, hideSecret(mine.s));
         }
         return { top, me, total: named.length };
     },
@@ -313,7 +334,7 @@ const OPS = {
         for (const u of users.values()) {
             const rx = Object.values(u.rx || {});
             members.push({
-                sub: u.sub, email: u.email, nick: u.nick || null, createdAt: u.createdAt, lastAt: u.lastAt,
+                sub: u.sub, ref: u.ref || null, email: u.email, nick: u.nick || null, createdAt: u.createdAt, lastAt: u.lastAt,
                 trial: u.trial && u.trial.keyId ? { keyId: u.trial.keyId, expiresAt: u.trial.expiresAt } : null,
                 hearts: rx.filter(m => m.includes('h')).length, dollars: rx.filter(m => m.includes('d')).length,
                 wons: rx.filter(m => m.includes('w')).length, score: score(u), buy: u.buy || 0, staff: !!u.staff,
@@ -352,6 +373,7 @@ const OPS = {
         const id = String(now).padStart(16, '0') + '-' + Math.random().toString(36).slice(2, 8);
         const c = { id, at: now, sub, nick: user.nick, text };
         if (user.staff) c.staff = true;
+        else if (await commentPoint(user, text, day)) c.pt = 1;   // 지울 때 점수를 되돌리려고 표시해 둔다
         const key = 'c:' + post + ':' + id;
         await this.storage.put(key, c);
         user.cm = (user.cm || []).concat(key);
@@ -375,7 +397,11 @@ const OPS = {
         if (!admin && c.sub !== sub) return { error: 'not_mine' };
         await this.storage.delete(key);
         const user = await this.storage.get('u:' + c.sub);
-        if (user && user.cm) { user.cm = user.cm.filter(k => k !== key); await this.storage.put('u:' + c.sub, user); }
+        if (user) {
+            user.cm = (user.cm || []).filter(k => k !== key);
+            if (c.pt && user.cmPt) user.cmPt.n = Math.max(0, user.cmPt.n - 1);
+            await this.storage.put('u:' + c.sub, user);
+        }
         return { ok: true };
     },
 

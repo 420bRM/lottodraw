@@ -1191,6 +1191,7 @@ async function signer(env, fresh) {
 function meta(order) {
     const md = { s: order.status, p: order.plan, a: order.amount, m: order.method, n: order.name || '', c: order.createdAt, k: order.keyId || '', i: order.ipTag || '' };
     if (order.test) md.t = 1;
+    if (order.memberRef) md.r = order.memberRef.slice(0, 12);   // 관리자 주문 목록에 회원 별명을 붙이는 데 쓴다
     return md;
 }
 

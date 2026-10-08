@@ -190,6 +190,7 @@
         try {
             const r = await call('/members');
             members = r.members || [];
+            if (lastOrders) renderOrders(lastOrders);   // 주문 카드에 회원 별명을 붙인다
             const m = r.meta || {};
             $('members-sum').textContent = `가입 ${m.users || members.length}명 · 무료 체험 ${m.trials || 0}건`;
             renderMembers();
@@ -219,7 +220,7 @@
                 el('td', { text: (m.staff ? '🛡 ' : '') + (m.nick || '—') }), el('td', { text: m.email || '' }), el('td', { text: when(m.createdAt) }),
                 el('td', { text: m.lastAt ? when(m.lastAt) : '' }), el('td', { text: trial }),
                 el('td', { text: String(m.hearts || 0) }), el('td', { text: String(m.dollars || 0) }), el('td', { text: String(m.wons || 0) }),
-                el('td', { title: m.score ? `출석 ${m.score.days}일 · 반응 ${m.score.reacts}개 · 채팅 ${m.score.chats || 0}개 · 이용권 ${(m.buy || 0).toLocaleString()}원` : '', text: m.score ? String(m.score.total) : '0' }), tools,
+                el('td', { title: m.score ? `출석 ${m.score.days}일 · 반응 ${m.score.reacts}개 · 채팅 ${m.score.chats || 0}개 · 댓글 ${m.score.comments || 0}개 · 이용권 ${(m.buy || 0).toLocaleString()}원` : '', text: m.score ? String(m.score.total) : '0' }), tools,
             ]));
         });
         table.appendChild(body);
@@ -359,12 +360,23 @@
         }
     }
 
+    let lastOrders = null;
+
+    // 주문을 낸 회원: 무료 체험은 키 번호로, 로그인한 채 산 주문은 회원 참조값(memberRef)으로 찾는다
+    function orderMember(o) {
+        const ref = o.r || (o.memberRef || '').slice(0, 12);
+        const kid = String(o.k || o.keyId || '').toLowerCase();
+        return members.find(m => (ref && m.ref && m.ref.slice(0, 12) === ref) || (o.m === 'trial' || o.method === 'trial') && kid && m.trial && String(m.trial.keyId).toLowerCase() === kid) || null;
+    }
+    const memberLine = m => el('p', { className: 'admin-line' }, ['회원: ', el('b', { text: m.nick || '(별명 없음)' }), ' · ' + m.email + (m.staff ? ' · 운영자' : '')]);
+
     async function loadOrders() {
         if (timer) clearTimeout(timer);
         say('admin-status', '불러오는 중…');
         try {
             const r = await call('/orders?status=' + tab);
-            renderOrders(r.orders || []);
+            lastOrders = r.orders || [];
+            renderOrders(lastOrders);
             say('admin-status', `${STATUS[tab] || '전체'} ${r.orders.length}건 · ${when(Date.now())} 기준`);
             if (tab === 'pending' && autoLeft > 0) {
                 timer = setTimeout(() => { if (!document.hidden) { autoLeft--; loadOrders(); } }, 120000);
@@ -419,7 +431,8 @@
                     el('b', { text: `${PLAN[o.p] || o.p} · ${o.m === 'manual' || o.m === 'trial' ? '무료' : won(o.a)}` }),
                     ` · ${METHOD[o.m] || o.m} · ${when(o.c)}`,
                 ]),
-                o.n ? el('p', { className: 'admin-line' }, ['입금자명/받는 사람: ', el('b', { text: o.n })]) : null,
+                o.n && o.m !== 'trial' ? el('p', { className: 'admin-line' }, ['입금자명/받는 사람: ', el('b', { text: o.n })]) : null,
+                orderMember(o) ? memberLine(orderMember(o)) : null,
                 o.k ? el('p', { className: 'admin-line', text: '키 번호 ' + o.k.toUpperCase() }) : null,
                 el('p', { className: 'co-actions' }, actions),
                 detail,
@@ -433,6 +446,7 @@
             const r = await call('/orders/' + o.id);
             const d = r.order;
             box.textContent = '';
+            if (!orderMember(o) && orderMember(d)) box.appendChild(memberLine(orderMember(d)));   // 예전 주문은 목록에 참조값이 없다
             if (d.key && d.status === 'paid') box.appendChild(keyBox(d));
             if (d.key && d.status === 'paid' && d.contact && status && status.mail) {
                 box.appendChild(el('p', { className: 'co-actions' }, [
