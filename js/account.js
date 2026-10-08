@@ -590,10 +590,12 @@
         renderReactions();
         // 실시간 채팅(js/chat.js) — 서버가 켜 두었을 때만, 관리자 페이지는 빼고
         if (chatOn && !/admin\.html$/.test(location.pathname)) document.head.appendChild(el('script', { src: root + 'js/chat.js', defer: '' }));
+        // 블로그 글 댓글(js/comments.js) — 글 목록(blog/index.html)은 빼고
+        if (/\/blog\/(?!index\.html$)[a-z0-9-]+\.html$/.test(location.pathname)) document.head.appendChild(el('script', { src: root + 'js/comments.js', defer: '' }));
     }
 
 
-    // js/chat.js 가 쓰는 길
+    // js/chat.js · js/comments.js 가 쓰는 길
     window.LottoAccount = {
         openLogin: r => (login ? openLogin(r) : null),
         openNick: first => (me ? openNick(!!first) : null),

@@ -118,6 +118,7 @@
             await loadOrders();
             loadMembers();
             loadChat();
+            loadComments();
         } catch (err) {
             token = null;
             store.del(TOKEN_STORE);
@@ -300,6 +301,61 @@
             await loadChat();
         } catch (err) {
             say('chat-status', '처리하지 못했습니다: ' + err.message, true);
+        }
+    }
+
+    /* ───── 블로그 댓글 관리 ───── */
+
+    async function loadComments() {
+        try {
+            const r = await call('/comments');
+            $('comments-card').hidden = false;
+            renderComments(r.comments || []);
+            say('comments-status', `댓글 ${(r.total || 0).toLocaleString()}개 · ${when(Date.now())} 기준`);
+        } catch (err) {
+            $('comments-card').hidden = err.status === 503;
+            if (err.status !== 503) say('comments-status', '댓글을 불러오지 못했습니다: ' + err.message, true);
+        }
+    }
+
+    function renderComments(list) {
+        const t = $('comments-table');
+        t.textContent = '';
+        t.appendChild(el('thead', {}, [el('tr', {}, ['시각', '글', '별명', '내용', ''].map(h => el('th', { text: h })))]));
+        const body = el('tbody');
+        if (!list.length) body.appendChild(el('tr', {}, [el('td', { colspan: '5', text: '아직 댓글이 없습니다.' })]));
+        list.forEach(c => body.appendChild(el('tr', {}, [
+            el('td', { text: when(c.at) }),
+            el('td', {}, [el('a', { href: 'blog/' + c.post + '.html#comments', target: '_blank', rel: 'noopener', text: c.post })]),
+            el('td', { text: (c.nick || '(별명 없음)') + (c.staff ? ' · 운영자' : '') }),
+            el('td', { className: 'chat-adm-text', text: c.text }),
+            el('td', { className: 'admin-row-tools' }, [
+                el('button', { type: 'button', className: 'btn btn-secondary btn-mini', text: '지우기', on: { click: () => commentDelete(c) } }),
+                el('button', { type: 'button', className: 'btn btn-secondary btn-mini danger', text: '막기', on: { click: () => commentBan(c) } }),
+            ]),
+        ])));
+        t.appendChild(body);
+    }
+
+    async function commentDelete(c) {
+        if (!window.confirm(`"${c.text.slice(0, 60)}" 댓글을 지웁니까?`)) return;
+        try {
+            await call('/comments/delete', { method: 'POST', body: { post: c.post, id: c.id } });
+            await loadComments();
+        } catch (err) {
+            say('comments-status', '처리하지 못했습니다: ' + err.message, true);
+        }
+    }
+
+    // 막기 = 채팅 금지(댓글도 함께 막힌다). 이미 쓴 댓글은 따로 지운다
+    async function commentBan(c) {
+        if (!window.confirm(`${c.nick || '이 회원'} 님의 댓글·채팅을 막습니까? (이미 쓴 댓글은 "지우기"로 따로 지웁니다)`)) return;
+        try {
+            await call('/chat/ban', { method: 'POST', body: { sub: c.sub, nick: c.nick || '' } });
+            say('comments-status', `${c.nick || '이 회원'} 님을 막았습니다. 해제는 "실시간 채팅 관리 → 채팅 금지 목록"에서 합니다.`);
+            loadChat();
+        } catch (err) {
+            say('comments-status', '처리하지 못했습니다: ' + err.message, true);
         }
     }
 
@@ -509,6 +565,7 @@
         $('admin-reload').addEventListener('click', () => { loadOrders(); loadMembers(); });
         $('members-reload').addEventListener('click', loadMembers);
         $('chat-reload').addEventListener('click', loadChat);
+        $('comments-reload').addEventListener('click', loadComments);
         $('members-q').addEventListener('input', renderMembers);
         document.querySelectorAll('.admin-tabs [data-status]').forEach(b => b.addEventListener('click', () => {
             tab = b.dataset.status;

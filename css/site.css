@@ -1113,3 +1113,27 @@ html.home { scroll-behavior: smooth; }
 .acct-staff { color: #1a8f3c; font-weight: bold; }
 .chat-nick.is-staff { color: #1a8f3c; }
 .chat-staff { display: inline-block; margin-right: 6px; padding: 0 5px; border-radius: 4px; background: #1a8f3c; color: #fff; font-size: 10px; font-weight: bold; line-height: 16px; vertical-align: 1px; }
+
+/* ───── 블로그 댓글 (js/comments.js) ───── */
+.cm { margin: 28px 0 8px; padding-top: 14px; border-top: 2px solid var(--line); }
+.cm h2 { margin: 0 0 4px; }
+.cm-count { color: var(--brand); }
+.cm-rule { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+.cm-list { margin: 0 0 14px; padding: 0; list-style: none; }
+.cm-item { padding: 10px 0; border-bottom: 1px solid var(--line); }
+.cm-item.is-mine { background: #f7f9fe; }
+.cm-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13px; }
+.cm-nick { color: var(--brand); }
+.cm-nick.is-staff { color: #1a8f3c; }
+.cm-head .chat-staff { margin-right: 0; }
+.cm-time { color: var(--muted); font-size: 12px; }
+.cm-del { margin-left: auto; padding: 2px 8px; border: 1px solid var(--line); border-radius: 4px; background: #fff; color: var(--muted); font: 12px var(--font); cursor: pointer; }
+.cm-del:hover { border-color: var(--error); color: var(--error); }
+.cm-text { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; }
+.cm-empty { padding: 10px 0; color: var(--muted); font-size: 14px; }
+.cm-input { box-sizing: border-box; width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 6px; font: 16px/1.5 var(--font); resize: vertical; }
+.cm-input:focus { border-color: var(--brand); outline: none; }
+.cm-form-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; }
+.cm-left { color: var(--muted); font-size: 12px; }
+.cm-status { margin: 8px 0 0; color: var(--error); font-size: 13px; }
+.cm-status:empty { display: none; }

@@ -14,11 +14,13 @@
 //                        trial: { orderId, keyId, key, expiresAt } — 가입 때 한 번 주는 무료 체험 키
 //                        rx:    { 항목: 'h' | 'd' | 'hd' } — 내가 누른 좋아요
 //                        sess:  로그인 세션 해시 (최근 5개)
+//                        cm:    내가 쓴 블로그 댓글 키, cmAt: 마지막으로 쓴 시각, cmDay: { day, n } 오늘 쓴 수
 //   s:<세션 해시>        { sub, exp }  — 30일
 //   t:<계정 번호 해시>   { at }        — 무료 체험을 받은 계정. 탈퇴해도 1년 남겨 다시 가입해 또 받는 것을 막는다
 //   r:<항목>             { h, d }      — 좋아요 수 (누구나 본다. 관리자 페이지에는 카드별 합계 표)
 //   n:<별명 소문자>      계정 번호      — 별명이 겹치지 않게
 //   m:<회원 참조값>      계정 번호      — 주문에 남기는 되돌릴 수 없는 참조값(sha256) → 계정. 탈퇴하면 지운다
+//   c:<글>:<시각 16자리>-<무작위>  { id, at, sub, nick, text, staff } — 블로그 댓글. 계정은 cm(이 키들의 목록)으로 찾아 탈퇴 때 지운다
 //   meta                 { users, trials }
 //
 // 이름·사진은 받지 않는다. 이메일은 "로그인한 계정" 표시와 문의 응대에만 쓴다.
@@ -62,6 +64,18 @@ function attend(user, now) {
     return true;
 }
 export const ITEM_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
+
+// 블로그 댓글
+export const COMMENT = { max: 500, gapMs: 15000, daily: 30, list: 200 };   // 글자 수, 다음 댓글까지, 하루 최대, 한 글에 보여 주는 수
+const pubComment = (c, sub) => Object.assign({ id: c.id, at: c.at, nick: c.nick, text: c.text }, c.staff ? { staff: true } : {}, sub && c.sub === sub ? { mine: true } : {});
+
+// 내가 쓴 댓글의 별명을 한꺼번에 바꾼다(별명을 바꾸거나 관리자가 지웠을 때)
+async function renameComments(storage, user) {
+    for (const k of user.cm || []) {
+        const c = await storage.get(k);
+        if (c) { c.nick = user.nick || null; await storage.put(k, c); }
+    }
+}
 
 export class Community {
     constructor(state) {
@@ -143,6 +157,7 @@ const OPS = {
         user.nickAt = now;
         user.spent = (user.spent || 0) + cost;
         await this.storage.put('u:' + sub, user);
+        await renameComments(this.storage, user);
         return { ok: true, user: view(user), cost };
     },
 
@@ -240,7 +255,7 @@ const OPS = {
         return { ok: true };
     },
 
-    // 탈퇴: 계정·세션·내가 누른 좋아요를 지운다. 무료 체험 기록(계정 번호 해시)만 1년 남는다.
+    // 탈퇴: 계정·세션·내가 누른 좋아요·내가 쓴 댓글을 지운다. 무료 체험 기록(계정 번호 해시)만 1년 남는다.
     async userDelete({ sub }) {
         const user = await this.storage.get('u:' + sub);
         if (!user) return { ok: true };
@@ -251,6 +266,7 @@ const OPS = {
             await this.storage.put('r:' + item, c);
         }
         for (const h of user.sess || []) await this.storage.delete('s:' + h);
+        for (let i = 0; i < (user.cm || []).length; i += 128) await this.storage.delete(user.cm.slice(i, i + 128));   // 내가 쓴 블로그 댓글
         if (user.nick) await this.storage.delete('n:' + user.nick.toLowerCase());
         if (user.ref) await this.storage.delete('m:' + user.ref);
         await this.storage.delete('u:' + sub);
@@ -318,7 +334,58 @@ const OPS = {
         if (user.nick) await this.storage.delete('n:' + user.nick.toLowerCase());
         user.nick = null;
         await this.storage.put('u:' + sub, user);
+        await renameComments(this.storage, user);
         return { ok: true };
+    },
+
+    /* ───── 블로그 댓글 ───── */
+
+    // 쓰기: 별명이 있어야 하고, 15초에 한 번·하루 30개까지. 글 검사(링크·연락처·홍보)는 Worker 가 먼저 한다.
+    async commentAdd({ sub, post, text, now }) {
+        const user = await this.storage.get('u:' + sub);
+        if (!user) return { error: 'no_user' };
+        if (!user.nick) return { error: 'need_nick' };
+        if (now - (user.cmAt || 0) < COMMENT.gapMs) return { error: 'slow' };
+        const day = kstDay(now);
+        const d = user.cmDay && user.cmDay.day === day ? user.cmDay : { day, n: 0 };
+        if (d.n >= COMMENT.daily) return { error: 'daily' };
+        const id = String(now).padStart(16, '0') + '-' + Math.random().toString(36).slice(2, 8);
+        const c = { id, at: now, sub, nick: user.nick, text };
+        if (user.staff) c.staff = true;
+        const key = 'c:' + post + ':' + id;
+        await this.storage.put(key, c);
+        user.cm = (user.cm || []).concat(key);
+        user.cmAt = now;
+        user.cmDay = { day, n: d.n + 1 };
+        await this.storage.put('u:' + sub, user);
+        return { comment: pubComment(c, sub) };
+    },
+
+    // 한 글의 댓글(오래된 것부터, 최근 200개). sub 가 있으면 내 댓글에 mine 표시
+    async commentList({ post, sub }) {
+        const rows = await this.storage.list({ prefix: 'c:' + post + ':', reverse: true, limit: COMMENT.list });
+        return { comments: [...rows.values()].reverse().map(c => pubComment(c, sub)) };
+    },
+
+    // 지우기: 쓴 사람 또는 관리자(admin)
+    async commentDelete({ sub, post, id, admin }) {
+        const key = 'c:' + post + ':' + id;
+        const c = await this.storage.get(key);
+        if (!c) return { error: 'not_found' };
+        if (!admin && c.sub !== sub) return { error: 'not_mine' };
+        await this.storage.delete(key);
+        const user = await this.storage.get('u:' + c.sub);
+        if (user && user.cm) { user.cm = user.cm.filter(k => k !== key); await this.storage.put('u:' + c.sub, user); }
+        return { ok: true };
+    },
+
+    // 관리자: 모든 글의 최근 댓글(누가 썼는지 포함)
+    async adminComments({ limit }) {
+        const rows = await this.storage.list({ prefix: 'c:', limit: 5000 });
+        const all = [];
+        for (const [k, c] of rows.entries()) all.push(Object.assign({ post: k.slice(2, k.lastIndexOf(':')) }, c));
+        all.sort((a, b) => b.at - a.at);
+        return { comments: all.slice(0, limit || 200), total: all.length };
     },
 };
 
