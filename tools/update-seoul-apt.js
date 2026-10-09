@@ -1,16 +1,20 @@
 // 사용: node tools/update-seoul-apt.js
 // 서울 · 강남 아파트 평균 매매가격(월별)을 받아 seoul-apt.json 으로 저장한다.
-// TOP 50 페이지 그래프의 "서울 아파트 평균가" · "강남 아파트 평균가" 비교선(1인당 당첨금으로 살 수 있나)이 이 파일을 쓴다.
+// TOP 50 페이지 그래프의 "서울 아파트 평균가" · "강남3구 아파트값" 비교선(1인당 당첨금으로 살 수 있나)이 이 파일을 쓴다.
 //
 // 받는 곳: KB부동산 데이터허브(data.kbland.kr)가 화면에 쓰는 자료 주소. 키가 필요 없다.
 //   1. 평균 매매가격(아파트 · 매매, 만 원)  — 2008년 12월부터 있다
 //   2. 매매가격지수(아파트 · 월간)          — 1986년부터 있다. 평균가가 없는 2002-12 ~ 2008-11 을
 //      "2008-12 평균가 × 그 달 지수 ÷ 2008-12 지수"로 거꾸로 환산한다(추정). 지수 기준 달이 바뀌어도 비율은 같다
-// 강남은 KB 권역 "강남11개구"(한강 이남 11개 구)를 쓴다. 이 자료에는 구 단위(강남구 단독)가 없다 — 2026-10 확인:
-// 지역 25개(전국 · 서울 · 강북14개구 · 강남11개구 · 수도권 · 광역시 · 도)뿐이고, 지역코드=11 을 줘도 같은 목록이 온다.
-// 실제로 쓴 지역 이름은 파일의 gangnam.name 에 남는다(화면 이름표가 이것을 따른다).
+// 강남은 강남3구(강남구 · 서초구 · 송파구) 평균이다. KB 평균가 자료에는 구 단위가 없어(지역 25개 = 권역 · 시도뿐, 2026-10 확인)
+// "㎡당 평균 매매가격"을 쓴다:
+//   3. ㎡당 평균 매매가격(아파트 · 매매, 만 원/㎡, 전용면적) — 지역코드=11 이면 서울 + 25개 구. 구 단위는 2013-04 부터 있다.
+//      × 84㎡(전용, 이른바 국민평형) = 그 구의 "84㎡ 아파트값". KB 도 "국평(전용 84㎡) 평균가"를 이렇게 발표하고,
+//      서울 평균가도 서울 ㎡당 값의 약 83배라 비슷한 잣대다
+//   4. 구 매매가격지수(지역코드=11, 2002-12 부터) — 구마다 2013-03 이전을 2번과 같은 방식으로 거꾸로 환산한다(추정)
+//   세 구를 따로 만든 뒤 달마다 단순 평균한다(구마다 아파트 수 가중치는 KB 자료에 없다)
 // 공개 문서가 없는 주소라 모양이 바뀌거나 막힐 수 있다. 서울을 못 받으면 기존 seoul-apt.json 을 그대로 두고 실패로 끝난다
-// (사이트는 저장해 둔 값으로 계속 보인다). 강남만 못 받으면 강남은 지난 값을 그대로 둔다. 받은 지역 목록과 실패 이유는 Actions 기록에 찍는다.
+// (사이트는 저장해 둔 값으로 계속 보인다). 강남3구만 못 받으면 강남은 지난 값을 그대로 둔다. 받은 지역 목록과 실패 이유는 Actions 기록에 찍는다.
 //
 // 이 컨테이너(Claude 작업 환경)에서는 주소가 막혀 있어 GitHub Actions(.github/workflows/update-seoul-apt.yml)에서 돈다.
 'use strict';
@@ -23,6 +27,8 @@ const OUT = path.join(ROOT, 'seoul-apt.json');
 const FIRST = '2002-12';          // 1회 추첨 달
 const ACTUAL_FROM = '2008-12';    // KB 평균가가 시작하는 달
 const MAX_LAG_MONTHS = 4;
+const SQM = 84;                   // 구 아파트값 = ㎡당 평균가 × 전용 84㎡(국민평형)
+const GU_FROM = '2013-04';        // KB ㎡당 평균가가 구 단위로 시작하는 달
 const KB = 'https://data-api.kbland.kr/bfmstat/weekMnthlyHuseTrnd/';
 
 const q = o => Object.keys(o).map(k => encodeURIComponent(k) + '=' + encodeURIComponent(o[k])).join('&');
@@ -96,35 +102,73 @@ function rowSeries(parsed, row) {
 }
 
 const isSeoul = r => r['지역명'] === '서울' || r['지역명'] === '서울특별시' || String(r['지역코드'] || '') === '1100000000';
-const isGangnamArea = r => String(r['지역코드'] || '') === '1B0000' || /^강남/.test(String(r['지역명'] || ''));
+// 강남3구: 이름과 지역코드(법정동 앞 10자리)
+const GANGNAM3 = [['강남구', '1168000000'], ['서초구', '1165000000'], ['송파구', '1171000000']];
+const isGu = (name, code) => r => String(r['지역코드'] || '') === code || r['지역명'] === name;
 
-// 지역 하나: 평균가(원, 2008-12부터) + 지수로 거꾸로 환산한 2002-12 ~ 2008-11 추정. 지수를 못 받으면 실제 구간만
-function buildRegion(name, avgMan, idx, now, maxValue) {
+// 지역 하나: 평균가(원) + 지수로 거꾸로 환산한 2002-12 ~ (실제 값 첫 달 - 1) 추정. 지수를 못 받으면 실제 구간만.
+// expectFrom: 실제 값이 적어도 이 달부터는 있어야 한다(자료가 짧게 오면 실패 — 추정 구간이 몰래 길어지지 않게)
+function buildRegion(name, avgMan, idx, now, maxValue, expectFrom) {
     const avg = {};
     Object.keys(avgMan).sort().forEach(k => { avg[k] = Math.round(avgMan[k] * 10000); });   // 만 원 → 원
     const months = Object.keys(avg).sort();
+    const anchor = months[0];
     const latest = months[months.length - 1];
-    if (!avg[ACTUAL_FROM]) throw new Error(`${name} 평균가에 ${ACTUAL_FROM} 이 없다 (첫 달 ${months[0]})`);
+    if (!anchor || anchor > expectFrom) throw new Error(`${name} 평균가가 ${expectFrom} 부터 있어야 하는데 첫 달이 ${anchor} 이다`);
     if (monthsBetween(latest, now) > MAX_LAG_MONTHS) throw new Error(`${name} 평균가 마지막 달 ${latest} 이 너무 오래됐다`);
     // 아파트 평균값이 1억 ~ maxValue 밖이면 단위나 지역을 잘못 읽은 것
     const bad = months.filter(k => !(avg[k] > 1e8 && avg[k] < maxValue));
     if (bad.length) throw new Error(`${name} 평균가 값이 이상하다: ${bad.slice(0, 5).map(k => k + '=' + avg[k]).join(', ')}`);
-    for (let k = ACTUAL_FROM; k <= latest; k = nextMonth(k)) if (!avg[k]) throw new Error(`${name} 평균가에 ${k} 가 빠졌다`);
+    for (let k = anchor; k <= latest; k = nextMonth(k)) if (!avg[k]) throw new Error(`${name} 평균가에 ${k} 가 빠졌다`);
 
     let est = null;
-    if (idx && idx[FIRST] && idx[ACTUAL_FROM]) {
+    if (anchor > FIRST && idx && idx[FIRST] && idx[anchor]) {
         est = {};
-        for (let k = FIRST; k < ACTUAL_FROM; k = nextMonth(k)) {
+        for (let k = FIRST; k < anchor; k = nextMonth(k)) {
             if (!idx[k]) { est = null; break; }
-            est[k] = Math.round(avg[ACTUAL_FROM] * idx[k] / idx[ACTUAL_FROM] / 1e4) * 1e4;   // 만 원 단위로
+            est[k] = Math.round(avg[anchor] * idx[k] / idx[anchor] / 1e4) * 1e4;   // 만 원 단위로
         }
     }
-    if (est) console.log(`  ${name} 추정: ${FIRST} ${est[FIRST]} 원 … 2008-11 ${est['2008-11']} 원 (2008-12 실제 ${avg[ACTUAL_FROM]} 원)`);
-    else console.log(`  ${name}: 지수로 추정 못 함 — ${ACTUAL_FROM} 부터만 싣는다`);
+    if (est) console.log(`  ${name} 추정: ${FIRST} ${est[FIRST]} 원 … 직전 달 ${est[Object.keys(est).sort().pop()]} 원 (${anchor} 실제 ${avg[anchor]} 원)`);
+    else if (anchor > FIRST) console.log(`  ${name}: 지수로 추정 못 함 — ${anchor} 부터만 싣는다`);
     const monthly = {};
     if (est) Object.keys(est).sort().forEach(k => { monthly[k] = est[k]; });
-    months.filter(k => k >= ACTUAL_FROM || !est).forEach(k => { monthly[k] = avg[k]; });
-    return { monthly: monthly, latest: latest, estimatedBefore: est ? ACTUAL_FROM : null };
+    months.forEach(k => { monthly[k] = avg[k]; });
+    return { monthly: monthly, latest: latest, estimatedBefore: est ? anchor : null };
+}
+
+// ㎡당 평균가 줄 하나를 { 'YYYY-MM': 값 } 으로. 이 응답은 값이 날짜보다 1개 적다(날짜는 200401 ~ 이번 달, 이번 달 값이 아직 없다).
+// 값은 날짜 목록 "앞에서부터" 맞춘다 — 2026-10 기사 값으로 확인: 강남구 2025-04 3,191만 원/㎡(파이낸셜뉴스),
+// 2025-12 3,716.7(3.3㎡당 1억 2,286.6만, 뉴시스), 2026-04 3,740.1(3.3㎡당 1억 2,342만, 헤럴드경제), 서초구 · 송파구 2025-12 도 같다.
+// 끝에서부터 맞추면 한 달씩 밀린다. 값이 날짜보다 많거나 2개 넘게 적으면 모양이 바뀐 것 — 쓰지 않는다
+function rowSeriesFromStart(parsed, row) {
+    const { dates, label } = parsed;
+    const listKey = Object.keys(row).find(k => Array.isArray(row[k]));
+    const vals = row[listKey] || [];
+    if (vals.length > dates.length || dates.length - vals.length > 2) {
+        throw new Error(`${label} ${row['지역명']}: 날짜 ${dates.length}개 · 값 ${vals.length}개 — 맞추는 방법을 모른다`);
+    }
+    const out = {};
+    vals.forEach((x, i) => {
+        const k = toYm(dates[i]);
+        const v = num(x);
+        if (k && Number.isFinite(v) && v > 0) out[k] = v;
+    });
+    const ks = Object.keys(out);
+    console.log(`  ${label}: ${row['지역명']}(${row['지역코드']}) ${ks.length}달, ${ks[0]} ~ ${ks[ks.length - 1]} (날짜 끝 ${dates[dates.length - 1]})`);
+    return out;
+}
+
+// 지역 여러 개를 달마다 단순 평균한다. 모든 지역에 값이 있는 달만, 마지막 달은 가장 이른 마지막 달.
+// 어느 지역이라도 추정인 달은 추정 — estimatedBefore 는 가장 늦은 것
+function averageRegions(regions) {
+    const latest = regions.map(r => r.latest).sort()[0];
+    const months = Object.keys(regions[0].monthly).filter(k => k <= latest && regions.every(r => r.monthly[k] > 0)).sort();
+    if (!months.length) throw new Error('평균 낼 달이 없다');
+    const monthly = {};
+    months.forEach(k => { monthly[k] = Math.round(regions.reduce((a, r) => a + r.monthly[k], 0) / regions.length); });
+    const est = regions.map(r => r.estimatedBefore).filter(Boolean).sort().pop() || null;
+    return { monthly: monthly, latest: latest, estimatedBefore: est && est > months[0] ? est : null };
 }
 
 // 지수: 기간(햇수)을 넓혀 가며 받는다. 2026-10 확인: 기간 30 → 1996-09부터, 99 → 1986-01부터, '전체'는 400 오류.
@@ -156,24 +200,35 @@ async function main() {
     // 서울 (필수)
     const seoulRow = top.rows.find(isSeoul) || top.rows.find(r => /^11/.test(String(r['지역코드'] || '')));
     if (!seoulRow) throw new Error('평균가에 서울 줄이 없다');
-    const seoul = buildRegion('서울', rowSeries(top, seoulRow), await getIndex({}, isSeoul, '서울 지수'), now, 1e10);
+    const seoul = buildRegion('서울', rowSeries(top, seoulRow), await getIndex({}, isSeoul, '서울 지수'), now, 1e10, ACTUAL_FROM);
 
-    // 강남 (있으면): KB 권역 강남11개구. 못 받으면 지난 값을 그대로 둔다
+    // 강남3구 (있으면): 구마다 ㎡당 평균가 × 84㎡ (+ 지수로 추정), 달마다 세 구 평균. 하나라도 못 받으면 지난 값을 그대로 둔다
     let prev = null;
     try { prev = JSON.parse(fs.readFileSync(OUT, 'utf8')); } catch (e) { /* 처음 */ }
     let gangnam = null;
     try {
-        const row = top.rows.find(isGangnamArea);
-        if (!row) throw new Error('평균가에 강남 권역 줄이 없다');
-        const gName = String(row['지역명']);
-        gangnam = Object.assign({ name: gName }, buildRegion(gName, rowSeries(top, row), await getIndex({}, isGangnamArea, '강남 지수'), now, 3e10));
+        const sqmUrl = KB + 'avgPrcPerSqmt?' + q(Object.assign({ '지역코드': '11' }, avgBase));
+        console.log('㎡당 평균 매매가격:', sqmUrl);
+        const sqm = parseKb(await get(sqmUrl), '㎡당 평균가');
+        const parts = [];
+        for (const [name, code] of GANGNAM3) {
+            const row = sqm.rows.find(isGu(name, code));
+            if (!row) throw new Error(`㎡당 평균가에 ${name} 줄이 없다`);
+            const perSqm = rowSeriesFromStart(sqm, row);
+            const man = {};
+            Object.keys(perSqm).forEach(k => { man[k] = perSqm[k] * SQM; });
+            parts.push(buildRegion(name, man, await getIndex({ '지역코드': '11' }, isGu(name, code), name + ' 지수'), now, 3e10, GU_FROM));
+        }
+        gangnam = Object.assign({ name: '강남3구', parts: GANGNAM3.map(g => g[0]), sqm: SQM }, averageRegions(parts));
+        const k = gangnam.latest;
+        console.log(`  강남3구 ${k}: ${parts.map((r, i) => GANGNAM3[i][0] + ' ' + r.monthly[k]).join(' · ')} → 평균 ${gangnam.monthly[k]} 원`);
     } catch (e) {
-        console.log('강남을 못 만들었다 — 지난 값을 그대로 둔다:', e.message);
+        console.log('강남3구를 못 만들었다 — 지난 값을 그대로 둔다:', e.message);
         gangnam = prev && prev.gangnam ? prev.gangnam : null;
     }
 
     const out = {
-        source: 'KB부동산 월간 주택가격동향 — 아파트 평균 매매가격(서울' + (gangnam ? ' · ' + gangnam.name : '') + ')',
+        source: 'KB부동산 월간 주택가격동향 — 아파트 평균 매매가격(서울)' + (gangnam && gangnam.sqm ? ` · ㎡당 평균 매매가격 × ${gangnam.sqm}㎡(${gangnam.name})` : gangnam ? ` · 평균 매매가격(${gangnam.name})` : ''),
         credit: { ko: 'KB부동산 월간 주택가격동향', en: 'KB Real Estate monthly housing price survey' },
         link: 'https://data.kbland.kr/',
         unit: 'KRW',
