@@ -4,8 +4,10 @@
 //
 // 받는 곳은 위에서부터 차례로 시도한다. 셋 다 같은 통계(통계청 소비자물가지수 총지수)를 옮겨 실은 것이다.
 //   1. 한국은행 ECOS   — 저장소 비밀값 ECOS_API_KEY 가 있을 때만 (무료 인증키, ecos.bok.or.kr)
-//   2. OECD 데이터 API — 키 없이 받는다. 한국 자료는 통계청 소비자물가지수(National methodology)
+//   2. OECD 데이터 API — 키 없이 받는다. 한국 자료는 통계청 소비자물가지수(National methodology).
+//                        주소 모양이 바뀌는 일이 있어 몇 가지 모양을 차례로 시도한다
 //   3. FRED            — 키 없이 받는다. OECD 자료를 옮겨 실은 것
+//   4. DBnomics        — 키 없이 받는다. IMF 소비자물가지수를 옮겨 실은 것
 // 기준연도(=100)는 곳마다 다를 수 있지만 상관없다. 그래프는 두 달의 비율만 쓴다.
 //
 // 이 컨테이너(Claude 작업 환경)에서는 위 주소들이 막혀 있어 GitHub Actions(.github/workflows/update-cpi.yml)에서 돈다.
@@ -23,17 +25,62 @@ const MAX_LAG_MONTHS = 5;         // 마지막 달이 이보다 오래되면 그
 const ym = d => `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
 const monthsBetween = (a, b) => { const [y1, m1] = a.split('-').map(Number); const [y2, m2] = b.split('-').map(Number); return (y2 - y1) * 12 + (m2 - m1); };
 
-async function get(url) {
+async function getOnce(url, accept) {
     const ctl = new AbortController();
-    const t = setTimeout(() => ctl.abort(), 30000);
+    const t = setTimeout(() => ctl.abort(), 90000);
     try {
-        const res = await fetch(url, { signal: ctl.signal, headers: { 'User-Agent': 'lottodraw.kr cpi updater', Accept: '*/*' } });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return await res.text();
+        const res = await fetch(url, { signal: ctl.signal, headers: { 'User-Agent': 'Mozilla/5.0 (compatible; lottodraw.kr-cpi/1.0; +https://www.lottodraw.kr)', Accept: accept || '*/*' } });
+        const text = await res.text();
+        if (!res.ok) throw new Error(`HTTP ${res.status} ${text.slice(0, 200).replace(/\s+/g, ' ')}`);
+        return text;
     } finally {
         clearTimeout(t);
     }
 }
+
+// 잠깐 끊긴 것이면 한 번 더 받는다. 4xx(주소가 틀림)는 다시 해도 같다
+async function get(url, accept) {
+    try {
+        return await getOnce(url, accept);
+    } catch (e) {
+        if (/HTTP 4\d\d/.test(e.message)) throw e;
+        await new Promise(r => setTimeout(r, 3000));
+        return getOnce(url, accept);
+    }
+}
+
+// OECD CSV 한 줄이 "한국 · 월별 · 소비자물가지수 · 지수 · 총지수 · 계절조정 안 함 · 변환 없음"인지
+const OECD_WANT = { REF_AREA: 'KOR', FREQ: 'M', MEASURE: 'CPI', UNIT_MEASURE: 'IX', EXPENDITURE: '_T', ADJUSTMENT: 'N', TRANSFORMATION: '_Z' };
+function parseOecdCsv(text) {
+    const rows = parseCsv(text);
+    const head = rows.shift() || [];
+    const ti = head.indexOf('TIME_PERIOD');
+    const vi = head.indexOf('OBS_VALUE');
+    if (ti < 0 || vi < 0) throw new Error('TIME_PERIOD/OBS_VALUE 칸이 없다: ' + head.join(',').slice(0, 160));
+    const cols = Object.keys(OECD_WANT).map(k => [head.indexOf(k), OECD_WANT[k]]).filter(c => c[0] >= 0);
+    const mi = head.indexOf('METHODOLOGY');
+    const out = {};
+    const method = {};
+    rows.forEach(r => {
+        if (!/^\d{4}-\d{2}$/.test(r[ti]) || r[vi] === '') return;
+        if (!cols.every(([i, want]) => r[i] === want)) return;
+        // 같은 달이 둘 이상이면 통계청 방식(N)을 고른다
+        const m = mi >= 0 ? r[mi] : 'N';
+        if (out[r[ti]] !== undefined && method[r[ti]] === 'N') return;
+        out[r[ti]] = Number(r[vi]);
+        method[r[ti]] = m;
+    });
+    return out;
+}
+const OECD_BASE = 'https://sdmx.oecd.org/public/rest/data/';
+const oecd = (flow, key, extra) => ({
+    name: `OECD 데이터 API (통계청 소비자물가지수 총지수) [${flow} ${key}]`,
+    enabled: () => true,
+    url: () => `${OECD_BASE}${flow}/${key}?startPeriod=2002-01${extra || ''}`,
+    accept: 'application/vnd.sdmx.data+csv; charset=utf-8',
+    public: 'https://data-explorer.oecd.org/ (Consumer price indices, Korea, monthly, index, total)',
+    parse: parseOecdCsv,
+});
 
 // 따옴표가 든 칸까지 읽는 작은 CSV 해석기
 function parseCsv(text) {
@@ -73,22 +120,10 @@ const SOURCES = [
             return out;
         },
     },
-    {
-        name: 'OECD 데이터 API (통계청 소비자물가지수 총지수)',
-        enabled: () => true,
-        url: () => 'https://sdmx.oecd.org/public/rest/data/OECD.SDD.TPS,DSD_PRICES@DF_PRICES_ALL,1.0/KOR.M.N.CPI.IX._T.N._Z?startPeriod=2002-01&dimensionAtObservation=AllDimensions&format=csvfile',
-        public: 'https://data-explorer.oecd.org/ (Consumer price indices, Korea, monthly, index)',
-        parse(text) {
-            const rows = parseCsv(text);
-            const head = rows.shift() || [];
-            const ti = head.indexOf('TIME_PERIOD');
-            const vi = head.indexOf('OBS_VALUE');
-            if (ti < 0 || vi < 0) throw new Error('TIME_PERIOD/OBS_VALUE 칸이 없다: ' + head.join(',').slice(0, 160));
-            const out = {};
-            rows.forEach(r => { if (/^\d{4}-\d{2}$/.test(r[ti]) && r[vi] !== '') out[r[ti]] = Number(r[vi]); });
-            return out;
-        },
-    },
+    oecd('OECD.SDD.TPS,DSD_PRICES@DF_PRICES_ALL,1.0', 'KOR.M.N.CPI.IX._T.N._Z'),
+    oecd('OECD.SDD.TPS,DSD_PRICES@DF_PRICES_ALL,1.0', 'KOR.M..CPI.IX._T..'),
+    oecd('OECD.SDD.TPS,DSD_PRICES@DF_PRICES_ALL,', 'KOR.M.N.CPI.IX._T.N._Z', '&format=csvfile'),
+    oecd('OECD.SDD.TPS,DSD_PRICES_COICOP2018@DF_PRICES_C2018_ALL,1.0', 'KOR.M.N.CPI.IX._T.N._Z'),
     {
         name: 'FRED (OECD 소비자물가지수, 한국 총지수)',
         enabled: () => true,
@@ -99,6 +134,20 @@ const SOURCES = [
             rows.shift();
             const out = {};
             rows.forEach(r => { if (/^\d{4}-\d{2}-\d{2}$/.test(r[0]) && r[1] !== '.' && r[1] !== '') out[r[0].slice(0, 7)] = Number(r[1]); });
+            return out;
+        },
+    },
+    {
+        name: 'DBnomics (IMF 소비자물가지수, 한국 총지수)',
+        enabled: () => true,
+        url: () => 'https://api.db.nomics.world/v22/series/IMF/CPI/M.KR.PCPI_IX?observations=1&format=json',
+        public: 'https://db.nomics.world/IMF/CPI/M.KR.PCPI_IX',
+        parse(text) {
+            const j = JSON.parse(text);
+            const doc = j && j.series && j.series.docs && j.series.docs[0];
+            if (!doc || !Array.isArray(doc.period)) throw new Error('예상과 다른 응답: ' + text.slice(0, 160));
+            const out = {};
+            doc.period.forEach((p, i) => { const v = doc.value[i]; if (/^\d{4}-\d{2}$/.test(p) && typeof v === 'number') out[p] = v; });
             return out;
         },
     },
@@ -130,7 +179,7 @@ async function main() {
     for (const src of SOURCES) {
         if (!src.enabled()) { console.log(`건너뜀: ${src.name} (설정 없음)`); continue; }
         try {
-            const got = check(src.parse(await get(src.url())));
+            const got = check(src.parse(await get(src.url(), src.accept)));
             const prev = fs.existsSync(OUT) ? JSON.parse(fs.readFileSync(OUT, 'utf8')) : null;
             const same = prev && JSON.stringify(prev.monthly) === JSON.stringify(got.monthly);
             const n = Object.keys(got.monthly).length;
