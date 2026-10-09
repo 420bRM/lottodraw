@@ -165,8 +165,6 @@ window.I18N_DICT = {
     'pc.tax.netTag': { ko: '세후', en: 'after tax' },
     'pc.tax.netTitle': { ko: '세금(3억 원까지 22%, 넘는 부분 33%)을 뗀 실수령액으로 봅니다', en: 'Show amounts after tax (22% up to 300m KRW, 33% above)' },
     'pc.tax.no':     { ko: '당첨자 수에는 세금이 없습니다', en: 'Not available for winner counts' },
-    'pc.cmp.clipKey': { ko: '▲ 위로 넘친 {n}회', en: '▲ {n} draws above the top' },
-    'pc.cmp.clipNote': { ko: '아파트값과 견줄 수 있게 세로축을 {v}에서 잘랐습니다. 그보다 큰 회차는 맨 위 ▲로 표시하며, 짚으면 값이 나옵니다.', en: 'To compare with flat prices the axis is cut at {v}; draws above it are marked ▲ at the top (point at them for the value).' },
     'pc.cmp.aptLegend': { ko: '서울 아파트 평균 매매가', en: 'Seoul apartment average price' },
     'pc.cmp.aptEst': { ko: '점선: {ym} 이전 추정', en: 'dotted: estimated before {ym}' },
     'pc.cmp.aptAt':  { ko: '서울 아파트 평균 ({ym})', en: 'Seoul flat avg. ({ym})' },

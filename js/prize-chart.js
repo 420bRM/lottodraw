@@ -19,7 +19,7 @@
 // "세금: 세전/세후"는 금액 지표의 선 자체를 세후 실수령액으로 바꾼다(지금 세율, tax.html 과 같은 계산).
 // "비교: 서울 아파트 평균가"(1인당 당첨금에서만)는 그 달 서울 아파트 평균 매매가(주황, seoul-apt.json — KB부동산,
 // tools/update-seoul-apt.js 가 받는다. 2008-12 이전은 지수로 거꾸로 환산한 추정이라 점선)를 겹친다. 켜면 세후로 바꾼다.
-// 이때 튀는 몇 회차(19회 407억 등)가 세로축을 키워 아파트 선이 바닥에 붙지 않게 위쪽을 자르고 넘친 회차는 ▲로 표시한다.
+// 세로축은 기본 화면과 똑같이 잡는다(자르지 않는다). 전체 기간에서 아파트 선이 낮게 깔리면 구간·로그 눈금으로 본다.
 //
 // 지표는 METRICS 에 한 줄씩 늘린다. 판매액이나 2~5등이 lotto-data.json 에 들어오면 여기에 더하면 된다.
 // 세로축은 늘 하나다 — 단위가 다른 두 지표를 한 그림에 겹치지 않는다(겹치면 없는 상관이 보인다).
@@ -663,23 +663,6 @@
             shown.forEach(b => { if (b.h > vmax) vmax = b.h; if (b.l > 0 && b.l < vmin) vmin = b.l; });
             if (aptVals) scan(aptVals);
             mas.forEach(n => scan(ser.ma[n]));
-            // 아파트 비교 중에는 위쪽을 자른다: 보이는 파란 값의 97% 지점과 아파트값 중 큰 것의 1.15배.
-            // 튀는 몇 회차 때문에 나머지가 바닥에 붙으면 비교가 안 된다. 넘친 회차는 맨 위에 ▲ (짚으면 값이 나온다)
-            let clipped = 0;
-            if (aptVals && !useLog) {
-                const seen = [];
-                let aMax = 0;
-                for (let i = start; i <= end; i++) {
-                    if (blue[i] != null) seen.push(blue[i]);
-                    if (aptVals[i] > aMax) aMax = aptVals[i];
-                }
-                seen.sort((a, b) => a - b);
-                const cap = Math.max(aMax, seen.length ? seen[Math.floor(0.97 * (seen.length - 1))] : 0) * 1.15;
-                if (cap > 0 && vmax > cap * 1.3) {
-                    vmax = cap;
-                    for (let i = start; i <= end; i++) if (blue[i] > cap) clipped++;
-                }
-            }
             const W = Math.max(280, Math.round(plot.clientWidth || 600));
             const H = W < 600 ? 240 : 320;
             const yt = useLog && vmin < Infinity ? logTicks(vmin, vmax) : linearTicks(vmax, H < 300 ? 4 : 5, metric.unit === 'people');
@@ -830,17 +813,6 @@
                 svgRoot.appendChild(rg);
             }
 
-            // 위로 넘친 회차: 맨 위에 작은 ▲
-            if (clipped) {
-                const cg = svg('g', { class: 'pc-clip' });
-                for (let i = start; i <= end; i++) {
-                    if (!(blue[i] > yt.max)) continue;
-                    const cx = x(i);
-                    cg.appendChild(svg('path', { d: `M${(cx - 3.5).toFixed(1)} ${M.top + 5}L${cx.toFixed(1)} ${M.top - 1}L${(cx + 3.5).toFixed(1)} ${M.top + 5}Z` }));
-                }
-                svgRoot.appendChild(cg);
-            }
-
             // 글자는 선 위에 (흰 테두리로 선과 겹쳐도 읽히게)
             const labels = svg('g', { class: 'pc-labels' });
             if (state.unlocked && state.ind.avg && sum.avg != null && ok(sum.avg)) {
@@ -892,7 +864,6 @@
             mas.forEach(n => items.push(['pc-key-ma' + n, T('pc.i.ma', { n: n })]));
             if (state.unlocked && state.ind.avg) items.push(['pc-key-avg', T('pc.i.avg')]);
             if (rolls.length) items.push(['pc-key-roll', T('pc.legend.roll')]);
-            if (clipped) items.push(['pc-key-clip', T('pc.cmp.clipKey', { n: clipped })]);
             items.forEach(it => legend.appendChild(el('span', null, [el('i', { className: 'pchart-key ' + it[0], 'aria-hidden': 'true' }), it[1]])));
             legend.hidden = !items.length;
 
@@ -929,7 +900,6 @@
                     unit ? T('pc.c.note', { span: T('pc.c.span' + unit) }) : '',
                     netOn ? T('pc.cmp.noteTax') : '',
                     aptVals ? T(apt.estimatedBefore ? 'pc.cmp.noteAptEst' : 'pc.cmp.noteApt', { ym: ymLabel(apt.estimatedBefore || apt.actualFrom || apt.latest) }) : '',
-                    clipped ? T('pc.cmp.clipNote', { v: fmtValue(metric, yt.max, true) }) : '',
                 ].filter(Boolean).join(' ');
             }
             renderNav(metric, ser, useLog);
@@ -997,17 +967,16 @@
             layer.appendChild(svg('line', { class: 'pc-cross', x1: xx, x2: xx, y1: M.top, y2: M.top + ph }));
             // 가로 십자선: 그림도구를 쓰는 중이면 손가락 높이, 아니면 파란 선 값에 붙는다
             const hv = state.tool && pointer ? S.yInv(pointer.y) : S.blue[i];
-            const yc = v => Math.max(M.top, y(v));    // 위로 잘린 값(▲)은 맨 위에
             if (ok(hv)) {
-                const hy = Math.round(state.tool && pointer ? pointer.y : yc(hv)) + 0.5;
+                const hy = Math.round(state.tool && pointer ? pointer.y : y(hv)) + 0.5;
                 layer.appendChild(svg('line', { class: 'pc-cross', x1: M.left, x2: M.left + S.pw, y1: hy, y2: hy }));
             }
             S.mas.forEach(n => { const v = ser.ma[n][i]; if (ok(v)) layer.appendChild(svg('circle', { class: 'pc-dot pc-dot-ma' + n, cx: x(i), cy: y(v), r: 4 })); });
             if (S.grey && ok(S.grey[i])) layer.appendChild(svg('circle', { class: 'pc-dot pc-dot-real', cx: x(i), cy: y(S.grey[i]), r: 4 }));
             if (S.aptOn && S.cs.apt[i] && ok(S.cs.apt[i].v)) layer.appendChild(svg('circle', { class: 'pc-dot pc-dot-apt', cx: x(i), cy: y(S.cs.apt[i].v), r: 4 }));
-            if (ok(S.blue[i])) layer.appendChild(svg('circle', { class: 'pc-dot', cx: x(i), cy: yc(S.blue[i]), r: 5 }));
+            if (ok(S.blue[i])) layer.appendChild(svg('circle', { class: 'pc-dot', cx: x(i), cy: y(S.blue[i]), r: 5 }));
             // 축 꼬리표: 아래 가로축에 회차, 오른쪽 세로축에 값
-            if (ok(hv)) axisTag(layer, state.tool && pointer ? pointer.y : yc(hv), fmtValue(metric, hv, true), 'pc-tag-cross', 'left');
+            if (ok(hv)) axisTag(layer, state.tool && pointer ? pointer.y : y(hv), fmtValue(metric, hv, true), 'pc-tag-cross', 'left');
             const xl = T('pc.xTick', { n: all[i].round });
             const xw = Math.ceil(measure(xl) + 2 * TAG_PAD);
             const xl0 = Math.max(0, Math.min(S.W - xw, x(i) - xw / 2));

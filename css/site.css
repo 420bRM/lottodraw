@@ -752,7 +752,6 @@ html.home { scroll-behavior: smooth; }
 .pc-key-real { border-color: var(--pc-real); }
 .pc-key-apt { border-color: var(--pc-apt); }
 .pc-key-apt-est { border-top-style: dotted; border-color: var(--pc-apt); }
-.pc-key-clip { display: none; }
 .pc-key-up, .pc-key-down { width: 9px; height: 11px; border: 0; }
 .pc-key-up { background: var(--pc-up); }
 .pc-key-down { background: var(--pc-down); }
@@ -761,7 +760,6 @@ html.home { scroll-behavior: smooth; }
 .pc-candle.is-up rect { fill: var(--pc-up); }
 .pc-candle.is-down line { stroke: var(--pc-down); }
 .pc-candle.is-down rect { fill: var(--pc-down); }
-.pc-clip path { fill: var(--pc-main); }
 .pc-key-roll { width: 9px; height: 9px; border: 1.5px solid #888; border-radius: 50%; }
 .pc-key-none { border-color: transparent; }
 .pchart-stage { position: relative; }
