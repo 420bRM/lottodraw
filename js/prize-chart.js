@@ -1,6 +1,7 @@
 // TOP 50 당첨금 페이지 맨 위의 회차별 그래프. 가로는 회차, 세로는 고른 지표.
 //
-// 그래프(지표·기간 고르기, 확대·이동, 짚어서 값 보기, 표로 보기)는 무료다. 보조지표(평균선·이동평균·로그 눈금)와
+// 그래프(지표 고르기, 물가 반영, 짚어서 값 보기, 표로 보기)는 무료이고 늘 전체 기간을 보인다.
+// 구간 설정(최근 N회·확대·축소·끌어 확대·작은 그래프로 옮기기), 보조지표(평균선·이동평균·로그 눈금),
 // 그림도구(수평선·추세선)는 이용권이 있을 때만 켜진다. 이 잠금도 license.js 와 같은 편의 잠금이다.
 //
 // 처음 열면 늘 "전체 기간 · 총 1등 당첨금"이다. 고른 지표·기간은 기억하지 않는다(보조지표만 기억한다).
@@ -282,13 +283,6 @@
         }
         const metricSeg = segGroup(T('pc.metricAria'), METRICS.map(m => ({ v: m.id, label: T(m.key) })),
             v => v === state.metric, v => { state.metric = v; state.pending = null; render(); });
-        const rangeSeg = segGroup(T('pc.rangeAria'), RANGES.map(n => ({ v: n, label: n ? T('pc.r.n', { n: n }) : T('pc.r.all') })),
-            v => isPreset(Number(v)), v => setView(presetView(v), true));
-        const zoomBtn = (label, aria, factor) => el('button', { type: 'button', text: label, 'aria-label': aria, title: aria,
-            on: { click: () => setView(zoomView(len, state.view, factor, state.hover), true) } });
-        const zoomIn = zoomBtn('＋', T('pc.zoomIn'), 0.5);
-        const zoomOut = zoomBtn('－', T('pc.zoomOut'), 2);
-        const zoomSeg = el('div', { className: 'pchart-seg pchart-zoom', role: 'group', 'aria-label': T('pc.zoomAria') }, [zoomIn, zoomOut]);
         const realBtn = el('button', { type: 'button', 'aria-pressed': 'false', text: T('pc.real'), on: { click: () => {
             if (byId(state.metric).unit !== 'won') return;
             state.real = !state.real;
@@ -324,6 +318,16 @@
         };
         toolChips.undo.removeAttribute('aria-pressed');
         toolChips.clear.removeAttribute('aria-pressed');
+        // 구간 설정(이용권): 최근 N회·전체, 확대·축소. 잠겨 있으면 늘 전체 기간이다
+        const rangeChips = RANGES.map(n => {
+            const c = chip(n ? T('pc.r.n', { n: n }) : T('pc.r.all'), () => pickRange(n));
+            c.dataset.v = String(n);
+            return c;
+        });
+        const zoomIn = chip('＋ ' + T('pc.zoomIn'), () => zoomBy(0.5));
+        const zoomOut = chip('－ ' + T('pc.zoomOut'), () => zoomBy(2));
+        zoomIn.removeAttribute('aria-pressed');
+        zoomOut.removeAttribute('aria-pressed');
 
         const badge = el('span', { className: 'lock-mark', text: T('pc.pro.badge') });
         const proNote = el('p', { className: 'pchart-pro-note' }, [
@@ -331,6 +335,9 @@
             el('a', { href: 'statistics.html', text: T('pc.pro.see') }),
         ]);
         const pro = el('div', { className: 'pchart-pro is-locked' }, [
+            el('div', { className: 'pchart-pro-group', role: 'group', 'aria-label': T('pc.pro.range') }, [
+                el('span', { className: 'pchart-pro-label', text: T('pc.pro.range') }),
+            ].concat(rangeChips, [zoomIn, zoomOut])),
             el('div', { className: 'pchart-pro-group', role: 'group', 'aria-label': T('pc.pro.ind') }, [
                 el('span', { className: 'pchart-pro-label', text: T('pc.pro.ind') }),
             ].concat(INDICATORS.map(k => indChips[k]))),
@@ -377,7 +384,7 @@
 
         root.textContent = '';
         root.classList.add('pchart-body');
-        [el('div', { className: 'pchart-controls' }, [metricSeg, realSeg, rangeSeg, zoomSeg]), pro, stage, hint, summary, cpiNote, live, table,
+        [el('div', { className: 'pchart-controls' }, [metricSeg, realSeg]), pro, stage, hint, summary, cpiNote, live, table,
             el('p', { className: 'pchart-note', text: T('pc.note') }), sourceLine].forEach(n => root.appendChild(n));
 
         /* 보조지표 · 그림도구 */
@@ -385,6 +392,14 @@
             proNote.classList.remove('is-flash');
             void proNote.offsetWidth;
             proNote.classList.add('is-flash');
+        }
+        function pickRange(n) {
+            if (!state.unlocked) return flashNote();
+            setView(presetView(n), true);
+        }
+        function zoomBy(factor) {
+            if (!state.unlocked) return flashNote();
+            setView(zoomView(len, state.view, factor, state.hover), true);
         }
         function toggleInd(k) {
             if (!state.unlocked) return flashNote();
@@ -418,10 +433,12 @@
 
         function paintControls() {
             metricSeg.paint();
-            rangeSeg.paint();
             const w = state.view.e - state.view.s + 1;
-            zoomIn.disabled = w <= Math.min(MIN_VIEW, len);
-            zoomOut.disabled = w >= len;
+            const lockIf = (c, off) => { if (off) c.setAttribute('aria-disabled', 'true'); else c.removeAttribute('aria-disabled'); };
+            rangeChips.forEach(c => { c.setAttribute('aria-pressed', String(state.unlocked && isPreset(Number(c.dataset.v)))); lockIf(c, !state.unlocked); });
+            lockIf(zoomIn, !state.unlocked || w <= Math.min(MIN_VIEW, len));
+            lockIf(zoomOut, !state.unlocked || w >= len);
+            nav.hidden = !state.unlocked;     // 작은 그래프(구간 옮기기)도 이용권 기능
             const wonMetric = byId(state.metric).unit === 'won';
             realBtn.setAttribute('aria-pressed', String(!!(state.real && wonMetric)));
             realBtn.disabled = !wonMetric;
@@ -791,7 +808,7 @@
             const p = pointAt(e);
             state.hover = p.i;
             drawHover(p);
-            if (e.pointerType === 'mouse' && e.button === 0 && !state.tool) {
+            if (e.pointerType === 'mouse' && e.button === 0 && !state.tool && state.unlocked) {
                 sel = { x0: p.x, i0: p.i, moved: false };
                 try { plot.setPointerCapture(e.pointerId); } catch (err) { /* 오래된 브라우저 */ }
             }
@@ -842,7 +859,7 @@
         // 키보드: ← → 한 회차, PageUp/PageDown 10회차, Home/End 처음·끝, + - 확대·축소, Esc 닫기
         plot.addEventListener('keydown', e => {
             if (!S) return;
-            if (e.key === '+' || e.key === '=' || e.key === '-' || e.key === '_') {
+            if (state.unlocked && (e.key === '+' || e.key === '=' || e.key === '-' || e.key === '_')) {
                 e.preventDefault();
                 setView(zoomView(len, state.view, e.key === '-' || e.key === '_' ? 2 : 0.5, state.hover), true);
                 return;
@@ -877,7 +894,7 @@
             return { px: px, i: Math.round((px - N.L) / N.pw * (len - 1)) };
         }
         nav.addEventListener('pointerdown', e => {
-            if (!N) return;
+            if (!N || !state.unlocked) return;
             const p = navIndex(e);
             const xs = N.x(state.view.s);
             const xe = N.x(state.view.e);
@@ -904,6 +921,7 @@
         nav.addEventListener('pointercancel', navEnd);
         // 키보드: ← → 구간 옮기기, + - 확대·축소
         nav.addEventListener('keydown', e => {
+            if (!state.unlocked) return;
             const w = state.view.e - state.view.s + 1;
             const step = Math.max(1, Math.round(w / 10));
             if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
@@ -974,6 +992,7 @@
                     INDICATORS.forEach(k => { state.ind[k] = false; });
                     state.tool = null;
                     state.pending = null;
+                    state.view = { s: 0, e: len - 1 };   // 구간 설정도 잠기므로 전체 기간으로
                 }
                 render();
             },
