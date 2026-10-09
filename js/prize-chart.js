@@ -403,9 +403,9 @@
             safeLink(cpi.link || cpi.sourceUrl) ? el('a', { href: safeLink(cpi.link || cpi.sourceUrl), target: '_blank', rel: 'noopener', text: cpiCredit() }) : cpiCredit(),
             T('pc.src.cpiTail', { ym: ymLabel(cpi.latest) }),
         ] : []).concat(apt ? [
-            T('pc.src.apt'),
+            T(gnGu ? 'pc.src.aptGn' : 'pc.src.apt'),
             safeLink(apt.link) ? el('a', { href: safeLink(apt.link), target: '_blank', rel: 'noopener', text: (apt.credit && (apt.credit[lang()] || apt.credit.ko)) || 'KB' }) : ((apt.credit && apt.credit.ko) || 'KB'),
-            T('pc.src.aptTail', { ym: ymLabel(apt.latest) }),
+            gnGu && gn.latest !== apt.latest ? T('pc.src.aptGnTail', { a: ymLabel(apt.latest), b: ymLabel(gn.latest) }) : T('pc.src.aptTail', { ym: ymLabel(apt.latest) }),
         ] : []));
 
         const chip = cell;

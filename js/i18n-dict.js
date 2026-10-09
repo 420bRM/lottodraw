@@ -224,6 +224,8 @@ window.I18N_DICT = {
     'pc.src.cpiTail': { ko: ' — 매월 7일 자동 갱신, {ym}분까지 반영', en: ' — updated automatically on the 7th of each month, through {ym}' },
     'pc.src.apt':    { ko: ' · 서울 아파트값 ', en: '; Seoul apartment prices: ' },
     'pc.src.aptTail': { ko: ' — 매월 자동 갱신, {ym}분까지 반영', en: ' — updated automatically each month, through {ym}' },
+    'pc.src.aptGn':  { ko: ' · 서울 · 강남구 아파트값 ', en: '; Seoul and Gangnam-gu apartment prices: ' },
+    'pc.src.aptGnTail': { ko: ' — 매월 자동 갱신, 서울 {a} · 강남구 {b}분까지 반영', en: ' — updated automatically each month, Seoul through {a}, Gangnam-gu through {b}' },
     'pc.numbersAria': { ko: '당첨번호 {nums}, 보너스 {bonus}', en: 'Winning numbers {nums}, bonus {bonus}' },
     'pc.gate.title': { ko: '로그인하면 그래프를 무료로 볼 수 있습니다', en: 'Sign in to see the chart, free' },
     'pc.gate.sub':   { ko: '구글 계정으로 바로 가입됩니다. 처음 가입하면 3일 동안 보조지표·그림도구까지 열립니다.',
