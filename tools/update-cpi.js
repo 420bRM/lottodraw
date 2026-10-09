@@ -6,8 +6,11 @@
 //   1. 한국은행 ECOS   — 저장소 비밀값 ECOS_API_KEY 가 있을 때만 (무료 인증키, ecos.bok.or.kr)
 //   2. OECD 데이터 API — 키 없이 받는다. 한국 자료는 통계청 소비자물가지수(National methodology).
 //                        주소 모양이 바뀌는 일이 있어 몇 가지 모양을 차례로 시도한다
-//   3. FRED            — 키 없이 받는다. OECD 자료를 옮겨 실은 것
-//   4. DBnomics        — 키 없이 받는다. IMF 소비자물가지수를 옮겨 실은 것
+//   3. DBnomics        — 키 없이 받는다. OECD·BIS 자료를 옮겨 실은 것
+//   4. BIS             — 국제결제은행 장기 소비자물가지수(한국, 월별). 키 없이 받는다
+//   5. 세계은행 GEM    — 월별 소비자물가지수(계절조정 안 함). 키 없이 받는다
+//   6. FRED · DBnomics(IMF) — 2026-10 확인 때 한국 자료가 2023-11 · 2025-07 에서 멈춰 있었다(멈춘 자료는 쓰지 않는다)
+// 마지막 달이 MAX_LAG_MONTHS 보다 오래된 자료는 버린다. 어느 것도 안 되면 기존 cpi-data.json 을 그대로 두고 실패로 끝난다.
 // 기준연도(=100)는 곳마다 다를 수 있지만 상관없다. 그래프는 두 달의 비율만 쓴다.
 //
 // 이 컨테이너(Claude 작업 환경)에서는 위 주소들이 막혀 있어 GitHub Actions(.github/workflows/update-cpi.yml)에서 돈다.
@@ -73,6 +76,42 @@ function parseOecdCsv(text) {
     return out;
 }
 const OECD_BASE = 'https://sdmx.oecd.org/public/rest/data/';
+// DBnomics 한 줄 시리즈: { series: { docs: [{ period: [...], value: [...] }] } }
+function parseDbnomics(text) {
+    const j = JSON.parse(text);
+    const doc = j && j.series && j.series.docs && j.series.docs[0];
+    if (!doc || !Array.isArray(doc.period)) throw new Error('예상과 다른 응답: ' + text.slice(0, 160));
+    const out = {};
+    doc.period.forEach((p, i) => { const v = doc.value[i]; if (/^\d{4}-\d{2}$/.test(p) && typeof v === 'number') out[p] = v; });
+    return out;
+}
+const dbnomics = (name, series, page) => ({
+    name: `DBnomics (${name})`,
+    enabled: () => true,
+    url: () => `https://api.db.nomics.world/v22/series/${series}?observations=1&format=json`,
+    public: page || `https://db.nomics.world/${series}`,
+    parse: parseDbnomics,
+});
+// SDMX-CSV(TIME_PERIOD, OBS_VALUE 칸)을 그대로 읽는다 — BIS
+function parseSdmxCsv(text) {
+    const rows = parseCsv(text);
+    const head = rows.shift() || [];
+    const ti = head.indexOf('TIME_PERIOD');
+    const vi = head.indexOf('OBS_VALUE');
+    if (ti < 0 || vi < 0) throw new Error('TIME_PERIOD/OBS_VALUE 칸이 없다: ' + head.join(',').slice(0, 160));
+    const out = {};
+    rows.forEach(r => { if (/^\d{4}-\d{2}$/.test(r[ti]) && r[vi] !== '' && r[vi] !== 'NaN') out[r[ti]] = Number(r[vi]); });
+    return out;
+}
+const bis = url => ({
+    name: 'BIS 장기 소비자물가지수 (한국, 월별, 2010=100)',
+    enabled: () => true,
+    url: () => url,
+    accept: 'application/vnd.sdmx.data+csv; charset=utf-8',
+    public: 'https://data.bis.org/topics/CPI (WS_LONG_CPI, M.KR.628)',
+    parse: parseSdmxCsv,
+});
+
 const oecd = (flow, key, extra) => ({
     name: `OECD 데이터 API (통계청 소비자물가지수 총지수) [${flow} ${key}]`,
     enabled: () => true,
@@ -124,6 +163,24 @@ const SOURCES = [
     oecd('OECD.SDD.TPS,DSD_PRICES@DF_PRICES_ALL,1.0', 'KOR.M..CPI.IX._T..'),
     oecd('OECD.SDD.TPS,DSD_PRICES@DF_PRICES_ALL,', 'KOR.M.N.CPI.IX._T.N._Z', '&format=csvfile'),
     oecd('OECD.SDD.TPS,DSD_PRICES_COICOP2018@DF_PRICES_C2018_ALL,1.0', 'KOR.M.N.CPI.IX._T.N._Z'),
+    dbnomics('OECD 소비자물가지수, 한국 총지수', 'OECD/DSD_PRICES@DF_PRICES_ALL/KOR.M.N.CPI.IX._T.N._Z'),
+    bis('https://stats.bis.org/api/v1/data/WS_LONG_CPI/M.KR.628/all?startPeriod=2002-01&format=csv'),
+    bis('https://stats.bis.org/api/v2/data/dataflow/BIS/WS_LONG_CPI/1.0/M.KR.628?c%5BTIME_PERIOD%5D=ge:2002-01&format=csv'),
+    dbnomics('BIS 장기 소비자물가지수, 한국', 'BIS/WS_LONG_CPI/M.KR.628'),
+    {
+        name: '세계은행 GEM (월별 소비자물가지수, 계절조정 안 함)',
+        enabled: () => true,
+        url: () => 'https://api.worldbank.org/v2/country/KOR/indicator/CPTOTNSXN?source=15&format=json&per_page=2000&date=2002M01:2035M12',
+        public: 'https://databank.worldbank.org/source/global-economic-monitor-(gem) (CPTOTNSXN)',
+        parse(text) {
+            const j = JSON.parse(text);
+            const rows = Array.isArray(j) && Array.isArray(j[1]) ? j[1] : null;
+            if (!rows) throw new Error('예상과 다른 응답: ' + text.slice(0, 160));
+            const out = {};
+            rows.forEach(r => { const m = /^(\d{4})M(\d{2})$/.exec(r.date); if (m && typeof r.value === 'number') out[`${m[1]}-${m[2]}`] = r.value; });
+            return out;
+        },
+    },
     {
         name: 'FRED (OECD 소비자물가지수, 한국 총지수)',
         enabled: () => true,
@@ -137,20 +194,7 @@ const SOURCES = [
             return out;
         },
     },
-    {
-        name: 'DBnomics (IMF 소비자물가지수, 한국 총지수)',
-        enabled: () => true,
-        url: () => 'https://api.db.nomics.world/v22/series/IMF/CPI/M.KR.PCPI_IX?observations=1&format=json',
-        public: 'https://db.nomics.world/IMF/CPI/M.KR.PCPI_IX',
-        parse(text) {
-            const j = JSON.parse(text);
-            const doc = j && j.series && j.series.docs && j.series.docs[0];
-            if (!doc || !Array.isArray(doc.period)) throw new Error('예상과 다른 응답: ' + text.slice(0, 160));
-            const out = {};
-            doc.period.forEach((p, i) => { const v = doc.value[i]; if (/^\d{4}-\d{2}$/.test(p) && typeof v === 'number') out[p] = v; });
-            return out;
-        },
-    },
+    dbnomics('IMF 소비자물가지수, 한국 총지수', 'IMF/CPI/M.KR.PCPI_IX'),
 ];
 
 // 1회 달부터 마지막 달까지 빠짐없이, 값은 모두 양수, 마지막 달은 최근이어야 한다
