@@ -1,15 +1,19 @@
-// TOP 50 당첨금 페이지 맨 위의 회차별 그래프. 가로는 회차, 세로는 고른 지표.
+// TOP 50 당첨금 페이지 맨 위의 회차별 그래프(#prize-chart, 접는 상자 — 처음엔 펼침). 가로는 회차, 세로는 고른 지표.
+// 상자를 접으면(폭 0) 그리기를 미뤘다가 펼칠 때 다시 그린다.
 //
 // 그래프(지표 고르기, 물가 반영, 짚어서 값 보기)는 무료이고 늘 전체 기간을 보인다.
 // 구간 설정(최근 N회·확대·축소·휠·끌어 옮기기·두 손가락·작은 그래프), 보조지표(평균선·이동평균·로그 눈금),
 // 그림도구(수평선·추세선)는 이용권이 있을 때만 켜진다. 이 잠금도 license.js 와 같은 편의 잠금이다.
+// 단, 처음 화면의 20회 · 240회 이동평균(DEFAULT_IND)은 누구나 본다 — 끄고 켜기 · 다른 보조지표는 이용권.
+// 도구 상자에는 줄마다 "이용권"을 달지 않고, 잠겼을 때 맨 아래 한 줄로 "이용권이 없으면 일부 기능은 제한"이라고 안내한다.
 //
 // 세로축 눈금은 왼쪽. 보이는 구간의 마지막 값(파란 · 회색 · 주황)은 선이 끝나는 오른쪽에 꼬리표로 붙는다(이동평균 끝값은
 // 붙이지 않는다 — 겹쳐서 읽히지 않고, 값은 짚으면 나온다). 짚은 자리는 십자선과 함께 가로축(회차)·세로축(값)에 꼬리표.
 // 봉 차트: 회차를 달·분기·해로 묶어 시가(첫 회차)·고가·저가·종가(마지막 회차). 오름 빨강 · 내림 파랑.
 // 선 · 월봉은 누구나, 분기봉 · 연봉은 이용권. 처음 열면 선 그래프다.
 //
-// 처음 열면 늘 "전체 기간 · 총 1등 당첨금 · 선 그래프"다. 고른 지표·기간은 기억하지 않는다(보조지표만 기억한다).
+// 처음 열면 늘 "전체 기간 · 총 1등 당첨금 · 선 그래프 · 물가 반영 · 20회 · 240회 이동평균"이다.
+// 고른 지표·기간은 기억하지 않는다(이용권이 있으면 보조지표만 기억한다).
 //
 // 로그인하지 않은 사람에게는 그래프를 흐리게 보이고 로그인을 권한다(setGated). 누구를 가릴지는 페이지가 정한다.
 //
@@ -47,6 +51,9 @@
     const RANGES = [50, 100, 300, 0];      // 0 = 전체
     const MA = [20, 60, 120, 240];
     const INDICATORS = ['avg'].concat(MA.map(n => 'ma' + n), ['log']);
+    // 처음 켜 두는 보조지표 — 이용권이 없어도 보인다(바꾸기는 이용권). 이용권이 있으면 고른 것을 기억해 그것을 쓴다
+    const DEFAULT_IND = { ma20: true, ma240: true };
+    const defaultInd = () => Object.fromEntries(INDICATORS.map(k => [k, !!DEFAULT_IND[k]]));
     const MIN_VIEW = 10;                   // 확대해도 이보다 좁게는 안 본다 (회차 수)
 
     // 점이 촘촘할수록 선을 가늘게: 전체 기간(1,200여 회)을 한 화면에 넣으면 2px 선은 뭉개진다.
@@ -344,11 +351,11 @@
         const state = {
             metric: METRICS[0].id,
             view: { s: 0, e: len - 1 },   // 보는 구간 (전체 배열의 칸 번호)
-            ind: Object.fromEntries(INDICATORS.map(k => [k, false])),
-            savedInd: saved.ind || {},
+            ind: defaultInd(),
+            savedInd: saved.ind || defaultInd(),
             unlocked: false,
             gated: false,        // 로그인 전: 그래프를 흐리게
-            real: false,         // 물가 반영
+            real: true,          // 물가 반영 (처음부터 켠다. 물가 자료가 없거나 당첨자 수 지표면 무시)
             tool: null,          // 'h' | 't'
             pending: null,       // 추세선 첫 점 { r, v }
             hover: null,         // 전체 배열의 칸 번호
@@ -359,6 +366,7 @@
         };
         let drawings = store.get(DRAW_STORE) || {};
         let S = null;            // 마지막으로 그린 눈금·크기
+        let lastW = 0;           // 마지막으로 그린 폭. 0 이면 접힌 상자 안이라 그리기를 미뤘다
 
         const saveView = () => store.set(VIEW_STORE, { ind: state.unlocked ? state.ind : state.savedInd });
         const presetView = n => (n ? clampView(len, len - n, len - 1) : { s: 0, e: len - 1 });
@@ -438,7 +446,7 @@
         zoomIn.removeAttribute('aria-pressed');
         zoomOut.removeAttribute('aria-pressed');
 
-        const badge = el('span', { className: 'lock-mark', text: T('pc.pro.badge') });
+        const badge = el('span', { className: 'lock-mark is-on', hidden: '', text: T('pc.pro.badgeOn') });
         const proNote = el('p', { className: 'pchart-pro-note' }, [
             T('pc.pro.note') + ' ',
             el('a', { href: 'statistics.html', text: T('pc.pro.see') }),
@@ -446,10 +454,10 @@
         // 이용권이 있으면 조작법 한 줄 (손가락 화면과 마우스 화면이 다르다)
         const coarse = !!(g.matchMedia && g.matchMedia('(pointer: coarse)').matches);
         const helpNote = el('p', { className: 'pchart-help', hidden: '', text: T(coarse ? 'pc.help.touch' : 'pc.help.mouse') });
-        // 한 줄: 왼쪽 이름 칸(유료 줄은 아래에 "이용권"), 오른쪽 단추 칸들. 단추는 1px 선으로만 나뉜다
+        // 한 줄: 왼쪽 이름 칸, 오른쪽 단추 칸들. 단추는 1px 선으로만 나뉜다. 이용권 줄이라고 따로 적지 않는다(맨 아래 안내 한 줄)
         // fit: 단추가 몇 개 안 되는 줄은 줄 폭을 등분하지 않고 글자 길이만큼만 차지한다
         const row = (label, buttons, paid, fit) => el('div', { className: 'pt-row' + (paid ? ' is-paid' : '') + (fit ? ' is-fit' : ''), role: 'group', 'aria-label': label }, [
-            el('div', { className: 'pt-label' }, [el('span', { text: label }), paid ? el('small', { className: 'pt-paid', text: T('pc.pro.badge') }) : null]),
+            el('div', { className: 'pt-label' }, [el('span', { text: label })]),
             el('div', { className: 'pt-btns' }, buttons),
         ]);
         const realRow = row(T('pc.row.amount'), [nominalBtn, realBtn], false, true);
@@ -465,11 +473,12 @@
         const netBtn = cell(T('pc.tax.net'), () => setNet(true));
         const taxRow = row(T('pc.row.tax'), [grossBtn, netBtn], false, true);
         // 비교(무료): 1인당 당첨금에 그 달 서울 아파트 평균가를 겹친다. 다른 지표에서 누르면 1인당 당첨금으로 바꾸고,
-        // 켤 때 세후로 바꾼다 — "당첨되면 서울 집을 살 수 있나"는 세후로 봐야 맞다
+        // 켤 때 세후로 바꾼다 — "당첨되면 서울 집을 살 수 있나"는 세후로 봐야 맞다. 아파트값은 그 달 값(당시 금액)이라
+        // 물가 반영(지금 돈 가치 회색 선)은 끈다 — 회색 선과 아파트값을 견주면 잘못 읽는다
         function toggleCmp(k) {
             if (state.metric !== 'each') { state.metric = 'each'; state[k] = true; }
             else state[k] = !state[k];
-            if (state[k]) state.net = true;
+            if (state[k]) { state.net = true; state.real = false; }
             state.pending = null;
             render();
         }
@@ -520,7 +529,7 @@
         root.classList.add('pchart-body');
         // 지표 고르기 → 그래프 → 요약 줄 → 나머지 그래프 도구 상자 → (그림도구 안내) → 설명(물가 · 봉 · 세금 · 아파트) → 주의 · 출처
         // 설명은 도구 상자 아래에 둔다 — 그래프 바로 밑에 두면 길어질 때 도구 상자가 그래프에서 멀어진다.
-        // 회차별 표는 따로 두지 않는다: 같은 페이지 위쪽에 TOP 50 표가 있고, 키보드 ←→ 로 회차마다 읽을 수 있다
+        // 회차별 표는 따로 두지 않는다: 바로 아래(그래프를 접으면 바로 보이는) TOP 50 표가 있고, 키보드 ←→ 로 회차마다 읽을 수 있다
         [metricBox, stage, summary, pro, hint, live, cpiNote, cmpNote,
             el('p', { className: 'pchart-note', text: T('pc.note') }), sourceLine].forEach(n => root.appendChild(n));
 
@@ -597,14 +606,13 @@
             netBtn.title = wonMetric ? T('pc.tax.netTitle') : T('pc.tax.no');
             grossBtn.title = wonMetric ? '' : T('pc.tax.no');
             pro.classList.toggle('is-locked', !state.unlocked);
-            badge.textContent = state.unlocked ? T('pc.pro.badgeOn') : T('pc.pro.badge');
-            badge.classList.toggle('is-on', state.unlocked);
+            badge.hidden = !state.unlocked;
             proNote.hidden = state.unlocked;
             helpNote.hidden = !state.unlocked;
             INDICATORS.forEach(k => {
                 const c = indChips[k];
                 const off = !state.unlocked || (k === 'log' && !isWon);
-                c.setAttribute('aria-pressed', String(state.unlocked && !!state.ind[k] && !(k === 'log' && !isWon)));
+                c.setAttribute('aria-pressed', String(!!state.ind[k] && !(k === 'log' && !isWon)));   // 잠겨도 켜 둔 기본값은 눌린 모양
                 if (off) c.setAttribute('aria-disabled', 'true'); else c.removeAttribute('aria-disabled');
                 if (k === 'log') c.title = isWon ? '' : T('pc.i.logNo');
             });
@@ -648,6 +656,8 @@
         }
 
         function render() {
+            // 접힌 상자 안(폭 0)에서는 그리지 않는다 — 펼치면 ResizeObserver 가 폭을 보고 다시 그린다
+            if (plot.isConnected && !plot.clientWidth) { lastW = 0; return; }
             const metric = byId(state.metric);
             const realOn = !!(state.real && cpi && metric.unit === 'won');
             const netOn = !!(state.net && metric.unit === 'won');
@@ -664,7 +674,7 @@
             const start = state.view.s;
             const end = state.view.e;
             const useLog = state.unlocked && state.ind.log && metric.unit === 'won';
-            const mas = state.unlocked ? MA.filter(n => state.ind['ma' + n]) : [];
+            const mas = MA.filter(n => state.ind['ma' + n]);   // 이용권이 없으면 state.ind 는 늘 처음 값(DEFAULT_IND)
             const sum = summarize(all, ser.vals, start, end);
             if (state.hover !== null && (state.hover < start || state.hover > end)) state.hover = null;
 
@@ -1362,8 +1372,7 @@
             e.preventDefault();
         });
 
-        // 폭이 바뀌면 다시 그린다 (휴대폰 회전 등)
-        let lastW = 0;
+        // 폭이 바뀌면 다시 그린다 (휴대폰 회전, 접은 상자를 다시 펼칠 때 등)
         const onResize = () => {
             const w = Math.round(plot.clientWidth);
             if (w && w !== lastW) { lastW = w; render(); }
@@ -1392,7 +1401,7 @@
                     INDICATORS.forEach(k => { state.ind[k] = !!state.savedInd[k]; });
                 } else {
                     state.savedInd = Object.assign({}, state.ind);
-                    INDICATORS.forEach(k => { state.ind[k] = false; });
+                    state.ind = defaultInd();   // 이용권이 없으면 처음 값(20회 · 240회 이동평균)으로
                     state.tool = null;
                     state.pending = null;
                     if (!freeCandle(state.candle)) state.candle = null;   // 분기봉·연봉은 잠기므로 처음 화면(선)으로
@@ -1405,6 +1414,7 @@
 
     return {
         METRICS: METRICS,
+        DEFAULT_IND: DEFAULT_IND,
         mount: mount,
         movingAverage: movingAverage,
         realFactor: realFactor,
