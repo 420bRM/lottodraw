@@ -25,12 +25,11 @@
     function fill(rows, message) {
         const body = $('rank-table').querySelector('tbody');
         body.textContent = '';
-        if (message) { body.appendChild(el('tr', {}, [el('td', { colspan: '4', text: message })])); return; }
+        if (message) { body.appendChild(el('tr', {}, [el('td', { colspan: '3', text: message })])); return; }
         rows.forEach(r => body.appendChild(el('tr', { className: r.rank <= 3 ? 'top' + r.rank : '' }, [
             el('td', { text: r.rank <= 3 ? ['🥇', '🥈', '🥉'][r.rank - 1] : String(r.rank) }),
             el('td', { text: r.nick }),
             el('td', { text: tr('rank.pts', '{n}점', { n: r.points.toLocaleString() }) }),
-            el('td', { text: tr('rank.days', '{n}일', { n: r.days }) }),
         ])));
     }
 
