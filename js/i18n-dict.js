@@ -152,6 +152,7 @@ window.I18N_DICT = {
     'pc.navAria':    { ko: '보는 구간. 끌어서 옮기고, 양 끝을 끌어 넓히거나 좁힙니다. 화살표 키로 옮기고 + − 키로 확대·축소합니다.',
                        en: 'Visible range. Drag to move it, drag either end to resize. Arrow keys move it; + and − zoom.' },
     'pc.r.custom':   { ko: '고른 구간', en: 'Selected range' },
+    'pc.readoutIdle': { ko: '그래프를 누르면 그 회차 정보가 여기에 나옵니다.', en: 'Tap the chart to see that draw here.' },
     'pc.real':       { ko: '물가 반영', en: 'Inflation-adjusted' },
     'pc.realTitle':  { ko: '그 회차 금액을 {ym} 돈 가치로 바꿔 봅니다 (소비자물가지수 기준)', en: 'Show each amount in {ym} money (consumer price index)' },
     'pc.realNo':     { ko: '당첨자 수에는 물가 반영이 없습니다', en: 'Not available for winner counts' },

@@ -789,6 +789,7 @@ html.home { scroll-behavior: smooth; }
 .pchart-zoom button { min-width: 38px; font-size: 15px; }
 
 /* 로그인 전: 그래프를 흐리게 하고 안내를 얹는다 */
+.pchart-body.is-gated .pchart-readout,
 .pchart-body.is-gated .pchart-legend,
 .pchart-body.is-gated .pchart-plot,
 .pchart-body.is-gated .pchart-nav,
@@ -814,6 +815,26 @@ html.home { scroll-behavior: smooth; }
 .prose .pchart-tip .pchart-tip-head { margin-bottom: 2px; color: var(--muted); }
 .pchart-tip-head b { color: var(--text); font-size: 13px; }
 .pchart-tip-balls { display: flex; align-items: center; gap: 3px; margin: 2px 0 6px !important; }
+
+/* 휴대폰 정보 줄 (좁은 화면에서 떠 있는 툴팁 대신) — 높이를 미리 잡아 눌러도 그래프가 밀리지 않게 */
+.pchart-readout { display: none; }
+.pchart-body.is-compact .pchart-readout {
+    display: block; min-height: 64px; margin-top: 6px; padding: 5px 8px;
+    border: 1px solid var(--line); border-radius: 8px; background: #fafbfd;
+    font-size: 11.5px; line-height: 1.45;
+}
+.prose .pchart-readout p { margin: 0; }
+.pr-idle { color: var(--muted); }
+.pr-head { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; }
+.pr-head b { font-size: 12.5px; }
+.pr-date { color: var(--muted); }
+.pr-balls { display: inline-flex; align-items: center; gap: 2px; }
+.pr-balls .mball { width: 17px; height: 17px; font-size: 9px; }
+.pr-balls .plus { font-size: 10px; }
+.pr-vals { display: flex; flex-wrap: wrap; gap: 0 10px; color: var(--muted); }
+.pr-item { white-space: nowrap; }
+.pr-item b { color: #000; font-variant-numeric: tabular-nums; }
+.pr-item .pchart-key { width: 10px; margin-right: 3px; }
 .pchart-tip-balls .mball { width: 22px; height: 22px; font-size: 11px; }
 .pchart-tip-row { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
 .pchart-tip-row b { color: #000; font-variant-numeric: tabular-nums; }
