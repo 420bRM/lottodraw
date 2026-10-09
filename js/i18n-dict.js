@@ -118,7 +118,7 @@ window.I18N_DICT = {
     'top.th.round':  { en: 'Draw' },
     'top.th.each':   { en: 'Per winner (approx.)' },
     'top.th.winners': { en: 'Winners' },
-    'top.th.total':  { en: 'Total first prize (exact)' },
+    'top.th.total':  { en: 'Total first prize' },
     'top.people':    { ko: '명', en: '' },
     'top.note':      { en: '* Amounts per winner are rounded for readability.<br>* Total first-prize figures are exact to the won.' },
     'top.back':      { en: 'Back to the generator' },
@@ -126,7 +126,7 @@ window.I18N_DICT = {
 
     /* ───── 회차별 그래프 (js/prize-chart.js) ───── */
     'pc.h2':         { en: 'First prize, draw by draw' },
-    'pc.lead':       { en: 'Draws run left to right; choose what to plot. It opens as monthly candles, and you can switch to a line. Point at the chart to read any draw and its winning numbers. With a pass you can set the range — recent draws only, zoom in and out, or move the window.' },
+    'pc.lead':       { en: 'Draws run left to right; choose what to plot. You can also view it as monthly candles. Point at the chart to read any draw and its winning numbers. With a pass you can set the range — recent draws only, zoom in and out, or move the window.' },
     'pc.loading':    { en: 'Loading the chart…' },
     'pc.metricAria': { ko: '그래프에 그릴 지표', en: 'What to plot' },
     'pc.rangeAria':  { ko: '기간', en: 'Range' },
@@ -205,6 +205,7 @@ window.I18N_DICT = {
                        en: 'Visible range. Drag to move it, drag either end to resize. Arrow keys move it; + and − zoom.' },
     'pc.r.custom':   { ko: '고른 구간', en: 'Selected range' },
     'pc.readoutIdle': { ko: '그래프를 누르면 그 회차 정보가 여기에 나옵니다.', en: 'Tap the chart to see that draw here.' },
+    'pc.readoutIdleMouse': { ko: '그래프에 마우스를 올리면 그 회차 정보가 여기에 나옵니다.', en: 'Point at the chart to see that draw here.' },
     'pc.real':       { ko: '물가 반영', en: 'Inflation-adjusted' },
     'pc.realTitle':  { ko: '그 회차 금액을 {ym} 돈 가치로 바꿔 봅니다 (소비자물가지수 기준)', en: 'Show each amount in {ym} money (consumer price index)' },
     'pc.realNo':     { ko: '당첨자 수에는 물가 반영이 없습니다', en: 'Not available for winner counts' },

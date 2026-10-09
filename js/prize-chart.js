@@ -7,9 +7,9 @@
 // 세로축 눈금은 왼쪽. 보이는 구간의 마지막 값(파란 · 회색 · 주황)은 선이 끝나는 오른쪽에 꼬리표로 붙는다(이동평균 끝값은
 // 붙이지 않는다 — 겹쳐서 읽히지 않고, 값은 짚으면 나온다). 짚은 자리는 십자선과 함께 가로축(회차)·세로축(값)에 꼬리표.
 // 봉 차트: 회차를 달·분기·해로 묶어 시가(첫 회차)·고가·저가·종가(마지막 회차). 오름 빨강 · 내림 파랑.
-// 선 · 월봉은 누구나, 분기봉 · 연봉은 이용권. 처음 열면 월봉이다.
+// 선 · 월봉은 누구나, 분기봉 · 연봉은 이용권. 처음 열면 선 그래프다.
 //
-// 처음 열면 늘 "전체 기간 · 총 1등 당첨금 · 월봉"이다. 고른 지표·기간은 기억하지 않는다(보조지표만 기억한다).
+// 처음 열면 늘 "전체 기간 · 총 1등 당첨금 · 선 그래프"다. 고른 지표·기간은 기억하지 않는다(보조지표만 기억한다).
 //
 // 로그인하지 않은 사람에게는 그래프를 흐리게 보이고 로그인을 권한다(setGated). 누구를 가릴지는 페이지가 정한다.
 //
@@ -354,7 +354,7 @@
             cmpApt: false,       // 비교: 서울 아파트 평균가 (1인당 당첨금에서만)
             cmpGn: false,        // 비교: 강남 아파트 평균가 (1인당 당첨금에서만)
             net: false,          // 세금: 세후 실수령액으로 (금액 지표만)
-            candle: 'm',         // 봉 차트: null(선) | 'm'(월봉, 무료 · 처음 화면) | 'q' · 'y'(이용권)
+            candle: null,        // 봉 차트: null(선, 처음 화면) | 'm'(월봉, 무료) | 'q' · 'y'(이용권)
         };
         let drawings = store.get(DRAW_STORE) || {};
         let S = null;            // 마지막으로 그린 눈금·크기
@@ -495,11 +495,10 @@
         const legend = el('div', { className: 'pchart-legend', hidden: '' });
         const hint = el('p', { className: 'pchart-hint', role: 'status', 'aria-live': 'polite' });
         const svgRoot = svg('svg', { 'aria-hidden': 'true', focusable: 'false' });
-        const tip = el('div', { className: 'pchart-tip', hidden: '' });
-        // 좁은 화면(휴대폰)에서는 떠 있는 툴팁이 그래프를 가리므로, 그래프 위 고정된 정보 줄에 짧게 보인다.
-        // 높이를 미리 잡아 두어 눌러도 그래프가 밀리지 않는다
+        // 짚은 회차 정보는 떠 있는 툴팁 대신 그래프 위 고정된 정보창에 보인다(PC · 휴대폰 같다) — 비교선 · 이평선까지 켜면
+        // 줄이 많아 툴팁이 그래프를 가린다. 높이를 미리 잡아 두어 짚어도 그래프가 덜 밀린다
         const readout = el('div', { className: 'pchart-readout', 'aria-hidden': 'true' });
-        const plot = el('div', { className: 'pchart-plot', role: 'group', tabindex: '0' }, [svgRoot, tip]);
+        const plot = el('div', { className: 'pchart-plot', role: 'group', tabindex: '0' }, [svgRoot]);
         // 아래 작은 그래프: 전체 기간 위에 지금 보는 구간을 표시한다. 끌어서 옮기고, 양 끝을 끌어 넓히거나 좁힌다
         const navSvg = svg('svg', { 'aria-hidden': 'true', focusable: 'false' });
         const nav = el('div', { className: 'pchart-nav', role: 'group', tabindex: '0', 'aria-label': T('pc.navAria'), 'aria-describedby': 'pchart-summary' }, [navSvg]);
@@ -985,11 +984,10 @@
             if (state.unlocked && state.tool === 't' && state.pending && pointer && ok(state.pending.v)) {
                 layer.appendChild(svg('line', { class: 'pc-draw pc-draw-pending', x1: x(indexOf(state.pending.r)), y1: y(state.pending.v), x2: pointer.x, y2: pointer.y }));
             }
-            const compact = S.W < 600;
-            root.classList.toggle('is-compact', compact);
+            root.classList.toggle('is-compact', S.W < 600);
             if (state.hover === null) {
-                tip.hidden = true;
-                if (compact) { readout.textContent = ''; readout.appendChild(el('p', { className: 'pr-idle', text: T('pc.readoutIdle') })); }
+                readout.textContent = '';
+                readout.appendChild(el('p', { className: 'pr-idle', text: T(coarse ? 'pc.readoutIdle' : 'pc.readoutIdleMouse') }));
                 return;
             }
 
@@ -1017,39 +1015,7 @@
             xt.appendChild(svg('text', { x: xl0 + xw / 2, y: M.top + ph + 15, 'text-anchor': 'middle' }, xl));
             layer.appendChild(xt);
 
-            const d = all[i];
-            if (compact) { fillReadout(i); tip.hidden = true; return; }
-            tip.textContent = '';
-            tip.appendChild(el('p', { className: 'pchart-tip-head' }, [el('b', { text: T('pc.drawNo', { n: d.round }) }), ' ' + (d.date || '')]));
-            if (d.numbers && d.numbers.length) {
-                tip.appendChild(el('p', { className: 'pchart-tip-balls', 'aria-label': T('pc.numbersAria', { nums: d.numbers.join(', '), bonus: d.bonus }) },
-                    d.numbers.map(ball).concat([el('span', { className: 'plus', text: '+' }), ball(d.bonus)])));
-            }
-            const row = (keyClass, value, label, cls) => tip.appendChild(el('p', { className: 'pchart-tip-row' + (cls ? ' ' + cls : '') }, [
-                keyClass ? el('i', { className: 'pchart-key ' + keyClass, 'aria-hidden': 'true' }) : el('i', { className: 'pchart-key pc-key-none', 'aria-hidden': 'true' }),
-                el('b', { text: value }), el('span', { text: label }),
-            ]));
-            // 물가 반영 중이면: 당시 금액 / 지금 돈 가치 / 물가가 몇 배 올랐나 (툴팁이 넓어지지 않게 이름표는 짧게)
-            row('pc-key-main', fmtValue(metric, S.blue[i]), mainLabel());
-            const bar = barAt(i);
-            if (bar) row(null, ohlcText(bar), T('pc.c.of', { p: periodLabel(bar.key) }), 'is-ohlc');   // 길어서 이름이 다음 줄로 넘어갈 수 있다
-            if (S.netOn) row(null, fmtValue(metric, seriesOf(metric).vals[i]), T('pc.tax.grossRow'));
-            if (S.realOn) {
-                if (S.grey) row('pc-key-real', fmtValue(metric, S.grey[i]), realAs());
-                const f = realFactor(cpi, d.date);
-                if (f) row(null, '×' + f.toFixed(2), T('pc.real.factor'));
-            }
-            cmpLines(i).forEach(c => row(c[0], c[1], c[2]));
-            S.mas.forEach(n => { const v = ser.ma[n][i]; row('pc-key-ma' + n, v == null ? '—' : fmtValue(metric, metric.unit === 'won' ? Math.round(v) : v), T('pc.i.ma', { n: n })); });
-            METRICS.filter(m => m.id !== metric.id).forEach(m => row(null, fmtValue(m, seriesOf(m).vals[i]), T(m.key)));
-
-            tip.hidden = false;
-            const tw = tip.offsetWidth;
-            let left = x(i) + 14;
-            if (left + tw > S.W) left = x(i) - 14 - tw;
-            if (left < 0) left = Math.max(0, Math.min(S.W - tw, x(i) - tw / 2));
-            tip.style.left = left + 'px';
-            tip.style.top = M.top + 'px';
+            fillReadout(i);
         }
 
         // 짚은 회차 값의 이름표: 봉일 때는 고른 기준(지금 돈 가치 등), 선일 때 물가 반영이면 파란 선 = 당시 금액
@@ -1093,9 +1059,10 @@
             return out;
         }
 
-        // 휴대폰 정보 줄: 1줄 회차·날짜·번호, 그 아래 값들을 이어서 (본 지표만 긴 금액, 나머지는 짧게)
+        // 정보창: 1줄 회차·날짜·번호, 그 아래 값들을 이어서. 좁은 화면은 본 지표만 긴 금액, 나머지는 짧게
         function fillReadout(i) {
             const { ser, metric } = S;
+            const short = S.W < 600;
             const d = all[i];
             readout.textContent = '';
             readout.appendChild(el('p', { className: 'pr-head' }, [
@@ -1111,15 +1078,15 @@
             item('pc-key-main', fmtValue(metric, S.blue[i]), mainLabel());
             const bar = barAt(i);
             if (bar) item(null, ohlcText(bar), T('pc.c.of', { p: periodLabel(bar.key) }));
-            if (S.netOn) item(null, fmtValue(metric, seriesOf(metric).vals[i], true), T('pc.tax.grossRow'));
+            if (S.netOn) item(null, fmtValue(metric, seriesOf(metric).vals[i], short), T('pc.tax.grossRow'));
             if (S.realOn) {
-                if (S.grey) item('pc-key-real', fmtValue(metric, S.grey[i], true), realAs());
+                if (S.grey) item('pc-key-real', fmtValue(metric, S.grey[i], short), realAs());
                 const f = realFactor(cpi, d.date);
                 if (f) item(null, '×' + f.toFixed(2), T('pc.real.factor'));
             }
-            cmpLines(i, true).forEach(c => item(c[0], c[1], c[2]));
-            S.mas.forEach(n => { const v = ser.ma[n][i]; item('pc-key-ma' + n, v == null ? '—' : fmtValue(metric, v, true), T('pc.i.maShort', { n: n })); });
-            METRICS.filter(m => m.id !== metric.id).forEach(m => item(null, fmtValue(m, seriesOf(m).vals[i], m.unit === 'won'), T(m.key)));
+            cmpLines(i, short).forEach(c => item(c[0], c[1], c[2]));
+            S.mas.forEach(n => { const v = ser.ma[n][i]; item('pc-key-ma' + n, v == null ? '—' : fmtValue(metric, metric.unit === 'won' && !short ? Math.round(v) : v, short), T(short ? 'pc.i.maShort' : 'pc.i.ma', { n: n })); });
+            METRICS.filter(m => m.id !== metric.id).forEach(m => item(null, fmtValue(m, seriesOf(m).vals[i], short && m.unit === 'won'), T(m.key)));
             readout.appendChild(vals);
         }
 
@@ -1422,7 +1389,7 @@
                     INDICATORS.forEach(k => { state.ind[k] = false; });
                     state.tool = null;
                     state.pending = null;
-                    if (!freeCandle(state.candle)) state.candle = 'm';   // 분기봉·연봉은 잠기므로 처음 화면(월봉)으로
+                    if (!freeCandle(state.candle)) state.candle = null;   // 분기봉·연봉은 잠기므로 처음 화면(선)으로
                     state.view = { s: 0, e: len - 1 };   // 구간 설정도 잠기므로 전체 기간으로
                 }
                 render();
