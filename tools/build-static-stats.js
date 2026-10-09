@@ -369,7 +369,8 @@ function normalChart(o) {
             const size = Math.min(bw - 4, Y(0) - Y(1) - 2);
             b.numbers.forEach((n, i) => {
                 const cy = Y(i + 0.5);
-                out.push(`<g class="dist-ball" data-band="${LottoStats.bandOf(n)}"><title>${n}번: ${fmt(b.counts[i])}회</title>`
+                // data-n · data-c: js/dist-balls.js 가 짚은 공 위에 "34번 · 187회"를 바로 띄운다
+                out.push(`<g class="dist-ball" data-band="${LottoStats.bandOf(n)}" data-n="${n}" data-c="${b.counts[i]}"><title>${n}번: ${fmt(b.counts[i])}회</title>`
                     + `<circle cx="${r2(left + bw / 2)}" cy="${r2(cy)}" r="${r2(size / 2)}"/>`
                     + `<text x="${r2(left + bw / 2)}" y="${r2(cy + 4)}" text-anchor="middle">${n}</text></g>`);
             });
@@ -1033,6 +1034,8 @@ function statPage(p) {
             `<p>${en('함께 보기:', 'See also:')} <a href="draws.html" data-i18n-en="All winning numbers by draw">회차별 당첨번호 전체 조회</a> · <a href="probability.html" data-i18n-en="Lotto probability">로또 확률</a></p>`,
         ]),
         script: p.script,
+        // 번호 공을 쌓은 분포 그림이 있으면 짚을 때 밝게 띄우는 스크립트
+        scripts: p.body.some(s => String(s).includes('class="dist-ball"')) ? ['js/dist-balls.js'] : undefined,
     });
 }
 
