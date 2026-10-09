@@ -1,7 +1,11 @@
 // TOP 50 당첨금 페이지 맨 위의 회차별 그래프. 가로는 회차, 세로는 고른 지표.
 //
-// 그래프(지표·기간 고르기, 짚어서 값 보기, 표로 보기)는 무료다. 보조지표(평균선·이동평균·로그 눈금)와
+// 그래프(지표·기간 고르기, 확대·이동, 짚어서 값 보기, 표로 보기)는 무료다. 보조지표(평균선·이동평균·로그 눈금)와
 // 그림도구(수평선·추세선)는 이용권이 있을 때만 켜진다. 이 잠금도 license.js 와 같은 편의 잠금이다.
+//
+// 처음 열면 늘 "전체 기간 · 총 1등 당첨금"이다. 고른 지표·기간은 기억하지 않는다(보조지표만 기억한다).
+//
+// 로그인하지 않은 사람에게는 그래프를 흐리게 보이고 로그인을 권한다(setGated). 누구를 가릴지는 페이지가 정한다.
 //
 // 지표는 METRICS 에 한 줄씩 늘린다. 판매액이나 2~5등이 lotto-data.json 에 들어오면 여기에 더하면 된다.
 // 세로축은 늘 하나다 — 단위가 다른 두 지표를 한 그림에 겹치지 않는다(겹치면 없는 상관이 보인다).
@@ -20,14 +24,39 @@
 
     // 이월(1등 0명) 회차는 1인당·총액이 없다. 0으로 그리면 "그 회차는 0원"으로 읽히므로 빈칸으로 둔다.
     const paid = d => d.firstPrizeWinners > 0 && d.firstPrizeAmount > 0;
-    const METRICS = [
-        { id: 'each', key: 'pc.m.each', unit: 'won', value: d => (paid(d) ? d.firstPrizeAmount : null) },
-        { id: 'winners', key: 'pc.m.winners', unit: 'people', value: d => (typeof d.firstPrizeWinners === 'number' ? d.firstPrizeWinners : null) },
+    const METRICS = [      // 맨 앞이 처음 보이는 지표
         { id: 'total', key: 'pc.m.total', unit: 'won', value: d => (paid(d) ? d.firstPrizeAmount * d.firstPrizeWinners : null) },
+        { id: 'winners', key: 'pc.m.winners', unit: 'people', value: d => (typeof d.firstPrizeWinners === 'number' ? d.firstPrizeWinners : null) },
+        { id: 'each', key: 'pc.m.each', unit: 'won', value: d => (paid(d) ? d.firstPrizeAmount : null) },
     ];
     const RANGES = [50, 100, 300, 0];      // 0 = 전체
-    const MA = [5, 20];
-    const INDICATORS = ['avg', 'ma5', 'ma20', 'log'];
+    const MA = [20, 60, 120, 240];
+    const INDICATORS = ['avg'].concat(MA.map(n => 'ma' + n), ['log']);
+    const MIN_VIEW = 10;                   // 확대해도 이보다 좁게는 안 본다 (회차 수)
+
+    // 점이 촘촘할수록 선을 가늘게: 전체 기간(1,200여 회)을 한 화면에 넣으면 2px 선은 뭉개진다.
+    // 1px 에 점이 몇 개 들어가는지로 정한다.
+    function lineWidth(points, px) {
+        const per = points / Math.max(1, px);
+        return per <= 0.15 ? 2 : per <= 0.4 ? 1.5 : per <= 0.8 ? 1.2 : per <= 1.6 ? 1 : 0.8;
+    }
+
+    // 보는 구간 [s, e] 를 전체 len 안에 맞춘다. 폭은 MIN_VIEW 이상, 전체 이하.
+    function clampView(len, s, e) {
+        let w = Math.round(e - s + 1);
+        w = Math.max(Math.min(MIN_VIEW, len), Math.min(len, w));
+        s = Math.round(Math.min(Math.max(0, s), len - w));
+        return { s: s, e: s + w - 1 };
+    }
+
+    // factor 0.5 = 두 배 확대, 2 = 두 배 축소. center 칸이 화면에서 같은 자리에 머문다.
+    function zoomView(len, view, factor, center) {
+        const w = view.e - view.s + 1;
+        const nw = Math.max(Math.min(MIN_VIEW, len), Math.min(len, Math.round(w * factor)));
+        const c = center == null ? (view.s + view.e) / 2 : center;
+        const ratio = w > 1 ? (c - view.s) / (w - 1) : 0.5;
+        return clampView(len, c - ratio * (nw - 1), c - ratio * (nw - 1) + nw - 1);
+    }
 
     /* ───── 계산 (브라우저 없이도 돈다: tools/test-prize-chart.js) ───── */
 
@@ -158,6 +187,9 @@
         return node;
     }
 
+    const bandOf = n => (n <= 10 ? 1 : n <= 20 ? 2 : n <= 30 ? 3 : n <= 40 ? 4 : 5);
+    const ball = n => el('span', { className: 'mball', 'data-band': String(bandOf(n)), text: String(n) });
+
     function svg(tag, attrs, text) {
         const node = document.createElementNS(SVG_NS, tag);
         Object.keys(attrs || {}).forEach(k => node.setAttribute(k, attrs[k]));
@@ -183,12 +215,14 @@
         }
 
         const saved = store.get(VIEW_STORE) || {};
+        const len = all.length;
         const state = {
-            metric: byId(saved.metric).id,
-            range: RANGES.indexOf(saved.range) !== -1 ? saved.range : 100,
-            ind: { avg: false, ma5: false, ma20: false, log: false },
+            metric: METRICS[0].id,
+            view: { s: 0, e: len - 1 },   // 보는 구간 (전체 배열의 칸 번호)
+            ind: Object.fromEntries(INDICATORS.map(k => [k, false])),
             savedInd: saved.ind || {},
             unlocked: false,
+            gated: false,        // 로그인 전: 그래프를 흐리게
             tool: null,          // 'h' | 't'
             pending: null,       // 추세선 첫 점 { r, v }
             hover: null,         // 전체 배열의 칸 번호
@@ -196,7 +230,17 @@
         let drawings = store.get(DRAW_STORE) || {};
         let S = null;            // 마지막으로 그린 눈금·크기
 
-        const saveView = () => store.set(VIEW_STORE, { metric: state.metric, range: state.range, ind: state.unlocked ? state.ind : state.savedInd });
+        const saveView = () => store.set(VIEW_STORE, { ind: state.unlocked ? state.ind : state.savedInd });
+        const presetView = n => (n ? clampView(len, len - n, len - 1) : { s: 0, e: len - 1 });
+        const isPreset = n => { const v = presetView(n); return v.s === state.view.s && v.e === state.view.e; };
+        // 끌기 중에는 한 화면에 한 번만 다시 그린다
+        let frame = 0;
+        let dragging = false;
+        function setView(v, now) {
+            state.view = clampView(len, v.s, v.e);
+            if (now) { render(); return; }
+            if (!frame) frame = g.requestAnimationFrame(() => { frame = 0; render(); });
+        }
 
         /* 조작 줄 */
         function segGroup(aria, items, isOn, onPick) {
@@ -209,17 +253,19 @@
             return box;
         }
         const metricSeg = segGroup(T('pc.metricAria'), METRICS.map(m => ({ v: m.id, label: T(m.key) })),
-            v => v === state.metric, v => { state.metric = v; state.pending = null; saveView(); render(); });
+            v => v === state.metric, v => { state.metric = v; state.pending = null; render(); });
         const rangeSeg = segGroup(T('pc.rangeAria'), RANGES.map(n => ({ v: n, label: n ? T('pc.r.n', { n: n }) : T('pc.r.all') })),
-            v => Number(v) === state.range, v => { state.range = v; saveView(); render(); });
+            v => isPreset(Number(v)), v => setView(presetView(v), true));
+        const zoomBtn = (label, aria, factor) => el('button', { type: 'button', text: label, 'aria-label': aria, title: aria,
+            on: { click: () => setView(zoomView(len, state.view, factor, state.hover), true) } });
+        const zoomIn = zoomBtn('＋', T('pc.zoomIn'), 0.5);
+        const zoomOut = zoomBtn('－', T('pc.zoomOut'), 2);
+        const zoomSeg = el('div', { className: 'pchart-seg pchart-zoom', role: 'group', 'aria-label': T('pc.zoomAria') }, [zoomIn, zoomOut]);
 
         const chip = (label, on) => el('button', { type: 'button', className: 'pchart-chip', 'aria-pressed': 'false', text: label, on: { click: on } });
-        const indChips = {
-            avg: chip(T('pc.i.avg'), () => toggleInd('avg')),
-            ma5: chip(T('pc.i.ma', { n: 5 }), () => toggleInd('ma5')),
-            ma20: chip(T('pc.i.ma', { n: 20 }), () => toggleInd('ma20')),
-            log: chip(T('pc.i.log'), () => toggleInd('log')),
-        };
+        const indChips = { avg: chip(T('pc.i.avg'), () => toggleInd('avg')) };
+        MA.forEach(n => { indChips['ma' + n] = chip(T('pc.i.maChip', { n: n }), () => toggleInd('ma' + n)); });
+        indChips.log = chip(T('pc.i.log'), () => toggleInd('log'));
         const toolChips = {
             h: chip(T('pc.d.h'), () => pickTool('h')),
             t: chip(T('pc.d.t'), () => pickTool('t')),
@@ -237,8 +283,7 @@
         const pro = el('div', { className: 'pchart-pro is-locked' }, [
             el('div', { className: 'pchart-pro-group', role: 'group', 'aria-label': T('pc.pro.ind') }, [
                 el('span', { className: 'pchart-pro-label', text: T('pc.pro.ind') }),
-                indChips.avg, indChips.ma5, indChips.ma20, indChips.log,
-            ]),
+            ].concat(INDICATORS.map(k => indChips[k]))),
             el('div', { className: 'pchart-pro-group', role: 'group', 'aria-label': T('pc.pro.draw') }, [
                 el('span', { className: 'pchart-pro-label', text: T('pc.pro.draw') }),
                 toolChips.h, toolChips.t, toolChips.undo, toolChips.clear,
@@ -252,6 +297,18 @@
         const svgRoot = svg('svg', { 'aria-hidden': 'true', focusable: 'false' });
         const tip = el('div', { className: 'pchart-tip', hidden: '' });
         const plot = el('div', { className: 'pchart-plot', role: 'group', tabindex: '0' }, [svgRoot, tip]);
+        // 아래 작은 그래프: 전체 기간 위에 지금 보는 구간을 표시한다. 끌어서 옮기고, 양 끝을 끌어 넓히거나 좁힌다
+        const navSvg = svg('svg', { 'aria-hidden': 'true', focusable: 'false' });
+        const nav = el('div', { className: 'pchart-nav', role: 'group', tabindex: '0', 'aria-label': T('pc.navAria'), 'aria-describedby': 'pchart-summary' }, [navSvg]);
+        // 로그인 전에 그래프 위에 얹는 안내
+        const gate = el('div', { className: 'pchart-gate', hidden: '' }, [
+            el('p', { className: 'pchart-gate-title', text: T('pc.gate.title') }),
+            el('p', { className: 'pchart-gate-sub', text: T('pc.gate.sub') }),
+            el('button', { type: 'button', className: 'btn', text: T('pc.gate.btn'), on: { click: () => {
+                if (g.LottoAccount && g.LottoAccount.openLogin) g.LottoAccount.openLogin(T('pc.gate.reason'));
+            } } }),
+        ]);
+        const stage = el('div', { className: 'pchart-stage' }, [legend, plot, nav, gate]);
         const summary = el('p', { className: 'pchart-summary', id: 'pchart-summary' });
         const live = el('p', { className: 'sr-only', 'aria-live': 'polite' });
         const tableBody = el('tbody');
@@ -269,7 +326,7 @@
 
         root.textContent = '';
         root.classList.add('pchart-body');
-        [el('div', { className: 'pchart-controls' }, [metricSeg, rangeSeg]), pro, legend, plot, hint, summary, live, table,
+        [el('div', { className: 'pchart-controls' }, [metricSeg, rangeSeg, zoomSeg]), pro, stage, hint, summary, live, table,
             el('p', { className: 'pchart-note', text: T('pc.note') })].forEach(n => root.appendChild(n));
 
         /* 보조지표 · 그림도구 */
@@ -311,6 +368,9 @@
         function paintControls() {
             metricSeg.paint();
             rangeSeg.paint();
+            const w = state.view.e - state.view.s + 1;
+            zoomIn.disabled = w <= Math.min(MIN_VIEW, len);
+            zoomOut.disabled = w >= len;
             const isWon = byId(state.metric).unit === 'won';
             pro.classList.toggle('is-locked', !state.unlocked);
             badge.textContent = state.unlocked ? T('pc.pro.badgeOn') : T('pc.pro.badge');
@@ -328,6 +388,12 @@
                 if (state.unlocked) toolChips[k].removeAttribute('aria-disabled'); else toolChips[k].setAttribute('aria-disabled', 'true');
             });
             plot.classList.toggle('is-drawing', !!state.tool);
+            root.classList.toggle('is-gated', state.gated);
+            gate.hidden = !state.gated;
+            table.hidden = state.gated;
+            [legend, plot, nav, summary].forEach(n => { if (state.gated) n.setAttribute('aria-hidden', 'true'); else n.removeAttribute('aria-hidden'); });
+            plot.tabIndex = state.gated ? -1 : 0;
+            nav.tabIndex = state.gated ? -1 : 0;
             hint.textContent = state.tool === 'h' ? T('pc.d.hintH') : state.tool === 't' ? (state.pending ? T('pc.d.hintT2') : T('pc.d.hintT1')) : '';
         }
 
@@ -343,8 +409,8 @@
         function render() {
             const metric = byId(state.metric);
             const ser = seriesOf(metric);
-            const end = all.length - 1;
-            const start = state.range ? Math.max(0, all.length - state.range) : 0;
+            const start = state.view.s;
+            const end = state.view.e;
             const useLog = state.unlocked && state.ind.log && metric.unit === 'won';
             const mas = state.unlocked ? MA.filter(n => state.ind['ma' + n]) : [];
             const sum = summarize(all, ser.vals, start, end);
@@ -359,6 +425,7 @@
             const W = Math.max(280, Math.round(plot.clientWidth || 600));
             const H = W < 600 ? 240 : 320;
             const yt = useLog && vmin < Infinity ? logTicks(vmin, vmax) : linearTicks(vmax, H < 300 ? 4 : 5, metric.unit === 'people');
+            const pts = end - start + 1;
             const tickText = yt.ticks.map(v => fmtValue(metric, v, true));
             const endLabels = mas.map(n => ({ n: n, text: T('pc.i.maShort', { n: n }) }));
             const M = {
@@ -428,8 +495,9 @@
                 seg.push(p);
             }
             flush();
+            const lw = lineWidth(pts, pw);
             data.appendChild(svg('path', { class: 'pc-area', d: area }));
-            data.appendChild(svg('path', { class: 'pc-line', d: line }));
+            data.appendChild(svg('path', { class: 'pc-line', d: line, style: `stroke-width:${lw}px` }));
 
             // 보조지표
             mas.forEach(n => {
@@ -441,7 +509,7 @@
                     d += (pen ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1);
                     pen = true;
                 }
-                data.appendChild(svg('path', { class: 'pc-ma pc-ma' + n, d: d }));
+                data.appendChild(svg('path', { class: 'pc-ma pc-ma' + n, d: d, style: `stroke-width:${Math.min(1.25, lw)}px` }));
             });
             if (state.unlocked && state.ind.avg && sum.avg != null && ok(sum.avg)) {
                 const yy = Math.round(y(sum.avg)) + 0.5;
@@ -492,6 +560,11 @@
                 return i >= start ? { text: l.text, y: y(arr[i]) } : null;
             }).filter(Boolean).sort((a, b) => a.y - b.y);
             for (let k = 1; k < ends.length; k++) if (ends[k].y - ends[k - 1].y < 13) ends[k].y = ends[k - 1].y + 13;
+            // 아래로 밀려 그래프 밖으로 나가면 위로 되민다
+            for (let k = ends.length - 1; k >= 0; k--) {
+                const limit = k === ends.length - 1 ? M.top + ph : ends[k + 1].y - 13;
+                if (ends[k].y > limit) ends[k].y = limit;
+            }
             ends.forEach(l => labels.appendChild(svg('text', { class: 'pc-tick', x: M.left + pw + 8, y: l.y + 4 }, l.text)));
             // 끝 점
             for (let i = end; i >= start; i--) {
@@ -515,7 +588,9 @@
             // 요약 한 줄 (그래프 아래 글자 — 짚지 않아도 읽힌다)
             const from = all[start].round;
             const to = all[end].round;
-            const parts = [T('pc.sum.scope', { label: state.range ? T('pc.r.n', { n: state.range }) : T('pc.r.all'), from: from, to: to }) + ' ' + T(metric.key)];
+            const preset = RANGES.find(isPreset);
+            const scopeLabel = preset === undefined ? T('pc.r.custom') : preset ? T('pc.r.n', { n: preset }) : T('pc.r.all');
+            const parts = [T('pc.sum.scope', { label: scopeLabel, from: from, to: to }) + ' ' + T(metric.key)];
             if (sum.avg != null) parts.push(T('pc.sum.avg', { v: fmtValue(metric, metric.unit === 'won' ? Math.round(sum.avg) : sum.avg) }));
             if (sum.hi != null) parts.push(T('pc.sum.max', { r: all[sum.hi].round, v: fmtValue(metric, ser.vals[sum.hi]) }));
             if (sum.lo != null) parts.push(T('pc.sum.min', { r: all[sum.lo].round, v: fmtValue(metric, ser.vals[sum.lo]) }));
@@ -523,9 +598,46 @@
             summary.textContent = parts.join(' · ');
             plot.setAttribute('aria-label', T('pc.plotAria', { metric: T(metric.key) }));
 
+            renderNav(metric, ser, useLog);
             paintControls();
             drawHover(null);
-            if (table.open) fillTable();
+            if (table.open && !dragging) fillTable();
+        }
+
+        /* 아래 작은 그래프 (전체 기간) */
+        let N = null;
+        function renderNav(metric, ser) {
+            const W = Math.max(280, Math.round(nav.clientWidth || plot.clientWidth || 600));
+            const H = 40;
+            const L = S.M.left;
+            const R = S.M.right;
+            const pw = W - L - R;
+            let vmax = 0;
+            ser.vals.forEach(v => { if (v != null && v > vmax) vmax = v; });
+            const x = i => L + i / Math.max(1, len - 1) * pw;
+            const y = v => 4 + (H - 8) - (vmax ? v / vmax : 0) * (H - 8);
+            N = { W: W, H: H, L: L, pw: pw, x: x };
+
+            navSvg.textContent = '';
+            navSvg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+            navSvg.setAttribute('width', W);
+            navSvg.setAttribute('height', H);
+            let d = '';
+            let pen = false;
+            for (let i = 0; i < len; i++) {
+                const v = ser.vals[i];
+                if (v == null) { pen = false; continue; }
+                d += (pen ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1);
+                pen = true;
+            }
+            navSvg.appendChild(svg('rect', { class: 'pn-bg', x: L, y: 0, width: pw, height: H, rx: 4 }));
+            navSvg.appendChild(svg('path', { class: 'pn-line', d: d }));
+            const xs = x(state.view.s);
+            const xe = x(state.view.e);
+            navSvg.appendChild(svg('rect', { class: 'pn-shade', x: L, y: 0, width: Math.max(0, xs - L), height: H }));
+            navSvg.appendChild(svg('rect', { class: 'pn-shade', x: xe, y: 0, width: Math.max(0, L + pw - xe), height: H }));
+            navSvg.appendChild(svg('rect', { class: 'pn-win', x: xs, y: 0.5, width: Math.max(1, xe - xs), height: H - 1 }));
+            [xs, xe].forEach(xx => navSvg.appendChild(svg('rect', { class: 'pn-handle', x: xx - 4, y: H / 2 - 10, width: 8, height: 20, rx: 2 })));
         }
 
         /* 짚은 회차 */
@@ -550,6 +662,10 @@
             const d = all[i];
             tip.textContent = '';
             tip.appendChild(el('p', { className: 'pchart-tip-head' }, [el('b', { text: T('pc.drawNo', { n: d.round }) }), ' ' + (d.date || '')]));
+            if (d.numbers && d.numbers.length) {
+                tip.appendChild(el('p', { className: 'pchart-tip-balls', 'aria-label': T('pc.numbersAria', { nums: d.numbers.join(', '), bonus: d.bonus }) },
+                    d.numbers.map(ball).concat([el('span', { className: 'plus', text: '+' }), ball(d.bonus)])));
+            }
             const row = (keyClass, value, label) => tip.appendChild(el('p', { className: 'pchart-tip-row' }, [
                 keyClass ? el('i', { className: 'pchart-key ' + keyClass, 'aria-hidden': 'true' }) : el('i', { className: 'pchart-key pc-key-none', 'aria-hidden': 'true' }),
                 el('b', { text: value }), el('span', { text: label }),
@@ -575,18 +691,44 @@
             return { i: Math.min(S.end, Math.max(S.start, i)), x: px, y: Math.min(S.M.top + S.ph, Math.max(S.M.top, py)) };
         }
 
+        // PC: 그래프를 가로로 끌면 그 구간을 확대한다 (그림도구를 쓰는 중이 아닐 때)
+        let sel = null;          // { x0, i0, moved }
+        let swallowClick = false;
         plot.addEventListener('pointermove', e => {
             if (!S) return;
             const p = pointAt(e);
             state.hover = p.i;
             drawHover(p);
+            if (sel) {
+                if (Math.abs(p.x - sel.x0) > 4) sel.moved = true;
+                if (sel.moved) {
+                    const x0 = Math.max(S.M.left, Math.min(sel.x0, p.x));
+                    const x1 = Math.min(S.M.left + S.pw, Math.max(sel.x0, p.x));
+                    S.hoverLayer.appendChild(svg('rect', { class: 'pc-select', x: x0, y: S.M.top, width: Math.max(0, x1 - x0), height: S.ph }));
+                }
+            }
         });
         plot.addEventListener('pointerdown', e => {
             if (!S) return;
             const p = pointAt(e);
             state.hover = p.i;
             drawHover(p);
+            if (e.pointerType === 'mouse' && e.button === 0 && !state.tool) {
+                sel = { x0: p.x, i0: p.i, moved: false };
+                try { plot.setPointerCapture(e.pointerId); } catch (err) { /* 오래된 브라우저 */ }
+            }
         });
+        const endSelect = e => {
+            if (!sel) return;
+            const s0 = sel;
+            sel = null;
+            if (!s0.moved || !S) return;
+            swallowClick = true;
+            const i1 = pointAt(e).i;
+            setView({ s: Math.min(s0.i0, i1), e: Math.max(s0.i0, i1) }, true);
+        };
+        plot.addEventListener('pointerup', endSelect);
+        plot.addEventListener('pointercancel', () => { sel = null; drawHover(null); });
         plot.addEventListener('pointerleave', e => {
             if (e.pointerType !== 'mouse') return;   // 손가락은 떼도 값을 남겨 둔다. 다른 데를 누르면 닫힌다
             state.hover = null;
@@ -598,6 +740,7 @@
             drawHover(null);
         });
         plot.addEventListener('click', e => {
+            if (swallowClick) { swallowClick = false; return; }
             if (!S || !state.unlocked || !state.tool) return;
             const p = pointAt(e);
             const v = S.yInv(p.y);
@@ -618,9 +761,14 @@
             render();
         });
 
-        // 키보드: ← → 한 회차, PageUp/PageDown 10회차, Home/End 처음·끝, Esc 닫기
+        // 키보드: ← → 한 회차, PageUp/PageDown 10회차, Home/End 처음·끝, + - 확대·축소, Esc 닫기
         plot.addEventListener('keydown', e => {
             if (!S) return;
+            if (e.key === '+' || e.key === '=' || e.key === '-' || e.key === '_') {
+                e.preventDefault();
+                setView(zoomView(len, state.view, e.key === '-' || e.key === '_' ? 2 : 0.5, state.hover), true);
+                return;
+            }
             const step = { ArrowLeft: -1, ArrowRight: 1, PageUp: -10, PageDown: 10 }[e.key];
             let i = state.hover === null ? S.end : state.hover;
             if (step) i += step;
@@ -632,7 +780,8 @@
             state.hover = Math.min(S.end, Math.max(S.start, i));
             drawHover(null);
             const d = all[state.hover];
-            live.textContent = T('pc.drawNo', { n: d.round }) + ' ' + (d.date || '') + ', ' + T(S.metric.key) + ' ' + fmtValue(S.metric, S.ser.vals[state.hover]);
+            live.textContent = T('pc.drawNo', { n: d.round }) + ' ' + (d.date || '') + ', ' + T(S.metric.key) + ' ' + fmtValue(S.metric, S.ser.vals[state.hover]) +
+                (d.numbers ? ', ' + T('pc.numbersAria', { nums: d.numbers.join(', '), bonus: d.bonus }) : '');
         });
         plot.addEventListener('focus', () => {
             // 키보드로 들어왔을 때만 마지막 회차를 짚어 준다 (마우스로 누른 것은 누른 자리)
@@ -641,6 +790,52 @@
             drawHover(null);
         });
         plot.addEventListener('blur', () => { state.hover = null; drawHover(null); });
+
+        // 작은 그래프: 창 안을 끌면 옮기기, 양 끝(손잡이)을 끌면 넓히기·좁히기, 창 밖을 누르면 그 자리로 옮기기
+        let navDrag = null;      // { mode: 'move'|'l'|'r', grab, view }
+        function navIndex(e) {
+            const rect = navSvg.getBoundingClientRect();
+            const px = (e.clientX - rect.left) * (N.W / rect.width);
+            return { px: px, i: Math.round((px - N.L) / N.pw * (len - 1)) };
+        }
+        nav.addEventListener('pointerdown', e => {
+            if (!N) return;
+            const p = navIndex(e);
+            const xs = N.x(state.view.s);
+            const xe = N.x(state.view.e);
+            const w = state.view.e - state.view.s;
+            let mode = 'move';
+            if (Math.abs(p.px - xs) <= 10) mode = 'l';
+            else if (Math.abs(p.px - xe) <= 10) mode = 'r';
+            else if (p.px < xs || p.px > xe) setView({ s: p.i - Math.round(w / 2), e: p.i - Math.round(w / 2) + w }, true);
+            navDrag = { mode: mode, grab: p.i, view: Object.assign({}, state.view) };
+            dragging = true;
+            try { nav.setPointerCapture(e.pointerId); } catch (err) { /* 오래된 브라우저 */ }
+            e.preventDefault();
+        });
+        nav.addEventListener('pointermove', e => {
+            if (!navDrag) return;
+            const i = navIndex(e).i;
+            const v = navDrag.view;
+            if (navDrag.mode === 'move') { const dI = i - navDrag.grab; setView({ s: v.s + dI, e: v.e + dI }); }
+            else if (navDrag.mode === 'l') setView({ s: Math.min(i, v.e - MIN_VIEW + 1), e: v.e });
+            else setView({ s: v.s, e: Math.max(i, v.s + MIN_VIEW - 1) });
+        });
+        const navEnd = () => { if (!navDrag) return; navDrag = null; dragging = false; render(); };
+        nav.addEventListener('pointerup', navEnd);
+        nav.addEventListener('pointercancel', navEnd);
+        // 키보드: ← → 구간 옮기기, + - 확대·축소
+        nav.addEventListener('keydown', e => {
+            const w = state.view.e - state.view.s + 1;
+            const step = Math.max(1, Math.round(w / 10));
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                const dI = e.key === 'ArrowLeft' ? -step : step;
+                setView({ s: state.view.s + dI, e: state.view.e + dI }, true);
+            } else if (e.key === '+' || e.key === '=') setView(zoomView(len, state.view, 0.5), true);
+            else if (e.key === '-' || e.key === '_') setView(zoomView(len, state.view, 2), true);
+            else return;
+            e.preventDefault();
+        });
 
         /* 표로 보기: 보이는 구간을 최근 회차부터 */
         function fillTable() {
@@ -676,6 +871,14 @@
 
         return {
             // 이용권이 확인되면 true, 환불·만료로 다시 잠그면 false
+            // 로그인 전이면 true: 그래프를 흐리게 하고 로그인 안내를 얹는다
+            setGated(on) {
+                on = !!on;
+                if (on === state.gated) return;
+                state.gated = on;
+                state.hover = null;
+                render();
+            },
             setUnlocked(on) {
                 on = !!on;
                 if (on === state.unlocked) return;
@@ -697,6 +900,10 @@
         METRICS: METRICS,
         mount: mount,
         movingAverage: movingAverage,
+        lineWidth: lineWidth,
+        clampView: clampView,
+        zoomView: zoomView,
+        MIN_VIEW: MIN_VIEW,
         niceStep: niceStep,
         linearTicks: linearTicks,
         logTicks: logTicks,

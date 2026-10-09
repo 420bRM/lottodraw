@@ -595,14 +595,24 @@
     }
 
 
-    // js/chat.js · js/comments.js 가 쓰는 길
+    // 로그인 설정과 내 정보 확인이 끝나면 풀린다 (실패해도 풀린다). 페이지는 이걸 기다린 뒤 loginOn()·session() 을 본다
+    let markReady;
+    const ready = new Promise(r => { markReady = r; });
+    const boot = () => start().catch(() => {}).then(() => {
+        markReady();
+        document.dispatchEvent(new CustomEvent('lotto:account-ready'));
+    });
+
+    // js/chat.js · js/comments.js · TOP 50 그래프가 쓰는 길
     window.LottoAccount = {
         openLogin: r => (login ? openLogin(r) : null),
         openNick: first => (me ? openNick(!!first) : null),
         session: () => { const s = local.get(SESSION_STORE); return s && s.session; },
         me: () => me,
+        loginOn: () => !!(login && login.google),   // 서버에 구글 로그인이 켜져 있는가
+        ready: ready,
     };
 
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
-    else start();
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+    else boot();
 })();

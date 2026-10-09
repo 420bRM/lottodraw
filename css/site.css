@@ -681,12 +681,16 @@ html.home { scroll-behavior: smooth; }
 .data-table tbody tr:hover { background: #f1f1f1; }
 
 /* ───── 회차별 그래프 (TOP 50 페이지, js/prize-chart.js) ─────
-   선 색은 색약 검사(전체 쌍)를 통과한 조합이다. 본 지표 파랑, 이동평균 주황·청록.
-   글자는 선 색을 쓰지 않는다 — 어떤 선인지는 옆의 짧은 선(범례)과 끝 이름표가 알려 준다. */
+   선 색은 색약 검사를 통과한 조합이다. 본 지표 파랑, 이동평균 20 초록 · 60 빨강 · 120 금색 · 240 청록.
+   다섯 선을 한꺼번에 켜면 일부 쌍이 색약에서 가까워지므로(ΔE 6~7) 범례와 선 끝 이름표를 늘 같이 단다.
+   글자는 선 색을 쓰지 않는다 — 어떤 선인지는 옆의 짧은 선(범례)과 끝 이름표가 알려 준다.
+   선 굵기는 점이 촘촘할수록 가늘어진다(js 의 lineWidth). 여기 값은 기본값이다. */
 .pchart {
     --pc-main: #1b5fd9;
-    --pc-ma5: #eb6834;
-    --pc-ma20: #1baf7a;
+    --pc-ma20: #008300;
+    --pc-ma60: #e34948;
+    --pc-ma120: #d4a017;
+    --pc-ma240: #1baf7a;
     --pc-ink: #333;
     margin: 0 0 32px;
 }
@@ -728,12 +732,16 @@ html.home { scroll-behavior: smooth; }
 .pchart-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 10px 0 0; color: var(--muted); font-size: 12px; }
 .pchart-key { display: inline-block; flex: none; width: 16px; height: 0; margin-right: 5px; border-top: 2px solid; vertical-align: middle; }
 .pc-key-main { border-color: var(--pc-main); }
-.pc-key-ma5 { border-color: var(--pc-ma5); }
 .pc-key-ma20 { border-color: var(--pc-ma20); }
+.pc-key-ma60 { border-color: var(--pc-ma60); }
+.pc-key-ma120 { border-color: var(--pc-ma120); }
+.pc-key-ma240 { border-color: var(--pc-ma240); }
 .pc-key-avg { border-top-width: 1px; border-color: #777; }
 .pc-key-roll { width: 9px; height: 9px; border: 1.5px solid #888; border-radius: 50%; }
 .pc-key-none { border-color: transparent; }
+.pchart-stage { position: relative; }
 .pchart-plot { position: relative; margin-top: 8px; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+@media (hover: hover) { .pchart-plot { cursor: crosshair; } }
 .pchart-plot:focus { outline: none; }
 .pchart-plot:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
 .pchart-plot.is-drawing { cursor: crosshair; touch-action: none; }
@@ -743,20 +751,56 @@ html.home { scroll-behavior: smooth; }
 .pc-base, .pc-xtick { stroke: #bbb; stroke-width: 1; }
 .pc-tick { fill: var(--muted); }
 .pc-area { fill: var(--pc-main); fill-opacity: .1; }
-.pc-line, .pc-ma { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
-.pc-line { stroke: var(--pc-main); }
-.pc-ma5 { stroke: var(--pc-ma5); }
+.pc-line, .pc-ma { fill: none; stroke-linejoin: round; stroke-linecap: round; }
+.pc-line { stroke: var(--pc-main); stroke-width: 2; }
+.pc-ma { stroke-width: 1.25; }
 .pc-ma20 { stroke: var(--pc-ma20); }
+.pc-ma60 { stroke: var(--pc-ma60); }
+.pc-ma120 { stroke: var(--pc-ma120); }
+.pc-ma240 { stroke: var(--pc-ma240); }
 .pc-avg { stroke: #777; stroke-width: 1; }
-.pc-draw { stroke: var(--pc-ink); stroke-width: 1.5; stroke-linecap: round; }
+.pc-draw { stroke: var(--pc-ink); stroke-width: 1; stroke-linecap: round; }
+.pc-select { fill: var(--pc-main); fill-opacity: .12; stroke: var(--pc-main); stroke-width: 1; }
 .pc-draw-pending { stroke-opacity: .45; }
 .pc-draw-end { fill: var(--pc-ink); stroke: #fff; stroke-width: 2; }
 .pc-roll { fill: #fff; stroke: #888; stroke-width: 1.5; }
 .pc-label { fill: var(--text); paint-order: stroke; stroke: #fff; stroke-width: 3px; stroke-linejoin: round; }
 .pc-cross { stroke: #999; stroke-width: 1; }
 .pc-dot { fill: var(--pc-main); stroke: #fff; stroke-width: 2; }
-.pc-dot-ma5 { fill: var(--pc-ma5); }
 .pc-dot-ma20 { fill: var(--pc-ma20); }
+.pc-dot-ma60 { fill: var(--pc-ma60); }
+.pc-dot-ma120 { fill: var(--pc-ma120); }
+.pc-dot-ma240 { fill: var(--pc-ma240); }
+
+/* 아래 작은 그래프 (전체 기간 · 보는 구간) */
+.pchart-nav { position: relative; margin-top: 6px; touch-action: pan-y; cursor: grab; user-select: none; -webkit-user-select: none; }
+.pchart-nav:active { cursor: grabbing; }
+.pchart-nav:focus { outline: none; }
+.pchart-nav:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
+.pchart-nav svg { display: block; width: 100%; height: auto; pointer-events: none; }
+.pn-bg { fill: #f6f8fb; }
+.pn-line { fill: none; stroke: #8ea3c8; stroke-width: 1; stroke-linejoin: round; }
+.pn-shade { fill: #fff; fill-opacity: .7; }
+.pn-win { fill: var(--pc-main); fill-opacity: .08; stroke: var(--brand); stroke-width: 1; }
+.pn-handle { fill: #fff; stroke: var(--brand); stroke-width: 1; }
+.pchart-seg button:disabled { background: #fff; color: #bbb; cursor: default; }
+.pchart-zoom button { min-width: 38px; font-size: 15px; }
+
+/* 로그인 전: 그래프를 흐리게 하고 안내를 얹는다 */
+.pchart-body.is-gated .pchart-legend,
+.pchart-body.is-gated .pchart-plot,
+.pchart-body.is-gated .pchart-nav,
+.pchart-body.is-gated .pchart-summary { filter: blur(6px); pointer-events: none; user-select: none; }
+.pchart-gate {
+    position: absolute; left: 50%; top: 50%; z-index: 6; transform: translate(-50%, -50%);
+    width: min(360px, calc(100% - 24px)); padding: 18px 16px;
+    border: 1px solid var(--line); border-radius: 12px;
+    background: rgba(255, 255, 255, .95); box-shadow: 0 10px 30px rgba(0, 0, 0, .15);
+    text-align: center;
+}
+.prose .pchart-gate p { margin: 0 0 10px; }
+.prose .pchart-gate .pchart-gate-title { margin-bottom: 4px; color: var(--brand); font-size: 16px; font-weight: bold; }
+.prose .pchart-gate .pchart-gate-sub { color: var(--muted); font-size: 13px; }
 .pchart-tip {
     position: absolute; z-index: 5;
     min-width: 180px; max-width: 280px; padding: 8px 10px;
@@ -767,6 +811,8 @@ html.home { scroll-behavior: smooth; }
 .prose .pchart-tip p { margin: 0; }
 .prose .pchart-tip .pchart-tip-head { margin-bottom: 2px; color: var(--muted); }
 .pchart-tip-head b { color: var(--text); font-size: 13px; }
+.pchart-tip-balls { display: flex; align-items: center; gap: 3px; margin: 2px 0 6px !important; }
+.pchart-tip-balls .mball { width: 22px; height: 22px; font-size: 11px; }
 .pchart-tip-row { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
 .pchart-tip-row b { color: #000; font-variant-numeric: tabular-nums; }
 .pchart-tip-row span { color: var(--muted); }

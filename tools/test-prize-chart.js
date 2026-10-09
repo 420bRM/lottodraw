@@ -28,6 +28,21 @@ check('로그 눈금은 7개 이하', lg.ticks.length <= 7, lg.ticks.length);
 const one = P.logTicks(2e9, 2e9);
 check('값이 하나뿐이어도 로그 위아래가 다르다', one.max > one.min, JSON.stringify(one));
 
+// 처음 보이는 지표 · 선 굵기 · 확대
+check('처음 보이는 지표는 총 1등 당첨금', P.METRICS[0].id === 'total', P.METRICS[0].id);
+check('점이 드물면 선이 굵다(2px)', P.lineWidth(50, 1000) === 2, P.lineWidth(50, 1000));
+check('전체 기간(1,244회·1,100px)은 1px 이하', P.lineWidth(1244, 1100) <= 1, P.lineWidth(1244, 1100));
+check('휴대폰 전체 기간은 더 가늘다', P.lineWidth(1244, 300) < P.lineWidth(1244, 1100));
+check('구간은 전체 안에 맞춘다', same(P.clampView(1244, -50, 99), { s: 0, e: 149 }), JSON.stringify(P.clampView(1244, -50, 99)));
+check('구간은 끝을 넘지 않는다', same(P.clampView(1244, 1200, 1300), { s: 1143, e: 1243 }), JSON.stringify(P.clampView(1244, 1200, 1300)));
+check('구간은 최소 폭 이상', P.clampView(1244, 500, 501).e - P.clampView(1244, 500, 501).s + 1 === P.MIN_VIEW);
+const full = { s: 0, e: 1243 };
+const zin = P.zoomView(1244, full, 0.5);
+check('전체에서 확대하면 가운데 절반', zin.e - zin.s + 1 === 622 && zin.s === 311, JSON.stringify(zin));
+check('짚은 회차가 제자리에 머문다', (() => { const v = P.zoomView(1244, full, 0.5, 1000); return Math.abs((1000 - v.s) / (v.e - v.s) - 1000 / 1243) < 0.01; })());
+check('최대로 축소하면 전체', same(P.zoomView(1244, zin, 4), full), JSON.stringify(P.zoomView(1244, zin, 4)));
+check('계속 확대해도 최소 폭에서 멈춘다', (() => { let v = full; for (let k = 0; k < 20; k++) v = P.zoomView(1244, v, 0.5); return v.e - v.s + 1 === P.MIN_VIEW; })());
+
 // 실제 데이터로 요약
 const draws = data.draws.slice().sort((a, b) => a.round - b.round);
 check('회차가 1부터 빠짐없이 이어진다 (그래프가 회차로 칸을 찾는다)', draws.every((d, i) => d.round === i + 1));
