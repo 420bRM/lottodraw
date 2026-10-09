@@ -691,6 +691,7 @@ html.home { scroll-behavior: smooth; }
     --pc-ma60: #e34948;
     --pc-ma120: #d4a017;
     --pc-ma240: #1baf7a;
+    --pc-real: #6b7484;     /* 물가 반영(지금 돈 가치) 선. 파란 선은 늘 당시 금액 */
     --pc-ink: #333;
     margin: 0 0 32px;
 }
@@ -731,7 +732,7 @@ html.home { scroll-behavior: smooth; }
 .pt-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 7px 10px; border-top: 1px solid #c9d1de; background: #f3f6fb; }
 .pchart-tools .lock-mark { border-radius: 0; }
 .pchart-tools .lock-mark.is-on { background: var(--brand); color: #fff; }
-.prose .pchart-pro-note { margin: 0; color: var(--muted); font-size: 12px; }
+.prose .pchart-pro-note, .prose .pchart-help { margin: 0; color: var(--muted); font-size: 12px; }
 .pchart-pro-note.is-flash { animation: pchart-flash 1s ease-out; }
 @keyframes pchart-flash { from { background: #fff1b8; } to { background: transparent; } }
 @media (prefers-reduced-motion: reduce) { .pchart-pro-note.is-flash { animation: none; font-weight: bold; } }
@@ -743,11 +744,12 @@ html.home { scroll-behavior: smooth; }
 .pc-key-ma120 { border-color: var(--pc-ma120); }
 .pc-key-ma240 { border-color: var(--pc-ma240); }
 .pc-key-avg { border-top-width: 1px; border-color: #777; }
-.pc-key-nominal { border-color: #9aa3b2; }
+.pc-key-real { border-color: var(--pc-real); }
 .pc-key-roll { width: 9px; height: 9px; border: 1.5px solid #888; border-radius: 50%; }
 .pc-key-none { border-color: transparent; }
 .pchart-stage { position: relative; }
-.pchart-plot { position: relative; margin-top: 8px; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.pchart-plot { position: relative; margin-top: 8px; touch-action: pan-y; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.pchart-plot.is-panning { cursor: grabbing; }
 @media (hover: hover) { .pchart-plot { cursor: crosshair; } }
 .pchart-plot:focus { outline: none; }
 .pchart-plot:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
@@ -766,14 +768,27 @@ html.home { scroll-behavior: smooth; }
 .pc-ma120 { stroke: var(--pc-ma120); }
 .pc-ma240 { stroke: var(--pc-ma240); }
 .pc-avg { stroke: #777; stroke-width: 1; }
-.pc-nominal { fill: none; stroke: #9aa3b2; stroke-width: 1; stroke-linejoin: round; }   /* 물가 반영 때 비교용 당시 금액 */
+.pc-real { fill: none; stroke: var(--pc-real); stroke-width: 1; stroke-linejoin: round; }
+.pc-dot-real { fill: var(--pc-real); }
+/* 오른쪽 축 꼬리표: 마지막 값(파란·회색은 칠한 상자), 이동평균 끝값(테두리 색), 짚은 자리(검은 상자) */
+.pc-tag rect { stroke-width: 1; }
+.pc-tag text { font-variant-numeric: tabular-nums; }
+.pc-tag-main rect { fill: var(--pc-main); stroke: var(--pc-main); }
+.pc-tag-real rect { fill: var(--pc-real); stroke: var(--pc-real); }
+.pc-tag-main text, .pc-tag-real text, .pc-tag-cross text { fill: #fff; }
+.pc-tag-ma rect { fill: #fff; stroke-width: 1.5; }
+.pc-tag-ma text { fill: var(--pc-ink); }
+.pc-tag-ma20 rect { stroke: var(--pc-ma20); }
+.pc-tag-ma60 rect { stroke: var(--pc-ma60); }
+.pc-tag-ma120 rect { stroke: var(--pc-ma120); }
+.pc-tag-ma240 rect { stroke: var(--pc-ma240); }
+.pc-tag-cross rect { fill: #333; stroke: #333; }
 .pc-draw { stroke: var(--pc-ink); stroke-width: 1; stroke-linecap: round; }
-.pc-select { fill: var(--pc-main); fill-opacity: .12; stroke: var(--pc-main); stroke-width: 1; }
 .pc-draw-pending { stroke-opacity: .45; }
 .pc-draw-end { fill: var(--pc-ink); stroke: #fff; stroke-width: 2; }
 .pc-roll { fill: #fff; stroke: #888; stroke-width: 1.5; }
 .pc-label { fill: var(--text); paint-order: stroke; stroke: #fff; stroke-width: 3px; stroke-linejoin: round; }
-.pc-cross { stroke: #999; stroke-width: 1; }
+.pc-cross { stroke: #999; stroke-width: 1; stroke-dasharray: 3 3; }
 .pc-dot { fill: var(--pc-main); stroke: #fff; stroke-width: 2; }
 .pc-dot-ma20 { fill: var(--pc-ma20); }
 .pc-dot-ma60 { fill: var(--pc-ma60); }
@@ -849,12 +864,6 @@ html.home { scroll-behavior: smooth; }
 .prose .pchart-cpi-note { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
 .prose .pchart-source { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
 .pchart-source a { color: inherit; text-decoration: underline; }
-.pchart-table { margin-top: 10px; }
-.pchart-table summary { color: var(--brand); font-size: 14px; font-weight: bold; cursor: pointer; }
-.pchart-table .table-scroll { max-height: 420px; margin-top: 6px; overflow: auto; }
-.pchart-table .data-table { margin: 0; }
-.pchart-table .data-table th { position: sticky; top: 0; }
-.pchart-table .data-table th, .pchart-table .data-table td { padding: 6px 8px; font-size: 13px; }
 .prose h2.top-table-h { margin-top: 8px; }
 /* 지표 상자는 그래프 위, 나머지 그래프 도구 상자는 그래프·요약 줄 아래 */
 .pchart-body { display: flex; flex-direction: column; }
