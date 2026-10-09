@@ -73,11 +73,13 @@ a { color: #0066cc; }
 }
 .sticker:hover { background: var(--brand-dark); }
 .sticker b { font-weight: bold; }
-/* 휴대폰: "최근 5개월 통계"와 언어 단추는 오른쪽 끝으로 (회차·계정 단추는 왼쪽) */
+/* 휴대폰: 한 줄에 [회차 … 최근 5개월 통계], 다음 줄에 [로그인 · 랭킹 … 언어]. "최근 5개월 통계"와 언어 단추는 오른쪽 끝.
+   자리가 모자라면 겹치지 않고 다음 줄로 넘어간다(언어 단추는 오른쪽에 붙은 채로) */
 @media (max-width: 599px) {
-    .banner-right { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 10px; width: 100%; }
-    .banner-right .latest-callout, .banner-right .acct-head { grid-column: 1; justify-self: start; }
-    .banner-right .sticker, .banner-right .lang-switch { grid-column: 2; justify-self: end; }
+    .banner-right { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; width: 100%; }
+    .banner-right .latest-callout { flex: 1 1 auto; min-width: 0; }
+    .banner-right .sticker, .banner-right .lang-switch { margin-left: auto; }
+    .banner-right .acct-head { flex-wrap: wrap; max-width: 100%; }
 }
 @media (max-width: 379px) {
     .banner-right .latest-callout { font-size: 14px; letter-spacing: -0.02em; }
