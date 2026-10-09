@@ -737,6 +737,7 @@ html.home { scroll-behavior: smooth; }
 .pc-key-ma120 { border-color: var(--pc-ma120); }
 .pc-key-ma240 { border-color: var(--pc-ma240); }
 .pc-key-avg { border-top-width: 1px; border-color: #777; }
+.pc-key-nominal { border-color: #9aa3b2; }
 .pc-key-roll { width: 9px; height: 9px; border: 1.5px solid #888; border-radius: 50%; }
 .pc-key-none { border-color: transparent; }
 .pchart-stage { position: relative; }
@@ -759,6 +760,7 @@ html.home { scroll-behavior: smooth; }
 .pc-ma120 { stroke: var(--pc-ma120); }
 .pc-ma240 { stroke: var(--pc-ma240); }
 .pc-avg { stroke: #777; stroke-width: 1; }
+.pc-nominal { fill: none; stroke: #9aa3b2; stroke-width: 1; stroke-linejoin: round; }   /* 물가 반영 때 비교용 당시 금액 */
 .pc-draw { stroke: var(--pc-ink); stroke-width: 1; stroke-linecap: round; }
 .pc-select { fill: var(--pc-main); fill-opacity: .12; stroke: var(--pc-main); stroke-width: 1; }
 .pc-draw-pending { stroke-opacity: .45; }
@@ -819,6 +821,7 @@ html.home { scroll-behavior: smooth; }
 .prose .pchart-hint { min-height: 1.4em; margin: 2px 0 0; color: var(--brand); font-size: 12px; font-weight: bold; }
 .prose .pchart-summary { margin: 2px 0 0; font-size: 13px; }
 .prose .pchart-note { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+.prose .pchart-cpi-note { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
 .pchart-table { margin-top: 10px; }
 .pchart-table summary { color: var(--brand); font-size: 14px; font-weight: bold; cursor: pointer; }
 .pchart-table .table-scroll { max-height: 420px; margin-top: 6px; overflow: auto; }

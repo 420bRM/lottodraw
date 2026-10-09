@@ -7,6 +7,9 @@
 //
 // 로그인하지 않은 사람에게는 그래프를 흐리게 보이고 로그인을 권한다(setGated). 누구를 가릴지는 페이지가 정한다.
 //
+// "물가 반영"을 켜면 금액 지표를 지금 돈 가치로 바꿔 그린다: 금액 × 물가지수(기준 달) ÷ 물가지수(그 회차 달).
+// 물가지수는 cpi-data.json(tools/update-cpi.js 가 매달 받는다). 파일이 없으면 단추를 숨긴다.
+//
 // 지표는 METRICS 에 한 줄씩 늘린다. 판매액이나 2~5등이 lotto-data.json 에 들어오면 여기에 더하면 된다.
 // 세로축은 늘 하나다 — 단위가 다른 두 지표를 한 그림에 겹치지 않는다(겹치면 없는 상관이 보인다).
 (function (root, factory) {
@@ -59,6 +62,15 @@
     }
 
     /* ───── 계산 (브라우저 없이도 돈다: tools/test-prize-chart.js) ───── */
+
+    // 그 회차 금액을 기준 달(cpi.latest) 돈 가치로 바꾸는 배수. 그 달 지수가 아직 없으면(최근 회차) 1배.
+    function realFactor(cpi, date) {
+        if (!cpi || !cpi.monthly || !cpi.latest || !date) return null;
+        const base = cpi.monthly[cpi.latest];
+        const k = String(date).slice(0, 7);
+        const v = k > cpi.latest ? base : cpi.monthly[k];
+        return base > 0 && v > 0 ? base / v : null;
+    }
 
     // 창 안의 빈 값(이월)은 빼고 평균한다. 창이 다 차기 전 회차는 null.
     function movingAverage(values, n) {
@@ -197,22 +209,37 @@
         return node;
     }
 
-    function mount(root, draws) {
+    function mount(root, draws, opts) {
+        const cpi = opts && opts.cpi && opts.cpi.monthly && opts.cpi.latest ? opts.cpi : null;
         const all = draws.slice().sort((a, b) => a.round - b.round);
         const first = all[0].round;
         const indexOf = r => r - first;      // 회차는 1부터 빠짐없이 이어진다 (update-lotto-data.js 가 검사)
         const byId = id => METRICS.find(m => m.id === id) || METRICS[0];
 
         const cache = {};
-        function seriesOf(metric) {
-            if (!cache[metric.id]) {
-                const vals = all.map(metric.value);
+        // real: 금액을 지금 돈 가치로 (금액 지표만)
+        function seriesOf(metric, real) {
+            real = !!(real && cpi && metric.unit === 'won');
+            const key = metric.id + (real ? ':real' : '');
+            if (!cache[key]) {
+                const vals = all.map(d => {
+                    const v = metric.value(d);
+                    if (v == null || !real) return v;
+                    const f = realFactor(cpi, d.date);
+                    return f ? v * f : v;
+                });
                 const ma = {};
                 MA.forEach(n => { ma[n] = movingAverage(vals, n); });
-                cache[metric.id] = { vals: vals, ma: ma };
+                cache[key] = { vals: vals, ma: ma, real: real };
             }
-            return cache[metric.id];
+            return cache[key];
         }
+        // "2026년 8월" / "Aug 2026"
+        const ymLabel = k => {
+            const [y, m] = String(k).split('-').map(Number);
+            return lang() === 'en' ? new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' }) : `${y}년 ${m}월`;
+        };
+        const realAs = () => T('pc.real.as', { ym: ymLabel(cpi.latest) });
 
         const saved = store.get(VIEW_STORE) || {};
         const len = all.length;
@@ -223,6 +250,7 @@
             savedInd: saved.ind || {},
             unlocked: false,
             gated: false,        // 로그인 전: 그래프를 흐리게
+            real: false,         // 물가 반영
             tool: null,          // 'h' | 't'
             pending: null,       // 추세선 첫 점 { r, v }
             hover: null,         // 전체 배열의 칸 번호
@@ -261,6 +289,15 @@
         const zoomIn = zoomBtn('＋', T('pc.zoomIn'), 0.5);
         const zoomOut = zoomBtn('－', T('pc.zoomOut'), 2);
         const zoomSeg = el('div', { className: 'pchart-seg pchart-zoom', role: 'group', 'aria-label': T('pc.zoomAria') }, [zoomIn, zoomOut]);
+        const realBtn = el('button', { type: 'button', 'aria-pressed': 'false', text: T('pc.real'), on: { click: () => {
+            if (byId(state.metric).unit !== 'won') return;
+            state.real = !state.real;
+            state.pending = null;
+            render();
+        } } });
+        const realSeg = el('div', { className: 'pchart-seg pchart-real', role: 'group', 'aria-label': T('pc.real') }, [realBtn]);
+        if (!cpi) realSeg.hidden = true;
+        const cpiNote = el('p', { className: 'pchart-cpi-note', hidden: '' });
 
         const chip = (label, on) => el('button', { type: 'button', className: 'pchart-chip', 'aria-pressed': 'false', text: label, on: { click: on } });
         const indChips = { avg: chip(T('pc.i.avg'), () => toggleInd('avg')) };
@@ -312,11 +349,12 @@
         const summary = el('p', { className: 'pchart-summary', id: 'pchart-summary' });
         const live = el('p', { className: 'sr-only', 'aria-live': 'polite' });
         const tableBody = el('tbody');
+        const tableHead = el('thead');
         const table = el('details', { className: 'pchart-table' }, [
             el('summary', { text: T('pc.table') }),
             el('div', { className: 'table-scroll' }, [
                 el('table', { className: 'data-table' }, [
-                    el('thead', null, [el('tr', null, ['pc.th.round', 'pc.th.date', 'pc.th.winners', 'pc.th.each', 'pc.th.total'].map(k => el('th', { scope: 'col', text: T(k) })))]),
+                    tableHead,
                     tableBody,
                 ]),
             ]),
@@ -326,7 +364,7 @@
 
         root.textContent = '';
         root.classList.add('pchart-body');
-        [el('div', { className: 'pchart-controls' }, [metricSeg, rangeSeg, zoomSeg]), pro, stage, hint, summary, live, table,
+        [el('div', { className: 'pchart-controls' }, [metricSeg, realSeg, rangeSeg, zoomSeg]), pro, stage, hint, summary, cpiNote, live, table,
             el('p', { className: 'pchart-note', text: T('pc.note') })].forEach(n => root.appendChild(n));
 
         /* 보조지표 · 그림도구 */
@@ -371,6 +409,10 @@
             const w = state.view.e - state.view.s + 1;
             zoomIn.disabled = w <= Math.min(MIN_VIEW, len);
             zoomOut.disabled = w >= len;
+            const wonMetric = byId(state.metric).unit === 'won';
+            realBtn.setAttribute('aria-pressed', String(!!(state.real && wonMetric)));
+            realBtn.disabled = !wonMetric;
+            realBtn.title = !cpi ? '' : wonMetric ? T('pc.realTitle', { ym: ymLabel(cpi.latest) }) : T('pc.realNo');
             const isWon = byId(state.metric).unit === 'won';
             pro.classList.toggle('is-locked', !state.unlocked);
             badge.textContent = state.unlocked ? T('pc.pro.badgeOn') : T('pc.pro.badge');
@@ -408,7 +450,9 @@
 
         function render() {
             const metric = byId(state.metric);
-            const ser = seriesOf(metric);
+            const realOn = !!(state.real && cpi && metric.unit === 'won');
+            const ser = seriesOf(metric, realOn);
+            const nominal = realOn ? seriesOf(metric, false) : null;   // 비교용: 당시 금액
             const start = state.view.s;
             const end = state.view.e;
             const useLog = state.unlocked && state.ind.log && metric.unit === 'won';
@@ -421,6 +465,7 @@
             let vmin = Infinity;
             const scan = arr => { for (let i = start; i <= end; i++) { const v = arr[i]; if (v != null && v > 0) { if (v > vmax) vmax = v; if (v < vmin) vmin = v; } } };
             scan(ser.vals);
+            if (nominal) scan(nominal.vals);
             mas.forEach(n => scan(ser.ma[n]));
             const W = Math.max(280, Math.round(plot.clientWidth || 600));
             const H = W < 600 ? 240 : 320;
@@ -445,7 +490,7 @@
                 ? py => Math.exp(Math.log(yt.min) + (M.top + ph - py) / ph * (Math.log(yt.max) - Math.log(yt.min)))
                 : py => yt.min + (M.top + ph - py) / ph * (yt.max - yt.min);
             const ok = v => v != null && (!useLog || v > 0);
-            S = { metric: metric, ser: ser, start: start, end: end, x: x, y: y, yInv: yInv, M: M, pw: pw, ph: ph, W: W, H: H, mas: mas, ok: ok, useLog: useLog };
+            S = { metric: metric, ser: ser, nominal: nominal, realOn: realOn, start: start, end: end, x: x, y: y, yInv: yInv, M: M, pw: pw, ph: ph, W: W, H: H, mas: mas, ok: ok, useLog: useLog };
 
             svgRoot.textContent = '';
             svgRoot.setAttribute('viewBox', `0 0 ${W} ${H}`);
@@ -497,6 +542,17 @@
             flush();
             const lw = lineWidth(pts, pw);
             data.appendChild(svg('path', { class: 'pc-area', d: area }));
+            if (nominal) {
+                let nd = '';
+                let pen = false;
+                for (let i = start; i <= end; i++) {
+                    const v = nominal.vals[i];
+                    if (!ok(v)) { pen = false; continue; }
+                    nd += (pen ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1);
+                    pen = true;
+                }
+                data.appendChild(svg('path', { class: 'pc-nominal', d: nd, style: `stroke-width:${Math.min(1, lw)}px` }));
+            }
             data.appendChild(svg('path', { class: 'pc-line', d: line, style: `stroke-width:${lw}px` }));
 
             // 보조지표
@@ -578,7 +634,8 @@
             // 범례: 선이 둘 이상이거나 이월 표시가 있을 때만
             legend.textContent = '';
             const items = [];
-            if (mas.length || rolls.length || (state.unlocked && state.ind.avg)) items.push(['pc-key-main', T(metric.key)]);
+            if (mas.length || rolls.length || realOn || (state.unlocked && state.ind.avg)) items.push(['pc-key-main', T(metric.key) + (realOn ? ' (' + realAs() + ')' : '')]);
+            if (realOn) items.push(['pc-key-nominal', T('pc.real.nominal')]);
             mas.forEach(n => items.push(['pc-key-ma' + n, T('pc.i.ma', { n: n })]));
             if (state.unlocked && state.ind.avg) items.push(['pc-key-avg', T('pc.i.avg')]);
             if (rolls.length) items.push(['pc-key-roll', T('pc.legend.roll')]);
@@ -590,7 +647,7 @@
             const to = all[end].round;
             const preset = RANGES.find(isPreset);
             const scopeLabel = preset === undefined ? T('pc.r.custom') : preset ? T('pc.r.n', { n: preset }) : T('pc.r.all');
-            const parts = [T('pc.sum.scope', { label: scopeLabel, from: from, to: to }) + ' ' + T(metric.key)];
+            const parts = [T('pc.sum.scope', { label: scopeLabel, from: from, to: to }) + ' ' + T(metric.key) + (realOn ? ' (' + realAs() + ')' : '')];
             if (sum.avg != null) parts.push(T('pc.sum.avg', { v: fmtValue(metric, metric.unit === 'won' ? Math.round(sum.avg) : sum.avg) }));
             if (sum.hi != null) parts.push(T('pc.sum.max', { r: all[sum.hi].round, v: fmtValue(metric, ser.vals[sum.hi]) }));
             if (sum.lo != null) parts.push(T('pc.sum.min', { r: all[sum.lo].round, v: fmtValue(metric, ser.vals[sum.lo]) }));
@@ -598,6 +655,8 @@
             summary.textContent = parts.join(' · ');
             plot.setAttribute('aria-label', T('pc.plotAria', { metric: T(metric.key) }));
 
+            cpiNote.hidden = !realOn;
+            if (realOn) cpiNote.textContent = T('pc.real.note', { ym: ymLabel(cpi.latest) });
             renderNav(metric, ser, useLog);
             paintControls();
             drawHover(null);
@@ -670,7 +729,13 @@
                 keyClass ? el('i', { className: 'pchart-key ' + keyClass, 'aria-hidden': 'true' }) : el('i', { className: 'pchart-key pc-key-none', 'aria-hidden': 'true' }),
                 el('b', { text: value }), el('span', { text: label }),
             ]));
-            row('pc-key-main', fmtValue(metric, ser.vals[i]), T(metric.key));
+            // 물가 반영 중이면: 지금 돈 가치 / 당시 금액 / 물가가 몇 배 올랐나 (툴팁이 넓어지지 않게 이름표는 짧게)
+            row('pc-key-main', fmtValue(metric, ser.vals[i]), S.realOn ? realAs() : T(metric.key));
+            if (S.realOn) {
+                row('pc-key-nominal', fmtValue(metric, S.nominal.vals[i]), T('pc.real.nominal'));
+                const f = realFactor(cpi, d.date);
+                if (f) row(null, '×' + f.toFixed(2), T('pc.real.factor'));
+            }
             S.mas.forEach(n => { const v = ser.ma[n][i]; row('pc-key-ma' + n, v == null ? '—' : fmtValue(metric, metric.unit === 'won' ? Math.round(v) : v), T('pc.i.ma', { n: n })); });
             METRICS.filter(m => m.id !== metric.id).forEach(m => row(null, fmtValue(m, seriesOf(m).vals[i]), T(m.key)));
 
@@ -842,6 +907,11 @@
             if (!S) return;
             const each = byId('each');
             const total = byId('total');
+            const realTotal = cpi ? seriesOf(total, true).vals : null;
+            const showReal = !!(S.realOn && realTotal);
+            tableHead.textContent = '';
+            tableHead.appendChild(el('tr', null, ['pc.th.round', 'pc.th.date', 'pc.th.winners', 'pc.th.each', 'pc.th.total'].map(k => el('th', { scope: 'col', text: T(k) }))
+                .concat(showReal ? [el('th', { scope: 'col', text: T('pc.th.total') + ' (' + realAs() + ')' })] : [])));
             const frag = document.createDocumentFragment();
             for (let i = S.end; i >= S.start; i--) {
                 const d = all[i];
@@ -851,6 +921,7 @@
                     el('td', { text: fmtInt(d.firstPrizeWinners) + T('pc.unitPeople') }),
                     el('td', { text: fmtValue(each, each.value(d)) }),
                     el('td', { text: fmtValue(total, total.value(d)) }),
+                    showReal ? el('td', { text: fmtValue(total, realTotal[i]) }) : null,
                 ]));
             }
             tableBody.textContent = '';
@@ -900,6 +971,7 @@
         METRICS: METRICS,
         mount: mount,
         movingAverage: movingAverage,
+        realFactor: realFactor,
         lineWidth: lineWidth,
         clampView: clampView,
         zoomView: zoomView,

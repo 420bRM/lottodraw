@@ -23,7 +23,7 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const OUT = path.join(ROOT, 'cpi-data.json');
 const FIRST = '2002-12';          // 1회 추첨 달. 이 달부터 있어야 한다
-const MAX_LAG_MONTHS = 5;         // 마지막 달이 이보다 오래되면 그 출처는 버린다(갱신이 멈춘 자료)
+const MAX_LAG_MONTHS = 6;         // 마지막 달이 이보다 오래되면 그 출처는 버린다(갱신이 멈춘 자료). OECD 자료는 4~5개월 늦게 올라온다
 
 const ym = d => `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
 const monthsBetween = (a, b) => { const [y1, m1] = a.split('-').map(Number); const [y2, m2] = b.split('-').map(Number); return (y2 - y1) * 12 + (m2 - m1); };
