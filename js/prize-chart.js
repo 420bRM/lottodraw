@@ -384,7 +384,8 @@
 
         root.textContent = '';
         root.classList.add('pchart-body');
-        [pro, stage, hint, summary, cpiNote, live, table,
+        // 그래프가 먼저 보이게: 그래프 → 요약 줄 → 그래프 도구 상자 → (그림도구 안내) → 표 · 주의 · 출처
+        [stage, summary, cpiNote, pro, hint, live, table,
             el('p', { className: 'pchart-note', text: T('pc.note') }), sourceLine].forEach(n => root.appendChild(n));
 
         /* 보조지표 · 그림도구 */

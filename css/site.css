@@ -699,7 +699,7 @@ html.home { scroll-behavior: smooth; }
 .pchart-loading { min-height: 320px; color: var(--muted); }
 /* 그래프 도구: 큰 사각형 하나. 줄마다 [이름 칸 | 단추 칸들], 단추는 모서리 없는 사각형이고 1px 선으로만 나뉜다.
    지표 · 금액 기준(무료)과 구간 설정 · 보조지표 · 그림도구(이용권)가 한 묶음으로 읽히게 같은 모양을 쓴다 */
-.pchart-tools { margin: 10px 0 0; border: 1px solid #c9d1de; background: #fff; font-size: 13px; }
+.pchart-tools { margin: 12px 0 0; border: 1px solid #c9d1de; background: #fff; font-size: 13px; }
 .pt-row { display: grid; grid-template-columns: 92px minmax(0, 1fr); overflow: hidden; border-top: 1px solid #c9d1de; }
 .pt-row:first-child { border-top: 0; }
 .pt-label {
@@ -843,7 +843,6 @@ html.home { scroll-behavior: smooth; }
 .prose .pchart-cpi-note { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
 .prose .pchart-source { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
 .pchart-source a { color: inherit; text-decoration: underline; }
-@media (max-width: 599px) { .pchart-body > .pchart-source { order: 2; } }
 .pchart-table { margin-top: 10px; }
 .pchart-table summary { color: var(--brand); font-size: 14px; font-weight: bold; cursor: pointer; }
 .pchart-table .table-scroll { max-height: 420px; margin-top: 6px; overflow: auto; }
@@ -851,11 +850,9 @@ html.home { scroll-behavior: smooth; }
 .pchart-table .data-table th { position: sticky; top: 0; }
 .pchart-table .data-table th, .pchart-table .data-table td { padding: 6px 8px; font-size: 13px; }
 .prose h2.top-table-h { margin-top: 8px; }
-/* 휴대폰: 그래프 도구 상자가 여러 줄로 길어져 그래프를 밀어내므로, 그래프·요약 아래로 내린다 */
+/* 그래프 도구 상자는 PC·휴대폰 모두 그래프·요약 줄 아래에 있다(그래프가 먼저 보이게) */
 .pchart-body { display: flex; flex-direction: column; }
 @media (max-width: 599px) {
-    .pchart-body > .pchart-tools { order: 1; }
-    .pchart-body > .pchart-table, .pchart-body > .pchart-note { order: 2; }
     .pt-row { grid-template-columns: minmax(0, 1fr); }
     .pt-label { flex-direction: row; align-items: baseline; gap: 6px; padding: 5px 10px; border-right: 0; border-bottom: 1px solid #c9d1de; }
     .pt-btn { flex-basis: 30%; min-height: 36px; }
