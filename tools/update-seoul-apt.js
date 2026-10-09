@@ -70,7 +70,12 @@ function seoulSeries(text, label) {
     const listKey = Object.keys(row).find(k => Array.isArray(row[k]));
     const vals = row[listKey] || [];
     const dates = data[dateKey];
-    if (vals.length !== dates.length) console.log(`  ${label}: 날짜 ${dates.length}개 · 값 ${vals.length}개 (앞에서부터 맞춘다)`);
+    // 날짜와 값 개수가 다르면 어느 쪽이 어긋났는지 알 수 없다 — 응답 모양을 찍고 쓰지 않는다
+    if (vals.length !== dates.length) {
+        const brief = a => JSON.stringify(a.slice(0, 4)) + ' … ' + JSON.stringify(a.slice(-4));
+        throw new Error(`${label}: 날짜 ${dates.length}개 · 값 ${vals.length}개가 다르다. 데이터 키: ${Object.keys(data).join(', ')} · 줄 키: ${Object.keys(row).join(', ')}`
+            + ` · 날짜 ${brief(dates)} · 값 ${brief(vals)} · 다른 키: ${JSON.stringify(Object.fromEntries(Object.keys(data).filter(k => k !== dateKey && k !== rowKey).map(k => [k, data[k]]))).slice(0, 400)}`);
+    }
     const out = {};
     dates.forEach((d, i) => {
         const k = toYm(d);
@@ -84,7 +89,15 @@ function seoulSeries(text, label) {
 async function main() {
     const now = ym(new Date());
     const avgUrl = KB + 'avgPrc?' + q({ '매물종별구분': '01', '매매전세코드': '01' });
-    const idxUrl = KB + 'priceIndex?' + q({ '월간주간구분코드': '01', '매물종별구분': '01', '매매전세코드': '01' });
+    // 지수는 기본으로 최근 2년만 준다. 기간을 넓히는 이름이 문서에 없어 몇 가지를 차례로 시도한다
+    const idxBase = { '월간주간구분코드': '01', '매물종별구분': '01', '매매전세코드': '01' };
+    const idxUrls = [
+        Object.assign({ '기간': '30' }, idxBase),
+        Object.assign({ '기간': '전체' }, idxBase),
+        Object.assign({ '조회시작일자': '200201', '조회종료일자': now.replace('-', '') }, idxBase),
+        Object.assign({ '시작년월': '200201', '종료년월': now.replace('-', '') }, idxBase),
+        Object.assign({ '기간': '99' }, idxBase),
+    ].map(o => KB + 'priceIndex?' + q(o));
     console.log('평균 매매가격:', avgUrl);
     const avgMan = seoulSeries(await get(avgUrl), '평균가');
     // 만 원 → 원
@@ -102,8 +115,17 @@ async function main() {
     // 2002-12 ~ 2008-11: 지수로 거꾸로 환산 (안 되면 실제 평균가 구간만 싣는다)
     let estimated = null;
     try {
-        console.log('매매가격지수:', idxUrl);
-        const idx = seoulSeries(await get(idxUrl), '지수');
+        let idx = null;
+        for (const u of idxUrls) {
+            console.log('매매가격지수:', decodeURIComponent(u));
+            try {
+                const got = seoulSeries(await get(u), '지수');
+                if (got[FIRST] && got[ACTUAL_FROM]) { idx = got; break; }
+            } catch (e) {
+                console.log('  ', e.message.slice(0, 1200));
+            }
+        }
+        if (!idx) throw new Error(`${FIRST}·${ACTUAL_FROM} 이 다 들어 있는 지수를 못 받았다`);
         const base = idx[ACTUAL_FROM];
         if (!base) throw new Error(`지수에 ${ACTUAL_FROM} 이 없다`);
         const est = {};
