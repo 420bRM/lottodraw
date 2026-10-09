@@ -334,19 +334,17 @@
             T('pc.pro.note') + ' ',
             el('a', { href: 'statistics.html', text: T('pc.pro.see') }),
         ]);
+        // 이용권 칸: 머리(제목·확인 표시·안내) 아래로 묶음마다 한 줄 — 왼쪽 이름, 오른쪽 같은 크기 사각 단추 격자
+        const group = (label, buttons) => el('div', { className: 'pchart-pro-group', role: 'group', 'aria-label': label }, [
+            el('span', { className: 'pchart-pro-label', text: label }),
+            el('div', { className: 'pchart-pro-btns' }, buttons),
+        ]);
         const pro = el('div', { className: 'pchart-pro is-locked' }, [
-            el('div', { className: 'pchart-pro-group', role: 'group', 'aria-label': T('pc.pro.range') }, [
-                el('span', { className: 'pchart-pro-label', text: T('pc.pro.range') }),
-            ].concat(rangeChips, [zoomIn, zoomOut])),
-            el('div', { className: 'pchart-pro-group', role: 'group', 'aria-label': T('pc.pro.ind') }, [
-                el('span', { className: 'pchart-pro-label', text: T('pc.pro.ind') }),
-            ].concat(INDICATORS.map(k => indChips[k]))),
-            el('div', { className: 'pchart-pro-group', role: 'group', 'aria-label': T('pc.pro.draw') }, [
-                el('span', { className: 'pchart-pro-label', text: T('pc.pro.draw') }),
-                toolChips.h, toolChips.t, toolChips.undo, toolChips.clear,
-            ]),
-            badge,
+            el('div', { className: 'pchart-pro-head' }, [el('span', { className: 'pchart-pro-title', text: T('pc.pro.title') }), badge]),
             proNote,
+            group(T('pc.pro.range'), rangeChips.concat([zoomIn, zoomOut])),
+            group(T('pc.pro.ind'), INDICATORS.map(k => indChips[k])),
+            group(T('pc.pro.draw'), [toolChips.h, toolChips.t, toolChips.undo, toolChips.clear]),
         ]);
 
         const legend = el('div', { className: 'pchart-legend', hidden: '' });

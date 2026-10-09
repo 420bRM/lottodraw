@@ -18,7 +18,7 @@
     const NOTE_STORE = 'lottodraw.account.note';        // sessionStorage: 새로 고친 뒤 띄울 안내
     const KEY_STORE = 'lottodraw.premium.key';          // js/license.js 와 같은 자리
     const CACHE_MS = 10 * 60 * 1000;
-    const NO_BAR = ['privacy', 'terms', 'contact', 'about', 'admin', 'ranking'];
+    const NO_BAR = ['privacy', 'terms', 'contact', 'about', 'admin', 'ranking', 'mypage'];
 
     const script = document.currentScript;
     const root = script && script.src ? new URL('..', script.src).href : '/';
@@ -347,6 +347,9 @@
             const trial = me.user && me.user.trial;
             if (me.user && me.user.nick) menu.appendChild(el('p', { className: 'acct-nick', text: me.user.nick }));
             menu.appendChild(el('p', { className: 'acct-email', text: me.user ? me.user.email : '' }));
+            const myLink = el('a', { className: 'acct-my', href: root + 'mypage.html', text: tr('acct.mypage', '마이페이지 →') });
+            if (/(^|\/)mypage\.html$/.test(location.pathname)) myLink.setAttribute('aria-current', 'page');
+            menu.appendChild(myLink);
             menu.appendChild(el('p', { className: 'acct-trial', text: trial
                 ? (trial.expiresAt > Date.now() ? tr('acct.trialUntil', '무료 체험: {until}까지', { until: fmtDate(trial.expiresAt) }) : tr('acct.trialOver', '무료 체험이 끝났습니다'))
                 : tr('acct.trialNone', '무료 체험은 계정당 한 번입니다') }));
@@ -611,6 +614,10 @@
         me: () => me,
         loginOn: () => !!(login && login.google),   // 서버에 구글 로그인이 켜져 있는가
         ready: ready,
+        // 마이페이지(js/mypage.js)가 쓰는 길: 내 정보 새로 받기, 로그아웃, 탈퇴
+        refresh: async () => { if (!login) return me; me = await loadMe(true); return me; },
+        logout: () => logout(),
+        withdraw: () => withdraw(),
     };
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
