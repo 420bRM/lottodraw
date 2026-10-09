@@ -352,7 +352,7 @@
             metric: METRICS[0].id,
             view: { s: 0, e: len - 1 },   // 보는 구간 (전체 배열의 칸 번호)
             ind: defaultInd(),
-            savedInd: saved.ind || defaultInd(),
+            savedInd: Object.assign(defaultInd(), saved.ind),   // 예전에 저장한 값에 없는 칸(예: ma240)은 처음 값으로
             unlocked: false,
             gated: false,        // 로그인 전: 그래프를 흐리게
             real: true,          // 물가 반영 (처음부터 켠다. 물가 자료가 없거나 당첨자 수 지표면 무시)
@@ -1315,7 +1315,7 @@
             drawHover(null);
             const d = all[state.hover];
             live.textContent = T('pc.drawNo', { n: d.round }) + ' ' + (d.date || '') + ', ' + T(S.metric.key) + ' ' + fmtValue(S.metric, S.blue[state.hover]) +
-                (S.realOn ? ', ' + realAs() + ' ' + fmtValue(S.metric, S.grey[state.hover]) : '') +
+                (S.realOn && S.grey ? ', ' + realAs() + ' ' + fmtValue(S.metric, S.grey[state.hover]) : '') +   // 봉 차트는 회색 선이 없다
                 (d.numbers ? ', ' + T('pc.numbersAria', { nums: d.numbers.join(', '), bonus: d.bonus }) : '');
         });
         plot.addEventListener('focus', () => {
@@ -1379,6 +1379,9 @@
         };
         if (g.ResizeObserver) new g.ResizeObserver(() => g.requestAnimationFrame(onResize)).observe(plot);
         else g.addEventListener('resize', onResize);
+        // 접는 상자(<details>)를 다시 펼치면 한 번 더 그린다 — ResizeObserver 가 없거나, 접힌 동안 그리기를 미룬 경우
+        const fold = root.closest && root.closest('details');
+        if (fold) fold.addEventListener('toggle', () => { if (fold.open) { lastW = 0; onResize(); } });
 
         render();
         lastW = Math.round(plot.clientWidth);
