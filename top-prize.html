@@ -459,14 +459,16 @@
     // 회차별 그래프. 보조지표·그림도구는 이용권이 확인되면 켜고, 환불·만료되면 몇 분 안에 다시 잠근다.
     // 로그인하지 않은 사람에게는 그래프를 흐리게 보인다. 이용권 키가 있으면(로그인 없이 산 사람) 연다.
     // 서버에 로그인이 꺼져 있거나 계정 스크립트(js/account.js)를 못 받으면 가리지 않는다 — 열 방법이 없는 잠금은 걸지 않는다.
-    // 물가지수(cpi-data.json)는 없어도 된다 — 없으면 "물가 반영" 단추만 숨는다
-    const cpiData = fetch('cpi-data.json').then(r => (r.ok ? r.json() : null)).catch(() => null);
+    // 물가지수(cpi-data.json)·서울 아파트값(seoul-apt.json)은 없어도 된다 — 없으면 그 단추만 숨는다
+    const getJson = url => fetch(url).then(r => (r.ok ? r.json() : null)).catch(() => null);
+    const cpiData = getJson('cpi-data.json');
+    const aptData = getJson('seoul-apt.json');
 
-    function mountChart(draws, cpi) {
+    function mountChart(draws, cpi, apt) {
         const box = document.getElementById('pchart-mount');
         let chart;
         try {
-            chart = PrizeChart.mount(box, draws, { cpi: cpi });
+            chart = PrizeChart.mount(box, draws, { cpi: cpi, apt: apt });
         } catch (err) {
             console.error(err);
             box.textContent = I18N.t('top.loadFail');
@@ -539,7 +541,7 @@
                 tbody.appendChild(tr);
             });
 
-            return cpiData.then(cpi => mountChart(data.draws, cpi));
+            return Promise.all([cpiData, aptData]).then(([cpi, apt]) => mountChart(data.draws, cpi, apt));
         })
         .catch(err => {
             console.error(err);
