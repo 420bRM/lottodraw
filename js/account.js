@@ -3,7 +3,7 @@
  * 모든 공개 페이지가 읽는 js/i18n.js 가 이 파일을 붙인다 — 페이지 1,300여 개의 HTML 을 고치지 않으려고.
  * 서버(/api/config)가 로그인을 켜 두지 않았으면 아무것도 그리지 않는다.
  *
- *   머리글   "로그인 · 3일 무료" 단추 → 구글 로그인 창. 로그인하면 "내 계정" 메뉴(체험 기간, 로그아웃, 탈퇴)
+ *   머리글   "로그인" 단추 → 구글 로그인 창. 체험 이야기는 머리글에 쓰지 않는다("3일만 무료"로 읽힌다) — 로그인 창 안에서만. 로그인하면 "내 계정" 메뉴(체험 기간, 로그아웃, 탈퇴)
  *   카드     오른쪽 아래 "+" → ♥(좋아요)·$(대박 기원) 중 고르기. 수는 아이콘+숫자로 누구나 보고, 누르려면 로그인.
  *            카드가 없는 페이지는 본문 끝에 하나(약관·개인정보·문의·소개 페이지는 빼고).
  *   별명     처음 가입하면 정하라고 묻고(건너뛸 수 있음), "내 계정"에서 바꾼다. 머리글 단추에 보인다.
@@ -190,7 +190,7 @@
             el('button', { type: 'button', className: 'acct-x', 'aria-label': tr('acct.close', '닫기'), text: '×', on: { click: closeModal } }),
             el('h2', { id: 'acct-title', text: tr('acct.title', '로그인 · 가입') }),
             reason ? el('p', { className: 'acct-reason', text: reason }) : null,
-            el('p', { className: 'acct-lead', text: tr('acct.lead', '구글 계정으로 바로 가입됩니다. 처음 가입하면 5개월 통계와 상세 분석 4종을 {days}일 동안 무료로 열어 드립니다.', { days }) }),
+            el('p', { className: 'acct-lead', text: tr('acct.lead', '가입과 로그인은 무료이고, 구글 계정으로 바로 가입됩니다. 처음 가입하면 이용권 기능(5개월 통계 · 상세 분석 4종 · TOP 50 그래프 도구)을 {days}일 동안 열어 드립니다. {days}일이 지나도 무료 기능은 그대로 씁니다.', { days }) }),
             el('ul', { className: 'acct-perks' }, [
                 el('li', { text: tr('acct.perk1', '{days}일 무료 체험 (계정당 한 번)', { days }) }),
                 el('li', { text: tr('acct.perk2', '카드마다 ♥ 좋아요 · $ 대박 기원 남기기') }),
@@ -332,10 +332,7 @@
         if (old) old.remove();
         const wrap = el('div', { id: 'acct-head', className: 'acct-head' });
         if (!me) {
-            wrap.appendChild(el('button', { type: 'button', className: 'acct-btn', on: { click: () => openLogin() } }, [
-                tr('acct.login', '로그인'),
-                el('span', { className: 'acct-badge', text: tr('acct.badge', '{days}일 무료', { days: (login && login.trialDays) || 3 }) }),
-            ]));
+            wrap.appendChild(el('button', { type: 'button', className: 'acct-btn', on: { click: () => openLogin() } }, [tr('acct.login', '로그인')]));
         } else {
             const menu = el('div', { className: 'acct-menu', hidden: '' });
             const btn = el('button', { type: 'button', className: 'acct-btn is-in', 'aria-expanded': 'false', on: { click: () => {
