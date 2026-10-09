@@ -109,6 +109,7 @@ window.I18N_DICT = {
     'tax.tip1':      { en: 'A prize must be claimed within one year. Unclaimed prizes go to the lottery fund.' },
     'tax.tip2':      { en: 'For a first prize the tax is withheld automatically, so the amount you receive is already net of tax.' },
     'tax.tip3':      { en: 'Rates can change from year to year; check the National Tax Service for the current figures.' },
+    'tax.tip4':      { en: 'What were past first prizes worth after tax? On the <a href="top-prize.html#prize-chart">Top 50 draw-by-draw chart</a>, choose "after tax" to see each draw\'s take-home amount next to Seoul and Gangnam 3-district apartment prices.' },
 
     /* ───── TOP 50 당첨금 ───── */
     'top.h1':        { en: 'Top 50 Lotto 6/45 First-Prize Payouts' },
@@ -123,6 +124,8 @@ window.I18N_DICT = {
     'top.note':      { en: '* Amounts per winner are rounded for readability.<br>* Total first-prize figures are exact to the won.' },
     'top.back':      { en: 'Back to the generator' },
     'top.h2':        { en: 'Top 50 by amount per winner' },
+    'top.toChart':   { en: 'See the draw-by-draw chart ↓' },
+    'top.toTable':   { en: '↑ Back to the Top 50 table' },
 
     /* ───── 회차별 그래프 (js/prize-chart.js) ───── */
     'pc.h2':         { en: 'First prize, draw by draw' },
@@ -268,7 +271,7 @@ window.I18N_DICT = {
     's5.f.day1':     { en: '24 hours from when you receive the key' },
     's5.f.week7':    { en: 'Seven days from when you receive the key' },
     's5.f.detail':   { en: 'The four detailed analyses on the home page' },
-    's5.f.chart':    { en: 'Quarterly/yearly candles, range, indicators and drawing tools on the Top 50 chart' },
+    's5.f.chart':    { en: 'Quarterly/yearly candles, range, indicators and drawing tools on the <a href="top-prize.html#prize-chart">Top 50 chart</a>' },
     's5.noRenew':    { en: 'Never charged automatically \u2014 it simply ends when the period is over.' },
     's5.f.eleven':   { en: '11 statistics for the last five months' },
     's5.f.days30':   { en: '30 days from when you receive the key' },

@@ -1121,7 +1121,7 @@ function updateTaxAndTop() {
     // 화면은 그대로이고(스크립트가 같은 내용으로 다시 그린다), JS 를 돌리지 않는 검색 로봇도 표를 읽는다.
     // 페이지 스크립트의 행 모양을 바꾸면 여기도 같이 바꾼다
     tp = replaceBetween('top-prize.html', tp, 'subtitle',
-        `(1인당 실수령액 기준 / 최신 <strong>${data.draws.length}</strong>회차까지 자동 업데이트)`);
+        `(1인당 당첨금 · 세전 기준 / 최신 <strong>${data.draws.length}</strong>회차까지 자동 업데이트)`);
     const rows = data.draws.slice().sort((a, b) => b.firstPrizeAmount - a.firstPrizeAmount).slice(0, 50).map((d, i) => {
         const winners = d.firstPrizeWinners || 1;
         return [
@@ -1160,7 +1160,7 @@ function updateAbout() {
             + [
                 link('index.html#sec-stats', '통계 12가지', '12 sets of statistics'),
                 link('draws.html', '회차별 당첨번호', 'All winning numbers'),
-                link('top-prize.html', 'TOP 50 당첨금 그래프', 'TOP 50 prize chart'),
+                link('top-prize.html#prize-chart', 'TOP 50 당첨금 그래프', 'TOP 50 prize chart'),
                 link('blog/index.html', '블로그', 'Blog'),
             ].join(' · ') + '</p>',
         '        ',

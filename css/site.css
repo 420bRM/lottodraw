@@ -694,12 +694,12 @@ html.home { scroll-behavior: smooth; }
     --pc-ma120: #d4a017;
     --pc-ma240: #1baf7a;
     --pc-real: #6b7484;     /* 물가 반영(지금 돈 가치) 선. 파란 선은 늘 당시 금액 */
-    --pc-apt: #e8710a;
-    --pc-gn: #a0219a;       /* 강남 아파트 평균가. 파랑 · 주황 · 회색과 색각 이상에서도 갈린다(validate_palette.js) */
+    --pc-apt: #e8710a;      /* 서울 아파트 평균가. 파란 선 · 회색 선과 색각 이상에서도 갈린다(validate_palette.js) */
+    --pc-gn: #a0219a;       /* 강남3구 아파트값. 파랑 · 주황 · 회색과 색각 이상에서도 갈린다(validate_palette.js) */
     --pc-up: #e0383e;       /* 봉 오름 (국내 관례: 오름 빨강 · 내림 파랑) */
-    --pc-down: #1b5fd9;      /* 서울 아파트 평균가. 파란 선 · 회색 선과 색각 이상에서도 갈린다(validate_palette.js) */
+    --pc-down: #1b5fd9;
     --pc-ink: #333;
-    margin: 0 0 32px;
+    margin: 40px 0 0;     /* TOP 50 표 · 안내문 아래 */
 }
 .prose .pchart h2 { margin-top: 0; }
 .prose .pchart-lead { margin: 0 0 4px; color: var(--muted); font-size: 14px; }
@@ -873,7 +873,10 @@ html.home { scroll-behavior: smooth; }
 .prose .pchart-cpi-note { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
 .prose .pchart-source { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
 .pchart-source a { color: inherit; text-decoration: underline; }
+/* TOP 50 페이지: 표가 먼저, 그래프는 표 아래. 서로 오가는 짧은 링크 */
 .prose h2.top-table-h { margin-top: 8px; }
+.prose .top-jump { margin: -14px 0 16px; font-size: 14px; text-align: center; }
+.prose .pchart .top-jump-up { margin: 10px 0 0; text-align: right; }
 /* 지표 상자는 그래프 위, 나머지 그래프 도구 상자는 그래프·요약 줄 아래 */
 .pchart-body { display: flex; flex-direction: column; }
 @media (max-width: 599px) {
