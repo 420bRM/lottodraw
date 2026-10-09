@@ -1,0 +1,54 @@
+name: update-cpi
+
+# 소비자물가지수(월별)를 받아 cpi-data.json 으로 저장한다 — TOP 50 그래프의 "물가 반영"이 쓴다.
+# 통계청 발표는 매월 초(보통 첫 화요일 무렵)라, 매월 7일 10:20 KST(01:20 UTC)에 받는다.
+# tools/update-cpi.js 나 이 파일을 고쳐 푸시하면 그 브랜치에서도 한 번 돌아 결과를 그 브랜치에 커밋한다.
+# 받는 곳과 순서는 tools/update-cpi.js 첫머리에 있다. 비밀값 ECOS_API_KEY 는 있으면 쓰고, 없어도 된다.
+on:
+  schedule:
+    - cron: "20 1 7 * *"
+  workflow_dispatch: {}
+  push:
+    paths:
+      - tools/update-cpi.js
+      - .github/workflows/update-cpi.yml
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: update-cpi-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: 물가지수 받기
+        id: fetch
+        env:
+          ECOS_API_KEY: ${{ secrets.ECOS_API_KEY }}
+        run: node tools/update-cpi.js
+
+      - name: 변경분 커밋
+        if: steps.fetch.outputs.changed == 'true'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cpi-data.json
+          git commit -m "chore: 소비자물가지수 ${{ steps.fetch.outputs.latest }}까지 반영"
+          git push origin HEAD:${{ github.ref_name }}
+
+      # GITHUB_TOKEN 으로 푸시한 커밋은 Pages 빌드를 트리거하지 않는다. 사이트 브랜치(html)일 때만 직접 요청한다
+      - name: Pages 재배포 요청
+        if: steps.fetch.outputs.changed == 'true' && github.ref_name == 'html'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh api --method POST "repos/${{ github.repository }}/pages/builds"
