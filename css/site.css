@@ -822,6 +822,9 @@ html.home { scroll-behavior: smooth; }
 .prose .pchart-summary { margin: 2px 0 0; font-size: 13px; }
 .prose .pchart-note { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
 .prose .pchart-cpi-note { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
+.prose .pchart-source { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
+.pchart-source a { color: inherit; text-decoration: underline; }
+@media (max-width: 599px) { .pchart-body > .pchart-source { order: 2; } }
 .pchart-table { margin-top: 10px; }
 .pchart-table summary { color: var(--brand); font-size: 14px; font-weight: bold; cursor: pointer; }
 .pchart-table .table-scroll { max-height: 420px; margin-top: 6px; overflow: auto; }

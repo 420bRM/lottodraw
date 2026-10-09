@@ -298,6 +298,19 @@
         const realSeg = el('div', { className: 'pchart-seg pchart-real', role: 'group', 'aria-label': T('pc.real') }, [realBtn]);
         if (!cpi) realSeg.hidden = true;
         const cpiNote = el('p', { className: 'pchart-cpi-note', hidden: '' });
+        // 출처 한 줄 (늘 보인다). 물가지수 출처 이름·링크는 cpi-data.json 이 정한다 — 받은 곳이 바뀌면 같이 바뀐다
+        const cpiCredit = () => {
+            if (!cpi) return '';
+            if (cpi.credit && cpi.credit[lang()]) return cpi.credit[lang()];
+            if (cpi.credit && cpi.credit.ko) return cpi.credit.ko;
+            return /OECD/.test(cpi.source || '') ? 'OECD' : (cpi.source || '');
+        };
+        const safeLink = u => (/^https:\/\/[^\s"'<>]+$/.test(u || '') ? u : null);
+        const sourceLine = el('p', { className: 'pchart-source' }, [T('pc.src.lotto')].concat(cpi ? [
+            T('pc.src.cpi'),
+            safeLink(cpi.link || cpi.sourceUrl) ? el('a', { href: safeLink(cpi.link || cpi.sourceUrl), target: '_blank', rel: 'noopener', text: cpiCredit() }) : cpiCredit(),
+            T('pc.src.cpiTail', { ym: ymLabel(cpi.latest) }),
+        ] : []));
 
         const chip = (label, on) => el('button', { type: 'button', className: 'pchart-chip', 'aria-pressed': 'false', text: label, on: { click: on } });
         const indChips = { avg: chip(T('pc.i.avg'), () => toggleInd('avg')) };
@@ -365,7 +378,7 @@
         root.textContent = '';
         root.classList.add('pchart-body');
         [el('div', { className: 'pchart-controls' }, [metricSeg, realSeg, rangeSeg, zoomSeg]), pro, stage, hint, summary, cpiNote, live, table,
-            el('p', { className: 'pchart-note', text: T('pc.note') })].forEach(n => root.appendChild(n));
+            el('p', { className: 'pchart-note', text: T('pc.note') }), sourceLine].forEach(n => root.appendChild(n));
 
         /* 보조지표 · 그림도구 */
         function flashNote() {
