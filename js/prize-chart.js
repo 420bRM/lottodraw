@@ -271,26 +271,22 @@
             if (!frame) frame = g.requestAnimationFrame(() => { frame = 0; render(); });
         }
 
-        /* 조작 줄 */
-        function segGroup(aria, items, isOn, onPick) {
-            const box = el('div', { className: 'pchart-seg', role: 'group', 'aria-label': aria });
-            items.forEach(it => {
-                box.appendChild(el('button', { type: 'button', 'data-v': String(it.v), 'aria-pressed': 'false', text: it.label,
-                    on: { click: () => onPick(it.v) } }));
-            });
-            box.paint = () => box.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(isOn(b.dataset.v))));
-            return box;
-        }
-        const metricSeg = segGroup(T('pc.metricAria'), METRICS.map(m => ({ v: m.id, label: T(m.key) })),
-            v => v === state.metric, v => { state.metric = v; state.pending = null; render(); });
-        const realBtn = el('button', { type: 'button', 'aria-pressed': 'false', text: T('pc.real'), on: { click: () => {
+        /* 그래프 도구: 큰 사각형 하나 안에 줄마다 [이름 | 모서리 없는 사각 단추들] */
+        const cell = (label, on) => el('button', { type: 'button', className: 'pt-btn', 'aria-pressed': 'false', text: label, on: { click: on } });
+        const metricBtns = METRICS.map(m => {
+            const b = cell(T(m.key), () => { state.metric = m.id; state.pending = null; render(); });
+            b.dataset.v = m.id;
+            return b;
+        });
+        // 금액 기준: 당시 금액 / 물가 반영(지금 돈 가치). 당첨자 수에서는 둘 다 꺼진다
+        function setReal(on) {
             if (byId(state.metric).unit !== 'won') return;
-            state.real = !state.real;
+            state.real = on;
             state.pending = null;
             render();
-        } } });
-        const realSeg = el('div', { className: 'pchart-seg pchart-real', role: 'group', 'aria-label': T('pc.real') }, [realBtn]);
-        if (!cpi) realSeg.hidden = true;
+        }
+        const nominalBtn = cell(T('pc.real.nominal'), () => setReal(false));
+        const realBtn = cell(T('pc.real'), () => setReal(true));
         const cpiNote = el('p', { className: 'pchart-cpi-note', hidden: '' });
         // 출처 한 줄 (늘 보인다). 물가지수 출처 이름·링크는 cpi-data.json 이 정한다 — 받은 곳이 바뀌면 같이 바뀐다
         const cpiCredit = () => {
@@ -306,7 +302,7 @@
             T('pc.src.cpiTail', { ym: ymLabel(cpi.latest) }),
         ] : []));
 
-        const chip = (label, on) => el('button', { type: 'button', className: 'pchart-chip', 'aria-pressed': 'false', text: label, on: { click: on } });
+        const chip = cell;
         const indChips = { avg: chip(T('pc.i.avg'), () => toggleInd('avg')) };
         MA.forEach(n => { indChips['ma' + n] = chip(T('pc.i.maChip', { n: n }), () => toggleInd('ma' + n)); });
         indChips.log = chip(T('pc.i.log'), () => toggleInd('log'));
@@ -334,25 +330,29 @@
             T('pc.pro.note') + ' ',
             el('a', { href: 'statistics.html', text: T('pc.pro.see') }),
         ]);
-        const pro = el('div', { className: 'pchart-pro is-locked' }, [
-            el('div', { className: 'pchart-pro-group', role: 'group', 'aria-label': T('pc.pro.range') }, [
-                el('span', { className: 'pchart-pro-label', text: T('pc.pro.range') }),
-            ].concat(rangeChips, [zoomIn, zoomOut])),
-            el('div', { className: 'pchart-pro-group', role: 'group', 'aria-label': T('pc.pro.ind') }, [
-                el('span', { className: 'pchart-pro-label', text: T('pc.pro.ind') }),
-            ].concat(INDICATORS.map(k => indChips[k]))),
-            el('div', { className: 'pchart-pro-group', role: 'group', 'aria-label': T('pc.pro.draw') }, [
-                el('span', { className: 'pchart-pro-label', text: T('pc.pro.draw') }),
-                toolChips.h, toolChips.t, toolChips.undo, toolChips.clear,
-            ]),
-            badge,
-            proNote,
+        // 한 줄: 왼쪽 이름 칸(유료 줄은 아래에 "이용권"), 오른쪽 단추 칸들. 단추는 1px 선으로만 나뉜다
+        const row = (label, buttons, paid) => el('div', { className: 'pt-row' + (paid ? ' is-paid' : ''), role: 'group', 'aria-label': label }, [
+            el('div', { className: 'pt-label' }, [el('span', { text: label }), paid ? el('small', { className: 'pt-paid', text: T('pc.pro.badge') }) : null]),
+            el('div', { className: 'pt-btns' }, buttons),
+        ]);
+        const realRow = row(T('pc.row.amount'), [nominalBtn, realBtn]);
+        if (!cpi) realRow.hidden = true;
+        const pro = el('div', { className: 'pchart-tools is-locked' }, [
+            row(T('pc.row.metric'), metricBtns),
+            realRow,
+            row(T('pc.pro.range'), rangeChips.concat([zoomIn, zoomOut]), true),
+            row(T('pc.pro.ind'), INDICATORS.map(k => indChips[k]), true),
+            row(T('pc.pro.draw'), [toolChips.h, toolChips.t, toolChips.undo, toolChips.clear], true),
+            el('div', { className: 'pt-foot' }, [badge, proNote]),
         ]);
 
         const legend = el('div', { className: 'pchart-legend', hidden: '' });
         const hint = el('p', { className: 'pchart-hint', role: 'status', 'aria-live': 'polite' });
         const svgRoot = svg('svg', { 'aria-hidden': 'true', focusable: 'false' });
         const tip = el('div', { className: 'pchart-tip', hidden: '' });
+        // 좁은 화면(휴대폰)에서는 떠 있는 툴팁이 그래프를 가리므로, 그래프 위 고정된 정보 줄에 짧게 보인다.
+        // 높이를 미리 잡아 두어 눌러도 그래프가 밀리지 않는다
+        const readout = el('div', { className: 'pchart-readout', 'aria-hidden': 'true' });
         const plot = el('div', { className: 'pchart-plot', role: 'group', tabindex: '0' }, [svgRoot, tip]);
         // 아래 작은 그래프: 전체 기간 위에 지금 보는 구간을 표시한다. 끌어서 옮기고, 양 끝을 끌어 넓히거나 좁힌다
         const navSvg = svg('svg', { 'aria-hidden': 'true', focusable: 'false' });
@@ -365,7 +365,7 @@
                 if (g.LottoAccount && g.LottoAccount.openLogin) g.LottoAccount.openLogin(T('pc.gate.reason'));
             } } }),
         ]);
-        const stage = el('div', { className: 'pchart-stage' }, [legend, plot, nav, gate]);
+        const stage = el('div', { className: 'pchart-stage' }, [legend, readout, plot, nav, gate]);
         const summary = el('p', { className: 'pchart-summary', id: 'pchart-summary' });
         const live = el('p', { className: 'sr-only', 'aria-live': 'polite' });
         const tableBody = el('tbody');
@@ -384,7 +384,7 @@
 
         root.textContent = '';
         root.classList.add('pchart-body');
-        [el('div', { className: 'pchart-controls' }, [metricSeg, realSeg]), pro, stage, hint, summary, cpiNote, live, table,
+        [pro, stage, hint, summary, cpiNote, live, table,
             el('p', { className: 'pchart-note', text: T('pc.note') }), sourceLine].forEach(n => root.appendChild(n));
 
         /* 보조지표 · 그림도구 */
@@ -432,7 +432,7 @@
         }
 
         function paintControls() {
-            metricSeg.paint();
+            metricBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === state.metric)));
             const w = state.view.e - state.view.s + 1;
             const lockIf = (c, off) => { if (off) c.setAttribute('aria-disabled', 'true'); else c.removeAttribute('aria-disabled'); };
             rangeChips.forEach(c => { c.setAttribute('aria-pressed', String(state.unlocked && isPreset(Number(c.dataset.v)))); lockIf(c, !state.unlocked); });
@@ -441,8 +441,10 @@
             nav.hidden = !state.unlocked;     // 작은 그래프(구간 옮기기)도 이용권 기능
             const wonMetric = byId(state.metric).unit === 'won';
             realBtn.setAttribute('aria-pressed', String(!!(state.real && wonMetric)));
-            realBtn.disabled = !wonMetric;
+            nominalBtn.setAttribute('aria-pressed', String(!(state.real && wonMetric) && wonMetric));
+            [realBtn, nominalBtn].forEach(b => { if (wonMetric) b.removeAttribute('aria-disabled'); else b.setAttribute('aria-disabled', 'true'); });
             realBtn.title = !cpi ? '' : wonMetric ? T('pc.realTitle', { ym: ymLabel(cpi.latest) }) : T('pc.realNo');
+            nominalBtn.title = wonMetric ? '' : T('pc.realNo');
             const isWon = byId(state.metric).unit === 'won';
             pro.classList.toggle('is-locked', !state.unlocked);
             badge.textContent = state.unlocked ? T('pc.pro.badgeOn') : T('pc.pro.badge');
@@ -463,7 +465,7 @@
             root.classList.toggle('is-gated', state.gated);
             gate.hidden = !state.gated;
             table.hidden = state.gated;
-            [legend, plot, nav, summary].forEach(n => { if (state.gated) n.setAttribute('aria-hidden', 'true'); else n.removeAttribute('aria-hidden'); });
+            [legend, readout, plot, nav, summary].forEach(n => { if (state.gated) n.setAttribute('aria-hidden', 'true'); else n.removeAttribute('aria-hidden'); });
             plot.tabIndex = state.gated ? -1 : 0;
             nav.tabIndex = state.gated ? -1 : 0;
             hint.textContent = state.tool === 'h' ? T('pc.d.hintH') : state.tool === 't' ? (state.pending ? T('pc.d.hintT2') : T('pc.d.hintT1')) : '';
@@ -740,7 +742,13 @@
             if (state.unlocked && state.tool === 't' && state.pending && pointer && ok(state.pending.v)) {
                 layer.appendChild(svg('line', { class: 'pc-draw pc-draw-pending', x1: x(indexOf(state.pending.r)), y1: y(state.pending.v), x2: pointer.x, y2: pointer.y }));
             }
-            if (state.hover === null) { tip.hidden = true; return; }
+            const compact = S.W < 600;
+            root.classList.toggle('is-compact', compact);
+            if (state.hover === null) {
+                tip.hidden = true;
+                if (compact) { readout.textContent = ''; readout.appendChild(el('p', { className: 'pr-idle', text: T('pc.readoutIdle') })); }
+                return;
+            }
 
             const i = state.hover;
             const xx = Math.round(x(i)) + 0.5;
@@ -749,6 +757,7 @@
             if (ok(ser.vals[i])) layer.appendChild(svg('circle', { class: 'pc-dot', cx: x(i), cy: y(ser.vals[i]), r: 5 }));
 
             const d = all[i];
+            if (compact) { fillReadout(i); tip.hidden = true; return; }
             tip.textContent = '';
             tip.appendChild(el('p', { className: 'pchart-tip-head' }, [el('b', { text: T('pc.drawNo', { n: d.round }) }), ' ' + (d.date || '')]));
             if (d.numbers && d.numbers.length) {
@@ -776,6 +785,32 @@
             if (left < 0) left = Math.max(0, Math.min(S.W - tw, x(i) - tw / 2));
             tip.style.left = left + 'px';
             tip.style.top = M.top + 'px';
+        }
+
+        // 휴대폰 정보 줄: 1줄 회차·날짜·번호, 그 아래 값들을 이어서 (본 지표만 긴 금액, 나머지는 짧게)
+        function fillReadout(i) {
+            const { ser, metric } = S;
+            const d = all[i];
+            readout.textContent = '';
+            readout.appendChild(el('p', { className: 'pr-head' }, [
+                el('b', { text: T('pc.drawNo', { n: d.round }) }),
+                el('span', { className: 'pr-date', text: d.date || '' }),
+                d.numbers && d.numbers.length ? el('span', { className: 'pr-balls' }, d.numbers.map(ball).concat([el('span', { className: 'plus', text: '+' }), ball(d.bonus)])) : null,
+            ]));
+            const vals = el('p', { className: 'pr-vals' });
+            const item = (keyClass, value, label) => vals.appendChild(el('span', { className: 'pr-item' }, [
+                keyClass ? el('i', { className: 'pchart-key ' + keyClass, 'aria-hidden': 'true' }) : null,
+                el('b', { text: value }), ' ' + label,
+            ]));
+            item('pc-key-main', fmtValue(metric, ser.vals[i]), S.realOn ? realAs() : T(metric.key));
+            if (S.realOn) {
+                item('pc-key-nominal', fmtValue(metric, S.nominal.vals[i], true), T('pc.real.nominal'));
+                const f = realFactor(cpi, d.date);
+                if (f) item(null, '×' + f.toFixed(2), T('pc.real.factor'));
+            }
+            S.mas.forEach(n => { const v = ser.ma[n][i]; item('pc-key-ma' + n, v == null ? '—' : fmtValue(metric, v, true), T('pc.i.maShort', { n: n })); });
+            METRICS.filter(m => m.id !== metric.id).forEach(m => item(null, fmtValue(m, seriesOf(m).vals[i], m.unit === 'won'), T(m.key)));
+            readout.appendChild(vals);
         }
 
         function pointAt(e) {

@@ -697,35 +697,35 @@ html.home { scroll-behavior: smooth; }
 .prose .pchart h2 { margin-top: 0; }
 .prose .pchart-lead { margin: 0 0 4px; color: var(--muted); font-size: 14px; }
 .pchart-loading { min-height: 320px; color: var(--muted); }
-.pchart-controls { display: flex; flex-wrap: wrap; gap: 8px 12px; margin: 10px 0 0; }
-.pchart-seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-.pchart-seg button {
-    margin: 0; padding: 7px 12px;
-    border: 0; border-left: 1px solid var(--line);
+/* 그래프 도구: 큰 사각형 하나. 줄마다 [이름 칸 | 단추 칸들], 단추는 모서리 없는 사각형이고 1px 선으로만 나뉜다.
+   지표 · 금액 기준(무료)과 구간 설정 · 보조지표 · 그림도구(이용권)가 한 묶음으로 읽히게 같은 모양을 쓴다 */
+.pchart-tools { margin: 10px 0 0; border: 1px solid #c9d1de; background: #fff; font-size: 13px; }
+.pt-row { display: grid; grid-template-columns: 92px minmax(0, 1fr); overflow: hidden; border-top: 1px solid #c9d1de; }
+.pt-row:first-child { border-top: 0; }
+.pt-label {
+    display: flex; flex-direction: column; justify-content: center; gap: 1px;
+    padding: 6px 10px; border-right: 1px solid #c9d1de; background: #f3f6fb;
+    color: var(--text); font-size: 12px; font-weight: bold; line-height: 1.25;
+}
+.pt-paid { color: #999; font-size: 10.5px; font-weight: normal; }
+.pchart-tools:not(.is-locked) .pt-paid { color: var(--brand); }
+/* 단추 칸: 오른쪽·아래 선을 1px 밖으로 밀어 줄의 테두리와 겹치지 않게 한다(.pt-row 가 잘라 낸다) */
+.pt-btns { display: flex; flex-wrap: wrap; margin: 0 -1px -1px 0; }
+.pt-btn {
+    flex: 1 0 96px; min-height: 34px; margin: 0; padding: 0 6px;   /* 줄 높이(이름 칸이 두 줄이어도)에 맞춰 늘어난다 */
+    border: 0; border-right: 1px solid #dfe4ec; border-bottom: 1px solid #dfe4ec; border-radius: 0;
     background: #fff; color: var(--text);
-    font: bold 13px/1.2 var(--font); cursor: pointer;
+    font: 12.5px/1 var(--font); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    cursor: pointer;
 }
-.pchart-seg button:first-child { border-left: 0; }
-.pchart-seg button:hover { background: var(--head); }
-.pchart-seg button[aria-pressed="true"] { background: var(--brand); color: #fff; }
-.pchart-pro {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;
-    margin: 10px 0 0; padding: 8px 12px;
-    border-radius: 8px; background: #f3f6fb; font-size: 13px;
-}
-.pchart-pro-group { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.pchart-pro-label { margin-right: 2px; color: var(--text); font-weight: bold; }
-.pchart-chip {
-    margin: 0; padding: 4px 10px;
-    border: 1px solid var(--line); border-radius: 999px;
-    background: #fff; color: var(--text);
-    font: 12px/1.4 var(--font); cursor: pointer;
-}
-.pchart-chip:hover { border-color: var(--brand); }
-.pchart-chip[aria-pressed="true"] { border-color: var(--brand); background: #e8efff; color: var(--brand); font-weight: bold; }
-.pchart-chip[aria-disabled="true"] { border-color: var(--line); background: #f7f7f7; color: #999; cursor: not-allowed; }
-.pchart-pro .lock-mark.is-on { background: var(--brand); color: #fff; }
-.prose .pchart-pro-note { flex-basis: 100%; margin: 0; color: var(--muted); font-size: 12px; }
+.pt-btn:hover { background: #eef2f9; }
+.pt-btn[aria-pressed="true"] { background: var(--brand); color: #fff; font-weight: bold; }
+.pt-btn[aria-disabled="true"] { background: #fafafa; color: #aaa; cursor: not-allowed; }
+.pt-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+.pt-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 7px 10px; border-top: 1px solid #c9d1de; background: #f3f6fb; }
+.pchart-tools .lock-mark { border-radius: 0; }
+.pchart-tools .lock-mark.is-on { background: var(--brand); color: #fff; }
+.prose .pchart-pro-note { margin: 0; color: var(--muted); font-size: 12px; }
 .pchart-pro-note.is-flash { animation: pchart-flash 1s ease-out; }
 @keyframes pchart-flash { from { background: #fff1b8; } to { background: transparent; } }
 @media (prefers-reduced-motion: reduce) { .pchart-pro-note.is-flash { animation: none; font-weight: bold; } }
@@ -785,10 +785,9 @@ html.home { scroll-behavior: smooth; }
 .pn-shade { fill: #fff; fill-opacity: .7; }
 .pn-win { fill: var(--pc-main); fill-opacity: .08; stroke: var(--brand); stroke-width: 1; }
 .pn-handle { fill: #fff; stroke: var(--brand); stroke-width: 1; }
-.pchart-seg button:disabled { background: #fff; color: #bbb; cursor: default; }
-.pchart-zoom button { min-width: 38px; font-size: 15px; }
 
 /* 로그인 전: 그래프를 흐리게 하고 안내를 얹는다 */
+.pchart-body.is-gated .pchart-readout,
 .pchart-body.is-gated .pchart-legend,
 .pchart-body.is-gated .pchart-plot,
 .pchart-body.is-gated .pchart-nav,
@@ -814,6 +813,26 @@ html.home { scroll-behavior: smooth; }
 .prose .pchart-tip .pchart-tip-head { margin-bottom: 2px; color: var(--muted); }
 .pchart-tip-head b { color: var(--text); font-size: 13px; }
 .pchart-tip-balls { display: flex; align-items: center; gap: 3px; margin: 2px 0 6px !important; }
+
+/* 휴대폰 정보 줄 (좁은 화면에서 떠 있는 툴팁 대신) — 높이를 미리 잡아 눌러도 그래프가 밀리지 않게 */
+.pchart-readout { display: none; }
+.pchart-body.is-compact .pchart-readout {
+    display: block; min-height: 64px; margin-top: 6px; padding: 5px 8px;
+    border: 1px solid var(--line); border-radius: 8px; background: #fafbfd;
+    font-size: 11.5px; line-height: 1.45;
+}
+.prose .pchart-readout p { margin: 0; }
+.pr-idle { color: var(--muted); }
+.pr-head { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; }
+.pr-head b { font-size: 12.5px; }
+.pr-date { color: var(--muted); }
+.pr-balls { display: inline-flex; align-items: center; gap: 2px; }
+.pr-balls .mball { width: 17px; height: 17px; font-size: 9px; }
+.pr-balls .plus { font-size: 10px; }
+.pr-vals { display: flex; flex-wrap: wrap; gap: 0 10px; color: var(--muted); }
+.pr-item { white-space: nowrap; }
+.pr-item b { color: #000; font-variant-numeric: tabular-nums; }
+.pr-item .pchart-key { width: 10px; margin-right: 3px; }
 .pchart-tip-balls .mball { width: 22px; height: 22px; font-size: 11px; }
 .pchart-tip-row { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
 .pchart-tip-row b { color: #000; font-variant-numeric: tabular-nums; }
@@ -832,13 +851,14 @@ html.home { scroll-behavior: smooth; }
 .pchart-table .data-table th { position: sticky; top: 0; }
 .pchart-table .data-table th, .pchart-table .data-table td { padding: 6px 8px; font-size: 13px; }
 .prose h2.top-table-h { margin-top: 8px; }
-/* 휴대폰: 보조지표 칸이 여러 줄로 길어져 그래프를 밀어내므로, 그래프·요약 아래로 내린다 */
+/* 휴대폰: 그래프 도구 상자가 여러 줄로 길어져 그래프를 밀어내므로, 그래프·요약 아래로 내린다 */
 .pchart-body { display: flex; flex-direction: column; }
 @media (max-width: 599px) {
-    .pchart-seg button { padding: 7px 9px; font-size: 12px; }
-    .pchart-body > .pchart-pro { order: 1; padding: 8px; gap: 6px 10px; }
+    .pchart-body > .pchart-tools { order: 1; }
     .pchart-body > .pchart-table, .pchart-body > .pchart-note { order: 2; }
-    .pchart-chip { padding: 3px 8px; }
+    .pt-row { grid-template-columns: minmax(0, 1fr); }
+    .pt-label { flex-direction: row; align-items: baseline; gap: 6px; padding: 5px 10px; border-right: 0; border-bottom: 1px solid #c9d1de; }
+    .pt-btn { flex-basis: 30%; min-height: 36px; }
     .pchart-loading { min-height: 240px; }
 }
 
@@ -1299,3 +1319,25 @@ html.home { scroll-behavior: smooth; }
 .cm-left { color: var(--muted); font-size: 12px; }
 .cm-status { margin: 8px 0 0; color: var(--error); font-size: 13px; }
 .cm-status:empty { display: none; }
+
+/* ───── 마이페이지 (mypage.html, js/mypage.js) ───── */
+.my-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 14px; margin-top: 16px; }
+.my-box { padding: 14px 16px; border: 1px solid var(--line); border-radius: 10px; background: #fff; box-shadow: var(--shadow); }
+.prose .my-box h2 { margin: 0 0 8px; font-size: 16px; }
+.prose .my-box p { margin: 4px 0; }
+.my-row { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 8px; padding: 7px 0; border-top: 1px solid #f0f0f0; font-size: 14px; }
+.my-k { color: var(--muted); }
+.my-v { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-width: 0; overflow-wrap: anywhere; }
+.my-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.my-muted { color: var(--muted); font-size: 13px; }
+.my-ok { color: #1a7f37; font-weight: bold; }
+.my-warn { color: var(--error); }
+.my-big { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 6px; }
+.my-big div { padding: 10px; border-radius: 8px; background: #f3f6fb; text-align: center; }
+.my-big b { display: block; color: var(--brand); font-size: 24px; line-height: 1.25; }
+.my-big span { color: var(--muted); font-size: 12px; }
+.my-key { margin-top: 10px; padding: 10px; border-radius: 8px; background: #f5f5f5; }
+.my-key code { display: block; font-size: 12px; overflow-wrap: anywhere; }
+.btn.my-danger { color: var(--error); }
+.acct-menu .acct-my { font-weight: bold; }
+@media (max-width: 699px) { .my-grid { grid-template-columns: minmax(0, 1fr); } }
