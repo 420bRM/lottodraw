@@ -6,7 +6,8 @@
 //   1. 평균 매매가격(아파트 · 매매, 만 원)  — 2008년 12월부터 있다
 //   2. 매매가격지수(아파트 · 월간)          — 1986년부터 있다. 평균가가 없는 2002-12 ~ 2008-11 을
 //      "2008-12 평균가 × 그 달 지수 ÷ 2008-12 지수"로 거꾸로 환산한다(추정). 지수 기준 달이 바뀌어도 비율은 같다
-// 강남은 서울의 하위 지역(지역코드=11)에서 "강남구"를 먼저 찾고, 없으면 KB 권역 "강남(한강 이남 11개 구)"을 쓴다.
+// 강남은 KB 권역 "강남11개구"(한강 이남 11개 구)를 쓴다. 이 자료에는 구 단위(강남구 단독)가 없다 — 2026-10 확인:
+// 지역 25개(전국 · 서울 · 강북14개구 · 강남11개구 · 수도권 · 광역시 · 도)뿐이고, 지역코드=11 을 줘도 같은 목록이 온다.
 // 실제로 쓴 지역 이름은 파일의 gangnam.name 에 남는다(화면 이름표가 이것을 따른다).
 // 공개 문서가 없는 주소라 모양이 바뀌거나 막힐 수 있다. 서울을 못 받으면 기존 seoul-apt.json 을 그대로 두고 실패로 끝난다
 // (사이트는 저장해 둔 값으로 계속 보인다). 강남만 못 받으면 강남은 지난 값을 그대로 둔다. 받은 지역 목록과 실패 이유는 Actions 기록에 찍는다.
@@ -95,8 +96,7 @@ function rowSeries(parsed, row) {
 }
 
 const isSeoul = r => r['지역명'] === '서울' || r['지역명'] === '서울특별시' || String(r['지역코드'] || '') === '1100000000';
-const isGangnamGu = r => r['지역명'] === '강남구' || String(r['지역코드'] || '') === '1168000000';
-const isGangnamArea = r => /강남/.test(String(r['지역명'] || '')) && !isGangnamGu(r);
+const isGangnamArea = r => String(r['지역코드'] || '') === '1B0000' || /^강남/.test(String(r['지역명'] || ''));
 
 // 지역 하나: 평균가(원, 2008-12부터) + 지수로 거꾸로 환산한 2002-12 ~ 2008-11 추정. 지수를 못 받으면 실제 구간만
 function buildRegion(name, avgMan, idx, now, maxValue) {
@@ -158,35 +158,15 @@ async function main() {
     if (!seoulRow) throw new Error('평균가에 서울 줄이 없다');
     const seoul = buildRegion('서울', rowSeries(top, seoulRow), await getIndex({}, isSeoul, '서울 지수'), now, 1e10);
 
-    // 강남 (있으면): 서울 하위 지역의 강남구 → 없으면 KB 권역 '강남'
+    // 강남 (있으면): KB 권역 강남11개구. 못 받으면 지난 값을 그대로 둔다
     let prev = null;
     try { prev = JSON.parse(fs.readFileSync(OUT, 'utf8')); } catch (e) { /* 처음 */ }
     let gangnam = null;
     try {
-        let gAvg = null;
-        let gName = null;
-        let gIdx = null;
-        try {
-            const subUrl = KB + 'avgPrc?' + q(Object.assign({ '지역코드': '11' }, avgBase));
-            console.log('평균 매매가격(서울 하위):', decodeURIComponent(subUrl));
-            const sub = parseKb(await get(subUrl), '서울 하위 평균가');
-            const row = sub.rows.find(isGangnamGu);
-            if (row) {
-                gAvg = rowSeries(sub, row);
-                gName = '강남구';
-                gIdx = await getIndex({ '지역코드': '11' }, isGangnamGu, '강남구 지수');
-            }
-        } catch (e) {
-            console.log('  서울 하위 지역을 못 받았다:', e.message.slice(0, 600));
-        }
-        if (!gAvg) {
-            const row = top.rows.find(isGangnamArea);
-            if (!row) throw new Error('강남구도, 강남 권역 줄도 없다');
-            gAvg = rowSeries(top, row);
-            gName = String(row['지역명']);
-            gIdx = await getIndex({}, isGangnamArea, '강남 권역 지수');
-        }
-        gangnam = Object.assign({ name: gName }, buildRegion(gName, gAvg, gIdx, now, 3e10));
+        const row = top.rows.find(isGangnamArea);
+        if (!row) throw new Error('평균가에 강남 권역 줄이 없다');
+        const gName = String(row['지역명']);
+        gangnam = Object.assign({ name: gName }, buildRegion(gName, rowSeries(top, row), await getIndex({}, isGangnamArea, '강남 지수'), now, 3e10));
     } catch (e) {
         console.log('강남을 못 만들었다 — 지난 값을 그대로 둔다:', e.message);
         gangnam = prev && prev.gangnam ? prev.gangnam : null;

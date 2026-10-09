@@ -6,9 +6,10 @@
 //
 // 세로축 눈금은 왼쪽. 보이는 구간의 마지막 값(파란 · 회색 · 주황)은 선이 끝나는 오른쪽에 꼬리표로 붙는다(이동평균 끝값은
 // 붙이지 않는다 — 겹쳐서 읽히지 않고, 값은 짚으면 나온다). 짚은 자리는 십자선과 함께 가로축(회차)·세로축(값)에 꼬리표.
-// 봉 차트(이용권): 회차를 달·분기·해로 묶어 시가(첫 회차)·고가·저가·종가(마지막 회차). 오름 빨강 · 내림 파랑.
+// 봉 차트: 회차를 달·분기·해로 묶어 시가(첫 회차)·고가·저가·종가(마지막 회차). 오름 빨강 · 내림 파랑.
+// 선 · 월봉은 누구나, 분기봉 · 연봉은 이용권. 처음 열면 월봉이다.
 //
-// 처음 열면 늘 "전체 기간 · 총 1등 당첨금"이다. 고른 지표·기간은 기억하지 않는다(보조지표만 기억한다).
+// 처음 열면 늘 "전체 기간 · 총 1등 당첨금 · 월봉"이다. 고른 지표·기간은 기억하지 않는다(보조지표만 기억한다).
 //
 // 로그인하지 않은 사람에게는 그래프를 흐리게 보이고 로그인을 권한다(setGated). 누구를 가릴지는 페이지가 정한다.
 //
@@ -17,7 +18,7 @@
 // 물가지수는 cpi-data.json(tools/update-cpi.js 가 매달 받는다). 파일이 없으면 단추를 숨긴다.
 //
 // "세금: 세전/세후"는 금액 지표의 선 자체를 세후 실수령액으로 바꾼다(지금 세율, tax.html 과 같은 계산).
-// "비교: 서울 아파트 평균가"(1인당 당첨금에서만)는 그 달 서울 아파트 평균 매매가(주황, seoul-apt.json — KB부동산,
+// "비교: 서울 · 강남 아파트 평균가"(1인당 당첨금에서만)는 그 달 아파트 평균 매매가(서울 주황 · 강남 자주, seoul-apt.json — KB부동산,
 // tools/update-seoul-apt.js 가 받는다. 2008-12 이전은 지수로 거꾸로 환산한 추정이라 점선)를 겹친다. 켜면 세후로 바꾼다.
 // 세로축은 기본 화면과 똑같이 잡는다(자르지 않는다). 전체 기간에서 아파트 선이 낮게 깔리면 구간·로그 눈금으로 본다.
 //
@@ -283,6 +284,9 @@
     function mount(root, draws, opts) {
         const cpi = opts && opts.cpi && opts.cpi.monthly && opts.cpi.latest ? opts.cpi : null;
         const apt = opts && opts.apt && opts.apt.monthly && opts.apt.latest ? opts.apt : null;
+        // 강남: seoul-apt.json 의 gangnam (강남구, 없으면 KB 강남 권역). 이름표는 실제로 받은 지역을 따른다
+        const gn = apt && apt.gangnam && apt.gangnam.monthly && apt.gangnam.latest ? apt.gangnam : null;
+        const gnName = () => (gn && gn.name === '강남구' ? T('pc.cmp.gnGu') : T('pc.cmp.gnArea'));
         const all = draws.slice().sort((a, b) => a.round - b.round);
         const first = all[0].round;
         const indexOf = r => r - first;      // 회차는 1부터 빠짐없이 이어진다 (update-lotto-data.js 가 검사)
@@ -308,17 +312,21 @@
             }
             return cache[key];
         }
-        // 비교선: 회차마다 세후 1인당 당첨금, 그 달 서울 아파트 평균가
+        // 비교선: 회차마다 세후 1인당 당첨금, 그 달 서울 · 강남 아파트 평균가
         let cmpCache = null;
         function cmpSeries() {
             if (!cmpCache) {
                 const each = byId('each');
                 const at = all.map(d => aptAt(apt, d.date));
+                const gt = all.map(d => aptAt(gn, d.date));
                 cmpCache = {
                     net: all.map(d => { const v = each.value(d); return v == null ? null : afterTax(v); }),
                     apt: at,                                  // { v, ym, est } | null
                     aptV: at.map(a => (a ? a.v : null)),
                     cut: at.findIndex(a => a && !a.est),      // 실제 평균가가 시작하는 칸 (앞은 추정)
+                    gn: gt,
+                    gnV: gt.map(a => (a ? a.v : null)),
+                    gnCut: gt.findIndex(a => a && !a.est),
                 };
             }
             return cmpCache;
@@ -344,8 +352,9 @@
             pending: null,       // 추세선 첫 점 { r, v }
             hover: null,         // 전체 배열의 칸 번호
             cmpApt: false,       // 비교: 서울 아파트 평균가 (1인당 당첨금에서만)
+            cmpGn: false,        // 비교: 강남 아파트 평균가 (1인당 당첨금에서만)
             net: false,          // 세금: 세후 실수령액으로 (금액 지표만)
-            candle: null,        // 봉 차트(이용권): null(선) | 'm' | 'q' | 'y'
+            candle: 'm',         // 봉 차트: null(선) | 'm'(월봉, 무료 · 처음 화면) | 'q' · 'y'(이용권)
         };
         let drawings = store.get(DRAW_STORE) || {};
         let S = null;            // 마지막으로 그린 눈금·크기
@@ -409,7 +418,8 @@
         };
         toolChips.undo.removeAttribute('aria-pressed');
         toolChips.clear.removeAttribute('aria-pressed');
-        // 봉 차트(이용권): 선 / 월봉 / 분기봉 / 연봉
+        // 봉 차트: 선 / 월봉(무료) / 분기봉 / 연봉(이용권)
+        const freeCandle = u => !u || u === 'm';
         const CANDLES = ['', 'm', 'q', 'y'];
         const candleChips = CANDLES.map(u => {
             const c = chip(T(u ? 'pc.c.' + u : 'pc.c.line'), () => pickCandle(u));
@@ -455,16 +465,19 @@
         const taxRow = row(T('pc.row.tax'), [grossBtn, netBtn], false, true);
         // 비교(무료): 1인당 당첨금에 그 달 서울 아파트 평균가를 겹친다. 다른 지표에서 누르면 1인당 당첨금으로 바꾸고,
         // 켤 때 세후로 바꾼다 — "당첨되면 서울 집을 살 수 있나"는 세후로 봐야 맞다
-        function toggleApt() {
-            if (state.metric !== 'each') { state.metric = 'each'; state.cmpApt = true; }
-            else state.cmpApt = !state.cmpApt;
-            if (state.cmpApt) state.net = true;
+        function toggleCmp(k) {
+            if (state.metric !== 'each') { state.metric = 'each'; state[k] = true; }
+            else state[k] = !state[k];
+            if (state[k]) state.net = true;
             state.pending = null;
             render();
         }
-        const aptBtn = cell(T('pc.cmp.apt'), toggleApt);
+        const aptBtn = cell(T('pc.cmp.apt'), () => toggleCmp('cmpApt'));
         aptBtn.title = T('pc.cmp.aptTitle');
-        const cmpRow = row(T('pc.row.compare'), [aptBtn], false, true);
+        const gnBtn = cell(T('pc.cmp.gn'), () => toggleCmp('cmpGn'));
+        gnBtn.title = T('pc.cmp.gnTitle', { name: gnName() });
+        if (!gn) gnBtn.hidden = true;
+        const cmpRow = row(T('pc.row.compare'), [aptBtn, gnBtn], false, true);
         if (!apt) cmpRow.hidden = true;
         // 지표만 그래프 위 작은 상자에, 나머지 도구는 그래프 아래 상자에
         const metricBox = el('div', { className: 'pchart-tools pt-top' }, [row(T('pc.row.metric'), metricBtns, false, true)]);
@@ -472,7 +485,7 @@
             realRow,
             taxRow,
             cmpRow,
-            row(T('pc.row.candle'), candleChips, true),
+            row(T('pc.row.candle'), candleChips, false),
             row(T('pc.pro.range'), rangeChips.concat([zoomIn, zoomOut]), true),
             row(T('pc.pro.ind'), INDICATORS.map(k => indChips[k]), true),
             row(T('pc.pro.draw'), [toolChips.h, toolChips.t, toolChips.undo, toolChips.clear], true),
@@ -517,7 +530,7 @@
             proNote.classList.add('is-flash');
         }
         function pickCandle(u) {
-            if (!state.unlocked) return flashNote();
+            if (!state.unlocked && !freeCandle(u)) return flashNote();
             state.candle = u || null;
             render();
         }
@@ -564,7 +577,7 @@
             const w = state.view.e - state.view.s + 1;
             const lockIf = (c, off) => { if (off) c.setAttribute('aria-disabled', 'true'); else c.removeAttribute('aria-disabled'); };
             rangeChips.forEach(c => { c.setAttribute('aria-pressed', String(state.unlocked && isPreset(Number(c.dataset.v)))); lockIf(c, !state.unlocked); });
-            candleChips.forEach(c => { c.setAttribute('aria-pressed', String(state.unlocked && (state.candle || '') === c.dataset.v)); lockIf(c, !state.unlocked); });
+            candleChips.forEach(c => { c.setAttribute('aria-pressed', String((state.candle || '') === c.dataset.v)); lockIf(c, !state.unlocked && !freeCandle(c.dataset.v)); });
             lockIf(zoomIn, !state.unlocked || w <= Math.min(MIN_VIEW, len));
             lockIf(zoomOut, !state.unlocked || w >= len);
             nav.hidden = !state.unlocked;     // 작은 그래프(구간 옮기기)도 이용권 기능
@@ -576,6 +589,7 @@
             nominalBtn.title = wonMetric ? '' : T('pc.realNo');
             const isWon = byId(state.metric).unit === 'won';
             aptBtn.setAttribute('aria-pressed', String(state.metric === 'each' && state.cmpApt));
+            gnBtn.setAttribute('aria-pressed', String(state.metric === 'each' && state.cmpGn));
             netBtn.setAttribute('aria-pressed', String(!!(state.net && wonMetric)));
             grossBtn.setAttribute('aria-pressed', String(!(state.net && wonMetric) && wonMetric));
             [netBtn, grossBtn].forEach(b => { if (wonMetric) b.removeAttribute('aria-disabled'); else b.setAttribute('aria-disabled', 'true'); });
@@ -639,12 +653,13 @@
             const ser = seriesOf(metric, realOn, netOn);          // 고른 기준: 요약·이동평균·평균선이 이 값으로 잰다
             const nominal = realOn ? seriesOf(metric, false, netOn) : null;
             // 봉 차트: 고른 기준(물가 반영·세후) 값으로 봉을 묶는다. 이때 선은 그리지 않는다
-            const unit = state.unlocked && state.candle ? state.candle : null;
+            const unit = state.candle && (state.unlocked || freeCandle(state.candle)) ? state.candle : null;
             const bars = unit ? ((ser.candles = ser.candles || {})[unit] = ser.candles[unit] || candles(all.map(d => d.date), ser.vals, unit)) : null;
             const blue = unit ? ser.vals : realOn ? nominal.vals : ser.vals;   // 파란 선: 늘 당시 금액
             const grey = unit ? null : realOn ? ser.vals : null;               // 회색 선: 지금 돈 가치 (물가 반영 때만)
-            const cs = metric.id === 'each' && state.cmpApt && apt ? cmpSeries() : null;
-            const aptVals = cs ? cs.aptV : null;                  // 주황: 서울 아파트 평균가
+            const cs = metric.id === 'each' && ((state.cmpApt && apt) || (state.cmpGn && gn)) ? cmpSeries() : null;
+            const aptVals = cs && state.cmpApt ? cs.aptV : null;  // 주황: 서울 아파트 평균가
+            const gnVals = cs && state.cmpGn && gn ? cs.gnV : null; // 자주: 강남 아파트 평균가
             const start = state.view.s;
             const end = state.view.e;
             const useLog = state.unlocked && state.ind.log && metric.unit === 'won';
@@ -662,6 +677,7 @@
             const shown = bars ? bars.filter(b => b.o !== null && b.e >= start && b.s <= end) : [];
             shown.forEach(b => { if (b.h > vmax) vmax = b.h; if (b.l > 0 && b.l < vmin) vmin = b.l; });
             if (aptVals) scan(aptVals);
+            if (gnVals) scan(gnVals);
             mas.forEach(n => scan(ser.ma[n]));
             const W = Math.max(280, Math.round(plot.clientWidth || 600));
             const H = W < 600 ? 240 : 320;
@@ -681,6 +697,7 @@
             // 최근 회차는 물가 배수가 1이라 파란·회색 끝값이 같다: 하나만
             if (grey) { pushTag(grey, 'pc-tag-real'); if (tags.length === 2 && tags[0].text === tags[1].text) tags.pop(); }
             if (aptVals) pushTag(aptVals, 'pc-tag-apt');
+            if (gnVals) pushTag(gnVals, 'pc-tag-gn');
             const tagW = tags.length ? Math.ceil(Math.max.apply(null, tags.map(t => measure(t.text))) + 2 * TAG_PAD) : 0;
             const M = { top: 12, right: tagW ? tagW + 6 : 10, bottom: 26, left: axisW + 6 };
             const pw = W - M.left - M.right;
@@ -693,7 +710,7 @@
             const yInv = useLog
                 ? py => Math.exp(Math.log(yt.min) + (M.top + ph - py) / ph * (Math.log(yt.max) - Math.log(yt.min)))
                 : py => yt.min + (M.top + ph - py) / ph * (yt.max - yt.min);
-            S = { metric: metric, ser: ser, blue: blue, grey: grey, bars: bars, unit: unit, netOn: netOn, aptOn: !!aptVals, cs: cs, realOn: realOn, start: start, end: end, x: x, y: y, yInv: yInv, M: M, pw: pw, ph: ph, W: W, H: H, mas: mas, ok: ok, useLog: useLog };
+            S = { metric: metric, ser: ser, blue: blue, grey: grey, bars: bars, unit: unit, netOn: netOn, aptOn: !!aptVals, gnOn: !!gnVals, cs: cs, realOn: realOn, start: start, end: end, x: x, y: y, yInv: yInv, M: M, pw: pw, ph: ph, W: W, H: H, mas: mas, ok: ok, useLog: useLog };
 
             svgRoot.textContent = '';
             svgRoot.setAttribute('viewBox', `0 0 ${W} ${H}`);
@@ -763,6 +780,11 @@
                 const cut = cs.cut < 0 ? len : cs.cut;
                 if (start < cut) plain(aptVals, 'pc-apt pc-apt-est', 1.75, start, Math.min(end, cut));
                 if (end >= cut) plain(aptVals, 'pc-apt', 1.75, Math.max(start, cut), end);
+            }
+            if (gnVals) {
+                const cut = cs.gnCut < 0 ? len : cs.gnCut;
+                if (start < cut) plain(gnVals, 'pc-gn pc-apt-est', 1.75, start, Math.min(end, cut));
+                if (end >= cut) plain(gnVals, 'pc-gn', 1.75, Math.max(start, cut), end);
             }
             if (!unit) data.appendChild(svg('path', { class: 'pc-line', d: line, style: `stroke-width:${lw}px` }));
             // 봉: 기간이 차지하는 가로 폭의 70%가 몸통, 가운데 세로선이 꼬리(최고~최저)
@@ -853,13 +875,16 @@
             if (unit) {
                 items.push(['pc-key-up', T('pc.c.upKey')]);
                 items.push(['pc-key-down', T('pc.c.downKey')]);
-            } else if (mas.length || rolls.length || realOn || aptVals || (state.unlocked && state.ind.avg)) {
+            } else if (mas.length || rolls.length || realOn || aptVals || gnVals || (state.unlocked && state.ind.avg)) {
                 items.push(['pc-key-main', T(metric.key) + tagNet + (realOn ? ' (' + T('pc.real.nominal') + ')' : '')]);
             }
             if (realOn && !unit) items.push(['pc-key-real', T('pc.real') + ' (' + realAs() + ')']);
             if (aptVals) {
                 items.push(['pc-key-apt', T('pc.cmp.aptLegend')]);
-                if (apt.estimatedBefore && cs.cut > start) items.push(['pc-key-apt-est', T('pc.cmp.aptEst', { ym: ymLabel(apt.actualFrom || apt.estimatedBefore) })]);
+            }
+            if (gnVals) items.push(['pc-key-gn', T('pc.cmp.gnLegend', { name: gnName() })]);
+            if ((aptVals && apt.estimatedBefore && cs.cut > start) || (gnVals && gn.estimatedBefore && cs.gnCut > start)) {
+                items.push(['pc-key-apt-est', T('pc.cmp.aptEst', { ym: ymLabel(apt.actualFrom || apt.estimatedBefore) })]);
             }
             mas.forEach(n => items.push(['pc-key-ma' + n, T('pc.i.ma', { n: n })]));
             if (state.unlocked && state.ind.avg) items.push(['pc-key-avg', T('pc.i.avg')]);
@@ -877,29 +902,35 @@
             if (sum.hi != null) parts.push(T('pc.sum.max', { r: all[sum.hi].round, v: fmtValue(metric, ser.vals[sum.hi]) }));
             if (sum.lo != null) parts.push(T('pc.sum.min', { r: all[sum.lo].round, v: fmtValue(metric, ser.vals[sum.lo]) }));
             if (sum.rollovers) parts.push(T('pc.sum.roll', { n: sum.rollovers }));
-            if (aptVals) {
-                // 세후 1인당 당첨금이 그 달 서울 아파트 평균가 이상이었던 회차
+            // 세후 1인당 당첨금이 그 달 아파트 평균가 이상이었던 회차
+            const beat = list => {
                 let n = 0;
                 let m = 0;
                 for (let i = start; i <= end; i++) {
-                    const a = cs.apt[i];
+                    const a = list[i];
                     if (!a || cs.net[i] == null) continue;
                     m++;
                     if (cs.net[i] >= a.v) n++;
                 }
-                if (m) parts.push(T('pc.sum.aptBeat', { n: fmtInt(n), m: fmtInt(m) }));
-            }
+                return m ? { n: fmtInt(n), m: fmtInt(m) } : null;
+            };
+            const bApt = aptVals ? beat(cs.apt) : null;
+            if (bApt) parts.push(T('pc.sum.aptBeat', bApt));
+            const bGn = gnVals ? beat(cs.gn) : null;
+            if (bGn) parts.push(T('pc.sum.gnBeat', Object.assign({ name: gnName() }, bGn)));
             summary.textContent = parts.join(' · ');
             plot.setAttribute('aria-label', T('pc.plotAria', { metric: T(metric.key) }));
 
             cpiNote.hidden = !realOn;
             if (realOn) cpiNote.textContent = T('pc.real.note', { ym: ymLabel(cpi.latest) });
-            cmpNote.hidden = !(netOn || aptVals || unit);
+            cmpNote.hidden = !(netOn || aptVals || gnVals || unit);
             if (!cmpNote.hidden) {
                 cmpNote.textContent = [
                     unit ? T('pc.c.note', { span: T('pc.c.span' + unit) }) : '',
                     netOn ? T('pc.cmp.noteTax') : '',
                     aptVals ? T(apt.estimatedBefore ? 'pc.cmp.noteAptEst' : 'pc.cmp.noteApt', { ym: ymLabel(apt.estimatedBefore || apt.actualFrom || apt.latest) }) : '',
+                    gnVals ? T(aptVals ? 'pc.cmp.noteGn' : gn.estimatedBefore ? 'pc.cmp.noteGnOnlyEst' : 'pc.cmp.noteGnOnly', { name: gnName(), ym: ymLabel(gn.estimatedBefore || apt.actualFrom || gn.latest) }) : '',
+                    gnVals && gn.name !== '강남구' ? T('pc.cmp.gnAreaNote') : '',
                 ].filter(Boolean).join(' ');
             }
             renderNav(metric, ser, useLog);
@@ -974,6 +1005,7 @@
             S.mas.forEach(n => { const v = ser.ma[n][i]; if (ok(v)) layer.appendChild(svg('circle', { class: 'pc-dot pc-dot-ma' + n, cx: x(i), cy: y(v), r: 4 })); });
             if (S.grey && ok(S.grey[i])) layer.appendChild(svg('circle', { class: 'pc-dot pc-dot-real', cx: x(i), cy: y(S.grey[i]), r: 4 }));
             if (S.aptOn && S.cs.apt[i] && ok(S.cs.apt[i].v)) layer.appendChild(svg('circle', { class: 'pc-dot pc-dot-apt', cx: x(i), cy: y(S.cs.apt[i].v), r: 4 }));
+            if (S.gnOn && S.cs.gn[i] && ok(S.cs.gn[i].v)) layer.appendChild(svg('circle', { class: 'pc-dot pc-dot-gn', cx: x(i), cy: y(S.cs.gn[i].v), r: 4 }));
             if (ok(S.blue[i])) layer.appendChild(svg('circle', { class: 'pc-dot', cx: x(i), cy: y(S.blue[i]), r: 5 }));
             // 축 꼬리표: 아래 가로축에 회차, 오른쪽 세로축에 값
             if (ok(hv)) axisTag(layer, state.tool && pointer ? pointer.y : y(hv), fmtValue(metric, hv, true), 'pc-tag-cross', 'left');
@@ -1043,14 +1075,20 @@
             return ymLabel(key);
         }
 
-        // 비교 줄들: [색 표시, 값, 이름]. 그 달 서울 아파트 평균가, 세후로 몇 채
+        // 비교 줄들: [색 표시, 값, 이름]. 그 달 서울 · 강남 아파트 평균가, 세후로 몇 채
         function cmpLines(i, short) {
             const out = [];
             const { metric, cs } = S;
+            const est = a => (a.est ? ' · ' + T('pc.cmp.estTag') : '');
             const a = S.aptOn ? cs.apt[i] : null;
             if (a) {
-                out.push(['pc-key-apt', fmtValue(metric, a.v, short), T('pc.cmp.aptAt', { ym: ymLabel(a.ym) }) + (a.est ? ' · ' + T('pc.cmp.estTag') : '')]);
+                out.push(['pc-key-apt', fmtValue(metric, a.v, short), T('pc.cmp.aptAt', { ym: ymLabel(a.ym) }) + est(a)]);
                 if (cs.net[i] != null) out.push([null, T('pc.cmp.unitsVal', { n: (cs.net[i] / a.v).toFixed(2) }), T('pc.cmp.units')]);
+            }
+            const g = S.gnOn ? cs.gn[i] : null;
+            if (g) {
+                out.push(['pc-key-gn', fmtValue(metric, g.v, short), T('pc.cmp.gnAt', { name: gnName(), ym: ymLabel(g.ym) }) + est(g)]);
+                if (cs.net[i] != null) out.push([null, T('pc.cmp.unitsVal', { n: (cs.net[i] / g.v).toFixed(2) }), T('pc.cmp.gnUnits', { name: gnName() })]);
             }
             return out;
         }
@@ -1384,7 +1422,7 @@
                     INDICATORS.forEach(k => { state.ind[k] = false; });
                     state.tool = null;
                     state.pending = null;
-                    state.candle = null;
+                    if (!freeCandle(state.candle)) state.candle = 'm';   // 분기봉·연봉은 잠기므로 처음 화면(월봉)으로
                     state.view = { s: 0, e: len - 1 };   // 구간 설정도 잠기므로 전체 기간으로
                 }
                 render();
