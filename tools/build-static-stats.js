@@ -1148,8 +1148,8 @@ function updateAbout() {
     const block = [
         '',
         h2En('자료를 둘러보며 로또를 즐겨 보세요', 'Explore the data and enjoy the game'),
-        pEn(`지난 ${fmt(N)}회의 당첨번호로 만든 그림과 통계가 사이트 곳곳에 있습니다. 그중 두 가지를 맛보기로 옮겨 왔습니다.`,
-            `All over the site you will find charts and statistics built from ${fmt(N)} past draws. Here is a taste of two of them.`),
+        pEn(`지난 ${fmt(N)}회의 당첨번호로 만든 그림과 통계가 사이트 곳곳에 있습니다. lottodraw.kr을 통해 로또를 더 깊이 있게 즐겨 보세요.`,
+            `All over the site you will find charts and statistics built from ${fmt(N)} past draws. Enjoy the lottery in more depth with lottodraw.kr.`),
         `<h3 data-i18n-en="How often has each number come up?">번호마다 몇 번씩 나왔을까요?</h3>`,
         ABOUT.freq.figure,
         more('statistics-frequency.html', '많이 나온 번호 순위 보기 →', 'See the most frequent numbers →'),
