@@ -146,7 +146,36 @@ async function getIndex(extra, pick, label) {
     return null;
 }
 
+// 임시 탐색: 구 단위(강남구) 자료를 주는 요청 방식이 있는지 찍어 본다. 결과를 보고 지운다
+async function probe() {
+    const base = { '매물종별구분': '01', '매매전세코드': '01' };
+    const idx = { '기간': '30', '월간주간구분코드': '01', '매물종별구분': '01', '매매전세코드': '01' };
+    const tries = [
+        ['avgPrc', Object.assign({ '지역코드': '1100000000' }, base)],
+        ['avgPrc', Object.assign({ '상위지역코드': '1100000000' }, base)],
+        ['avgPrc', Object.assign({ '법정동코드': '1100000000' }, base)],
+        ['priceIndex', Object.assign({ '지역코드': '1100000000' }, idx)],
+        ['priceIndex', Object.assign({ '상위지역코드': '1100000000' }, idx)],
+        ['priceIndex', Object.assign({ '지역코드': '11' }, idx)],
+    ];
+    for (const [ep, o] of tries) {
+        const u = KB + ep + '?' + q(o);
+        try {
+            const text = await get(u);
+            const body = JSON.parse(text);
+            const data = body && body.dataBody && body.dataBody.data;
+            const rowKey = data && Object.keys(data).find(k => /데이터/.test(k) && Array.isArray(data[k]));
+            const rows = rowKey ? data[rowKey] : [];
+            const gn = rows.find(r => /강남구/.test(String(r['지역명'])));
+            console.log(`탐색 ${ep} ${JSON.stringify(o)} → 지역 ${rows.length}개${gn ? ' · 강남구 있음(' + gn['지역코드'] + ')' : ''}: ${rows.map(r => r['지역명']).join(',').slice(0, 300)}`);
+        } catch (e) {
+            console.log(`탐색 ${ep} ${JSON.stringify(o)} → 실패: ${e.message.slice(0, 200)}`);
+        }
+    }
+}
+
 async function main() {
+    await probe();
     const now = ym(new Date());
     const avgBase = { '매물종별구분': '01', '매매전세코드': '01' };
     const avgUrl = KB + 'avgPrc?' + q(avgBase);
