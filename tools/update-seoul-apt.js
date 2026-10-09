@@ -68,10 +68,15 @@ function seoulSeries(text, label) {
         || rows.find(r => /^11/.test(String(r['지역코드'] || '')));
     if (!row) throw new Error(`${label}: 서울 줄이 없다 (지역: ${rows.map(r => r['지역명'] + '/' + r['지역코드']).slice(0, 30).join(', ')})`);
     const listKey = Object.keys(row).find(k => Array.isArray(row[k]));
-    const vals = row[listKey] || [];
+    const vals = (row[listKey] || []).slice();
     const dates = data[dateKey];
-    // 날짜와 값 개수가 다르면 어느 쪽이 어긋났는지 알 수 없다 — 응답 모양을 찍고 쓰지 않는다
-    if (vals.length !== dates.length) {
+    // 지수 응답은 값 목록 끝에 변동률 몇 개(전월 대비 등)가 더 붙어 온다(2026-10 확인: 날짜 361 · 값 364, 마지막 달 값 다음에
+    // 1.13 · 10.30 · 15.04). 그래서 값이 조금(5개 이하) 많으면 앞에서부터 날짜 수만큼만 쓴다.
+    // 그 밖에 개수가 다르면 어느 쪽이 어긋났는지 알 수 없다 — 응답 모양을 찍고 쓰지 않는다
+    if (vals.length > dates.length && vals.length - dates.length <= 5) {
+        console.log(`  ${label}: 값 끝에 붙은 ${vals.length - dates.length}개(${JSON.stringify(vals.slice(dates.length))})는 변동률로 보고 뺀다`);
+        vals.length = dates.length;
+    } else if (vals.length !== dates.length) {
         const brief = a => JSON.stringify(a.slice(0, 4)) + ' … ' + JSON.stringify(a.slice(-4));
         throw new Error(`${label}: 날짜 ${dates.length}개 · 값 ${vals.length}개가 다르다. 데이터 키: ${Object.keys(data).join(', ')} · 줄 키: ${Object.keys(row).join(', ')}`
             + ` · 날짜 ${brief(dates)} · 값 ${brief(vals)} · 다른 키: ${JSON.stringify(Object.fromEntries(Object.keys(data).filter(k => k !== dateKey && k !== rowKey).map(k => [k, data[k]]))).slice(0, 400)}`);
@@ -89,15 +94,10 @@ function seoulSeries(text, label) {
 async function main() {
     const now = ym(new Date());
     const avgUrl = KB + 'avgPrc?' + q({ '매물종별구분': '01', '매매전세코드': '01' });
-    // 지수는 기본으로 최근 2년만 준다. 기간을 넓히는 이름이 문서에 없어 몇 가지를 차례로 시도한다
+    // 지수는 기간을 안 주면 최근 2년만 준다
     const idxBase = { '월간주간구분코드': '01', '매물종별구분': '01', '매매전세코드': '01' };
-    const idxUrls = [
-        Object.assign({ '기간': '30' }, idxBase),
-        Object.assign({ '기간': '전체' }, idxBase),
-        Object.assign({ '조회시작일자': '200201', '조회종료일자': now.replace('-', '') }, idxBase),
-        Object.assign({ '시작년월': '200201', '종료년월': now.replace('-', '') }, idxBase),
-        Object.assign({ '기간': '99' }, idxBase),
-    ].map(o => KB + 'priceIndex?' + q(o));
+    // 기간은 햇수다(2026-10 확인: 30 → 1996-09부터, 99 → 1986-01부터, '전체'는 400 오류)
+    const idxUrls = ['30', '99'].map(n => KB + 'priceIndex?' + q(Object.assign({ '기간': n }, idxBase)));
     console.log('평균 매매가격:', avgUrl);
     const avgMan = seoulSeries(await get(avgUrl), '평균가');
     // 만 원 → 원
