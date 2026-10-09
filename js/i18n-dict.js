@@ -136,6 +136,8 @@ window.I18N_DICT = {
     'pc.r.n':        { ko: '최근 {n}회', en: 'Last {n}' },
     'pc.r.all':      { ko: '전체', en: 'All' },
     'pc.pro.title':  { ko: '이용권 기능', en: 'Pass features' },
+    'pc.row.metric': { ko: '지표', en: 'Metric' },
+    'pc.row.amount': { ko: '금액 기준', en: 'Amounts' },
     'pc.pro.range':  { ko: '구간 설정', en: 'Range' },
     'pc.pro.ind':    { ko: '보조지표', en: 'Indicators' },
     'pc.pro.draw':   { ko: '그림도구', en: 'Drawing' },

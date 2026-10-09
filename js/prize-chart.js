@@ -271,26 +271,22 @@
             if (!frame) frame = g.requestAnimationFrame(() => { frame = 0; render(); });
         }
 
-        /* 조작 줄 */
-        function segGroup(aria, items, isOn, onPick) {
-            const box = el('div', { className: 'pchart-seg', role: 'group', 'aria-label': aria });
-            items.forEach(it => {
-                box.appendChild(el('button', { type: 'button', 'data-v': String(it.v), 'aria-pressed': 'false', text: it.label,
-                    on: { click: () => onPick(it.v) } }));
-            });
-            box.paint = () => box.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(isOn(b.dataset.v))));
-            return box;
-        }
-        const metricSeg = segGroup(T('pc.metricAria'), METRICS.map(m => ({ v: m.id, label: T(m.key) })),
-            v => v === state.metric, v => { state.metric = v; state.pending = null; render(); });
-        const realBtn = el('button', { type: 'button', 'aria-pressed': 'false', text: T('pc.real'), on: { click: () => {
+        /* 그래프 도구: 큰 사각형 하나 안에 줄마다 [이름 | 모서리 없는 사각 단추들] */
+        const cell = (label, on) => el('button', { type: 'button', className: 'pt-btn', 'aria-pressed': 'false', text: label, on: { click: on } });
+        const metricBtns = METRICS.map(m => {
+            const b = cell(T(m.key), () => { state.metric = m.id; state.pending = null; render(); });
+            b.dataset.v = m.id;
+            return b;
+        });
+        // 금액 기준: 당시 금액 / 물가 반영(지금 돈 가치). 당첨자 수에서는 둘 다 꺼진다
+        function setReal(on) {
             if (byId(state.metric).unit !== 'won') return;
-            state.real = !state.real;
+            state.real = on;
             state.pending = null;
             render();
-        } } });
-        const realSeg = el('div', { className: 'pchart-seg pchart-real', role: 'group', 'aria-label': T('pc.real') }, [realBtn]);
-        if (!cpi) realSeg.hidden = true;
+        }
+        const nominalBtn = cell(T('pc.real.nominal'), () => setReal(false));
+        const realBtn = cell(T('pc.real'), () => setReal(true));
         const cpiNote = el('p', { className: 'pchart-cpi-note', hidden: '' });
         // 출처 한 줄 (늘 보인다). 물가지수 출처 이름·링크는 cpi-data.json 이 정한다 — 받은 곳이 바뀌면 같이 바뀐다
         const cpiCredit = () => {
@@ -306,7 +302,7 @@
             T('pc.src.cpiTail', { ym: ymLabel(cpi.latest) }),
         ] : []));
 
-        const chip = (label, on) => el('button', { type: 'button', className: 'pchart-chip', 'aria-pressed': 'false', text: label, on: { click: on } });
+        const chip = cell;
         const indChips = { avg: chip(T('pc.i.avg'), () => toggleInd('avg')) };
         MA.forEach(n => { indChips['ma' + n] = chip(T('pc.i.maChip', { n: n }), () => toggleInd('ma' + n)); });
         indChips.log = chip(T('pc.i.log'), () => toggleInd('log'));
@@ -334,17 +330,20 @@
             T('pc.pro.note') + ' ',
             el('a', { href: 'statistics.html', text: T('pc.pro.see') }),
         ]);
-        // 이용권 칸: 머리(제목·확인 표시·안내) 아래로 묶음마다 한 줄 — 왼쪽 이름, 오른쪽 같은 크기 사각 단추 격자
-        const group = (label, buttons) => el('div', { className: 'pchart-pro-group', role: 'group', 'aria-label': label }, [
-            el('span', { className: 'pchart-pro-label', text: label }),
-            el('div', { className: 'pchart-pro-btns' }, buttons),
+        // 한 줄: 왼쪽 이름 칸(유료 줄은 아래에 "이용권"), 오른쪽 단추 칸들. 단추는 1px 선으로만 나뉜다
+        const row = (label, buttons, paid) => el('div', { className: 'pt-row' + (paid ? ' is-paid' : ''), role: 'group', 'aria-label': label }, [
+            el('div', { className: 'pt-label' }, [el('span', { text: label }), paid ? el('small', { className: 'pt-paid', text: T('pc.pro.badge') }) : null]),
+            el('div', { className: 'pt-btns' }, buttons),
         ]);
-        const pro = el('div', { className: 'pchart-pro is-locked' }, [
-            el('div', { className: 'pchart-pro-head' }, [el('span', { className: 'pchart-pro-title', text: T('pc.pro.title') }), badge]),
-            proNote,
-            group(T('pc.pro.range'), rangeChips.concat([zoomIn, zoomOut])),
-            group(T('pc.pro.ind'), INDICATORS.map(k => indChips[k])),
-            group(T('pc.pro.draw'), [toolChips.h, toolChips.t, toolChips.undo, toolChips.clear]),
+        const realRow = row(T('pc.row.amount'), [nominalBtn, realBtn]);
+        if (!cpi) realRow.hidden = true;
+        const pro = el('div', { className: 'pchart-tools is-locked' }, [
+            row(T('pc.row.metric'), metricBtns),
+            realRow,
+            row(T('pc.pro.range'), rangeChips.concat([zoomIn, zoomOut]), true),
+            row(T('pc.pro.ind'), INDICATORS.map(k => indChips[k]), true),
+            row(T('pc.pro.draw'), [toolChips.h, toolChips.t, toolChips.undo, toolChips.clear], true),
+            el('div', { className: 'pt-foot' }, [badge, proNote]),
         ]);
 
         const legend = el('div', { className: 'pchart-legend', hidden: '' });
@@ -385,7 +384,7 @@
 
         root.textContent = '';
         root.classList.add('pchart-body');
-        [el('div', { className: 'pchart-controls' }, [metricSeg, realSeg]), pro, stage, hint, summary, cpiNote, live, table,
+        [pro, stage, hint, summary, cpiNote, live, table,
             el('p', { className: 'pchart-note', text: T('pc.note') }), sourceLine].forEach(n => root.appendChild(n));
 
         /* 보조지표 · 그림도구 */
@@ -433,7 +432,7 @@
         }
 
         function paintControls() {
-            metricSeg.paint();
+            metricBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === state.metric)));
             const w = state.view.e - state.view.s + 1;
             const lockIf = (c, off) => { if (off) c.setAttribute('aria-disabled', 'true'); else c.removeAttribute('aria-disabled'); };
             rangeChips.forEach(c => { c.setAttribute('aria-pressed', String(state.unlocked && isPreset(Number(c.dataset.v)))); lockIf(c, !state.unlocked); });
@@ -442,8 +441,10 @@
             nav.hidden = !state.unlocked;     // 작은 그래프(구간 옮기기)도 이용권 기능
             const wonMetric = byId(state.metric).unit === 'won';
             realBtn.setAttribute('aria-pressed', String(!!(state.real && wonMetric)));
-            realBtn.disabled = !wonMetric;
+            nominalBtn.setAttribute('aria-pressed', String(!(state.real && wonMetric) && wonMetric));
+            [realBtn, nominalBtn].forEach(b => { if (wonMetric) b.removeAttribute('aria-disabled'); else b.setAttribute('aria-disabled', 'true'); });
             realBtn.title = !cpi ? '' : wonMetric ? T('pc.realTitle', { ym: ymLabel(cpi.latest) }) : T('pc.realNo');
+            nominalBtn.title = wonMetric ? '' : T('pc.realNo');
             const isWon = byId(state.metric).unit === 'won';
             pro.classList.toggle('is-locked', !state.unlocked);
             badge.textContent = state.unlocked ? T('pc.pro.badgeOn') : T('pc.pro.badge');
