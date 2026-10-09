@@ -1349,3 +1349,17 @@ html.home { scroll-behavior: smooth; }
 .btn.my-danger { color: var(--error); }
 .acct-menu .acct-my { font-weight: bold; }
 @media (max-width: 699px) { .my-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* ───── 공유 줄 (js/share.js) ───── */
+.share-bar { margin: 28px 0 8px; padding: 12px 14px; border: 1px solid #c9d1de; background: #f6f8fb; }
+.prose .share-bar h2 { margin: 0 0 8px; color: var(--text); font-size: 15px; }
+.share-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+.share-btn {
+    display: inline-flex; align-items: center; justify-content: center; min-height: 34px; margin: 0; padding: 0 14px;
+    border: 1px solid #c9d1de; border-radius: 0; background: #fff; color: var(--text);
+    font: 13px/1 var(--font); text-decoration: none; cursor: pointer; white-space: nowrap;
+}
+.share-btn:hover { border-color: var(--brand); color: var(--brand); }
+.share-btn.is-main { border-color: var(--brand); background: var(--brand); color: #fff; font-weight: bold; }
+.share-btn.is-main:hover { background: var(--brand-dark); color: #fff; }
+.share-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }

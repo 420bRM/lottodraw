@@ -338,6 +338,9 @@ module.exports = function buildBlog(ctx) {
                     return `<li><a href="../${page}" data-i18n-en="${esc(nameEn + ' →')}">${esc(name + ' →')}</a><span data-i18n-en="${esc(noteEn)}">${esc(note)}</span></li>`;
                 }).join('') + '</ul></section>'
             : '';
+        // 공유 줄: 단추는 js/share.js 가 단다(휴대폰 공유 창 · 링크 복사 · X · 페이스북 · 네이버 · 밴드)
+        const share = `<section class="share-bar" data-share data-url="${esc(url)}" data-title="${esc(p.title)}"${p.en ? ` data-title-en="${esc(p.en.title)}"` : ''} aria-labelledby="share-t-${p.slug}">`
+            + `<h2 id="share-t-${p.slug}" data-i18n="share.h">이 글 공유하기</h2><div class="share-btns"></div></section>`;
         const navLink = (q, key, label) => `<a href="${q.slug}.html"><small data-i18n="${key}">${label}</small><span${tr(q.en && esc(q.en.title))}>${esc(q.title)}</span></a>`;
         const postNav = prev || next
             ? '<nav class="post-nav" aria-label="이전 글과 다음 글" data-i18n-attr="aria-label:blog.prevNextAria">'
@@ -372,7 +375,8 @@ module.exports = function buildBlog(ctx) {
                 author: { '@type': 'Organization', name: 'lottodraw.kr', url: SITE + '/' },
                 publisher: { '@type': 'Organization', name: 'lottodraw.kr', url: SITE + '/' },
             }],
-            body: [toc, p.body, related, postNav],
+            body: [toc, p.body, share, related, postNav],
+            scripts: ['js/share.js'],
         }));
     });
 

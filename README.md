@@ -56,6 +56,7 @@
 | `cpi-data.json` | **월별 소비자물가지수(총지수)**. 그래프 "물가 반영"이 쓴다. `tools/update-cpi.js` 가 받는다(손으로 고치지 않는다). `credit`·`link` 가 그래프 아래 출처 줄에 그대로 나온다(지금은 OECD, DBnomics 경유) |
 | `tools/update-cpi.js` · `.github/workflows/update-cpi.yml` | 물가지수 받기. 매월 7일 10:20 KST 예약 실행 + 이 두 파일을 고쳐 푸시하면 그 브랜치에서 한 번. 받는 곳: ECOS(비밀값 `ECOS_API_KEY` 가 있을 때) → OECD → FRED → DBnomics. 1회 달(2002-12)부터 빠짐없고 마지막 달이 6개월 안쪽일 때만 저장 |
 | `js/mypage.js` | 마이페이지 그리기. 로그인 정보는 `LottoAccount`(`refresh`·`logout`·`withdraw`·`openNick`), 이용권은 `LottoLicense` |
+| `js/share.js` | 공유 줄 단추 달기: `[data-share]` 안의 `.share-btns` 에 휴대폰 공유 창(Web Share, 카톡 등) · 링크 복사 · X · 페이스북 · 네이버 · 밴드. 주소는 `data-url`, 제목은 `data-title`(영어 화면이면 `data-title-en` + `?lang=en`). 카톡 전용 카드는 카카오 앱 키가 있어야 해서 아직 없음 |
 | `js/prize-chart.js` | TOP 50 페이지의 회차별 그래프(SVG). **지표는 맨 위 `METRICS` 에 한 줄씩 늘린다** — 판매액·2~5등을 넣으려면 먼저 `tools/update-lotto-data.js` 가 그 값을 받아 `lotto-data.json` 에 넣어야 한다. 계산 시험: `node tools/test-prize-chart.js` |
 | `js/license.js` | 이용권 키의 서명·기간·환불 여부를 **브라우저 안에서** 판정 |
 | `js/premium.js` | 결제 페이지: 주문서, 입금 안내, 주문 상태 확인, 잠금/해제 |
@@ -69,7 +70,7 @@
 | `tools/wait-for-draw.js` | 토요일 밤 추첨 결과(1등 당첨자 수까지)가 나올 때까지 기다리기 (`draw-night` 이 쓴다) |
 | `tools/indexnow.js` | 바뀐 페이지를 네이버·Bing 에 바로 알리기 (IndexNow) |
 | `tools/build-static-stats.js` | 통계 페이지, 회차 페이지, 블로그, 사이트맵 다시 만들기 |
-| `tools/build-blog.js` | 블로그 원고로 `blog/` 만들기 (`build-static-stats.js` 가 불러 쓴다) |
+| `tools/build-blog.js` | 블로그 원고로 `blog/` 만들기 (`build-static-stats.js` 가 불러 쓴다). 글마다 본문 끝에 공유 줄을 붙인다. 생성 페이지에 스크립트를 더 실으려면 `shell()` 의 `scripts` 옵션 |
 | `content/blog/*.md` `content/blog/en/*.md` | **블로그 원고(한국어·영어). 글을 고칠 곳은 여기다** |
 | `.github/workflows/update-lotto-data.yml` | 수집 → 페이지 생성 → 배포 → 색인 요청. `draw-night` 이 토요일 밤에 실행하고, 일·월 예약은 안전망 |
 | `.github/workflows/draw-night.yml` | 토요일 낮부터 기다렸다가 추첨 결과가 나오면 `update-lotto-data` 를 바로 실행 |
@@ -573,6 +574,7 @@ Dropbox `260914 클로드` 폴더의 README와 CLAUDE.md는 **실제로 적용�
 
 | 날짜 | 어디서 | 한 일 |
 |---|---|---|
+| 2026-10-09 | Claude Code 웹 | **블로그 글 공유 단추**(`js/share.js`): 글 15편 본문 끝(관련 페이지 위)에 '이 글 공유하기' 줄 — 휴대폰은 '공유하기 (카톡 등)'로 기기 공유 창, 어디서나 링크 복사 · X · 페이스북 · 네이버 · 밴드. 영어 화면에서는 영어 제목과 `?lang=en` 주소로 공유. 카톡 전용 카드는 카카오 앱 키를 받으면 추가 |
 | 2026-10-09 | Claude Code 웹 | 그래프 **순서**: 그래프 위에는 '지표' 상자(단추는 글자 길이만큼)만, 그 아래 그래프 → 요약 줄 → 나머지 도구 상자(금액 기준은 글자 길이만큼, 구간·보조지표·그림도구는 등분) |
 | 2026-10-09 | Claude Code 웹 | **마이페이지**(`mypage.html`, `js/mypage.js`, 계정 메뉴에 링크): 내 정보·이용권(키 보기/복사·다른 기기용 링크)·점수/순위·계정 관리. 그래프 **도구를 큰 사각형 하나로**: 줄마다 [이름 칸 | 모서리 없는 사각 단추들](1px 선으로만 나뉨) — 지표 · 금액 기준(당시 금액/물가 반영) · 구간 설정 · 보조지표 · 그림도구(유료 줄은 이름 아래 "이용권"). 휴대폰은 단추 3열 |
 | 2026-10-09 | Claude Code 웹 | 그래프 **휴대폰 정보 줄**: 좁은 화면에서는 떠 있는 툴팁 대신 그래프 위 고정 칸(2~3줄)에 회차·날짜·번호·값을 짧게 보인다(그래프를 가리지 않음, 높이를 미리 잡아 밀리지 않음). PC 는 그대로 툴팁 |

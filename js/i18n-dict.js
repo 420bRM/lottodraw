@@ -840,6 +840,14 @@ window.I18N_DICT = {
     'cm.e.fail':      { ko: '처리하지 못했습니다.', en: 'Something went wrong.' },
     'react.add':      { ko: '반응 남기기', en: 'React' },
     'acct.mypage':    { ko: '마이페이지 →', en: 'My page →' },
+    'share.h':        { en: 'Share this post' },
+    'share.native':   { ko: '공유하기 (카톡 등)', en: 'Share…' },
+    'share.copy':     { ko: '링크 복사', en: 'Copy link' },
+    'share.copied':   { ko: '복사했습니다', en: 'Copied' },
+    'share.copyManual': { ko: '아래 주소를 복사해 주세요', en: 'Please copy this address' },
+    'share.facebook': { ko: '페이스북', en: 'Facebook' },
+    'share.naver':    { ko: '네이버', en: 'Naver' },
+    'share.band':     { ko: '밴드', en: 'Band' },
 
     /* ───── 마이페이지 (js/mypage.js) ───── */
     'my.h1':          { en: 'My page' },

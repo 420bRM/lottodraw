@@ -278,7 +278,7 @@ ${o.body.filter(Boolean).join('\n\n')}
         <p data-i18n-html="footer.copy">&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권</p>
     </footer>
 </div>
-${o.script ? `<script>\n${o.script}\n</script>\n` : ''}<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9372871176021283" crossorigin="anonymous"></script>
+${(o.scripts || []).map(src => `<script src="${base}${src}" defer></script>\n`).join('')}${o.script ? `<script>\n${o.script}\n</script>\n` : ''}<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9372871176021283" crossorigin="anonymous"></script>
 </body>
 </html>
 `;
