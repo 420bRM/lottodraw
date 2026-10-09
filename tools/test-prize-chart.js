@@ -54,6 +54,17 @@ check('휠 아래로 = 축소(폭이 는다)', P.wheelWidth(100, 100) > 100, P.w
 check('아주 작은 휠도 한 칸은 바뀐다', P.wheelWidth(12, -1) === 11 && P.wheelWidth(12, 1) === 13);
 check('터치패드 벌리기(ctrl)는 더 크게', P.wheelWidth(1000, -10, true) < P.wheelWidth(1000, -10));
 
+// 봉: 기간마다 시가(첫 회차) · 고가 · 저가 · 종가(마지막 회차), 빈 값(이월)은 건너뛴다
+const cd = P.candles(['2003-01-04', '2003-01-11', '2003-02-01', '2003-04-05', '2004-01-03'], [10, null, 30, 5, 8], 'y');
+check('연봉은 해마다 하나', cd.length === 2 && cd[0].key === '2003' && cd[1].key === '2004', JSON.stringify(cd.map(c => c.key)));
+check('시가 · 고가 · 저가 · 종가', cd[0].o === 10 && cd[0].h === 30 && cd[0].l === 5 && cd[0].c === 5, JSON.stringify(cd[0]));
+check('봉이 차지하는 회차 칸', cd[0].s === 0 && cd[0].e === 3 && cd[1].s === 4 && cd[1].e === 4);
+check('분기봉 이름', P.candles(['2003-04-05', '2003-12-27'], [1, 2], 'q').map(c => c.key).join() === '2003-Q2,2003-Q4');
+check('월봉 이름', P.candles(['2003-04-05', '2003-04-12', '2003-05-03'], [1, 2, 3], 'm').length === 2);
+check('값이 하나도 없는 기간은 시가가 null', P.candles(['2003-01-04'], [null], 'y')[0].o === null);
+const real = P.candles(data.draws.slice().sort((a, b) => a.round - b.round).map(d => d.date), data.draws.slice().sort((a, b) => a.round - b.round).map(d => d.firstPrizeWinners > 0 ? d.firstPrizeAmount * d.firstPrizeWinners : null), 'y');
+check('2003년 연봉: 고가 836억 (19회)', Math.round(real.find(c => c.key === '2003').h / 1e8) === 836, real.find(c => c.key === '2003').h);
+
 // 세후 실수령액 (tax.html 과 같은 계산)
 check('200만 원 이하는 세금 없음', P.afterTax(2000000) === 2000000);
 check('20억 → 약 13억 7,300만 (3억까지 22%, 넘는 부분 33%)', Math.round(P.afterTax(2e9) / 1e5) === 13730, P.afterTax(2e9));
