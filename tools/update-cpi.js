@@ -1,0 +1,267 @@
+// 사용: node tools/update-cpi.js
+// 한국 소비자물가지수(총지수, 월별)를 받아 cpi-data.json 으로 저장한다.
+// TOP 50 페이지 그래프의 "물가 반영"(그 회차 금액을 지금 돈 가치로 바꿔 보기)이 이 파일을 쓴다.
+//
+// 받는 곳은 위에서부터 차례로 시도한다. 셋 다 같은 통계(통계청 소비자물가지수 총지수)를 옮겨 실은 것이다.
+//   1. 한국은행 ECOS   — 저장소 비밀값 ECOS_API_KEY 가 있을 때만 (무료 인증키, ecos.bok.or.kr)
+//   2. OECD 데이터 API — 키 없이 받는다. 한국 자료는 통계청 소비자물가지수(National methodology).
+//                        주소 모양이 바뀌는 일이 있어 몇 가지 모양을 차례로 시도한다
+//   3. DBnomics        — 키 없이 받는다. OECD·BIS 자료를 옮겨 실은 것
+//   4. BIS             — 국제결제은행 장기 소비자물가지수(한국, 월별). 키 없이 받는다
+//   5. 세계은행 GEM    — 월별 소비자물가지수(계절조정 안 함). 키 없이 받는다
+//   6. FRED · DBnomics(IMF) — 2026-10 확인 때 한국 자료가 2023-11 · 2025-07 에서 멈춰 있었다(멈춘 자료는 쓰지 않는다)
+// 마지막 달이 MAX_LAG_MONTHS 보다 오래된 자료는 버린다. 어느 것도 안 되면 기존 cpi-data.json 을 그대로 두고 실패로 끝난다.
+// 기준연도(=100)는 곳마다 다를 수 있지만 상관없다. 그래프는 두 달의 비율만 쓴다.
+// 사이트에는 credit(출처 이름)과 link 를 그대로 보여 준다 — 실제로 받은 곳이 바뀌면 출처 표시도 같이 바뀐다.
+//
+// 이 컨테이너(Claude 작업 환경)에서는 위 주소들이 막혀 있어 GitHub Actions(.github/workflows/update-cpi.yml)에서 돈다.
+// 매달 7일 예약 실행과, 이 파일을 고쳐 푸시했을 때 돈다. 바뀐 게 있으면 cpi-data.json 을 커밋한다.
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+
+const ROOT = path.resolve(__dirname, '..');
+const OUT = path.join(ROOT, 'cpi-data.json');
+const FIRST = '2002-12';          // 1회 추첨 달. 이 달부터 있어야 한다
+const MAX_LAG_MONTHS = 6;         // 마지막 달이 이보다 오래되면 그 출처는 버린다(갱신이 멈춘 자료). OECD 자료는 4~5개월 늦게 올라온다
+
+const ym = d => `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+const monthsBetween = (a, b) => { const [y1, m1] = a.split('-').map(Number); const [y2, m2] = b.split('-').map(Number); return (y2 - y1) * 12 + (m2 - m1); };
+
+async function getOnce(url, accept) {
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), 90000);
+    try {
+        const res = await fetch(url, { signal: ctl.signal, headers: { 'User-Agent': 'Mozilla/5.0 (compatible; lottodraw.kr-cpi/1.0; +https://www.lottodraw.kr)', Accept: accept || '*/*' } });
+        const text = await res.text();
+        if (!res.ok) throw new Error(`HTTP ${res.status} ${text.slice(0, 200).replace(/\s+/g, ' ')}`);
+        return text;
+    } finally {
+        clearTimeout(t);
+    }
+}
+
+// 잠깐 끊긴 것이면 한 번 더 받는다. 4xx(주소가 틀림)는 다시 해도 같다
+async function get(url, accept) {
+    try {
+        return await getOnce(url, accept);
+    } catch (e) {
+        if (/HTTP 4\d\d/.test(e.message)) throw e;
+        await new Promise(r => setTimeout(r, 3000));
+        return getOnce(url, accept);
+    }
+}
+
+// OECD CSV 한 줄이 "한국 · 월별 · 소비자물가지수 · 지수 · 총지수 · 계절조정 안 함 · 변환 없음"인지
+const OECD_WANT = { REF_AREA: 'KOR', FREQ: 'M', MEASURE: 'CPI', UNIT_MEASURE: 'IX', EXPENDITURE: '_T', ADJUSTMENT: 'N', TRANSFORMATION: '_Z' };
+function parseOecdCsv(text) {
+    const rows = parseCsv(text);
+    const head = rows.shift() || [];
+    const ti = head.indexOf('TIME_PERIOD');
+    const vi = head.indexOf('OBS_VALUE');
+    if (ti < 0 || vi < 0) throw new Error('TIME_PERIOD/OBS_VALUE 칸이 없다: ' + head.join(',').slice(0, 160));
+    const cols = Object.keys(OECD_WANT).map(k => [head.indexOf(k), OECD_WANT[k]]).filter(c => c[0] >= 0);
+    const mi = head.indexOf('METHODOLOGY');
+    const out = {};
+    const method = {};
+    rows.forEach(r => {
+        if (!/^\d{4}-\d{2}$/.test(r[ti]) || r[vi] === '') return;
+        if (!cols.every(([i, want]) => r[i] === want)) return;
+        // 같은 달이 둘 이상이면 통계청 방식(N)을 고른다
+        const m = mi >= 0 ? r[mi] : 'N';
+        if (out[r[ti]] !== undefined && method[r[ti]] === 'N') return;
+        out[r[ti]] = Number(r[vi]);
+        method[r[ti]] = m;
+    });
+    return out;
+}
+const OECD_BASE = 'https://sdmx.oecd.org/public/rest/data/';
+// DBnomics 한 줄 시리즈: { series: { docs: [{ period: [...], value: [...] }] } }
+function parseDbnomics(text) {
+    const j = JSON.parse(text);
+    const doc = j && j.series && j.series.docs && j.series.docs[0];
+    if (!doc || !Array.isArray(doc.period)) throw new Error('예상과 다른 응답: ' + text.slice(0, 160));
+    const out = {};
+    doc.period.forEach((p, i) => { const v = doc.value[i]; if (/^\d{4}-\d{2}$/.test(p) && typeof v === 'number') out[p] = v; });
+    return out;
+}
+// DBnomics 는 원자료를 그대로 옮겨 싣는 곳이라, 출처는 원래 기관(credit)으로 적고 경유지(via)만 남긴다
+const dbnomics = (name, series, credit) => ({
+    name: `DBnomics (${name})`,
+    enabled: () => true,
+    url: () => `https://api.db.nomics.world/v22/series/${series}?observations=1&format=json`,
+    public: `https://db.nomics.world/${series}`,
+    credit: credit,
+    via: 'DBnomics',
+    parse: parseDbnomics,
+});
+// SDMX-CSV(TIME_PERIOD, OBS_VALUE 칸)을 그대로 읽는다 — BIS
+function parseSdmxCsv(text) {
+    const rows = parseCsv(text);
+    const head = rows.shift() || [];
+    const ti = head.indexOf('TIME_PERIOD');
+    const vi = head.indexOf('OBS_VALUE');
+    if (ti < 0 || vi < 0) throw new Error('TIME_PERIOD/OBS_VALUE 칸이 없다: ' + head.join(',').slice(0, 160));
+    const out = {};
+    rows.forEach(r => { if (/^\d{4}-\d{2}$/.test(r[ti]) && r[vi] !== '' && r[vi] !== 'NaN') out[r[ti]] = Number(r[vi]); });
+    return out;
+}
+const bis = url => ({
+    name: 'BIS 장기 소비자물가지수 (한국, 월별, 2010=100)',
+    enabled: () => true,
+    url: () => url,
+    accept: 'application/vnd.sdmx.data+csv; charset=utf-8',
+    public: 'https://data.bis.org/topics/CPI',
+    credit: { ko: '국제결제은행(BIS) 소비자물가지수', en: 'BIS consumer prices' },
+    parse: parseSdmxCsv,
+});
+
+const oecd = (flow, key, extra) => ({
+    name: `OECD 데이터 API (통계청 소비자물가지수 총지수) [${flow} ${key}]`,
+    enabled: () => true,
+    url: () => `${OECD_BASE}${flow}/${key}?startPeriod=2002-01${extra || ''}`,
+    accept: 'application/vnd.sdmx.data+csv; charset=utf-8',
+    public: 'https://data-explorer.oecd.org/',
+    credit: { ko: 'OECD 소비자물가지수 (한국 통계청 작성)', en: 'OECD consumer price indices (compiled by Statistics Korea)' },
+    parse: parseOecdCsv,
+});
+
+// 따옴표가 든 칸까지 읽는 작은 CSV 해석기
+function parseCsv(text) {
+    const rows = [];
+    let row = [];
+    let cell = '';
+    let q = false;
+    for (let i = 0; i < text.length; i++) {
+        const c = text[i];
+        if (q) {
+            if (c === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+            else if (c === '"') q = false;
+            else cell += c;
+        } else if (c === '"') q = true;
+        else if (c === ',') { row.push(cell); cell = ''; }
+        else if (c === '\n' || c === '\r') {
+            if (c === '\r' && text[i + 1] === '\n') i++;
+            row.push(cell); rows.push(row); row = []; cell = '';
+        } else cell += c;
+    }
+    if (cell || row.length) { row.push(cell); rows.push(row); }
+    return rows.filter(r => r.length > 1 || r[0]);
+}
+
+const SOURCES = [
+    {
+        name: '한국은행 ECOS (통계청 소비자물가지수 총지수, 2020=100)',
+        enabled: () => !!process.env.ECOS_API_KEY,
+        url: () => `https://ecos.bok.or.kr/api/StatisticSearch/${encodeURIComponent(process.env.ECOS_API_KEY)}/json/kr/1/1000/901Y009/M/200201/${ym(new Date()).replace('-', '')}/0`,
+        public: 'https://ecos.bok.or.kr/',
+        credit: { ko: '한국은행 경제통계시스템(ECOS) · 통계청 소비자물가지수', en: 'Bank of Korea ECOS (Statistics Korea CPI)' },
+        parse(text) {
+            const j = JSON.parse(text);
+            const rows = j && j.StatisticSearch && j.StatisticSearch.row;
+            if (!Array.isArray(rows)) throw new Error('예상과 다른 응답: ' + text.slice(0, 160));
+            const out = {};
+            rows.forEach(r => { out[`${r.TIME.slice(0, 4)}-${r.TIME.slice(4, 6)}`] = Number(r.DATA_VALUE); });
+            return out;
+        },
+    },
+    oecd('OECD.SDD.TPS,DSD_PRICES@DF_PRICES_ALL,1.0', 'KOR.M.N.CPI.IX._T.N._Z'),
+    oecd('OECD.SDD.TPS,DSD_PRICES@DF_PRICES_ALL,1.0', 'KOR.M..CPI.IX._T..'),
+    oecd('OECD.SDD.TPS,DSD_PRICES@DF_PRICES_ALL,', 'KOR.M.N.CPI.IX._T.N._Z', '&format=csvfile'),
+    oecd('OECD.SDD.TPS,DSD_PRICES_COICOP2018@DF_PRICES_C2018_ALL,1.0', 'KOR.M.N.CPI.IX._T.N._Z'),
+    dbnomics('OECD 소비자물가지수, 한국 총지수', 'OECD/DSD_PRICES@DF_PRICES_ALL/KOR.M.N.CPI.IX._T.N._Z', { ko: 'OECD 소비자물가지수 (한국 통계청 작성)', en: 'OECD consumer price indices (compiled by Statistics Korea)' }),
+    bis('https://stats.bis.org/api/v1/data/WS_LONG_CPI/M.KR.628/all?startPeriod=2002-01&format=csv'),
+    bis('https://stats.bis.org/api/v2/data/dataflow/BIS/WS_LONG_CPI/1.0/M.KR.628?c%5BTIME_PERIOD%5D=ge:2002-01&format=csv'),
+    dbnomics('BIS 장기 소비자물가지수, 한국', 'BIS/WS_LONG_CPI/M.KR.628', { ko: '국제결제은행(BIS) 소비자물가지수', en: 'BIS consumer prices' }),
+    {
+        name: '세계은행 GEM (월별 소비자물가지수, 계절조정 안 함)',
+        enabled: () => true,
+        url: () => 'https://api.worldbank.org/v2/country/KOR/indicator/CPTOTNSXN?source=15&format=json&per_page=2000&date=2002M01:2035M12',
+        public: 'https://databank.worldbank.org/source/global-economic-monitor-(gem)',
+        credit: { ko: '세계은행 GEM 소비자물가지수', en: 'World Bank GEM consumer prices' },
+        parse(text) {
+            const j = JSON.parse(text);
+            const rows = Array.isArray(j) && Array.isArray(j[1]) ? j[1] : null;
+            if (!rows) throw new Error('예상과 다른 응답: ' + text.slice(0, 160));
+            const out = {};
+            rows.forEach(r => { const m = /^(\d{4})M(\d{2})$/.exec(r.date); if (m && typeof r.value === 'number') out[`${m[1]}-${m[2]}`] = r.value; });
+            return out;
+        },
+    },
+    {
+        name: 'FRED (OECD 소비자물가지수, 한국 총지수)',
+        enabled: () => true,
+        url: () => 'https://fred.stlouisfed.org/graph/fredgraph.csv?id=KORCPIALLMINMEI',
+        public: 'https://fred.stlouisfed.org/series/KORCPIALLMINMEI',
+        credit: { ko: 'OECD 소비자물가지수 (FRED 경유)', en: 'OECD consumer price indices (via FRED)' },
+        parse(text) {
+            const rows = parseCsv(text);
+            rows.shift();
+            const out = {};
+            rows.forEach(r => { if (/^\d{4}-\d{2}-\d{2}$/.test(r[0]) && r[1] !== '.' && r[1] !== '') out[r[0].slice(0, 7)] = Number(r[1]); });
+            return out;
+        },
+    },
+    dbnomics('IMF 소비자물가지수, 한국 총지수', 'IMF/CPI/M.KR.PCPI_IX', { ko: 'IMF 소비자물가지수', en: 'IMF consumer prices' }),
+];
+
+// 1회 달부터 마지막 달까지 빠짐없이, 값은 모두 양수, 마지막 달은 최근이어야 한다
+function check(monthly) {
+    const keys = Object.keys(monthly).sort();
+    if (!keys.length) throw new Error('자료가 비었다');
+    const from = keys.find(k => k >= FIRST);
+    if (!from || keys[0] > FIRST) throw new Error(`${FIRST} 자료가 없다 (첫 달 ${keys[0]})`);
+    const last = keys[keys.length - 1];
+    const lag = monthsBetween(last, ym(new Date()));
+    if (lag > MAX_LAG_MONTHS) throw new Error(`마지막 달이 ${last} 로 ${lag}개월 전이다 (갱신이 멈춘 자료)`);
+    const out = {};
+    for (let k = FIRST, n = 0; k <= last; n++) {
+        const v = monthly[k];
+        if (!(v > 0)) throw new Error(`${k} 값이 없거나 잘못됐다: ${v}`);
+        out[k] = Math.round(v * 1000) / 1000;
+        const [y, m] = k.split('-').map(Number);
+        k = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`;
+        if (n > 1000) throw new Error('달 계산이 끝나지 않는다');
+    }
+    return { monthly: out, latest: last };
+}
+
+async function main() {
+    const errors = [];
+    for (const src of SOURCES) {
+        if (!src.enabled()) { console.log(`건너뜀: ${src.name} (설정 없음)`); continue; }
+        try {
+            const got = check(src.parse(await get(src.url(), src.accept)));
+            const prev = fs.existsSync(OUT) ? JSON.parse(fs.readFileSync(OUT, 'utf8')) : null;
+            const pick = d => JSON.stringify([d.credit, d.link, d.via || null, d.latest, d.monthly]);
+            const next = { credit: src.credit, link: src.public, via: src.via || null, latest: got.latest, monthly: got.monthly };
+            const same = !!prev && pick(prev) === pick(next);
+            const n = Object.keys(got.monthly).length;
+            console.log(`받음: ${src.name} — ${FIRST} ~ ${got.latest} (${n}개월)${same ? ', 바뀐 것 없음' : ''}`);
+            if (!same) {
+                const data = {
+                    source: src.name,
+                    credit: src.credit,          // 사이트에 보이는 출처 이름 (ko/en)
+                    link: src.public,            // 출처 이름에 거는 링크
+                    via: src.via || null,        // 원자료를 옮겨 실은 경유지(있으면)
+                    note: '월별 소비자물가지수(총지수). 그래프는 두 달의 비율만 쓰므로 기준연도와 상관없다. 매월 7일 자동 갱신(.github/workflows/update-cpi.yml).',
+                    updated: new Date().toISOString().slice(0, 10),
+                    latest: got.latest,
+                    monthly: got.monthly,
+                };
+                fs.writeFileSync(OUT, JSON.stringify(data, null, 1) + '\n');
+            }
+            if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, `changed=${same ? 'false' : 'true'}\nlatest=${got.latest}\n`);
+            return;
+        } catch (e) {
+            console.log(`실패: ${src.name} — ${e.message}`);
+            errors.push(`${src.name}: ${e.message}`);
+        }
+    }
+    console.error('물가지수를 어디서도 받지 못했다. 기존 cpi-data.json 은 그대로 둔다.\n' + errors.join('\n'));
+    process.exit(1);
+}
+
+if (require.main === module) main();
+module.exports = { parseCsv, check, SOURCES };

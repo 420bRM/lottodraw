@@ -43,6 +43,14 @@ check('짚은 회차가 제자리에 머문다', (() => { const v = P.zoomView(1
 check('최대로 축소하면 전체', same(P.zoomView(1244, zin, 4), full), JSON.stringify(P.zoomView(1244, zin, 4)));
 check('계속 확대해도 최소 폭에서 멈춘다', (() => { let v = full; for (let k = 0; k < 20; k++) v = P.zoomView(1244, v, 0.5); return v.e - v.s + 1 === P.MIN_VIEW; })());
 
+// 물가 반영: 금액 × 지수(기준 달) ÷ 지수(그 달)
+const cpi = { latest: '2026-08', monthly: { '2002-12': 50, '2014-03': 80, '2026-08': 120 } };
+check('물가 배수 = 기준 달 ÷ 그 달', Math.abs(P.realFactor(cpi, '2002-12-07') - 2.4) < 1e-9, P.realFactor(cpi, '2002-12-07'));
+check('기준 달 회차는 1배', P.realFactor(cpi, '2026-08-29') === 1);
+check('지수가 아직 없는 최근 달은 1배', P.realFactor(cpi, '2026-10-03') === 1);
+check('지수가 빠진 달은 계산하지 않는다', P.realFactor(cpi, '2010-05-01') === null);
+check('물가 자료가 없으면 계산하지 않는다', P.realFactor(null, '2010-05-01') === null);
+
 // 실제 데이터로 요약
 const draws = data.draws.slice().sort((a, b) => a.round - b.round);
 check('회차가 1부터 빠짐없이 이어진다 (그래프가 회차로 칸을 찾는다)', draws.every((d, i) => d.round === i + 1));
