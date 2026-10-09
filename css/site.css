@@ -1386,7 +1386,8 @@ html.home { scroll-behavior: smooth; }
 .share-btn.is-main:hover { background: var(--brand-dark); color: #fff; }
 .share-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
 
-/* About: 통계 그림 미리 보기 (tools/build-static-stats.js 가 채운다) */
+/* About: 자료 둘러보기 (tools/build-static-stats.js 가 채운다) */
 .prose .about-dist h3 { margin: 22px 0 6px; font-size: 16px; }
 .prose .about-more { margin: 0 0 8px; font-size: 14px; }
 .about-more a { font-weight: bold; }
+.prose .about-explore { margin: 18px 0 0; font-size: 14px; }
