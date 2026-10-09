@@ -4,8 +4,9 @@
 // 구간 설정(최근 N회·확대·축소·휠·끌어 옮기기·두 손가락·작은 그래프), 보조지표(평균선·이동평균·로그 눈금),
 // 그림도구(수평선·추세선)는 이용권이 있을 때만 켜진다. 이 잠금도 license.js 와 같은 편의 잠금이다.
 //
-// 거래소 차트처럼: 세로축은 오른쪽, 마지막 값과 이동평균 끝값은 오른쪽 축에 꼬리표로,
-// 짚은 자리는 십자선과 함께 가로축(회차)·세로축(값)에 꼬리표로 보인다.
+// 세로축 눈금은 왼쪽. 보이는 구간의 마지막 값(파란 · 회색 · 주황)은 선이 끝나는 오른쪽에 꼬리표로 붙는다(이동평균 끝값은
+// 붙이지 않는다 — 겹쳐서 읽히지 않고, 값은 짚으면 나온다). 짚은 자리는 십자선과 함께 가로축(회차)·세로축(값)에 꼬리표.
+// 봉 차트(이용권): 회차를 달·분기·해로 묶어 시가(첫 회차)·고가·저가·종가(마지막 회차). 오름 빨강 · 내림 파랑.
 //
 // 처음 열면 늘 "전체 기간 · 총 1등 당첨금"이다. 고른 지표·기간은 기억하지 않는다(보조지표만 기억한다).
 //
@@ -18,7 +19,7 @@
 // "세금: 세전/세후"는 금액 지표의 선 자체를 세후 실수령액으로 바꾼다(지금 세율, tax.html 과 같은 계산).
 // "비교: 서울 아파트 평균가"(1인당 당첨금에서만)는 그 달 서울 아파트 평균 매매가(주황, seoul-apt.json — KB부동산,
 // tools/update-seoul-apt.js 가 받는다. 2008-12 이전은 지수로 거꾸로 환산한 추정이라 점선)를 겹친다. 켜면 세후로 바꾼다.
-// 이때 튀는 몇 회차(19회 407억 등)가 세로축을 키워 아파트 선이 바닥에 붙지 않게 위쪽을 자르고 넘친 회차는 ▲로 표시한다.
+// 세로축은 기본 화면과 똑같이 잡는다(자르지 않는다). 전체 기간에서 아파트 선이 낮게 깔리면 구간·로그 눈금으로 본다.
 //
 // 지표는 METRICS 에 한 줄씩 늘린다. 판매액이나 2~5등이 lotto-data.json 에 들어오면 여기에 더하면 된다.
 // 세로축은 늘 하나다 — 단위가 다른 두 지표를 한 그림에 겹치지 않는다(겹치면 없는 상관이 보인다).
@@ -82,6 +83,35 @@
     function wheelWidth(w, dy, pinch) {
         const f = Math.exp(dy * (pinch ? 0.01 : 0.002));
         return dy < 0 ? Math.min(w - 1, Math.floor(w * f)) : Math.max(w + 1, Math.ceil(w * f));
+    }
+
+    // 봉을 묶는 기간: 'm' 달 · 'q' 분기 · 'y' 해
+    function periodKey(date, unit) {
+        const d = String(date);
+        const m = Number(d.slice(5, 7));
+        return unit === 'y' ? d.slice(0, 4) : unit === 'q' ? d.slice(0, 4) + '-Q' + Math.ceil(m / 3) : d.slice(0, 7);
+    }
+
+    // 봉: 회차를 기간으로 묶어 시가(첫 회차)·고가·저가·종가(마지막 회차). 값이 없는 회차(이월)는 건너뛴다.
+    // 돌려주는 것: [{ key, s, e(회차 칸 범위), o, h, l, c, hi, lo(최고·최저 칸) }] — 값이 하나도 없는 기간은 o 가 null
+    function candles(dates, vals, unit) {
+        const out = [];
+        let cur = null;
+        dates.forEach((date, i) => {
+            const key = periodKey(date, unit);
+            if (!cur || cur.key !== key) {
+                cur = { key: key, s: i, e: i, o: null, h: null, l: null, c: null, hi: -1, lo: -1 };
+                out.push(cur);
+            }
+            cur.e = i;
+            const v = vals[i];
+            if (v == null) return;
+            if (cur.o === null) cur.o = v;
+            cur.c = v;
+            if (cur.h === null || v > cur.h) { cur.h = v; cur.hi = i; }
+            if (cur.l === null || v < cur.l) { cur.l = v; cur.lo = i; }
+        });
+        return out;
     }
 
     /* ───── 계산 (브라우저 없이도 돈다: tools/test-prize-chart.js) ───── */
@@ -315,6 +345,7 @@
             hover: null,         // 전체 배열의 칸 번호
             cmpApt: false,       // 비교: 서울 아파트 평균가 (1인당 당첨금에서만)
             net: false,          // 세금: 세후 실수령액으로 (금액 지표만)
+            candle: null,        // 봉 차트(이용권): null(선) | 'm' | 'q' | 'y'
         };
         let drawings = store.get(DRAW_STORE) || {};
         let S = null;            // 마지막으로 그린 눈금·크기
@@ -378,6 +409,13 @@
         };
         toolChips.undo.removeAttribute('aria-pressed');
         toolChips.clear.removeAttribute('aria-pressed');
+        // 봉 차트(이용권): 선 / 월봉 / 분기봉 / 연봉
+        const CANDLES = ['', 'm', 'q', 'y'];
+        const candleChips = CANDLES.map(u => {
+            const c = chip(T(u ? 'pc.c.' + u : 'pc.c.line'), () => pickCandle(u));
+            c.dataset.v = u;
+            return c;
+        });
         // 구간 설정(이용권): 최근 N회·전체, 확대·축소. 잠겨 있으면 늘 전체 기간이다
         const rangeChips = RANGES.map(n => {
             const c = chip(n ? T('pc.r.n', { n: n }) : T('pc.r.all'), () => pickRange(n));
@@ -434,6 +472,7 @@
             realRow,
             taxRow,
             cmpRow,
+            row(T('pc.row.candle'), candleChips, true),
             row(T('pc.pro.range'), rangeChips.concat([zoomIn, zoomOut]), true),
             row(T('pc.pro.ind'), INDICATORS.map(k => indChips[k]), true),
             row(T('pc.pro.draw'), [toolChips.h, toolChips.t, toolChips.undo, toolChips.clear], true),
@@ -476,6 +515,11 @@
             proNote.classList.remove('is-flash');
             void proNote.offsetWidth;
             proNote.classList.add('is-flash');
+        }
+        function pickCandle(u) {
+            if (!state.unlocked) return flashNote();
+            state.candle = u || null;
+            render();
         }
         function pickRange(n) {
             if (!state.unlocked) return flashNote();
@@ -520,6 +564,7 @@
             const w = state.view.e - state.view.s + 1;
             const lockIf = (c, off) => { if (off) c.setAttribute('aria-disabled', 'true'); else c.removeAttribute('aria-disabled'); };
             rangeChips.forEach(c => { c.setAttribute('aria-pressed', String(state.unlocked && isPreset(Number(c.dataset.v)))); lockIf(c, !state.unlocked); });
+            candleChips.forEach(c => { c.setAttribute('aria-pressed', String(state.unlocked && (state.candle || '') === c.dataset.v)); lockIf(c, !state.unlocked); });
             lockIf(zoomIn, !state.unlocked || w <= Math.min(MIN_VIEW, len));
             lockIf(zoomOut, !state.unlocked || w >= len);
             nav.hidden = !state.unlocked;     // 작은 그래프(구간 옮기기)도 이용권 기능
@@ -570,12 +615,14 @@
             return measure.ctx ? measure.ctx.measureText(text).width : text.length * 7;
         }
 
-        // 오른쪽 세로축의 꼬리표: 값 글자 + 테두리 상자. 겹치면 어긋나게 놓는 것은 부르는 쪽이 한다
+        // 꼬리표: 값 글자 + 상자. left = 왼쪽 세로축(짚은 값), right = 선이 끝나는 오른쪽(마지막 값).
+        // 겹치면 어긋나게 놓는 것은 부르는 쪽이 한다
         const TAG_PAD = 4;
-        function axisTag(parent, yy, text, cls) {
-            const x0 = S.M.left + S.pw + 2;
+        function axisTag(parent, yy, text, cls, side) {
+            const w = Math.ceil(measure(text) + 2 * TAG_PAD);
+            const x0 = side === 'left' ? S.M.left - 2 - w : S.M.left + S.pw + 2;
             const t = svg('g', { class: 'pc-tag ' + cls });
-            t.appendChild(svg('rect', { x: x0, y: Math.round(yy) - 8, width: Math.ceil(measure(text) + 2 * TAG_PAD), height: 16, rx: 2 }));
+            t.appendChild(svg('rect', { x: x0, y: Math.round(yy) - 8, width: w, height: 16, rx: 2 }));
             t.appendChild(svg('text', { x: x0 + TAG_PAD, y: Math.round(yy) + 4 }, text));
             parent.appendChild(t);
         }
@@ -591,8 +638,11 @@
             const netOn = !!(state.net && metric.unit === 'won');
             const ser = seriesOf(metric, realOn, netOn);          // 고른 기준: 요약·이동평균·평균선이 이 값으로 잰다
             const nominal = realOn ? seriesOf(metric, false, netOn) : null;
-            const blue = realOn ? nominal.vals : ser.vals;       // 파란 선: 늘 당시 금액
-            const grey = realOn ? ser.vals : null;               // 회색 선: 지금 돈 가치 (물가 반영 때만)
+            // 봉 차트: 고른 기준(물가 반영·세후) 값으로 봉을 묶는다. 이때 선은 그리지 않는다
+            const unit = state.unlocked && state.candle ? state.candle : null;
+            const bars = unit ? ((ser.candles = ser.candles || {})[unit] = ser.candles[unit] || candles(all.map(d => d.date), ser.vals, unit)) : null;
+            const blue = unit ? ser.vals : realOn ? nominal.vals : ser.vals;   // 파란 선: 늘 당시 금액
+            const grey = unit ? null : realOn ? ser.vals : null;               // 회색 선: 지금 돈 가치 (물가 반영 때만)
             const cs = metric.id === 'each' && state.cmpApt && apt ? cmpSeries() : null;
             const aptVals = cs ? cs.aptV : null;                  // 주황: 서울 아파트 평균가
             const start = state.view.s;
@@ -608,33 +658,31 @@
             const scan = arr => { for (let i = start; i <= end; i++) { const v = arr[i]; if (v != null && v > 0) { if (v > vmax) vmax = v; if (v < vmin) vmin = v; } } };
             scan(blue);
             if (grey) scan(grey);
+            // 봉은 구간 끝에 걸친 기간의 값까지 그리므로 그 고가·저가도 넣는다
+            const shown = bars ? bars.filter(b => b.o !== null && b.e >= start && b.s <= end) : [];
+            shown.forEach(b => { if (b.h > vmax) vmax = b.h; if (b.l > 0 && b.l < vmin) vmin = b.l; });
             if (aptVals) scan(aptVals);
             mas.forEach(n => scan(ser.ma[n]));
-            // 아파트 비교 중에는 위쪽을 자른다: 보이는 파란 값의 97% 지점과 아파트값 중 큰 것의 1.15배.
-            // 튀는 몇 회차 때문에 나머지가 바닥에 붙으면 비교가 안 된다. 넘친 회차는 맨 위에 ▲ (짚으면 값이 나온다)
-            let clipped = 0;
-            if (aptVals && !useLog) {
-                const seen = [];
-                let aMax = 0;
-                for (let i = start; i <= end; i++) {
-                    if (blue[i] != null) seen.push(blue[i]);
-                    if (aptVals[i] > aMax) aMax = aptVals[i];
-                }
-                seen.sort((a, b) => a - b);
-                const cap = Math.max(aMax, seen.length ? seen[Math.floor(0.97 * (seen.length - 1))] : 0) * 1.15;
-                if (cap > 0 && vmax > cap * 1.3) {
-                    vmax = cap;
-                    for (let i = start; i <= end; i++) if (blue[i] > cap) clipped++;
-                }
-            }
             const W = Math.max(280, Math.round(plot.clientWidth || 600));
             const H = W < 600 ? 240 : 320;
             const yt = useLog && vmin < Infinity ? logTicks(vmin, vmax) : linearTicks(vmax, H < 300 ? 4 : 5, metric.unit === 'people');
             const pts = end - start + 1;
             const tickText = yt.ticks.map(v => fmtValue(metric, v, true));
-            // 오른쪽 축 폭: 눈금 글자와 꼬리표(맨 위 값 정도 길이) 중 넓은 것
+            const ok = v => v != null && (!useLog || v > 0);
+            // 왼쪽 축 폭: 눈금 글자와 짚은 값 꼬리표(맨 위 값 정도 길이) 중 넓은 것
             const axisW = Math.ceil(Math.max.apply(null, tickText.concat([fmtValue(metric, yt.max, true), fmtValue(metric, vmax || 0, true)]).map(measure)) + 2 * TAG_PAD);
-            const M = { top: 12, right: axisW + 6, bottom: 26, left: 10 };
+            // 오른쪽: 보이는 구간 마지막 값 꼬리표(파란 · 회색 · 주황)
+            const tags = [];
+            const pushTag = (arr, cls) => {
+                const i = lastOk(arr, start, end, ok);
+                if (i >= 0) tags.push({ v: arr[i], text: fmtValue(metric, arr[i], true), cls: cls });
+            };
+            pushTag(blue, 'pc-tag-main');
+            // 최근 회차는 물가 배수가 1이라 파란·회색 끝값이 같다: 하나만
+            if (grey) { pushTag(grey, 'pc-tag-real'); if (tags.length === 2 && tags[0].text === tags[1].text) tags.pop(); }
+            if (aptVals) pushTag(aptVals, 'pc-tag-apt');
+            const tagW = tags.length ? Math.ceil(Math.max.apply(null, tags.map(t => measure(t.text))) + 2 * TAG_PAD) : 0;
+            const M = { top: 12, right: tagW ? tagW + 6 : 10, bottom: 26, left: axisW + 6 };
             const pw = W - M.left - M.right;
             const ph = H - M.top - M.bottom;
             const span = Math.max(1, end - start);
@@ -645,8 +693,7 @@
             const yInv = useLog
                 ? py => Math.exp(Math.log(yt.min) + (M.top + ph - py) / ph * (Math.log(yt.max) - Math.log(yt.min)))
                 : py => yt.min + (M.top + ph - py) / ph * (yt.max - yt.min);
-            const ok = v => v != null && (!useLog || v > 0);
-            S = { metric: metric, ser: ser, blue: blue, grey: grey, netOn: netOn, aptOn: !!aptVals, cs: cs, realOn: realOn, start: start, end: end, x: x, y: y, yInv: yInv, M: M, pw: pw, ph: ph, W: W, H: H, mas: mas, ok: ok, useLog: useLog };
+            S = { metric: metric, ser: ser, blue: blue, grey: grey, bars: bars, unit: unit, netOn: netOn, aptOn: !!aptVals, cs: cs, realOn: realOn, start: start, end: end, x: x, y: y, yInv: yInv, M: M, pw: pw, ph: ph, W: W, H: H, mas: mas, ok: ok, useLog: useLog };
 
             svgRoot.textContent = '';
             svgRoot.setAttribute('viewBox', `0 0 ${W} ${H}`);
@@ -659,15 +706,13 @@
             defs.appendChild(clip);
             svgRoot.appendChild(defs);
 
-            // 눈금: 세로축은 오른쪽 (거래소 차트처럼 선이 끝나는 자리 옆에 값이 온다)
+            // 눈금: 세로축은 왼쪽
             const grid = svg('g', { class: 'pc-axis' });
-            const axisX = M.left + pw;
             yt.ticks.forEach((v, k) => {
                 const yy = Math.round(y(v)) + 0.5;
-                grid.appendChild(svg('line', { class: k === 0 && !useLog ? 'pc-base' : 'pc-grid', x1: M.left, x2: axisX, y1: yy, y2: yy }));
-                grid.appendChild(svg('text', { class: 'pc-tick', x: axisX + 2 + TAG_PAD, y: yy + 4 }, tickText[k]));
+                grid.appendChild(svg('line', { class: k === 0 && !useLog ? 'pc-base' : 'pc-grid', x1: M.left, x2: M.left + pw, y1: yy, y2: yy }));
+                grid.appendChild(svg('text', { class: 'pc-tick', x: M.left - 2 - TAG_PAD, y: yy + 4, 'text-anchor': 'end' }, tickText[k]));
             });
-            grid.appendChild(svg('line', { class: 'pc-base', x1: Math.round(axisX) + 0.5, x2: Math.round(axisX) + 0.5, y1: M.top, y2: M.top + ph }));
             const xStep = niceStep(span, Math.max(2, Math.floor(pw / 90)), true);
             const firstTick = Math.ceil(all[start].round / xStep) * xStep;
             for (let r = firstTick; r <= all[end].round; r += xStep) {
@@ -699,7 +744,7 @@
             }
             flush();
             const lw = lineWidth(pts, pw);
-            data.appendChild(svg('path', { class: 'pc-area', d: area }));
+            if (!unit) data.appendChild(svg('path', { class: 'pc-area', d: area }));
             // 선 하나(면 없이): 회색 지금 돈 가치, 이동평균
             const plain = (arr, cls, width, from, to) => {
                 let d = '';
@@ -719,7 +764,22 @@
                 if (start < cut) plain(aptVals, 'pc-apt pc-apt-est', 1.75, start, Math.min(end, cut));
                 if (end >= cut) plain(aptVals, 'pc-apt', 1.75, Math.max(start, cut), end);
             }
-            data.appendChild(svg('path', { class: 'pc-line', d: line, style: `stroke-width:${lw}px` }));
+            if (!unit) data.appendChild(svg('path', { class: 'pc-line', d: line, style: `stroke-width:${lw}px` }));
+            // 봉: 기간이 차지하는 가로 폭의 70%가 몸통, 가운데 세로선이 꼬리(최고~최저)
+            shown.forEach(b => {
+                if (!ok(b.h) || !ok(b.l)) return;
+                const xl = x(b.s - 0.5);
+                const xr = x(b.e + 0.5);
+                const cx = (xl + xr) / 2;
+                const bw = Math.max(1, (xr - xl) * 0.7);
+                const yo = y(b.o);
+                const yc = y(b.c);
+                const cls = 'pc-candle ' + (b.c >= b.o ? 'is-up' : 'is-down');
+                const g1 = svg('g', { class: cls });
+                g1.appendChild(svg('line', { x1: cx.toFixed(1), x2: cx.toFixed(1), y1: y(b.h).toFixed(1), y2: y(b.l).toFixed(1) }));
+                g1.appendChild(svg('rect', { x: (cx - bw / 2).toFixed(1), y: Math.min(yo, yc).toFixed(1), width: bw.toFixed(1), height: Math.max(1, Math.abs(yo - yc)).toFixed(1) }));
+                data.appendChild(g1);
+            });
 
             // 보조지표
             mas.forEach(n => plain(ser.ma[n], 'pc-ma pc-ma' + n, Math.min(1.25, lw)));
@@ -753,17 +813,6 @@
                 svgRoot.appendChild(rg);
             }
 
-            // 위로 넘친 회차: 맨 위에 작은 ▲
-            if (clipped) {
-                const cg = svg('g', { class: 'pc-clip' });
-                for (let i = start; i <= end; i++) {
-                    if (!(blue[i] > yt.max)) continue;
-                    const cx = x(i);
-                    cg.appendChild(svg('path', { d: `M${(cx - 3.5).toFixed(1)} ${M.top + 5}L${cx.toFixed(1)} ${M.top - 1}L${(cx + 3.5).toFixed(1)} ${M.top + 5}Z` }));
-                }
-                svgRoot.appendChild(cg);
-            }
-
             // 글자는 선 위에 (흰 테두리로 선과 겹쳐도 읽히게)
             const labels = svg('g', { class: 'pc-labels' });
             if (state.unlocked && state.ind.avg && sum.avg != null && ok(sum.avg)) {
@@ -777,25 +826,11 @@
             }
             // 끝 점
             const lastBlue = lastOk(blue, start, end, ok);
-            if (lastBlue >= 0) labels.appendChild(svg('circle', { class: 'pc-dot', cx: x(lastBlue), cy: Math.max(M.top, y(blue[lastBlue])), r: 4 }));
+            if (lastBlue >= 0 && !unit) labels.appendChild(svg('circle', { class: 'pc-dot', cx: x(lastBlue), cy: Math.max(M.top, y(blue[lastBlue])), r: 4 }));
             svgRoot.appendChild(labels);
 
-            // 오른쪽 축 꼬리표: 보이는 구간 마지막 값(파란·회색)과 이동평균 끝값. 겹치면 아래 것을 내리고, 밖으로 나가면 되민다
-            const tags = [];
-            const pushTag = (arr, cls) => {
-                const i = lastOk(arr, start, end, ok);
-                if (i >= 0) tags.push({ y: Math.max(M.top, y(arr[i])), text: fmtValue(metric, arr[i], true), cls: cls });
-            };
-            pushTag(blue, 'pc-tag-main');
-            if (grey) {
-                pushTag(grey, 'pc-tag-real');
-                // 최근 회차는 물가 배수가 1이라 파란·회색 끝값이 같다: 하나만
-                const a = tags[tags.length - 2];
-                const b = tags[tags.length - 1];
-                if (a && b && b.cls === 'pc-tag-real' && a.text === b.text) tags.pop();
-            }
-            if (aptVals) pushTag(aptVals, 'pc-tag-apt');
-            mas.forEach(n => pushTag(ser.ma[n], 'pc-tag-ma pc-tag-ma' + n));
+            // 오른쪽 꼬리표: 보이는 구간 마지막 값. 겹치면 아래 것을 내리고, 밖으로 나가면 되민다
+            tags.forEach(t => { t.y = Math.max(M.top, y(t.v)); });
             tags.sort((a, b) => a.y - b.y);
             const GAP = 17;
             for (let k = 1; k < tags.length; k++) if (tags[k].y - tags[k - 1].y < GAP) tags[k].y = tags[k - 1].y + GAP;
@@ -805,7 +840,7 @@
             }
             const tagLayer = svg('g');
             // 파란 꼬리표가 맨 위에 오게 나중에 그린다
-            tags.filter(t => t.cls !== 'pc-tag-main').concat(tags.filter(t => t.cls === 'pc-tag-main')).forEach(t => axisTag(tagLayer, t.y, t.text, t.cls));
+            tags.filter(t => t.cls !== 'pc-tag-main').concat(tags.filter(t => t.cls === 'pc-tag-main')).forEach(t => axisTag(tagLayer, t.y, t.text, t.cls, 'right'));
             svgRoot.appendChild(tagLayer);
 
             S.hoverLayer = svg('g', { class: 'pc-hover' });
@@ -815,8 +850,13 @@
             legend.textContent = '';
             const items = [];
             const tagNet = netOn ? ' (' + T('pc.tax.netTag') + ')' : '';
-            if (mas.length || rolls.length || realOn || aptVals || (state.unlocked && state.ind.avg)) items.push(['pc-key-main', T(metric.key) + tagNet + (realOn ? ' (' + T('pc.real.nominal') + ')' : '')]);
-            if (realOn) items.push(['pc-key-real', T('pc.real') + ' (' + realAs() + ')']);
+            if (unit) {
+                items.push(['pc-key-up', T('pc.c.upKey')]);
+                items.push(['pc-key-down', T('pc.c.downKey')]);
+            } else if (mas.length || rolls.length || realOn || aptVals || (state.unlocked && state.ind.avg)) {
+                items.push(['pc-key-main', T(metric.key) + tagNet + (realOn ? ' (' + T('pc.real.nominal') + ')' : '')]);
+            }
+            if (realOn && !unit) items.push(['pc-key-real', T('pc.real') + ' (' + realAs() + ')']);
             if (aptVals) {
                 items.push(['pc-key-apt', T('pc.cmp.aptLegend')]);
                 if (apt.estimatedBefore && cs.cut > start) items.push(['pc-key-apt-est', T('pc.cmp.aptEst', { ym: ymLabel(apt.actualFrom || apt.estimatedBefore) })]);
@@ -824,7 +864,6 @@
             mas.forEach(n => items.push(['pc-key-ma' + n, T('pc.i.ma', { n: n })]));
             if (state.unlocked && state.ind.avg) items.push(['pc-key-avg', T('pc.i.avg')]);
             if (rolls.length) items.push(['pc-key-roll', T('pc.legend.roll')]);
-            if (clipped) items.push(['pc-key-clip', T('pc.cmp.clipKey', { n: clipped })]);
             items.forEach(it => legend.appendChild(el('span', null, [el('i', { className: 'pchart-key ' + it[0], 'aria-hidden': 'true' }), it[1]])));
             legend.hidden = !items.length;
 
@@ -855,12 +894,12 @@
 
             cpiNote.hidden = !realOn;
             if (realOn) cpiNote.textContent = T('pc.real.note', { ym: ymLabel(cpi.latest) });
-            cmpNote.hidden = !(netOn || aptVals);
+            cmpNote.hidden = !(netOn || aptVals || unit);
             if (!cmpNote.hidden) {
                 cmpNote.textContent = [
+                    unit ? T('pc.c.note', { span: T('pc.c.span' + unit) }) : '',
                     netOn ? T('pc.cmp.noteTax') : '',
                     aptVals ? T(apt.estimatedBefore ? 'pc.cmp.noteAptEst' : 'pc.cmp.noteApt', { ym: ymLabel(apt.estimatedBefore || apt.actualFrom || apt.latest) }) : '',
-                    clipped ? T('pc.cmp.clipNote', { v: fmtValue(metric, yt.max, true) }) : '',
                 ].filter(Boolean).join(' ');
             }
             renderNav(metric, ser, useLog);
@@ -928,17 +967,16 @@
             layer.appendChild(svg('line', { class: 'pc-cross', x1: xx, x2: xx, y1: M.top, y2: M.top + ph }));
             // 가로 십자선: 그림도구를 쓰는 중이면 손가락 높이, 아니면 파란 선 값에 붙는다
             const hv = state.tool && pointer ? S.yInv(pointer.y) : S.blue[i];
-            const yc = v => Math.max(M.top, y(v));    // 위로 잘린 값(▲)은 맨 위에
             if (ok(hv)) {
-                const hy = Math.round(state.tool && pointer ? pointer.y : yc(hv)) + 0.5;
+                const hy = Math.round(state.tool && pointer ? pointer.y : y(hv)) + 0.5;
                 layer.appendChild(svg('line', { class: 'pc-cross', x1: M.left, x2: M.left + S.pw, y1: hy, y2: hy }));
             }
             S.mas.forEach(n => { const v = ser.ma[n][i]; if (ok(v)) layer.appendChild(svg('circle', { class: 'pc-dot pc-dot-ma' + n, cx: x(i), cy: y(v), r: 4 })); });
             if (S.grey && ok(S.grey[i])) layer.appendChild(svg('circle', { class: 'pc-dot pc-dot-real', cx: x(i), cy: y(S.grey[i]), r: 4 }));
             if (S.aptOn && S.cs.apt[i] && ok(S.cs.apt[i].v)) layer.appendChild(svg('circle', { class: 'pc-dot pc-dot-apt', cx: x(i), cy: y(S.cs.apt[i].v), r: 4 }));
-            if (ok(S.blue[i])) layer.appendChild(svg('circle', { class: 'pc-dot', cx: x(i), cy: yc(S.blue[i]), r: 5 }));
+            if (ok(S.blue[i])) layer.appendChild(svg('circle', { class: 'pc-dot', cx: x(i), cy: y(S.blue[i]), r: 5 }));
             // 축 꼬리표: 아래 가로축에 회차, 오른쪽 세로축에 값
-            if (ok(hv)) axisTag(layer, state.tool && pointer ? pointer.y : yc(hv), fmtValue(metric, hv, true), 'pc-tag-cross');
+            if (ok(hv)) axisTag(layer, state.tool && pointer ? pointer.y : y(hv), fmtValue(metric, hv, true), 'pc-tag-cross', 'left');
             const xl = T('pc.xTick', { n: all[i].round });
             const xw = Math.ceil(measure(xl) + 2 * TAG_PAD);
             const xl0 = Math.max(0, Math.min(S.W - xw, x(i) - xw / 2));
@@ -955,15 +993,17 @@
                 tip.appendChild(el('p', { className: 'pchart-tip-balls', 'aria-label': T('pc.numbersAria', { nums: d.numbers.join(', '), bonus: d.bonus }) },
                     d.numbers.map(ball).concat([el('span', { className: 'plus', text: '+' }), ball(d.bonus)])));
             }
-            const row = (keyClass, value, label) => tip.appendChild(el('p', { className: 'pchart-tip-row' }, [
+            const row = (keyClass, value, label, cls) => tip.appendChild(el('p', { className: 'pchart-tip-row' + (cls ? ' ' + cls : '') }, [
                 keyClass ? el('i', { className: 'pchart-key ' + keyClass, 'aria-hidden': 'true' }) : el('i', { className: 'pchart-key pc-key-none', 'aria-hidden': 'true' }),
                 el('b', { text: value }), el('span', { text: label }),
             ]));
             // 물가 반영 중이면: 당시 금액 / 지금 돈 가치 / 물가가 몇 배 올랐나 (툴팁이 넓어지지 않게 이름표는 짧게)
-            row('pc-key-main', fmtValue(metric, S.blue[i]), (S.realOn ? T('pc.real.nominal') : T(metric.key)) + (S.netOn ? ' (' + T('pc.tax.netTag') + ')' : ''));
+            row('pc-key-main', fmtValue(metric, S.blue[i]), mainLabel());
+            const bar = barAt(i);
+            if (bar) row(null, ohlcText(bar), T('pc.c.of', { p: periodLabel(bar.key) }), 'is-ohlc');   // 길어서 이름이 다음 줄로 넘어갈 수 있다
             if (S.netOn) row(null, fmtValue(metric, seriesOf(metric).vals[i]), T('pc.tax.grossRow'));
             if (S.realOn) {
-                row('pc-key-real', fmtValue(metric, S.grey[i]), realAs());
+                if (S.grey) row('pc-key-real', fmtValue(metric, S.grey[i]), realAs());
                 const f = realFactor(cpi, d.date);
                 if (f) row(null, '×' + f.toFixed(2), T('pc.real.factor'));
             }
@@ -978,6 +1018,29 @@
             if (left < 0) left = Math.max(0, Math.min(S.W - tw, x(i) - tw / 2));
             tip.style.left = left + 'px';
             tip.style.top = M.top + 'px';
+        }
+
+        // 짚은 회차 값의 이름표: 봉일 때는 고른 기준(지금 돈 가치 등), 선일 때 물가 반영이면 파란 선 = 당시 금액
+        function mainLabel() {
+            const net = S.netOn ? ' (' + T('pc.tax.netTag') + ')' : '';
+            if (S.unit) return T(S.metric.key) + net + (S.realOn ? ' (' + realAs() + ')' : '');
+            return (S.realOn ? T('pc.real.nominal') : T(S.metric.key)) + net;
+        }
+        // 봉: 그 회차가 든 기간, "시 · 고 · 저 · 종", 기간 이름
+        function barAt(i) {
+            if (!S.bars) return null;
+            const b = S.bars.find(q => i >= q.s && i <= q.e);
+            return b && b.o !== null ? b : null;
+        }
+        function ohlcText(b) {
+            const f = v => fmtValue(S.metric, v, true);
+            return T('pc.c.ohlc', { o: f(b.o), h: f(b.h), l: f(b.l), c: f(b.c) });
+        }
+        function periodLabel(key) {
+            const y = key.slice(0, 4);
+            if (key.length === 4) return T('pc.c.pY', { y: y });
+            if (key.indexOf('-Q') > 0) return T('pc.c.pQ', { y: y, q: key.slice(-1) });
+            return ymLabel(key);
         }
 
         // 비교 줄들: [색 표시, 값, 이름]. 그 달 서울 아파트 평균가, 세후로 몇 채
@@ -1007,10 +1070,12 @@
                 keyClass ? el('i', { className: 'pchart-key ' + keyClass, 'aria-hidden': 'true' }) : null,
                 el('b', { text: value }), ' ' + label,
             ]));
-            item('pc-key-main', fmtValue(metric, S.blue[i]), (S.realOn ? T('pc.real.nominal') : T(metric.key)) + (S.netOn ? ' (' + T('pc.tax.netTag') + ')' : ''));
+            item('pc-key-main', fmtValue(metric, S.blue[i]), mainLabel());
+            const bar = barAt(i);
+            if (bar) item(null, ohlcText(bar), T('pc.c.of', { p: periodLabel(bar.key) }));
             if (S.netOn) item(null, fmtValue(metric, seriesOf(metric).vals[i], true), T('pc.tax.grossRow'));
             if (S.realOn) {
-                item('pc-key-real', fmtValue(metric, S.grey[i], true), realAs());
+                if (S.grey) item('pc-key-real', fmtValue(metric, S.grey[i], true), realAs());
                 const f = realFactor(cpi, d.date);
                 if (f) item(null, '×' + f.toFixed(2), T('pc.real.factor'));
             }
@@ -1319,6 +1384,7 @@
                     INDICATORS.forEach(k => { state.ind[k] = false; });
                     state.tool = null;
                     state.pending = null;
+                    state.candle = null;
                     state.view = { s: 0, e: len - 1 };   // 구간 설정도 잠기므로 전체 기간으로
                 }
                 render();
@@ -1336,6 +1402,7 @@
         zoomView: zoomView,
         afterTax: afterTax,
         aptAt: aptAt,
+        candles: candles,
         viewAround: viewAround,
         wheelWidth: wheelWidth,
         MIN_VIEW: MIN_VIEW,
