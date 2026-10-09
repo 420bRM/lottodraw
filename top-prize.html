@@ -55,7 +55,7 @@
 
         <section class="pchart" id="prize-chart" aria-labelledby="pchart-title">
             <h2 id="pchart-title" data-i18n="pc.h2">회차별 1등 당첨금 그래프</h2>
-            <p class="pchart-lead" data-i18n="pc.lead">가로는 회차, 세로는 고른 지표입니다. 그래프를 짚으면 그 회차의 값이 나옵니다.</p>
+            <p class="pchart-lead" data-i18n="pc.lead">가로는 회차, 세로는 고른 지표입니다. 그래프를 짚으면 그 회차의 값과 당첨번호가 나옵니다. ＋·－ 단추나 그래프를 가로로 끌어(PC) 확대하고, 아래 작은 그래프로 보는 구간을 옮깁니다.</p>
             <div id="pchart-mount"><p class="pchart-loading" data-i18n="pc.loading">그래프를 불러오는 중…</p></div>
         </section>
 
@@ -457,6 +457,8 @@
     const subtitle = document.getElementById('subtitle');
 
     // 회차별 그래프. 보조지표·그림도구는 이용권이 확인되면 켜고, 환불·만료되면 몇 분 안에 다시 잠근다.
+    // 로그인하지 않은 사람에게는 그래프를 흐리게 보인다. 이용권 키가 있으면(로그인 없이 산 사람) 연다.
+    // 서버에 로그인이 꺼져 있거나 계정 스크립트(js/account.js)를 못 받으면 가리지 않는다 — 열 방법이 없는 잠금은 걸지 않는다.
     function mountChart(draws) {
         const box = document.getElementById('pchart-mount');
         let chart;
@@ -467,11 +469,31 @@
             box.textContent = I18N.t('top.loadFail');
             return;
         }
+        let passOk = false;
+        let accountKnown = false;
+        const hadSession = () => {
+            try { const s = JSON.parse(localStorage.getItem('lottodraw.account') || 'null'); return !!(s && s.session); } catch (e) { return false; }
+        };
+        const updateGate = () => {
+            const A = window.LottoAccount;
+            let gated;
+            if (passOk) gated = false;
+            else if (!accountKnown) gated = !hadSession();     // 확인 전: 로그인 흔적이 없으면 일단 가린다(번쩍 보였다 가려지지 않게)
+            else gated = !!(A && A.loginOn && A.loginOn() && !A.session());
+            chart.setGated(gated);
+        };
+        const onAccount = () => { accountKnown = true; updateGate(); };
+        if (window.LottoAccount && LottoAccount.ready) LottoAccount.ready.then(onAccount);
+        else document.addEventListener('lotto:account-ready', onAccount, { once: true });
+        setTimeout(() => { if (!accountKnown) onAccount(); }, 6000);
+        updateGate();
+
         const check = () => {
-            if (!window.LottoLicense || !LottoLicense.savedKey()) { chart.setUnlocked(false); return; }
+            if (!window.LottoLicense || !LottoLicense.savedKey()) { passOk = false; chart.setUnlocked(false); updateGate(); return; }
             LottoLicense.unlockState().then(state => {
-                if (state.unlocked) chart.setUnlocked(true);
-                else if (!state.offline) chart.setUnlocked(false);
+                if (state.unlocked) { passOk = true; chart.setUnlocked(true); }
+                else if (!state.offline) { passOk = false; chart.setUnlocked(false); }
+                updateGate();
             }).catch(err => console.error(err));
         };
         check();
