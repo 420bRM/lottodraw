@@ -3,8 +3,7 @@
  * 모든 공개 페이지가 읽는 js/i18n.js 가 이 파일을 붙인다 — 페이지 1,300여 개의 HTML 을 고치지 않으려고.
  * 서버(/api/config)가 로그인을 켜 두지 않았으면 아무것도 그리지 않는다.
  *
- *   머리글   "로그인 · 첫 가입 이용권 3일" 단추 → 구글 로그인 창. 배지는 이 브라우저에서 로그인한 적이 없고 이용권 키도 없을 때만
- *            보인다("3일만 무료"로 읽히지 않게, 이미 체험을 받은 사람에게 다시 권하지 않게). 로그인하면 "내 계정" 메뉴(체험 기간, 로그아웃, 탈퇴)
+ *   머리글   "로그인" 단추 → 구글 로그인 창. 체험 이야기는 머리글에 쓰지 않는다("3일만 무료"로 읽힌다) — 로그인 창 안에서만. 로그인하면 "내 계정" 메뉴(체험 기간, 로그아웃, 탈퇴)
  *   카드     오른쪽 아래 "+" → ♥(좋아요)·$(대박 기원) 중 고르기. 수는 아이콘+숫자로 누구나 보고, 누르려면 로그인.
  *            카드가 없는 페이지는 본문 끝에 하나(약관·개인정보·문의·소개 페이지는 빼고).
  *   별명     처음 가입하면 정하라고 묻고(건너뛸 수 있음), "내 계정"에서 바꾼다. 머리글 단추에 보인다.
@@ -18,7 +17,6 @@
     const CONFIG_STORE = 'lottodraw.account.config';    // sessionStorage { at, login }
     const NOTE_STORE = 'lottodraw.account.note';        // sessionStorage: 새로 고친 뒤 띄울 안내
     const KEY_STORE = 'lottodraw.premium.key';          // js/license.js 와 같은 자리
-    const SEEN_STORE = 'lottodraw.account.seen';        // 이 브라우저에서 한 번이라도 로그인했으면 '1' (로그아웃해도 남는다)
     const CACHE_MS = 10 * 60 * 1000;
     const NO_BAR = ['privacy', 'terms', 'contact', 'about', 'admin', 'ranking', 'mypage'];
 
@@ -233,7 +231,6 @@
         try {
             const got = await request('/api/auth/google', { method: 'POST', body: { credential: resp && resp.credential } });
             local.set(SESSION_STORE, { session: got.session, email: got.user.email });
-            safe(() => localStorage.setItem(SEEN_STORE, '1'));
             temp.del(ME_STORE);   // 새로 고친 뒤 내 정보와 내가 누른 좋아요를 다시 받는다
             const added = applyTrial(got.user.trial);
             if (got.trialNew) {
@@ -335,13 +332,7 @@
         if (old) old.remove();
         const wrap = el('div', { id: 'acct-head', className: 'acct-head' });
         if (!me) {
-            const days = (login && login.trialDays) || 3;
-            // 첫 가입 혜택 배지: 로그인한 적이 있거나(체험은 계정당 한 번) 이용권 키가 이미 있으면 숨긴다
-            const fresh = !safe(() => localStorage.getItem(SEEN_STORE), null) && !safe(() => localStorage.getItem(KEY_STORE), null);
-            wrap.appendChild(el('button', { type: 'button', className: 'acct-btn', title: tr('acct.btnTitle', '로그인·가입은 무료입니다. 처음 가입하면 이용권 기능을 {days}일 동안 열어 드립니다(계정당 한 번).', { days: days }), on: { click: () => openLogin() } }, [
-                tr('acct.login', '로그인'),
-                fresh ? el('span', { className: 'acct-badge', text: tr('acct.badge', '첫 가입 이용권 {days}일', { days: days }) }) : null,
-            ]));
+            wrap.appendChild(el('button', { type: 'button', className: 'acct-btn', on: { click: () => openLogin() } }, [tr('acct.login', '로그인')]));
         } else {
             const menu = el('div', { className: 'acct-menu', hidden: '' });
             const btn = el('button', { type: 'button', className: 'acct-btn is-in', 'aria-expanded': 'false', on: { click: () => {

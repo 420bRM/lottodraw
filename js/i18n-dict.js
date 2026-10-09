@@ -744,8 +744,6 @@ window.I18N_DICT = {
 
     /* ───── 로그인 · 좋아요 (js/account.js) ───── */
     'acct.login':     { ko: '로그인', en: 'Sign in' },
-    'acct.badge':     { ko: '첫 가입 이용권 {days}일', en: 'New: {days}-day pass' },
-    'acct.btnTitle':  { ko: '로그인·가입은 무료입니다. 처음 가입하면 이용권 기능을 {days}일 동안 열어 드립니다(계정당 한 번).', en: 'Signing in is free. New members get the pass features for {days} days (once per account).' },
     'acct.mine':      { ko: '내 계정', en: 'My account' },
     'acct.title':     { ko: '로그인 · 가입', en: 'Sign in / Sign up' },
     'acct.close':     { ko: '닫기', en: 'Close' },
