@@ -695,6 +695,7 @@ html.home { scroll-behavior: smooth; }
     --pc-ma240: #1baf7a;
     --pc-real: #6b7484;     /* 물가 반영(지금 돈 가치) 선. 파란 선은 늘 당시 금액 */
     --pc-apt: #e8710a;
+    --pc-gn: #a0219a;       /* 강남 아파트 평균가. 파랑 · 주황 · 회색과 색각 이상에서도 갈린다(validate_palette.js) */
     --pc-up: #e0383e;       /* 봉 오름 (국내 관례: 오름 빨강 · 내림 파랑) */
     --pc-down: #1b5fd9;      /* 서울 아파트 평균가. 파란 선 · 회색 선과 색각 이상에서도 갈린다(validate_palette.js) */
     --pc-ink: #333;
@@ -751,7 +752,8 @@ html.home { scroll-behavior: smooth; }
 .pc-key-avg { border-top-width: 1px; border-color: #777; }
 .pc-key-real { border-color: var(--pc-real); }
 .pc-key-apt { border-color: var(--pc-apt); }
-.pc-key-apt-est { border-top-style: dotted; border-color: var(--pc-apt); }
+.pc-key-gn { border-color: var(--pc-gn); }
+.pc-key-apt-est { border-top-style: dotted; border-color: #888; }   /* 점선 = 추정 (서울 · 강남 공통) */
 .pc-key-up, .pc-key-down { width: 9px; height: 11px; border: 0; }
 .pc-key-up { background: var(--pc-up); }
 .pc-key-down { background: var(--pc-down); }
@@ -788,6 +790,8 @@ html.home { scroll-behavior: smooth; }
 .pc-apt { fill: none; stroke: var(--pc-apt); stroke-linejoin: round; }
 .pc-apt-est { stroke-dasharray: 2 3; }
 .pc-dot-apt { fill: var(--pc-apt); }
+.pc-gn { fill: none; stroke: var(--pc-gn); stroke-linejoin: round; }
+.pc-dot-gn { fill: var(--pc-gn); }
 
 /* 꼬리표: 마지막 값(오른쪽, 파란·회색·주황 칠한 상자), 짚은 자리(왼쪽 축 · 아래 축, 검은 상자) */
 .pc-tag rect { stroke-width: 1; }
@@ -798,6 +802,8 @@ html.home { scroll-behavior: smooth; }
 .pc-tag-cross rect { fill: #333; stroke: #333; }
 .pc-tag-apt rect { fill: var(--pc-apt); stroke: var(--pc-apt); }
 .pc-tag-apt text { fill: #1a1a1a; }                      /* 주황 위 흰 글자는 흐리다 */
+.pc-tag-gn rect { fill: var(--pc-gn); stroke: var(--pc-gn); }
+.pc-tag-gn text { fill: #fff; }
 
 .pc-draw { stroke: var(--pc-ink); stroke-width: 1; stroke-linecap: round; }
 .pc-draw-pending { stroke-opacity: .45; }
