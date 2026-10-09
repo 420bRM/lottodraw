@@ -643,7 +643,8 @@
         const TAG_PAD = 4;
         function axisTag(parent, yy, text, cls, side) {
             const w = Math.ceil(measure(text) + 2 * TAG_PAD);
-            const x0 = side === 'left' ? S.M.left - 2 - w : S.M.left + S.pw + 2;
+            // 휴대폰(inAxis)은 왼쪽 칸이 없으니 짚은 값 꼬리표를 그래프 안 왼쪽에 겹친다
+            const x0 = side === 'left' ? (S.inAxis ? S.M.left + 2 : S.M.left - 2 - w) : S.M.left + S.pw + 2;
             const t = svg('g', { class: 'pc-tag ' + cls });
             t.appendChild(svg('rect', { x: x0, y: Math.round(yy) - 8, width: w, height: 16, rx: 2 }));
             t.appendChild(svg('text', { x: x0 + TAG_PAD, y: Math.round(yy) + 4 }, text));
@@ -692,6 +693,8 @@
             mas.forEach(n => scan(ser.ma[n]));
             const W = Math.max(280, Math.round(plot.clientWidth || 600));
             const H = W < 600 ? 240 : 320;
+            // 휴대폰: 세로축 눈금 글자를 그래프 안 왼쪽 위에 겹쳐 그려, 선이 왼쪽 끝까지 차게 한다(왼쪽 칸을 따로 두지 않는다)
+            const inAxis = W < 600;
             const yt = useLog && vmin < Infinity ? logTicks(vmin, vmax) : linearTicks(vmax, H < 300 ? 4 : 5, metric.unit === 'people');
             const pts = end - start + 1;
             const tickText = yt.ticks.map(v => fmtValue(metric, v, true));
@@ -710,7 +713,7 @@
             if (aptVals) pushTag(aptVals, 'pc-tag-apt');
             if (gnVals) pushTag(gnVals, 'pc-tag-gn');
             const tagW = tags.length ? Math.ceil(Math.max.apply(null, tags.map(t => measure(t.text))) + 2 * TAG_PAD) : 0;
-            const M = { top: 12, right: tagW ? tagW + 6 : 10, bottom: 26, left: axisW + 6 };
+            const M = { top: 12, right: tagW ? tagW + 6 : 10, bottom: 26, left: inAxis ? 1 : axisW + 6 };
             const pw = W - M.left - M.right;
             const ph = H - M.top - M.bottom;
             const span = Math.max(1, end - start);
@@ -721,7 +724,7 @@
             const yInv = useLog
                 ? py => Math.exp(Math.log(yt.min) + (M.top + ph - py) / ph * (Math.log(yt.max) - Math.log(yt.min)))
                 : py => yt.min + (M.top + ph - py) / ph * (yt.max - yt.min);
-            S = { metric: metric, ser: ser, blue: blue, grey: grey, bars: bars, unit: unit, netOn: netOn, aptOn: !!aptVals, gnOn: !!gnVals, cs: cs, realOn: realOn, start: start, end: end, x: x, y: y, yInv: yInv, M: M, pw: pw, ph: ph, W: W, H: H, mas: mas, ok: ok, useLog: useLog };
+            S = { metric: metric, ser: ser, blue: blue, grey: grey, bars: bars, unit: unit, netOn: netOn, aptOn: !!aptVals, gnOn: !!gnVals, cs: cs, realOn: realOn, start: start, end: end, x: x, y: y, yInv: yInv, M: M, pw: pw, ph: ph, W: W, H: H, mas: mas, ok: ok, useLog: useLog, inAxis: inAxis };
 
             svgRoot.textContent = '';
             svgRoot.setAttribute('viewBox', `0 0 ${W} ${H}`);
@@ -734,12 +737,14 @@
             defs.appendChild(clip);
             svgRoot.appendChild(defs);
 
-            // 눈금: 세로축은 왼쪽
+            // 눈금: 세로축은 왼쪽. 휴대폰은 그래프 안 왼쪽, 가로줄 바로 위에 흰 테두리 글자로(선 위에 그린다 — 아래 yLab)
             const grid = svg('g', { class: 'pc-axis' });
+            const yLab = svg('g', { class: 'pc-axis pc-ylab' });
             yt.ticks.forEach((v, k) => {
                 const yy = Math.round(y(v)) + 0.5;
                 grid.appendChild(svg('line', { class: k === 0 && !useLog ? 'pc-base' : 'pc-grid', x1: M.left, x2: M.left + pw, y1: yy, y2: yy }));
-                grid.appendChild(svg('text', { class: 'pc-tick', x: M.left - 2 - TAG_PAD, y: yy + 4, 'text-anchor': 'end' }, tickText[k]));
+                if (!inAxis) grid.appendChild(svg('text', { class: 'pc-tick', x: M.left - 2 - TAG_PAD, y: yy + 4, 'text-anchor': 'end' }, tickText[k]));
+                else if (v !== 0) yLab.appendChild(svg('text', { class: 'pc-tick pc-tick-in', x: M.left + 3, y: yy - 4, 'text-anchor': 'start' }, tickText[k]));   // 0 은 바닥선이라 뺀다(이월 표시와 겹친다)
             });
             const xStep = niceStep(span, Math.max(2, Math.floor(pw / 90)), true);
             const firstTick = Math.ceil(all[start].round / xStep) * xStep;
@@ -861,6 +866,7 @@
             const lastBlue = lastOk(blue, start, end, ok);
             if (lastBlue >= 0 && !unit) labels.appendChild(svg('circle', { class: 'pc-dot', cx: x(lastBlue), cy: Math.max(M.top, y(blue[lastBlue])), r: 4 }));
             svgRoot.appendChild(labels);
+            if (inAxis) svgRoot.appendChild(yLab);
 
             // 오른쪽 꼬리표: 보이는 구간 마지막 값. 겹치면 아래 것을 내리고, 밖으로 나가면 되민다
             tags.forEach(t => { t.y = Math.max(M.top, y(t.v)); });
