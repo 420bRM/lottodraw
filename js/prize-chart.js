@@ -518,9 +518,10 @@
 
         root.textContent = '';
         root.classList.add('pchart-body');
-        // 지표 고르기 → 그래프 → 요약 줄 → 나머지 그래프 도구 상자 → (그림도구 안내) → 주의 · 출처
+        // 지표 고르기 → 그래프 → 요약 줄 → 나머지 그래프 도구 상자 → (그림도구 안내) → 설명(물가 · 봉 · 세금 · 아파트) → 주의 · 출처
+        // 설명은 도구 상자 아래에 둔다 — 그래프 바로 밑에 두면 길어질 때 도구 상자가 그래프에서 멀어진다.
         // 회차별 표는 따로 두지 않는다: 바로 아래 TOP 50 표가 있고, 키보드 ←→ 로 회차마다 읽을 수 있다
-        [metricBox, stage, summary, cpiNote, cmpNote, pro, hint, live,
+        [metricBox, stage, summary, pro, hint, live, cpiNote, cmpNote,
             el('p', { className: 'pchart-note', text: T('pc.note') }), sourceLine].forEach(n => root.appendChild(n));
 
         /* 보조지표 · 그림도구 */

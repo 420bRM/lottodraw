@@ -158,7 +158,7 @@ window.I18N_DICT = {
                        en: 'Each candle covers the draws in {span}: open is the first draw, close the last, and the wick ends the highest and lowest. Every draw is independent, so a candle\'s colour (up or down) does not signal a trend.' },
     'pc.cmp.apt':    { ko: '서울 아파트 평균가', en: 'Seoul flat price' },
     'pc.cmp.gn':     { ko: '강남3구 아파트값', en: 'Gangnam 3-district flat price' },
-    'pc.cmp.gnTitle': { ko: '1인당 당첨금 옆에 그 달 강남3구(강남 · 서초 · 송파) {sqm}㎡ 아파트 평균 매매가(KB부동산)를 그립니다', en: 'Draw the average price of a {sqm}㎡ apartment in the Gangnam 3 districts (Gangnam, Seocho, Songpa) for that month (KB Real Estate) next to the prize per winner' },
+    'pc.cmp.gnTitle': { ko: '1인당 당첨금 옆에 그 달 강남3구(강남 · 서초 · 송파) {sqm}㎡ 아파트 평균 매매가(KB부동산)를 그립니다', en: 'Draw the average price of an {sqm}㎡ apartment in the Gangnam 3 districts (Gangnam, Seocho, Songpa) for that month (KB Real Estate) next to the prize per winner' },
     'pc.cmp.gnName': { ko: '강남3구 {sqm}㎡', en: 'Gangnam 3 districts {sqm}㎡' },
     'pc.cmp.gnLegend': { ko: '{name} 아파트 평균 매매가', en: '{name} apartment average price' },
     'pc.cmp.gnAt':   { ko: '{name} 평균 ({ym})', en: '{name} avg. ({ym})' },
