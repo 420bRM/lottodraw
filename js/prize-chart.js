@@ -284,9 +284,11 @@
     function mount(root, draws, opts) {
         const cpi = opts && opts.cpi && opts.cpi.monthly && opts.cpi.latest ? opts.cpi : null;
         const apt = opts && opts.apt && opts.apt.monthly && opts.apt.latest ? opts.apt : null;
-        // 강남: seoul-apt.json 의 gangnam (강남구, 없으면 KB 강남 권역). 이름표는 실제로 받은 지역을 따른다
+        // 강남: seoul-apt.json 의 gangnam — 강남구 ㎡당 평균가 × 84㎡(sqm). 예전 파일은 KB 강남 권역(11개 구).
+        // 이름표는 실제로 받은 지역을 따른다
         const gn = apt && apt.gangnam && apt.gangnam.monthly && apt.gangnam.latest ? apt.gangnam : null;
-        const gnName = () => (gn && gn.name === '강남구' ? T('pc.cmp.gnGu') : T('pc.cmp.gnArea'));
+        const gnGu = !!(gn && gn.name === '강남구');
+        const gnName = () => (!gnGu ? T('pc.cmp.gnArea') : gn.sqm ? T('pc.cmp.gnGuSqm', { sqm: gn.sqm }) : T('pc.cmp.gnGu'));
         const all = draws.slice().sort((a, b) => a.round - b.round);
         const first = all[0].round;
         const indexOf = r => r - first;      // 회차는 1부터 빠짐없이 이어진다 (update-lotto-data.js 가 검사)
@@ -474,7 +476,7 @@
         }
         const aptBtn = cell(T('pc.cmp.apt'), () => toggleCmp('cmpApt'));
         aptBtn.title = T('pc.cmp.aptTitle');
-        const gnBtn = cell(T('pc.cmp.gn'), () => toggleCmp('cmpGn'));
+        const gnBtn = cell(T(gnGu ? 'pc.cmp.gnGuBtn' : 'pc.cmp.gn'), () => toggleCmp('cmpGn'));
         gnBtn.title = T('pc.cmp.gnTitle', { name: gnName() });
         if (!gn) gnBtn.hidden = true;
         const cmpRow = row(T('pc.row.compare'), [aptBtn, gnBtn], false, true);
@@ -882,8 +884,13 @@
                 items.push(['pc-key-apt', T('pc.cmp.aptLegend')]);
             }
             if (gnVals) items.push(['pc-key-gn', T('pc.cmp.gnLegend', { name: gnName() })]);
-            if ((aptVals && apt.estimatedBefore && cs.cut > start) || (gnVals && gn.estimatedBefore && cs.gnCut > start)) {
-                items.push(['pc-key-apt-est', T('pc.cmp.aptEst', { ym: ymLabel(apt.actualFrom || apt.estimatedBefore) })]);
+            // 점선(추정) — 서울은 2008-12, 강남구는 2013-04 이전처럼 달이 다르면 둘 다 적는다
+            const aptEstYm = aptVals && apt.estimatedBefore && cs.cut > start ? apt.actualFrom || apt.estimatedBefore : null;
+            const gnEstYm = gnVals && gn.estimatedBefore && cs.gnCut > start ? gn.estimatedBefore : null;
+            if (aptEstYm && gnEstYm && aptEstYm !== gnEstYm) {
+                items.push(['pc-key-apt-est', T('pc.cmp.estBoth', { a: ymLabel(aptEstYm), name: gnName(), b: ymLabel(gnEstYm) })]);
+            } else if (aptEstYm || gnEstYm) {
+                items.push(['pc-key-apt-est', T('pc.cmp.aptEst', { ym: ymLabel(aptEstYm || gnEstYm) })]);
             }
             mas.forEach(n => items.push(['pc-key-ma' + n, T('pc.i.ma', { n: n })]));
             if (state.unlocked && state.ind.avg) items.push(['pc-key-avg', T('pc.i.avg')]);
@@ -928,8 +935,9 @@
                     unit ? T('pc.c.note', { span: T('pc.c.span' + unit) }) : '',
                     netOn ? T('pc.cmp.noteTax') : '',
                     aptVals ? T(apt.estimatedBefore ? 'pc.cmp.noteAptEst' : 'pc.cmp.noteApt', { ym: ymLabel(apt.estimatedBefore || apt.actualFrom || apt.latest) }) : '',
-                    gnVals ? T(aptVals ? 'pc.cmp.noteGn' : gn.estimatedBefore ? 'pc.cmp.noteGnOnlyEst' : 'pc.cmp.noteGnOnly', { name: gnName(), ym: ymLabel(gn.estimatedBefore || apt.actualFrom || gn.latest) }) : '',
-                    gnVals && gn.name !== '강남구' ? T('pc.cmp.gnAreaNote') : '',
+                    gnVals && gn.sqm ? T(gn.estimatedBefore ? 'pc.cmp.noteGnSqmEst' : 'pc.cmp.noteGnSqm', { sqm: gn.sqm, ym: ymLabel(gn.estimatedBefore || gn.latest) }) : '',
+                    gnVals && !gn.sqm ? T(aptVals ? 'pc.cmp.noteGn' : gn.estimatedBefore ? 'pc.cmp.noteGnOnlyEst' : 'pc.cmp.noteGnOnly', { name: gnName(), ym: ymLabel(gn.estimatedBefore || apt.actualFrom || gn.latest) }) : '',
+                    gnVals && !gnGu ? T('pc.cmp.gnAreaNote') : '',
                 ].filter(Boolean).join(' ');
             }
             renderNav(metric, ser, useLog);
