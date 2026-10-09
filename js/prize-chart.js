@@ -284,11 +284,10 @@
     function mount(root, draws, opts) {
         const cpi = opts && opts.cpi && opts.cpi.monthly && opts.cpi.latest ? opts.cpi : null;
         const apt = opts && opts.apt && opts.apt.monthly && opts.apt.latest ? opts.apt : null;
-        // 강남: seoul-apt.json 의 gangnam — 강남구 ㎡당 평균가 × 84㎡(sqm). 예전 파일은 KB 강남 권역(11개 구).
-        // 이름표는 실제로 받은 지역을 따른다
-        const gn = apt && apt.gangnam && apt.gangnam.monthly && apt.gangnam.latest ? apt.gangnam : null;
-        const gnGu = !!(gn && gn.name === '강남구');
-        const gnName = () => (!gnGu ? T('pc.cmp.gnArea') : gn.sqm ? T('pc.cmp.gnGuSqm', { sqm: gn.sqm }) : T('pc.cmp.gnGu'));
+        // 강남: seoul-apt.json 의 gangnam — 강남3구(강남 · 서초 · 송파) ㎡당 평균가 × 84㎡ 를 달마다 평균한 값.
+        // 다른 모양(예전 강남 권역 · 강남구 단독 파일)이면 이름표가 맞지 않으니 비교 단추를 숨긴다
+        const gn = apt && apt.gangnam && apt.gangnam.name === '강남3구' && apt.gangnam.sqm && apt.gangnam.monthly && apt.gangnam.latest ? apt.gangnam : null;
+        const gnName = () => T('pc.cmp.gnName', { sqm: gn.sqm });
         const all = draws.slice().sort((a, b) => a.round - b.round);
         const first = all[0].round;
         const indexOf = r => r - first;      // 회차는 1부터 빠짐없이 이어진다 (update-lotto-data.js 가 검사)
@@ -354,7 +353,7 @@
             pending: null,       // 추세선 첫 점 { r, v }
             hover: null,         // 전체 배열의 칸 번호
             cmpApt: false,       // 비교: 서울 아파트 평균가 (1인당 당첨금에서만)
-            cmpGn: false,        // 비교: 강남 아파트 평균가 (1인당 당첨금에서만)
+            cmpGn: false,        // 비교: 강남3구 84㎡ 아파트값 (1인당 당첨금에서만)
             net: false,          // 세금: 세후 실수령액으로 (금액 지표만)
             candle: null,        // 봉 차트: null(선, 처음 화면) | 'm'(월봉, 무료) | 'q' · 'y'(이용권)
         };
@@ -403,9 +402,9 @@
             safeLink(cpi.link || cpi.sourceUrl) ? el('a', { href: safeLink(cpi.link || cpi.sourceUrl), target: '_blank', rel: 'noopener', text: cpiCredit() }) : cpiCredit(),
             T('pc.src.cpiTail', { ym: ymLabel(cpi.latest) }),
         ] : []).concat(apt ? [
-            T(gnGu ? 'pc.src.aptGn' : 'pc.src.apt'),
+            T(gn ? 'pc.src.aptGn' : 'pc.src.apt'),
             safeLink(apt.link) ? el('a', { href: safeLink(apt.link), target: '_blank', rel: 'noopener', text: (apt.credit && (apt.credit[lang()] || apt.credit.ko)) || 'KB' }) : ((apt.credit && apt.credit.ko) || 'KB'),
-            gnGu && gn.latest !== apt.latest ? T('pc.src.aptGnTail', { a: ymLabel(apt.latest), b: ymLabel(gn.latest) }) : T('pc.src.aptTail', { ym: ymLabel(apt.latest) }),
+            gn && gn.latest !== apt.latest ? T('pc.src.aptGnTail', { a: ymLabel(apt.latest), b: ymLabel(gn.latest) }) : T('pc.src.aptTail', { ym: ymLabel(apt.latest) }),
         ] : []));
 
         const chip = cell;
@@ -476,8 +475,8 @@
         }
         const aptBtn = cell(T('pc.cmp.apt'), () => toggleCmp('cmpApt'));
         aptBtn.title = T('pc.cmp.aptTitle');
-        const gnBtn = cell(T(gnGu ? 'pc.cmp.gnGuBtn' : 'pc.cmp.gn'), () => toggleCmp('cmpGn'));
-        gnBtn.title = T('pc.cmp.gnTitle', { name: gnName() });
+        const gnBtn = cell(T('pc.cmp.gn'), () => toggleCmp('cmpGn'));
+        if (gn) gnBtn.title = T('pc.cmp.gnTitle', { sqm: gn.sqm });
         if (!gn) gnBtn.hidden = true;
         const cmpRow = row(T('pc.row.compare'), [aptBtn, gnBtn], false, true);
         if (!apt) cmpRow.hidden = true;
@@ -935,9 +934,7 @@
                     unit ? T('pc.c.note', { span: T('pc.c.span' + unit) }) : '',
                     netOn ? T('pc.cmp.noteTax') : '',
                     aptVals ? T(apt.estimatedBefore ? 'pc.cmp.noteAptEst' : 'pc.cmp.noteApt', { ym: ymLabel(apt.estimatedBefore || apt.actualFrom || apt.latest) }) : '',
-                    gnVals && gn.sqm ? T(gn.estimatedBefore ? 'pc.cmp.noteGnSqmEst' : 'pc.cmp.noteGnSqm', { sqm: gn.sqm, ym: ymLabel(gn.estimatedBefore || gn.latest) }) : '',
-                    gnVals && !gn.sqm ? T(aptVals ? 'pc.cmp.noteGn' : gn.estimatedBefore ? 'pc.cmp.noteGnOnlyEst' : 'pc.cmp.noteGnOnly', { name: gnName(), ym: ymLabel(gn.estimatedBefore || apt.actualFrom || gn.latest) }) : '',
-                    gnVals && !gnGu ? T('pc.cmp.gnAreaNote') : '',
+                    gnVals ? T(gn.estimatedBefore ? 'pc.cmp.noteGnEst' : 'pc.cmp.noteGn', { sqm: gn.sqm, ym: ymLabel(gn.estimatedBefore || gn.latest) }) : '',
                 ].filter(Boolean).join(' ');
             }
             renderNav(metric, ser, useLog);
