@@ -369,7 +369,8 @@ function normalChart(o) {
             const size = Math.min(bw - 4, Y(0) - Y(1) - 2);
             b.numbers.forEach((n, i) => {
                 const cy = Y(i + 0.5);
-                out.push(`<g class="dist-ball" data-band="${LottoStats.bandOf(n)}"><title>${n}번: ${fmt(b.counts[i])}회</title>`
+                // data-n · data-c: js/dist-balls.js 가 짚은 공 위에 "34번 · 187회"를 바로 띄운다
+                out.push(`<g class="dist-ball" data-band="${LottoStats.bandOf(n)}" data-n="${n}" data-c="${b.counts[i]}"><title>${n}번: ${fmt(b.counts[i])}회</title>`
                     + `<circle cx="${r2(left + bw / 2)}" cy="${r2(cy)}" r="${r2(size / 2)}"/>`
                     + `<text x="${r2(left + bw / 2)}" y="${r2(cy + 4)}" text-anchor="middle">${n}</text></g>`);
             });
@@ -1033,6 +1034,8 @@ function statPage(p) {
             `<p>${en('함께 보기:', 'See also:')} <a href="draws.html" data-i18n-en="All winning numbers by draw">회차별 당첨번호 전체 조회</a> · <a href="probability.html" data-i18n-en="Lotto probability">로또 확률</a></p>`,
         ]),
         script: p.script,
+        // 번호 공을 쌓은 분포 그림이 있으면 짚을 때 밝게 띄우는 스크립트
+        scripts: p.body.some(s => String(s).includes('class="dist-ball"')) ? ['js/dist-balls.js'] : undefined,
     });
 }
 
@@ -1121,7 +1124,7 @@ function updateTaxAndTop() {
     // 화면은 그대로이고(스크립트가 같은 내용으로 다시 그린다), JS 를 돌리지 않는 검색 로봇도 표를 읽는다.
     // 페이지 스크립트의 행 모양을 바꾸면 여기도 같이 바꾼다
     tp = replaceBetween('top-prize.html', tp, 'subtitle',
-        `(1인당 실수령액 기준 / 최신 <strong>${data.draws.length}</strong>회차까지 자동 업데이트)`);
+        `(1인당 당첨금 · 세전 기준 / 최신 <strong>${data.draws.length}</strong>회차까지 자동 업데이트)`);
     const rows = data.draws.slice().sort((a, b) => b.firstPrizeAmount - a.firstPrizeAmount).slice(0, 50).map((d, i) => {
         const winners = d.firstPrizeWinners || 1;
         return [
@@ -1160,7 +1163,7 @@ function updateAbout() {
             + [
                 link('index.html#sec-stats', '통계 12가지', '12 sets of statistics'),
                 link('draws.html', '회차별 당첨번호', 'All winning numbers'),
-                link('top-prize.html', 'TOP 50 당첨금 그래프', 'TOP 50 prize chart'),
+                link('top-prize.html#prize-chart', 'TOP 50 당첨금 그래프', 'TOP 50 prize chart'),
                 link('blog/index.html', '블로그', 'Blog'),
             ].join(' · ') + '</p>',
         '        ',

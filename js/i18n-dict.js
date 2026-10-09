@@ -109,6 +109,7 @@ window.I18N_DICT = {
     'tax.tip1':      { en: 'A prize must be claimed within one year. Unclaimed prizes go to the lottery fund.' },
     'tax.tip2':      { en: 'For a first prize the tax is withheld automatically, so the amount you receive is already net of tax.' },
     'tax.tip3':      { en: 'Rates can change from year to year; check the National Tax Service for the current figures.' },
+    'tax.tip4':      { en: 'What would past first prizes be worth after tax? On the <a href="top-prize.html#prize-chart">Top 50 draw-by-draw chart</a>, choose "Seoul flat price" or "Gangnam 3-district flat price" under Compare to see each draw\'s after-tax prize per winner (at today\'s rates) next to that month\'s apartment prices.' },
 
     /* ───── TOP 50 당첨금 ───── */
     'top.h1':        { en: 'Top 50 Lotto 6/45 First-Prize Payouts' },
@@ -123,6 +124,8 @@ window.I18N_DICT = {
     'top.note':      { en: '* Amounts per winner are rounded for readability.<br>* Total first-prize figures are exact to the won.' },
     'top.back':      { en: 'Back to the generator' },
     'top.h2':        { en: 'Top 50 by amount per winner' },
+    'top.fold':      { en: 'Collapse' },
+    'top.unfold':    { en: 'Expand' },
 
     /* ───── 회차별 그래프 (js/prize-chart.js) ───── */
     'pc.h2':         { en: 'First prize, draw by draw' },
@@ -186,9 +189,8 @@ window.I18N_DICT = {
     'pc.pro.range':  { ko: '구간 설정', en: 'Range' },
     'pc.pro.ind':    { ko: '보조지표', en: 'Indicators' },
     'pc.pro.draw':   { ko: '그림도구', en: 'Drawing' },
-    'pc.pro.badge':  { ko: '이용권', en: 'Pass' },
     'pc.pro.badgeOn': { ko: '이용권 확인됨', en: 'Pass active' },
-    'pc.pro.note':   { ko: '분기봉·연봉, 구간 설정(휠·두 손가락 확대, 끌어 옮기기), 보조지표, 그림도구는 이용권이 있으면 켜집니다. 그 전에는 전체 기간으로 보입니다.', en: 'Quarterly and yearly candles, range (wheel or pinch to zoom, drag to pan), indicators and drawing tools turn on with a pass. Until then the chart shows all draws.' },
+    'pc.pro.note':   { ko: '이용권을 구매하지 않았다면 일부 기능은 제한됩니다.', en: 'Without a pass, some features are limited.' },
     'pc.help.mouse': { ko: '마우스 휠: 확대·축소 · 끌기: 옮기기 · 두 번 클릭: 전체 기간 · ←→ 키: 회차 옮기기', en: 'Wheel: zoom · Drag: pan · Double-click: show all · ← →: move between draws' },
     'pc.help.touch': { ko: '두 손가락: 확대·축소 · 옆으로 밀기: 옮기기 · 길게 누른 채 밀기: 값 보기 · 두 번 누르기: 전체 기간', en: 'Pinch: zoom · Swipe sideways: pan · Press and hold, then slide: read values · Double-tap: show all' },
     'pc.pro.see':    { ko: '이용권 보기', en: 'See passes' },
@@ -268,7 +270,7 @@ window.I18N_DICT = {
     's5.f.day1':     { en: '24 hours from when you receive the key' },
     's5.f.week7':    { en: 'Seven days from when you receive the key' },
     's5.f.detail':   { en: 'The four detailed analyses on the home page' },
-    's5.f.chart':    { en: 'Quarterly/yearly candles, range, indicators and drawing tools on the Top 50 chart' },
+    's5.f.chart':    { en: 'Quarterly/yearly candles, range, indicators and drawing tools on the <a href="top-prize.html#prize-chart">Top 50 chart</a>' },
     's5.noRenew':    { en: 'Never charged automatically \u2014 it simply ends when the period is over.' },
     's5.f.eleven':   { en: '11 statistics for the last five months' },
     's5.f.days30':   { en: '30 days from when you receive the key' },

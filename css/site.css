@@ -694,12 +694,12 @@ html.home { scroll-behavior: smooth; }
     --pc-ma120: #d4a017;
     --pc-ma240: #1baf7a;
     --pc-real: #6b7484;     /* 물가 반영(지금 돈 가치) 선. 파란 선은 늘 당시 금액 */
-    --pc-apt: #e8710a;
-    --pc-gn: #a0219a;       /* 강남 아파트 평균가. 파랑 · 주황 · 회색과 색각 이상에서도 갈린다(validate_palette.js) */
+    --pc-apt: #e8710a;      /* 서울 아파트 평균가. 파란 선 · 회색 선과 색각 이상에서도 갈린다(validate_palette.js) */
+    --pc-gn: #a0219a;       /* 강남3구 아파트값. 파랑 · 주황 · 회색과 색각 이상에서도 갈린다(validate_palette.js) */
     --pc-up: #e0383e;       /* 봉 오름 (국내 관례: 오름 빨강 · 내림 파랑) */
-    --pc-down: #1b5fd9;      /* 서울 아파트 평균가. 파란 선 · 회색 선과 색각 이상에서도 갈린다(validate_palette.js) */
+    --pc-down: #1b5fd9;
     --pc-ink: #333;
-    margin: 0 0 32px;
+    margin: 0 0 28px;
 }
 .prose .pchart h2 { margin-top: 0; }
 .prose .pchart-lead { margin: 0 0 4px; color: var(--muted); font-size: 14px; }
@@ -714,8 +714,6 @@ html.home { scroll-behavior: smooth; }
     padding: 6px 10px; border-right: 1px solid #c9d1de; background: #f3f6fb;
     color: var(--text); font-size: 12px; font-weight: bold; line-height: 1.25;
 }
-.pt-paid { color: #999; font-size: 10.5px; font-weight: normal; }
-.pchart-tools:not(.is-locked) .pt-paid { color: var(--brand); }
 /* 단추 칸: 오른쪽·아래 선을 1px 밖으로 밀어 줄의 테두리와 겹치지 않게 한다(.pt-row 가 잘라 낸다) */
 .pt-btns { display: flex; flex-wrap: wrap; margin: 0 -1px -1px 0; }
 .pt-btn {
@@ -728,6 +726,8 @@ html.home { scroll-behavior: smooth; }
 .pt-btn:hover { background: #eef2f9; }
 .pt-btn[aria-pressed="true"] { background: var(--brand); color: #fff; font-weight: bold; }
 .pt-btn[aria-disabled="true"] { background: #fafafa; color: #aaa; cursor: not-allowed; }
+/* 잠겼지만 처음부터 켜 둔 것(이용권 없이 보이는 20회 · 240회 이동평균): 켜진 줄 알 수 있게 옅은 파랑 */
+.pt-btn[aria-pressed="true"][aria-disabled="true"] { background: #e3eaf7; color: var(--brand); font-weight: bold; }
 .pt-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
 /* 단추가 적은 줄(지표 · 금액 기준): 등분하지 않고 글자 길이만큼 */
 .pt-row.is-fit .pt-btn { flex: 0 0 auto; padding: 0 16px; }
@@ -874,6 +874,17 @@ html.home { scroll-behavior: smooth; }
 .prose .pchart-source { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
 .pchart-source a { color: inherit; text-decoration: underline; }
 .prose h2.top-table-h { margin-top: 8px; }
+/* TOP 50 페이지: 그래프는 맨 위 접는 상자(처음엔 펼침). 제목 줄을 누르면 접혀 아래 TOP 50 표가 바로 보인다 */
+.pchart-fold { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 0 6px; border-bottom: 2px solid var(--brand); cursor: pointer; list-style: none; }
+.pchart-fold::-webkit-details-marker { display: none; }
+.pchart-fold:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.prose .pchart-fold h2 { margin: 0; }
+.pchart-fold-hint { flex: none; padding: 3px 10px; border: 1px solid #c9d1de; background: #f3f6fb; color: var(--brand); font-size: 13px; font-weight: bold; white-space: nowrap; }
+.pchart-fold:hover .pchart-fold-hint { background: #e3eaf7; }
+.pchart-fold-hint::after { content: ' ▲'; }
+details.pchart:not([open]) .pchart-fold-hint::after { content: ' ▼'; }
+details.pchart[open] .when-closed, details.pchart:not([open]) .when-open { display: none; }
+details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 /* 지표 상자는 그래프 위, 나머지 그래프 도구 상자는 그래프·요약 줄 아래 */
 .pchart-body { display: flex; flex-direction: column; }
 @media (max-width: 599px) {
@@ -1055,6 +1066,17 @@ html.home { scroll-behavior: smooth; }
 .dist-curve { fill: none; stroke: var(--ball-3); stroke-width: 2.5; stroke-linejoin: round; }
 .dist-ball circle { stroke: #fff; stroke-width: 1; }
 .dist-ball text { fill: #fff; font-size: 11px; font-weight: bold; pointer-events: none; }
+/* 공에 마우스를 올리면(휴대폰은 누르면) 그 공을 밝게 · 조금 크게 · 빛 테두리, 나머지 공은 옅게.
+   JS(js/dist-balls.js)가 있으면 .is-on/.has-on 으로, 없으면 :hover 로 같은 모양 */
+.dist-ball { transition: opacity .12s ease-out; }
+.dist-ball circle { transform-box: fill-box; transform-origin: center; transition: transform .12s ease-out, filter .12s ease-out; }
+.dist-ball:hover circle, .dist-ball.is-on circle { transform: scale(1.14); filter: brightness(1.22) saturate(1.15) drop-shadow(0 0 3px rgba(255, 210, 0, .95)); stroke-width: 2; }
+.dist-chart:has(.dist-ball:hover) .dist-ball:not(:hover), .dist-chart.has-on .dist-ball:not(.is-on) { opacity: .4; }
+.dist-tip rect { fill: #1f2733; opacity: .92; }
+.dist-tip text { fill: #fff; font-size: 12px; font-weight: bold; pointer-events: none; }
+.dist-tip { pointer-events: none; }
+@media (hover: none) { .dist-ball { cursor: pointer; -webkit-tap-highlight-color: transparent; } }
+@media (prefers-reduced-motion: reduce) { .dist-ball, .dist-ball circle { transition: none; } }
 .dist-ball[data-band="1"] circle { fill: var(--ball-1); }
 .dist-ball[data-band="2"] circle { fill: var(--ball-2); }
 .dist-ball[data-band="3"] circle { fill: var(--ball-3); }

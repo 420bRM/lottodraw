@@ -51,15 +51,18 @@
 
     <main class="prose wide">
         <h1 data-i18n="top.h1">역대 로또 6/45 1등 당첨금 TOP 50</h1>
-        <p class="intro" id="subtitle" aria-live="polite" data-i18n="top.loading"><!-- seo:subtitle:start -->(1인당 실수령액 기준 / 최신 <strong>1244</strong>회차까지 자동 업데이트)<!-- seo:subtitle:end --></p>
+        <p class="intro" id="subtitle" aria-live="polite" data-i18n="top.loading"><!-- seo:subtitle:start -->(1인당 당첨금 · 세전 기준 / 최신 <strong>1244</strong>회차까지 자동 업데이트)<!-- seo:subtitle:end --></p>
 
-        <section class="pchart" id="prize-chart" aria-labelledby="pchart-title">
-            <h2 id="pchart-title" data-i18n="pc.h2">회차별 1등 당첨금 그래프</h2>
+        <details class="pchart" id="prize-chart" open aria-labelledby="pchart-title">
+            <summary class="pchart-fold">
+                <h2 id="pchart-title" data-i18n="pc.h2">회차별 1등 당첨금 그래프</h2>
+                <span class="pchart-fold-hint" aria-hidden="true"><span class="when-open" data-i18n="top.fold">접기</span><span class="when-closed" data-i18n="top.unfold">펼치기</span></span>
+            </summary>
             <p class="pchart-lead" data-i18n="pc.lead">가로는 회차, 세로는 고른 지표입니다. 한 달씩 묶은 월봉으로도 볼 수 있습니다. 그래프를 짚으면 그 회차의 값과 당첨번호가 나옵니다. 이용권이 있으면 구간 설정(최근 회차만 보기·확대·축소·이동)도 할 수 있습니다.</p>
             <div id="pchart-mount"><p class="pchart-loading" data-i18n="pc.loading">그래프를 불러오는 중…</p></div>
-        </section>
+        </details>
 
-        <h2 class="top-table-h" data-i18n="top.h2">1인당 당첨금 순위 TOP 50</h2>
+        <h2 class="top-table-h" id="top50" data-i18n="top.h2">1인당 당첨금 순위 TOP 50</h2>
         <div class="table-scroll">
             <table class="data-table" id="topPrizeTable">
                 <thead>
@@ -511,8 +514,8 @@
             const totalRounds = data.draws.length;
             subtitle.innerHTML =
                 I18N.lang === 'ko'
-                    ? `(1인당 실수령액 기준 / 최신 <strong>${totalRounds}</strong>회차까지 자동 업데이트)`
-                    : `(amount per winner / updated automatically through draw <strong>${totalRounds}</strong>)`;
+                    ? `(1인당 당첨금 · 세전 기준 / 최신 <strong>${totalRounds}</strong>회차까지 자동 업데이트)`
+                    : `(amount per winner, before tax / updated automatically through draw <strong>${totalRounds}</strong>)`;
 
             const sorted = [...data.draws]
                 .sort((a, b) => b.firstPrizeAmount - a.firstPrizeAmount)
