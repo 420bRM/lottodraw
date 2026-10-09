@@ -146,41 +146,37 @@ async function getIndex(extra, pick, label) {
     return null;
 }
 
-// 임시 탐색: 구 단위(강남구 · 서초구 · 송파구) 평균가를 주는 요청 방식이 있는지 찍어 본다. 결과를 보고 지운다.
-// 지난 탐색(2026-10): avgPrc 는 지역코드를 줘도 권역 25개뿐, priceIndex 는 지역코드=11 이면 서울 + 25개 구.
+// 임시 탐색: 구 단위 ㎡당 평균가(avgPrcPerSqmt · 지역코드=11)의 날짜 맞춤과 시작 달을 찍어 본다. 결과를 보고 지운다.
+// 지난 탐색(2026-10): avgPrcPerSqmt?지역코드=11 → 서울 + 25개 구, 날짜 273개(200401~202609)인데 값은 272개.
+// 맞춰 볼 기사 값: 강남구 2025-04 3,191만 원/㎡(파이낸셜뉴스), 2025-12 3.3㎡당 1억 2,286.6만 원(뉴시스, KB 월간시계열)
 async function probe() {
     const base = { '매물종별구분': '01', '매매전세코드': '01' };
-    const tries = [
-        ['avgPrcPerSqmt', Object.assign({ '지역코드': '1100000000' }, base)],
-        ['avgPrcPerSqmt', Object.assign({ '지역코드': '11' }, base)],
-        ['avgPrcPerSqmt', base],
-        ['mdpsPrc', Object.assign({ '지역코드': '1100000000' }, base)],
-        ['mdpsPrc', Object.assign({ '지역코드': '11' }, base)],
-        ['avgPrc', Object.assign({ '지역코드': '11' }, base)],
-        ['avgPrc', Object.assign({ '지역코드': '1168000000' }, base)],
-        ['avgPrc', Object.assign({ '월간주간구분코드': '01', '지역코드': '1100000000' }, base)],
-        ['avgPrc', Object.assign({ '기간': '99', '지역코드': '1100000000' }, base)],
-    ];
-    for (const [ep, o] of tries) {
-        const u = KB + ep + '?' + q(o);
-        try {
-            const text = await get(u);
-            const body = JSON.parse(text);
-            const data = body && body.dataBody && body.dataBody.data;
-            if (!data) { console.log(`탐색 ${ep} ${JSON.stringify(o)} → data 없음: ${text.slice(0, 300)}`); continue; }
-            const dateKey = Object.keys(data).find(k => /날짜/.test(k) && Array.isArray(data[k]));
-            const rowKey = Object.keys(data).find(k => /데이터/.test(k) && Array.isArray(data[k]));
-            const dates = dateKey ? data[dateKey] : [];
-            const rows = rowKey ? data[rowKey] : [];
-            console.log(`탐색 ${ep} ${JSON.stringify(o)} → 키 ${Object.keys(data).join(',')} · 날짜 ${dates.length}개(${dates[0]} ~ ${dates[dates.length - 1]}) · 지역 ${rows.length}개: ${rows.map(r => r['지역명']).join(',').slice(0, 400)}`);
-            rows.filter(r => /강남구|서초구|송파구|^서울/.test(String(r['지역명']))).forEach(r => {
-                const lk = Object.keys(r).find(k => Array.isArray(r[k]));
-                const v = lk ? r[lk] : [];
-                console.log(`    ${r['지역명']}(${r['지역코드']}) 줄 키 ${Object.keys(r).join(',')} · 값 ${v.length}개: ${JSON.stringify(v.slice(0, 3))} … ${JSON.stringify(v.slice(-4))}`);
-            });
-        } catch (e) {
-            console.log(`탐색 ${ep} ${JSON.stringify(o)} → 실패: ${e.message.slice(0, 200)}`);
-        }
+    try {
+        const body = JSON.parse(await get(KB + 'avgPrcPerSqmt?' + q(Object.assign({ '지역코드': '11' }, base))));
+        const data = body.dataBody.data;
+        const dates = data['날짜리스트'];
+        console.log(`탐색 ㎡당: 날짜 처음 ${JSON.stringify(dates.slice(0, 3))} 끝 ${JSON.stringify(dates.slice(-3))} · 업데이트일자 ${JSON.stringify(data['업데이트일자'])}`);
+        data['데이터리스트'].filter(r => /^(서울|강남구|서초구|송파구|노원구)$/.test(String(r['지역명']))).forEach(r => {
+            const v = r.dataList;
+            const first = v.findIndex(x => x !== null && x !== '' && x !== undefined);
+            console.log(`  ${r['지역명']} 값 ${v.length}개 · 첫 값 칸 ${first} (앞 맞춤 ${dates[first]} / 끝 맞춤 ${dates[first + dates.length - v.length]}) = ${v[first]}`);
+            const tail = v.slice(-22).map(x => (x === null ? 'null' : Math.round(x * 10) / 10));
+            console.log(`    끝 22개(끝 맞춤 ${dates[dates.length - 22]}~${dates[dates.length - 1]}): ${tail.join(' ')}`);
+        });
+    } catch (e) {
+        console.log('탐색 ㎡당 실패: ' + e.message.slice(0, 300));
+    }
+    try {
+        const body = JSON.parse(await get(KB + 'priceIndex?' + q({ '기간': '30', '월간주간구분코드': '01', '매물종별구분': '01', '매매전세코드': '01', '지역코드': '11' })));
+        const data = body.dataBody.data;
+        const dates = data['날짜리스트'];
+        data['데이터리스트'].filter(r => /^(서울|강남구|서초구)$/.test(String(r['지역명']))).forEach(r => {
+            const v = r.dataList;
+            const first = v.findIndex(x => x !== null && x !== '' && x !== undefined);
+            console.log(`탐색 지수 ${r['지역명']}: 날짜 ${dates.length}개(${dates[0]}~${dates[dates.length - 1]}) 값 ${v.length}개 · 첫 값 ${dates[first]} = ${v[first]} · 끝 ${JSON.stringify(v.slice(-5))}`);
+        });
+    } catch (e) {
+        console.log('탐색 지수 실패: ' + e.message.slice(0, 300));
     }
 }
 
