@@ -1,0 +1,52 @@
+name: update-seoul-apt
+
+# 서울 아파트 평균 매매가격(월별, KB부동산)을 받아 seoul-apt.json 으로 저장한다 — TOP 50 그래프의 "서울 아파트 평균가" 비교선이 쓴다.
+# KB 월간 주택가격동향은 달마다 중순~말에 나온다. 매월 1일 · 16일 10:40 KST(01:40 UTC)에 받아 보고, 바뀐 게 있을 때만 커밋한다.
+# tools/update-seoul-apt.js 나 이 파일을 고쳐 푸시하면 그 브랜치에서도 한 번 돌아 결과를 그 브랜치에 커밋한다.
+on:
+  schedule:
+    - cron: "40 1 1,16 * *"
+  workflow_dispatch: {}
+  push:
+    paths:
+      - tools/update-seoul-apt.js
+      - .github/workflows/update-seoul-apt.yml
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: update-seoul-apt-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: 서울 아파트 평균 매매가격 받기
+        id: fetch
+        run: node tools/update-seoul-apt.js
+
+      - name: 변경분 커밋
+        if: steps.fetch.outputs.changed == 'true'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add seoul-apt.json
+          git commit -m "chore: 서울 아파트 평균 매매가격 ${{ steps.fetch.outputs.latest }}까지 반영"
+          git pull --rebase origin ${{ github.ref_name }}
+          git push origin HEAD:${{ github.ref_name }}
+
+      # GITHUB_TOKEN 으로 푸시한 커밋은 Pages 빌드를 트리거하지 않는다. 사이트 브랜치(html)일 때만 직접 요청한다
+      - name: Pages 재배포 요청
+        if: steps.fetch.outputs.changed == 'true' && github.ref_name == 'html'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh api --method POST "repos/${{ github.repository }}/pages/builds"

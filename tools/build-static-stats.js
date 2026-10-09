@@ -419,6 +419,8 @@ function binsOf(values, width) {
 const within = (values, mean, sd, k) => values.filter(v => Math.abs(v - mean) <= k * sd).length;
 
 const STATS = [];
+// About 페이지에 옮겨 싣는 정규분포 그림 두 개(많이 나온 번호 · 번호 합계). 통계 페이지와 같은 그림을 쓴다
+const ABOUT = {};
 
 (() => {
     const e = extremesOf(stats.frequency);
@@ -439,12 +441,12 @@ const STATS = [];
     const distBlock = [
         pEn(`번호 하나가 한 회차에 뽑힐 확률은 6/45입니다. ${fmt(N)}회를 추첨하면 번호마다 출현 횟수는 평균 ${f1(EXP_NUM)}회, 표준편차 ${f1(SD_NUM)}회인 정규분포에 가깝게 흩어져야 합니다. 아래 공 하나가 번호 하나입니다.`,
             `A given number has a 6-in-45 chance of being drawn. Over ${fmt(N)} draws, the counts should scatter close to a normal distribution with a mean of ${f1(EXP_NUM)} and a standard deviation of ${f1(SD_NUM)}. Each ball below is one number.`),
-        normalChart({
+        (ABOUT.freq = { figure: normalChart({
             bins, numbers: true, total: 45, mean: EXP_NUM, sd: SD_NUM, unit: '개',
             xLabel: '출현 횟수 (5회 단위)', xLabelEn: 'Appearances (bands of 5)',
             barLabel: '번호 (공 1개 = 번호 1개)', barLabelEn: 'numbers (one ball = one number)',
             aria: `번호 45개의 출현 횟수 분포. 이론 평균 ${f1(EXP_NUM)}회, 표준편차 ${f1(SD_NUM)}회`,
-        }),
+        }), e: e, in2: in2 }).figure,
         table([['항목', 'Measure'], ['이론 (정규분포)', 'Theory (normal)'], [`실제 (${RANGE})`, `Actual (draws 1–${N})`]], [
             [en('평균', 'Mean'), times(f1(EXP_NUM)), times(f1(actualMean))],
             [en('표준편차', 'Standard deviation'), times(f1(SD_NUM)), times(f1(actualSd))],
@@ -599,12 +601,12 @@ const STATS = [];
         h2En('합계는 정규분포를 따른다', 'The sum follows a normal distribution'),
         pEn(`번호 6개를 더한 값은 여러 수를 더한 값이라 가운데로 모이고 좌우가 대칭인 정규분포에 가까워집니다. 1~45에서 6개를 뽑으면 이론상 평균 ${MEAN}, 표준편차 ${f1(SD)}입니다. 막대는 실제 ${RANGE}의 합계를 10 단위로 센 것이고, 곡선은 이론 정규분포입니다.`,
             `Adding six numbers together pulls the result toward the middle, giving a roughly symmetrical, normal-looking distribution. Drawing six numbers from 1–45 gives a theoretical mean of ${MEAN} and a standard deviation of ${f1(SD)}. The bars count the actual sums from draws 1–${N} in steps of 10; the curve is the theoretical distribution.`),
-        normalChart({
+        (ABOUT.sum = { figure: normalChart({
             bins: binsOf(sums, 10), total: N, mean: MEAN, sd: SD, unit: '회',
             xLabel: '당첨번호 6개의 합계 (10 단위)', xLabelEn: 'Sum of the six numbers (bands of 10)',
             barLabel: `실제 ${RANGE}`, barLabelEn: `actual, draws 1–${N}`,
             aria: `당첨번호 합계 분포. 실제 평균 ${f1(avg)}, 이론 평균 ${MEAN}, 표준편차 ${f1(SD)}`,
-        }),
+        }), avg: avg, mean: MEAN, lo1: lo1, hi1: hi1, in1: in1 }).figure,
         table([['항목', 'Measure'], ['이론 (정규분포)', 'Theory (normal)'], [`실제 (${RANGE})`, `Actual (draws 1–${N})`]], [
             [en('평균', 'Mean'), String(MEAN), f1(avg)],
             [en('표준편차', 'Standard deviation'), f1(SD), f1(sd)],
@@ -1138,6 +1140,35 @@ function updateTaxAndTop() {
 
 /* ───── 사이트맵 ───── */
 
+// About: 통계 페이지 두 곳(많이 나온 번호 · 번호 합계)의 정규분포 그림을 그대로 옮겨 싣고 짧게 읽는 법을 단다.
+// 눌러야만 보이던 그림을 소개 페이지에서 먼저 보여 준다. 숫자는 매주 다시 만든다
+function updateAbout() {
+    const f = ABOUT.freq;
+    const m = ABOUT.sum;
+    const top = f.e.top.map(r => r.number).join('·');
+    const bottom = f.e.bottom.map(r => r.number).join('·');
+    const more = (href, ko, english) => `<p class="about-more"><a href="${href}" data-i18n-en="${esc(english)}">${ko}</a></p>`;
+    const block = [
+        '',
+        h2En('통계 그림 미리 보기 — 정규분포로 읽기', 'A look at the statistics, read with the normal curve'),
+        pEn(`이 사이트의 통계는 숫자가 "많다·적다"를 우연과 견줘 보여 줍니다. 그 잣대가 종 모양의 <strong>정규분포</strong>입니다. 공평한 추첨이라도 값은 평균 둘레에 흩어지고, 평균 ±1σ(표준편차) 안에 약 68%, ±2σ 안에 약 95%가 들어옵니다. 아래 두 그림은 홈 통계 중 두 가지를 그대로 옮긴 것입니다.`,
+            `The statistics on this site compare "a lot" and "a little" with what chance alone would give. The yardstick is the bell-shaped <strong>normal distribution</strong>: even in a perfectly fair draw, values scatter around the mean, with about 68% within ±1σ (one standard deviation) and about 95% within ±2σ. The two charts below are taken straight from the statistics on the home page.`),
+        `<h3 data-i18n-en="Most frequent numbers: one ball is one number">많이 나온 번호 순위 — 공 하나가 번호 하나</h3>`,
+        pEn(`${RANGE} 동안 번호 45개가 각각 몇 번 나왔는지를 5회 단위로 쌓았습니다. 이론 평균은 ${f1(EXP_NUM)}회, 표준편차는 ${f1(SD_NUM)}회입니다. 가장 많이 나온 <strong>${top}번(${f.e.max}회)</strong>과 가장 적게 나온 <strong>${bottom}번(${f.e.min}회)</strong>도 곡선의 끝자락에 있을 뿐, 45개 중 ${f.in2}개가 평균 ±2σ 안에 있습니다. 많이 나온 번호도 우연으로 충분히 나올 만큼만 많이 나왔다는 뜻입니다.`,
+            `Each of the 45 numbers is stacked by how many times it came up in draws 1–${N}, in bands of 5. The theoretical mean is ${f1(EXP_NUM)} and the standard deviation ${f1(SD_NUM)}. Even the most frequent, <strong>${top} (${f.e.max} times)</strong>, and the least frequent, <strong>${bottom} (${f.e.min} times)</strong>, sit only at the edges of the curve: ${f.in2} of 45 numbers fall within ±2σ. The "frequent" numbers are only as frequent as chance alone would produce.`),
+        f.figure,
+        more('statistics-frequency.html', '많이 나온 번호 순위 자세히 보기 →', 'More on the most frequent numbers →'),
+        `<h3 data-i18n-en="Sum of the numbers: bars are real draws, the curve is theory">번호 합계 — 막대는 실제, 곡선은 이론</h3>`,
+        pEn(`회차마다 당첨번호 6개를 더한 값을 10 단위로 셌습니다. 여러 수를 더하면 가운데로 모여 좌우 대칭인 종 모양이 됩니다. 실제 평균 ${f1(m.avg)}, 이론 평균 ${m.mean}으로 거의 같고, 약 3분의 2(${pct(m.in1, N)})가 <strong>${m.lo1}~${m.hi1}</strong> 사이였습니다. 다만 합계가 가운데인 조합은 그런 조합이 많을 뿐, 조합 하나하나의 1등 확률은 모두 같습니다.`,
+            `The six winning numbers of each draw are added up and counted in bands of 10. Adding several numbers pulls the result toward the middle, giving a symmetrical bell shape. The actual mean of ${f1(m.avg)} is almost the theoretical ${m.mean}, and about two thirds of draws (${pct(m.in1, N)}) summed to <strong>${m.lo1}–${m.hi1}</strong>. A middling sum is common only because more combinations add up to it — every single combination has the same chance of winning.`),
+        m.figure,
+        more('statistics-sum.html', '번호 합계 분포 자세히 보기 →', 'More on the sum of numbers →'),
+        '        ',
+    ].join('\n');
+    const src = read('about.html');
+    return write('about.html', replaceBetween('about.html', src, 'about-dist', block));
+}
+
 // blog: build-blog.js 가 돌려준 [{ path, lastmod }]. 글의 날짜를 그대로 lastmod 로 쓴다
 function updateSitemap(blog) {
     const old = read('sitemap.xml');
@@ -1196,6 +1227,7 @@ const blog = require(path.join(__dirname, 'build-blog.js'))({ shell, write, SITE
 changed += blog.changed;
 updateHome();
 updateTaxAndTop();
+if (updateAbout()) changed++;
 const urls = updateSitemap(blog.sitemap);
 console.log(`통계 ${STATS.length}쪽 · 회차 ${draws.length}쪽 · 전체 조회 · 확률 · 블로그 ${blog.posts}편 · 사이트맵 ${urls}개 (${RANGE}, 갱신일 ${UPDATED})`);
 console.log(`바뀐 생성 페이지: ${changed}쪽`);

@@ -15,6 +15,11 @@
 // 파란 선은 늘 당시 받은 금액이다 — 사람들이 먼저 알고 싶은 값. 요약·이동평균·평균선은 고른 기준(지금 돈 가치)으로 잰다.
 // 물가지수는 cpi-data.json(tools/update-cpi.js 가 매달 받는다). 파일이 없으면 단추를 숨긴다.
 //
+// "세금: 세전/세후"는 금액 지표의 선 자체를 세후 실수령액으로 바꾼다(지금 세율, tax.html 과 같은 계산).
+// "비교: 서울 아파트 평균가"(1인당 당첨금에서만)는 그 달 서울 아파트 평균 매매가(주황, seoul-apt.json — KB부동산,
+// tools/update-seoul-apt.js 가 받는다. 2008-12 이전은 지수로 거꾸로 환산한 추정이라 점선)를 겹친다. 켜면 세후로 바꾼다.
+// 이때 튀는 몇 회차(19회 407억 등)가 세로축을 키워 아파트 선이 바닥에 붙지 않게 위쪽을 자르고 넘친 회차는 ▲로 표시한다.
+//
 // 지표는 METRICS 에 한 줄씩 늘린다. 판매액이나 2~5등이 lotto-data.json 에 들어오면 여기에 더하면 된다.
 // 세로축은 늘 하나다 — 단위가 다른 두 지표를 한 그림에 겹치지 않는다(겹치면 없는 상관이 보인다).
 (function (root, factory) {
@@ -80,6 +85,24 @@
     }
 
     /* ───── 계산 (브라우저 없이도 돈다: tools/test-prize-chart.js) ───── */
+
+    // 세후 실수령액 (tax.html 과 같은 계산): 200만 원 이하 비과세, 넘으면 구입비 1,000원을 뺀 금액에
+    // 3억 원까지 22%, 넘는 부분에만 33% (지방소득세 포함). 지금 세율로 모든 회차를 계산한다
+    function afterTax(v) {
+        if (!(v > 2000000)) return v;
+        const base = Math.max(0, v - 1000);
+        return v - Math.floor(Math.min(base, 3e8) * 0.22 + Math.max(0, base - 3e8) * 0.33);
+    }
+
+    // 그 회차 달의 서울 아파트 평균가. 아직 안 나온 달(최근 회차)은 마지막 달 값. { v, ym, est }
+    function aptAt(apt, date) {
+        if (!apt || !apt.monthly || !apt.latest || !date) return null;
+        let k = String(date).slice(0, 7);
+        if (k > apt.latest) k = apt.latest;
+        const v = apt.monthly[k];
+        if (!(v > 0)) return null;
+        return { v: v, ym: k, est: !!(apt.estimatedBefore && k < apt.estimatedBefore) };
+    }
 
     // 그 회차 금액을 기준 달(cpi.latest) 돈 가치로 바꾸는 배수. 그 달 지수가 아직 없으면(최근 회차) 1배.
     function realFactor(cpi, date) {
@@ -229,19 +252,22 @@
 
     function mount(root, draws, opts) {
         const cpi = opts && opts.cpi && opts.cpi.monthly && opts.cpi.latest ? opts.cpi : null;
+        const apt = opts && opts.apt && opts.apt.monthly && opts.apt.latest ? opts.apt : null;
         const all = draws.slice().sort((a, b) => a.round - b.round);
         const first = all[0].round;
         const indexOf = r => r - first;      // 회차는 1부터 빠짐없이 이어진다 (update-lotto-data.js 가 검사)
         const byId = id => METRICS.find(m => m.id === id) || METRICS[0];
 
         const cache = {};
-        // real: 금액을 지금 돈 가치로 (금액 지표만)
-        function seriesOf(metric, real) {
+        // real: 금액을 지금 돈 가치로, net: 세후 실수령액으로 (금액 지표만). 총액의 세후는 1인당 세후 × 당첨자 수
+        function seriesOf(metric, real, net) {
             real = !!(real && cpi && metric.unit === 'won');
-            const key = metric.id + (real ? ':real' : '');
+            net = !!(net && metric.unit === 'won');
+            const key = metric.id + (real ? ':real' : '') + (net ? ':net' : '');
             if (!cache[key]) {
                 const vals = all.map(d => {
-                    const v = metric.value(d);
+                    let v = metric.value(d);
+                    if (v != null && net) v = metric.id === 'total' ? afterTax(d.firstPrizeAmount) * d.firstPrizeWinners : afterTax(v);
                     if (v == null || !real) return v;
                     const f = realFactor(cpi, d.date);
                     return f ? v * f : v;
@@ -251,6 +277,21 @@
                 cache[key] = { vals: vals, ma: ma, real: real };
             }
             return cache[key];
+        }
+        // 비교선: 회차마다 세후 1인당 당첨금, 그 달 서울 아파트 평균가
+        let cmpCache = null;
+        function cmpSeries() {
+            if (!cmpCache) {
+                const each = byId('each');
+                const at = all.map(d => aptAt(apt, d.date));
+                cmpCache = {
+                    net: all.map(d => { const v = each.value(d); return v == null ? null : afterTax(v); }),
+                    apt: at,                                  // { v, ym, est } | null
+                    aptV: at.map(a => (a ? a.v : null)),
+                    cut: at.findIndex(a => a && !a.est),      // 실제 평균가가 시작하는 칸 (앞은 추정)
+                };
+            }
+            return cmpCache;
         }
         // "2026년 8월" / "Aug 2026"
         const ymLabel = k => {
@@ -272,6 +313,8 @@
             tool: null,          // 'h' | 't'
             pending: null,       // 추세선 첫 점 { r, v }
             hover: null,         // 전체 배열의 칸 번호
+            cmpApt: false,       // 비교: 서울 아파트 평균가 (1인당 당첨금에서만)
+            net: false,          // 세금: 세후 실수령액으로 (금액 지표만)
         };
         let drawings = store.get(DRAW_STORE) || {};
         let S = null;            // 마지막으로 그린 눈금·크기
@@ -304,6 +347,7 @@
         const nominalBtn = cell(T('pc.real.nominal'), () => setReal(false));
         const realBtn = cell(T('pc.real'), () => setReal(true));
         const cpiNote = el('p', { className: 'pchart-cpi-note', hidden: '' });
+        const cmpNote = el('p', { className: 'pchart-cpi-note', hidden: '' });
         // 출처 한 줄 (늘 보인다). 물가지수 출처 이름·링크는 cpi-data.json 이 정한다 — 받은 곳이 바뀌면 같이 바뀐다
         const cpiCredit = () => {
             if (!cpi) return '';
@@ -316,6 +360,10 @@
             T('pc.src.cpi'),
             safeLink(cpi.link || cpi.sourceUrl) ? el('a', { href: safeLink(cpi.link || cpi.sourceUrl), target: '_blank', rel: 'noopener', text: cpiCredit() }) : cpiCredit(),
             T('pc.src.cpiTail', { ym: ymLabel(cpi.latest) }),
+        ] : []).concat(apt ? [
+            T('pc.src.apt'),
+            safeLink(apt.link) ? el('a', { href: safeLink(apt.link), target: '_blank', rel: 'noopener', text: (apt.credit && (apt.credit[lang()] || apt.credit.ko)) || 'KB' }) : ((apt.credit && apt.credit.ko) || 'KB'),
+            T('pc.src.aptTail', { ym: ymLabel(apt.latest) }),
         ] : []));
 
         const chip = cell;
@@ -357,10 +405,35 @@
         ]);
         const realRow = row(T('pc.row.amount'), [nominalBtn, realBtn], false, true);
         if (!cpi) realRow.hidden = true;
+        // 세금(무료): 세전 / 세후. 당첨자 수에서는 둘 다 꺼진다
+        function setNet(on) {
+            if (byId(state.metric).unit !== 'won') return;
+            state.net = on;
+            state.pending = null;
+            render();
+        }
+        const grossBtn = cell(T('pc.tax.gross'), () => setNet(false));
+        const netBtn = cell(T('pc.tax.net'), () => setNet(true));
+        const taxRow = row(T('pc.row.tax'), [grossBtn, netBtn], false, true);
+        // 비교(무료): 1인당 당첨금에 그 달 서울 아파트 평균가를 겹친다. 다른 지표에서 누르면 1인당 당첨금으로 바꾸고,
+        // 켤 때 세후로 바꾼다 — "당첨되면 서울 집을 살 수 있나"는 세후로 봐야 맞다
+        function toggleApt() {
+            if (state.metric !== 'each') { state.metric = 'each'; state.cmpApt = true; }
+            else state.cmpApt = !state.cmpApt;
+            if (state.cmpApt) state.net = true;
+            state.pending = null;
+            render();
+        }
+        const aptBtn = cell(T('pc.cmp.apt'), toggleApt);
+        aptBtn.title = T('pc.cmp.aptTitle');
+        const cmpRow = row(T('pc.row.compare'), [aptBtn], false, true);
+        if (!apt) cmpRow.hidden = true;
         // 지표만 그래프 위 작은 상자에, 나머지 도구는 그래프 아래 상자에
         const metricBox = el('div', { className: 'pchart-tools pt-top' }, [row(T('pc.row.metric'), metricBtns, false, true)]);
         const pro = el('div', { className: 'pchart-tools is-locked' }, [
             realRow,
+            taxRow,
+            cmpRow,
             row(T('pc.pro.range'), rangeChips.concat([zoomIn, zoomOut]), true),
             row(T('pc.pro.ind'), INDICATORS.map(k => indChips[k]), true),
             row(T('pc.pro.draw'), [toolChips.h, toolChips.t, toolChips.undo, toolChips.clear], true),
@@ -395,7 +468,7 @@
         root.classList.add('pchart-body');
         // 지표 고르기 → 그래프 → 요약 줄 → 나머지 그래프 도구 상자 → (그림도구 안내) → 주의 · 출처
         // 회차별 표는 따로 두지 않는다: 바로 아래 TOP 50 표가 있고, 키보드 ←→ 로 회차마다 읽을 수 있다
-        [metricBox, stage, summary, cpiNote, pro, hint, live,
+        [metricBox, stage, summary, cpiNote, cmpNote, pro, hint, live,
             el('p', { className: 'pchart-note', text: T('pc.note') }), sourceLine].forEach(n => root.appendChild(n));
 
         /* 보조지표 · 그림도구 */
@@ -457,6 +530,12 @@
             realBtn.title = !cpi ? '' : wonMetric ? T('pc.realTitle', { ym: ymLabel(cpi.latest) }) : T('pc.realNo');
             nominalBtn.title = wonMetric ? '' : T('pc.realNo');
             const isWon = byId(state.metric).unit === 'won';
+            aptBtn.setAttribute('aria-pressed', String(state.metric === 'each' && state.cmpApt));
+            netBtn.setAttribute('aria-pressed', String(!!(state.net && wonMetric)));
+            grossBtn.setAttribute('aria-pressed', String(!(state.net && wonMetric) && wonMetric));
+            [netBtn, grossBtn].forEach(b => { if (wonMetric) b.removeAttribute('aria-disabled'); else b.setAttribute('aria-disabled', 'true'); });
+            netBtn.title = wonMetric ? T('pc.tax.netTitle') : T('pc.tax.no');
+            grossBtn.title = wonMetric ? '' : T('pc.tax.no');
             pro.classList.toggle('is-locked', !state.unlocked);
             badge.textContent = state.unlocked ? T('pc.pro.badgeOn') : T('pc.pro.badge');
             badge.classList.toggle('is-on', state.unlocked);
@@ -509,10 +588,13 @@
         function render() {
             const metric = byId(state.metric);
             const realOn = !!(state.real && cpi && metric.unit === 'won');
-            const ser = seriesOf(metric, realOn);                 // 고른 기준: 요약·이동평균·평균선이 이 값으로 잰다
-            const nominal = realOn ? seriesOf(metric, false) : null;
+            const netOn = !!(state.net && metric.unit === 'won');
+            const ser = seriesOf(metric, realOn, netOn);          // 고른 기준: 요약·이동평균·평균선이 이 값으로 잰다
+            const nominal = realOn ? seriesOf(metric, false, netOn) : null;
             const blue = realOn ? nominal.vals : ser.vals;       // 파란 선: 늘 당시 금액
             const grey = realOn ? ser.vals : null;               // 회색 선: 지금 돈 가치 (물가 반영 때만)
+            const cs = metric.id === 'each' && state.cmpApt && apt ? cmpSeries() : null;
+            const aptVals = cs ? cs.aptV : null;                  // 주황: 서울 아파트 평균가
             const start = state.view.s;
             const end = state.view.e;
             const useLog = state.unlocked && state.ind.log && metric.unit === 'won';
@@ -526,7 +608,25 @@
             const scan = arr => { for (let i = start; i <= end; i++) { const v = arr[i]; if (v != null && v > 0) { if (v > vmax) vmax = v; if (v < vmin) vmin = v; } } };
             scan(blue);
             if (grey) scan(grey);
+            if (aptVals) scan(aptVals);
             mas.forEach(n => scan(ser.ma[n]));
+            // 아파트 비교 중에는 위쪽을 자른다: 보이는 파란 값의 97% 지점과 아파트값 중 큰 것의 1.15배.
+            // 튀는 몇 회차 때문에 나머지가 바닥에 붙으면 비교가 안 된다. 넘친 회차는 맨 위에 ▲ (짚으면 값이 나온다)
+            let clipped = 0;
+            if (aptVals && !useLog) {
+                const seen = [];
+                let aMax = 0;
+                for (let i = start; i <= end; i++) {
+                    if (blue[i] != null) seen.push(blue[i]);
+                    if (aptVals[i] > aMax) aMax = aptVals[i];
+                }
+                seen.sort((a, b) => a - b);
+                const cap = Math.max(aMax, seen.length ? seen[Math.floor(0.97 * (seen.length - 1))] : 0) * 1.15;
+                if (cap > 0 && vmax > cap * 1.3) {
+                    vmax = cap;
+                    for (let i = start; i <= end; i++) if (blue[i] > cap) clipped++;
+                }
+            }
             const W = Math.max(280, Math.round(plot.clientWidth || 600));
             const H = W < 600 ? 240 : 320;
             const yt = useLog && vmin < Infinity ? logTicks(vmin, vmax) : linearTicks(vmax, H < 300 ? 4 : 5, metric.unit === 'people');
@@ -546,7 +646,7 @@
                 ? py => Math.exp(Math.log(yt.min) + (M.top + ph - py) / ph * (Math.log(yt.max) - Math.log(yt.min)))
                 : py => yt.min + (M.top + ph - py) / ph * (yt.max - yt.min);
             const ok = v => v != null && (!useLog || v > 0);
-            S = { metric: metric, ser: ser, blue: blue, grey: grey, realOn: realOn, start: start, end: end, x: x, y: y, yInv: yInv, M: M, pw: pw, ph: ph, W: W, H: H, mas: mas, ok: ok, useLog: useLog };
+            S = { metric: metric, ser: ser, blue: blue, grey: grey, netOn: netOn, aptOn: !!aptVals, cs: cs, realOn: realOn, start: start, end: end, x: x, y: y, yInv: yInv, M: M, pw: pw, ph: ph, W: W, H: H, mas: mas, ok: ok, useLog: useLog };
 
             svgRoot.textContent = '';
             svgRoot.setAttribute('viewBox', `0 0 ${W} ${H}`);
@@ -601,10 +701,10 @@
             const lw = lineWidth(pts, pw);
             data.appendChild(svg('path', { class: 'pc-area', d: area }));
             // 선 하나(면 없이): 회색 지금 돈 가치, 이동평균
-            const plain = (arr, cls, width) => {
+            const plain = (arr, cls, width, from, to) => {
                 let d = '';
                 let pen = false;
-                for (let i = start; i <= end; i++) {
+                for (let i = from == null ? start : from; i <= (to == null ? end : to); i++) {
                     const v = arr[i];
                     if (!ok(v)) { pen = false; continue; }
                     d += (pen ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1);
@@ -613,6 +713,12 @@
                 data.appendChild(svg('path', { class: cls, d: d, style: `stroke-width:${width}px` }));
             };
             if (grey) plain(grey, 'pc-real', Math.min(1.25, lw));
+            if (aptVals) {
+                // 2008-12 이전(지수로 추정)은 점선. 끊기지 않게 실제 첫 칸까지 점선으로 잇는다
+                const cut = cs.cut < 0 ? len : cs.cut;
+                if (start < cut) plain(aptVals, 'pc-apt pc-apt-est', 1.75, start, Math.min(end, cut));
+                if (end >= cut) plain(aptVals, 'pc-apt', 1.75, Math.max(start, cut), end);
+            }
             data.appendChild(svg('path', { class: 'pc-line', d: line, style: `stroke-width:${lw}px` }));
 
             // 보조지표
@@ -647,6 +753,17 @@
                 svgRoot.appendChild(rg);
             }
 
+            // 위로 넘친 회차: 맨 위에 작은 ▲
+            if (clipped) {
+                const cg = svg('g', { class: 'pc-clip' });
+                for (let i = start; i <= end; i++) {
+                    if (!(blue[i] > yt.max)) continue;
+                    const cx = x(i);
+                    cg.appendChild(svg('path', { d: `M${(cx - 3.5).toFixed(1)} ${M.top + 5}L${cx.toFixed(1)} ${M.top - 1}L${(cx + 3.5).toFixed(1)} ${M.top + 5}Z` }));
+                }
+                svgRoot.appendChild(cg);
+            }
+
             // 글자는 선 위에 (흰 테두리로 선과 겹쳐도 읽히게)
             const labels = svg('g', { class: 'pc-labels' });
             if (state.unlocked && state.ind.avg && sum.avg != null && ok(sum.avg)) {
@@ -660,19 +777,24 @@
             }
             // 끝 점
             const lastBlue = lastOk(blue, start, end, ok);
-            if (lastBlue >= 0) labels.appendChild(svg('circle', { class: 'pc-dot', cx: x(lastBlue), cy: y(blue[lastBlue]), r: 4 }));
+            if (lastBlue >= 0) labels.appendChild(svg('circle', { class: 'pc-dot', cx: x(lastBlue), cy: Math.max(M.top, y(blue[lastBlue])), r: 4 }));
             svgRoot.appendChild(labels);
 
             // 오른쪽 축 꼬리표: 보이는 구간 마지막 값(파란·회색)과 이동평균 끝값. 겹치면 아래 것을 내리고, 밖으로 나가면 되민다
             const tags = [];
             const pushTag = (arr, cls) => {
                 const i = lastOk(arr, start, end, ok);
-                if (i >= 0) tags.push({ y: y(arr[i]), text: fmtValue(metric, arr[i], true), cls: cls });
+                if (i >= 0) tags.push({ y: Math.max(M.top, y(arr[i])), text: fmtValue(metric, arr[i], true), cls: cls });
             };
             pushTag(blue, 'pc-tag-main');
-            if (grey) pushTag(grey, 'pc-tag-real');
-            // 최근 회차는 물가 배수가 1이라 파란·회색 끝값이 같다: 하나만
-            if (tags.length === 2 && tags[0].text === tags[1].text) tags.pop();
+            if (grey) {
+                pushTag(grey, 'pc-tag-real');
+                // 최근 회차는 물가 배수가 1이라 파란·회색 끝값이 같다: 하나만
+                const a = tags[tags.length - 2];
+                const b = tags[tags.length - 1];
+                if (a && b && b.cls === 'pc-tag-real' && a.text === b.text) tags.pop();
+            }
+            if (aptVals) pushTag(aptVals, 'pc-tag-apt');
             mas.forEach(n => pushTag(ser.ma[n], 'pc-tag-ma pc-tag-ma' + n));
             tags.sort((a, b) => a.y - b.y);
             const GAP = 17;
@@ -692,11 +814,17 @@
             // 범례: 선이 둘 이상이거나 이월 표시가 있을 때만
             legend.textContent = '';
             const items = [];
-            if (mas.length || rolls.length || realOn || (state.unlocked && state.ind.avg)) items.push(['pc-key-main', T(metric.key) + (realOn ? ' (' + T('pc.real.nominal') + ')' : '')]);
+            const tagNet = netOn ? ' (' + T('pc.tax.netTag') + ')' : '';
+            if (mas.length || rolls.length || realOn || aptVals || (state.unlocked && state.ind.avg)) items.push(['pc-key-main', T(metric.key) + tagNet + (realOn ? ' (' + T('pc.real.nominal') + ')' : '')]);
             if (realOn) items.push(['pc-key-real', T('pc.real') + ' (' + realAs() + ')']);
+            if (aptVals) {
+                items.push(['pc-key-apt', T('pc.cmp.aptLegend')]);
+                if (apt.estimatedBefore && cs.cut > start) items.push(['pc-key-apt-est', T('pc.cmp.aptEst', { ym: ymLabel(apt.actualFrom || apt.estimatedBefore) })]);
+            }
             mas.forEach(n => items.push(['pc-key-ma' + n, T('pc.i.ma', { n: n })]));
             if (state.unlocked && state.ind.avg) items.push(['pc-key-avg', T('pc.i.avg')]);
             if (rolls.length) items.push(['pc-key-roll', T('pc.legend.roll')]);
+            if (clipped) items.push(['pc-key-clip', T('pc.cmp.clipKey', { n: clipped })]);
             items.forEach(it => legend.appendChild(el('span', null, [el('i', { className: 'pchart-key ' + it[0], 'aria-hidden': 'true' }), it[1]])));
             legend.hidden = !items.length;
 
@@ -705,16 +833,36 @@
             const to = all[end].round;
             const preset = RANGES.find(isPreset);
             const scopeLabel = preset === undefined ? T('pc.r.custom') : preset ? T('pc.r.n', { n: preset }) : T('pc.r.all');
-            const parts = [T('pc.sum.scope', { label: scopeLabel, from: from, to: to }) + ' ' + T(metric.key) + (realOn ? ' (' + realAs() + ')' : '')];
+            const parts = [T('pc.sum.scope', { label: scopeLabel, from: from, to: to }) + ' ' + T(metric.key) + tagNet + (realOn ? ' (' + realAs() + ')' : '')];
             if (sum.avg != null) parts.push(T('pc.sum.avg', { v: fmtValue(metric, metric.unit === 'won' ? Math.round(sum.avg) : sum.avg) }));
             if (sum.hi != null) parts.push(T('pc.sum.max', { r: all[sum.hi].round, v: fmtValue(metric, ser.vals[sum.hi]) }));
             if (sum.lo != null) parts.push(T('pc.sum.min', { r: all[sum.lo].round, v: fmtValue(metric, ser.vals[sum.lo]) }));
             if (sum.rollovers) parts.push(T('pc.sum.roll', { n: sum.rollovers }));
+            if (aptVals) {
+                // 세후 1인당 당첨금이 그 달 서울 아파트 평균가 이상이었던 회차
+                let n = 0;
+                let m = 0;
+                for (let i = start; i <= end; i++) {
+                    const a = cs.apt[i];
+                    if (!a || cs.net[i] == null) continue;
+                    m++;
+                    if (cs.net[i] >= a.v) n++;
+                }
+                if (m) parts.push(T('pc.sum.aptBeat', { n: fmtInt(n), m: fmtInt(m) }));
+            }
             summary.textContent = parts.join(' · ');
             plot.setAttribute('aria-label', T('pc.plotAria', { metric: T(metric.key) }));
 
             cpiNote.hidden = !realOn;
             if (realOn) cpiNote.textContent = T('pc.real.note', { ym: ymLabel(cpi.latest) });
+            cmpNote.hidden = !(netOn || aptVals);
+            if (!cmpNote.hidden) {
+                cmpNote.textContent = [
+                    netOn ? T('pc.cmp.noteTax') : '',
+                    aptVals ? T(apt.estimatedBefore ? 'pc.cmp.noteAptEst' : 'pc.cmp.noteApt', { ym: ymLabel(apt.estimatedBefore || apt.actualFrom || apt.latest) }) : '',
+                    clipped ? T('pc.cmp.clipNote', { v: fmtValue(metric, yt.max, true) }) : '',
+                ].filter(Boolean).join(' ');
+            }
             renderNav(metric, ser, useLog);
             paintControls();
             drawHover(null);
@@ -780,15 +928,17 @@
             layer.appendChild(svg('line', { class: 'pc-cross', x1: xx, x2: xx, y1: M.top, y2: M.top + ph }));
             // 가로 십자선: 그림도구를 쓰는 중이면 손가락 높이, 아니면 파란 선 값에 붙는다
             const hv = state.tool && pointer ? S.yInv(pointer.y) : S.blue[i];
+            const yc = v => Math.max(M.top, y(v));    // 위로 잘린 값(▲)은 맨 위에
             if (ok(hv)) {
-                const hy = Math.round(state.tool && pointer ? pointer.y : y(hv)) + 0.5;
+                const hy = Math.round(state.tool && pointer ? pointer.y : yc(hv)) + 0.5;
                 layer.appendChild(svg('line', { class: 'pc-cross', x1: M.left, x2: M.left + S.pw, y1: hy, y2: hy }));
             }
             S.mas.forEach(n => { const v = ser.ma[n][i]; if (ok(v)) layer.appendChild(svg('circle', { class: 'pc-dot pc-dot-ma' + n, cx: x(i), cy: y(v), r: 4 })); });
             if (S.grey && ok(S.grey[i])) layer.appendChild(svg('circle', { class: 'pc-dot pc-dot-real', cx: x(i), cy: y(S.grey[i]), r: 4 }));
-            if (ok(S.blue[i])) layer.appendChild(svg('circle', { class: 'pc-dot', cx: x(i), cy: y(S.blue[i]), r: 5 }));
+            if (S.aptOn && S.cs.apt[i] && ok(S.cs.apt[i].v)) layer.appendChild(svg('circle', { class: 'pc-dot pc-dot-apt', cx: x(i), cy: y(S.cs.apt[i].v), r: 4 }));
+            if (ok(S.blue[i])) layer.appendChild(svg('circle', { class: 'pc-dot', cx: x(i), cy: yc(S.blue[i]), r: 5 }));
             // 축 꼬리표: 아래 가로축에 회차, 오른쪽 세로축에 값
-            if (ok(hv)) axisTag(layer, state.tool && pointer ? pointer.y : y(hv), fmtValue(metric, hv, true), 'pc-tag-cross');
+            if (ok(hv)) axisTag(layer, state.tool && pointer ? pointer.y : yc(hv), fmtValue(metric, hv, true), 'pc-tag-cross');
             const xl = T('pc.xTick', { n: all[i].round });
             const xw = Math.ceil(measure(xl) + 2 * TAG_PAD);
             const xl0 = Math.max(0, Math.min(S.W - xw, x(i) - xw / 2));
@@ -810,12 +960,14 @@
                 el('b', { text: value }), el('span', { text: label }),
             ]));
             // 물가 반영 중이면: 당시 금액 / 지금 돈 가치 / 물가가 몇 배 올랐나 (툴팁이 넓어지지 않게 이름표는 짧게)
-            row('pc-key-main', fmtValue(metric, S.blue[i]), S.realOn ? T('pc.real.nominal') : T(metric.key));
+            row('pc-key-main', fmtValue(metric, S.blue[i]), (S.realOn ? T('pc.real.nominal') : T(metric.key)) + (S.netOn ? ' (' + T('pc.tax.netTag') + ')' : ''));
+            if (S.netOn) row(null, fmtValue(metric, seriesOf(metric).vals[i]), T('pc.tax.grossRow'));
             if (S.realOn) {
                 row('pc-key-real', fmtValue(metric, S.grey[i]), realAs());
                 const f = realFactor(cpi, d.date);
                 if (f) row(null, '×' + f.toFixed(2), T('pc.real.factor'));
             }
+            cmpLines(i).forEach(c => row(c[0], c[1], c[2]));
             S.mas.forEach(n => { const v = ser.ma[n][i]; row('pc-key-ma' + n, v == null ? '—' : fmtValue(metric, metric.unit === 'won' ? Math.round(v) : v), T('pc.i.ma', { n: n })); });
             METRICS.filter(m => m.id !== metric.id).forEach(m => row(null, fmtValue(m, seriesOf(m).vals[i]), T(m.key)));
 
@@ -826,6 +978,18 @@
             if (left < 0) left = Math.max(0, Math.min(S.W - tw, x(i) - tw / 2));
             tip.style.left = left + 'px';
             tip.style.top = M.top + 'px';
+        }
+
+        // 비교 줄들: [색 표시, 값, 이름]. 그 달 서울 아파트 평균가, 세후로 몇 채
+        function cmpLines(i, short) {
+            const out = [];
+            const { metric, cs } = S;
+            const a = S.aptOn ? cs.apt[i] : null;
+            if (a) {
+                out.push(['pc-key-apt', fmtValue(metric, a.v, short), T('pc.cmp.aptAt', { ym: ymLabel(a.ym) }) + (a.est ? ' · ' + T('pc.cmp.estTag') : '')]);
+                if (cs.net[i] != null) out.push([null, T('pc.cmp.unitsVal', { n: (cs.net[i] / a.v).toFixed(2) }), T('pc.cmp.units')]);
+            }
+            return out;
         }
 
         // 휴대폰 정보 줄: 1줄 회차·날짜·번호, 그 아래 값들을 이어서 (본 지표만 긴 금액, 나머지는 짧게)
@@ -843,12 +1007,14 @@
                 keyClass ? el('i', { className: 'pchart-key ' + keyClass, 'aria-hidden': 'true' }) : null,
                 el('b', { text: value }), ' ' + label,
             ]));
-            item('pc-key-main', fmtValue(metric, S.blue[i]), S.realOn ? T('pc.real.nominal') : T(metric.key));
+            item('pc-key-main', fmtValue(metric, S.blue[i]), (S.realOn ? T('pc.real.nominal') : T(metric.key)) + (S.netOn ? ' (' + T('pc.tax.netTag') + ')' : ''));
+            if (S.netOn) item(null, fmtValue(metric, seriesOf(metric).vals[i], true), T('pc.tax.grossRow'));
             if (S.realOn) {
                 item('pc-key-real', fmtValue(metric, S.grey[i], true), realAs());
                 const f = realFactor(cpi, d.date);
                 if (f) item(null, '×' + f.toFixed(2), T('pc.real.factor'));
             }
+            cmpLines(i, true).forEach(c => item(c[0], c[1], c[2]));
             S.mas.forEach(n => { const v = ser.ma[n][i]; item('pc-key-ma' + n, v == null ? '—' : fmtValue(metric, v, true), T('pc.i.maShort', { n: n })); });
             METRICS.filter(m => m.id !== metric.id).forEach(m => item(null, fmtValue(m, seriesOf(m).vals[i], m.unit === 'won'), T(m.key)));
             readout.appendChild(vals);
@@ -1168,6 +1334,8 @@
         lineWidth: lineWidth,
         clampView: clampView,
         zoomView: zoomView,
+        afterTax: afterTax,
+        aptAt: aptAt,
         viewAround: viewAround,
         wheelWidth: wheelWidth,
         MIN_VIEW: MIN_VIEW,

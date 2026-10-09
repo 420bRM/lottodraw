@@ -54,6 +54,18 @@ check('휠 아래로 = 축소(폭이 는다)', P.wheelWidth(100, 100) > 100, P.w
 check('아주 작은 휠도 한 칸은 바뀐다', P.wheelWidth(12, -1) === 11 && P.wheelWidth(12, 1) === 13);
 check('터치패드 벌리기(ctrl)는 더 크게', P.wheelWidth(1000, -10, true) < P.wheelWidth(1000, -10));
 
+// 세후 실수령액 (tax.html 과 같은 계산)
+check('200만 원 이하는 세금 없음', P.afterTax(2000000) === 2000000);
+check('20억 → 약 13억 7,300만 (3억까지 22%, 넘는 부분 33%)', Math.round(P.afterTax(2e9) / 1e5) === 13730, P.afterTax(2e9));
+check('5억 → 약 3억 6,800만', Math.round(P.afterTax(5e8) / 1e6) === 368, P.afterTax(5e8));
+check('빈 값은 그대로', P.afterTax(null) === null);
+// 서울 아파트 평균가: 그 회차 달, 아직 없는 달은 마지막 달, 추정 구간 표시
+const apt = { latest: '2026-09', estimatedBefore: '2008-12', monthly: { '2005-03': 4e8, '2008-12': 5.25e8, '2026-09': 1.62e9 } };
+check('그 달 값', P.aptAt(apt, '2008-12-06').v === 5.25e8 && !P.aptAt(apt, '2008-12-06').est);
+check('추정 구간 표시', P.aptAt(apt, '2005-03-12').est === true);
+check('아직 안 나온 달은 마지막 달', P.aptAt(apt, '2026-10-03').ym === '2026-09');
+check('값이 없는 달은 null', P.aptAt(apt, '2010-01-02') === null);
+
 // 물가 반영: 금액 × 지수(기준 달) ÷ 지수(그 달)
 const cpi = { latest: '2026-08', monthly: { '2002-12': 50, '2014-03': 80, '2026-08': 120 } };
 check('물가 배수 = 기준 달 ÷ 그 달', Math.abs(P.realFactor(cpi, '2002-12-07') - 2.4) < 1e-9, P.realFactor(cpi, '2002-12-07'));
