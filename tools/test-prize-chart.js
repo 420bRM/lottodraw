@@ -43,6 +43,17 @@ check('짚은 회차가 제자리에 머문다', (() => { const v = P.zoomView(1
 check('최대로 축소하면 전체', same(P.zoomView(1244, zin, 4), full), JSON.stringify(P.zoomView(1244, zin, 4)));
 check('계속 확대해도 최소 폭에서 멈춘다', (() => { let v = full; for (let k = 0; k < 20; k++) v = P.zoomView(1244, v, 0.5); return v.e - v.s + 1 === P.MIN_VIEW; })());
 
+// 휠 · 두 손가락: 커서 자리 칸이 화면 같은 자리에 머문다
+const va = P.viewAround(1244, 100, 600, 0.25);
+check('커서 자리(1/4 지점)에 그 칸이 온다', va.e - va.s + 1 === 100 && Math.abs((600 - va.s) / 99 - 0.25) < 0.01, JSON.stringify(va));
+check('왼쪽 끝 너머로는 안 간다', same(P.viewAround(1244, 100, 5, 0.9), { s: 0, e: 99 }), JSON.stringify(P.viewAround(1244, 100, 5, 0.9)));
+check('오른쪽 끝 너머로는 안 간다', P.viewAround(1244, 100, 1243, 0).e === 1243);
+check('최소 폭 아래로는 안 좁힌다', (() => { const v = P.viewAround(1244, 3, 500, 0.5); return v.e - v.s + 1 === P.MIN_VIEW; })());
+check('휠 위로 = 확대(폭이 준다)', P.wheelWidth(1244, -100) < 1244 && P.wheelWidth(1244, -100) > 900, P.wheelWidth(1244, -100));
+check('휠 아래로 = 축소(폭이 는다)', P.wheelWidth(100, 100) > 100, P.wheelWidth(100, 100));
+check('아주 작은 휠도 한 칸은 바뀐다', P.wheelWidth(12, -1) === 11 && P.wheelWidth(12, 1) === 13);
+check('터치패드 벌리기(ctrl)는 더 크게', P.wheelWidth(1000, -10, true) < P.wheelWidth(1000, -10));
+
 // 물가 반영: 금액 × 지수(기준 달) ÷ 지수(그 달)
 const cpi = { latest: '2026-08', monthly: { '2002-12': 50, '2014-03': 80, '2026-08': 120 } };
 check('물가 배수 = 기준 달 ÷ 그 달', Math.abs(P.realFactor(cpi, '2002-12-07') - 2.4) < 1e-9, P.realFactor(cpi, '2002-12-07'));
