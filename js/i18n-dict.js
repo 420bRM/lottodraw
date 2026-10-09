@@ -138,7 +138,7 @@ window.I18N_DICT = {
     'pc.pro.title':  { ko: '이용권 기능', en: 'Pass features' },
     'pc.row.metric': { ko: '지표', en: 'Metric' },
     'pc.row.amount': { ko: '금액 기준', en: 'Amounts' },
-    'about.distAria': { ko: '통계 그림 미리 보기', en: 'A look at the statistics' },
+    'about.distAria': { ko: '자료 둘러보기', en: 'Explore the data' },
     'pc.row.compare': { ko: '비교', en: 'Compare' },
     'pc.cmp.apt':    { ko: '서울 아파트 평균가', en: 'Seoul flat price' },
     'pc.cmp.aptTitle': { ko: '1인당 당첨금 옆에 그 달 서울 아파트 평균 매매가(KB부동산)를 그립니다', en: 'Draw the average Seoul apartment price of that month (KB Real Estate) next to the prize per winner' },
