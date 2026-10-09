@@ -702,7 +702,6 @@ html.home { scroll-behavior: smooth; }
     margin: 0 0 28px;
 }
 .prose .pchart h2 { margin-top: 0; }
-.prose .pchart-lead { margin: 0 0 4px; color: var(--muted); font-size: 14px; }
 .pchart-loading { min-height: 320px; color: var(--muted); }
 /* 그래프 도구: 큰 사각형 하나. 줄마다 [이름 칸 | 단추 칸들], 단추는 모서리 없는 사각형이고 1px 선으로만 나뉜다.
    지표 · 금액 기준(무료)과 구간 설정 · 보조지표 · 그림도구(이용권)가 한 묶음으로 읽히게 같은 모양을 쓴다 */
@@ -874,15 +873,14 @@ html.home { scroll-behavior: smooth; }
 .prose .pchart-source { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
 .pchart-source a { color: inherit; text-decoration: underline; }
 .prose h2.top-table-h { margin-top: 8px; }
-/* TOP 50 페이지: 그래프는 맨 위 접는 상자(처음엔 펼침). 제목 줄을 누르면 접혀 아래 TOP 50 표가 바로 보인다 */
-.pchart-fold { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 0 6px; border-bottom: 2px solid var(--brand); cursor: pointer; list-style: none; }
+/* TOP 50 페이지: 그래프는 맨 위 접는 상자(처음엔 펼침). 제목 줄을 누르면 접혀 아래 TOP 50 표가 바로 보인다(설명 문단 없음) */
+.pchart-fold { display: block; padding: 4px 0 6px; border-bottom: 2px solid var(--brand); cursor: pointer; list-style: none; }
 .pchart-fold::-webkit-details-marker { display: none; }
 .pchart-fold:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .prose .pchart-fold h2 { margin: 0; }
-.pchart-fold-hint { flex: none; padding: 3px 10px; border: 1px solid #c9d1de; background: #f3f6fb; color: var(--brand); font-size: 13px; font-weight: bold; white-space: nowrap; }
-.pchart-fold:hover .pchart-fold-hint { background: #e3eaf7; }
-.pchart-fold-hint::after { content: ' ▲'; }
-details.pchart:not([open]) .pchart-fold-hint::after { content: ' ▼'; }
+/* 제목 바로 뒤 "(클릭하여 접기)" · 접혔을 때 "(클릭하여 열기)" */
+.pchart-fold-hint { margin-left: 6px; color: var(--muted); font-size: 13px; font-weight: normal; }
+@media (hover: hover) { .pchart-fold:hover .pchart-fold-hint { color: var(--brand); text-decoration: underline; } }
 details.pchart[open] .when-closed, details.pchart:not([open]) .when-open { display: none; }
 details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 /* 지표 상자는 그래프 위, 나머지 그래프 도구 상자는 그래프·요약 줄 아래 */

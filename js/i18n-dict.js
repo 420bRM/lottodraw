@@ -124,12 +124,11 @@ window.I18N_DICT = {
     'top.note':      { en: '* Amounts per winner are rounded for readability.<br>* Total first-prize figures are exact to the won.' },
     'top.back':      { en: 'Back to the generator' },
     'top.h2':        { en: 'Top 50 by amount per winner' },
-    'top.fold':      { en: 'Collapse' },
-    'top.unfold':    { en: 'Expand' },
+    'top.fold':      { en: '(click to collapse)' },
+    'top.unfold':    { en: '(click to expand)' },
 
     /* ───── 회차별 그래프 (js/prize-chart.js) ───── */
     'pc.h2':         { en: 'First prize, draw by draw' },
-    'pc.lead':       { en: 'Draws run left to right; choose what to plot. You can also view it as monthly candles. Point at the chart to read any draw and its winning numbers. With a pass you can set the range — recent draws only, zoom in and out, or move the window.' },
     'pc.loading':    { en: 'Loading the chart…' },
     'pc.metricAria': { ko: '그래프에 그릴 지표', en: 'What to plot' },
     'pc.rangeAria':  { ko: '기간', en: 'Range' },
