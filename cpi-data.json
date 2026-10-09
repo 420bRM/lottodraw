@@ -1,7 +1,12 @@
 {
  "source": "DBnomics (OECD 소비자물가지수, 한국 총지수)",
- "sourceUrl": "https://db.nomics.world/OECD/DSD_PRICES@DF_PRICES_ALL/KOR.M.N.CPI.IX._T.N._Z",
- "note": "월별 소비자물가지수(총지수). 그래프는 두 달의 비율만 쓰므로 기준연도와 상관없다.",
+ "credit": {
+  "ko": "OECD 소비자물가지수 (한국 통계청 작성)",
+  "en": "OECD consumer price indices (compiled by Statistics Korea)"
+ },
+ "link": "https://db.nomics.world/OECD/DSD_PRICES@DF_PRICES_ALL/KOR.M.N.CPI.IX._T.N._Z",
+ "via": "DBnomics",
+ "note": "월별 소비자물가지수(총지수). 그래프는 두 달의 비율만 쓰므로 기준연도와 상관없다. 매월 7일 자동 갱신(.github/workflows/update-cpi.yml).",
  "updated": "2026-10-09",
  "latest": "2026-05",
  "monthly": {
