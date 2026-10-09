@@ -331,14 +331,16 @@
             el('a', { href: 'statistics.html', text: T('pc.pro.see') }),
         ]);
         // 한 줄: 왼쪽 이름 칸(유료 줄은 아래에 "이용권"), 오른쪽 단추 칸들. 단추는 1px 선으로만 나뉜다
-        const row = (label, buttons, paid) => el('div', { className: 'pt-row' + (paid ? ' is-paid' : ''), role: 'group', 'aria-label': label }, [
+        // fit: 단추가 몇 개 안 되는 줄은 줄 폭을 등분하지 않고 글자 길이만큼만 차지한다
+        const row = (label, buttons, paid, fit) => el('div', { className: 'pt-row' + (paid ? ' is-paid' : '') + (fit ? ' is-fit' : ''), role: 'group', 'aria-label': label }, [
             el('div', { className: 'pt-label' }, [el('span', { text: label }), paid ? el('small', { className: 'pt-paid', text: T('pc.pro.badge') }) : null]),
             el('div', { className: 'pt-btns' }, buttons),
         ]);
-        const realRow = row(T('pc.row.amount'), [nominalBtn, realBtn]);
+        const realRow = row(T('pc.row.amount'), [nominalBtn, realBtn], false, true);
         if (!cpi) realRow.hidden = true;
+        // 지표만 그래프 위 작은 상자에, 나머지 도구는 그래프 아래 상자에
+        const metricBox = el('div', { className: 'pchart-tools pt-top' }, [row(T('pc.row.metric'), metricBtns, false, true)]);
         const pro = el('div', { className: 'pchart-tools is-locked' }, [
-            row(T('pc.row.metric'), metricBtns),
             realRow,
             row(T('pc.pro.range'), rangeChips.concat([zoomIn, zoomOut]), true),
             row(T('pc.pro.ind'), INDICATORS.map(k => indChips[k]), true),
@@ -384,8 +386,8 @@
 
         root.textContent = '';
         root.classList.add('pchart-body');
-        // 그래프가 먼저 보이게: 그래프 → 요약 줄 → 그래프 도구 상자 → (그림도구 안내) → 표 · 주의 · 출처
-        [stage, summary, cpiNote, pro, hint, live, table,
+        // 지표 고르기 → 그래프 → 요약 줄 → 나머지 그래프 도구 상자 → (그림도구 안내) → 표 · 주의 · 출처
+        [metricBox, stage, summary, cpiNote, pro, hint, live, table,
             el('p', { className: 'pchart-note', text: T('pc.note') }), sourceLine].forEach(n => root.appendChild(n));
 
         /* 보조지표 · 그림도구 */

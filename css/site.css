@@ -722,6 +722,12 @@ html.home { scroll-behavior: smooth; }
 .pt-btn[aria-pressed="true"] { background: var(--brand); color: #fff; font-weight: bold; }
 .pt-btn[aria-disabled="true"] { background: #fafafa; color: #aaa; cursor: not-allowed; }
 .pt-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+/* 단추가 적은 줄(지표 · 금액 기준): 등분하지 않고 글자 길이만큼 */
+.pt-row.is-fit .pt-btn { flex: 0 0 auto; padding: 0 16px; }
+/* 그래프 위 지표 상자: 내용만큼의 폭 */
+.pchart-tools.pt-top { width: max-content; max-width: 100%; margin: 10px 0 0; }
+.pt-top .pt-row { grid-template-columns: auto minmax(0, auto); }
+.pt-top .pt-label { padding: 6px 12px; }
 .pt-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 7px 10px; border-top: 1px solid #c9d1de; background: #f3f6fb; }
 .pchart-tools .lock-mark { border-radius: 0; }
 .pchart-tools .lock-mark.is-on { background: var(--brand); color: #fff; }
@@ -850,12 +856,17 @@ html.home { scroll-behavior: smooth; }
 .pchart-table .data-table th { position: sticky; top: 0; }
 .pchart-table .data-table th, .pchart-table .data-table td { padding: 6px 8px; font-size: 13px; }
 .prose h2.top-table-h { margin-top: 8px; }
-/* 그래프 도구 상자는 PC·휴대폰 모두 그래프·요약 줄 아래에 있다(그래프가 먼저 보이게) */
+/* 지표 상자는 그래프 위, 나머지 그래프 도구 상자는 그래프·요약 줄 아래 */
 .pchart-body { display: flex; flex-direction: column; }
 @media (max-width: 599px) {
     .pt-row { grid-template-columns: minmax(0, 1fr); }
     .pt-label { flex-direction: row; align-items: baseline; gap: 6px; padding: 5px 10px; border-right: 0; border-bottom: 1px solid #c9d1de; }
     .pt-btn { flex-basis: 30%; min-height: 36px; }
+    .pt-row.is-fit .pt-btn { padding: 0 12px; }
+    /* 그래프 위 지표 상자는 휴대폰에서도 이름을 왼쪽에 둔다(한 줄로) */
+    .pt-top .pt-row { grid-template-columns: auto minmax(0, auto); }
+    .pt-top .pt-label { flex-direction: column; padding: 5px 8px; border-right: 1px solid #c9d1de; border-bottom: 0; }
+    .pt-top .pt-row.is-fit .pt-btn { padding: 0 9px; font-size: 12px; }   /* 폭 320px 안쪽에서도 한 줄에 */
     .pchart-loading { min-height: 240px; }
 }
 
