@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 // 동행복권 공식 조회 API → lotto-data.json 증분 갱신.
+// 같은 응답의 2~5등(당첨 게임 수 · 1게임당 금액)과 회차 판매액은 prize-data.json 에 따로 둔다.
+// lotto-data.json 은 모든 페이지가 받으므로 가볍게 두고, 2~5등은 쓰는 곳(생성기 · TOP 50)만 읽는다.
+// 2026-10 Actions 로그로 확인: 1회부터 rnk2~5WnNope/WnAmt, wholEpsdSumNtslAmt(판매액)가 다 있다.
+// rlvtEpsdSumNtslAmt 는 판매액이 아니다(262회 이후 판매액의 절반쯤 — 당첨금 재원 쪽).
 //
 //   node tools/update-lotto-data.js            새 회차 추가 + 최근 3회차 재확인
 //   node tools/update-lotto-data.js --full     1회차부터 전부 API와 대조해 교정
@@ -14,12 +18,14 @@ const https = require('https');
 const path = require('path');
 
 const FILE = path.join(__dirname, '..', 'lotto-data.json');
+const PRIZE_FILE = path.join(__dirname, '..', 'prize-data.json');
 const API = 'https://www.dhlottery.co.kr/lt645/selectPstLt645Info.do?srchLtEpsd=';
 const UA = 'Mozilla/5.0 (compatible; lottodraw.kr data updater)';
 // 추첨 직후에 받으면 1등 당첨자 수/금액이 0으로 들어오는 경우가 있다(1228회가 그랬다).
 // 매번 최근 몇 회차를 다시 받아 늦게 확정된 값을 반영한다.
 const REFRESH_RECENT = 3;
 const DELAY_MS = 150;
+const FULL_DELAY_MS = 300;   // 전 회차를 다시 받을 때는 조금 더 천천히
 
 const args = process.argv.slice(2);
 const FULL = args.includes('--full');
@@ -49,10 +55,23 @@ function getText(url) {
     });
 }
 
-// 반환: 회차 객체, 또는 아직 추첨 전이면 null.
+// 응답 한 줄 → 2~5등 · 판매액. 숫자가 아니면 null(그 회차는 비워 둔다)
+const PRIZE_KEYS = [['w2', 'rnk2WnNope'], ['a2', 'rnk2WnAmt'], ['w3', 'rnk3WnNope'], ['a3', 'rnk3WnAmt'],
+    ['w4', 'rnk4WnNope'], ['a4', 'rnk4WnAmt'], ['w5', 'rnk5WnNope'], ['a5', 'rnk5WnAmt'], ['sales', 'wholEpsdSumNtslAmt']];
+function prizeOf(x) {
+    const p = { round: x.ltEpsd };
+    for (const [k, src] of PRIZE_KEYS) {
+        const v = Number(x[src]);
+        if (!Number.isInteger(v) || v < 0) return null;
+        p[k] = v;
+    }
+    return p;
+}
+
+// 반환: { draw, prize }, 또는 아직 추첨 전이면 null. prize 는 2~5등 · 판매액(못 읽으면 null).
 // "추첨 전(빈 목록)"과 "차단/구조 변경(JSON 아님)"을 구분해야 한다 — 뒤쪽을 끝으로
 // 착각하면 무인 실행에서 조용히 갱신이 멈춘다.
-async function fetchRound(round) {
+async function fetchRoundFull(round) {
     let lastErr;
     for (let attempt = 1; attempt <= 4; attempt++) {
         try {
@@ -67,7 +86,7 @@ async function fetchRound(round) {
             const x = list[0];
             if (x.ltEpsd !== round) throw new Error(`${round}회를 요청했는데 ${x.ltEpsd}회가 왔다`);
             const ymd = String(x.ltRflYmd);
-            return {
+            const draw = {
                 round: x.ltEpsd,
                 date: `${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}`,
                 numbers: [x.tm1WnNo, x.tm2WnNo, x.tm3WnNo, x.tm4WnNo, x.tm5WnNo, x.tm6WnNo].sort((a, b) => a - b),
@@ -75,6 +94,7 @@ async function fetchRound(round) {
                 firstPrizeWinners: x.rnk1WnNope,
                 firstPrizeAmount: x.rnk1WnAmt,
             };
+            return { draw: draw, prize: prizeOf(x) };
         } catch (e) {
             lastErr = e;
             if (/JSON이 아닌|예상과 다른|요청했는데/.test(e.message)) break; // 재시도해도 같다
@@ -82,6 +102,26 @@ async function fetchRound(round) {
         }
     }
     throw new Error(`${round}회 조회 실패: ${lastErr.message}`);
+}
+// 회차 객체만 (tools/wait-for-draw.js 가 쓴다)
+const fetchRound = round => fetchRoundFull(round).then(r => (r ? r.draw : null));
+
+// 2~5등 검사: 정수 · 0 이상, 당첨 게임이 있으면 금액도 있어야 한다.
+// 추첨 직후에는 2~5등이 0으로 올 수 있다 — 5등 0게임이면 "아직 집계 전"으로 보고 오류로 치지 않는다(다음 실행이 고친다)
+function validatePrize(list) {
+    const errs = [];
+    list.forEach(p => {
+        PRIZE_KEYS.forEach(([k]) => { if (!Number.isInteger(p[k]) || p[k] < 0) errs.push(`${p.round}회 ${k} 이상: ${p[k]}`); });
+        if (p.w5 > 0) [2, 3, 4, 5].forEach(r => { if (p['w' + r] > 0 && !(p['a' + r] > 0)) errs.push(`${p.round}회 ${r}등 당첨 게임은 있는데 금액이 0`); });
+    });
+    return errs;
+}
+// prize-data.json: 회차 하나에 한 줄 (diff 가 회차 단위로 보이게)
+function prizeJson(list, lastUpdated, eol) {
+    const head = { source: '동행복권 회차별 당첨 결과(selectPstLt645Info.do)', note: 'w2~w5: 당첨 게임 수, a2~a5: 1게임당 당첨금(원), sales: 회차 판매액(원). 1등은 lotto-data.json', lastUpdated: lastUpdated };
+    const lines = list.map(p => '    ' + JSON.stringify(p));
+    return '{' + eol + Object.keys(head).map(k => `  ${JSON.stringify(k)}: ${JSON.stringify(head[k])},`).join(eol) + eol
+        + '  "draws": [' + eol + lines.join(',' + eol) + eol + '  ]' + eol + '}' + eol;
 }
 
 function validate(data) {
@@ -126,6 +166,17 @@ async function main() {
     const byRound = new Map(data.draws.map(d => [d.round, d]));
     const maxRound = data.draws.reduce((m, d) => Math.max(m, d.round), 0);
 
+    // 2~5등 (없으면 새로 만든다 — 처음엔 --full 로 채운다)
+    let prizeRaw = '';
+    try { prizeRaw = fs.readFileSync(PRIZE_FILE, 'utf8'); } catch (e) { /* 처음 */ }
+    const prizeBy = new Map((prizeRaw ? JSON.parse(prizeRaw).draws : []).map(p => [p.round, p]));
+    let prizeChanged = 0;
+    let prizeMissing = 0;
+    const putPrize = (r, p) => {
+        if (!p) { prizeMissing++; return; }
+        if (JSON.stringify(prizeBy.get(r)) !== JSON.stringify(p)) { prizeBy.set(r, p); prizeChanged++; }
+    };
+
     const added = [];
     const changed = [];
 
@@ -133,18 +184,22 @@ async function main() {
     console.log(`현재 ${maxRound}회차까지 보유. ${refreshFrom}~${maxRound}회 재확인 후 ${maxRound + 1}회부터 새로 받는다.`);
 
     for (let r = refreshFrom; r <= maxRound; r++) {
-        const got = await fetchRound(r);
-        if (!got) throw new Error(`${r}회는 이미 보유한 회차인데 API가 빈 목록을 돌려줬다`);
+        const res = await fetchRoundFull(r);
+        if (!res) throw new Error(`${r}회는 이미 보유한 회차인데 API가 빈 목록을 돌려줬다`);
+        const got = res.draw;
         const diffs = diffDraw(byRound.get(r), got);
         if (diffs.length) { changed.push({ round: r, diffs }); byRound.set(r, got); }
+        putPrize(r, res.prize);
         if (FULL && r % 100 === 0) console.log(`  … ${r}회 확인`);
-        await sleep(DELAY_MS);
+        await sleep(FULL ? FULL_DELAY_MS : DELAY_MS);
     }
 
     for (let r = maxRound + 1; ; r++) {
-        const got = await fetchRound(r);
-        if (!got) break;
+        const res = await fetchRoundFull(r);
+        if (!res) break;
+        const got = res.draw;
         byRound.set(r, got);
+        putPrize(r, res.prize);
         added.push(r);
         console.log(`  + ${r}회 ${got.date} [${got.numbers.join(', ')}] +${got.bonus}`);
         await sleep(DELAY_MS);
@@ -153,7 +208,8 @@ async function main() {
     const draws = [...byRound.values()].sort((a, b) => b.round - a.round);
     const next = { totalDraws: draws.length, lastUpdated: draws[0].date || data.lastUpdated, draws };
 
-    const errs = validate(next);
+    const prizeList = [...prizeBy.values()].filter(p => byRound.has(p.round)).sort((a, b) => b.round - a.round);
+    const errs = validate(next).concat(validatePrize(prizeList));
     if (errs.length) {
         console.error(`검증 실패 — 파일을 쓰지 않는다:\n  ${errs.slice(0, 20).join('\n  ')}${errs.length > 20 ? `\n  … 외 ${errs.length - 20}건` : ''}`);
         process.exit(1);
@@ -167,16 +223,19 @@ async function main() {
     let out = JSON.stringify(next, null, 2).replace(/\n/g, eol);
     if (trailing) out += eol;
 
+    const prizeOut = prizeJson(prizeList, next.lastUpdated, eol);
+    const prizeIsChanged = prizeOut !== prizeRaw;
     const isChanged = out !== raw;
     console.log(`\n추가 ${added.length}회차, 교정 ${changed.length}회차 → 최신 ${draws[0].round}회 (${next.lastUpdated})`);
-    setOutput('changed', isChanged);
+    console.log(`2~5등: ${prizeList.length}회차 보유, 이번에 바뀐 회차 ${prizeChanged}${prizeMissing ? `, 응답에서 못 읽은 회차 ${prizeMissing}` : ''}`);
+    setOutput('changed', isChanged || prizeIsChanged);
     setOutput('latest', draws[0].round);
     setOutput('added', added.length);
 
-    if (!isChanged) { console.log('변경 없음.'); return; }
+    if (!isChanged && !prizeIsChanged) { console.log('변경 없음.'); return; }
     if (DRY) { console.log('--dry-run: 파일은 쓰지 않았다.'); return; }
-    fs.writeFileSync(FILE, out);
-    console.log(`${path.basename(FILE)} 저장.`);
+    if (isChanged) { fs.writeFileSync(FILE, out); console.log(`${path.basename(FILE)} 저장.`); }
+    if (prizeIsChanged) { fs.writeFileSync(PRIZE_FILE, prizeOut); console.log(`${path.basename(PRIZE_FILE)} 저장.`); }
 }
 
 // tools/wait-for-draw.js 가 fetchRound 를 빌려 쓴다. 불러 쓸 때는 수집을 돌리지 않는다.
