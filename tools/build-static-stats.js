@@ -890,9 +890,9 @@ function roundPage(d) {
             tierRow(5, '3개 번호 일치', '3 numbers', p.w5, p.a5),
         ], 'tier-table'),
         pEn(`${d.round}회 총 판매액은 <strong>${wonExact(p.sales)}</strong>입니다. 당첨 게임 수는 한 사람이 같은 번호로 여러 게임을 산 경우도 따로 셉니다.`
-            + (d.round < FIRST_1000_WON ? ' 이 회차는 1게임이 2,000원이던 때(1~87회)라 당첨금이 지금보다 큽니다.' : ''),
+            + (d.round < FIRST_1000_WON ? ' 이 회차는 1게임이 2,000원이던 때(1~87회)입니다. 5등도 지금(5,000원)의 두 배인 10,000원이었습니다. 세후 칸은 지금 1게임 1,000원 기준으로 셉니다.' : ''),
             `Total sales for draw ${d.round} were <strong>${wonExactEn(p.sales)}</strong>. Winning games count each ticket line separately, even when one person bought the same numbers several times.`
-            + (d.round < FIRST_1000_WON ? ' Back then (draws 1–87) one game cost 2,000 KRW, so prizes were larger than today.' : ''), 'note'),
+            + (d.round < FIRST_1000_WON ? ' Back then (draws 1–87) one game cost 2,000 KRW, and 5th prize paid 10,000 KRW, twice today\'s 5,000. The after-tax column uses today\'s 1,000 KRW game.' : ''), 'note'),
     ] : [];
 
     const cum = cumulative[d.round];
@@ -904,7 +904,7 @@ function roundPage(d) {
         crumbs: [['draws.html', '회차별 당첨번호', null, 'All draws'], [null, `${d.round}회`, null, `Draw ${d.round}`]],
         title: `로또 ${d.round}회 당첨번호 (${d.date}) ${nums.join(' ')} + ${d.bonus}`,
         h1: `로또 ${d.round}회 당첨번호`, h1En: `Lotto Draw ${d.round}`,
-        desc: `로또 6/45 제${d.round}회(${d.date}) 당첨번호는 ${nums.join(', ')}, 보너스 ${d.bonus}. ${descPrize}${descSecond}. 등수별 당첨금과 홀짝·합계·연속번호·AC값 분석.`,
+        desc: `로또 6/45 제${d.round}회(${d.date}) 당첨번호는 ${nums.join(', ')}, 보너스 ${d.bonus}. ${descPrize}${descSecond}. ${p ? '등수별 당첨금과 ' : ''}홀짝·합계·연속번호·AC값 분석.`,
         scope: en(`${d.date} 추첨`, `Drawn on ${d.date}`),
         body: [
             `<div class="round-balls" aria-label="당첨번호 ${nums.join(', ')} 보너스 ${d.bonus}">${nums.map(bigBall).join('')}<span class="plus">+</span>${bigBall(d.bonus)}</div>`,

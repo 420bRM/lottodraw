@@ -61,7 +61,7 @@
 | `tools/update-seoul-apt.js` | 서울 아파트 평균 매매가(KB부동산 데이터허브, 키 없음, 2008-12부터)와 KB 아파트 매매가격지수(1986년부터)를 받아 `seoul-apt.json` 으로. 2002-12 ~ 2008-11 은 지수로 거꾸로 환산한 추정. 강남은 `gangnam` 칸 = **강남3구(강남 · 서초 · 송파) 84㎡ 아파트값의 평균** — 구마다 ㎡당 평균 매매가 × 84㎡(전용, 국민평형)를 만들어 달마다 단순 평균. KB 평균가 자료에는 구 단위가 없고 ㎡당 평균가(`avgPrcPerSqmt?지역코드=11`)에만 25개 구가 있다(2013-04부터, 그 앞은 구마다 지수로 추정). ㎡당 응답은 값이 날짜보다 1개 적어 앞에서부터 맞춘다(기사 값으로 확인). 공개 문서가 없는 주소라 실패하면 기존 파일을 그대로 둔다. GitHub Actions `update-seoul-apt.yml`(매월 1·16일)에서 돈다 |
 | `js/share.js` | 공유 줄 단추 달기: `[data-share]` 안의 `.share-btns` 에 휴대폰 공유 창(Web Share, 카톡 등) · 링크 복사 · X · 페이스북 · 네이버 · 밴드. 주소는 `data-url`, 제목은 `data-title`(영어 화면이면 `data-title-en` + `?lang=en`). 카톡 전용 카드는 카카오 앱 키가 있어야 해서 아직 없음 |
 | `js/dist-balls.js` | 번호 공을 쌓은 분포 그림(많이 나온 번호 순위 · About 미리 보기)에서 공을 짚으면 밝게 띄우고 나머지는 옅게, 공 위에 "34번 · 187회" 이름표. 그림은 생성기가 미리 그린 SVG(`data-n` · `data-c`), 스크립트가 없어도 CSS `:hover` 로 밝아진다 |
-| `js/prize-chart.js` | TOP 50 페이지의 회차별 그래프(SVG). **지표는 맨 위 `METRICS` 에 한 줄씩 늘린다** — 판매액·2~5등을 넣으려면 먼저 `tools/update-lotto-data.js` 가 그 값을 받아 `lotto-data.json` 에 넣어야 한다. 계산 시험: `node tools/test-prize-chart.js` |
+| `js/prize-chart.js` | TOP 50 페이지의 회차별 그래프(SVG). **지표는 맨 위 `METRICS` 에 한 줄씩 늘린다** — 판매액·2~5등은 `prize-data.json`(수집기가 이미 받는다)에 있으니 그래프가 그 파일도 받게 한 뒤 늘린다 — `lotto-data.json` 에는 넣지 않는다(모든 페이지가 받는다). 계산 시험: `node tools/test-prize-chart.js` |
 | `js/license.js` | 이용권 키의 서명·기간·환불 여부를 **브라우저 안에서** 판정 |
 | `js/premium.js` | 결제 페이지: 주문서, 입금 안내, 주문 상태 확인, 잠금/해제 |
 | `js/premium-config.js` | 결제 서버 주소, 화면 가격, **판매자 정보**(공개돼도 되는 값만) |
@@ -70,7 +70,7 @@
 | `worker/` | **결제·이용권 서버** (Cloudflare Worker). 주문, 키 서명, 환불 목록, 페이앱 연동 |
 | `js/i18n.js` | 한국어 ↔ 영어 전환 엔진 |
 | `js/i18n-dict.js` | **번역 사전. 문구를 고칠 곳은 여기 한 군데다** |
-| `tools/update-lotto-data.js` | 동행복권에서 새 회차 받아오기 (`lotto-data.json` + 2~5등 · 판매액 `prize-data.json`. `--full` 은 1회부터 전부 다시) |
+| `tools/update-lotto-data.js` | 동행복권에서 새 회차 받아오기 (`lotto-data.json` + 2~5등 · 판매액 `prize-data.json`. `--full` 은 1회부터 전부 다시, `--missing` 은 2~5등이 비었거나 집계 전인 회차만 — 둘 다 한 회차가 실패해도 멈추지 않는다. Actions 에서 다시 채우려면 git 기록 `7e94341` 의 일회용 워크플로 `backfill-prize-data.yml` 같은 것을 잠깐 넣는다) |
 | `tools/wait-for-draw.js` | 토요일 밤 추첨 결과(1등 당첨자 수까지)가 나올 때까지 기다리기 (`draw-night` 이 쓴다) |
 | `tools/indexnow.js` | 바뀐 페이지를 네이버·Bing 에 바로 알리기 (IndexNow) |
 | `tools/build-static-stats.js` | 통계 페이지, 회차 페이지, 블로그, 사이트맵 다시 만들기 |

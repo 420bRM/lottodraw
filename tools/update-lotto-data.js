@@ -113,13 +113,14 @@ const fetchRound = round => fetchRoundFull(round).then(r => (r ? r.draw : null))
 
 // 2~5등 검사: 정수 · 0 이상, 당첨 게임이 있으면 금액도 있어야 한다.
 // 추첨 직후에는 2~5등이 0으로 올 수 있다 — 5등 0게임이면 "아직 집계 전"으로 보고 오류로 치지 않는다(다음 실행이 고친다)
-function validatePrize(list) {
+function prizeProblems(p) {
     const errs = [];
-    list.forEach(p => {
-        PRIZE_KEYS.forEach(([k]) => { if (!Number.isInteger(p[k]) || p[k] < 0) errs.push(`${p.round}회 ${k} 이상: ${p[k]}`); });
-        if (p.w5 > 0) [2, 3, 4, 5].forEach(r => { if (p['w' + r] > 0 && !(p['a' + r] > 0)) errs.push(`${p.round}회 ${r}등 당첨 게임은 있는데 금액이 0`); });
-    });
+    PRIZE_KEYS.forEach(([k]) => { if (!Number.isInteger(p[k]) || p[k] < 0) errs.push(`${p.round}회 ${k} 이상: ${p[k]}`); });
+    if (p.w5 > 0) [2, 3, 4, 5].forEach(r => { if (p['w' + r] > 0 && !(p['a' + r] > 0)) errs.push(`${p.round}회 ${r}등 당첨 게임은 있는데 금액이 0`); });
     return errs;
+}
+function validatePrize(list) {
+    return [].concat(...list.map(prizeProblems));
 }
 // prize-data.json: 회차 하나에 한 줄 (diff 가 회차 단위로 보이게)
 function prizeJson(list, lastUpdated, eol) {
@@ -177,8 +178,12 @@ async function main() {
     const prizeBy = new Map((prizeRaw ? JSON.parse(prizeRaw).draws : []).map(p => [p.round, p]));
     let prizeChanged = 0;
     let prizeMissing = 0;
+    // 새로 받은 2~5등이 앞뒤가 안 맞으면(당첨 게임은 있는데 금액 0 등) 이번에는 저장하지 않는다 — 1등 갱신을 막지 않고,
+    // 최근 회차는 다음 실행이 다시 받는다(REFRESH_RECENT). 파일에 이미 있던 값이 이상한 것만 검증에서 멈춘다
     const putPrize = (r, p) => {
         if (!p) { prizeMissing++; return; }
+        const bad = prizeProblems(p);
+        if (bad.length) { prizeMissing++; console.log(`  ! 2~5등 값이 이상해 이번에는 건너뛴다: ${bad.join(' / ')}`); return; }
         if (JSON.stringify(prizeBy.get(r)) !== JSON.stringify(p)) { prizeBy.set(r, p); prizeChanged++; }
     };
 

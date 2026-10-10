@@ -27,7 +27,7 @@
 // tools/update-seoul-apt.js 가 받는다. 2008-12 이전은 지수로 거꾸로 환산한 추정이라 점선)를 겹친다. 켜면 세후로 바꾼다.
 // 세로축은 기본 화면과 똑같이 잡는다(자르지 않는다). 전체 기간에서 아파트 선이 낮게 깔리면 구간·로그 눈금으로 본다.
 //
-// 지표는 METRICS 에 한 줄씩 늘린다. 판매액이나 2~5등이 lotto-data.json 에 들어오면 여기에 더하면 된다.
+// 지표는 METRICS 에 한 줄씩 늘린다. 판매액 · 2~5등은 prize-data.json 에 있다(페이지가 그 파일도 받게 한 뒤 더한다).
 // 세로축은 늘 하나다 — 단위가 다른 두 지표를 한 그림에 겹치지 않는다(겹치면 없는 상관이 보인다).
 (function (root, factory) {
     if (typeof module === 'object' && module.exports) module.exports = factory();
