@@ -1,10 +1,11 @@
 // TOP 50 당첨금 페이지 맨 위의 회차별 그래프(#prize-chart, 접는 상자 — 처음엔 펼침). 가로는 회차, 세로는 고른 지표.
 // 상자를 접으면(폭 0) 그리기를 미뤘다가 펼칠 때 다시 그린다.
 //
-// 그래프(지표 고르기, 물가 반영, 짚어서 값 보기)는 무료이고 늘 전체 기간을 보인다.
-// 구간 설정(최근 N회·확대·축소·휠·끌어 옮기기·두 손가락·작은 그래프), 보조지표(평균선·이동평균·로그 눈금),
-// 그림도구(수평선·추세선)는 이용권이 있을 때만 켜진다. 이 잠금도 license.js 와 같은 편의 잠금이다.
-// 단, 처음 화면의 20회 · 240회 이동평균(DEFAULT_IND)은 누구나 본다 — 끄고 켜기 · 다른 보조지표는 이용권.
+// 무료: 지표 고르기, 짚어서 값 보기, 구간 설정(최근 N회·확대·축소·휠·끌어 옮기기·두 손가락·작은 그래프),
+//       세전, 서울 아파트 비교, 선 · 월봉, 240회 이동평균(FREE_IND — 처음부터 보이고 끄고 켜기는 이용권).
+// 이용권: 물가 반영, 세후, 강남3구 아파트값 비교, 분기봉 · 연봉, 보조지표(평균선 · 20/60/120/240회 이동평균 끄고 켜기 ·
+//       로그 눈금), 그림도구(수평선·추세선). 이용권이 있으면 처음 화면은 물가 반영 + 20회 · 240회 이동평균(DEFAULT_IND).
+// 이 잠금도 license.js 와 같은 편의 잠금이다.
 // 도구 상자에는 줄마다 "이용권"을 달지 않고, 잠겼을 때 맨 아래 한 줄로 "이용권이 없으면 일부 기능은 제한"이라고 안내한다.
 //
 // 세로축 눈금은 왼쪽. 보이는 구간의 마지막 값(파란 · 회색 · 주황)은 선이 끝나는 오른쪽에 꼬리표로 붙는다(이동평균 끝값은
@@ -51,9 +52,11 @@
     const RANGES = [50, 100, 300, 0];      // 0 = 전체
     const MA = [20, 60, 120, 240];
     const INDICATORS = ['avg'].concat(MA.map(n => 'ma' + n), ['log']);
-    // 처음 켜 두는 보조지표 — 이용권이 없어도 보인다(바꾸기는 이용권). 이용권이 있으면 고른 것을 기억해 그것을 쓴다
+    // 처음 켜 두는 보조지표. 이용권이 있으면 DEFAULT_IND(고른 것을 기억해 그것을 쓴다),
+    // 없으면 FREE_IND — 240회 이동평균만 보인다(끄고 켜기 · 다른 보조지표는 이용권)
     const DEFAULT_IND = { ma20: true, ma240: true };
-    const defaultInd = () => Object.fromEntries(INDICATORS.map(k => [k, !!DEFAULT_IND[k]]));
+    const FREE_IND = { ma240: true };
+    const indOf = base => Object.fromEntries(INDICATORS.map(k => [k, !!base[k]]));
     const MIN_VIEW = 10;                   // 확대해도 이보다 좁게는 안 본다 (회차 수)
 
     // 점이 촘촘할수록 선을 가늘게: 전체 기간(1,200여 회)을 한 화면에 넣으면 2px 선은 뭉개진다.
@@ -328,6 +331,7 @@
                 const at = all.map(d => aptAt(apt, d.date));
                 const gt = all.map(d => aptAt(gn, d.date));
                 cmpCache = {
+                    gross: all.map(d => each.value(d)),       // 세전 1인당 (세후가 잠겼거나 꺼졌을 때 "몇 채" 기준)
                     net: all.map(d => { const v = each.value(d); return v == null ? null : afterTax(v); }),
                     apt: at,                                  // { v, ym, est } | null
                     aptV: at.map(a => (a ? a.v : null)),
@@ -351,17 +355,17 @@
         const state = {
             metric: METRICS[0].id,
             view: { s: 0, e: len - 1 },   // 보는 구간 (전체 배열의 칸 번호)
-            ind: defaultInd(),
-            savedInd: Object.assign(defaultInd(), saved.ind),   // 예전에 저장한 값에 없는 칸(예: ma240)은 처음 값으로
+            ind: indOf(FREE_IND),
+            savedInd: Object.assign(indOf(DEFAULT_IND), saved.ind),   // 예전에 저장한 값에 없는 칸(예: ma240)은 처음 값으로
             unlocked: false,
             gated: false,        // 로그인 전: 그래프를 흐리게
-            real: true,          // 물가 반영 (처음부터 켠다. 물가 자료가 없거나 당첨자 수 지표면 무시)
+            real: true,          // 물가 반영 (이용권 — 있으면 처음부터 켜진다. 물가 자료가 없거나 당첨자 수 지표면 무시)
             tool: null,          // 'h' | 't'
             pending: null,       // 추세선 첫 점 { r, v }
             hover: null,         // 전체 배열의 칸 번호
             cmpApt: false,       // 비교: 서울 아파트 평균가 (1인당 당첨금에서만)
             cmpGn: false,        // 비교: 강남3구 84㎡ 아파트값 (1인당 당첨금에서만)
-            net: false,          // 세금: 세후 실수령액으로 (금액 지표만)
+            net: false,          // 세금: 세후 실수령액으로 (이용권, 금액 지표만)
             candle: null,        // 봉 차트: null(선, 처음 화면) | 'm'(월봉, 무료) | 'q' · 'y'(이용권)
         };
         let drawings = store.get(DRAW_STORE) || {};
@@ -388,6 +392,7 @@
         });
         // 금액 기준: 당시 금액 / 물가 반영(지금 돈 가치). 당첨자 수에서는 둘 다 꺼진다
         function setReal(on) {
+            if (on && !state.unlocked) return flashNote();   // 물가 반영은 이용권
             if (byId(state.metric).unit !== 'won') return;
             state.real = on;
             state.pending = null;
@@ -435,7 +440,7 @@
             c.dataset.v = u;
             return c;
         });
-        // 구간 설정(이용권): 최근 N회·전체, 확대·축소. 잠겨 있으면 늘 전체 기간이다
+        // 구간 설정(무료): 최근 N회·전체, 확대·축소
         const rangeChips = RANGES.map(n => {
             const c = chip(n ? T('pc.r.n', { n: n }) : T('pc.r.all'), () => pickRange(n));
             c.dataset.v = String(n);
@@ -453,7 +458,7 @@
         ]);
         // 이용권이 있으면 조작법 한 줄 (손가락 화면과 마우스 화면이 다르다)
         const coarse = !!(g.matchMedia && g.matchMedia('(pointer: coarse)').matches);
-        const helpNote = el('p', { className: 'pchart-help', hidden: '', text: T(coarse ? 'pc.help.touch' : 'pc.help.mouse') });
+        const helpNote = el('p', { className: 'pchart-help', text: T(coarse ? 'pc.help.touch' : 'pc.help.mouse') });   // 구간 조작은 무료라 늘 보인다
         // 한 줄: 왼쪽 이름 칸, 오른쪽 단추 칸들. 단추는 1px 선으로만 나뉜다. 이용권 줄이라고 따로 적지 않는다(맨 아래 안내 한 줄)
         // fit: 단추가 몇 개 안 되는 줄은 줄 폭을 등분하지 않고 글자 길이만큼만 차지한다
         const row = (label, buttons, paid, fit) => el('div', { className: 'pt-row' + (paid ? ' is-paid' : '') + (fit ? ' is-fit' : ''), role: 'group', 'aria-label': label }, [
@@ -464,6 +469,7 @@
         if (!cpi) realRow.hidden = true;
         // 세금(무료): 세전 / 세후. 당첨자 수에서는 둘 다 꺼진다
         function setNet(on) {
+            if (on && !state.unlocked) return flashNote();   // 세후는 이용권
             if (byId(state.metric).unit !== 'won') return;
             state.net = on;
             state.pending = null;
@@ -476,6 +482,7 @@
         // 켤 때 세후로 바꾼다 — "당첨되면 서울 집을 살 수 있나"는 세후로 봐야 맞다. 아파트값은 그 달 값(당시 금액)이라
         // 물가 반영(지금 돈 가치 회색 선)은 끈다 — 회색 선과 아파트값을 견주면 잘못 읽는다
         function toggleCmp(k) {
+            if (k === 'cmpGn' && !state.unlocked) return flashNote();   // 강남3구 비교는 이용권
             if (state.metric !== 'each') { state.metric = 'each'; state[k] = true; }
             else state[k] = !state[k];
             if (state[k]) { state.net = true; state.real = false; }
@@ -496,7 +503,7 @@
             taxRow,
             cmpRow,
             row(T('pc.row.candle'), candleChips, false),
-            row(T('pc.pro.range'), rangeChips.concat([zoomIn, zoomOut]), true),
+            row(T('pc.pro.range'), rangeChips.concat([zoomIn, zoomOut]), false),
             row(T('pc.pro.ind'), INDICATORS.map(k => indChips[k]), true),
             row(T('pc.pro.draw'), [toolChips.h, toolChips.t, toolChips.undo, toolChips.clear], true),
             el('div', { className: 'pt-foot' }, [badge, proNote, helpNote]),
@@ -545,11 +552,9 @@
             render();
         }
         function pickRange(n) {
-            if (!state.unlocked) return flashNote();
             setView(presetView(n), true);
         }
         function zoomBy(factor) {
-            if (!state.unlocked) return flashNote();
             setView(zoomView(len, state.view, factor, state.hover), true);
         }
         function toggleInd(k) {
@@ -586,29 +591,32 @@
             metricBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === state.metric)));
             const w = state.view.e - state.view.s + 1;
             const lockIf = (c, off) => { if (off) c.setAttribute('aria-disabled', 'true'); else c.removeAttribute('aria-disabled'); };
-            rangeChips.forEach(c => { c.setAttribute('aria-pressed', String(state.unlocked && isPreset(Number(c.dataset.v)))); lockIf(c, !state.unlocked); });
+            rangeChips.forEach(c => c.setAttribute('aria-pressed', String(isPreset(Number(c.dataset.v)))));
             candleChips.forEach(c => { c.setAttribute('aria-pressed', String((state.candle || '') === c.dataset.v)); lockIf(c, !state.unlocked && !freeCandle(c.dataset.v)); });
-            lockIf(zoomIn, !state.unlocked || w <= Math.min(MIN_VIEW, len));
-            lockIf(zoomOut, !state.unlocked || w >= len);
-            nav.hidden = !state.unlocked;     // 작은 그래프(구간 옮기기)도 이용권 기능
+            lockIf(zoomIn, w <= Math.min(MIN_VIEW, len));
+            lockIf(zoomOut, w >= len);
             const wonMetric = byId(state.metric).unit === 'won';
-            realBtn.setAttribute('aria-pressed', String(!!(state.real && wonMetric)));
-            nominalBtn.setAttribute('aria-pressed', String(!(state.real && wonMetric) && wonMetric));
-            [realBtn, nominalBtn].forEach(b => { if (wonMetric) b.removeAttribute('aria-disabled'); else b.setAttribute('aria-disabled', 'true'); });
+            const realShown = !!(state.real && wonMetric && state.unlocked);
+            realBtn.setAttribute('aria-pressed', String(realShown));
+            nominalBtn.setAttribute('aria-pressed', String(!realShown && wonMetric));
+            lockIf(nominalBtn, !wonMetric);
+            lockIf(realBtn, !wonMetric || !state.unlocked);
             realBtn.title = !cpi ? '' : wonMetric ? T('pc.realTitle', { ym: ymLabel(cpi.latest) }) : T('pc.realNo');
             nominalBtn.title = wonMetric ? '' : T('pc.realNo');
             const isWon = byId(state.metric).unit === 'won';
             aptBtn.setAttribute('aria-pressed', String(state.metric === 'each' && state.cmpApt));
-            gnBtn.setAttribute('aria-pressed', String(state.metric === 'each' && state.cmpGn));
-            netBtn.setAttribute('aria-pressed', String(!!(state.net && wonMetric)));
-            grossBtn.setAttribute('aria-pressed', String(!(state.net && wonMetric) && wonMetric));
-            [netBtn, grossBtn].forEach(b => { if (wonMetric) b.removeAttribute('aria-disabled'); else b.setAttribute('aria-disabled', 'true'); });
+            gnBtn.setAttribute('aria-pressed', String(state.metric === 'each' && state.cmpGn && state.unlocked));
+            lockIf(gnBtn, !state.unlocked);
+            const netShown = !!(state.net && wonMetric && state.unlocked);
+            netBtn.setAttribute('aria-pressed', String(netShown));
+            grossBtn.setAttribute('aria-pressed', String(!netShown && wonMetric));
+            lockIf(grossBtn, !wonMetric);
+            lockIf(netBtn, !wonMetric || !state.unlocked);
             netBtn.title = wonMetric ? T('pc.tax.netTitle') : T('pc.tax.no');
             grossBtn.title = wonMetric ? '' : T('pc.tax.no');
             pro.classList.toggle('is-locked', !state.unlocked);
             badge.hidden = !state.unlocked;
             proNote.hidden = state.unlocked;
-            helpNote.hidden = !state.unlocked;
             INDICATORS.forEach(k => {
                 const c = indChips[k];
                 const off = !state.unlocked || (k === 'log' && !isWon);
@@ -660,8 +668,8 @@
             // 접힌 상자 안(폭 0)에서는 그리지 않는다 — 펼치면 ResizeObserver 가 폭을 보고 다시 그린다
             if (plot.isConnected && !plot.clientWidth) { lastW = 0; return; }
             const metric = byId(state.metric);
-            const realOn = !!(state.real && cpi && metric.unit === 'won');
-            const netOn = !!(state.net && metric.unit === 'won');
+            const realOn = !!(state.real && state.unlocked && cpi && metric.unit === 'won');   // 물가 반영 · 세후는 이용권
+            const netOn = !!(state.net && state.unlocked && metric.unit === 'won');
             const ser = seriesOf(metric, realOn, netOn);          // 고른 기준: 요약·이동평균·평균선이 이 값으로 잰다
             const nominal = realOn ? seriesOf(metric, false, netOn) : null;
             // 봉 차트: 고른 기준(물가 반영·세후) 값으로 봉을 묶는다. 이때 선은 그리지 않는다
@@ -669,9 +677,10 @@
             const bars = unit ? ((ser.candles = ser.candles || {})[unit] = ser.candles[unit] || candles(all.map(d => d.date), ser.vals, unit)) : null;
             const blue = unit ? ser.vals : realOn ? nominal.vals : ser.vals;   // 파란 선: 늘 당시 금액
             const grey = unit ? null : realOn ? ser.vals : null;               // 회색 선: 지금 돈 가치 (물가 반영 때만)
-            const cs = metric.id === 'each' && ((state.cmpApt && apt) || (state.cmpGn && gn)) ? cmpSeries() : null;
+            const gnOk = !!(state.cmpGn && gn && state.unlocked);                 // 강남3구 비교는 이용권
+            const cs = metric.id === 'each' && ((state.cmpApt && apt) || gnOk) ? cmpSeries() : null;
             const aptVals = cs && state.cmpApt ? cs.aptV : null;  // 주황: 서울 아파트 평균가
-            const gnVals = cs && state.cmpGn && gn ? cs.gnV : null; // 자주: 강남 아파트 평균가
+            const gnVals = cs && gnOk ? cs.gnV : null;            // 자주: 강남3구 아파트값
             const start = state.view.s;
             const end = state.view.e;
             const useLog = state.unlocked && state.ind.log && metric.unit === 'won';
@@ -924,22 +933,23 @@
             if (sum.hi != null) parts.push(T('pc.sum.max', { r: all[sum.hi].round, v: fmtValue(metric, ser.vals[sum.hi]) }));
             if (sum.lo != null) parts.push(T('pc.sum.min', { r: all[sum.lo].round, v: fmtValue(metric, ser.vals[sum.lo]) }));
             if (sum.rollovers) parts.push(T('pc.sum.roll', { n: sum.rollovers }));
-            // 세후 1인당 당첨금이 그 달 아파트 평균가 이상이었던 회차
+            // 1인당 당첨금(보이는 기준: 세후 또는 세전)이 그 달 아파트 평균가 이상이었던 회차
+            const mine = cs ? (netOn ? cs.net : cs.gross) : null;
             const beat = list => {
                 let n = 0;
                 let m = 0;
                 for (let i = start; i <= end; i++) {
                     const a = list[i];
-                    if (!a || cs.net[i] == null) continue;
+                    if (!a || mine[i] == null) continue;
                     m++;
-                    if (cs.net[i] >= a.v) n++;
+                    if (mine[i] >= a.v) n++;
                 }
                 return m ? { n: fmtInt(n), m: fmtInt(m) } : null;
             };
             const bApt = aptVals ? beat(cs.apt) : null;
-            if (bApt) parts.push(T('pc.sum.aptBeat', bApt));
+            if (bApt) parts.push(T(netOn ? 'pc.sum.aptBeat' : 'pc.sum.aptBeatGross', bApt));
             const bGn = gnVals ? beat(cs.gn) : null;
-            if (bGn) parts.push(T('pc.sum.gnBeat', Object.assign({ name: gnName() }, bGn)));
+            if (bGn) parts.push(T(netOn ? 'pc.sum.gnBeat' : 'pc.sum.gnBeatGross', Object.assign({ name: gnName() }, bGn)));
             summary.textContent = parts.join(' · ');
             plot.setAttribute('aria-label', T('pc.plotAria', { metric: T(metric.key) }));
 
@@ -1067,16 +1077,17 @@
         function cmpLines(i, short) {
             const out = [];
             const { metric, cs } = S;
+            const mine = S.netOn ? cs.net : cs.gross;   // 보이는 선과 같은 기준(세후/세전)으로 "몇 채"
             const est = a => (a.est ? ' · ' + T('pc.cmp.estTag') : '');
             const a = S.aptOn ? cs.apt[i] : null;
             if (a) {
                 out.push(['pc-key-apt', fmtValue(metric, a.v, short), T('pc.cmp.aptAt', { ym: ymLabel(a.ym) }) + est(a)]);
-                if (cs.net[i] != null) out.push([null, T('pc.cmp.unitsVal', { n: (cs.net[i] / a.v).toFixed(2) }), T('pc.cmp.units')]);
+                if (mine[i] != null) out.push([null, T('pc.cmp.unitsVal', { n: (mine[i] / a.v).toFixed(2) }), T(S.netOn ? 'pc.cmp.units' : 'pc.cmp.unitsGross')]);
             }
             const g = S.gnOn ? cs.gn[i] : null;
             if (g) {
                 out.push(['pc-key-gn', fmtValue(metric, g.v, short), T('pc.cmp.gnAt', { name: gnName(), ym: ymLabel(g.ym) }) + est(g)]);
-                if (cs.net[i] != null) out.push([null, T('pc.cmp.unitsVal', { n: (cs.net[i] / g.v).toFixed(2) }), T('pc.cmp.gnUnits', { name: gnName() })]);
+                if (mine[i] != null) out.push([null, T('pc.cmp.unitsVal', { n: (mine[i] / g.v).toFixed(2) }), T(S.netOn ? 'pc.cmp.gnUnits' : 'pc.cmp.gnUnitsGross', { name: gnName() })]);
             }
             return out;
         }
@@ -1129,11 +1140,11 @@
         const showAt = p => { state.hover = p.i; drawHover(p); };
         const hideHover = () => { if (state.hover === null) return; state.hover = null; drawHover(null); };
 
-        /* 조작 (구간 설정이라 이용권 기능). 거래소 차트처럼:
+        /* 조작 (구간 설정 — 무료). 거래소 차트처럼:
          *  PC     휠 = 확대·축소(커서 자리가 제자리), 가로 휠·Shift+휠 = 옮기기, 끌기 = 옮기기, 두 번 클릭 = 전체 기간
          *  휴대폰 두 손가락 = 확대·축소·옮기기, 확대해 있으면 옆으로 밀기 = 옮기기, 길게 누른 채 밀기 = 값 보기
-         * 잠겨 있거나 전체 기간이면 손가락으로 옆으로 밀 때 값을 본다(옮길 데가 없다). 그림도구를 쓰는 중에는 옮기지 않는다. */
-        const canMove = () => state.unlocked && !state.gated && !state.tool;
+         * 전체 기간이면 손가락으로 옆으로 밀 때 값을 본다(옮길 데가 없다). 그림도구를 쓰는 중에는 옮기지 않는다. */
+        const canMove = () => !state.gated && !state.tool;
         const zoomed = () => state.view.e - state.view.s + 1 < len;
         const pts = new Map();   // 누르고 있는 마우스·손가락: pointerId → svg 좌표
         let gest = null;         // { kind: 'pan' | 'pinch' | 'wait' | 'scrub' | 'idle', … }
@@ -1299,7 +1310,7 @@
         // 이용권이 있으면 보는 구간 끝을 넘어갈 때 구간도 따라 옮긴다
         plot.addEventListener('keydown', e => {
             if (!S) return;
-            if (state.unlocked && (e.key === '+' || e.key === '=' || e.key === '-' || e.key === '_')) {
+            if (e.key === '+' || e.key === '=' || e.key === '-' || e.key === '_') {
                 e.preventDefault();
                 setView(zoomView(len, state.view, e.key === '-' || e.key === '_' ? 2 : 0.5, state.hover), true);
                 return;
@@ -1340,7 +1351,7 @@
             return { px: px, i: Math.round((px - N.L) / N.pw * (len - 1)) };
         }
         nav.addEventListener('pointerdown', e => {
-            if (!N || !state.unlocked) return;
+            if (!N) return;
             const p = navIndex(e);
             const xs = N.x(state.view.s);
             const xe = N.x(state.view.e);
@@ -1366,7 +1377,6 @@
         nav.addEventListener('pointercancel', navEnd);
         // 키보드: ← → 구간 옮기기, + - 확대·축소
         nav.addEventListener('keydown', e => {
-            if (!state.unlocked) return;
             const w = state.view.e - state.view.s + 1;
             const step = Math.max(1, Math.round(w / 10));
             if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
@@ -1410,11 +1420,10 @@
                     INDICATORS.forEach(k => { state.ind[k] = !!state.savedInd[k]; });
                 } else {
                     state.savedInd = Object.assign({}, state.ind);
-                    state.ind = defaultInd();   // 이용권이 없으면 처음 값(20회 · 240회 이동평균)으로
+                    state.ind = indOf(FREE_IND);   // 이용권이 없으면 240회 이동평균만
                     state.tool = null;
                     state.pending = null;
                     if (!freeCandle(state.candle)) state.candle = null;   // 분기봉·연봉은 잠기므로 처음 화면(선)으로
-                    state.view = { s: 0, e: len - 1 };   // 구간 설정도 잠기므로 전체 기간으로
                 }
                 render();
             },
@@ -1424,6 +1433,7 @@
     return {
         METRICS: METRICS,
         DEFAULT_IND: DEFAULT_IND,
+        FREE_IND: FREE_IND,
         mount: mount,
         movingAverage: movingAverage,
         realFactor: realFactor,

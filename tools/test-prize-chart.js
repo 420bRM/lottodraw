@@ -30,7 +30,8 @@ check('값이 하나뿐이어도 로그 위아래가 다르다', one.max > one.m
 
 // 처음 보이는 지표 · 선 굵기 · 확대
 check('처음 보이는 지표는 총 1등 당첨금', P.METRICS[0].id === 'total', P.METRICS[0].id);
-check('처음 켜 둔 이동평균은 20회 · 240회', JSON.stringify(P.DEFAULT_IND) === JSON.stringify({ ma20: true, ma240: true }), JSON.stringify(P.DEFAULT_IND));
+check('이용권이 있으면 처음 켜 둔 이동평균은 20회 · 240회', JSON.stringify(P.DEFAULT_IND) === JSON.stringify({ ma20: true, ma240: true }), JSON.stringify(P.DEFAULT_IND));
+check('이용권이 없으면 240회 이동평균만 보인다', JSON.stringify(P.FREE_IND) === JSON.stringify({ ma240: true }), JSON.stringify(P.FREE_IND));
 check('점이 드물면 선이 굵다(2px)', P.lineWidth(50, 1000) === 2, P.lineWidth(50, 1000));
 check('전체 기간(1,244회·1,100px)은 1px 이하', P.lineWidth(1244, 1100) <= 1, P.lineWidth(1244, 1100));
 check('휴대폰 전체 기간은 더 가늘다', P.lineWidth(1244, 300) < P.lineWidth(1244, 1100));
