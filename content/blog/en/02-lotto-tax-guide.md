@@ -15,13 +15,13 @@ Lotto prize tax comes down to two sentences. **Prizes of 2m KRW or less are tax-
 
 Under tax law, lottery winnings count as "other income". They fall under separate taxation (final withholding), which means the tax is withheld at source when the prize is paid and nothing more is owed. Winnings are not added to your other income, so the tax is the same whether your salary is high or low.
 
-The tax-free threshold used to be 50,000 KRW, but it rose to 2m KRW in 2023. So today 4th prize (50,000 KRW) and 5th prize (5,000 KRW), and most 3rd prizes too, are paid with no tax.
+The tax-free threshold used to be 50,000 KRW, but it rose to 2m KRW in 2023. So today 4th prize (50,000 KRW) and 5th prize (5,000 KRW) are paid with no tax, and so is any 3rd prize of 2m KRW or less.
 
 ## Common mistake 1: the 2m KRW is not a "deduction"
 
 The 2m KRW is not an amount taken off your prize. It is **the threshold that decides whether tax applies at all**. If a prize is even 1 KRW over 2m KRW, 22% applies to the **full amount**, not just to the part above 2m KRW.
 
-A 3rd prize is usually between 1.3m and 1.7m KRW, so it is tax-free. But in a draw with unusually few 3rd-prize winners, it can go over 2m KRW. For example, if 3rd prize is 2.1m KRW, 462,000 KRW is taken in tax and you receive 1,638,000 KRW. That is less than you would take home from a 1.9m KRW 3rd prize.
+Nine times out of ten a 3rd prize is between 1.1m and 1.7m KRW, so it is tax-free. Since draw 88, when a game started costing 1,000 KRW, not even the largest, draw 91 at 1,982,242 KRW, has gone over 2m KRW. Still, a draw with unusually few 3rd-prize winners could push it over. For example, if 3rd prize is 2.1m KRW, 462,000 KRW is taken in tax and you receive 1,638,000 KRW. That is less than you would take home from a 1.9m KRW 3rd prize.
 
 ## Common mistake 2: 33% applies only to the part above 300m KRW
 
@@ -67,6 +67,6 @@ When a ticket bought with pooled money wins, tax is withheld at source **on the 
 
 ## Work it out yourself
 
-Use the [after-tax calculator](/tax.html), which shows the tax and take-home amount under the rules above as soon as you enter a prize. It also reflects the threshold where the full amount is taxed once a prize goes even 1 KRW over 2m KRW, and the subtraction of the 1,000 KRW ticket price.
+Use the [after-tax calculator](/tax.html), which shows the tax and take-home amount under the rules above as soon as you enter a prize. It also reflects the threshold where the full amount is taxed once a prize goes even 1 KRW over 2m KRW, and the subtraction of the 1,000 KRW ticket price. What 2nd and 3rd prizes have actually paid, with averages and draw-by-draw records, is in [2nd and 3rd prize statistics](/statistics-prize-2-3.html).
 
 > This article explains the general structure of the tax rules and is not tax advice. If your situation is specific, such as a joint win or a gift, talk to a tax professional.

@@ -730,10 +730,12 @@ html.home { scroll-behavior: smooth; }
 .pt-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
 /* 단추가 적은 줄(지표 · 금액 기준): 등분하지 않고 글자 길이만큼 */
 .pt-row.is-fit .pt-btn { flex: 0 0 auto; padding: 0 16px; }
-/* 그래프 위 지표 상자: 내용만큼의 폭 */
-.pchart-tools.pt-top { width: max-content; max-width: 100%; margin: 10px 0 0; }
-.pt-top .pt-row { grid-template-columns: auto minmax(0, auto); }
+/* 그래프 위 지표 상자: 내용만큼의 폭. 줄이 둘(1등 · 2·3등)이라 이름 칸 폭을 subgrid 로 맞추고,
+   짧은 줄의 단추는 남는 폭을 나눠 채운다(빈 칸이 단추처럼 보이지 않게). subgrid 를 모르는 브라우저는 줄마다 따로 잰다 */
+.pchart-tools.pt-top { display: grid; grid-template-columns: auto minmax(0, auto); width: max-content; max-width: 100%; margin: 10px 0 0; }
+.pt-top .pt-row { grid-column: 1 / -1; grid-template-columns: auto minmax(0, auto); grid-template-columns: subgrid; }
 .pt-top .pt-label { padding: 6px 12px; }
+.pt-top .pt-row.is-fit .pt-btn { flex: 1 0 auto; }
 .pt-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 7px 10px; border-top: 1px solid #c9d1de; background: #f3f6fb; }
 .pchart-tools .lock-mark { border-radius: 0; }
 .pchart-tools .lock-mark.is-on { background: var(--brand); color: #fff; }
@@ -899,7 +901,7 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
     .pt-btn { flex-basis: 30%; min-height: 36px; }
     .pt-row.is-fit .pt-btn { padding: 0 12px; }
     /* 그래프 위 지표 상자는 휴대폰에서도 이름을 왼쪽에 둔다(한 줄로) */
-    .pt-top .pt-row { grid-template-columns: auto minmax(0, auto); }
+    .pt-top .pt-row { grid-template-columns: auto minmax(0, auto); grid-template-columns: subgrid; }
     .pt-top .pt-label { flex-direction: column; padding: 5px 8px; border-right: 1px solid #c9d1de; border-bottom: 0; }
     .pt-top .pt-row.is-fit .pt-btn { padding: 0 9px; font-size: 12px; }   /* 폭 320px 안쪽에서도 한 줄에 */
     .pchart-loading { min-height: 240px; }
@@ -1024,6 +1026,14 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 .draws-table td { white-space: nowrap; }
 .kv-table td:first-child { font-weight: bold; text-align: left; }
 .kv-table td:last-child { text-align: left; }
+/* 2·3등 당첨금 통계 · 실수령액 표: 한글이 글자 단위로 끊기지 않게(띄어쓰기에서만 줄을 바꾼다).
+   긴 설명은 칸 안 둘째 줄(.sub)로 내리고, 휴대폰에서는 글자를 줄여 표가 옆으로 밀리지 않게 한다 */
+.tier-stat th, .tier-stat td { word-break: keep-all; }
+.tier-stat .sub { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; font-weight: normal; }
+.tier-glance td:first-child, .tier-records td:first-child, .tier-tax td:first-child { font-weight: bold; text-align: left; }
+/* 금액 칸은 "원"만 다음 줄로 떨어지지 않게 한 줄로 (첫 칸 이름표만 줄을 바꾼다) */
+.tier-glance td + td, .tier-years td + td { white-space: nowrap; }
+@media (max-width: 599px) { .prose .data-table.tier-stat th, .prose .data-table.tier-stat td { padding: 6px 7px; font-size: 13px; } }
 .round-nav { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 8px; }
 .round-nav .btn { margin-top: 0; }
 .stat-index h3 { margin: 0 0 10px; color: var(--brand); font-size: 16px; }

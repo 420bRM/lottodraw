@@ -107,11 +107,35 @@ check('당첨자 수 최저는 0명(이월)', draws.map(winners.value)[w.lo] ===
 const d = draws[draws.length - 1];
 check('총 당첨금 = 1인당 × 인원', total.value(d) === d.firstPrizeAmount * d.firstPrizeWinners);
 
+// 2·3등 1게임당 (top-prize.html 이 prize-data.json 의 a2 · a3 · w2 · w3 를 회차에 붙인다)
+const second = P.METRICS.find(m => m.id === 'second');
+const third = P.METRICS.find(m => m.id === 'third');
+check('2·3등 지표가 있고 금액 지표다', !!(second && third && second.tier && third.tier && second.unit === 'won' && third.unit === 'won'));
+check('1등 지표는 2·3등 묶음이 아니다', P.METRICS.filter(m => !m.tier).map(m => m.id).join() === 'total,winners,each');
+check('2등 금액', second.value({ w2: 80, a2: 60175749 }) === 60175749);
+check('3등 금액', third.value({ w3: 3731, a3: 1290287 }) === 1290287);
+check('2등 당첨이 없던 회차(3 · 5회)는 빈칸', second.value({ w2: 0, a2: 0 }) === null);
+check('2·3등 자료가 없는 회차는 빈칸', second.value({ round: 1 }) === null && third.value({ round: 1 }) === null);
+const prize = require(path.join(ROOT, 'prize-data.json'));
+const tierBy = {};
+prize.draws.forEach(p => { tierBy[p.round] = p; });
+const merged = draws.map(x => Object.assign({}, x, tierBy[x.round] ? { w2: tierBy[x.round].w2, a2: tierBy[x.round].a2, w3: tierBy[x.round].w3, a3: tierBy[x.round].a3 } : {}));
+const s2 = P.summarize(merged, merged.map(second.value), 0, merged.length - 1);
+const best2 = prize.draws.filter(p => p.w2 > 0).reduce((a, b) => (b.a2 > a.a2 ? b : a));
+check('2등 전체 최고가 자료의 최고 회차와 같다', merged[s2.hi].round === best2.round, `${merged[s2.hi].round} vs ${best2.round}`);
+
 // 글자 (I18N 이 없으면 한국어)
 check('금액 긴 표기 (만 원 아래 버림, 홈 상세 분석과 같다)', P.wonLong(1604686625) === '16억 468만 원', P.wonLong(1604686625));
 check('금액 긴 표기 (억 딱 떨어짐)', P.wonLong(3000000000) === '30억 원', P.wonLong(3000000000));
 check('금액 눈금 표기', P.wonShort(2.5e8) === '2.5억' && P.wonShort(5e7) === '5,000만' && P.wonShort(0) === '0',
     [P.wonShort(2.5e8), P.wonShort(5e7), P.wonShort(0)].join(' '));
+// 영문: 3등(100만 원대)이 "1m" 으로 뭉개지지 않게
+globalThis.I18N = { lang: 'en', t: k => k, f: k => k };
+const enLong = [1604686625, 56947382, 1449581, 627634].map(P.wonLong);
+check('영문 긴 표기 (1등 · 2등 · 3등 · 3등 최저)', enLong.join(' / ') === '1.60 bn KRW / 57m KRW / 1.45m KRW / 627,634 KRW', enLong.join(' / '));
+const enShort = [2.5e9, 5e7, 1.4e6, 6e5].map(P.wonShort);
+check('영문 눈금 표기', enShort.join(' ') === '2.5bn 50m 1.4m 600k', enShort.join(' '));
+delete globalThis.I18N;
 
 console.log(failed ? `\n실패 ${failed}건` : '\n모두 통과');
 process.exit(failed ? 1 : 0);

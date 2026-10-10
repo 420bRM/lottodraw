@@ -27,7 +27,8 @@
 // tools/update-seoul-apt.js 가 받는다. 2008-12 이전은 지수로 거꾸로 환산한 추정이라 점선)를 겹친다. 켜면 세후로 바꾼다.
 // 세로축은 기본 화면과 똑같이 잡는다(자르지 않는다). 전체 기간에서 아파트 선이 낮게 깔리면 구간·로그 눈금으로 본다.
 //
-// 지표는 METRICS 에 한 줄씩 늘린다. 판매액 · 2~5등은 prize-data.json 에 있다(페이지가 그 파일도 받게 한 뒤 더한다).
+// 지표는 METRICS 에 한 줄씩 늘린다. 2·3등 1게임당(tier)은 페이지가 prize-data.json 을 받아 회차에 붙여 준 값(a2 · a3 · w2 · w3)이다 —
+// 그 값이 하나도 없으면 단추를 숨긴다. 판매액 · 4~5등도 같은 파일에 있다.
 // 세로축은 늘 하나다 — 단위가 다른 두 지표를 한 그림에 겹치지 않는다(겹치면 없는 상관이 보인다).
 (function (root, factory) {
     if (typeof module === 'object' && module.exports) module.exports = factory();
@@ -48,7 +49,11 @@
         { id: 'total', key: 'pc.m.total', unit: 'won', value: d => (paid(d) ? d.firstPrizeAmount * d.firstPrizeWinners : null) },
         { id: 'winners', key: 'pc.m.winners', unit: 'people', value: d => (typeof d.firstPrizeWinners === 'number' ? d.firstPrizeWinners : null) },
         { id: 'each', key: 'pc.m.each', unit: 'won', value: d => (paid(d) ? d.firstPrizeAmount : null) },
+        // 2·3등 1게임당. 당첨 게임이 없거나(3 · 5회의 2등) 아직 집계 전이면 빈칸
+        { id: 'second', key: 'pc.m.second', unit: 'won', tier: true, value: d => (d.w2 > 0 && d.a2 > 0 ? d.a2 : null) },
+        { id: 'third', key: 'pc.m.third', unit: 'won', tier: true, value: d => (d.w3 > 0 && d.a3 > 0 ? d.a3 : null) },
     ];
+    const FIRST_1000_WON = 88;   // 1~87회는 1게임 2,000원 — 2·3등 금액이 지금보다 훨씬 크다
     const RANGES = [50, 100, 300, 0];      // 0 = 전체
     const MA = [20, 60, 120, 240];
     const INDICATORS = ['avg'].concat(MA.map(n => 'ma' + n), ['log']);
@@ -233,9 +238,15 @@
     const fmtInt = n => Number(n).toLocaleString(lang() === 'en' ? 'en-US' : 'ko-KR');
     const fmtDec = n => Number(n).toLocaleString(lang() === 'en' ? 'en-US' : 'ko-KR', { maximumFractionDigits: 1 });
 
-    // 1,604,686,625 → "16억 469만 원" / "1.60 bn KRW"
+    // 1,604,686,625 → "16억 469만 원" / "1.60 bn KRW". 영문은 3등(100만 원대)도 읽히게 1,000만 원 아래는 소수 둘째 자리까지,
+    // 100만 원 아래는 원 단위까지
     function wonLong(v) {
-        if (lang() === 'en') return v >= 1e9 ? (v / 1e9).toFixed(2) + ' bn KRW' : Math.round(v / 1e6) + 'm KRW';
+        if (lang() === 'en') {
+            if (v >= 1e9) return (v / 1e9).toFixed(2) + ' bn KRW';
+            if (v >= 1e7) return Math.round(v / 1e6) + 'm KRW';
+            if (v >= 1e6) return (v / 1e6).toFixed(2) + 'm KRW';
+            return fmtInt(Math.round(v)) + ' KRW';
+        }
         const eok = Math.floor(v / 1e8);
         const man = Math.floor((v % 1e8) / 1e4);
         if (!eok) return fmtInt(man) + '만 원';
@@ -248,6 +259,7 @@
         if (lang() === 'en') {
             if (v >= 1e9) return fmtDec(v / 1e9) + 'bn';
             if (v >= 1e6) return fmtDec(v / 1e6) + 'm';
+            if (v >= 1e3) return fmtDec(v / 1e3) + 'k';
             return fmtInt(v);
         }
         if (v >= 1e8) return fmtDec(v / 1e8) + '억';
@@ -256,7 +268,7 @@
     }
 
     function fmtValue(metric, v, short) {
-        if (v == null) return T('pc.rollover');
+        if (v == null) return T(metric.tier ? 'pc.none' : 'pc.rollover');
         if (metric.unit === 'won') return short ? wonShort(v) : wonLong(v);
         const n = short ? fmtDec(v) : (Number.isInteger(v) ? fmtInt(v) : fmtDec(v));
         return short ? n : n + T('pc.unitPeople');
@@ -301,7 +313,9 @@
         const all = draws.slice().sort((a, b) => a.round - b.round);
         const first = all[0].round;
         const indexOf = r => r - first;      // 회차는 1부터 빠짐없이 이어진다 (update-lotto-data.js 가 검사)
-        const byId = id => METRICS.find(m => m.id === id) || METRICS[0];
+        // 2·3등 자료가 없으면(파일을 못 받음) 그 지표는 뺀다
+        const metrics = METRICS.filter(m => !m.tier || all.some(d => m.value(d) != null));
+        const byId = id => metrics.find(m => m.id === id) || metrics[0];
 
         const cache = {};
         // real: 금액을 지금 돈 가치로, net: 세후 실수령액으로 (금액 지표만). 총액의 세후는 1인당 세후 × 당첨자 수
@@ -353,7 +367,7 @@
         const saved = store.get(VIEW_STORE) || {};
         const len = all.length;
         const state = {
-            metric: METRICS[0].id,
+            metric: metrics[0].id,
             view: { s: 0, e: len - 1 },   // 보는 구간 (전체 배열의 칸 번호)
             ind: indOf(FREE_IND),
             savedInd: Object.assign(indOf(DEFAULT_IND), saved.ind),   // 예전에 저장한 값에 없는 칸(예: ma240)은 처음 값으로
@@ -385,7 +399,7 @@
 
         /* 그래프 도구: 큰 사각형 하나 안에 줄마다 [이름 | 모서리 없는 사각 단추들] */
         const cell = (label, on) => el('button', { type: 'button', className: 'pt-btn', 'aria-pressed': 'false', text: label, on: { click: on } });
-        const metricBtns = METRICS.map(m => {
+        const metricBtns = metrics.map(m => {
             const b = cell(T(m.key), () => { state.metric = m.id; state.pending = null; render(); });
             b.dataset.v = m.id;
             return b;
@@ -498,7 +512,11 @@
         const cmpRow = row(T('pc.row.compare'), [aptBtn, gnBtn], false, true);
         if (!apt) cmpRow.hidden = true;
         // 지표만 그래프 위 작은 상자에, 나머지 도구는 그래프 아래 상자에
-        const metricBox = el('div', { className: 'pchart-tools pt-top' }, [row(T('pc.row.metric'), metricBtns, false, true)]);
+        const tierBtns = metricBtns.filter(b => byId(b.dataset.v).tier);
+        const metricBox = el('div', { className: 'pchart-tools pt-top' }, [
+            row(T('pc.row.metric'), metricBtns.filter(b => !byId(b.dataset.v).tier), false, true),
+            tierBtns.length ? row(T('pc.row.tier'), tierBtns, false, true) : null,
+        ]);
         const pro = el('div', { className: 'pchart-tools is-locked' }, [
             realRow,
             taxRow,
@@ -852,9 +870,9 @@
             }
             svgRoot.appendChild(data);
 
-            // 이월 표시 (금액 지표에서 선이 끊긴 자리)
+            // 이월 표시 (1등 금액 지표에서 선이 끊긴 자리). 2·3등은 1등 이월과 상관없이 금액이 있다
             const rolls = [];
-            if (metric.unit === 'won') {
+            if (metric.unit === 'won' && !metric.tier) {
                 for (let i = start; i <= end; i++) if (all[i].firstPrizeWinners === 0) rolls.push(i);
                 const rg = svg('g');
                 rolls.forEach(i => rg.appendChild(svg('circle', { class: 'pc-roll', cx: x(i), cy: base, r: 4 })));
@@ -933,7 +951,7 @@
             if (sum.avg != null) parts.push(T('pc.sum.avg', { v: fmtValue(metric, metric.unit === 'won' ? Math.round(sum.avg) : sum.avg) }));
             if (sum.hi != null) parts.push(T('pc.sum.max', { r: all[sum.hi].round, v: fmtValue(metric, ser.vals[sum.hi]) }));
             if (sum.lo != null) parts.push(T('pc.sum.min', { r: all[sum.lo].round, v: fmtValue(metric, ser.vals[sum.lo]) }));
-            if (sum.rollovers) parts.push(T('pc.sum.roll', { n: sum.rollovers }));
+            if (sum.rollovers && !metric.tier) parts.push(T('pc.sum.roll', { n: sum.rollovers }));
             // 1인당 당첨금(보이는 기준: 세후 또는 세전)이 그 달 아파트 평균가 이상이었던 회차
             const mine = cs ? (netOn ? cs.net : cs.gross) : null;
             const beat = list => {
@@ -956,9 +974,11 @@
 
             cpiNote.hidden = !realOn;
             if (realOn) cpiNote.textContent = T('pc.real.note', { ym: ymLabel(cpi.latest) });
-            cmpNote.hidden = !(netOn || aptVals || gnVals || unit);
+            const oldPrice = !!(metric.tier && all[start].round < FIRST_1000_WON);   // 보는 구간에 1~87회가 있다
+            cmpNote.hidden = !(netOn || aptVals || gnVals || unit || oldPrice);
             if (!cmpNote.hidden) {
                 cmpNote.textContent = [
+                    oldPrice ? T('pc.tier.note') : '',
                     unit ? T('pc.c.note', { span: T('pc.c.span' + unit) }) : '',
                     netOn ? T('pc.cmp.noteTax') : '',
                     aptVals ? T(apt.estimatedBefore ? 'pc.cmp.noteAptEst' : 'pc.cmp.noteApt', { ym: ymLabel(apt.estimatedBefore || apt.actualFrom || apt.latest) }) : '',
@@ -1121,7 +1141,9 @@
             }
             cmpLines(i, short).forEach(c => item(c[0], c[1], c[2]));
             S.mas.forEach(n => { const v = ser.ma[n][i]; item('pc-key-ma' + n, v == null ? '—' : fmtValue(metric, metric.unit === 'won' && !short ? Math.round(v) : v, short), T(short ? 'pc.i.maShort' : 'pc.i.ma', { n: n })); });
-            METRICS.filter(m => m.id !== metric.id).forEach(m => item(null, fmtValue(m, seriesOf(m).vals[i], short && m.unit === 'won'), T(m.key)));
+            // 같은 묶음(1등 셋 · 2·3등 둘)의 다른 지표만 — 다 넣으면 정보창이 너무 길다
+            metrics.filter(m => m.id !== metric.id && !m.tier === !metric.tier).forEach(m => item(null, fmtValue(m, seriesOf(m).vals[i], short && m.unit === 'won'), T(m.key)));
+            if (metric.tier) [['w2', 'pc.i.games2'], ['w3', 'pc.i.games3']].forEach(([k, label]) => { if (typeof d[k] === 'number') item(null, fmtInt(d[k]) + T('pc.unitGames'), T(label)); });
             readout.appendChild(vals);
         }
 
