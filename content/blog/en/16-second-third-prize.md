@@ -18,7 +18,9 @@ One bonus number makes a 38-fold difference in the odds. The 228 combinations fo
 
 Half of the ticket sales go into prizes. The fixed 4th (50,000 KRW) and 5th (5,000 KRW) prizes are paid first, and what is left is split 75% to 1st, 12.5% to 2nd and 12.5% to 3rd. Each prize's share divided by its number of winning games gives the prize per game.
 
-Because 2nd and 3rd prize get the same 12.5%, the two pay out the same total every draw. Checking all 1,158 draws, the largest gap between the 2nd-prize total and the 3rd-prize total was 4,458 KRW — just the leftovers from cutting each prize to a whole won. The same total is shared by dozens of games at 2nd prize and thousands at 3rd, so a 3rd-prize game pays about 1/38 of a 2nd-prize game.
+Because 2nd and 3rd prize get the same share, the two pay out the same total every draw. Checking all 1,158 draws, the largest gap between the 2nd-prize total and the 3rd-prize total was 4,458 KRW — just the leftovers from cutting each prize to a whole won. The same total is shared by dozens of games at 2nd prize and thousands at 3rd, so a 3rd-prize game pays about 1/38 of a 2nd-prize game.
+
+Up to draw 400 (July 2010), 4th prize was not fixed either: what was left after 5th prize was split 60/10/10/20 among 1st to 4th. That period includes 2005. Even then, 2nd and 3rd prize each got the same 10%.
 
 ## What they actually paid
 
@@ -36,13 +38,13 @@ Nine times out of ten, 2nd prize paid between 38m and 79m KRW, and 3rd prize bet
 
 In 2005 sales were 51.9 bn KRW per draw; by 2025 they were 119.2 bn KRW, 2.3 times as much. Yet the average 2nd prize per game barely moved, from 56.26m to 53.76m KRW. Bigger sales do mean a bigger 2nd-prize pot, but more games sold also means proportionally more 2nd-prize wins. Per draw, 2nd-prize games went from 37.6 on average to 92.
 
-You can check this with a little arithmetic. Of every 1,000 KRW game, 500 KRW goes to prizes, and 4th and 5th prize take about 180 KRW of that on average. 12.5% of the remaining 320 KRW or so, about 40 KRW, goes to 2nd prize. 2nd prize comes up once in 1,357,510 games, so one 2nd-prize game is worth 40 KRW × 1,357,510, or about 54m KRW. However large the sales, this calculation stays the same.
+You can check this with a little arithmetic. Of every 1,000 KRW game, 500 KRW goes to prizes, and under today's rules 4th and 5th prize take about 180 KRW of that on average. 12.5% of the remaining 320 KRW or so, about 40 KRW, goes to 2nd prize. 2nd prize comes up once in 1,357,510 games, so one 2nd-prize game is worth 40 KRW × 1,357,510, or about 54m KRW. However large the sales, this calculation stays the same. The old rules up to draw 400 (10% of what was left after about 112 KRW for 5th prize) give about 39 KRW, or about 53m KRW per 2nd-prize game — almost the same.
 
-The actual average is a little higher because the numbers people choose are not spread evenly. In just over half of all draws, 2nd prize has slightly fewer winning games than the estimate and pays slightly more, while only a handful of draws, where popular numbers came up, see 2nd-prize wins pile up.
+The actual average is a little higher because the number of 2nd-prize games swings from draw to draw. The big payouts in draws with few winners pull the average up, and because the numbers people choose are not spread evenly, the swings are larger. In just over half of all draws, 2nd prize has slightly fewer winning games than the estimate and pays slightly more, while only a handful of draws, where popular numbers came up, see 2nd-prize wins pile up.
 
 ## Crowded draws and empty draws
 
-Compare the number of 2nd-prize games estimated from sales with the actual number, and since draw 88 the two match almost exactly overall. Draw 1057, however, had 664 — eight times the estimated 83. According to reports at the time, 103 of them were bought at one shop in Seoul by the same person with the same numbers. Buying the same numbers on several tickets, or many people choosing the same numbers, leaves the odds unchanged but adds games to share with, so each game's share shrinks.
+Compare the number of 2nd-prize games estimated from sales with the actual number, and since draw 88 the two match almost exactly overall. Draw 1057, however, had 664 — eight times the estimated 83. According to reports at the time, 103 of them came from one shop in Dongdaemun, Seoul, and 100 of those, picked by hand and sold at the same date and time, were thought to be one buyer's. Buying the same numbers on several tickets, or many people choosing the same numbers, leaves the odds unchanged but adds games to share with, so each game's share shrinks.
 
 At the other extreme, some draws had no 2nd-prize winner at all: draws 3 and 5, back when a game cost 2,000 KRW. Every draw since 88 has had a 2nd prize, and even the fewest, draw 255, had 13 winning games.
 
@@ -70,6 +72,6 @@ Since draw 88 not even the largest 3rd prize has gone over 2m KRW, so under toda
 - The two prizes always share the same total; the amount per game depends on the number of winning games.
 - Even as sales grow, the amount per game stays almost the same.
 
-Averages by draw and the year-by-year picture are in [2nd and 3rd prize statistics](/statistics-prize-2-3.html), and the 2nd-prize ranking is in [the Top 50 2nd prizes](/top-prize.html#top50-second).
+Averages, records and the year-by-year picture are in [2nd and 3rd prize statistics](/statistics-prize-2-3.html), and the 2nd-prize ranking is in [the Top 50 2nd prizes](/top-prize.html#top50-second).
 
 > Figures come from Donghaeng Lottery's public results for draw 88, when a game started costing 1,000 KRW, through draw 1245 (10 October 2026). Draws 1–87 cost 2,000 KRW a game, so their amounts are on a different footing and are left out of the averages. The shop case in draw 1057 is quoted from press reports at the time.

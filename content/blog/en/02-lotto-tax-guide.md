@@ -67,6 +67,6 @@ When a ticket bought with pooled money wins, tax is withheld at source **on the 
 
 ## Work it out yourself
 
-Use the [after-tax calculator](/tax.html), which shows the tax and take-home amount under the rules above as soon as you enter a prize. It also reflects the threshold where the full amount is taxed once a prize goes even 1 KRW over 2m KRW, and the subtraction of the 1,000 KRW ticket price. What 2nd and 3rd prizes have actually paid, with averages and draw-by-draw records, is in [2nd and 3rd prize statistics](/statistics-prize-2-3.html).
+Use the [after-tax calculator](/tax.html), which shows the tax and take-home amount under the rules above as soon as you enter a prize. It also reflects the threshold where the full amount is taxed once a prize goes even 1 KRW over 2m KRW, and the subtraction of the 1,000 KRW ticket price. What 2nd and 3rd prizes have actually paid, with averages, records and year-by-year averages, is in [2nd and 3rd prize statistics](/statistics-prize-2-3.html).
 
 > This article explains the general structure of the tax rules and is not tax advice. If your situation is specific, such as a joint win or a gift, talk to a tax professional.

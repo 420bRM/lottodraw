@@ -49,9 +49,10 @@
         { id: 'total', key: 'pc.m.total', unit: 'won', value: d => (paid(d) ? d.firstPrizeAmount * d.firstPrizeWinners : null) },
         { id: 'winners', key: 'pc.m.winners', unit: 'people', value: d => (typeof d.firstPrizeWinners === 'number' ? d.firstPrizeWinners : null) },
         { id: 'each', key: 'pc.m.each', unit: 'won', value: d => (paid(d) ? d.firstPrizeAmount : null) },
-        // 2·3등 1게임당. 당첨 게임이 없거나(3 · 5회의 2등) 아직 집계 전이면 빈칸
-        { id: 'second', key: 'pc.m.second', unit: 'won', tier: true, value: d => (d.w2 > 0 && d.a2 > 0 ? d.a2 : null) },
-        { id: 'third', key: 'pc.m.third', unit: 'won', tier: true, value: d => (d.w3 > 0 && d.a3 > 0 ? d.a3 : null) },
+        // 2·3등 1게임당. 빈칸이 두 가지다: 당첨 게임이 없던 회차(3 · 5회의 2등)는 null("없음"),
+        // 자료가 아직 붙지 않은 회차(추첨 직후 집계 전)는 undefined("집계 전"). 둘 다 선 · 평균에서는 빈칸으로 다룬다(== null)
+        { id: 'second', key: 'pc.m.second', unit: 'won', tier: true, value: d => (typeof d.w2 !== 'number' ? undefined : d.w2 > 0 && d.a2 > 0 ? d.a2 : null) },
+        { id: 'third', key: 'pc.m.third', unit: 'won', tier: true, value: d => (typeof d.w3 !== 'number' ? undefined : d.w3 > 0 && d.a3 > 0 ? d.a3 : null) },
     ];
     const FIRST_1000_WON = 88;   // 1~87회는 1게임 2,000원 — 2·3등 금액이 지금보다 훨씬 크다
     const RANGES = [50, 100, 300, 0];      // 0 = 전체
@@ -268,6 +269,7 @@
     }
 
     function fmtValue(metric, v, short) {
+        if (v === undefined && metric.tier) return T('pc.tierPending');
         if (v == null) return T(metric.tier ? 'pc.none' : 'pc.rollover');
         if (metric.unit === 'won') return short ? wonShort(v) : wonLong(v);
         const n = short ? fmtDec(v) : (Number.isInteger(v) ? fmtInt(v) : fmtDec(v));
@@ -671,7 +673,8 @@
         function axisTag(parent, yy, text, cls, side) {
             const w = Math.ceil(measure(text) + 2 * TAG_PAD);
             // 휴대폰(inAxis)은 왼쪽 칸이 없으니 짚은 값 꼬리표를 그래프 안 왼쪽에 겹친다
-            const x0 = side === 'left' ? (S.inAxis ? S.M.left + 2 : S.M.left - 2 - w) : S.M.left + S.pw + 2;
+            // 왼쪽 칸보다 긴 값(예: 2등 "5,564.8만")은 그림 왼쪽 끝에 맞춰 조금 겹친다 — 잘리지 않게
+            const x0 = side === 'left' ? (S.inAxis ? S.M.left + 2 : Math.max(0, S.M.left - 2 - w)) : S.M.left + S.pw + 2;
             const t = svg('g', { class: 'pc-tag ' + cls });
             t.appendChild(svg('rect', { x: x0, y: Math.round(yy) - 8, width: w, height: 16, rx: 2 }));
             t.appendChild(svg('text', { x: x0 + TAG_PAD, y: Math.round(yy) + 4 }, text));
@@ -974,7 +977,9 @@
 
             cpiNote.hidden = !realOn;
             if (realOn) cpiNote.textContent = T('pc.real.note', { ym: ymLabel(cpi.latest) });
-            const oldPrice = !!(metric.tier && all[start].round < FIRST_1000_WON);   // 보는 구간에 1~87회가 있다
+            // 보는 구간에 1~87회가 있거나, 이동평균 · 봉이 그 회차들까지 끌어와 계산하면 안내한다
+            const reach = Math.min(start - (mas.length ? Math.max.apply(null, mas) - 1 : 0), shown.length ? shown[0].s : start);
+            const oldPrice = !!(metric.tier && all[Math.max(0, reach)].round < FIRST_1000_WON);
             cmpNote.hidden = !(netOn || aptVals || gnVals || unit || oldPrice);
             if (!cmpNote.hidden) {
                 cmpNote.textContent = [
@@ -1038,6 +1043,7 @@
                 layer.appendChild(svg('line', { class: 'pc-draw pc-draw-pending', x1: x(indexOf(state.pending.r)), y1: y(state.pending.v), x2: pointer.x, y2: pointer.y }));
             }
             root.classList.toggle('is-compact', S.W < 600);
+            root.classList.toggle('is-tier', !!S.metric.tier);   // 2·3등은 정보창 줄이 하나 더 — 높이를 미리 더 잡는다
             if (state.hover === null) {
                 readout.textContent = '';
                 readout.appendChild(el('p', { className: 'pr-idle', text: T(coarse ? 'pc.readoutIdle' : 'pc.readoutIdleMouse') }));
@@ -1143,7 +1149,7 @@
             S.mas.forEach(n => { const v = ser.ma[n][i]; item('pc-key-ma' + n, v == null ? '—' : fmtValue(metric, metric.unit === 'won' && !short ? Math.round(v) : v, short), T(short ? 'pc.i.maShort' : 'pc.i.ma', { n: n })); });
             // 같은 묶음(1등 셋 · 2·3등 둘)의 다른 지표만 — 다 넣으면 정보창이 너무 길다
             metrics.filter(m => m.id !== metric.id && !m.tier === !metric.tier).forEach(m => item(null, fmtValue(m, seriesOf(m).vals[i], short && m.unit === 'won'), T(m.key)));
-            if (metric.tier) [['w2', 'pc.i.games2'], ['w3', 'pc.i.games3']].forEach(([k, label]) => { if (typeof d[k] === 'number') item(null, fmtInt(d[k]) + T('pc.unitGames'), T(label)); });
+            if (metric.tier) [['w2', 'pc.i.game2', 'pc.i.games2'], ['w3', 'pc.i.game3', 'pc.i.games3']].forEach(([k, one, many]) => { if (typeof d[k] === 'number') item(null, fmtInt(d[k]) + T('pc.unitGames'), T(d[k] === 1 ? one : many)); });
             readout.appendChild(vals);
         }
 

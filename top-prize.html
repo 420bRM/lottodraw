@@ -837,6 +837,17 @@
     const aptData = getJson('seoul-apt.json');
     const tierData = getJson('prize-data.json');
 
+    // 주소의 #위치(예: #top50-second)로 들어오면 브라우저가 먼저 그 표로 옮기는데, 위에 그래프가 늦게 들어와 표가 밀린다.
+    // 그동안 사람이 화면을 움직이지 않았으면 그래프를 그린 뒤 다시 맞춘다
+    let userMoved = false;
+    ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach(ev => window.addEventListener(ev, () => { userMoved = true; }, { once: true, passive: true }));
+    function restoreHash() {
+        let id = '';
+        try { id = decodeURIComponent(location.hash.slice(1)); } catch (e) { return; }   // 깨진 주소(%XX)는 그냥 둔다
+        const target = id && id !== 'prize-chart' ? document.getElementById(id) : null;
+        if (target && !userMoved) target.scrollIntoView();
+    }
+
     // 2·3등 1게임당 금액과 당첨 게임 수를 회차에 붙인다(그래프의 2·3등 지표). 집계 전(5등 0게임) 회차는 붙이지 않는다
     function withTiers(draws, prize) {
         const by = {};
@@ -924,7 +935,7 @@
                 tbody.appendChild(tr);
             });
 
-            return Promise.all([cpiData, aptData, tierData]).then(([cpi, apt, prize]) => mountChart(withTiers(data.draws, prize), cpi, apt));
+            return Promise.all([cpiData, aptData, tierData]).then(([cpi, apt, prize]) => { mountChart(withTiers(data.draws, prize), cpi, apt); restoreHash(); });
         })
         .catch(err => {
             console.error(err);

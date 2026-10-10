@@ -15,6 +15,7 @@
 //   round/<회차>.html        회차별 당첨번호 페이지 (전 회차)
 //   draws.html               회차별 당첨번호 전체 조회
 //   probability.html         등수별 당첨 확률
+//   statistics-prize-2-3.html  2등·3등 당첨금 (prize-data.json 이 있을 때만)
 //   index.html · tax.html · top-prize.html   <!-- seo:... --> 표식 사이만 고친다
 //   blog/                    블로그 목록과 글 (tools/build-blog.js 를 불러 만든다)
 //   sitemap.xml
@@ -142,6 +143,7 @@ function lottoTax(prize) {
 // 통계 12가지(STATS)에는 넣지 않는다 — 홈의 "통계 12가지"가 그대로이게, 확률 페이지처럼 목록 끝에 따로 잇는다.
 // 1~87회는 1게임이 2,000원이라 금액이 훨씬 크다 — 평균 · 최고 · 최저 · 연도별 표는 88회부터 센다
 const TIER_FILE = 'statistics-prize-2-3.html';
+const TIER_SINCE = '2026-10-10';   // 2·3등 통계 페이지와 다른 페이지의 링크를 넣은 날
 const mean = a => a.reduce((s, v) => s + v, 0) / Math.max(1, a.length);
 const median = a => {
     const s = a.slice().sort(asc);
@@ -927,10 +929,10 @@ function roundPage(d) {
         ], 'tier-table'),
         pEn(`${d.round}회 총 판매액은 <strong>${wonExact(p.sales)}</strong>입니다. 당첨 게임 수는 한 사람이 같은 번호로 여러 게임을 산 경우도 따로 셉니다.`
             + (d.round < FIRST_1000_WON ? ' 이 회차는 1게임이 2,000원이던 때(1~87회)입니다. 5등도 지금(5,000원)의 두 배인 10,000원이었습니다. 세후 칸은 지금 1게임 1,000원 기준으로 셉니다.' : '')
-            + (TIER ? ` 2등·3등의 평균과 역대 기록은 <a href="../${TIER_FILE}">2등·3등 당첨금 통계</a>에 있습니다.` : ''),
+            + (TIER ? ` 88회 이후 2등·3등의 평균과 기록은 <a href="../${TIER_FILE}">2등·3등 당첨금 통계</a>에 있습니다.` : ''),
             `Total sales for draw ${d.round} were <strong>${wonExactEn(p.sales)}</strong>. Winning games count each ticket line separately, even when one person bought the same numbers several times.`
             + (d.round < FIRST_1000_WON ? ' Back then (draws 1–87) one game cost 2,000 KRW, and 5th prize paid 10,000 KRW, twice today\'s 5,000. The after-tax column uses today\'s 1,000 KRW game.' : '')
-            + (TIER ? ` Averages and records for 2nd and 3rd prize are in <a href="../${TIER_FILE}">2nd and 3rd prize statistics</a>.` : ''), 'note'),
+            + (TIER ? ` Averages and records for 2nd and 3rd prize since draw 88 are in <a href="../${TIER_FILE}">2nd and 3rd prize statistics</a>.` : ''), 'note'),
     ] : [];
 
     const cum = cumulative[d.round];
@@ -1109,7 +1111,7 @@ function prizeTierPage() {
             [en('1게임 당첨 확률', 'Odds per game'), `1 / ${fmt(Math.round(TOTAL / 6))}`, `1 / ${fmt(Math.round(TOTAL / 228))}`],
             [en('1게임당 평균', 'Average per game'), `<strong>${about(T.mean2)}</strong>`, `<strong>${about(T.mean3)}</strong>`],
             [en('중앙값', 'Median'), about(T.med2), about(T.med3)],
-            [en(`최근 52회 평균${sub(`${recent[0].round}~${last}회`)}`, `Last 52 draws${sub(`draws ${recent[0].round}–${last}`)}`), about(avg2(recent)), about(avg3(recent))],
+            [en(`최근 52회 평균${sub(`${recent[0].round}~${last}회`)}`, `Average, last 52 draws${sub(`draws ${recent[0].round}–${last}`)}`), about(avg2(recent)), about(avg3(recent))],
             [en('최고', 'Highest'), exact(T.max2, 'a2'), exact(T.max3, 'a3')],
             [en('최저', 'Lowest'), exact(T.min2, 'a2'), exact(T.min3, 'a3')],
             [en('회차당 평균 당첨 게임', 'Winning games per draw (avg)'), games(Math.round(mean(now.map(p => p.w2)))), games(Math.round(mean(now.map(p => p.w3))))],
@@ -1225,15 +1227,16 @@ function prizeTierPage() {
             '2nd and 3rd prizes are paid at any NH NongHyup Bank branch (except some small outlets). Bring the winning ticket and your ID, and claim within one year of the payout start date; after that the money goes to the Lottery Fund. 1st prize is paid only at the bank\'s head office, while 4th and 5th can also be collected at a lottery retailer. The steps are in <a href="blog/how-to-claim-first-prize.html">how a 1st prize is actually claimed</a>.'),
     ];
 
-    const title = `로또 2등·3등 당첨금 통계 · 평균·최고·최저·실수령액 (1~${last}회)`;
-    const desc = `로또 2등 당첨금은 1게임당 평균 ${wonAbout(T.mean2)}(세후 약 ${wonAbout(T.mean2 - tax2)}), 3등은 평균 ${wonAbout(T.mean3)}입니다(88~${last}회). 역대 최고·최저 회차, 연도별 평균, 2등이 몰린 회차, 세금과 받는 곳까지 정리했습니다.`;
+    // 평균 · 최고 · 최저는 88회(1게임 1,000원)부터라 제목 · 범위도 88회부터로 적는다(1~87회는 본문에 따로)
+    const title = `로또 2등·3등 당첨금 통계 · 평균·최고·최저·실수령액 (88~${last}회)`;
+    const desc = `로또 2등 당첨금은 1게임당 평균 ${wonAbout(T.mean2)}(세후 약 ${wonAbout(T.mean2 - tax2)}), 3등은 평균 ${wonAbout(T.mean3)}입니다(88~${last}회). 88회 이후 최고·최저 회차, 연도별 평균, 2등이 몰린 회차, 세금과 받는 곳까지 정리했습니다.`;
     return shell({
         file: TIER_FILE,
         crumbs: [['index.html#sec-stats', '로또 통계', null, 'Lotto statistics'], [null, '2등·3등 당첨금', null, '2nd & 3rd prizes']],
         title,
         h1: '로또 2등 · 3등 당첨금 통계', h1En: 'Lotto 2nd and 3rd Prize Statistics',
         desc,
-        scope: en(`1~${last}회 · 매주 추첨 후 자동 갱신 (마지막 갱신 ${UPDATED})`, `Draws 1–${last} · updated automatically after each draw (last update ${UPDATED})`),
+        scope: en(`88~${last}회 기준(1~87회는 따로 적음) · 매주 추첨 후 자동 갱신 (마지막 갱신 ${UPDATED})`, `Draws 88–${last} (1–87 noted separately) · updated automatically after each draw (last update ${UPDATED})`),
         lead: en(`2등은 당첨번호 6개 중 5개와 보너스 번호를 맞힌 게임, 3등은 보너스 없이 5개를 맞힌 게임입니다. 1게임이 1,000원이 된 88회부터 ${last}회까지 1게임당 당첨금은 2등이 평균 <strong>${wonAbout(T.mean2)}</strong>, 3등이 평균 <strong>${wonAbout(T.mean3)}</strong>입니다.`,
             `Second prize goes to a game that matches five of the six winning numbers plus the bonus ball; third prize to one that matches five without the bonus. From draw 88, when a game started costing 1,000 KRW, to draw ${last}, 2nd prize paid <strong>${wonAboutEn(T.mean2)}</strong> per game on average and 3rd prize <strong>${wonAboutEn(T.mean3)}</strong>.`),
         ld: [{
@@ -1396,8 +1399,8 @@ function updateTaxAndTop() {
         ];
     };
     const tierBlock = T ? '\n' + [
-        pEn(`2등과 3등은 1게임당 금액이 회차마다 다릅니다. 1게임이 1,000원이 된 88회부터 ${T.last}회까지의 실제 금액으로 계산하면 다음과 같습니다.`,
-            `2nd and 3rd prizes change from draw to draw. Here is the tax on real amounts from draw 88 (when a game started costing 1,000 KRW) to draw ${T.last}.`),
+        pEn(`2등과 3등은 1게임당 금액이 회차마다 다릅니다. 1게임이 1,000원이 된 88회부터 ${T.last}회까지의 실제 금액에 지금 세법을 적용하면 다음과 같습니다.`,
+            `2nd and 3rd prizes change from draw to draw. Here is the tax under today's rules on real amounts from draw 88 (when a game started costing 1,000 KRW) to draw ${T.last}.`),
         table([['구분', 'Prize'], ['당첨금 (1게임)', 'Per game (KRW)'], ['세금', 'Tax (KRW)'], ['실수령액', 'Take-home (KRW)']], [
             taxRow('2등 평균', '2nd, average', T.mean2),
             taxRow(`2등 최고 (${T.max2.round}회)`, `2nd, highest (draw ${T.max2.round})`, T.max2.a2),
@@ -1405,8 +1408,8 @@ function updateTaxAndTop() {
             taxRow('3등 평균', '3rd, average', T.mean3),
             taxRow(`3등 최고 (${T.max3.round}회)`, `3rd, highest (draw ${T.max3.round})`, T.max3.a3),
         ], 'tier-stat tier-tax'),
-        pEn(`금액은 만 원 단위로 반올림했습니다. ${T.max3.a3 <= 2e6 ? '3등은 88회 이후 가장 많았던 회차도 200만 원 이하라 세금이 없었습니다. ' : ''}회차별 평균과 기록은 <a href="${TIER_FILE}">2등·3등 당첨금 통계</a>에서 볼 수 있습니다.`,
-            `Amounts are rounded. ${T.max3.a3 <= 2e6 ? 'Since draw 88, even the largest 3rd prize stayed at 2m KRW or less, so no tax was due. ' : ''}Averages and records by draw are in <a href="${TIER_FILE}">2nd and 3rd prize statistics</a>.`, 'note'),
+        pEn(`금액은 만 원 단위로 반올림했습니다. ${T.max3.a3 <= 2e6 ? '3등은 88회 이후 가장 많았던 회차도 200만 원을 넘지 않아 지금 세법으로는 세금이 없습니다(2022년까지는 5만 원만 넘어도 당첨금 전체에 22%를 매겼습니다). ' : ''}평균과 최고·최저 기록, 연도별 평균은 <a href="${TIER_FILE}">2등·3등 당첨금 통계</a>에 있습니다.`,
+            `Amounts are rounded. ${T.max3.a3 <= 2e6 ? 'Even the largest 3rd prize since draw 88 was 2m KRW or less, so under today\'s rules it is tax-free (until 2022, anything over 50,000 KRW was taxed at 22% in full). ' : ''}Averages, records and year-by-year averages are in <a href="${TIER_FILE}">2nd and 3rd prize statistics</a>.`, 'note'),
     ].join('\n') + '\n        '
         : pEn('2등·3등 자료를 준비하고 있습니다.', '2nd and 3rd prize data is being prepared.');
     tax = replaceBetween('tax.html', tax, 'tax-tiers', tierBlock);
@@ -1500,6 +1503,8 @@ function updateSitemap(blog) {
 
     const entry = (p, lastmod, freq, pri) => ({ loc: SITE + p, lastmod, changefreq: freq, priority: pri });
     const kept = p => keep[SITE + p] || UPDATED;
+    // 한 번 크게 바뀐 페이지: 예전 lastmod 가 그 날보다 앞이면 그 날로 (2·3등 링크를 넣은 날)
+    const atLeast = (p, d) => (kept(p) > d ? kept(p) : d);
     const entries = [
         entry('/', UPDATED, 'weekly', '1.0'),
         entry('/draws.html', UPDATED, 'weekly', '0.9'),
@@ -1507,10 +1512,10 @@ function updateSitemap(blog) {
         STATS.map(p => entry('/' + p.file, UPDATED, 'weekly', '0.8')),
         TIER ? [entry('/' + TIER_FILE, UPDATED, 'weekly', '0.8')] : [],
         [
-            entry('/probability.html', kept('/probability.html'), 'yearly', '0.7'),
+            entry('/probability.html', TIER ? atLeast('/probability.html', TIER_SINCE) : kept('/probability.html'), 'yearly', '0.7'),
             entry('/statistics.html', UPDATED, 'weekly', '0.7'),
             entry('/top-prize.html', UPDATED, 'weekly', '0.7'),
-            entry('/tax.html', kept('/tax.html'), 'yearly', '0.7'),
+            entry('/tax.html', TIER ? UPDATED : kept('/tax.html'), TIER ? 'weekly' : 'yearly', '0.7'),   // 2·3등 표가 매주 바뀐다
             entry('/about.html', kept('/about.html'), 'monthly', '0.5'),
             entry('/privacy.html', kept('/privacy.html'), 'yearly', '0.3'),
             entry('/terms.html', kept('/terms.html'), 'yearly', '0.3'),

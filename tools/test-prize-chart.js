@@ -115,7 +115,7 @@ check('1등 지표는 2·3등 묶음이 아니다', P.METRICS.filter(m => !m.tie
 check('2등 금액', second.value({ w2: 80, a2: 60175749 }) === 60175749);
 check('3등 금액', third.value({ w3: 3731, a3: 1290287 }) === 1290287);
 check('2등 당첨이 없던 회차(3 · 5회)는 빈칸', second.value({ w2: 0, a2: 0 }) === null);
-check('2·3등 자료가 없는 회차는 빈칸', second.value({ round: 1 }) === null && third.value({ round: 1 }) === null);
+check('2·3등 자료가 아직 없는 회차는 집계 전(undefined — 당첨 없음 null 과 다르다)', second.value({ round: 1 }) === undefined && third.value({ round: 1 }) === undefined);
 const prize = require(path.join(ROOT, 'prize-data.json'));
 const tierBy = {};
 prize.draws.forEach(p => { tierBy[p.round] = p; });
