@@ -7,6 +7,7 @@
 //
 //   node tools/update-lotto-data.js            새 회차 추가 + 최근 3회차 재확인
 //   node tools/update-lotto-data.js --full     1회차부터 전부 API와 대조해 교정
+//   node tools/update-lotto-data.js --missing  2~5등이 비었거나 집계 전인 회차만 다시 받는다(--full 이 중간에 놓친 회차 채우기)
 //   node tools/update-lotto-data.js --dry-run  바뀔 내용만 출력하고 파일은 안 씀
 //
 // 의존성 없음. Node 8 이상. 브라우저에서 이 API를 부르면 CORS로 막히므로
@@ -29,6 +30,10 @@ const FULL_DELAY_MS = 300;   // 전 회차를 다시 받을 때는 조금 더 �
 
 const args = process.argv.slice(2);
 const FULL = args.includes('--full');
+const MISSING = args.includes('--missing');
+// 여러 회차를 한꺼번에 받을 때(--full, --missing)는 한 회차가 끝내 안 받아져도 멈추지 않고 넘어간다 — 2026-10 첫 --full 이
+// 1094회 timeout 하나로 앞의 1,093회차 결과까지 버렸다. 놓친 회차는 끝에 한 번 더 받고, 그래도 안 되면 --missing 으로 채운다
+const BULK = FULL || MISSING;
 const DRY = args.includes('--dry-run');
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -71,9 +76,9 @@ function prizeOf(x) {
 // 반환: { draw, prize }, 또는 아직 추첨 전이면 null. prize 는 2~5등 · 판매액(못 읽으면 null).
 // "추첨 전(빈 목록)"과 "차단/구조 변경(JSON 아님)"을 구분해야 한다 — 뒤쪽을 끝으로
 // 착각하면 무인 실행에서 조용히 갱신이 멈춘다.
-async function fetchRoundFull(round) {
+async function fetchRoundFull(round, tries) {
     let lastErr;
-    for (let attempt = 1; attempt <= 4; attempt++) {
+    for (let attempt = 1; attempt <= (tries || 4); attempt++) {
         try {
             const text = await getText(API + round);
             let json;
@@ -181,17 +186,43 @@ async function main() {
     const changed = [];
 
     const refreshFrom = FULL ? 1 : Math.max(1, maxRound - REFRESH_RECENT + 1);
-    console.log(`현재 ${maxRound}회차까지 보유. ${refreshFrom}~${maxRound}회 재확인 후 ${maxRound + 1}회부터 새로 받는다.`);
+    const todo = [];
+    if (MISSING) {
+        for (let r = 1; r <= maxRound; r++) { const p = prizeBy.get(r); if (!p || !(p.w5 > 0)) todo.push(r); }
+        console.log(`현재 ${maxRound}회차까지 보유. 2~5등이 비었거나 집계 전인 ${todo.length}회차를 받는다.`);
+    } else {
+        for (let r = refreshFrom; r <= maxRound; r++) todo.push(r);
+        console.log(`현재 ${maxRound}회차까지 보유. ${refreshFrom}~${maxRound}회 재확인 후 ${maxRound + 1}회부터 새로 받는다.`);
+    }
 
-    for (let r = refreshFrom; r <= maxRound; r++) {
-        const res = await fetchRoundFull(r);
+    const refresh = async r => {
+        const res = await fetchRoundFull(r, BULK ? 6 : 4);
         if (!res) throw new Error(`${r}회는 이미 보유한 회차인데 API가 빈 목록을 돌려줬다`);
         const got = res.draw;
         const diffs = diffDraw(byRound.get(r), got);
         if (diffs.length) { changed.push({ round: r, diffs }); byRound.set(r, got); }
         putPrize(r, res.prize);
-        if (FULL && r % 100 === 0) console.log(`  … ${r}회 확인`);
-        await sleep(FULL ? FULL_DELAY_MS : DELAY_MS);
+    };
+    let missed = [];
+    for (let k = 0; k < todo.length; k++) {
+        const r = todo[k];
+        if (!BULK) await refresh(r);
+        else {
+            try { await refresh(r); } catch (e) { missed.push(r); console.log(`  ! ${e.message} — 끝에 다시 받는다`); }
+        }
+        if (BULK && (k + 1) % 100 === 0) console.log(`  … ${k + 1}/${todo.length}회차 확인 (${r}회)`);
+        await sleep(BULK ? FULL_DELAY_MS : DELAY_MS);
+    }
+    if (missed.length) {
+        console.log(`  놓친 ${missed.length}회차를 30초 쉬고 다시 받는다: ${missed.join(', ')}`);
+        await sleep(30000);
+        const again = [];
+        for (const r of missed) {
+            try { await refresh(r); } catch (e) { again.push(r); console.log(`  ! ${e.message}`); }
+            await sleep(1000);
+        }
+        missed = again;
+        if (missed.length) console.log(`  끝내 못 받은 회차 ${missed.length}개(${missed.join(', ')}) — 받은 것만 저장한다. --missing 으로 다시 채운다`);
     }
 
     for (let r = maxRound + 1; ; r++) {
@@ -229,6 +260,7 @@ async function main() {
     console.log(`\n추가 ${added.length}회차, 교정 ${changed.length}회차 → 최신 ${draws[0].round}회 (${next.lastUpdated})`);
     console.log(`2~5등: ${prizeList.length}회차 보유, 이번에 바뀐 회차 ${prizeChanged}${prizeMissing ? `, 응답에서 못 읽은 회차 ${prizeMissing}` : ''}`);
     setOutput('changed', isChanged || prizeIsChanged);
+    setOutput('missed', missed.length);
     setOutput('latest', draws[0].round);
     setOutput('added', added.length);
 
