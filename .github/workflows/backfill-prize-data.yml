@@ -1,7 +1,7 @@
 name: backfill-prize-data
 
 # 일회용(채우고 나면 지운다): 1회부터 전 회차를 다시 받아 prize-data.json(2~5등 · 판매액)을 처음 채운다.
-# 다시 돌리려면 이 파일을 고쳐 push 한다(아래 줄의 숫자를 바꾸는 식으로). 시도: 2
+# 다시 돌리려면 이 파일을 고쳐 push 한다(아래 줄의 숫자를 바꾸는 식으로). 시도: 3
 # 작업 브랜치에 이 파일을 push 하면 그 브랜치에서 돌고, 결과를 그 브랜치에 커밋한다. html 에서는 돌지 않는다.
 on:
   push:
@@ -24,8 +24,11 @@ jobs:
       - name: 전 회차 다시 받기 (--full — 한 회차가 안 받아져도 넘어간다)
         run: node tools/update-lotto-data.js --full
       - name: 놓친 회차 채우기 (--missing)
+        continue-on-error: true
         run: node tools/update-lotto-data.js --missing
+      # 앞 단계가 실패해도 받아 둔 만큼은 커밋한다(2번째 시도 때 --missing 의 timeout 으로 다 받은 결과를 버렸다)
       - name: 브랜치에 커밋
+        if: ${{ !cancelled() }}
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

@@ -225,8 +225,15 @@ async function main() {
         if (missed.length) console.log(`  끝내 못 받은 회차 ${missed.length}개(${missed.join(', ')}) — 받은 것만 저장한다. --missing 으로 다시 채운다`);
     }
 
-    for (let r = maxRound + 1; ; r++) {
-        const res = await fetchRoundFull(r);
+    // 새 회차: --missing 은 빈 칸만 채우므로 찾지 않는다. --full 은 찾되, 조회가 끝내 안 되면 오류로 치지 않고 그만 찾는다
+    // (추첨 전 회차를 물었는데 응답이 늦게 와서 앞에서 받은 1,245회차를 버린 일이 있다 — 새 회차는 다음 정기 실행이 받는다)
+    for (let r = maxRound + 1; !MISSING; r++) {
+        let res;
+        try { res = await fetchRoundFull(r); } catch (e) {
+            if (!BULK) throw e;
+            console.log(`  ! ${e.message} — 새 회차는 다음 실행에서 받는다`);
+            break;
+        }
         if (!res) break;
         const got = res.draw;
         byRound.set(r, got);
