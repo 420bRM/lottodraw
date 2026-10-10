@@ -201,6 +201,7 @@ const latestCalloutEn = `Draw ${LATEST.round}: ${LATEST.numbers.join(' ')} <span
 // base: 하위 폴더 페이지에서 쓰는 경로 앞머리 ('' 또는 '../')
 // mainClass: 본문에 더 붙일 클래스 (블로그의 'blog-index' · 'blog-post')
 // note: 맨 위 주석을 바꿀 때 (블로그는 원고에서 만든다)
+// 머리말의 탭 아이콘(favicon.ico · favicon.svg · apple-touch-icon.png)은 사이트 맨 위 폴더에 있다. 손으로 관리하는 페이지(index 등)에도 같은 세 줄이 있다
 function shell(o) {
     const base = o.base || '';
     const title = `${o.title} | lottodraw.kr`;
@@ -242,6 +243,9 @@ function shell(o) {
     <meta name="twitter:description" content="${esc(o.desc)}">
     <meta name="twitter:image" content="${OG_IMAGE}">
     <meta name="google-adsense-account" content="ca-pub-9372871176021283">
+    <link rel="icon" href="/favicon.ico" sizes="32x32">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <link rel="stylesheet" href="${base}css/site.css">
     <script src="${base}js/i18n-dict.js"></script>
     <script src="${base}js/i18n.js"></script>
