@@ -57,6 +57,7 @@ const RELATED = {
     'low-high':    ['statistics-low-high.html', '저고 비율', 'Low/high split', '낮은 번호와 높은 번호의 비율', 'Low (1–22) and high (23–45) numbers'],
     consecutive:   ['statistics-consecutive.html', '연속번호 통계', 'Consecutive numbers', '연속번호가 나온 회차 비율', 'Share of draws with consecutive numbers'],
     'prize-stats': ['statistics-prize.html', '1등 당첨자 수 통계', '1st-prize winners per draw', '회차별 당첨자 수 분포와 이월 횟수', 'How many winners each draw had, and rollovers'],
+    'prize-tiers': ['statistics-prize-2-3.html', '2등·3등 당첨금 통계', '2nd & 3rd prize statistics', '평균·최고·최저와 연도별 흐름', 'Averages, records and the year-by-year picture'],
     probability:   ['probability.html', '로또 확률', 'Lotto odds', '등수별 당첨 확률과 계산 방법', 'Odds for each prize tier and how they are worked out'],
     tax:           ['tax.html', '실수령액 계산기', 'After-tax calculator', '당첨금을 넣으면 세금과 실수령액', 'Enter a prize to see the tax and take-home amount'],
     'top-prize':   ['top-prize.html', '역대 1등 당첨금 TOP 50', 'Top 50 jackpots', '1인당 당첨금이 컸던 회차', 'Draws with the largest prize per winner'],

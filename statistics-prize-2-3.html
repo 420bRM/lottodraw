@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<!-- 이 파일은 tools/build-static-stats.js 가 매주 다시 만든다. 직접 고치면 덮어쓰인다. -->
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로또 2등·3등 당첨금 통계 · 평균·최고·최저·실수령액 (88~1245회) | lottodraw.kr</title>
+    <meta name="description" content="로또 2등 당첨금은 1게임당 평균 5,695만 원(세후 약 4,442만 원), 3등은 평균 145만 원입니다(88~1245회). 88회 이후 최고·최저 회차, 연도별 평균, 2등이 몰린 회차, 세금과 받는 곳까지 정리했습니다.">
+    <link rel="canonical" href="https://www.lottodraw.kr/statistics-prize-2-3.html">
+    <meta property="og:title" content="로또 2등·3등 당첨금 통계 · 평균·최고·최저·실수령액 (88~1245회) | lottodraw.kr">
+    <meta property="og:description" content="로또 2등 당첨금은 1게임당 평균 5,695만 원(세후 약 4,442만 원), 3등은 평균 145만 원입니다(88~1245회). 88회 이후 최고·최저 회차, 연도별 평균, 2등이 몰린 회차, 세금과 받는 곳까지 정리했습니다.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://www.lottodraw.kr/statistics-prize-2-3.html">
+    <meta property="og:site_name" content="lottodraw.kr">
+    <meta property="og:image" content="https://www.lottodraw.kr/img/og-default.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="로또 2등·3등 당첨금 통계 · 평균·최고·최저·실수령액 (88~1245회) | lottodraw.kr">
+    <meta name="twitter:description" content="로또 2등 당첨금은 1게임당 평균 5,695만 원(세후 약 4,442만 원), 3등은 평균 145만 원입니다(88~1245회). 88회 이후 최고·최저 회차, 연도별 평균, 2등이 몰린 회차, 세금과 받는 곳까지 정리했습니다.">
+    <meta name="twitter:image" content="https://www.lottodraw.kr/img/og-default.png">
+    <meta name="google-adsense-account" content="ca-pub-9372871176021283">
+    <link rel="icon" href="/favicon.ico" sizes="32x32">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="stylesheet" href="css/site.css">
+    <script src="js/i18n-dict.js"></script>
+    <script src="js/i18n.js"></script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Dataset","name":"로또 2등·3등 당첨금 통계 · 평균·최고·최저·실수령액 (88~1245회)","description":"로또 2등 당첨금은 1게임당 평균 5,695만 원(세후 약 4,442만 원), 3등은 평균 145만 원입니다(88~1245회). 88회 이후 최고·최저 회차, 연도별 평균, 2등이 몰린 회차, 세금과 받는 곳까지 정리했습니다.","url":"https://www.lottodraw.kr/statistics-prize-2-3.html","isAccessibleForFree":true,"dateModified":"2026-10-10","temporalCoverage":"2002-12-07/2026-10-10","creator":{"@type":"Organization","name":"lottodraw.kr","url":"https://www.lottodraw.kr/"},"keywords":["로또 2등 당첨금","로또 3등 당첨금","로또 2등 실수령액","로또 3등 세금"]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://www.lottodraw.kr/"},{"@type":"ListItem","position":2,"name":"로또 통계","item":"https://www.lottodraw.kr/index.html#sec-stats"},{"@type":"ListItem","position":3,"name":"2등·3등 당첨금","item":"https://www.lottodraw.kr/statistics-prize-2-3.html"}]}]}</script>
+    <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "91c08d8a39d944e69c10024f2314b955"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+<body>
+<div class="page">
+    <header class="banner">
+        <a class="brand" href="index.html">
+            <span class="brand-name">LOTTODRAW.KR</span>
+            <span class="brand-tag" data-i18n="brand.tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
+        </a>
+        <div class="banner-right">
+            <p class="latest-callout" data-i18n-en="Draw 1245: 4 5 25 28 32 42 &lt;span class=&quot;bonus-sep&quot;&gt;+&lt;/span&gt; 12">제1245회 4 5 25 28 32 42 <span class="bonus-sep">+</span> 12</p>
+            <a class="sticker" href="statistics.html" data-i18n-html="header.sticker">최근 <b>5개월</b> 통계</a>
+            <div class="lang-switch" role="group" aria-label="Language">
+                <button type="button" data-lang-btn="ko">KO</button><button type="button" data-lang-btn="en">EN</button>
+            </div>
+        </div>
+    </header>
+
+    <nav class="nav" aria-label="주 메뉴" data-i18n-attr="aria-label:nav.aria">
+        <ul>
+            <li><a href="index.html" data-i18n="nav.index">생성기 · 통계</a></li>
+            <li><a href="draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="top-prize.html" data-i18n="nav.topPrize">TOP 50 당첨금</a></li>
+            <li><a href="tax.html" data-i18n="nav.tax">실수령액 계산</a></li>
+            <li><a href="blog/index.html" data-i18n="nav.blog">블로그</a></li>
+            <li><a href="about.html" data-i18n="nav.about">ABOUT</a></li>
+        </ul>
+    </nav>
+
+    <main class="prose stat-page">
+        <nav class="breadcrumb" aria-label="현재 위치" data-i18n-attr="aria-label:crumb.aria"><a href="index.html" data-i18n="crumb.home">홈</a> › <a href="index.html#sec-stats" data-i18n-en="Lotto statistics">로또 통계</a> › <span data-i18n-en="2nd &amp; 3rd prizes">2등·3등 당첨금</span></nav>
+        <h1 data-i18n-en="Lotto 2nd and 3rd Prize Statistics">로또 2등 · 3등 당첨금 통계</h1>
+        <p class="stat-scope"><span data-i18n-en="Draws 88–1245 (1–87 noted separately) · updated automatically after each draw (last update 2026-10-10)">88~1245회 기준(1~87회는 따로 적음) · 매주 추첨 후 자동 갱신 (마지막 갱신 2026-10-10)</span></p>
+        <p class="stat-lead"><span data-i18n-en="Second prize goes to a game that matches five of the six winning numbers plus the bonus ball; third prize to one that matches five without the bonus. From draw 88, when a game started costing 1,000 KRW, to draw 1245, 2nd prize paid &lt;strong&gt;56.9m KRW&lt;/strong&gt; per game on average and 3rd prize &lt;strong&gt;1.45m KRW&lt;/strong&gt;.">2등은 당첨번호 6개 중 5개와 보너스 번호를 맞힌 게임, 3등은 보너스 없이 5개를 맞힌 게임입니다. 1게임이 1,000원이 된 88회부터 1245회까지 1게임당 당첨금은 2등이 평균 <strong>5,695만 원</strong>, 3등이 평균 <strong>145만 원</strong>입니다.</span></p>
+
+<h2 data-i18n-en="At a glance">한눈에 보기</h2>
+
+<div class="table-scroll">
+<table class="data-table tier-stat tier-glance">
+<thead><tr><th scope="col" data-i18n-en="Measure">항목</th><th scope="col" data-i18n-en="2nd prize">2등</th><th scope="col" data-i18n-en="3rd prize">3등</th></tr></thead>
+<tbody>
+<tr><td><span data-i18n-en="To win">당첨 조건</span></td><td><span data-i18n-en="5 numbers + bonus">5개 번호 + 보너스</span></td><td><span data-i18n-en="5 numbers">5개 번호 일치</span></td></tr>
+<tr><td><span data-i18n-en="Odds per game">1게임 당첨 확률</span></td><td>1 / 1,357,510</td><td>1 / 35,724</td></tr>
+<tr><td><span data-i18n-en="Average per game">1게임당 평균</span></td><td><strong><span data-i18n-en="56.9m KRW">5,695만 원</span></strong></td><td><strong><span data-i18n-en="1.45m KRW">145만 원</span></strong></td></tr>
+<tr><td><span data-i18n-en="Median">중앙값</span></td><td><span data-i18n-en="56.0m KRW">5,599만 원</span></td><td><span data-i18n-en="1.47m KRW">147만 원</span></td></tr>
+<tr><td><span data-i18n-en="Average, last 52 draws&lt;span class=&quot;sub&quot;&gt;draws 1194–1245&lt;/span&gt;">최근 52회 평균<span class="sub">1194~1245회</span></span></td><td><span data-i18n-en="56.9m KRW">5,690만 원</span></td><td><span data-i18n-en="1.46m KRW">146만 원</span></td></tr>
+<tr><td><span data-i18n-en="Highest">최고</span></td><td><span data-i18n-en="122,970,658 KRW&lt;span class=&quot;sub&quot;&gt;&lt;a href=&quot;round/255.html&quot;&gt;draw 255&lt;/a&gt;&lt;/span&gt;">122,970,658원<span class="sub"><a href="round/255.html">255회</a></span></span></td><td><span data-i18n-en="1,982,242 KRW&lt;span class=&quot;sub&quot;&gt;&lt;a href=&quot;round/91.html&quot;&gt;draw 91&lt;/a&gt;&lt;/span&gt;">1,982,242원<span class="sub"><a href="round/91.html">91회</a></span></span></td></tr>
+<tr><td><span data-i18n-en="Lowest">최저</span></td><td><span data-i18n-en="6,895,880 KRW&lt;span class=&quot;sub&quot;&gt;&lt;a href=&quot;round/1057.html&quot;&gt;draw 1057&lt;/a&gt;&lt;/span&gt;">6,895,880원<span class="sub"><a href="round/1057.html">1057회</a></span></span></td><td><span data-i18n-en="627,634 KRW&lt;span class=&quot;sub&quot;&gt;&lt;a href=&quot;round/1019.html&quot;&gt;draw 1019&lt;/a&gt;&lt;/span&gt;">627,634원<span class="sub"><a href="round/1019.html">1019회</a></span></span></td></tr>
+<tr><td><span data-i18n-en="Winning games per draw (avg)">회차당 평균 당첨 게임</span></td><td><span data-i18n-en="54">54게임</span></td><td><span data-i18n-en="2,031">2,031게임</span></td></tr>
+<tr><td><span data-i18n-en="Average after tax">평균 금액의 세후</span></td><td><span data-i18n-en="44.4m KRW&lt;span class=&quot;sub&quot;&gt;about 12.5m KRW tax&lt;/span&gt;">4,442만 원<span class="sub">세금 약 1,253만 원</span></span></td><td><span data-i18n-en="1.45m KRW&lt;span class=&quot;sub&quot;&gt;tax-free&lt;/span&gt;">145만 원<span class="sub">비과세</span></span></td></tr>
+</tbody>
+</table>
+</div>
+
+<p class="note" data-i18n-en="Based on the 1,158 draws from 88 to 1245. In draws 1–87, when a game cost 2,000 KRW, the averages were much higher: 143.6m KRW for 2nd and 3.25m KRW for 3rd (draws 3 and 5 had no 2nd-prize winner and are left out of that average). Each draw's amounts are in the prize table on its own page — open any draw from &lt;a href=&quot;draws.html&quot;&gt;all winning numbers&lt;/a&gt;.">88회부터 1245회까지 1,158회 기준입니다. 1게임이 2,000원이던 1~87회는 2등 평균 1억 4,355만 원, 3등 평균 325만 원으로 훨씬 컸습니다(2등이 한 게임도 없던 3·5회는 2등 평균에서 뺍니다). 회차마다의 금액은 <a href="draws.html">회차별 당첨번호</a>에서 회차를 누르면 나오는 등수별 표에 있습니다.</p>
+
+<h2 data-i18n-en="How the 2nd and 3rd prizes are set">2등과 3등 당첨금은 어떻게 정해질까</h2>
+
+<p data-i18n-en="Half of the ticket sales go into prizes. The fixed 4th (50,000 KRW) and 5th (5,000 KRW) prizes are paid first, and what is left is split 75% to 1st, 12.5% to 2nd and 12.5% to 3rd. Each tier's share is divided by the number of winning games in that tier, so the 2nd and 3rd prizes change from draw to draw, just like the jackpot.">로또 판매액의 50%가 당첨금입니다. 금액이 정해진 4등(5만 원)과 5등(5,000원)을 먼저 주고, 남은 돈을 1등 75%, 2등 12.5%, 3등 12.5%로 나눕니다. 각 등수의 몫을 그 등수에 당첨된 게임 수로 나눈 것이 1게임당 당첨금이라, 2등과 3등 금액도 1등처럼 회차마다 달라집니다.</p>
+
+<p data-i18n-en="Because 2nd and 3rd prize each get the same 12.5%, &lt;strong&gt;the two tiers pay out the same total every draw&lt;/strong&gt;. Checking all 1,158 draws since draw 88 in this site's data, the largest gap between the two totals was 4,458 KRW — just the leftovers from cutting each prize to a whole won. There are 228 third-prize combinations, 38 times the 6 for second, so third prize usually has about 38 times as many winning games and pays about 1/38 as much per game. The actual median across draws is 1/38.5.">2등과 3등은 똑같이 12.5%씩 받으므로 <strong>두 등수의 총액은 매 회차 같습니다</strong>. 88회 이후 1,158회를 이 사이트 자료로 맞춰 보니 2등 총액과 3등 총액의 차이는 가장 큰 회차도 4,458원이었습니다. 1게임당 금액을 원 단위로 끊으며 남는 자투리입니다. 3등이 되는 조합은 228가지로 2등(6가지)의 38배라, 3등 게임도 보통 38배쯤 나오고 3등 1게임 금액은 2등의 약 38분의 1이 됩니다. 실제 회차별 비율의 중앙값은 38.5분의 1입니다.</p>
+
+<p data-i18n-en="Up to draw 400 (31 July 2010), 4th prize was not a fixed amount either. After 5th prize, the rest was split 60% to 1st, 10% to 2nd, 10% to 3rd and 20% to 4th — and 2nd and 3rd still paid the same total. From draw 401, 4th prize has been fixed at 50,000 KRW.">400회(2010년 7월 31일)까지는 4등도 금액이 정해져 있지 않았습니다. 5등을 주고 남은 돈을 1등 60%, 2등 10%, 3등 10%, 4등 20%로 나눴고, 이때도 2등과 3등의 총액은 같았습니다. 401회부터 4등이 5만 원으로 고정됐습니다.</p>
+
+<h2 data-i18n-en="Draws with far more 2nd-prize winners than expected">2등이 예상보다 많이 나온 회차</h2>
+
+<p data-i18n-en="The chance of 2nd prize is 1 in 1,357,510 per game, so multiplying it by the games sold in a draw (sales ÷ 1,000 KRW) gives a rough estimate of how many 2nd-prize wins to expect. Across all draws since 88, the actual number came to 1.00 times that estimate — close to spot on. In the draws below, though, there were several times as many, and each game's share shrank accordingly.">2등이 될 확률은 1게임에 1,357,510분의 1이라, 그 회차에 팔린 게임 수(판매액 ÷ 1,000원)에 곱하면 2등이 몇 게임 나올지 어림할 수 있습니다. 88회 이후 전체로는 실제 2등 게임 수가 이 어림의 1.00배로 거의 맞았습니다. 그런데 아래 회차들은 어림보다 몇 배나 많이 나와 1게임당 금액이 크게 줄었습니다.</p>
+
+<div class="table-scroll">
+<table class="data-table tier-stat">
+<thead><tr><th scope="col" data-i18n-en="Draw">회차</th><th scope="col" data-i18n-en="Expected 2nd-prize games">예상 2등 게임</th><th scope="col" data-i18n-en="Actual">실제</th><th scope="col" data-i18n-en="2nd prize per game">2등 1게임당</th></tr></thead>
+<tbody>
+<tr><td><a href="round/1057.html" data-i18n-en="Draw 1057">1057회</a></td><td><span data-i18n-en="82.9">82.9게임</span></td><td><span data-i18n-en="664&lt;span class=&quot;sub&quot;&gt;8.0×&lt;/span&gt;">664게임<span class="sub">8.0배</span></span></td><td><span data-i18n-en="6,895,880 KRW">6,895,880원</span></td></tr>
+<tr><td><a href="round/1150.html" data-i18n-en="Draw 1150">1150회</a></td><td><span data-i18n-en="84.1">84.1게임</span></td><td><span data-i18n-en="226&lt;span class=&quot;sub&quot;&gt;2.7×&lt;/span&gt;">226게임<span class="sub">2.7배</span></span></td><td><span data-i18n-en="19,690,668 KRW">19,690,668원</span></td></tr>
+<tr><td><a href="round/1075.html" data-i18n-en="Draw 1075">1075회</a></td><td><span data-i18n-en="77.8">77.8게임</span></td><td><span data-i18n-en="160&lt;span class=&quot;sub&quot;&gt;2.1×&lt;/span&gt;">160게임<span class="sub">2.1배</span></span></td><td><span data-i18n-en="27,153,161 KRW">27,153,161원</span></td></tr>
+<tr><td><a href="round/745.html" data-i18n-en="Draw 745">745회</a></td><td><span data-i18n-en="54.2">54.2게임</span></td><td><span data-i18n-en="110&lt;span class=&quot;sub&quot;&gt;2.0×&lt;/span&gt;">110게임<span class="sub">2.0배</span></span></td><td><span data-i18n-en="22,631,000 KRW">22,631,000원</span></td></tr>
+<tr><td><a href="round/528.html" data-i18n-en="Draw 528">528회</a></td><td><span data-i18n-en="42.4">42.4게임</span></td><td><span data-i18n-en="86&lt;span class=&quot;sub&quot;&gt;2.0×&lt;/span&gt;">86게임<span class="sub">2.0배</span></span></td><td><span data-i18n-en="25,536,397 KRW">25,536,397원</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<p data-i18n-en="The more games carry the same numbers (including one person buying the same numbers on several tickets), the more winning games there are and the smaller each share. Every combination has the same odds, but not the same number of games to share with. More on this in &lt;a href=&quot;blog/why-jackpots-split.html&quot;&gt;why jackpots get split&lt;/a&gt;.">같은 번호를 고른 게임이 많을수록(한 사람이 같은 번호를 여러 장 산 경우도 포함) 당첨 게임이 늘어 1게임 몫이 줄어듭니다. 확률은 어떤 번호든 같지만, 나눠 가질 게임 수는 번호마다 다릅니다. 자세한 이야기는 <a href="blog/why-jackpots-split.html">사람이 직접 고르면 왜 당첨금이 쪼개지나</a>에 있습니다.</p>
+
+<h2 data-i18n-en="2nd and 3rd prizes by year">연도별 2등 · 3등 평균 당첨금</h2>
+
+<p data-i18n-en="Sales per draw grew 2.3-fold, from 51.9 bn KRW in 2005 to 119.2 bn KRW in 2025, yet 2nd prize per game barely moved from 56.3m KRW to 53.8m KRW. Bigger sales mean a bigger 2nd-prize pot, but also proportionally more winning games (2nd-prize games per draw: 37.6 → 92.0).">회차당 판매액은 2005년 519억 원에서 2025년 1,192억 원으로 2.3배가 됐지만, 2등 1게임 금액은 5,626만 원에서 5,376만 원으로 거의 그대로입니다. 판매액이 늘면 2등 총액도 늘지만, 2등에 당첨되는 게임도 같은 비율로 늘기 때문입니다(회차당 2등 게임 평균 37.6 → 92.0).</p>
+
+<div class="table-scroll">
+<table class="data-table tier-stat tier-years">
+<thead><tr><th scope="col" data-i18n-en="Year">연도</th><th scope="col" data-i18n-en="2nd prize (avg)">2등 평균</th><th scope="col" data-i18n-en="3rd prize (avg)">3등 평균</th><th scope="col" data-i18n-en="Sales per draw">회차당 판매액</th></tr></thead>
+<tbody>
+<tr><td><span data-i18n-en="2026&lt;span class=&quot;sub&quot;&gt;draws 1205–1245&lt;/span&gt;">2026년<span class="sub">1205~1245회</span></span></td><td><span data-i18n-en="57.7m KRW">5,766만 원</span></td><td><span data-i18n-en="1.48m KRW">148만 원</span></td><td><span data-i18n-en="122.0 bn KRW">1,220억 원</span></td></tr>
+<tr><td><span data-i18n-en="2025&lt;span class=&quot;sub&quot;&gt;draws 1153–1204&lt;/span&gt;">2025년<span class="sub">1153~1204회</span></span></td><td><span data-i18n-en="53.8m KRW">5,376만 원</span></td><td><span data-i18n-en="1.40m KRW">140만 원</span></td><td><span data-i18n-en="119.2 bn KRW">1,192억 원</span></td></tr>
+<tr><td><span data-i18n-en="2024&lt;span class=&quot;sub&quot;&gt;draws 1101–1152&lt;/span&gt;">2024년<span class="sub">1101~1152회</span></span></td><td><span data-i18n-en="56.7m KRW">5,668만 원</span></td><td><span data-i18n-en="1.44m KRW">144만 원</span></td><td><span data-i18n-en="114.0 bn KRW">1,140억 원</span></td></tr>
+<tr><td><span data-i18n-en="2023&lt;span class=&quot;sub&quot;&gt;draws 1049–1100&lt;/span&gt;">2023년<span class="sub">1049~1100회</span></span></td><td><span data-i18n-en="55.7m KRW">5,566만 원</span></td><td><span data-i18n-en="1.47m KRW">147만 원</span></td><td><span data-i18n-en="108.6 bn KRW">1,086억 원</span></td></tr>
+<tr><td><span data-i18n-en="2022&lt;span class=&quot;sub&quot;&gt;draws 996–1048&lt;/span&gt;">2022년<span class="sub">996~1048회</span></span></td><td><span data-i18n-en="56.5m KRW">5,645만 원</span></td><td><span data-i18n-en="1.45m KRW">145만 원</span></td><td><span data-i18n-en="104.1 bn KRW">1,041억 원</span></td></tr>
+<tr><td><span data-i18n-en="2021&lt;span class=&quot;sub&quot;&gt;draws 944–995&lt;/span&gt;">2021년<span class="sub">944~995회</span></span></td><td><span data-i18n-en="57.8m KRW">5,779만 원</span></td><td><span data-i18n-en="1.45m KRW">145만 원</span></td><td><span data-i18n-en="98.4 bn KRW">984억 원</span></td></tr>
+<tr><td><span data-i18n-en="2020&lt;span class=&quot;sub&quot;&gt;draws 892–943&lt;/span&gt;">2020년<span class="sub">892~943회</span></span></td><td><span data-i18n-en="57.0m KRW">5,700만 원</span></td><td><span data-i18n-en="1.45m KRW">145만 원</span></td><td><span data-i18n-en="90.6 bn KRW">906억 원</span></td></tr>
+<tr><td><span data-i18n-en="2019&lt;span class=&quot;sub&quot;&gt;draws 840–891&lt;/span&gt;">2019년<span class="sub">840~891회</span></span></td><td><span data-i18n-en="58.1m KRW">5,808만 원</span></td><td><span data-i18n-en="1.51m KRW">151만 원</span></td><td><span data-i18n-en="82.8 bn KRW">828억 원</span></td></tr>
+<tr><td><span data-i18n-en="2018&lt;span class=&quot;sub&quot;&gt;draws 788–839&lt;/span&gt;">2018년<span class="sub">788~839회</span></span></td><td><span data-i18n-en="57.0m KRW">5,702만 원</span></td><td><span data-i18n-en="1.45m KRW">145만 원</span></td><td><span data-i18n-en="76.2 bn KRW">762억 원</span></td></tr>
+<tr><td><span data-i18n-en="2017&lt;span class=&quot;sub&quot;&gt;draws 736–787&lt;/span&gt;">2017년<span class="sub">736~787회</span></span></td><td><span data-i18n-en="55.0m KRW">5,505만 원</span></td><td><span data-i18n-en="1.44m KRW">144만 원</span></td><td><span data-i18n-en="73.0 bn KRW">730억 원</span></td></tr>
+<tr><td><span data-i18n-en="2016&lt;span class=&quot;sub&quot;&gt;draws 683–735&lt;/span&gt;">2016년<span class="sub">683~735회</span></span></td><td><span data-i18n-en="57.4m KRW">5,744만 원</span></td><td><span data-i18n-en="1.45m KRW">145만 원</span></td><td><span data-i18n-en="67.9 bn KRW">679억 원</span></td></tr>
+<tr><td><span data-i18n-en="2015&lt;span class=&quot;sub&quot;&gt;draws 631–682&lt;/span&gt;">2015년<span class="sub">631~682회</span></span></td><td><span data-i18n-en="55.7m KRW">5,569만 원</span></td><td><span data-i18n-en="1.44m KRW">144만 원</span></td><td><span data-i18n-en="62.4 bn KRW">624억 원</span></td></tr>
+<tr><td><span data-i18n-en="2014&lt;span class=&quot;sub&quot;&gt;draws 579–630&lt;/span&gt;">2014년<span class="sub">579~630회</span></span></td><td><span data-i18n-en="57.3m KRW">5,728만 원</span></td><td><span data-i18n-en="1.48m KRW">148만 원</span></td><td><span data-i18n-en="58.5 bn KRW">585억 원</span></td></tr>
+<tr><td><span data-i18n-en="2013&lt;span class=&quot;sub&quot;&gt;draws 527–578&lt;/span&gt;">2013년<span class="sub">527~578회</span></span></td><td><span data-i18n-en="56.5m KRW">5,646만 원</span></td><td><span data-i18n-en="1.44m KRW">144만 원</span></td><td><span data-i18n-en="57.3 bn KRW">573억 원</span></td></tr>
+<tr><td><span data-i18n-en="2012&lt;span class=&quot;sub&quot;&gt;draws 475–526&lt;/span&gt;">2012년<span class="sub">475~526회</span></span></td><td><span data-i18n-en="60.0m KRW">5,998만 원</span></td><td><span data-i18n-en="1.51m KRW">151만 원</span></td><td><span data-i18n-en="54.5 bn KRW">545억 원</span></td></tr>
+<tr><td><span data-i18n-en="2011&lt;span class=&quot;sub&quot;&gt;draws 422–474&lt;/span&gt;">2011년<span class="sub">422~474회</span></span></td><td><span data-i18n-en="57.1m KRW">5,713만 원</span></td><td><span data-i18n-en="1.45m KRW">145만 원</span></td><td><span data-i18n-en="53.1 bn KRW">531억 원</span></td></tr>
+<tr><td><span data-i18n-en="2010&lt;span class=&quot;sub&quot;&gt;draws 370–421&lt;/span&gt;">2010년<span class="sub">370~421회</span></span></td><td><span data-i18n-en="53.2m KRW">5,325만 원</span></td><td><span data-i18n-en="1.42m KRW">142만 원</span></td><td><span data-i18n-en="46.6 bn KRW">466억 원</span></td></tr>
+<tr><td><span data-i18n-en="2009&lt;span class=&quot;sub&quot;&gt;draws 318–369&lt;/span&gt;">2009년<span class="sub">318~369회</span></span></td><td><span data-i18n-en="55.2m KRW">5,523만 원</span></td><td><span data-i18n-en="1.46m KRW">146만 원</span></td><td><span data-i18n-en="45.2 bn KRW">452억 원</span></td></tr>
+<tr><td><span data-i18n-en="2008&lt;span class=&quot;sub&quot;&gt;draws 266–317&lt;/span&gt;">2008년<span class="sub">266~317회</span></span></td><td><span data-i18n-en="57.0m KRW">5,698만 원</span></td><td><span data-i18n-en="1.38m KRW">138만 원</span></td><td><span data-i18n-en="43.6 bn KRW">436억 원</span></td></tr>
+<tr><td><span data-i18n-en="2007&lt;span class=&quot;sub&quot;&gt;draws 214–265&lt;/span&gt;">2007년<span class="sub">214~265회</span></span></td><td><span data-i18n-en="61.2m KRW">6,123만 원</span></td><td><span data-i18n-en="1.43m KRW">143만 원</span></td><td><span data-i18n-en="43.6 bn KRW">436억 원</span></td></tr>
+<tr><td><span data-i18n-en="2006&lt;span class=&quot;sub&quot;&gt;draws 162–213&lt;/span&gt;">2006년<span class="sub">162~213회</span></span></td><td><span data-i18n-en="57.9m KRW">5,792만 원</span></td><td><span data-i18n-en="1.43m KRW">143만 원</span></td><td><span data-i18n-en="47.5 bn KRW">475억 원</span></td></tr>
+<tr><td><span data-i18n-en="2005&lt;span class=&quot;sub&quot;&gt;draws 109–161&lt;/span&gt;">2005년<span class="sub">109~161회</span></span></td><td><span data-i18n-en="56.3m KRW">5,626만 원</span></td><td><span data-i18n-en="1.47m KRW">147만 원</span></td><td><span data-i18n-en="51.9 bn KRW">519억 원</span></td></tr>
+<tr><td><span data-i18n-en="2004&lt;span class=&quot;sub&quot;&gt;draws 88–108&lt;/span&gt;">2004년<span class="sub">88~108회</span></span></td><td><span data-i18n-en="64.4m KRW">6,438만 원</span></td><td><span data-i18n-en="1.52m KRW">152만 원</span></td><td><span data-i18n-en="56.9 bn KRW">569억 원</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 data-i18n-en="Records for winning games">당첨 게임 수 기록</h2>
+
+<div class="table-scroll">
+<table class="data-table tier-stat tier-records">
+<thead><tr><th scope="col" data-i18n-en="Record (since draw 88)">기록 (88회 이후)</th><th scope="col" data-i18n-en="Draw">회차</th><th scope="col" data-i18n-en="Winning games">당첨 게임</th><th scope="col" data-i18n-en="Prize per game">1게임당 당첨금</th></tr></thead>
+<tbody>
+<tr><td><span data-i18n-en="Most 2nd-prize games">2등 게임 최다</span></td><td><a href="round/1057.html" data-i18n-en="Draw 1057">1057회</a></td><td><span data-i18n-en="664">664게임</span></td><td><span data-i18n-en="6,895,880 KRW">6,895,880원</span></td></tr>
+<tr><td><span data-i18n-en="Fewest 2nd-prize games">2등 게임 최소</span></td><td><a href="round/255.html" data-i18n-en="Draw 255">255회</a></td><td><span data-i18n-en="13">13게임</span></td><td><span data-i18n-en="122,970,658 KRW">122,970,658원</span></td></tr>
+<tr><td><span data-i18n-en="Most 3rd-prize games">3등 게임 최다</span></td><td><a href="round/1019.html" data-i18n-en="Draw 1019">1019회</a></td><td><span data-i18n-en="5,823">5,823게임</span></td><td><span data-i18n-en="627,634 KRW">627,634원</span></td></tr>
+<tr><td><span data-i18n-en="Fewest 3rd-prize games">3등 게임 최소</span></td><td><a href="round/263.html" data-i18n-en="Draw 263">263회</a></td><td><span data-i18n-en="937">937게임</span></td><td><span data-i18n-en="1,656,036 KRW">1,656,036원</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<p class="note" data-i18n-en="Only &lt;a href=&quot;round/3.html&quot;&gt;draw 3&lt;/a&gt; and &lt;a href=&quot;round/5.html&quot;&gt;draw 5&lt;/a&gt;, back when a game cost 2,000 KRW, had no 2nd-prize winner at all.">2등이 한 게임도 나오지 않은 회차는 1게임 2,000원 시절의 <a href="round/3.html">3회</a>, <a href="round/5.html">5회</a>뿐입니다.</p>
+
+<h2 data-i18n-en="Tax and take-home amount">세금과 실수령액</h2>
+
+<p data-i18n-en="2nd prize is always above 2m KRW, so 22% (20% income tax + 2% local tax) is taken from the prize minus the 1,000 KRW ticket. On the average of 56.9m KRW, that is about 12.5m KRW in tax and about 44.4m KRW to take home. Even the largest since draw 88, &lt;a href=&quot;round/255.html&quot;&gt;draw 255&lt;/a&gt; (123.0m KRW), stayed under 300m KRW, so the 33% rate never came into play.">2등은 200만 원을 넘으므로 구입비 1,000원을 뺀 금액에 22%(소득세 20% + 지방소득세 2%)를 떼고 받습니다. 평균 5,695만 원이면 세금이 약 1,253만 원, 실수령액은 약 4,442만 원입니다. 88회 이후 가장 컸던 <a href="round/255.html">255회</a>(1억 2,297만 원)도 3억 원이 안 돼, 3억 원 넘는 부분에 붙는 33%는 해당하지 않았습니다.</p>
+
+<p data-i18n-en="Since draw 88, even the largest 3rd prize, &lt;a href=&quot;round/91.html&quot;&gt;draw 91&lt;/a&gt; at 1,982,242 KRW, stayed below 2m KRW. Prizes up to 2m KRW have been tax-free since 2023, so 3rd prize is paid in full. Until 2022 anything over 50,000 KRW was taxed at 22% on the whole amount, so 3rd prize was taxed too.">3등은 88회 이후 가장 많았던 <a href="round/91.html">91회</a>도 1,982,242원이라 200만 원을 넘은 적이 없습니다. 2023년부터 200만 원 이하는 비과세라, 3등은 세금 없이 그대로 받습니다. 2022년까지는 5만 원만 넘어도 당첨금 전체에 22%를 매겨 3등도 세금을 냈습니다.</p>
+
+<p data-i18n-en="To work out any amount yourself, use &lt;a href=&quot;tax.html&quot;&gt;the after-tax calculator&lt;/a&gt;.">금액을 넣어 직접 계산하려면 <a href="tax.html">실수령액 계산기</a>를 쓰세요.</p>
+
+<h2 data-i18n-en="Where to claim">어디서 받을까</h2>
+
+<p data-i18n-en="2nd and 3rd prizes are paid at any NH NongHyup Bank branch (except some small outlets). Bring the winning ticket and your ID, and claim within one year of the payout start date; after that the money goes to the Lottery Fund. 1st prize is paid only at the bank's head office, while 4th and 5th can also be collected at a lottery retailer. The steps are in &lt;a href=&quot;blog/how-to-claim-first-prize.html&quot;&gt;how a 1st prize is actually claimed&lt;/a&gt;.">2등과 3등은 NH농협은행 전국 지점(일부 출장소 제외)에서 받습니다. 당첨 복권과 신분증을 가져가면 되고, 지급 개시일부터 1년 안에 받아야 합니다. 기한이 지나면 당첨금은 복권기금으로 넘어갑니다. 1등은 농협은행 본점에서만, 4등과 5등은 복권 판매점에서도 받을 수 있습니다. 절차는 <a href="blog/how-to-claim-first-prize.html">1등에 당첨되면 실제로 어떻게 수령하나</a>에 정리했습니다.</p>
+
+<p><a class="btn" href="top-prize.html#top50-second" data-i18n-en="Top 50 second prizes">2등 당첨금 순위 TOP 50</a></p>
+
+<p data-i18n-en="See also: &lt;a href=&quot;probability.html&quot;&gt;lotto odds&lt;/a&gt; · &lt;a href=&quot;tax.html&quot;&gt;after-tax calculator&lt;/a&gt; · &lt;a href=&quot;statistics-prize.html&quot;&gt;first-prize winners&lt;/a&gt; · &lt;a href=&quot;draws.html&quot;&gt;all winning numbers&lt;/a&gt;">함께 보기: <a href="probability.html">로또 확률</a> · <a href="tax.html">실수령액 계산기</a> · <a href="statistics-prize.html">1등 당첨자 수</a> · <a href="draws.html">회차별 당첨번호</a></p>
+
+<h2 data-i18n-en="Other statistics">다른 로또 통계</h2>
+
+<ul class="stat-links"><li><a href="statistics-frequency.html" data-i18n-en="Most frequent numbers">많이 나온 번호 순위</a><span data-i18n-en="top 34 187× · lowest 9 137×">1위 34번 187회 · 최소 9번 137회</span></li><li><a href="statistics-bonus.html" data-i18n-en="Bonus ball">보너스 번호</a><span data-i18n-en="most 2 36× · fewest 29 18×">최다 2번 36회 · 최소 29번 18회</span></li><li><a href="statistics-even-odd.html" data-i18n-en="Odd / even split">홀짝 비율</a><span data-i18n-en="most common 3 odd / 3 even 33.3%">최다 홀3 짝3 33.3%</span></li><li><a href="statistics-low-high.html" data-i18n-en="Low / high split">저고 비율</a><span data-i18n-en="most common 3 low / 3 high 33.0%">최다 저3 고3 33.0%</span></li><li><a href="statistics-consecutive.html" data-i18n-en="Consecutive numbers">연속번호</a><span data-i18n-en="with a run 51.7% (theory 52.9%)">연속번호 포함 51.7% (이론 52.9%)</span></li><li><a href="statistics-sum.html" data-i18n-en="Sum of numbers">번호 합계</a><span data-i18n-en="average 138.3 · most common band 120~139">평균 138.3 · 최다 구간 120~139</span></li><li><a href="statistics-prize.html" data-i18n-en="First-prize winners">1등 당첨자 수</a><span data-i18n-en="14 rollovers · 8.6 winners on average">이월 14회 · 평균 8.6명</span></li><li><a href="statistics-trend.html" data-i18n-en="Hot and cold, last 50 draws">최근 50회 많이·적게</a><span data-i18n-en="most 31 (11×) · fewest 14 (3×)">최다 31번 11회 · 최소 14번 3회</span></li><li><a href="statistics-pair.html" data-i18n-en="Number pairs">궁합수 순위</a><span data-i18n-en="top pair 11·21, 34×">1위 11·21번 34회</span></li><li><a href="statistics-gap.html" data-i18n-en="Longest absences">미출수 (장기 미출현)</a><span data-i18n-en="27 — absent for 21 draws">1위 27번 · 21회차째 미출현</span></li><li><a href="statistics-ac.html" data-i18n-en="AC value">AC값</a><span data-i18n-en="most common AC 8 34.8%">최다 AC 8 34.8%</span></li><li><a href="statistics-tail.html" data-i18n-en="Last digits">끝수 · 끝수합</a><span data-i18n-en="last-digit sum averages 26.0 · digit 7 most frequent">끝수합 평균 26.0 · 끝수 7 최다</span></li></ul>
+
+        <p class="page-disclaimer" data-i18n="disclaimer.page">지난 추첨 기록을 정리한 것이며 다음 회차를 예측하지 않습니다. 어떤 6개를 고르든 1등 확률은 1/8,145,060으로 같습니다. 당첨번호 출처: 동행복권.</p>
+    </main>
+
+    <footer class="footer">
+        <ul class="footer-nav">
+            <li><a href="index.html" data-i18n="footer.home">HOME</a></li>
+            <li><a href="draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="top-prize.html" data-i18n="footer.top">TOP 50</a></li>
+            <li><a href="tax.html" data-i18n="footer.tax">실수령액</a></li>
+            <li><a href="blog/index.html" data-i18n="nav.blog">블로그</a></li>
+            <li><a href="about.html" data-i18n="nav.about">ABOUT</a></li>
+        </ul>
+        <p><a href="privacy.html" data-i18n="footer.privacy">개인정보 처리방침</a> · <a href="terms.html" data-i18n="footer.terms">이용약관</a> · <a href="contact.html" data-i18n="footer.contact">문의</a></p>
+        <p data-i18n-html="footer.copy">&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권</p>
+    </footer>
+</div>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9372871176021283" crossorigin="anonymous"></script>
+</body>
+</html>

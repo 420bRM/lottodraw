@@ -436,7 +436,7 @@
         </p>
 
         <h2 class="top-table-h top-second-h" id="top50-second" data-i18n="top.h2second">2등 당첨금 순위 TOP 50</h2>
-        <p class="note top-second-note"><!-- seo:second-note:start --><span data-i18n-en="Second prize means 5 numbers plus the bonus. Ranked by prize per game; draws 1–87 cost 2,000 KRW a game, so 49 of the Top 50 come from that era. Since draw 88 (1,000 KRW a game) the highest was &lt;a href=&quot;round/255.html&quot;&gt;draw 255&lt;/a&gt; at 123m KRW (13 winning games).">2등은 6개 중 5개와 보너스 번호를 맞힌 게임입니다. 1게임당 당첨금 순이며, 1~87회는 1게임이 2,000원이던 때라 금액이 커서 TOP 50 중 49개가 그 시절입니다. 1게임 1,000원이 된 88회 이후 최고는 <a href="round/255.html">255회</a> 1억 2,297만 원(13게임)입니다.</span><!-- seo:second-note:end --></p>
+        <p class="note top-second-note"><!-- seo:second-note:start --><span data-i18n-en="Second prize means 5 numbers plus the bonus. Ranked by prize per game; draws 1–87 cost 2,000 KRW a game, so 49 of the Top 50 come from that era. Since draw 88 (1,000 KRW a game) the highest was &lt;a href=&quot;round/255.html&quot;&gt;draw 255&lt;/a&gt; at 123m KRW (13 winning games). Averages, the year-by-year picture and 3rd-prize records are in &lt;a href=&quot;statistics-prize-2-3.html&quot;&gt;2nd and 3rd prize statistics&lt;/a&gt;.">2등은 6개 중 5개와 보너스 번호를 맞힌 게임입니다. 1게임당 당첨금 순이며, 1~87회는 1게임이 2,000원이던 때라 금액이 커서 TOP 50 중 49개가 그 시절입니다. 1게임 1,000원이 된 88회 이후 최고는 <a href="round/255.html">255회</a> 1억 2,297만 원(13게임)입니다. 평균과 연도별 흐름, 3등 기록은 <a href="statistics-prize-2-3.html">2등·3등 당첨금 통계</a>에 있습니다.</span><!-- seo:second-note:end --></p>
         <div class="table-scroll">
             <table class="data-table" id="topSecondTable">
                 <thead>
@@ -831,10 +831,32 @@
     // 회차별 그래프. 보조지표·그림도구는 이용권이 확인되면 켜고, 환불·만료되면 몇 분 안에 다시 잠근다.
     // 로그인하지 않은 사람에게는 그래프를 흐리게 보인다. 이용권 키가 있으면(로그인 없이 산 사람) 연다.
     // 서버에 로그인이 꺼져 있거나 계정 스크립트(js/account.js)를 못 받으면 가리지 않는다 — 열 방법이 없는 잠금은 걸지 않는다.
-    // 물가지수(cpi-data.json)·서울 아파트값(seoul-apt.json)은 없어도 된다 — 없으면 그 단추만 숨는다
+    // 물가지수(cpi-data.json)·서울 아파트값(seoul-apt.json)·2~5등(prize-data.json)은 없어도 된다 — 없으면 그 단추만 숨는다
     const getJson = url => fetch(url).then(r => (r.ok ? r.json() : null)).catch(() => null);
     const cpiData = getJson('cpi-data.json');
     const aptData = getJson('seoul-apt.json');
+    const tierData = getJson('prize-data.json');
+
+    // 주소의 #위치(예: #top50-second)로 들어오면 브라우저가 먼저 그 표로 옮기는데, 위에 그래프가 늦게 들어와 표가 밀린다.
+    // 그동안 사람이 화면을 움직이지 않았으면 그래프를 그린 뒤 다시 맞춘다
+    let userMoved = false;
+    ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach(ev => window.addEventListener(ev, () => { userMoved = true; }, { once: true, passive: true }));
+    function restoreHash() {
+        let id = '';
+        try { id = decodeURIComponent(location.hash.slice(1)); } catch (e) { return; }   // 깨진 주소(%XX)는 그냥 둔다
+        const target = id && id !== 'prize-chart' ? document.getElementById(id) : null;
+        if (target && !userMoved) target.scrollIntoView();
+    }
+
+    // 2·3등 1게임당 금액과 당첨 게임 수를 회차에 붙인다(그래프의 2·3등 지표). 집계 전(5등 0게임) 회차는 붙이지 않는다
+    function withTiers(draws, prize) {
+        const by = {};
+        ((prize && prize.draws) || []).forEach(p => { if (p.w5 > 0) by[p.round] = p; });
+        return draws.map(d => {
+            const p = by[d.round];
+            return p ? Object.assign({}, d, { w2: p.w2, a2: p.a2, w3: p.w3, a3: p.a3 }) : d;
+        });
+    }
 
     function mountChart(draws, cpi, apt) {
         const box = document.getElementById('pchart-mount');
@@ -913,7 +935,7 @@
                 tbody.appendChild(tr);
             });
 
-            return Promise.all([cpiData, aptData]).then(([cpi, apt]) => mountChart(data.draws, cpi, apt));
+            return Promise.all([cpiData, aptData, tierData]).then(([cpi, apt, prize]) => { mountChart(withTiers(data.draws, prize), cpi, apt); restoreHash(); });
         })
         .catch(err => {
             console.error(err);
