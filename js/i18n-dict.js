@@ -124,6 +124,10 @@ window.I18N_DICT = {
     'top.note':      { en: '* Amounts per winner are rounded for readability.<br>* Total first-prize figures are exact to the won.' },
     'top.back':      { en: 'Back to the generator' },
     'top.h2':        { en: 'Top 50 by amount per winner' },
+    'top.h2second':  { en: 'Top 50 second prizes (per winning game)' },
+    'top.th2.each':  { en: 'Second prize per game (approx.)' },
+    'top.th2.games': { en: 'Winning games' },
+    'top.th2.total': { en: 'Total second prize' },
     'top.fold':      { en: '(click to collapse)' },
     'top.unfold':    { en: '(click to expand)' },
 
