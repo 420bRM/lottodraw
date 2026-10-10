@@ -875,6 +875,12 @@ html.home { scroll-behavior: smooth; }
 .prose .pchart-source { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
 .pchart-source a { color: inherit; text-decoration: underline; }
 .prose h2.top-table-h { margin-top: 8px; }
+/* 1등 표 · 안내문 아래 2등 TOP 50 */
+.prose h2.top-second-h { margin-top: 36px; }
+/* 회차 페이지 등수별 당첨금 표: 칸 글자를 줄바꿈하지 않는다(좁은 화면은 옆으로 밀어 본다) */
+.tier-table th, .tier-table td { white-space: nowrap; }
+@media (max-width: 599px) { .stat-page .data-table.tier-table th, .stat-page .data-table.tier-table td { padding: 6px 8px; font-size: 13px; } }   /* .stat-page .data-table 칸 여백보다 앞서게 */
+.prose .top-second-note { margin: 0 0 10px; }
 /* TOP 50 페이지: 그래프는 맨 위 접는 상자(처음엔 펼침). 제목 줄을 누르면 접혀 아래 TOP 50 표가 바로 보인다(설명 문단 없음) */
 .pchart-fold { display: block; padding: 4px 0 6px; border-bottom: 2px solid var(--brand); cursor: pointer; list-style: none; }
 .pchart-fold::-webkit-details-marker { display: none; }

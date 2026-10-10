@@ -57,6 +57,16 @@ const data = JSON.parse(read('lotto-data.json'));
 const draws = data.draws.slice().sort((a, b) => b.round - a.round);
 if (!draws.length) throw new Error('lotto-data.json 에 회차가 없다');
 
+// 2~5등 · 판매액 (tools/update-lotto-data.js 가 prize-data.json 에 받는다). 파일이 없거나 그 회차가 아직 집계 전
+// (5등 0게임 — 추첨 직후)이면 그 회차는 등수별 표를 빼고 1등만 쓴다
+let prizeData = null;
+try { prizeData = JSON.parse(read('prize-data.json')); } catch (e) { /* 아직 없다 */ }
+const prizeOf = {};
+(prizeData ? prizeData.draws : []).forEach(p => { if (p.w5 > 0) prizeOf[p.round] = p; });
+// 회차 페이지에 등수별 표를 처음 넣은 날 — 그 전 회차들의 사이트맵 lastmod 를 이 날로 올려 검색엔진이 다시 읽게 한다
+const PRIZE_TABLE_SINCE = '2026-10-10';
+const FIRST_1000_WON = 88;   // 1~87회는 1게임 2,000원, 88회부터 1,000원
+
 const stats = LottoStats.compute(draws, { pairTop: 20, trendTop: 10 });
 const N = stats.rounds;
 const LATEST = draws[0];
@@ -105,6 +115,9 @@ function wonEn(amount) {
     if (!amount) return '0';
     return amount >= 1e9 ? (amount / 1e9).toFixed(2) + ' bn KRW' : Math.round(amount / 1e6) + 'm KRW';
 }
+// 원 단위까지 (2~5등은 만 원 아래도 의미가 있다)
+const wonExact = n => `${fmt(n)}원`;
+const wonExactEn = n => `${fmt(n)} KRW`;
 function won(amount) {
     if (!amount) return '0원';
     const eok = Math.floor(amount / 1e8);
@@ -188,6 +201,7 @@ const latestCalloutEn = `Draw ${LATEST.round}: ${LATEST.numbers.join(' ')} <span
 // base: 하위 폴더 페이지에서 쓰는 경로 앞머리 ('' 또는 '../')
 // mainClass: 본문에 더 붙일 클래스 (블로그의 'blog-index' · 'blog-post')
 // note: 맨 위 주석을 바꿀 때 (블로그는 원고에서 만든다)
+// 머리말의 탭 아이콘(favicon.ico · favicon.svg · apple-touch-icon.png)은 사이트 맨 위 폴더에 있다. 손으로 관리하는 페이지(index 등)에도 같은 세 줄이 있다
 function shell(o) {
     const base = o.base || '';
     const title = `${o.title} | lottodraw.kr`;
@@ -229,6 +243,9 @@ function shell(o) {
     <meta name="twitter:description" content="${esc(o.desc)}">
     <meta name="twitter:image" content="${OG_IMAGE}">
     <meta name="google-adsense-account" content="ca-pub-9372871176021283">
+    <link rel="icon" href="/favicon.ico" sizes="32x32">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <link rel="stylesheet" href="${base}css/site.css">
     <script src="${base}js/i18n-dict.js"></script>
     <script src="${base}js/i18n.js"></script>
@@ -852,6 +869,31 @@ function roundPage(d) {
                 `${winners} first-prize winners, ${wonEn(amount)} each${amount ? ` (about ${wonEn(amount - lottoTax(amount))} after tax)` : ''}`)
             : en('1등 당첨 정보가 아직 없습니다.', 'First-prize details are not available yet.');
     const descPrize = winners === 0 ? '1등 없음(이월)' : winners ? `1등 ${winners}명 · 1인당 ${won(amount)}` : '1등 정보 확인 중';
+    // 등수별 당첨금 (2~5등이 집계된 회차만)
+    const p = prizeOf[d.round];
+    const descSecond = p ? (p.w2 ? ` · 2등 ${fmt(p.w2)}게임 · 1게임당 ${won(p.a2)}` : ' · 2등 없음') : '';
+    const after = a => (a ? a - lottoTax(a) : 0);
+    const tierRow = (no, ko, enLabel, games, per) => [
+        en(`${no}등`, `${['1st', '2nd', '3rd', '4th', '5th'][no - 1]}`),
+        en(ko, enLabel),
+        games ? en(`${fmt(games)}게임`, fmt(games)) : en('없음', 'none'),
+        games && per ? `<strong>${en(wonExact(per), wonExactEn(per))}</strong>` : '—',
+        games && per ? en(wonExact(after(per)), wonExactEn(after(per))) : '—',
+    ];
+    const prizeTable = p ? [
+        h2En(`${d.round}회 등수별 당첨금`, `Draw ${d.round} prizes by tier`),
+        table([['등수', 'Tier'], ['당첨 조건', 'To win'], ['당첨 게임 수', 'Winning games'], ['1게임당 당첨금', 'Prize per game'], ['세후 (지금 세법)', 'After tax (current law)']], [
+            tierRow(1, '6개 번호 일치', 'all 6 numbers', winners || 0, amount),
+            tierRow(2, '5개 번호 + 보너스', '5 numbers + bonus', p.w2, p.a2),
+            tierRow(3, '5개 번호 일치', '5 numbers', p.w3, p.a3),
+            tierRow(4, '4개 번호 일치', '4 numbers', p.w4, p.a4),
+            tierRow(5, '3개 번호 일치', '3 numbers', p.w5, p.a5),
+        ], 'tier-table'),
+        pEn(`${d.round}회 총 판매액은 <strong>${wonExact(p.sales)}</strong>입니다. 당첨 게임 수는 한 사람이 같은 번호로 여러 게임을 산 경우도 따로 셉니다.`
+            + (d.round < FIRST_1000_WON ? ' 이 회차는 1게임이 2,000원이던 때(1~87회)입니다. 5등도 지금(5,000원)의 두 배인 10,000원이었습니다. 세후 칸은 지금 1게임 1,000원 기준으로 셉니다.' : ''),
+            `Total sales for draw ${d.round} were <strong>${wonExactEn(p.sales)}</strong>. Winning games count each ticket line separately, even when one person bought the same numbers several times.`
+            + (d.round < FIRST_1000_WON ? ' Back then (draws 1–87) one game cost 2,000 KRW, and 5th prize paid 10,000 KRW, twice today\'s 5,000. The after-tax column uses today\'s 1,000 KRW game.' : ''), 'note'),
+    ] : [];
 
     const cum = cumulative[d.round];
     return shell({
@@ -862,11 +904,12 @@ function roundPage(d) {
         crumbs: [['draws.html', '회차별 당첨번호', null, 'All draws'], [null, `${d.round}회`, null, `Draw ${d.round}`]],
         title: `로또 ${d.round}회 당첨번호 (${d.date}) ${nums.join(' ')} + ${d.bonus}`,
         h1: `로또 ${d.round}회 당첨번호`, h1En: `Lotto Draw ${d.round}`,
-        desc: `로또 6/45 제${d.round}회(${d.date}) 당첨번호는 ${nums.join(', ')}, 보너스 ${d.bonus}. ${descPrize}. 홀짝·합계·연속번호·AC값 분석.`,
+        desc: `로또 6/45 제${d.round}회(${d.date}) 당첨번호는 ${nums.join(', ')}, 보너스 ${d.bonus}. ${descPrize}${descSecond}. ${p ? '등수별 당첨금과 ' : ''}홀짝·합계·연속번호·AC값 분석.`,
         scope: en(`${d.date} 추첨`, `Drawn on ${d.date}`),
         body: [
             `<div class="round-balls" aria-label="당첨번호 ${nums.join(', ')} 보너스 ${d.bonus}">${nums.map(bigBall).join('')}<span class="plus">+</span>${bigBall(d.bonus)}</div>`,
             `<p class="stat-lead">${prizeText}</p>`,   // prizeText 안에 영문이 같이 들어 있다
+            ...prizeTable,
             h2En('이 회차 번호 분석', 'A look at this draw'),
             table([['항목', 'Item'], ['값', 'Value']], [
                 [en('홀짝', 'Odd / even'), en(`홀${odd} 짝${6 - odd}`, `${odd} odd / ${6 - odd} even`)],
@@ -886,8 +929,8 @@ function roundPage(d) {
                 next ? `    <a class="btn btn-secondary" href="${next.round}.html" data-i18n-en="Draw ${next.round} →">${next.round}회 →</a>` : '',
                 '</nav>',
             ].filter(Boolean).join('\n'),
-            pEn('세후 금액은 구입비 1,000원을 뺀 뒤 3억 원까지 22%, 초과분 33%를 적용한 추정치입니다. <a href="../tax.html">실수령액 계산기</a>에서 금액을 바꿔 계산해 볼 수 있습니다.',
-                'The after-tax figure is an estimate: the 1,000 KRW ticket price is deducted, then 22% is applied up to 300m KRW and 33% to anything above. Try other amounts in <a href="../tax.html">the after-tax calculator</a>.'),
+            pEn('세후 금액은 지금 세법으로 계산한 추정치입니다(200만 원 이하 비과세, 넘으면 구입비 1,000원을 뺀 뒤 3억 원까지 22%, 초과분 33%). 2022년까지는 5만 원만 넘어도 당첨금 전체에 세금을 매겼습니다. <a href="../tax.html">실수령액 계산기</a>에서 금액을 바꿔 계산해 볼 수 있습니다.',
+                'After-tax figures are estimates under current law: up to 2m KRW is tax-free; above that, the 1,000 KRW ticket price is deducted, then 22% applies up to 300m KRW and 33% to anything above. Until 2022 any prize over 50,000 KRW was taxed in full. Try other amounts in <a href="../tax.html">the after-tax calculator</a>.'),
         ],
     });
 }
@@ -1119,7 +1162,7 @@ function updateTaxAndTop() {
     let tp = read('top-prize.html');
     tp = replaceBetween('top-prize.html', tp, 'head', headBlock(
         '역대 로또 1등 당첨금 순위 TOP 50 (1인당) | lottodraw.kr',
-        `로또 6/45 역대 1등 당첨금 1인당 금액 순위 TOP 50. 역대 최고는 ${top.round}회 ${won(top.firstPrizeAmount)}, ${RANGE} 1등 평균 당첨금은 ${won(avg)}.`));
+        `로또 6/45 역대 1등 당첨금 1인당 금액 순위 TOP 50. 역대 최고는 ${top.round}회 ${won(top.firstPrizeAmount)}, ${RANGE} 1등 평균 당첨금은 ${won(avg)}. 2등 당첨금 순위 TOP 50도 함께.`));
     // 표와 부제는 페이지의 스크립트가 그리는 것과 글자 하나까지 같게 미리 박아 둔다.
     // 화면은 그대로이고(스크립트가 같은 내용으로 다시 그린다), JS 를 돌리지 않는 검색 로봇도 표를 읽는다.
     // 페이지 스크립트의 행 모양을 바꾸면 여기도 같이 바꾼다
@@ -1138,6 +1181,26 @@ function updateTaxAndTop() {
         ].join('\n');
     });
     tp = replaceBetween('top-prize.html', tp, 'rows', '\n' + rows.join('\n') + '\n                ');
+
+    // 2등 TOP 50 (1게임당 금액 순, 같으면 앞 회차). 1~87회는 1게임 2,000원이라 위쪽을 거의 다 차지한다 — 안내 문장에 88회 이후 최고를 함께 적는다
+    const seconds = Object.values(prizeOf).filter(p => p.w2 > 0 && p.a2 > 0);
+    const second = seconds.slice().sort((a, b) => b.a2 - a.a2 || a.round - b.round);
+    const best88 = second.find(p => p.round >= FIRST_1000_WON);
+    const early = second.slice(0, 50).filter(p => p.round < FIRST_1000_WON).length;
+    tp = replaceBetween('top-prize.html', tp, 'second-note', second.length
+        ? en(`2등은 6개 중 5개와 보너스 번호를 맞힌 게임입니다. 1게임당 당첨금 순이며, 1~87회는 1게임이 2,000원이던 때라 금액이 커서 TOP 50 중 ${early}개가 그 시절입니다. 1게임 1,000원이 된 88회 이후 최고는 <a href="round/${best88.round}.html">${best88.round}회</a> ${won(best88.a2)}(${fmt(best88.w2)}게임)입니다.`,
+            `Second prize means 5 numbers plus the bonus. Ranked by prize per game; draws 1–87 cost 2,000 KRW a game, so ${early} of the Top 50 come from that era. Since draw 88 (1,000 KRW a game) the highest was <a href="round/${best88.round}.html">draw ${best88.round}</a> at ${wonEn(best88.a2)} (${fmt(best88.w2)} winning games).`)
+        : en('2등 당첨금 자료를 준비하고 있습니다.', 'Second-prize data is being prepared.'));
+    const rows2 = second.slice(0, 50).map((p, i) => [
+        '                    <tr>',
+        `                        <td><strong>${i + 1}</strong></td>`,
+        `                        <td><a href="round/${p.round}.html" data-i18n-en="#${p.round}">${p.round}회</a></td>`,
+        `                        <td>${en(won(p.a2), wonEn(p.a2))}</td>`,
+        `                        <td>${en(`${fmt(p.w2)}게임`, fmt(p.w2))}</td>`,
+        `                        <td style="font-weight:bold;">${en(wonExact(p.a2 * p.w2), wonExactEn(p.a2 * p.w2))}</td>`,
+        '                    </tr>',
+    ].join('\n'));
+    tp = replaceBetween('top-prize.html', tp, 'rows2', rows2.length ? '\n' + rows2.join('\n') + '\n                ' : '');
     write('top-prize.html', tp);
 }
 
@@ -1199,7 +1262,7 @@ function updateSitemap(blog) {
         ],
         (blog || []).map(b => entry(b.path, b.lastmod || kept(b.path), 'monthly', '0.6')),
         // 회차 페이지는 추첨 뒤 바뀌지 않는다. 직전 회차만 "다음 회차" 링크가 한 번 붙는다.
-        draws.map((d, i) => entry(`/round/${d.round}.html`, i <= 1 ? UPDATED : d.date, i === 0 ? 'weekly' : 'yearly', i < 10 ? '0.8' : '0.5')),
+        draws.map((d, i) => entry(`/round/${d.round}.html`, i <= 1 ? UPDATED : prizeOf[d.round] && d.date < PRIZE_TABLE_SINCE ? PRIZE_TABLE_SINCE : d.date, i === 0 ? 'weekly' : 'yearly', i < 10 ? '0.8' : '0.5')),
     );
 
     const xml = [

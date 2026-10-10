@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- lottodraw.kr 탭 아이콘: 사이트 남색 바탕에 노란 로또공(1~10번 공 색)과 7. 작게 줄여도 보이게 글꼴 대신 선으로 그린다 -->
+  <rect width="64" height="64" rx="14" fill="#003087"/>
+  <circle cx="32" cy="33" r="23" fill="#fbc400"/>
+  <circle cx="23.5" cy="23" r="5" fill="#fff" opacity=".45"/>
+  <path d="M22 21.5h20L29.5 47" fill="none" stroke="#002266" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
