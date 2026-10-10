@@ -109,7 +109,7 @@ window.I18N_DICT = {
     'tax.tip1':      { en: 'A prize must be claimed within one year. Unclaimed prizes go to the lottery fund.' },
     'tax.tip2':      { en: 'For a first prize the tax is withheld automatically, so the amount you receive is already net of tax.' },
     'tax.tip3':      { en: 'Rates can change from year to year; check the National Tax Service for the current figures.' },
-    'tax.tip4':      { en: 'What would past first prizes be worth after tax? On the <a href="top-prize.html#prize-chart">Top 50 draw-by-draw chart</a>, choose "Seoul flat price" or "Gangnam 3-district flat price" under Compare to see each draw\'s after-tax prize per winner (at today\'s rates) next to that month\'s apartment prices.' },
+    'tax.tip4':      { en: 'Could past first prizes have bought a home? On the <a href="top-prize.html#prize-chart">Top 50 draw-by-draw chart</a>, choose "Seoul flat price" under Compare to see each draw\'s prize per winner next to that month\'s apartment price. With a pass you can also see it after tax (at today\'s rates) and against Gangnam 3-district prices.' },
 
     /* ───── TOP 50 당첨금 ───── */
     'top.h1':        { en: 'Top 50 Lotto 6/45 First-Prize Payouts' },

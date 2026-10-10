@@ -13,7 +13,7 @@
 // 봉 차트: 회차를 달·분기·해로 묶어 시가(첫 회차)·고가·저가·종가(마지막 회차). 오름 빨강 · 내림 파랑.
 // 선 · 월봉은 누구나, 분기봉 · 연봉은 이용권. 처음 열면 선 그래프다.
 //
-// 처음 열면 늘 "전체 기간 · 총 1등 당첨금 · 선 그래프 · 물가 반영 · 20회 · 240회 이동평균"이다.
+// 처음 열면 늘 "전체 기간 · 총 1등 당첨금 · 선 그래프 · 세전 · 240회 이동평균"이다(이용권이 있으면 물가 반영 + 20회 · 240회 이동평균).
 // 고른 지표·기간은 기억하지 않는다(이용권이 있으면 보조지표만 기억한다).
 //
 // 로그인하지 않은 사람에게는 그래프를 흐리게 보이고 로그인을 권한다(setGated). 누구를 가릴지는 페이지가 정한다.
@@ -456,7 +456,7 @@
             T('pc.pro.note') + ' ',
             el('a', { href: 'statistics.html', text: T('pc.pro.see') }),
         ]);
-        // 이용권이 있으면 조작법 한 줄 (손가락 화면과 마우스 화면이 다르다)
+        // 조작법 한 줄 (구간 조작은 무료라 늘 보인다. 손가락 화면과 마우스 화면이 다르다)
         const coarse = !!(g.matchMedia && g.matchMedia('(pointer: coarse)').matches);
         const helpNote = el('p', { className: 'pchart-help', text: T(coarse ? 'pc.help.touch' : 'pc.help.mouse') });   // 구간 조작은 무료라 늘 보인다
         // 한 줄: 왼쪽 이름 칸, 오른쪽 단추 칸들. 단추는 1px 선으로만 나뉜다. 이용권 줄이라고 따로 적지 않는다(맨 아래 안내 한 줄)
@@ -467,7 +467,7 @@
         ]);
         const realRow = row(T('pc.row.amount'), [nominalBtn, realBtn], false, true);
         if (!cpi) realRow.hidden = true;
-        // 세금(무료): 세전 / 세후. 당첨자 수에서는 둘 다 꺼진다
+        // 세금: 세전(무료) / 세후(이용권). 당첨자 수에서는 둘 다 꺼진다
         function setNet(on) {
             if (on && !state.unlocked) return flashNote();   // 세후는 이용권
             if (byId(state.metric).unit !== 'won') return;
@@ -478,7 +478,8 @@
         const grossBtn = cell(T('pc.tax.gross'), () => setNet(false));
         const netBtn = cell(T('pc.tax.net'), () => setNet(true));
         const taxRow = row(T('pc.row.tax'), [grossBtn, netBtn], false, true);
-        // 비교(무료): 1인당 당첨금에 그 달 서울 아파트 평균가를 겹친다. 다른 지표에서 누르면 1인당 당첨금으로 바꾸고,
+        // 비교: 서울 아파트(무료) · 강남3구(이용권). 1인당 당첨금에 그 달 아파트값을 겹치고, "몇 채"는 보이는 선(세후/세전) 기준.
+        // 다른 지표에서 누르면 1인당 당첨금으로 바꾸고,
         // 켤 때 세후로 바꾼다 — "당첨되면 서울 집을 살 수 있나"는 세후로 봐야 맞다. 아파트값은 그 달 값(당시 금액)이라
         // 물가 반영(지금 돈 가치 회색 선)은 끈다 — 회색 선과 아파트값을 견주면 잘못 읽는다
         function toggleCmp(k) {
@@ -1077,6 +1078,7 @@
         function cmpLines(i, short) {
             const out = [];
             const { metric, cs } = S;
+            if (!cs) return out;                         // 비교를 끈 화면
             const mine = S.netOn ? cs.net : cs.gross;   // 보이는 선과 같은 기준(세후/세전)으로 "몇 채"
             const est = a => (a.est ? ' · ' + T('pc.cmp.estTag') : '');
             const a = S.aptOn ? cs.apt[i] : null;
