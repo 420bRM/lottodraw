@@ -1,0 +1,21 @@
+name: probe-prize-fields
+
+# 임시 검사(다 보면 지운다): 동행복권 회차 응답의 2~5등 · 판매액 필드를 로그로 찍는다. 파일은 쓰지 않는다.
+on:
+  push:
+    paths:
+      - tools/probe-prize-fields.js
+      - .github/workflows/probe-prize-fields.yml
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: node tools/probe-prize-fields.js
