@@ -127,7 +127,7 @@
                         <summary class="card-title"><span data-i18n="gen.history">생성 이력 · 과정 로그</span></summary>
                             <div class="card-body">
                                 <table class="history">
-                                    <caption class="sr-only" data-i18n="gen.historyCap">오늘 생성한 번호 (최근 100개, 10개씩 쪽 넘김)</caption>
+                                    <caption class="sr-only" data-i18n="gen.historyCap">오늘 생성한 번호 (최근 100개)</caption>
                                     <thead><tr><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr></thead>
                                     <tbody id="history-body"></tbody>
                                 </table>
@@ -447,9 +447,11 @@
         let clickCount = storageGet(clickKey, '0');
         document.getElementById('visitor-count').innerText = I18N.f('gen.todayCount', { n: clickCount });
     }
-    // ---- 생성 이력 · 과정 로그: 10개씩 쪽을 나눈다 (10개 이하면 쪽 단추를 숨긴다) ----
-    const PAGE_SIZE = 10;
-    const HISTORY_MAX = 100;   // 오늘 이력은 최근 100개까지 (10쪽)
+    // ---- 생성 이력 · 과정 로그: 쪽을 나눈다. PC(홈 카드가 두 칸이 되는 폭 900px 이상)는 5개, 휴대폰 · 좁은 화면은 10개씩.
+    // 한 쪽에 다 들어가면 쪽 단추를 숨긴다 ----
+    const HISTORY_MAX = 100;   // 오늘 이력은 최근 100개까지
+    const pcQuery = typeof matchMedia === 'function' ? matchMedia('(min-width: 900px)') : null;
+    const pageSize = () => (pcQuery && pcQuery.matches ? 5 : 10);
     function makePager(id, onTurn) {
         const nav = document.getElementById(id);
         const prev = nav.querySelector('[data-dir="-1"]');
@@ -474,11 +476,12 @@
         return {
             // 항목 수에 맞춰 쪽 수를 다시 세고, 보여 줄 쪽(범위 안으로)을 돌려준다
             set(count, page) {
-                st.pages = Math.max(1, Math.ceil(count / PAGE_SIZE));
+                st.pages = Math.max(1, Math.ceil(count / pageSize()));
                 st.page = Math.min(Math.max(0, page), st.pages - 1);
                 paint();
                 return st.page;
             },
+            get page() { return st.page; },
         };
     }
     // 최근 것이 1쪽 맨 위
@@ -486,10 +489,11 @@
     const historyPager = makePager('history-pager', p => loadHistory(p));
     function loadHistory(page) {
         const history = readHistory().slice().reverse();
+        const size = pageSize();
         historyPage = historyPager.set(history.length, page == null ? historyPage : page);
         const tbody = document.getElementById('history-body');
         tbody.innerHTML = '';
-        history.slice(historyPage * PAGE_SIZE, (historyPage + 1) * PAGE_SIZE).forEach(entry => {
+        history.slice(historyPage * size, (historyPage + 1) * size).forEach(entry => {
             const tr = document.createElement('tr');
             String(entry).split(', ').forEach(num => {
                 const td = document.createElement('td');
@@ -546,16 +550,30 @@
         }
         return null;
     }
-    // 시도 로그: 한 번 생성할 때마다 새로 모은다. 최근 50줄을 10줄씩 쪽으로 나눠, 처음엔 마지막 쪽(고른 번호가 있는 쪽)
+    // 시도 로그: 한 번 생성할 때마다 새로 모은다. 최근 50줄을 쪽으로 나눠(PC 5줄 · 휴대폰 10줄), 처음엔 마지막 쪽(고른 번호가 있는 쪽)
     let logLines = [];
     const logPager = makePager('log-pager', p => renderLog(p));
     function renderLog(page) {
         const logDiv = document.getElementById('log');
         const kept = logLines.slice(-50);
+        const size = pageSize();
         const p = logPager.set(kept.length, page == null ? Infinity : page);
         logDiv.innerHTML = '<strong>' + I18N.t('gen.logTitle') +
             (logLines.length > kept.length ? I18N.f('gen.logTail', { n: kept.length }) : '') +
-            ':</strong><br>' + kept.slice(p * PAGE_SIZE, (p + 1) * PAGE_SIZE).join('<br>');
+            ':</strong><br>' + kept.slice(p * size, (p + 1) * size).join('<br>');
+    }
+    // 창 폭이 PC ↔ 휴대폰 경계를 넘으면 쪽 크기가 바뀐다 — 보고 있던 쪽의 첫 줄이 든 쪽으로 다시 그린다
+    let shownSize = pageSize();
+    function onPageSizeChange() {
+        const old = shownSize;
+        shownSize = pageSize();
+        if (old === shownSize) return;
+        loadHistory(Math.floor(historyPage * old / shownSize));
+        if (logLines.length) renderLog(Math.floor(logPager.page * old / shownSize));
+    }
+    if (pcQuery) {
+        if (pcQuery.addEventListener) pcQuery.addEventListener('change', onPageSizeChange);
+        else if (pcQuery.addListener) pcQuery.addListener(onPageSizeChange);
     }
     function generateNumbers() {
         updateClickCount();

@@ -331,7 +331,7 @@ window.I18N_DICT = {
     'gen.checkAll':  { en: 'Check all' },
     'gen.checkNone': { en: 'Uncheck all' },
     'gen.history':   { en: 'History · attempt log' },
-    'gen.historyCap': { en: 'Numbers generated today (last 100, 10 per page)' },
+    'gen.historyCap': { en: 'Numbers generated today (last 100)' },
     'gen.historyPager': { ko: '생성 이력 쪽 넘기기', en: 'History pages' },
     'gen.logPager':  { ko: '과정 로그 쪽 넘기기', en: 'Attempt log pages' },
     'gen.prev':      { ko: '‹ 이전', en: '‹ Prev' },

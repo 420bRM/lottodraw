@@ -567,7 +567,7 @@ html.home { scroll-behavior: smooth; }
 #sec-generator .result-msg { margin: 16px 0; }
 .gen-extras { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; margin-top: 14px; }
 /* 본문은 다 펼쳐 보인다(2026-10-11). 예전에는 첫 구간을 한 화면에 맞추려 높이를 12vh(낮은 화면 6vh)로 묶고 안에서
-   스크롤시켰는데, 휴대폰에서는 두세 줄만 보였다. 생성 이력 · 과정 로그는 10개씩 쪽을 넘겨 길이가 늘지 않는다 */
+   스크롤시켰는데, 휴대폰에서는 두세 줄만 보였다. 생성 이력 · 과정 로그는 쪽을 넘겨(PC 5개 · 휴대폰 10개) 길이가 늘지 않는다 */
 .gen-extras .card-body { font-size: 12px; line-height: 1.55; }
 .pager { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 8px 0 0; }
 .pager[hidden] { display: none; }
