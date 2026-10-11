@@ -706,6 +706,9 @@ html.home { scroll-behavior: smooth; }
 .prose.wide { max-width: 1200px; }
 .prose h3 { margin: 18px 0 6px; color: var(--text); font-size: 16px; }
 .prose .intro { margin: 0 0 24px; color: var(--muted); font-size: 16px; text-align: center; }
+/* About 의 주요 기능 목록: 기능 이름(링크) — 설명 */
+.prose .about-features { padding-left: 20px; }
+.prose .about-features li { margin: 8px 0; }
 .prose .note { margin: 16px 0 0; color: var(--muted); font-size: 13px; }
 .prose .intro.error { color: var(--error); }
 .page-actions { margin: 28px 0 0; text-align: center; }
