@@ -1006,8 +1006,9 @@
         function renderNav(metric, ser) {
             const W = Math.max(280, Math.round(nav.clientWidth || plot.clientWidth || 600));
             const H = 40;
-            const L = S.M.left;
-            const R = S.M.right;
+            // 양 끝 손잡이(폭 8px)가 그림 밖으로 잘리지 않게 좌우를 5px 이상 남긴다 (그래프는 오른쪽 끝까지 차도)
+            const L = Math.max(5, S.M.left);
+            const R = Math.max(5, S.M.right);
             const pw = W - L - R;
             let vmax = 0;
             ser.vals.forEach(v => { if (v != null && v > vmax) vmax = v; });

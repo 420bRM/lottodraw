@@ -133,15 +133,17 @@
                                 </table>
                                 <div class="pager" id="history-pager" role="group" aria-label="생성 이력 쪽 넘기기" data-i18n-attr="aria-label:gen.historyPager" hidden>
                                     <button type="button" class="btn btn-secondary btn-small" data-dir="-1" data-i18n="gen.prev">‹ 이전</button>
-                                    <span class="pager-label" aria-live="polite"></span>
+                                    <span class="pager-label"></span>
                                     <button type="button" class="btn btn-secondary btn-small" data-dir="1" data-i18n="gen.next">다음 ›</button>
+                                    <span class="sr-only pager-live" aria-live="polite"></span>
                                 </div>
                                 <p class="muted" id="visitor-count"></p>
                                 <div class="log" id="log"></div>
                                 <div class="pager" id="log-pager" role="group" aria-label="과정 로그 쪽 넘기기" data-i18n-attr="aria-label:gen.logPager" hidden>
                                     <button type="button" class="btn btn-secondary btn-small" data-dir="-1" data-i18n="gen.prev">‹ 이전</button>
-                                    <span class="pager-label" aria-live="polite"></span>
+                                    <span class="pager-label"></span>
                                     <button type="button" class="btn btn-secondary btn-small" data-dir="1" data-i18n="gen.next">다음 ›</button>
+                                    <span class="sr-only pager-live" aria-live="polite"></span>
                                 </div>
                             </div>
                         </details>
@@ -326,7 +328,8 @@
     }
     function readHistory() {
         try {
-            return JSON.parse(storageGet(historyKey, '[]'));
+            const v = JSON.parse(storageGet(historyKey, '[]'));
+            return Array.isArray(v) ? v : [];   // 배열이 아니면(손으로 바꾼 값 등) 빈 이력으로
         } catch (e) {
             return [];
         }
@@ -452,15 +455,18 @@
     const HISTORY_MAX = 100;   // 오늘 이력은 최근 100개까지
     const pcQuery = typeof matchMedia === 'function' ? matchMedia('(min-width: 900px)') : null;
     const pageSize = () => (pcQuery && pcQuery.matches ? 5 : 10);
-    function makePager(id, onTurn) {
+    // srKey: 쪽을 넘겼을 때 화면 읽기 프로그램에 읽어 줄 문장("생성 이력 2/3쪽") — 보이는 "2 / 3"은 읽지 않는다
+    function makePager(id, onTurn, srKey) {
         const nav = document.getElementById(id);
         const prev = nav.querySelector('[data-dir="-1"]');
         const next = nav.querySelector('[data-dir="1"]');
         const label = nav.querySelector('.pager-label');
+        const live = nav.querySelector('.pager-live');
         const st = { page: 0, pages: 1 };
         function paint() {
             nav.hidden = st.pages <= 1;
-            label.textContent = I18N.f('gen.page', { p: st.page + 1, n: st.pages });
+            const text = I18N.f('gen.page', { p: st.page + 1, n: st.pages });
+            if (label.textContent !== text) label.textContent = text;
             prev.disabled = st.page <= 0;
             next.disabled = st.page >= st.pages - 1;
         }
@@ -470,6 +476,10 @@
             st.page = to;
             paint();
             onTurn(to);
+            // 끝 쪽에 닿아 누른 단추가 꺼지면 초점이 사라진다 — 반대쪽 단추로 옮긴다
+            const used = dir > 0 ? next : prev;
+            if (used.disabled && document.activeElement !== (dir > 0 ? prev : next)) (dir > 0 ? prev : next).focus();
+            if (live) live.textContent = I18N.f(srKey, { p: to + 1, n: st.pages });
         }
         prev.addEventListener('click', () => turn(-1));
         next.addEventListener('click', () => turn(1));
@@ -486,14 +496,15 @@
     }
     // 최근 것이 1쪽 맨 위
     let historyPage = 0;
-    const historyPager = makePager('history-pager', p => loadHistory(p));
+    const historyPager = makePager('history-pager', p => loadHistory(p), 'gen.historyPageSr');
     function loadHistory(page) {
         const history = readHistory().slice().reverse();
         const size = pageSize();
         historyPage = historyPager.set(history.length, page == null ? historyPage : page);
         const tbody = document.getElementById('history-body');
         tbody.innerHTML = '';
-        history.slice(historyPage * size, (historyPage + 1) * size).forEach(entry => {
+        const rows = history.slice(historyPage * size, (historyPage + 1) * size);
+        rows.forEach(entry => {
             const tr = document.createElement('tr');
             String(entry).split(', ').forEach(num => {
                 const td = document.createElement('td');
@@ -502,6 +513,16 @@
             });
             tbody.appendChild(tr);
         });
+        // 쪽이 여럿이면 마지막 쪽이 짧아도 표 높이를 그대로 둔다 — 쪽 단추가 손가락 아래에서 위로 튀지 않게
+        if (history.length > size) {
+            for (let k = rows.length; k < size; k++) {
+                const tr = document.createElement('tr');
+                tr.className = 'history-pad';
+                tr.setAttribute('aria-hidden', 'true');
+                for (let c = 0; c < 6; c++) { const td = document.createElement('td'); td.textContent = '\u00a0'; tr.appendChild(td); }   // 빈 칸도 숫자 줄과 같은 높이
+                tbody.appendChild(tr);
+            }
+        }
     }
     function saveHistory(numStr) {
         let history = readHistory();
@@ -552,15 +573,18 @@
     }
     // 시도 로그: 한 번 생성할 때마다 새로 모은다. 최근 50줄을 쪽으로 나눠(PC 5줄 · 휴대폰 10줄), 처음엔 마지막 쪽(고른 번호가 있는 쪽)
     let logLines = [];
-    const logPager = makePager('log-pager', p => renderLog(p));
+    const logPager = makePager('log-pager', p => renderLog(p), 'gen.logPageSr');
     function renderLog(page) {
         const logDiv = document.getElementById('log');
         const kept = logLines.slice(-50);
         const size = pageSize();
         const p = logPager.set(kept.length, page == null ? Infinity : page);
+        const lines = kept.slice(p * size, (p + 1) * size);
+        // 쪽이 여럿이면 짧은 쪽도 같은 높이로 (쪽 단추가 튀지 않게)
+        if (kept.length > size) while (lines.length < size) lines.push('&nbsp;');
         logDiv.innerHTML = '<strong>' + I18N.t('gen.logTitle') +
             (logLines.length > kept.length ? I18N.f('gen.logTail', { n: kept.length }) : '') +
-            ':</strong><br>' + kept.slice(p * size, (p + 1) * size).join('<br>');
+            ':</strong><br>' + lines.join('<br>');
     }
     // 창 폭이 PC ↔ 휴대폰 경계를 넘으면 쪽 크기가 바뀐다 — 보고 있던 쪽의 첫 줄이 든 쪽으로 다시 그린다
     let shownSize = pageSize();
@@ -800,17 +824,29 @@
             });
         });
 
-        // 지금 보고 있는 구간을 점에 표시한다
-        if ('IntersectionObserver' in window) {
-            const io = new IntersectionObserver(entries => {
-                entries.forEach(en => {
-                    if (!en.isIntersecting) return;
-                    const i = ids.indexOf(en.target.id);
-                    dots.forEach((d, k) => d.setAttribute('aria-current', String(k === i)));
-                });
-            }, { threshold: 0.5 });
-            ids.forEach(id => { const el = document.getElementById(id); if (el) io.observe(el); });
+        // 지금 보고 있는 구간을 점에 표시한다 — 화면에 가장 많이 보이는 구간. 구간이 화면보다 몇 배 길어도
+        // (생성 이력 · 보렐 카드를 펼친 첫 구간) 보이는 높이로 고르므로 점이 비지 않는다. 스크롤마다 한 화면에 한 번만 잰다
+        function markCurrent() {
+            const vh = window.innerHeight;
+            let best = -1;
+            let bestH = 0;
+            ids.forEach((id, k) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const r = el.getBoundingClientRect();
+                const h = Math.min(r.bottom, vh) - Math.max(r.top, 0);
+                if (h > bestH) { bestH = h; best = k; }
+            });
+            if (best >= 0) dots.forEach((d, k) => d.setAttribute('aria-current', String(k === best)));
         }
+        let marking = false;
+        window.addEventListener('scroll', () => {
+            if (marking) return;
+            marking = true;
+            requestAnimationFrame(() => { marking = false; markCurrent(); });
+        }, { passive: true });
+        window.addEventListener('resize', markCurrent);
+        markCurrent();
 
     }
 

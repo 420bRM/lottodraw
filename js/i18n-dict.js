@@ -337,6 +337,8 @@ window.I18N_DICT = {
     'gen.prev':      { ko: '‹ 이전', en: '‹ Prev' },
     'gen.next':      { ko: '다음 ›', en: 'Next ›' },
     'gen.page':      { ko: '{p} / {n}', en: '{p} / {n}' },
+    'gen.historyPageSr': { ko: '생성 이력 {p}/{n}쪽', en: 'History page {p} of {n}' },
+    'gen.logPageSr': { ko: '과정 로그 {p}/{n}쪽', en: 'Log page {p} of {n}' },
     'gen.borel':     { en: 'Borel\u2019s law, and the limits of this tool' },
     'gen.cueStats':  { en: '12 all-time statistics below' },
     'gen.cueRecent': { en: 'The last 10 draws at a glance, below' },
