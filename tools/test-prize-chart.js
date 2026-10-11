@@ -139,6 +139,22 @@ check('until 날까지는 마지막 해 금액, 그 뒤(정해지지 않은 해)
     hourly(wage.until) === last.hourly && hourly(afterUntil) === null && hourly('2002-08-31') === null);
 check('until 은 마지막 기간이 시작한 해의 12월 31일', wage.until === last.from.slice(0, 4) + '-12-31');
 check('월 209시간', wage.hoursPerMonth === 209 && P.wageAt(wage, '2026-10-10').hourly * wage.hoursPerMonth === 2156880);
+// 그래프 선은 계단 대신 직선: 기간 가운데에서 그 기간 금액, 사이는 날짜 비율로. 숫자(정보창 · n년치)는 wageAt 그대로
+const lineAt = d => P.wageLineAt(wage, d);
+check('직선: 기간 가운데에서는 그 기간 금액', Math.abs(lineAt('2025-07-02') - 10030) < 1 && Math.abs(lineAt('2014-07-02') - 5210) < 1);
+check('직선: 해가 바뀌는 날은 두 해 금액의 가운데쯤', Math.abs(lineAt('2026-01-01') - (10030 + 10320) / 2) < 2, String(lineAt('2026-01-01')));
+check('직선: 첫 기간 가운데 전은 평평, 범위는 wageAt 과 같다',
+    lineAt('2002-12-07') === 2275 && lineAt('2002-08-31') === null && lineAt(afterUntil) === null && lineAt(wage.until) === last.hourly);
+{
+    // 모든 날을 걸어 보면: 줄지 않고, 하루에 크게 뛰지 않는다(계단이 아니다)
+    let prev = null, down = 0, jump = 0;
+    for (let t = Date.parse('2002-12-01T00:00:00Z'); t <= Date.parse(wage.until + 'T00:00:00Z'); t += 864e5) {
+        const v = lineAt(new Date(t).toISOString().slice(0, 10));
+        if (prev != null && v != null) { if (v < prev - 1e-9) down++; if (v - prev > 5) jump++; }
+        prev = v;
+    }
+    check('직선: 날마다 걸어도 줄지 않고 하루 5원 넘게 뛰지 않는다', down === 0 && jump === 0, `down ${down} jump ${jump}`);
+}
 
 // 글자 (I18N 이 없으면 한국어)
 check('금액 긴 표기 (만 원 아래 버림, 홈 상세 분석과 같다)', P.wonLong(1604686625) === '16억 468만 원', P.wonLong(1604686625));

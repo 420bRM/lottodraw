@@ -1483,20 +1483,3 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 .prose .about-more { margin: 0 0 8px; font-size: 14px; }
 .about-more a { font-weight: bold; }
 .prose .about-explore { margin: 18px 0 0; font-size: 14px; }
-
-/* ───── 생성 번호 출력(인쇄) — 홈 "출력" 단추를 누른 동안만(body.is-printing) 이 종이 한 장을 찍는다.
-   그냥 Ctrl+P 로 찍으면 평소 화면 그대로. 용지 한 장(5게임 A~E)씩 묶는다 ───── */
-.print-sheet { display: none; }
-@media print {
-    body.is-printing > :not(.print-sheet) { display: none !important; }
-    body.is-printing > .print-sheet { display: block; color: #000; background: #fff; }
-    .print-sheet h1 { margin: 0 0 2mm; font-size: 18pt; }
-    .print-sheet .ps-meta { margin: 0 0 6mm; color: #444; font-size: 10pt; }
-    .print-sheet .ps-slip { margin: 0 0 6mm; break-inside: avoid; page-break-inside: avoid; }
-    .print-sheet h2 { margin: 0 0 2mm; font-size: 11pt; }
-    .print-sheet table { border-collapse: collapse; }
-    .print-sheet th, .print-sheet td { height: 10mm; border: 0.3mm solid #888; text-align: center; font-variant-numeric: tabular-nums; }
-    .print-sheet td { width: 13mm; font-size: 15pt; font-weight: bold; }
-    .print-sheet th { width: 9mm; color: #555; font-size: 11pt; }
-    .print-sheet .ps-note { margin: 8mm 0 0; color: #555; font-size: 9pt; }
-}
