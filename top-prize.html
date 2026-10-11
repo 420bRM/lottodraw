@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- seo:head:start -->
     <title>역대 로또 1등 당첨금 순위 TOP 50 (1인당) | lottodraw.kr</title>
-    <meta name="description" content="로또 6/45 역대 1등 당첨금 1인당 금액 순위 TOP 50. 역대 최고는 19회 407억 2,295만 원, 1~1245회 1등 평균 당첨금은 26억 5,826만 원. 2등 당첨금 순위 TOP 50도 함께.">
+    <meta name="description" content="로또 6/45 역대 1등 당첨금 1인당 금액 순위 TOP 50. 역대 최고는 19회 407억 2,295만 원, 1~1245회 1등 평균 당첨금은 26억 5,826만 원. 2등 당첨금 순위 TOP 50과 최근 50회 1·2등 당첨금도 함께.">
     <meta property="og:title" content="역대 로또 1등 당첨금 순위 TOP 50 (1인당) | lottodraw.kr">
-    <meta property="og:description" content="로또 6/45 역대 1등 당첨금 1인당 금액 순위 TOP 50. 역대 최고는 19회 407억 2,295만 원, 1~1245회 1등 평균 당첨금은 26억 5,826만 원. 2등 당첨금 순위 TOP 50도 함께.">
+    <meta property="og:description" content="로또 6/45 역대 1등 당첨금 1인당 금액 순위 TOP 50. 역대 최고는 19회 407억 2,295만 원, 1~1245회 1등 평균 당첨금은 26억 5,826만 원. 2등 당첨금 순위 TOP 50과 최근 50회 1·2등 당첨금도 함께.">
     <meta property="og:image" content="https://www.lottodraw.kr/img/og-default.png">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="역대 로또 1등 당첨금 순위 TOP 50 (1인당) | lottodraw.kr">
-    <meta name="twitter:description" content="로또 6/45 역대 1등 당첨금 1인당 금액 순위 TOP 50. 역대 최고는 19회 407억 2,295만 원, 1~1245회 1등 평균 당첨금은 26억 5,826만 원. 2등 당첨금 순위 TOP 50도 함께.">
+    <meta name="twitter:description" content="로또 6/45 역대 1등 당첨금 1인당 금액 순위 TOP 50. 역대 최고는 19회 407억 2,295만 원, 1~1245회 1등 평균 당첨금은 26억 5,826만 원. 2등 당첨금 순위 TOP 50과 최근 50회 1·2등 당첨금도 함께.">
     <meta name="twitter:image" content="https://www.lottodraw.kr/img/og-default.png">
     <!-- seo:head:end -->
     <link rel="canonical" href="https://www.lottodraw.kr/top-prize.html">
@@ -64,8 +64,12 @@
         </details>
 
         <h2 class="top-table-h" id="top50" data-i18n="top.h2">1인당 당첨금 순위 TOP 50</h2>
-        <div class="table-scroll">
-            <table class="data-table" id="topPrizeTable">
+        <div class="top-view-btns" role="group" aria-label="1등 표 보기" data-i18n-attr="aria-label:top.view1" data-heading="top50">
+            <button type="button" class="top-view-btn" aria-pressed="true" data-view="top50-rank" data-i18n="top.viewRank">당첨금 순위</button>
+            <button type="button" class="top-view-btn" aria-pressed="false" data-view="top50-latest" data-title="top.h2latest" data-i18n="top.viewLatest">최근 50회</button>
+        </div>
+        <div class="table-scroll" data-top-view="top50-rank">
+            <table class="data-table top-table" id="topPrizeTable">
                 <thead>
                     <tr>
                         <th data-i18n="top.th.rank">순위</th>
@@ -430,15 +434,386 @@
             </table>
         </div>
 
-        <p class="note" data-i18n-html="top.note">
+        <p class="note" data-i18n-html="top.note" data-top-view="top50-rank">
             * 1인당 당첨금은 가독성을 위해 “억 원” 단위로 표시합니다.<br>
             * 총 1등 당첨금은 1원 단위까지 정확한 금액입니다.
         </p>
 
+        <div class="table-scroll" data-top-view="top50-latest" hidden>
+            <table class="data-table top-table" id="latestPrizeTable">
+                <thead>
+                    <tr>
+                        <th data-i18n="top.th.round">회차</th>
+                        <th data-i18n="top.th.date">추첨일</th>
+                        <th data-i18n="top.th.each">1인당 당첨금 (약)</th>
+                        <th data-i18n="top.th.winners">당첨자 수</th>
+                        <th data-i18n="top.th.total">총 1등 당첨금</th>
+                    </tr>
+                </thead>
+                <tbody><!-- seo:latest-rows:start -->
+                    <tr>
+                        <td><a href="round/1245.html" data-i18n-en="#1245">1245회</a></td>
+                        <td>2026-10-10</td>
+                        <td><span data-i18n-en="3.01 bn KRW">30억 651만 원</span></td>
+                        <td><span data-i18n-en="10">10명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="30,065,157,750 KRW">30,065,157,750 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1244.html" data-i18n-en="#1244">1244회</a></td>
+                        <td>2026-10-03</td>
+                        <td><span data-i18n-en="1.60 bn KRW">16억 468만 원</span></td>
+                        <td><span data-i18n-en="18">18명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="28,884,359,250 KRW">28,884,359,250 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1243.html" data-i18n-en="#1243">1243회</a></td>
+                        <td>2026-09-26</td>
+                        <td><span data-i18n-en="2.59 bn KRW">25억 9,252만 원</span></td>
+                        <td><span data-i18n-en="12">12명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="31,110,303,384 KRW">31,110,303,384 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1242.html" data-i18n-en="#1242">1242회</a></td>
+                        <td>2026-09-19</td>
+                        <td><span data-i18n-en="3.28 bn KRW">32억 8,102만 원</span></td>
+                        <td><span data-i18n-en="9">9명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="29,529,263,250 KRW">29,529,263,250 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1241.html" data-i18n-en="#1241">1241회</a></td>
+                        <td>2026-09-12</td>
+                        <td><span data-i18n-en="1.63 bn KRW">16억 2,839만 원</span></td>
+                        <td><span data-i18n-en="18">18명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="29,311,055,640 KRW">29,311,055,640 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1240.html" data-i18n-en="#1240">1240회</a></td>
+                        <td>2026-09-05</td>
+                        <td><span data-i18n-en="1.79 bn KRW">17억 9,181만 원</span></td>
+                        <td><span data-i18n-en="16">16명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="28,669,084,128 KRW">28,669,084,128 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1239.html" data-i18n-en="#1239">1239회</a></td>
+                        <td>2026-08-29</td>
+                        <td><span data-i18n-en="2.21 bn KRW">22억 1,478만 원</span></td>
+                        <td><span data-i18n-en="13">13명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="28,792,261,875 KRW">28,792,261,875 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1238.html" data-i18n-en="#1238">1238회</a></td>
+                        <td>2026-08-22</td>
+                        <td><span data-i18n-en="1.20 bn KRW">11억 9,725만 원</span></td>
+                        <td><span data-i18n-en="23">23명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="27,536,950,514 KRW">27,536,950,514 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1237.html" data-i18n-en="#1237">1237회</a></td>
+                        <td>2026-08-15</td>
+                        <td><span data-i18n-en="1.21 bn KRW">12억 1,493만 원</span></td>
+                        <td><span data-i18n-en="23">23명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="27,943,451,640 KRW">27,943,451,640 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1236.html" data-i18n-en="#1236">1236회</a></td>
+                        <td>2026-08-08</td>
+                        <td><span data-i18n-en="2.44 bn KRW">24억 4,191만 원</span></td>
+                        <td><span data-i18n-en="11">11명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="26,861,113,125 KRW">26,861,113,125 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1235.html" data-i18n-en="#1235">1235회</a></td>
+                        <td>2026-08-01</td>
+                        <td><span data-i18n-en="3.09 bn KRW">30억 9,096만 원</span></td>
+                        <td><span data-i18n-en="9">9명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="27,818,654,625 KRW">27,818,654,625 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1234.html" data-i18n-en="#1234">1234회</a></td>
+                        <td>2026-07-25</td>
+                        <td><span data-i18n-en="1.60 bn KRW">15억 9,512만 원</span></td>
+                        <td><span data-i18n-en="18">18명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="28,712,332,134 KRW">28,712,332,134 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1233.html" data-i18n-en="#1233">1233회</a></td>
+                        <td>2026-07-18</td>
+                        <td><span data-i18n-en="838m KRW">8억 3,796만 원</span></td>
+                        <td><span data-i18n-en="31">31명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="25,976,927,276 KRW">25,976,927,276 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1232.html" data-i18n-en="#1232">1232회</a></td>
+                        <td>2026-07-11</td>
+                        <td><span data-i18n-en="2.53 bn KRW">25억 3,326만 원</span></td>
+                        <td><span data-i18n-en="11">11명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="27,865,869,009 KRW">27,865,869,009 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1231.html" data-i18n-en="#1231">1231회</a></td>
+                        <td>2026-07-04</td>
+                        <td><span data-i18n-en="1.65 bn KRW">16억 5,299만 원</span></td>
+                        <td><span data-i18n-en="17">17명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="28,100,831,258 KRW">28,100,831,258 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1230.html" data-i18n-en="#1230">1230회</a></td>
+                        <td>2026-06-27</td>
+                        <td><span data-i18n-en="1.77 bn KRW">17억 7,135만 원</span></td>
+                        <td><span data-i18n-en="16">16명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="28,341,715,136 KRW">28,341,715,136 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1229.html" data-i18n-en="#1229">1229회</a></td>
+                        <td>2026-06-20</td>
+                        <td><span data-i18n-en="3.52 bn KRW">35억 1,975만 원</span></td>
+                        <td><span data-i18n-en="8">8명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="28,158,072,000 KRW">28,158,072,000 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1228.html" data-i18n-en="#1228">1228회</a></td>
+                        <td>2026-06-13</td>
+                        <td><span data-i18n-en="2.70 bn KRW">26억 9,833만 원</span></td>
+                        <td><span data-i18n-en="11">11명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="29,681,678,631 KRW">29,681,678,631 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1227.html" data-i18n-en="#1227">1227회</a></td>
+                        <td>2026-06-06</td>
+                        <td><span data-i18n-en="2.67 bn KRW">26억 7,480만 원</span></td>
+                        <td><span data-i18n-en="11">11명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="29,422,893,005 KRW">29,422,893,005 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1226.html" data-i18n-en="#1226">1226회</a></td>
+                        <td>2026-05-30</td>
+                        <td><span data-i18n-en="2.82 bn KRW">28억 1,523만 원</span></td>
+                        <td><span data-i18n-en="10">10명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="28,152,301,130 KRW">28,152,301,130 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1225.html" data-i18n-en="#1225">1225회</a></td>
+                        <td>2026-05-23</td>
+                        <td><span data-i18n-en="2.23 bn KRW">22억 2,813만 원</span></td>
+                        <td><span data-i18n-en="13">13명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="28,965,730,131 KRW">28,965,730,131 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1224.html" data-i18n-en="#1224">1224회</a></td>
+                        <td>2026-05-16</td>
+                        <td><span data-i18n-en="2.41 bn KRW">24억 1,485만 원</span></td>
+                        <td><span data-i18n-en="12">12명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="28,978,263,000 KRW">28,978,263,000 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1223.html" data-i18n-en="#1223">1223회</a></td>
+                        <td>2026-05-09</td>
+                        <td><span data-i18n-en="1.86 bn KRW">18억 5,755만 원</span></td>
+                        <td><span data-i18n-en="16">16명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="29,720,866,128 KRW">29,720,866,128 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1222.html" data-i18n-en="#1222">1222회</a></td>
+                        <td>2026-05-02</td>
+                        <td><span data-i18n-en="1.20 bn KRW">12억 298만 원</span></td>
+                        <td><span data-i18n-en="24">24명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="28,871,684,256 KRW">28,871,684,256 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1221.html" data-i18n-en="#1221">1221회</a></td>
+                        <td>2026-04-25</td>
+                        <td><span data-i18n-en="1.83 bn KRW">18억 3,080만 원</span></td>
+                        <td><span data-i18n-en="16">16명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="29,292,818,640 KRW">29,292,818,640 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1220.html" data-i18n-en="#1220">1220회</a></td>
+                        <td>2026-04-18</td>
+                        <td><span data-i18n-en="2.11 bn KRW">21억 1,451만 원</span></td>
+                        <td><span data-i18n-en="14">14명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="29,603,198,254 KRW">29,603,198,254 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1219.html" data-i18n-en="#1219">1219회</a></td>
+                        <td>2026-04-11</td>
+                        <td><span data-i18n-en="2.51 bn KRW">25억 823만 원</span></td>
+                        <td><span data-i18n-en="12">12명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="30,098,794,128 KRW">30,098,794,128 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1218.html" data-i18n-en="#1218">1218회</a></td>
+                        <td>2026-04-04</td>
+                        <td><span data-i18n-en="1.71 bn KRW">17억 1,448만 원</span></td>
+                        <td><span data-i18n-en="18">18명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="30,860,676,756 KRW">30,860,676,756 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1217.html" data-i18n-en="#1217">1217회</a></td>
+                        <td>2026-03-28</td>
+                        <td><span data-i18n-en="2.18 bn KRW">21억 7,973만 원</span></td>
+                        <td><span data-i18n-en="14">14명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="30,516,332,252 KRW">30,516,332,252 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1216.html" data-i18n-en="#1216">1216회</a></td>
+                        <td>2026-03-21</td>
+                        <td><span data-i18n-en="2.15 bn KRW">21억 4,865만 원</span></td>
+                        <td><span data-i18n-en="14">14명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="30,081,156,000 KRW">30,081,156,000 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1215.html" data-i18n-en="#1215">1215회</a></td>
+                        <td>2026-03-14</td>
+                        <td><span data-i18n-en="2.00 bn KRW">19억 9,854만 원</span></td>
+                        <td><span data-i18n-en="16">16명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="31,976,674,128 KRW">31,976,674,128 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1214.html" data-i18n-en="#1214">1214회</a></td>
+                        <td>2026-03-07</td>
+                        <td><span data-i18n-en="2.43 bn KRW">24억 3,157만 원</span></td>
+                        <td><span data-i18n-en="12">12명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="29,178,926,256 KRW">29,178,926,256 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1213.html" data-i18n-en="#1213">1213회</a></td>
+                        <td>2026-02-28</td>
+                        <td><span data-i18n-en="1.74 bn KRW">17억 4,001만 원</span></td>
+                        <td><span data-i18n-en="18">18명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="31,320,209,628 KRW">31,320,209,628 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1212.html" data-i18n-en="#1212">1212회</a></td>
+                        <td>2026-02-21</td>
+                        <td><span data-i18n-en="2.65 bn KRW">26억 5,408만 원</span></td>
+                        <td><span data-i18n-en="12">12명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="31,849,068,384 KRW">31,849,068,384 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1211.html" data-i18n-en="#1211">1211회</a></td>
+                        <td>2026-02-14</td>
+                        <td><span data-i18n-en="2.37 bn KRW">23억 7,095만 원</span></td>
+                        <td><span data-i18n-en="14">14명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="33,193,384,504 KRW">33,193,384,504 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1210.html" data-i18n-en="#1210">1210회</a></td>
+                        <td>2026-02-07</td>
+                        <td><span data-i18n-en="1.10 bn KRW">11억 229만 원</span></td>
+                        <td><span data-i18n-en="24">24명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="26,455,161,768 KRW">26,455,161,768 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1209.html" data-i18n-en="#1209">1209회</a></td>
+                        <td>2026-01-31</td>
+                        <td><span data-i18n-en="1.37 bn KRW">13억 7,191만 원</span></td>
+                        <td><span data-i18n-en="22">22명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="30,182,030,252 KRW">30,182,030,252 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1208.html" data-i18n-en="#1208">1208회</a></td>
+                        <td>2026-01-24</td>
+                        <td><span data-i18n-en="5.00 bn KRW">50억 171만 원</span></td>
+                        <td><span data-i18n-en="6">6명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="30,010,281,750 KRW">30,010,281,750 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1207.html" data-i18n-en="#1207">1207회</a></td>
+                        <td>2026-01-17</td>
+                        <td><span data-i18n-en="1.73 bn KRW">17억 3,320만 원</span></td>
+                        <td><span data-i18n-en="17">17명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="29,464,450,133 KRW">29,464,450,133 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1206.html" data-i18n-en="#1206">1206회</a></td>
+                        <td>2026-01-10</td>
+                        <td><span data-i18n-en="1.87 bn KRW">18억 6,880만 원</span></td>
+                        <td><span data-i18n-en="15">15명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="28,032,105,000 KRW">28,032,105,000 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1205.html" data-i18n-en="#1205">1205회</a></td>
+                        <td>2026-01-03</td>
+                        <td><span data-i18n-en="3.23 bn KRW">32억 2,638만 원</span></td>
+                        <td><span data-i18n-en="10">10명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="32,263,862,630 KRW">32,263,862,630 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1204.html" data-i18n-en="#1204">1204회</a></td>
+                        <td>2025-12-27</td>
+                        <td><span data-i18n-en="1.66 bn KRW">16억 6,100만 원</span></td>
+                        <td><span data-i18n-en="18">18명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="29,898,138,384 KRW">29,898,138,384 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1203.html" data-i18n-en="#1203">1203회</a></td>
+                        <td>2025-12-20</td>
+                        <td><span data-i18n-en="1.37 bn KRW">13억 6,806만 원</span></td>
+                        <td><span data-i18n-en="21">21명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="28,729,275,393 KRW">28,729,275,393 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1202.html" data-i18n-en="#1202">1202회</a></td>
+                        <td>2025-12-13</td>
+                        <td><span data-i18n-en="1.92 bn KRW">19억 2,041만 원</span></td>
+                        <td><span data-i18n-en="14">14명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="26,885,751,382 KRW">26,885,751,382 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1201.html" data-i18n-en="#1201">1201회</a></td>
+                        <td>2025-12-06</td>
+                        <td><span data-i18n-en="1.41 bn KRW">14억 1,455만 원</span></td>
+                        <td><span data-i18n-en="19">19명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="26,876,558,642 KRW">26,876,558,642 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1200.html" data-i18n-en="#1200">1200회</a></td>
+                        <td>2025-11-29</td>
+                        <td><span data-i18n-en="2.36 bn KRW">23억 5,729만 원</span></td>
+                        <td><span data-i18n-en="12">12명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="28,287,598,500 KRW">28,287,598,500 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1199.html" data-i18n-en="#1199">1199회</a></td>
+                        <td>2025-11-22</td>
+                        <td><span data-i18n-en="1.70 bn KRW">16억 9,560만 원</span></td>
+                        <td><span data-i18n-en="17">17명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="28,825,367,263 KRW">28,825,367,263 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1198.html" data-i18n-en="#1198">1198회</a></td>
+                        <td>2025-11-15</td>
+                        <td><span data-i18n-en="2.95 bn KRW">29억 5,368만 원</span></td>
+                        <td><span data-i18n-en="10">10명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="29,536,866,380 KRW">29,536,866,380 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1197.html" data-i18n-en="#1197">1197회</a></td>
+                        <td>2025-11-08</td>
+                        <td><span data-i18n-en="2.21 bn KRW">22억 508만 원</span></td>
+                        <td><span data-i18n-en="13">13명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="28,666,167,751 KRW">28,666,167,751 원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1196.html" data-i18n-en="#1196">1196회</a></td>
+                        <td>2025-11-01</td>
+                        <td><span data-i18n-en="2.00 bn KRW">20억 162만 원</span></td>
+                        <td><span data-i18n-en="15">15명</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="30,024,413,250 KRW">30,024,413,250 원</span></td>
+                    </tr>
+                <!-- seo:latest-rows:end --></tbody>
+            </table>
+        </div>
+        <p class="note" data-top-view="top50-latest" hidden><!-- seo:latest-note:start --><span data-i18n-en="* In the latest 50 draws (1196–1245) the amount per winner averaged 2.15 bn KRW (all draws 1–1245: 2.66 bn KRW). The highest was &lt;a href=&quot;round/1208.html&quot;&gt;draw 1208&lt;/a&gt; at 5.00 bn KRW (6 winners) and the lowest &lt;a href=&quot;round/1233.html&quot;&gt;draw 1233&lt;/a&gt; at 838m KRW (31 winners).&lt;br&gt;* Amounts per winner are approximate; total first-prize figures are exact to the won.">* 최근 50회(1196~1245회) 1인당 당첨금은 평균 21억 4,881만 원입니다(1~1245회 전체 평균 26억 5,826만 원). 가장 많았던 회차는 <a href="round/1208.html">1208회</a> 50억 171만 원(6명), 가장 적었던 회차는 <a href="round/1233.html">1233회</a> 8억 3,796만 원(31명)입니다.<br>* 1인당 당첨금은 만 원 아래를 버렸고, 총 1등 당첨금은 1원 단위까지 정확한 금액입니다.</span><!-- seo:latest-note:end --></p>
+
         <h2 class="top-table-h top-second-h" id="top50-second" data-i18n="top.h2second">2등 당첨금 순위 TOP 50</h2>
-        <p class="note top-second-note"><!-- seo:second-note:start --><span data-i18n-en="Second prize means 5 numbers plus the bonus. Ranked by prize per game; draws 1–87 cost 2,000 KRW a game, so 49 of the Top 50 come from that era. Since draw 88 (1,000 KRW a game) the highest was &lt;a href=&quot;round/255.html&quot;&gt;draw 255&lt;/a&gt; at 123m KRW (13 winning games). Averages, the year-by-year picture and 3rd-prize records are in &lt;a href=&quot;statistics-prize-2-3.html&quot;&gt;2nd and 3rd prize statistics&lt;/a&gt;.">2등은 6개 중 5개와 보너스 번호를 맞힌 게임입니다. 1게임당 당첨금 순이며, 1~87회는 1게임이 2,000원이던 때라 금액이 커서 TOP 50 중 49개가 그 시절입니다. 1게임 1,000원이 된 88회 이후 최고는 <a href="round/255.html">255회</a> 1억 2,297만 원(13게임)입니다. 평균과 연도별 흐름, 3등 기록은 <a href="statistics-prize-2-3.html">2등·3등 당첨금 통계</a>에 있습니다.</span><!-- seo:second-note:end --></p>
-        <div class="table-scroll">
-            <table class="data-table" id="topSecondTable">
+        <div class="top-view-btns" role="group" aria-label="2등 표 보기" data-i18n-attr="aria-label:top.view2" data-heading="top50-second">
+            <button type="button" class="top-view-btn" aria-pressed="true" data-view="top50-second-rank" data-i18n="top.viewRank">당첨금 순위</button>
+            <button type="button" class="top-view-btn" aria-pressed="false" data-view="top50-second-latest" data-title="top.h2secondLatest" data-i18n="top.viewLatest">최근 50회</button>
+        </div>
+        <p class="note top-second-note" data-top-view="top50-second-rank"><!-- seo:second-note:start --><span data-i18n-en="Second prize means 5 numbers plus the bonus. Ranked by prize per game; draws 1–87 cost 2,000 KRW a game, so 49 of the Top 50 come from that era. Since draw 88 (1,000 KRW a game) the highest was &lt;a href=&quot;round/255.html&quot;&gt;draw 255&lt;/a&gt; at 123m KRW (13 winning games). Averages, the year-by-year picture and 3rd-prize records are in &lt;a href=&quot;statistics-prize-2-3.html&quot;&gt;2nd and 3rd prize statistics&lt;/a&gt;.">2등은 6개 중 5개와 보너스 번호를 맞힌 게임입니다. 1게임당 당첨금 순이며, 1~87회는 1게임이 2,000원이던 때라 금액이 커서 TOP 50 중 49개가 그 시절입니다. 1게임 1,000원이 된 88회 이후 최고는 <a href="round/255.html">255회</a> 1억 2,297만 원(13게임)입니다. 평균과 연도별 흐름, 3등 기록은 <a href="statistics-prize-2-3.html">2등·3등 당첨금 통계</a>에 있습니다.</span><!-- seo:second-note:end --></p>
+        <div class="table-scroll" data-top-view="top50-second-rank">
+            <table class="data-table top-table" id="topSecondTable">
                 <thead>
                     <tr>
                         <th data-i18n="top.th.rank">순위</th>
@@ -803,6 +1178,373 @@
             </table>
         </div>
 
+        <p class="note top-second-note" data-top-view="top50-second-latest" hidden><!-- seo:latest-note2:start --><span data-i18n-en="Second prize per winning game in the latest 50 draws (1196–1245). It averaged 57.1m KRW; the highest was &lt;a href=&quot;round/1208.html&quot;&gt;draw 1208&lt;/a&gt; at 74m KRW (68 winning games) and the lowest &lt;a href=&quot;round/1210.html&quot;&gt;draw 1210&lt;/a&gt; at 29m KRW (153 winning games). The average since draw 88 (56.9m KRW) and the year-by-year picture are in &lt;a href=&quot;statistics-prize-2-3.html&quot;&gt;2nd and 3rd prize statistics&lt;/a&gt;.">최근 50회(1196~1245회) 2등 1게임당 당첨금입니다. 평균은 5,711만 원이고, 가장 많았던 회차는 <a href="round/1208.html">1208회</a> 7,355만 원(68게임), 가장 적었던 회차는 <a href="round/1210.html">1210회</a> 2,881만 원(153게임)입니다. 88회 이후 평균(5,695만 원)과 연도별 흐름은 <a href="statistics-prize-2-3.html">2등·3등 당첨금 통계</a>에 있습니다.</span><!-- seo:latest-note2:end --></p>
+        <div class="table-scroll" data-top-view="top50-second-latest" hidden>
+            <table class="data-table top-table" id="latestSecondTable">
+                <thead>
+                    <tr>
+                        <th data-i18n="top.th.round">회차</th>
+                        <th data-i18n="top.th.date">추첨일</th>
+                        <th data-i18n="top.th2.each">2등 1게임당 당첨금 (약)</th>
+                        <th data-i18n="top.th2.games">당첨 게임 수</th>
+                        <th data-i18n="top.th2.total">2등 총 당첨금</th>
+                    </tr>
+                </thead>
+                <tbody><!-- seo:latest-rows2:start -->
+                    <tr>
+                        <td><a href="round/1245.html" data-i18n-en="#1245">1245회</a></td>
+                        <td>2026-10-10</td>
+                        <td><span data-i18n-en="55m KRW">5,506만 원</span></td>
+                        <td><span data-i18n-en="91">91게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="5,010,859,672 KRW">5,010,859,672원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1244.html" data-i18n-en="#1244">1244회</a></td>
+                        <td>2026-10-03</td>
+                        <td><span data-i18n-en="60m KRW">6,017만 원</span></td>
+                        <td><span data-i18n-en="80">80게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,814,059,920 KRW">4,814,059,920원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1243.html" data-i18n-en="#1243">1243회</a></td>
+                        <td>2026-09-26</td>
+                        <td><span data-i18n-en="45m KRW">4,508만 원</span></td>
+                        <td><span data-i18n-en="115">115게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="5,185,050,655 KRW">5,185,050,655원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1242.html" data-i18n-en="#1242">1242회</a></td>
+                        <td>2026-09-19</td>
+                        <td><span data-i18n-en="47m KRW">4,732만 원</span></td>
+                        <td><span data-i18n-en="104">104게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,921,543,952 KRW">4,921,543,952원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1241.html" data-i18n-en="#1241">1241회</a></td>
+                        <td>2026-09-12</td>
+                        <td><span data-i18n-en="54m KRW">5,427만 원</span></td>
+                        <td><span data-i18n-en="90">90게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,885,175,970 KRW">4,885,175,970원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1240.html" data-i18n-en="#1240">1240회</a></td>
+                        <td>2026-09-05</td>
+                        <td><span data-i18n-en="61m KRW">6,125만 원</span></td>
+                        <td><span data-i18n-en="78">78게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,778,180,706 KRW">4,778,180,706원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1239.html" data-i18n-en="#1239">1239회</a></td>
+                        <td>2026-08-29</td>
+                        <td><span data-i18n-en="68m KRW">6,758만 원</span></td>
+                        <td><span data-i18n-en="71">71게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,798,710,370 KRW">4,798,710,370원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1238.html" data-i18n-en="#1238">1238회</a></td>
+                        <td>2026-08-22</td>
+                        <td><span data-i18n-en="55m KRW">5,463만 원</span></td>
+                        <td><span data-i18n-en="84">84게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,589,491,788 KRW">4,589,491,788원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1237.html" data-i18n-en="#1237">1237회</a></td>
+                        <td>2026-08-15</td>
+                        <td><span data-i18n-en="62m KRW">6,209만 원</span></td>
+                        <td><span data-i18n-en="75">75게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,657,242,000 KRW">4,657,242,000원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1236.html" data-i18n-en="#1236">1236회</a></td>
+                        <td>2026-08-08</td>
+                        <td><span data-i18n-en="53m KRW">5,329만 원</span></td>
+                        <td><span data-i18n-en="84">84게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,476,852,240 KRW">4,476,852,240원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1235.html" data-i18n-en="#1235">1235회</a></td>
+                        <td>2026-08-01</td>
+                        <td><span data-i18n-en="57m KRW">5,654만 원</span></td>
+                        <td><span data-i18n-en="82">82게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,636,442,442 KRW">4,636,442,442원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1234.html" data-i18n-en="#1234">1234회</a></td>
+                        <td>2026-07-25</td>
+                        <td><span data-i18n-en="67m KRW">6,739만 원</span></td>
+                        <td><span data-i18n-en="71">71게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,785,388,711 KRW">4,785,388,711원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1233.html" data-i18n-en="#1233">1233회</a></td>
+                        <td>2026-07-18</td>
+                        <td><span data-i18n-en="57m KRW">5,696만 원</span></td>
+                        <td><span data-i18n-en="76">76게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,329,487,896 KRW">4,329,487,896원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1232.html" data-i18n-en="#1232">1232회</a></td>
+                        <td>2026-07-11</td>
+                        <td><span data-i18n-en="50m KRW">5,048만 원</span></td>
+                        <td><span data-i18n-en="92">92게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,644,311,524 KRW">4,644,311,524원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1231.html" data-i18n-en="#1231">1231회</a></td>
+                        <td>2026-07-04</td>
+                        <td><span data-i18n-en="51m KRW">5,090만 원</span></td>
+                        <td><span data-i18n-en="92">92게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,683,471,876 KRW">4,683,471,876원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1230.html" data-i18n-en="#1230">1230회</a></td>
+                        <td>2026-06-27</td>
+                        <td><span data-i18n-en="52m KRW">5,248만 원</span></td>
+                        <td><span data-i18n-en="90">90게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,723,619,220 KRW">4,723,619,220원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1229.html" data-i18n-en="#1229">1229회</a></td>
+                        <td>2026-06-20</td>
+                        <td><span data-i18n-en="53m KRW">5,273만 원</span></td>
+                        <td><span data-i18n-en="89">89게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,693,012,008 KRW">4,693,012,008원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1228.html" data-i18n-en="#1228">1228회</a></td>
+                        <td>2026-06-13</td>
+                        <td><span data-i18n-en="60m KRW">5,960만 원</span></td>
+                        <td><span data-i18n-en="83">83게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,946,946,495 KRW">4,946,946,495원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1227.html" data-i18n-en="#1227">1227회</a></td>
+                        <td>2026-06-06</td>
+                        <td><span data-i18n-en="70m KRW">7,005만 원</span></td>
+                        <td><span data-i18n-en="70">70게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,903,815,560 KRW">4,903,815,560원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1226.html" data-i18n-en="#1226">1226회</a></td>
+                        <td>2026-05-30</td>
+                        <td><span data-i18n-en="63m KRW">6,256만 원</span></td>
+                        <td><span data-i18n-en="75">75게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,692,050,250 KRW">4,692,050,250원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1225.html" data-i18n-en="#1225">1225회</a></td>
+                        <td>2026-05-23</td>
+                        <td><span data-i18n-en="64m KRW">6,352만 원</span></td>
+                        <td><span data-i18n-en="76">76게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,827,621,688 KRW">4,827,621,688원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1224.html" data-i18n-en="#1224">1224회</a></td>
+                        <td>2026-05-16</td>
+                        <td><span data-i18n-en="69m KRW">6,899만 원</span></td>
+                        <td><span data-i18n-en="70">70게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,829,710,550 KRW">4,829,710,550원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1223.html" data-i18n-en="#1223">1223회</a></td>
+                        <td>2026-05-09</td>
+                        <td><span data-i18n-en="48m KRW">4,809만 원</span></td>
+                        <td><span data-i18n-en="103">103게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,953,477,751 KRW">4,953,477,751원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1222.html" data-i18n-en="#1222">1222회</a></td>
+                        <td>2026-05-02</td>
+                        <td><span data-i18n-en="42m KRW">4,184만 원</span></td>
+                        <td><span data-i18n-en="115">115게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,811,947,415 KRW">4,811,947,415원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1221.html" data-i18n-en="#1221">1221회</a></td>
+                        <td>2026-04-25</td>
+                        <td><span data-i18n-en="51m KRW">5,085만 원</span></td>
+                        <td><span data-i18n-en="96">96게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,882,136,448 KRW">4,882,136,448원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1220.html" data-i18n-en="#1220">1220회</a></td>
+                        <td>2026-04-18</td>
+                        <td><span data-i18n-en="58m KRW">5,804만 원</span></td>
+                        <td><span data-i18n-en="85">85게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,933,866,395 KRW">4,933,866,395원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1219.html" data-i18n-en="#1219">1219회</a></td>
+                        <td>2026-04-11</td>
+                        <td><span data-i18n-en="65m KRW">6,514만 원</span></td>
+                        <td><span data-i18n-en="77">77게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="5,016,465,762 KRW">5,016,465,762원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1218.html" data-i18n-en="#1218">1218회</a></td>
+                        <td>2026-04-04</td>
+                        <td><span data-i18n-en="64m KRW">6,429만 원</span></td>
+                        <td><span data-i18n-en="80">80게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="5,143,446,160 KRW">5,143,446,160원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1217.html" data-i18n-en="#1217">1217회</a></td>
+                        <td>2026-03-28</td>
+                        <td><span data-i18n-en="60m KRW">5,983만 원</span></td>
+                        <td><span data-i18n-en="85">85게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="5,086,055,410 KRW">5,086,055,410원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1216.html" data-i18n-en="#1216">1216회</a></td>
+                        <td>2026-03-21</td>
+                        <td><span data-i18n-en="58m KRW">5,762만 원</span></td>
+                        <td><span data-i18n-en="87">87게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="5,013,526,032 KRW">5,013,526,032원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1215.html" data-i18n-en="#1215">1215회</a></td>
+                        <td>2026-03-14</td>
+                        <td><span data-i18n-en="70m KRW">7,012만 원</span></td>
+                        <td><span data-i18n-en="76">76게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="5,329,445,736 KRW">5,329,445,736원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1214.html" data-i18n-en="#1214">1214회</a></td>
+                        <td>2026-03-07</td>
+                        <td><span data-i18n-en="49m KRW">4,912만 원</span></td>
+                        <td><span data-i18n-en="99">99게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,863,154,428 KRW">4,863,154,428원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1213.html" data-i18n-en="#1213">1213회</a></td>
+                        <td>2026-02-28</td>
+                        <td><span data-i18n-en="47m KRW">4,745만 원</span></td>
+                        <td><span data-i18n-en="110">110게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="5,220,035,040 KRW">5,220,035,040원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1212.html" data-i18n-en="#1212">1212회</a></td>
+                        <td>2026-02-21</td>
+                        <td><span data-i18n-en="67m KRW">6,719만 원</span></td>
+                        <td><span data-i18n-en="79">79게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="5,308,178,112 KRW">5,308,178,112원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1211.html" data-i18n-en="#1211">1211회</a></td>
+                        <td>2026-02-14</td>
+                        <td><span data-i18n-en="64m KRW">6,432만 원</span></td>
+                        <td><span data-i18n-en="86">86게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="5,532,230,790 KRW">5,532,230,790원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1210.html" data-i18n-en="#1210">1210회</a></td>
+                        <td>2026-02-07</td>
+                        <td><span data-i18n-en="29m KRW">2,881만 원</span></td>
+                        <td><span data-i18n-en="153">153게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,409,193,627 KRW">4,409,193,627원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1209.html" data-i18n-en="#1209">1209회</a></td>
+                        <td>2026-01-31</td>
+                        <td><span data-i18n-en="69m KRW">6,890만 원</span></td>
+                        <td><span data-i18n-en="73">73게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="5,030,338,385 KRW">5,030,338,385원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1208.html" data-i18n-en="#1208">1208회</a></td>
+                        <td>2026-01-24</td>
+                        <td><span data-i18n-en="74m KRW">7,355만 원</span></td>
+                        <td><span data-i18n-en="68">68게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="5,001,713,684 KRW">5,001,713,684원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1207.html" data-i18n-en="#1207">1207회</a></td>
+                        <td>2026-01-17</td>
+                        <td><span data-i18n-en="57m KRW">5,710만 원</span></td>
+                        <td><span data-i18n-en="86">86게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,910,741,728 KRW">4,910,741,728원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1206.html" data-i18n-en="#1206">1206회</a></td>
+                        <td>2026-01-10</td>
+                        <td><span data-i18n-en="63m KRW">6,313만 원</span></td>
+                        <td><span data-i18n-en="74">74게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,672,017,528 KRW">4,672,017,528원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1205.html" data-i18n-en="#1205">1205회</a></td>
+                        <td>2026-01-03</td>
+                        <td><span data-i18n-en="55m KRW">5,543만 원</span></td>
+                        <td><span data-i18n-en="97">97게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="5,377,310,527 KRW">5,377,310,527원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1204.html" data-i18n-en="#1204">1204회</a></td>
+                        <td>2025-12-27</td>
+                        <td><span data-i18n-en="52m KRW">5,245만 원</span></td>
+                        <td><span data-i18n-en="95">95게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,983,023,125 KRW">4,983,023,125원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1203.html" data-i18n-en="#1203">1203회</a></td>
+                        <td>2025-12-20</td>
+                        <td><span data-i18n-en="41m KRW">4,057만 원</span></td>
+                        <td><span data-i18n-en="118">118게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,788,212,614 KRW">4,788,212,614원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1202.html" data-i18n-en="#1202">1202회</a></td>
+                        <td>2025-12-13</td>
+                        <td><span data-i18n-en="41m KRW">4,110만 원</span></td>
+                        <td><span data-i18n-en="109">109게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,480,958,608 KRW">4,480,958,608원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1201.html" data-i18n-en="#1201">1201회</a></td>
+                        <td>2025-12-06</td>
+                        <td><span data-i18n-en="53m KRW">5,332만 원</span></td>
+                        <td><span data-i18n-en="84">84게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,479,426,504 KRW">4,479,426,504원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1200.html" data-i18n-en="#1200">1200회</a></td>
+                        <td>2025-11-29</td>
+                        <td><span data-i18n-en="59m KRW">5,893만 원</span></td>
+                        <td><span data-i18n-en="80">80게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,714,599,760 KRW">4,714,599,760원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1199.html" data-i18n-en="#1199">1199회</a></td>
+                        <td>2025-11-22</td>
+                        <td><span data-i18n-en="64m KRW">6,405만 원</span></td>
+                        <td><span data-i18n-en="75">75게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,804,227,900 KRW">4,804,227,900원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1198.html" data-i18n-en="#1198">1198회</a></td>
+                        <td>2025-11-15</td>
+                        <td><span data-i18n-en="63m KRW">6,311만 원</span></td>
+                        <td><span data-i18n-en="78">78게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,922,811,114 KRW">4,922,811,114원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1197.html" data-i18n-en="#1197">1197회</a></td>
+                        <td>2025-11-08</td>
+                        <td><span data-i18n-en="65m KRW">6,456만 원</span></td>
+                        <td><span data-i18n-en="74">74게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="4,777,694,634 KRW">4,777,694,634원</span></td>
+                    </tr>
+                    <tr>
+                        <td><a href="round/1196.html" data-i18n-en="#1196">1196회</a></td>
+                        <td>2025-11-01</td>
+                        <td><span data-i18n-en="53m KRW">5,323만 원</span></td>
+                        <td><span data-i18n-en="94">94게임</span></td>
+                        <td style="font-weight:bold;"><span data-i18n-en="5,004,068,944 KRW">5,004,068,944원</span></td>
+                    </tr>
+                <!-- seo:latest-rows2:end --></tbody>
+            </table>
+        </div>
+
         <p class="page-actions"><a class="btn" href="index.html" data-i18n="top.back">번호 생성하러 돌아가기</a></p>
     </main>
 
@@ -848,6 +1590,23 @@
         const target = id && id !== 'prize-chart' ? document.getElementById(id) : null;
         if (target && !userMoved) target.scrollIntoView();
     }
+
+    // 1등 · 2등 표 위 [당첨금 순위 | 최근 50회] 단추. 두 표 모두 생성기가 HTML 에 박아 두고(최근 50회는 숨김) 여기서는 보이기만 바꾼다.
+    // 제목도 따라 바꾼다 — 순위로 돌아오면 처음 제목(번역된 것)으로
+    document.querySelectorAll('.top-view-btns').forEach(group => {
+        const btns = group.querySelectorAll('.top-view-btn');
+        const heading = document.getElementById(group.dataset.heading);
+        btns.forEach(btn => btn.addEventListener('click', () => {
+            btns.forEach(b => {
+                const on = b === btn;
+                b.setAttribute('aria-pressed', on ? 'true' : 'false');
+                document.querySelectorAll(`[data-top-view="${b.dataset.view}"]`).forEach(el => { el.hidden = !on; });
+            });
+            if (!heading) return;
+            if (heading.dataset.rankTitle === undefined) heading.dataset.rankTitle = heading.textContent;
+            heading.textContent = btn.dataset.title ? I18N.t(btn.dataset.title) : heading.dataset.rankTitle;
+        }));
+    });
 
     // 2·3등 1게임당 금액과 당첨 게임 수를 회차에 붙인다(그래프의 2·3등 지표). 집계 전(5등 0게임) 회차는 붙이지 않는다
     function withTiers(draws, prize) {

@@ -1424,7 +1424,7 @@ function updateTaxAndTop() {
     let tp = read('top-prize.html');
     tp = replaceBetween('top-prize.html', tp, 'head', headBlock(
         '역대 로또 1등 당첨금 순위 TOP 50 (1인당) | lottodraw.kr',
-        `로또 6/45 역대 1등 당첨금 1인당 금액 순위 TOP 50. 역대 최고는 ${top.round}회 ${won(top.firstPrizeAmount)}, ${RANGE} 1등 평균 당첨금은 ${won(avg)}. 2등 당첨금 순위 TOP 50도 함께.`));
+        `로또 6/45 역대 1등 당첨금 1인당 금액 순위 TOP 50. 역대 최고는 ${top.round}회 ${won(top.firstPrizeAmount)}, ${RANGE} 1등 평균 당첨금은 ${won(avg)}. 2등 당첨금 순위 TOP 50과 최근 50회 1·2등 당첨금도 함께.`));
     // 표와 부제는 페이지의 스크립트가 그리는 것과 글자 하나까지 같게 미리 박아 둔다.
     // 화면은 그대로이고(스크립트가 같은 내용으로 다시 그린다), JS 를 돌리지 않는 검색 로봇도 표를 읽는다.
     // 페이지 스크립트의 행 모양을 바꾸면 여기도 같이 바꾼다
@@ -1465,6 +1465,71 @@ function updateTaxAndTop() {
         '                    </tr>',
     ].join('\n'));
     tp = replaceBetween('top-prize.html', tp, 'rows2', rows2.length ? '\n' + rows2.join('\n') + '\n                ' : '');
+
+    // 최근 50회 (1등 · 2등 표 위 [당첨금 순위 | 최근 50회] 단추로 바꿔 본다 — 처음엔 숨김). 최신 회차부터.
+    // 순위 표와 달리 1인당 금액을 만 원 단위까지 적는다(최근 회차는 거의 10~30억 원이라 "억 원"으로는 다 같아 보인다)
+    const recent = draws.slice(0, 50);
+    const span = `${recent[recent.length - 1].round}~${recent[0].round}회`;
+    const spanEn = `${recent[recent.length - 1].round}–${recent[0].round}`;
+    const roundA = r => `<a href="round/${r}.html">${r}회</a>`;
+    const roundAEn = r => `<a href="round/${r}.html">draw ${r}</a>`;
+    const plural = (n, word) => `${fmt(n)} ${word}${n === 1 ? '' : 's'}`;
+    const extremes = (list, val) => list.reduce((m, x) => {
+        if (!m.hi || val(x) > val(m.hi)) m.hi = x;
+        if (!m.lo || val(x) < val(m.lo)) m.lo = x;
+        return m;
+    }, { hi: null, lo: null });
+    const row = cells => ['                    <tr>', ...cells.map(c => `                        ${c}`), '                    </tr>'].join('\n');
+
+    const latestRows = recent.map(d => {
+        const w = typeof d.firstPrizeWinners === 'number' ? d.firstPrizeWinners : null;
+        const amt = w ? d.firstPrizeAmount : 0;
+        return row([
+            `<td><a href="round/${d.round}.html" data-i18n-en="#${d.round}">${d.round}회</a></td>`,
+            `<td>${d.date}</td>`,
+            `<td>${w === 0 ? en('이월', 'rollover') : amt ? en(won(amt), wonEn(amt)) : en('확인 중', 'pending')}</td>`,
+            `<td>${w === null ? '-' : en(`${w}명`, String(w))}</td>`,
+            `<td style="font-weight:bold;">${amt ? en(`${fmt(amt * w)} 원`, `${fmt(amt * w)} KRW`) : '-'}</td>`,
+        ]);
+    });
+    tp = replaceBetween('top-prize.html', tp, 'latest-rows', '\n' + latestRows.join('\n') + '\n                ');
+    const paid = recent.filter(d => d.firstPrizeWinners > 0 && d.firstPrizeAmount > 0);
+    const rolled = recent.filter(d => d.firstPrizeWinners === 0).length;
+    const e1 = extremes(paid, d => d.firstPrizeAmount);
+    const avgRecent = mean(paid.map(d => d.firstPrizeAmount));
+    tp = replaceBetween('top-prize.html', tp, 'latest-note', paid.length
+        ? en(`* 최근 50회(${span}) 1인당 당첨금은 평균 ${wonAbout(avgRecent)}입니다(${RANGE} 전체 평균 ${won(avg)}). 가장 많았던 회차는 ${roundA(e1.hi.round)} ${won(e1.hi.firstPrizeAmount)}(${e1.hi.firstPrizeWinners}명), 가장 적었던 회차는 ${roundA(e1.lo.round)} ${won(e1.lo.firstPrizeAmount)}(${e1.lo.firstPrizeWinners}명)입니다.<br>`
+            + '* 1인당 당첨금은 만 원 아래를 버렸고, 총 1등 당첨금은 1원 단위까지 정확한 금액입니다.'
+            + (rolled ? '<br>* 이월은 1등 당첨자가 없어 당첨금이 다음 회차로 넘어간 회차입니다.' : ''),
+            `* In the latest 50 draws (${spanEn}) the amount per winner averaged ${wonAboutEn(avgRecent)} (all draws 1–${N}: ${wonEn(avg)}). The highest was ${roundAEn(e1.hi.round)} at ${wonEn(e1.hi.firstPrizeAmount)} (${plural(e1.hi.firstPrizeWinners, 'winner')}) and the lowest ${roundAEn(e1.lo.round)} at ${wonEn(e1.lo.firstPrizeAmount)} (${plural(e1.lo.firstPrizeWinners, 'winner')}).<br>`
+            + '* Amounts per winner are approximate; total first-prize figures are exact to the won.'
+            + (rolled ? '<br>* A rollover means nobody won first prize, so the money moved on to the next draw.' : ''))
+        : en('1등 당첨금 자료를 준비하고 있습니다.', 'First-prize data is being prepared.'));
+
+    // 2등 최근 50회. 2~5등이 아직 집계 전(추첨 직후)인 회차는 "집계 중"으로 두고 평균에서 뺀다
+    const latestRows2 = seconds.length ? recent.map(d => {
+        const p = prizeOf[d.round];
+        return row([
+            `<td><a href="round/${d.round}.html" data-i18n-en="#${d.round}">${d.round}회</a></td>`,
+            `<td>${d.date}</td>`,
+            `<td>${!p ? en('집계 중', 'pending') : p.w2 > 0 ? en(won(p.a2), wonEn(p.a2)) : en('당첨 없음', 'none')}</td>`,
+            `<td>${p ? en(`${fmt(p.w2)}게임`, fmt(p.w2)) : '-'}</td>`,
+            `<td style="font-weight:bold;">${p && p.w2 > 0 ? en(wonExact(p.a2 * p.w2), wonExactEn(p.a2 * p.w2)) : '-'}</td>`,
+        ]);
+    }) : [];
+    tp = replaceBetween('top-prize.html', tp, 'latest-rows2', latestRows2.length ? '\n' + latestRows2.join('\n') + '\n                ' : '');
+    const paid2 = recent.map(d => prizeOf[d.round]).filter(p => p && p.w2 > 0 && p.a2 > 0);
+    const pending2 = recent.filter(d => !prizeOf[d.round]).length;
+    const e2 = extremes(paid2, p => p.a2);
+    const avgRecent2 = mean(paid2.map(p => p.a2));
+    tp = replaceBetween('top-prize.html', tp, 'latest-note2', paid2.length
+        ? en(`최근 50회(${span}) 2등 1게임당 당첨금입니다. 평균은 ${wonAbout(avgRecent2)}이고, 가장 많았던 회차는 ${roundA(e2.hi.round)} ${won(e2.hi.a2)}(${fmt(e2.hi.w2)}게임), 가장 적었던 회차는 ${roundA(e2.lo.round)} ${won(e2.lo.a2)}(${fmt(e2.lo.w2)}게임)입니다.`
+            + (pending2 ? ` 집계 중인 회차(${pending2}개)는 평균에서 뺐습니다.` : '')
+            + (TIER ? ` 88회 이후 평균(${wonAbout(TIER.mean2)})과 연도별 흐름은 <a href="${TIER_FILE}">2등·3등 당첨금 통계</a>에 있습니다.` : ''),
+            `Second prize per winning game in the latest 50 draws (${spanEn}). It averaged ${wonAboutEn(avgRecent2)}; the highest was ${roundAEn(e2.hi.round)} at ${wonEn(e2.hi.a2)} (${plural(e2.hi.w2, 'winning game')}) and the lowest ${roundAEn(e2.lo.round)} at ${wonEn(e2.lo.a2)} (${plural(e2.lo.w2, 'winning game')}).`
+            + (pending2 ? ` ${plural(pending2, 'draw')} still being counted ${pending2 === 1 ? 'is' : 'are'} left out of the average.` : '')
+            + (TIER ? ` The average since draw 88 (${wonAboutEn(TIER.mean2)}) and the year-by-year picture are in <a href="${TIER_FILE}">2nd and 3rd prize statistics</a>.` : ''))
+        : en('2등 당첨금 자료를 준비하고 있습니다.', 'Second-prize data is being prepared.'));
     write('top-prize.html', tp);
 }
 

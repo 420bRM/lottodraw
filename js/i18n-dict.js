@@ -131,6 +131,14 @@ window.I18N_DICT = {
     'top.th2.total': { en: 'Total second prize' },
     'top.fold':      { en: '(click to collapse)' },
     'top.unfold':    { en: '(click to expand)' },
+    // 표 위 [당첨금 순위 | 최근 50회] 단추와, 최근 50회를 고르면 바뀌는 제목(스크립트가 넣으므로 한국어도 둔다)
+    'top.viewRank':  { en: 'Top 50' },
+    'top.viewLatest': { en: 'Latest 50' },
+    'top.view1':     { en: 'First-prize table view' },
+    'top.view2':     { en: 'Second-prize table view' },
+    'top.h2latest':  { ko: '최근 50회 1등 당첨금', en: 'First prize in the latest 50 draws' },
+    'top.h2secondLatest': { ko: '최근 50회 2등 당첨금', en: 'Second prize in the latest 50 draws' },
+    'top.th.date':   { en: 'Date' },
 
     /* ───── 회차별 그래프 (js/prize-chart.js) ───── */
     'pc.h2':         { en: 'First prize, draw by draw' },
