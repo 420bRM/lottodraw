@@ -124,6 +124,17 @@ const s2 = P.summarize(merged, merged.map(second.value), 0, merged.length - 1);
 const best2 = prize.draws.filter(p => p.w2 > 0).reduce((a, b) => (b.a2 > a.a2 ? b : a));
 check('2등 전체 최고가 자료의 최고 회차와 같다', merged[s2.hi].round === best2.round, `${merged[s2.hi].round} vs ${best2.round}`);
 
+// 최저임금 (min-wage.json — 2등은 연봉, 3등은 월급과 견준다)
+const wage = require(path.join(ROOT, 'min-wage.json'));
+const hourly = d => { const w = P.wageAt(wage, d); return w ? w.hourly : null; };
+check('최저임금 기간이 날짜 순이고 금액이 오른다', wage.periods.every((p, i, a) => !i || (p.from > a[i - 1].from && p.hourly > a[i - 1].hourly)));
+check('첫 회차(2002-12-07)는 2002.9~2003.8 의 2,275원', hourly('2002-12-07') === 2275);
+check('2003-08-31 은 2,275원, 다음 날부터 2,510원', hourly('2003-08-31') === 2275 && hourly('2003-09-01') === 2510);
+check('2005.9~2006.12(16개월)는 3,100원', hourly('2005-09-03') === 3100 && hourly('2006-12-30') === 3100);
+check('2007년부터 1~12월', hourly('2007-01-06') === 3480 && hourly('2026-10-10') === 10320 && hourly('2027-12-31') === 10700);
+check('정해지지 않은 해(until 뒤)와 첫 고시 전은 없음', hourly('2028-01-01') === null && hourly('2002-08-31') === null);
+check('월 209시간', wage.hoursPerMonth === 209 && P.wageAt(wage, '2026-10-10').hourly * wage.hoursPerMonth === 2156880);
+
 // 글자 (I18N 이 없으면 한국어)
 check('금액 긴 표기 (만 원 아래 버림, 홈 상세 분석과 같다)', P.wonLong(1604686625) === '16억 468만 원', P.wonLong(1604686625));
 check('금액 긴 표기 (억 딱 떨어짐)', P.wonLong(3000000000) === '30억 원', P.wonLong(3000000000));

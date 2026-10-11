@@ -757,7 +757,7 @@ html.home { scroll-behavior: smooth; }
 .pc-key-ma240 { border-color: var(--pc-ma240); }
 .pc-key-avg { border-top-width: 1px; border-color: #777; }
 .pc-key-real { border-color: var(--pc-real); }
-.pc-key-apt { border-color: var(--pc-apt); }
+.pc-key-apt, .pc-key-wage { border-color: var(--pc-apt); }   /* 최저임금(2·3등)은 아파트(1등)와 한 화면에 함께 나오지 않아 같은 주황을 쓴다 */
 .pc-key-gn { border-color: var(--pc-gn); }
 .pc-key-apt-est { border-top-style: dotted; border-color: #888; }   /* 점선 = 추정 (서울 · 강남 공통) */
 .pc-key-up, .pc-key-down { width: 9px; height: 11px; border: 0; }
@@ -795,9 +795,9 @@ html.home { scroll-behavior: smooth; }
 .pc-avg { stroke: #777; stroke-width: 1; }
 .pc-real { fill: none; stroke: var(--pc-real); stroke-width: 1; stroke-linejoin: round; }
 .pc-dot-real { fill: var(--pc-real); }
-.pc-apt { fill: none; stroke: var(--pc-apt); stroke-linejoin: round; }
+.pc-apt, .pc-wage { fill: none; stroke: var(--pc-apt); stroke-linejoin: round; }
 .pc-apt-est { stroke-dasharray: 2 3; }
-.pc-dot-apt { fill: var(--pc-apt); }
+.pc-dot-apt, .pc-dot-wage { fill: var(--pc-apt); }
 .pc-gn { fill: none; stroke: var(--pc-gn); stroke-linejoin: round; }
 .pc-dot-gn { fill: var(--pc-gn); }
 
@@ -808,8 +808,8 @@ html.home { scroll-behavior: smooth; }
 .pc-tag-real rect { fill: var(--pc-real); stroke: var(--pc-real); }
 .pc-tag-main text, .pc-tag-real text, .pc-tag-cross text { fill: #fff; }
 .pc-tag-cross rect { fill: #333; stroke: #333; }
-.pc-tag-apt rect { fill: var(--pc-apt); stroke: var(--pc-apt); }
-.pc-tag-apt text { fill: #1a1a1a; }                      /* 주황 위 흰 글자는 흐리다 */
+.pc-tag-apt rect, .pc-tag-wage rect { fill: var(--pc-apt); stroke: var(--pc-apt); }
+.pc-tag-apt text, .pc-tag-wage text { fill: #1a1a1a; }   /* 주황 위 흰 글자는 흐리다 */
 .pc-tag-gn rect { fill: var(--pc-gn); stroke: var(--pc-gn); }
 .pc-tag-gn text { fill: #fff; }
 
