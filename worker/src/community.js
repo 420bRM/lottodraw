@@ -12,6 +12,7 @@
 //                        chat: { n, day, today, h } — (공지하지 않는 규칙) 점수를 받은 채팅 수(전체), 오늘(한국 날짜)의 수, 마지막 메시지 해시(같은 말 반복 거르기)
 //                        buy: 로그인한 채 산 이용권 금액 합계(원) — 랭킹 점수용
 //                        trial: { orderId, keyId, key, expiresAt } — 가입 때 한 번 주는 무료 체험 키
+//                        gen:   { inc, exc, pat, recent, at } — 저장한 번호 생성기 설정(고정수 · 제외수 · 켠 패턴 번호 · 직전 당첨 조합 제외 칸). 본인에게만 보인다
 //                        rx:    { 항목: 'h' | 'd' | 'hd' } — 내가 누른 좋아요
 //                        sess:  로그인 세션 해시 (최근 5개)
 //                        cm:    내가 쓴 블로그 댓글 키, cmAt: 마지막으로 쓴 시각, cmDay: { day, n } 오늘 쓴 수
@@ -158,6 +159,15 @@ const OPS = {
         const needTrial = pending && (isNew || now - (user.trial.at || 0) > 60 * 1000);
         if (needTrial && !isNew) { user.trial.at = now; await this.storage.put('u:' + sub, user); }
         return { isNew, needTrial, attended, user: view(user) };
+    },
+
+    // 번호 생성기 설정 저장(gen 은 index.js 가 다듬어 넘긴다). null 이면 지운다
+    async setGen({ sub, gen }) {
+        const user = await this.storage.get('u:' + sub);
+        if (!user) return { error: 'no_user' };
+        if (gen) user.gen = gen; else delete user.gen;
+        await this.storage.put('u:' + sub, user);
+        return { ok: true, user: view(user) };
     },
 
     async setTrial({ sub, trial }) {
@@ -425,7 +435,7 @@ const OPS = {
 
 function view(user) {
     const trial = user.trial && user.trial.key ? { key: user.trial.key, keyId: user.trial.keyId, expiresAt: user.trial.expiresAt } : null;
-    return { email: user.email, nick: user.nick || null, createdAt: user.createdAt, trial, score: pubScore(user), staff: !!user.staff };
+    return { email: user.email, nick: user.nick || null, createdAt: user.createdAt, trial, score: pubScore(user), staff: !!user.staff, gen: user.gen || null };
 }
 
 function reply(data, status) {

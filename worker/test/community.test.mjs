@@ -187,6 +187,37 @@ test('구글 가입: 처음 한 번 3일 무료 체험 키, 다시 로그인하�
     assert.deepEqual(st.login, { users: 1, trials: 1, trialDays: 3 });
 });
 
+test('번호 생성기 설정: 로그인한 회원만 저장 · 다듬어 저장 · 내 정보에만 · 지우기 · 탈퇴하면 함께 사라진다', async () => {
+    const env = await fresh();
+    const a = await login(env);
+    const s = a.data.session;
+    assert.equal(a.data.user.gen, null);
+    // 로그인 없이는 안 된다
+    assert.equal((await call(env, 'POST', '/api/me/generator', { body: { gen: { inc: [1] } } })).status, 401);
+    // 엉뚱한 값은 걸러 낸다: 범위 밖 · 겹침 · 고정수 7개 · 제외수와 고정수 겹침 · 패턴 번호 · 칸 범위
+    const saved = await call(env, 'POST', '/api/me/generator', { headers: auth(s), body: { gen: {
+        inc: [7, 3, 3, 0, 46, 'x', 1, 2, 4, 5, 6], exc: [10, 3, 45, 45, 99], pat: [16, 1, 1, 17, 0], recent: 99, extra: 'nope' } } });
+    assert.equal(saved.status, 200, JSON.stringify(saved.data));
+    const g = saved.data.user.gen;
+    assert.deepEqual(g.inc, [1, 2, 3, 4, 5, 6]);
+    assert.deepEqual(g.exc, [10, 45], '고정수와 겹친 제외수는 뺀다');
+    assert.deepEqual(g.pat, [1, 16]);
+    assert.equal(g.recent, 10);
+    assert.ok(!('extra' in g) && g.at > 0);
+    // 내 정보에 나온다
+    const me = await call(env, 'GET', '/api/me', { headers: auth(s) });
+    assert.deepEqual(me.data.user.gen.inc, [1, 2, 3, 4, 5, 6]);
+    // 이상한 본문은 거절
+    assert.equal((await call(env, 'POST', '/api/me/generator', { headers: auth(s), body: { gen: 'x' } })).status, 400);
+    // 지우기
+    const cleared = await call(env, 'POST', '/api/me/generator', { headers: auth(s), body: { gen: null } });
+    assert.equal(cleared.data.user.gen, null);
+    // 다시 저장한 뒤 탈퇴하면 계정과 함께 사라진다
+    await call(env, 'POST', '/api/me/generator', { headers: auth(s), body: { gen: { inc: [8] } } });
+    assert.equal((await call(env, 'POST', '/api/me/delete', { body: { confirm: true }, headers: auth(s) })).status, 200);
+    assert.ok(![...env.COMMUNITY._m.values()].some(v => v && v.gen), '탈퇴하면 설정도 지워진다');
+});
+
 test('구글 토큰 위조·다른 사이트·만료·미확인 이메일은 거절한다', async () => {
     const env = await fresh();
     const now = Math.floor(Date.now() / 1000);
