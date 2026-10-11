@@ -670,11 +670,12 @@
         // 꼬리표: 값 글자 + 상자. left = 왼쪽 세로축(짚은 값), right = 선이 끝나는 오른쪽(마지막 값).
         // 겹치면 어긋나게 놓는 것은 부르는 쪽이 한다
         const TAG_PAD = 4;
+        const TAG_GAP = 7;       // 선 끝(끝 점 반지름 4~5)과 오른쪽 꼬리표 사이
         function axisTag(parent, yy, text, cls, side) {
             const w = Math.ceil(measure(text) + 2 * TAG_PAD);
             // 휴대폰(inAxis)은 왼쪽 칸이 없으니 짚은 값 꼬리표를 그래프 안 왼쪽에 겹친다
             // 왼쪽 칸보다 긴 값(예: 2등 "5,564.8만")은 그림 왼쪽 끝에 맞춰 조금 겹친다 — 잘리지 않게
-            const x0 = side === 'left' ? (S.inAxis ? S.M.left + 2 : Math.max(0, S.M.left - 2 - w)) : S.M.left + S.pw + 2;
+            const x0 = side === 'left' ? (S.inAxis ? S.M.left + 2 : Math.max(0, S.M.left - 2 - w)) : S.M.left + S.pw + TAG_GAP;
             const t = svg('g', { class: 'pc-tag ' + cls });
             t.appendChild(svg('rect', { x: x0, y: Math.round(yy) - 8, width: w, height: 16, rx: 2 }));
             t.appendChild(svg('text', { x: x0 + TAG_PAD, y: Math.round(yy) + 4 }, text));
@@ -744,8 +745,13 @@
             if (aptVals) pushTag(aptVals, 'pc-tag-apt');
             if (gnVals) pushTag(gnVals, 'pc-tag-gn');
             const tagW = tags.length ? Math.ceil(Math.max.apply(null, tags.map(t => measure(t.text))) + 2 * TAG_PAD) : 0;
-            const M = { top: 12, right: tagW ? tagW + 6 : 10, bottom: 26, left: inAxis ? 1 : axisW + 6 };
-            const pw = W - M.left - M.right;
+            // 오른쪽도 그래프 영역으로 채운다 — 가로줄 · 바닥선은 오른쪽 끝(plotW)까지 긋는다. 선 · 봉 · 이동평균은 그보다 꼬리표 띠(band)만큼
+            // 앞(pw)에서 끝나고(잘라 낸다), 마지막 값 꼬리표는 그 띠 안 선이 끝난 자리 바로 오른쪽에 둔다:
+            // 꼬리표는 그래프 영역 안에 있으면서 선 · 봉을 가리지 않는다
+            const band = tagW ? TAG_GAP + tagW + 3 : 6;
+            const M = { top: 12, right: 1, bottom: 26, left: inAxis ? 1 : axisW + 6 };
+            const plotW = W - M.left - M.right;
+            const pw = Math.max(40, plotW - band);
             const ph = H - M.top - M.bottom;
             const span = Math.max(1, end - start);
             const x = i => M.left + (i - start) / span * pw;
@@ -755,7 +761,7 @@
             const yInv = useLog
                 ? py => Math.exp(Math.log(yt.min) + (M.top + ph - py) / ph * (Math.log(yt.max) - Math.log(yt.min)))
                 : py => yt.min + (M.top + ph - py) / ph * (yt.max - yt.min);
-            S = { metric: metric, ser: ser, blue: blue, grey: grey, bars: bars, unit: unit, netOn: netOn, aptOn: !!aptVals, gnOn: !!gnVals, cs: cs, realOn: realOn, start: start, end: end, x: x, y: y, yInv: yInv, M: M, pw: pw, ph: ph, W: W, H: H, mas: mas, ok: ok, useLog: useLog, inAxis: inAxis };
+            S = { metric: metric, ser: ser, blue: blue, grey: grey, bars: bars, unit: unit, netOn: netOn, aptOn: !!aptVals, gnOn: !!gnVals, cs: cs, realOn: realOn, start: start, end: end, x: x, y: y, yInv: yInv, M: M, pw: pw, plotW: plotW, ph: ph, W: W, H: H, mas: mas, ok: ok, useLog: useLog, inAxis: inAxis };
 
             svgRoot.textContent = '';
             svgRoot.setAttribute('viewBox', `0 0 ${W} ${H}`);
@@ -773,7 +779,7 @@
             const yLab = svg('g', { class: 'pc-axis pc-ylab' });
             yt.ticks.forEach((v, k) => {
                 const yy = Math.round(y(v)) + 0.5;
-                grid.appendChild(svg('line', { class: k === 0 && !useLog ? 'pc-base' : 'pc-grid', x1: M.left, x2: M.left + pw, y1: yy, y2: yy }));
+                grid.appendChild(svg('line', { class: k === 0 && !useLog ? 'pc-base' : 'pc-grid', x1: M.left, x2: M.left + plotW, y1: yy, y2: yy }));
                 if (!inAxis) grid.appendChild(svg('text', { class: 'pc-tick', x: M.left - 2 - TAG_PAD, y: yy + 4, 'text-anchor': 'end' }, tickText[k]));
                 else if (v !== 0) yLab.appendChild(svg('text', { class: 'pc-tick pc-tick-in', x: M.left + 3, y: yy - 4, 'text-anchor': 'start' }, tickText[k]));   // 0 은 바닥선이라 뺀다(이월 표시와 겹친다)
             });
@@ -1000,8 +1006,9 @@
         function renderNav(metric, ser) {
             const W = Math.max(280, Math.round(nav.clientWidth || plot.clientWidth || 600));
             const H = 40;
-            const L = S.M.left;
-            const R = S.M.right;
+            // 양 끝 손잡이(폭 8px)가 그림 밖으로 잘리지 않게 좌우를 5px 이상 남긴다 (그래프는 오른쪽 끝까지 차도)
+            const L = Math.max(5, S.M.left);
+            const R = Math.max(5, S.M.right);
             const pw = W - L - R;
             let vmax = 0;
             ser.vals.forEach(v => { if (v != null && v > vmax) vmax = v; });

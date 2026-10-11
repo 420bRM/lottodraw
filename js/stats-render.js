@@ -198,8 +198,6 @@
             body: chartWithToggle(stats.bonus, T('sr.c.bonusAria')).concat([extremes(stats.bonus, T('sr.unitTimes'))]),
         });
 
-        specs.push({ id: 'stat-even-odd', tint: 'sage', title: T('sr.c.oddEven'), meta: scope, body: [hbars(stats.oddEven, total)] });
-        specs.push({ id: 'stat-low-high', tint: 'salmon', title: T('sr.c.lowHigh'), meta: T('sr.c.lowHighMeta'), body: [hbars(stats.lowHigh, total)] });
         specs.push({ id: 'stat-consecutive', tint: 'steel', title: T('sr.c.consecutive'), meta: T('sr.c.consecutiveMeta'), body: [hbars(stats.consecutive, total)] });
         specs.push({ id: 'stat-sum', tint: 'lime', title: T('sr.c.sum'), meta: scope, body: [hbars(stats.sum, total)] });
         specs.push({ id: 'stat-prize', tint: 'sky', title: T('sr.c.winners'), meta: T('sr.c.winnersMeta'), body: [hbars(stats.winners, total)] });
@@ -221,7 +219,8 @@
         });
 
         // 표본이 적으면 대부분의 번호가 "한 번도 안 나옴"으로 묶여 순위가 무의미해진다.
-        if (stats.gaps && total >= 50) {
+        const hasGap = !!(stats.gaps && total >= 50);
+        if (hasGap) {
             specs.push({
                 id: 'stat-gap', tint: 'salmon',
                 title: T('sr.c.gaps'), meta: T('sr.c.gapsMeta'),
@@ -230,14 +229,22 @@
             });
         }
 
-        if (stats.ac) {
-            specs.push({
-                id: 'stat-ac', tint: 'steel',
-                title: T('sr.c.ac'), meta: T('sr.c.acMeta'),
-                body: [hbars(acRows(stats.ac), total),
-                    el('p', { className: 'card-note', text: T('sr.c.acNote') })],
-            });
-        }
+        // 홀짝 · 저고 비율은 뒤로(2026-10-11 — 3 · 4번에서 뒤로). 둘은 크기가 비슷해 2 · 3 · 4칸 어느 격자에서도 한 줄에 나란히 오게 둔다:
+        //   홈(미출수 있음)   … 7. 궁합수 · 8. 미출수 · 9. 홀짝 · 10. 저고 · 11. AC값 · 12. 끝수
+        //   5개월(미출수 없음) … 7. 궁합수 · 8. AC값 · 9. 홀짝 · 10. 저고 · 11. 끝수
+        // 순서를 바꾸면 통계 페이지 목록(tools/build-static-stats.js 의 STATS_ORDER)과 statistics.html 잠금 미리보기도 같이 바꾼다
+        const evenLow = [
+            { id: 'stat-even-odd', tint: 'sage', title: T('sr.c.oddEven'), meta: scope, body: [hbars(stats.oddEven, total)] },
+            { id: 'stat-low-high', tint: 'salmon', title: T('sr.c.lowHigh'), meta: T('sr.c.lowHighMeta'), body: [hbars(stats.lowHigh, total)] },
+        ];
+        const acSpec = stats.ac ? {
+            id: 'stat-ac', tint: 'steel',
+            title: T('sr.c.ac'), meta: T('sr.c.acMeta'),
+            body: [hbars(acRows(stats.ac), total),
+                el('p', { className: 'card-note', text: T('sr.c.acNote') })],
+        } : null;
+        if (hasGap) specs.push.apply(specs, evenLow.concat(acSpec ? [acSpec] : []));
+        else specs.push.apply(specs, (acSpec ? [acSpec] : []).concat(evenLow));
 
         if (stats.tail) {
             specs.push({
@@ -261,7 +268,7 @@
             });
         }
 
-        // 번호는 여기서 매긴다. 표본이 적어 빠지는 카드가 있어도(10번) 1,2,3… 이 이어진다.
+        // 번호는 여기서 매긴다. 표본이 적어 빠지는 카드(미출수)가 있어도 1,2,3… 이 이어진다.
         let no = 0;
         container.textContent = '';
         specs.forEach(spec => {
