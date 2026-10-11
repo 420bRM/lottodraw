@@ -17,7 +17,8 @@
 //                        cm:    내가 쓴 블로그 댓글 키, cmAt: 마지막으로 쓴 시각, cmDay: { day, n } 오늘 쓴 수
 //                        cmPt:  { n, day, today, h } — (공지하지 않는 규칙) 점수를 받은 댓글 수, 오늘 받은 수, 마지막으로 받은 댓글 해시
 //   s:<세션 해시>        { sub, exp }  — 30일
-//   t:<계정 번호 해시>   { at }        — 무료 체험을 받은 계정. 탈퇴해도 1년 남겨 다시 가입해 또 받는 것을 막는다
+//   t:<계정 번호 해시>   { at }        — 무료 체험을 받은 계정. 탈퇴해도 1년 남겨 다시 가입해 또 받는 것을 막는다.
+//                        가입 체험을 끈 동안(SIGNUP_TRIAL_DAYS 없음 — 2026-10-11부터 기본)은 쓸모가 없어 로그인 때 지운다
 //   r:<항목>             { h, d }      — 좋아요 수 (누구나 본다. 관리자 페이지에는 카드별 합계 표)
 //   n:<별명 소문자>      계정 번호      — 별명이 겹치지 않게
 //   m:<회원 참조값>      계정 번호      — 주문에 남기는 되돌릴 수 없는 참조값(sha256) → 계정. 탈퇴하면 지운다
@@ -26,7 +27,6 @@
 //
 // 이름·사진은 받지 않는다. 이메일은 "로그인한 계정" 표시와 문의 응대에만 쓴다.
 
-export const TRIAL_DAYS = 3;
 export const SESSION_DAYS = 30;
 const TRIAL_MEMORY_DAYS = 365;
 const MAX_SESSIONS = 5;
@@ -126,18 +126,26 @@ export class Community {
 }
 
 const OPS = {
-    // 구글 로그인 뒤. 처음이면 계정을 만들고, 무료 체험을 줄 수 있는지 알려 준다.
-    async login({ sub, email, subHash, ref, now }) {
+    // 구글 로그인 뒤. 처음이면 계정을 만들고, 무료 체험을 줄 수 있는지 알려 준다(trial: 가입 체험이 켜져 있을 때만).
+    async login({ sub, email, subHash, ref, now, trial }) {
         let user = await this.storage.get('u:' + sub);
         const isNew = !user;
         if (!user) {
             user = { sub, email, createdAt: now, lastAt: now, trial: null, rx: {}, sess: [] };
-            const used = await this.storage.get('t:' + subHash);
-            if (!used || now - used.at > TRIAL_MEMORY_DAYS * DAY) {
-                user.trial = { pending: true, at: now };
-                await this.storage.put('t:' + subHash, { at: now });
+            if (trial) {
+                const used = await this.storage.get('t:' + subHash);
+                if (!used || now - used.at > TRIAL_MEMORY_DAYS * DAY) {
+                    user.trial = { pending: true, at: now };
+                    await this.storage.put('t:' + subHash, { at: now });
+                }
             }
             await this.bump('users', 1);
+        }
+        if (!trial) {
+            // 체험을 끈 동안: 발급 도중 멈춘 체험은 버리고(받은 키는 그대로), "체험을 받은 계정" 기록은 쓸모가 없어 지운다
+            if (user.trial && user.trial.pending) user.trial = null;
+            const marks = await this.storage.list({ prefix: 't:', limit: 128 });
+            for (const k of marks.keys()) await this.storage.delete(k);
         }
         user.email = email;
         user.lastAt = now;

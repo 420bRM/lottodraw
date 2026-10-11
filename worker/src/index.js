@@ -8,7 +8,7 @@
 //   3) 환불 — 키 발급 뒤 단순 변심 환불은 없다(이용약관 4조). 키가 작동하지 않거나 중복 입금한 경우
 //      구매자가 문의하면 판매자가 관리자 페이지에서 "환불 처리"를 누른다: 키 정지, 카드는 결제 취소까지.
 //   4) 지킴이 — 한 시간마다 입금 알림 연결이 살아 있는지 보고, 끊기면 판매자에게 알린다.
-//   5) 회원 — 구글 로그인(가입하면 3일 무료 체험 키 1회), 좋아요(하트·달러). 저장은 community.js.
+//   5) 회원 — 구글 로그인, 좋아요(하트·달러). 가입 무료 체험 키(1회)는 SIGNUP_TRIAL_DAYS 를 넣을 때만 — 2026-10-11부터 끔. 저장은 community.js.
 //
 // 키 확인은 브라우저가 공개키로 혼자 한다(js/license.js). 이 서버가 멈춰도
 // 이미 산 사람의 잠금은 풀린다. 서버가 필요한 건 "팔 때"뿐이다.
@@ -20,7 +20,7 @@
 
 import { generateKeyPair, importPrivate, importPublic, signKey, verifyKey, parseKey, hex32, publicOnly, keyId, b64urlEncode } from './keys.js';
 import { plansFor } from './plans.js';
-import { community, TRIAL_DAYS, SESSION_DAYS, REACT_TYPES, ITEM_RE, POINTS, COMMENT } from './community.js';
+import { community, SESSION_DAYS, REACT_TYPES, ITEM_RE, POINTS, COMMENT } from './community.js';
 import { verifyGoogleToken } from './google.js';
 
 import { chatStub, checkText } from './chat.js';
@@ -142,7 +142,7 @@ async function getConfig(request, env) {
         // 입금 알림 연결이 살아 있으면 계좌이체도 몇 분 안에 저절로 열린다. 화면 안내 문구가 이걸 따른다.
         autoConfirm: await hookAlive(env),
         // 구글 로그인(가입하면 무료 체험 + 좋아요). 클라이언트 ID 를 넣기 전에는 화면에 로그인 단추가 없다.
-        login: loginReady(env) ? { google: env.GOOGLE_CLIENT_ID, trialDays: TRIAL_DAYS } : null,
+        login: loginReady(env) ? { google: env.GOOGLE_CLIENT_ID, trialDays: signupTrialDays(env) } : null,
         chat: chatReady(env),
     }, 200, { 'Cache-Control': 'public, max-age=60' }, true);
 }
@@ -568,6 +568,12 @@ function wordsOf(s) {
 
 /* ───── 회원 (구글 로그인 · 무료 체험 · 좋아요) ───── */
 
+// 가입 무료 체험(계정당 한 번) 일수. 비밀값/변수 SIGNUP_TRIAL_DAYS 를 넣을 때만 준다 — 2026-10-11부터 넣지 않는다(끔).
+// 무료로 볼 수 있는 것이 이미 많아 체험으로 이용권 기능을 열어 주지 않기로 했다. 이미 준 체험 키는 기간까지 그대로 쓴다
+function signupTrialDays(env) {
+    const n = Math.floor(Number(env.SIGNUP_TRIAL_DAYS));
+    return n > 0 ? Math.min(n, 30) : 0;
+}
 function loginReady(env) {
     return !!(env.GOOGLE_CLIENT_ID && env.COMMUNITY);
 }
@@ -606,14 +612,18 @@ async function googleLogin(request, env, ctx) {
     if (!g) throw new HttpError(401, 'bad_credential', '구글 로그인을 확인하지 못했습니다. 다시 시도해 주세요.');
 
     const now = Date.now();
-    const r = await community(env, 'login', { sub: g.sub, email: g.email, subHash: await sha256('trial:' + g.sub), ref: await memberRef(g.sub), now });
+    const days = signupTrialDays(env);
+    const r = await community(env, 'login', { sub: g.sub, email: g.email, subHash: await sha256('trial:' + g.sub), ref: await memberRef(g.sub), now, trial: days > 0 });
     let user = r.user;
     let trialNew = false;
     if (r.needTrial) {
-        user = await issueTrial(env, g.sub);
+        user = await issueTrial(env, g.sub, days);
         trialNew = true;
         const stats = await community(env, 'stats').catch(() => null);
-        ctx.waitUntil(notify(env, `새 가입 · ${TRIAL_DAYS}일 무료 체험 키 ${user.trial.keyId}` + (stats ? `\n가입 ${stats.users}명 · 체험 ${stats.trials}건` : '')));
+        ctx.waitUntil(notify(env, `새 가입 · ${days}일 무료 체험 키 ${user.trial.keyId}` + (stats ? `\n가입 ${stats.users}명 · 체험 ${stats.trials}건` : '')));
+    } else if (r.isNew) {
+        const stats = await community(env, 'stats').catch(() => null);
+        ctx.waitUntil(notify(env, '새 가입' + (stats ? ` · 가입 ${stats.users}명` : '')));
     }
 
     const token = b64urlEncode(crypto.getRandomValues(new Uint8Array(32)));
@@ -623,11 +633,11 @@ async function googleLogin(request, env, ctx) {
 
 // 무료 체험 키는 주문처럼 남긴다(관리자 페이지에서 보이고, 정지·조회가 같은 길로 된다). 0원, 메일은 보내지 않는다.
 // 이메일은 주문에 적지 않는다 — 계정에만 있고 탈퇴하면 지워진다.
-async function issueTrial(env, sub) {
+async function issueTrial(env, sub, days) {
     const now = Date.now();
     const order = {
-        id: await freshId(env), tokenHash: '', plan: 'trial', planName: `${TRIAL_DAYS}일 무료 체험`,
-        listPrice: 0, amount: 0, method: 'trial', name: '무료 체험', contact: '', days: TRIAL_DAYS,
+        id: await freshId(env), tokenHash: '', plan: 'trial', planName: `${days}일 무료 체험`,
+        listPrice: 0, amount: 0, method: 'trial', name: '무료 체험', contact: '', days: days,
         status: 'pending', createdAt: now, deadline: now, log: [{ at: now, what: 'created', by: 'google' }],
     };
     await confirm(env, order, 'google');
@@ -844,7 +854,7 @@ async function admin(request, env, sub, method, url) {
             },
             notify: { telegram: !!(env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID), url: !!env.NOTIFY_URL },
             mail: mailReady(env),
-            login: loginReady(env) ? await community(env, 'stats').catch(() => ({ error: true })) : null,
+            login: loginReady(env) ? Object.assign(await community(env, 'stats').catch(() => ({ error: true })), { trialDays: signupTrialDays(env) }) : null,
         });
     }
     // 서명 키는 사람이 한 번 눌러서 만든다. 저절로 만들면 동시에 두 개가 생겨 한쪽 키가 무효가 될 수 있다.

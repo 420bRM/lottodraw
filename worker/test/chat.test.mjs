@@ -387,7 +387,13 @@ test('관리자 주문 목록: 로그인한 채 산 주문에 회원 참조값(�
     const m = (await call(env, 'GET', '/api/admin/members', { headers: asAdmin })).data.members.find(x => x.nick === '구매곰');
     assert.ok(row.r && m.ref);
     assert.equal(row.r, m.ref.slice(0, 12));
-    // 무료 체험 주문은 회원 명부의 체험 키 번호로 찾는다
-    const trial = list.find(x => x.m === 'trial');
-    assert.equal(trial.k.toLowerCase(), m.trial.keyId.toLowerCase());
+    // 무료 체험 주문은 회원 명부의 체험 키 번호로 찾는다(가입 체험은 2026-10-11부터 꺼져 있어 체험을 켠 서버로 따로 본다)
+    const { env: env2 } = setup();
+    env2.SIGNUP_TRIAL_DAYS = '3';
+    await member(env2, 'T', '체험곰');
+    const list2 = (await call(env2, 'GET', '/api/admin/orders?status=all', { headers: asAdmin })).data.orders;
+    const m2 = (await call(env2, 'GET', '/api/admin/members', { headers: asAdmin })).data.members.find(x => x.nick === '체험곰');
+    const trial = list2.find(x => x.m === 'trial');
+    assert.equal(trial.k.toLowerCase(), m2.trial.keyId.toLowerCase());
+    assert.ok(!list.some(x => x.m === 'trial'), '체험을 끈 서버(기본)에는 체험 주문이 없다');
 });
