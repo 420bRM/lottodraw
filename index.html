@@ -742,6 +742,7 @@
     // 내 설정 저장은 계정에 남기므로 로그인만. 잠금은 화면에서만 거는 것이라 가입을 이끄는 용도다
     const RECENT_STEPS = [0, 1, 2, 3, 5, 10, 20, 30, 50, 100, Infinity];   // 끌기 막대 칸 → 직전 몇 회(마지막 칸은 역대 전체)
     let pastCombos = null;     // 최신 회차부터 [{ key: '1,5,8,16,28,33', round }] — 당첨번호 6개만(보너스 제외)
+    let pendingRecent = 0;     // 당첨 기록을 받기 전에 불러온 막대 칸
     let passOk = false;        // 이 브라우저에 이용권이 열려 있다
     let accountKnown = false;  // account.js 가 로그인 설정을 받아 왔다
     const acct = () => window.LottoAccount;
@@ -782,7 +783,10 @@
         load.disabled = signed && !savedGen();
         const range = recentRange();
         range.disabled = !open || !pastCombos;
-        document.querySelector('#gen-recent .member-cover').hidden = open;
+        const cover = document.querySelector('#gen-recent .member-cover');
+        cover.hidden = open;
+        cover.setAttribute('aria-label', I18N.t('gen.memberRecent'));
+        document.getElementById('generate-five').setAttribute('aria-label', I18N.t(open ? 'gen.goFiveAria' : 'gen.goFiveLocked'));
         if (!open && +range.value) range.value = 0;
         paintRecent();
     }
@@ -798,7 +802,8 @@
             await acct().saveGen(currentSettings());
             flashButton(btn, I18N.t('gen.savedShort'), I18N.t('gen.saved'), 'gen-set-live');
         } catch (e) {
-            flashButton(btn, I18N.t('gen.saveFailShort'), I18N.t('gen.saveFail'), 'gen-set-live');
+            flashButton(btn, I18N.t('gen.saveFailShort'), I18N.t(e.status === 401 ? 'gen.saveFail' : 'gen.saveFailRetry'), 'gen-set-live');
+            if (e.status === 401) { paintMember(); askLogin('acct.expired'); }
         }
         paintMember();
     }
@@ -812,7 +817,9 @@
         (g.inc || []).forEach(n => includeSet.add(n));
         (g.exc || []).forEach(n => { if (!includeSet.has(n)) excludeSet.add(n); });
         for (let i = 1; i <= 16; i++) document.getElementById(`pattern${i}`).checked = (g.pat || []).includes(i);
-        recentRange().value = memberOk() ? Math.max(0, Math.min(RECENT_STEPS.length - 1, g.recent || 0)) : 0;
+        const step = memberOk() ? Math.max(0, Math.min(RECENT_STEPS.length - 1, g.recent || 0)) : 0;
+        if (pastCombos) recentRange().value = step;
+        else pendingRecent = step;   // 당첨 기록을 받기 전에는 막대가 꺼져 있다 — 받은 뒤에 칸을 맞춘다(그 전에 뽑으면 빼지 않으므로 '끔'으로 보인다)
         document.getElementById('picker-warning').textContent = '';
         renderPicker();
         paintRecent();
@@ -825,10 +832,10 @@
         document.getElementById('generate-five').addEventListener('click', () => (memberOk() ? generateNumbers(5) : askLogin('gen.memberFive')));
         document.getElementById('gen-save').addEventListener('click', saveSettings);
         document.getElementById('gen-load').addEventListener('click', loadSettings);
-        const onAccount = () => { if (accountKnown) return; accountKnown = true; paintMember(); };
+        const onAccount = () => { accountKnown = true; paintMember(); };
         if (acct() && acct().ready) acct().ready.then(onAccount);
         else document.addEventListener('lotto:account-ready', () => { if (acct() && acct().ready) acct().ready.then(onAccount); else onAccount(); }, { once: true });
-        setTimeout(onAccount, 6000);   // 로그인 스크립트를 못 받으면 잠그지 않는다
+        setTimeout(() => { if (!accountKnown) onAccount(); }, 6000);   // 로그인 스크립트를 못 받으면 잠그지 않는다(늦게 오면 그때 다시 칠한다)
         if (window.LottoLicense && LottoLicense.savedKey && LottoLicense.savedKey()) {
             LottoLicense.unlockState().then(st => { passOk = !!(st && st.unlocked); paintMember(); }).catch(() => {});
         }
@@ -855,11 +862,17 @@
                 logLines.push(prefix + I18N.f('gen.logSkip', { i: attempts, nums: numStr, reason: invalidReason }));
                 continue;
             }
-            const pastRound = rules.past.get(numbers.join(','));
+            const key = numbers.join(',');
+            const pastRound = rules.past.get(key);
             if (pastRound) {
                 logLines.push(prefix + I18N.f('gen.logSkipPast', { i: attempts, nums: numStr, round: pastRound }));
                 continue;
             }
+            if (rules.made.has(key)) {   // 5게임: 한 용지에 같은 줄을 두 번 넣지 않는다
+                logLines.push(prefix + I18N.f('gen.logSkipDup', { i: attempts, nums: numStr }));
+                continue;
+            }
+            rules.made.add(key);
             logLines.push(prefix + I18N.f('gen.logKeep', { i: attempts, nums: numStr }));
             return { numbers: numbers, str: numStr, attempts: attempts };
         }
@@ -874,7 +887,7 @@
         logLines = [];
         renderLog();
         const includeNums = [...includeSet];
-        const rules = { includeNums: includeNums, exclude: new Set(excludeSet), patterns: new Set(), past: new Map() };
+        const rules = { includeNums: includeNums, exclude: new Set(excludeSet), patterns: new Set(), past: new Map(), made: new Set() };
         for (let i = 1; i <= 16; i++) {
             if (document.getElementById(`pattern${i}`).checked) rules.patterns.add(i);
         }
@@ -906,6 +919,8 @@
             }
         }
 
+        const onlyOne = count > 1 && includeNums.length === 6;   // 고정수 6개면 조합이 하나뿐이다
+        if (onlyOne) count = 1;
         const made = [];
         for (let g = 0; g < count; g++) {
             const game = makeGame(rules, count > 1 ? 'ABCDE'[g] + ' · ' : '');
@@ -922,7 +937,8 @@
         // 5게임은 E 부터 넣어, 최근 것부터 보이는 생성 이력 1쪽에 A~E 차례로 놓이게
         made.slice().reverse().forEach(m => saveHistory(m.str));
         fillBalls(made[0].numbers);
-        if (count === 1) setMessage(I18N.f('gen.done', { nums: made[0].str, i: made[0].attempts }));
+        if (onlyOne) setMessage(I18N.f('gen.fiveFixed6', { nums: made[0].str }));
+        else if (count === 1) setMessage(I18N.f('gen.done', { nums: made[0].str, i: made[0].attempts }));
         else if (made.length === count) setMessage(I18N.t('gen.doneFive'));
         else setMessage(I18N.f('gen.doneSome', { n: made.length }), true);
     }
@@ -953,6 +969,8 @@
                 renderFact(stats.gaps, sorted[0].round);
                 renderDetails(data.draws);
                 pastCombos = sorted.map(d => ({ key: d.numbers.slice().sort((a, b) => a - b).join(','), round: d.round }));
+                if (pendingRecent && memberOk()) recentRange().value = pendingRecent;
+                pendingRecent = 0;
                 paintMember();
             })
             .catch(err => {
