@@ -37,6 +37,9 @@ const ROOT = path.resolve(__dirname, '..');
 const SITE = 'https://www.lottodraw.kr';
 // 공유 미리보기 이미지(1200x630). 정적 파일이라 회차와 무관하다.
 const OG_IMAGE = `${SITE}/img/og-default.png`;
+// 사이트를 한마디로 (2026-10-11). 머리글 문구(js/i18n-dict.js 'brand.tag') · 홈 설명 · 안내 문단 · 구조화 데이터 · About 이 같은 말을 쓴다
+const SITE_KIND = '로또 데이터 플랫폼';
+const SITE_KIND_EN = 'lotto data platform';
 const LottoStats = require(path.join(ROOT, 'js', 'lotto-stats.js'));
 // Cloudflare Web Analytics 비콘. DNS only(프록시 꺼짐)라 자동 주입이 안 되어 직접 심는다.
 // 손으로 관리하는 페이지(index, about 등)의 </head> 앞에도 같은 줄이 들어 있다.
@@ -144,6 +147,7 @@ function lottoTax(prize) {
 // 1~87회는 1게임이 2,000원이라 금액이 훨씬 크다 — 평균 · 최고 · 최저 · 연도별 표는 88회부터 센다
 const TIER_FILE = 'statistics-prize-2-3.html';
 const TIER_SINCE = '2026-10-10';   // 2·3등 통계 페이지와 다른 페이지의 링크를 넣은 날
+const ABOUT_SINCE = '2026-10-11';  // About 을 "로또 데이터 플랫폼" 소개 · 주요 기능 목록으로 고친 날
 const mean = a => a.reduce((s, v) => s + v, 0) / Math.max(1, a.length);
 const median = a => {
     const s = a.slice().sort(asc);
@@ -293,7 +297,7 @@ function shell(o) {
     <header class="banner">
         <a class="brand" href="${base}index.html">
             <span class="brand-name">LOTTODRAW.KR</span>
-            <span class="brand-tag" data-i18n="brand.tag">특수 패턴을 걸러내는 로또 6/45 번호 생성기</span>
+            <span class="brand-tag" data-i18n="brand.tag">당첨번호부터 통계·당첨금까지, 로또 데이터 플랫폼</span>
         </a>
         <div class="banner-right">
 ${o.callout === false ? '' : `            <p class="latest-callout" data-i18n-en="${esc(latestCalloutEn)}">${latestCallout}</p>
@@ -1327,10 +1331,13 @@ const headBlock = (title, desc) =>
     `\n    <meta name="twitter:title" content="${esc(title)}">\n    <meta name="twitter:description" content="${esc(desc)}">` +
     `\n    <meta name="twitter:image" content="${OG_IMAGE}">\n    `;
 
-function updateHome() {
+// posts: 블로그 글 수 (build-blog.js 가 센다)
+function updateHome(posts) {
+    // 제목은 "로또 통계" 검색어를 맡으므로 그대로 둔다(README 4-4). 사이트가 무엇인지는 설명 · 안내 문단 · 구조화 데이터가 말한다
     const title = `로또 통계 분석 · 번호 생성기 (${RANGE}) | lottodraw.kr`;
     const e = extremesOf(stats.frequency);
-    const desc = `로또 역대 ${RANGE} 당첨번호 통계 분석 무료. 많이 나온 번호(1위 ${numsText(e.top)} ${e.max}회), 미출수, 궁합수, 홀짝·끝수 통계와 고정수·제외수를 넣는 번호 생성기. 매주 자동 갱신.`;
+    const desc = `lottodraw.kr은 ${SITE_KIND}입니다. 로또 6/45 ${RANGE} 전 회차 당첨번호와 통계 12종(많이 나온 번호 1위 ${numsText(e.top)} ${e.max}회·미출수·궁합수), 역대 당첨금 TOP 50·그래프, 실수령액 계산기, 16개 패턴을 거르는 번호 생성기. 매주 자동 갱신.`;
+    const top = draws.filter(d => d.firstPrizeAmount).sort((a, b) => b.firstPrizeAmount - a.firstPrizeAmount)[0];
     const dataset = {
         '@type': 'Dataset',
         name: '로또 6/45 전 회차 당첨번호 통계',
@@ -1346,17 +1353,24 @@ function updateHome() {
     const ld = JSON.stringify({
         '@context': 'https://schema.org',
         '@graph': [
-            { '@type': 'WebSite', '@id': SITE + '/#website', name: 'lottodraw.kr', alternateName: '로또드로우', url: SITE + '/', inLanguage: 'ko-KR' },
+            {
+                '@type': 'WebSite', '@id': SITE + '/#website', name: 'lottodraw.kr', alternateName: '로또드로우', url: SITE + '/', inLanguage: 'ko-KR',
+                // 검색엔진 · AI 요약이 사이트를 한 문장으로 소개할 때 읽는 자리. 기능을 하나씩 다 적는다
+                description: `lottodraw.kr은 ${SITE_KIND}입니다. 동행복권 로또 6/45 ${RANGE} 당첨 기록으로 회차별 당첨번호와 등수별 당첨금, `
+                    + '전 회차 통계 12종, 역대 당첨금 TOP 50과 회차별 그래프(물가 반영 · 서울 아파트값 · 최저임금 비교), 실수령액 계산기, '
+                    + '2·3등 당첨금 통계, 등수별 당첨 확률, 16개 특수 패턴을 거르는 번호 생성기, 해설 블로그를 제공합니다. 다음 회차를 예측하지 않습니다.',
+            },
             { '@type': 'Organization', '@id': SITE + '/#org', name: 'lottodraw.kr', url: SITE + '/', email: 'contact@lottodraw.kr' },
             dataset,
         ],
     });
     const latestNums = LATEST.numbers.slice().sort(asc);
     const links = '\n' + [
-        `            ${pEn(`로또 6/45 ${RANGE} 전 회차 통계입니다. 가장 많이 나온 번호는 ${numsText(e.top)}(${e.max}회), 가장 적게 나온 번호는 ${numsText(e.bottom)}(${e.min}회)이며, 회차별 당첨번호부터 미출수·궁합수·홀짝·AC값·끝수 통계까지 12종을 매주 추첨 후 갱신합니다.`,
-            `Statistics for every Lotto 6/45 draw so far (1–${N}). The number drawn most often is ${e.top.map(r => r.number).join('·')} (${e.max} times) and the least often ${e.bottom.map(r => r.number).join('·')} (${e.min} times). Twelve sets of figures — past results, longest absences, pairs, odd/even, AC values, last digits — are refreshed after every draw.`, 'stat-lead')}`,
-        '            <nav class="stat-index" aria-label="통계별 자세히 보기" data-i18n-attr="aria-label:stats.indexAria">',
-        '                <h3 data-i18n-en="Each statistic in detail">통계별 자세히 보기</h3>',
+        // 구글이 홈 검색 결과의 설명으로 이 문단을 가져다 쓴다 — 첫 문장이 사이트가 무엇인지 말한다
+        `            ${pEn(`lottodraw.kr은 ${SITE_KIND}입니다. 로또 6/45 ${RANGE} 전 회차 당첨번호로 통계 12종을 계산하며, 가장 많이 나온 번호는 ${numsText(e.top)}(${e.max}회), 가장 적게 나온 번호는 ${numsText(e.bottom)}(${e.min}회)입니다. 통계와 회차별 당첨번호·등수별 당첨금, 역대 당첨금 TOP 50은 매주 추첨 후 갱신되고, 실수령액 계산기와 확률·블로그 해설도 아래에서 이어집니다.`,
+            `lottodraw.kr is a ${SITE_KIND_EN}. Twelve sets of statistics are computed from every Lotto 6/45 draw so far (1–${N}): the number drawn most often is ${e.top.map(r => r.number).join('·')} (${e.max} times) and the least often ${e.bottom.map(r => r.number).join('·')} (${e.min} times). The statistics, past results with every prize tier and the Top 50 prizes are refreshed after every draw, and the after-tax calculator, odds and blog articles are listed below.`, 'stat-lead')}`,
+        '            <nav class="stat-index" aria-label="통계와 기능 자세히 보기" data-i18n-attr="aria-label:stats.indexAria">',
+        '                <h3 data-i18n-en="Statistics and tools in detail">통계와 기능 자세히 보기</h3>',
         '                <ul class="stat-links">',
         STATS.map(p => `                    <li><a href="${p.file}"${p.shortEn ? ` data-i18n-en="${esc(p.shortEn)}"` : ''}>${esc(p.short)}</a>` +
             `<span${p.factEn ? ` data-i18n-en="${esc(p.factEn)}"` : ''}>${esc(p.fact)}</span></li>`).join('\n'),
@@ -1365,6 +1379,11 @@ function updateHome() {
         '                    <li><a href="probability.html" data-i18n-en="Lotto odds">로또 확률</a><span data-i18n-en="1st 1/8,145,060 · 5th 1/45">1등 1/8,145,060 · 5등 1/45</span></li>',
         ...(TIER ? [`                    <li><a href="${TIER_FILE}" data-i18n-en="${esc('2nd & 3rd prizes')}">2등·3등 당첨금</a>`
             + `<span data-i18n-en="${esc(`average: 2nd ${wonAboutEn(TIER.mean2)} · 3rd ${wonAboutEn(TIER.mean3)}`)}">평균 2등 ${wonAbout(TIER.mean2)} · 3등 ${wonAbout(TIER.mean3)}</span></li>`] : []),
+        `                    <li><a href="top-prize.html" data-i18n-en="Top 50 prizes">역대 당첨금 TOP 50</a>` +
+            // 금액은 TOP 50 표처럼 억 원 단위 — 만 원까지 적으면 칸이 두 줄로 넘친다
+            `<span data-i18n-en="${esc(`highest per winner ${wonEn(top.firstPrizeAmount)} (draw ${top.round})`)}">1인당 최고 ${(top.firstPrizeAmount / 1e8).toFixed(0)}억 원 (${top.round}회)</span></li>`,
+        '                    <li><a href="tax.html" data-i18n-en="After-tax calculator">실수령액 계산기</a><span data-i18n-en="22% up to 300m KRW · 33% above">3억 원까지 22% · 초과분 33%</span></li>',
+        ...(posts ? [`                    <li><a href="blog/index.html" data-i18n-en="Blog">블로그</a><span data-i18n-en="${posts} articles on claiming, tax and statistics">수령·세금·통계 해설 ${posts}편</span></li>`] : []),
         '                </ul>',
         '            </nav>',
         '            ',
@@ -1587,7 +1606,7 @@ function updateSitemap(blog) {
             entry('/statistics.html', UPDATED, 'weekly', '0.7'),
             entry('/top-prize.html', UPDATED, 'weekly', '0.7'),
             entry('/tax.html', TIER ? UPDATED : kept('/tax.html'), TIER ? 'weekly' : 'yearly', '0.7'),   // 2·3등 표가 매주 바뀐다
-            entry('/about.html', kept('/about.html'), 'monthly', '0.5'),
+            entry('/about.html', atLeast('/about.html', ABOUT_SINCE), 'monthly', '0.5'),
             entry('/privacy.html', kept('/privacy.html'), 'yearly', '0.3'),
             entry('/terms.html', kept('/terms.html'), 'yearly', '0.3'),
             entry('/contact.html', kept('/contact.html'), 'yearly', '0.3'),
@@ -1624,7 +1643,7 @@ if (TIER && write(TIER_FILE, prizeTierPage())) changed++;
 // 블로그는 원고(content/blog/)로 만든다. 같은 틀을 쓰고 사이트맵에 같이 넣으려고 여기서 부른다
 const blog = require(path.join(__dirname, 'build-blog.js'))({ shell, write, SITE, OG_IMAGE });
 changed += blog.changed;
-updateHome();
+updateHome(blog.posts);
 updateTaxAndTop();
 if (updateAbout()) changed++;
 const urls = updateSitemap(blog.sitemap);
