@@ -369,7 +369,7 @@ window.I18N_DICT = {
     'gen.cellAria':  { ko: '{n}번 {state}', en: 'Number {n}, {state}' },
     'gen.sumFixed':  { ko: '고정수 {n}개', en: '{n} fixed' },
     'gen.sumExcluded': { ko: '제외수 {n}개', en: '{n} excluded' },
-    'gen.todayCount': { ko: '오늘 {n}회 생성', en: 'Generated today: {n}' },
+    'gen.todayCount': { ko: '오늘 {n}회 생성', en: 'Today: {n}' },
     'gen.logTitle':  { ko: '생성 과정 로그', en: 'Attempt log' },
     'gen.logTail':   { ko: ' (최근 {n}줄)', en: ' (last {n} lines)' },
     'gen.logIdle':   { ko: '번호를 생성하면 시도한 조합과 걸러진 까닭이 여기에 나옵니다.',

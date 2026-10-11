@@ -1098,10 +1098,11 @@
                 const picks = new Set([S.start, S.end]);
                 const n = Math.min(16, S.end - S.start + 1);
                 for (let k = 0; k < n; k++) picks.add(Math.round(S.start + (S.end - S.start) * k / Math.max(1, n - 1)));
+                for (let i = S.start; i <= S.end; i++) if (all[i].firstPrizeWinners === 0) picks.add(i);   // 이월 회차는 "1등 없음" 문장이 길다(전체 14회)
                 let h = 0;
                 picks.forEach(i => { fillReadout(i); h = Math.max(h, boxH(readout)); });
-                // 휴대폰은 줄이 좁아 표본에 없는 몇몇 회차(긴 금액 · 이월 회차 등)가 한 줄 더 쓴다 — 보이는 회차를 다 재는 대신(느리다) 한 줄을 더 잡는다
-                if (h && S.W < 600 && S.end - S.start + 1 > picks.size) h += Math.ceil(parseFloat(getComputedStyle(readout).lineHeight) || 17);
+                // 표본에 없는 몇몇 회차(긴 금액 · 기간 이름 등)가 한 줄 더 쓰는 일이 있다 — 보이는 회차를 다 재는 대신(느리다) 한 줄을 더 잡는다
+                if (h && S.end - S.start + 1 > picks.size) h += Math.ceil(parseFloat(getComputedStyle(readout).lineHeight) || 17);
                 readoutMin = h;
                 if (h) readout.style.minHeight = h + 'px';
             }

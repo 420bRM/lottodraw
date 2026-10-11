@@ -663,6 +663,10 @@ html.home { scroll-behavior: smooth; }
 @media (max-width: 1099px) {
     .gen-hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 }
+/* 휴대폰 · 좁은 화면은 로그 자리를 미리 잡지 않으니 쪽 넘김 단추를 손가락에 맞게 키운다 */
+@media (max-width: 899px) {
+    .pager-mini button { min-width: 34px; height: 28px; }
+}
 @media (max-width: 899px) {
     .gen-hero, .teaser { grid-template-columns: minmax(0, 1fr); }
     .gen-extras { grid-template-columns: minmax(0, 1fr); }

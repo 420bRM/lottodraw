@@ -393,10 +393,14 @@
     }
     function setMessage(text, isError) {
         const el = document.getElementById('result');
+        const hint = document.getElementById('result-hint');
+        // 번호를 못 만들었을 때는 "이 번호가 당첨번호일 수도"가 맞지 않아 감춘다. 그 자리(줄 + 위아래 여백 8px)는 오류 문장 칸이
+        // 이어받아 칸 높이가 그대로 — 단추와 아래 카드가 움직이지 않는다. 번호를 만들면 되돌린다
+        if (isError && !hint.hidden) el.style.minHeight = (el.getBoundingClientRect().height + hint.getBoundingClientRect().height + 8) + 'px';
+        else if (!isError) el.style.minHeight = '';
         el.innerText = text;
         el.classList.toggle('error', !!isError);
-        // 번호를 못 만들었을 때는 "이 번호가 당첨번호일 수도"가 맞지 않다 — 감추면 긴 오류 문장이 그 자리를 써서 칸 높이도 그대로
-        document.getElementById('result-hint').hidden = !!isError;
+        hint.hidden = !!isError;
     }
 
     function bandOf(n) {
@@ -679,6 +683,8 @@
         if (kept.length > size) while (lines.length < size) lines.push('&nbsp;');
         document.getElementById('log-tail').textContent = logLines.length > kept.length ? I18N.f('gen.logTail', { n: kept.length }) : '';
         logDiv.innerHTML = kept.length ? lines.join('<br>') : '<span class="log-idle">' + I18N.t('gen.logIdle') + '</span>';
+        // PC 는 상자 높이가 정해져 긴 까닭이 접히면 안에서 스크롤된다 — 마지막 쪽은 고른 번호(맨 아래 줄)가 보이게 끝으로, 다른 쪽은 처음부터
+        logDiv.scrollTop = p === Math.ceil(kept.length / size) - 1 ? logDiv.scrollHeight : 0;
     }
     // 창 폭이 PC ↔ 휴대폰 경계를 넘으면 쪽 크기가 바뀐다 — 보고 있던 쪽의 첫 줄이 든 쪽으로 다시 그린다
     let shownSize = pageSize();
