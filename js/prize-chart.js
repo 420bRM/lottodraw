@@ -168,6 +168,21 @@
         }
         return null;
     }
+    // 그래프에 그릴 최저임금 선(시간급): 실제로는 해가 바뀔 때 한 번에 오르는 계단이지만, 읽기 쉽게 기간마다 가운데 날짜에
+    // 그 기간 금액을 두고 직선으로 잇는다. 첫 기간 가운데 전 · 마지막 기간 가운데 뒤는 평평하게. 그리는 범위는 wageAt 과 같다
+    function wageLineAt(wage, date) {
+        if (!wageAt(wage, date)) return null;
+        const ps = wage.periods;
+        const day = 864e5;
+        const t = Date.parse(String(date).slice(0, 10) + 'T00:00:00Z');
+        const ends = ps.map((p, k) => (k + 1 < ps.length ? Date.parse(ps[k + 1].from + 'T00:00:00Z') : Date.parse(wage.until + 'T00:00:00Z') + day));
+        const mids = ps.map((p, k) => (Date.parse(p.from + 'T00:00:00Z') + ends[k]) / 2);
+        if (t <= mids[0]) return ps[0].hourly;
+        for (let k = 0; k + 1 < ps.length; k++) {
+            if (t < mids[k + 1]) return ps[k].hourly + (ps[k + 1].hourly - ps[k].hourly) * (t - mids[k]) / (mids[k + 1] - mids[k]);
+        }
+        return ps[ps.length - 1].hourly;
+    }
 
     // 그 회차 금액을 기준 달(cpi.latest) 돈 가치로 바꾸는 배수. 그 달 지수가 아직 없으면(최근 회차) 1배.
     function realFactor(cpi, date) {
@@ -367,7 +382,13 @@
             if (!wageCache[metricId]) {
                 const yearly = metricId === 'second';
                 const at = all.map(d => wageAt(wage, d.date));
-                wageCache[metricId] = { at: at, vals: at.map(w => (w ? w.hourly * wage.hoursPerMonth * (yearly ? 12 : 1) : null)), yearly: yearly };
+                const per = wage.hoursPerMonth * (yearly ? 12 : 1);
+                wageCache[metricId] = {
+                    at: at,
+                    vals: at.map(w => (w ? w.hourly * per : null)),                                  // 정보창 · n년치 · 꼬리표: 실제 금액
+                    line: all.map(d => { const h = wageLineAt(wage, d.date); return h ? h * per : null; }),   // 그림: 해마다 금액을 이은 직선
+                    yearly: yearly,
+                };
             }
             return wageCache[metricId];
         }
@@ -788,7 +809,7 @@
             shown.forEach(b => { if (b.h > vmax) vmax = b.h; if (b.l > 0 && b.l < vmin) vmin = b.l; });
             if (aptVals) scan(aptVals);
             if (gnVals) scan(gnVals);
-            if (wageVals) scan(wageVals);
+            if (wageVals) { scan(wageVals); scan(ws.line); }
             mas.forEach(n => scan(ser.ma[n]));
             const W = Math.max(280, Math.round(plot.clientWidth || 600));
             const H = W < 600 ? 240 : 320;
@@ -907,7 +928,7 @@
                 if (start < cut) plain(gnVals, 'pc-gn pc-apt-est', 1.75, start, Math.min(end, cut));
                 if (end >= cut) plain(gnVals, 'pc-gn', 1.75, Math.max(start, cut), end);
             }
-            if (wageVals) plain(wageVals, 'pc-wage', 1.75);
+            if (wageVals) plain(ws.line, 'pc-wage', 1.75);   // 계단 대신 직선(숫자는 실제 금액)
             if (!unit) data.appendChild(svg('path', { class: 'pc-line', d: line, style: `stroke-width:${lw}px` }));
             // 봉: 기간이 차지하는 가로 폭의 70%가 몸통, 가운데 세로선이 꼬리(최고~최저)
             shown.forEach(b => {
@@ -1183,7 +1204,7 @@
             if (S.grey && ok(S.grey[i])) layer.appendChild(svg('circle', { class: 'pc-dot pc-dot-real', cx: x(i), cy: y(S.grey[i]), r: 4 }));
             if (S.aptOn && S.cs.apt[i] && ok(S.cs.apt[i].v)) layer.appendChild(svg('circle', { class: 'pc-dot pc-dot-apt', cx: x(i), cy: y(S.cs.apt[i].v), r: 4 }));
             if (S.gnOn && S.cs.gn[i] && ok(S.cs.gn[i].v)) layer.appendChild(svg('circle', { class: 'pc-dot pc-dot-gn', cx: x(i), cy: y(S.cs.gn[i].v), r: 4 }));
-            if (S.ws && ok(S.ws.vals[i])) layer.appendChild(svg('circle', { class: 'pc-dot pc-dot-wage', cx: x(i), cy: y(S.ws.vals[i]), r: 4 }));
+            if (S.ws && ok(S.ws.line[i])) layer.appendChild(svg('circle', { class: 'pc-dot pc-dot-wage', cx: x(i), cy: y(S.ws.line[i]), r: 4 }));   // 점은 선 위에
             if (ok(S.blue[i])) layer.appendChild(svg('circle', { class: 'pc-dot', cx: x(i), cy: y(S.blue[i]), r: 5 }));
             // 축 꼬리표: 아래 가로축에 회차, 오른쪽 세로축에 값
             if (ok(hv)) axisTag(layer, state.tool && pointer ? pointer.y : y(hv), fmtValue(metric, hv, true), 'pc-tag-cross', 'left');
@@ -1603,6 +1624,7 @@
         afterTax: afterTax,
         aptAt: aptAt,
         wageAt: wageAt,
+        wageLineAt: wageLineAt,
         candles: candles,
         viewAround: viewAround,
         wheelWidth: wheelWidth,

@@ -23,6 +23,23 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <link rel="stylesheet" href="css/site.css">
+    <style>
+        /* 생성 이력 출력(인쇄) — "출력" 단추를 누를 때만(body.is-printing) 아래 종이 한 장을 찍는다. 그냥 인쇄(Ctrl+P)는 평소 화면.
+           site.css 가 아니라 여기 두는 까닭: 배포 직후 브라우저가 옛 site.css 를 쥐고 있으면 인쇄 규칙이 없어 홈 전체가 찍혔다 */
+        @media print {
+            body.is-printing > :not(.print-sheet) { display: none !important; }
+            body.is-printing > .print-sheet { display: block !important; color: #000; background: #fff; font-family: sans-serif; }
+            .print-sheet h1 { margin: 0 0 2mm; font-size: 18pt; }
+            .print-sheet .ps-meta { margin: 0 0 6mm; color: #444; font-size: 10pt; }
+            .print-sheet .ps-slip { margin: 0 0 6mm; break-inside: avoid; page-break-inside: avoid; }
+            .print-sheet h2 { margin: 0 0 2mm; font-size: 11pt; }
+            .print-sheet table { border-collapse: collapse; }
+            .print-sheet th, .print-sheet td { height: 10mm; border: 0.3mm solid #888; text-align: center; font-variant-numeric: tabular-nums; }
+            .print-sheet td { width: 13mm; font-size: 15pt; font-weight: bold; }
+            .print-sheet th { width: 9mm; color: #555; font-size: 11pt; }
+            .print-sheet .ps-note { margin: 8mm 0 0; color: #555; font-size: 9pt; }
+        }
+    </style>
     <script src="js/i18n-dict.js"></script>
     <script src="js/i18n.js"></script>
     <!-- seo:ld:start -->
@@ -589,7 +606,12 @@
         }
         flashButton(document.getElementById('history-copy'), I18N.t(ok ? 'gen.copiedShort' : 'gen.copyFailShort'), I18N.t(ok ? 'ui.copied' : 'ui.copyFail'));
     }
-    // 출력: 숨겨 둔 종이(body 바로 아래 .print-sheet)를 채우고 인쇄 창을 연다. 인쇄하는 동안만 화면의 나머지를 감춘다(CSS @media print)
+    // 출력: 숨겨 둔 종이(body 바로 아래 .print-sheet)를 채우고 인쇄 창을 연다. 인쇄할 때 화면의 나머지를 감춘다(위 <style> 의 @media print).
+    // is-printing 은 afterprint 에 풀지 않는다 — 인쇄 화면을 그리기 전에 afterprint 를 보내는 브라우저가 있으면 홈 전체가 찍힌다.
+    // 대신 단추 없이 시작한 인쇄(Ctrl+P · 메뉴)의 beforeprint 에서 푼다
+    let sheetPrint = false;
+    window.addEventListener('beforeprint', () => { if (!sheetPrint) document.body.classList.remove('is-printing'); });
+    window.addEventListener('afterprint', () => { sheetPrint = false; });
     function printHistory() {
         const sets = historySets();
         if (!sets.length) return;
@@ -598,6 +620,7 @@
         if (!sheet) {
             sheet = el('div', 'print-sheet');
             sheet.id = 'print-sheet';
+            sheet.hidden = true;   // 화면에서는 늘 감춘다(인쇄 규칙만 보이게 한다)
             sheet.setAttribute('aria-hidden', 'true');
             document.body.appendChild(sheet);
         }
@@ -618,9 +641,8 @@
             sheet.appendChild(slip);
         }
         sheet.appendChild(el('p', 'ps-note', I18N.t('gen.printNote')));
+        sheetPrint = true;
         document.body.classList.add('is-printing');
-        const done = () => { document.body.classList.remove('is-printing'); window.removeEventListener('afterprint', done); };
-        window.addEventListener('afterprint', done);
         window.print();
     }
     function saveHistory(numStr) {
