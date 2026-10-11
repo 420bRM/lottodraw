@@ -1578,6 +1578,7 @@
     const cpiData = getJson('cpi-data.json');
     const aptData = getJson('seoul-apt.json');
     const tierData = getJson('prize-data.json');
+    const wageData = getJson('min-wage.json');   // 2·3등 비교: 최저임금 (없으면 단추가 숨는다)
 
     // 주소의 #위치(예: #top50-second)로 들어오면 브라우저가 먼저 그 표로 옮기는데, 위에 그래프가 늦게 들어와 표가 밀린다.
     // 그동안 사람이 화면을 움직이지 않았으면 그래프를 그린 뒤 다시 맞춘다
@@ -1617,11 +1618,11 @@
         });
     }
 
-    function mountChart(draws, cpi, apt) {
+    function mountChart(draws, cpi, apt, wage) {
         const box = document.getElementById('pchart-mount');
         let chart;
         try {
-            chart = PrizeChart.mount(box, draws, { cpi: cpi, apt: apt });
+            chart = PrizeChart.mount(box, draws, { cpi: cpi, apt: apt, wage: wage });
         } catch (err) {
             console.error(err);
             box.textContent = I18N.t('top.loadFail');
@@ -1694,7 +1695,7 @@
                 tbody.appendChild(tr);
             });
 
-            return Promise.all([cpiData, aptData, tierData]).then(([cpi, apt, prize]) => { mountChart(withTiers(data.draws, prize), cpi, apt); restoreHash(); });
+            return Promise.all([cpiData, aptData, tierData, wageData]).then(([cpi, apt, prize, wage]) => { mountChart(withTiers(data.draws, prize), cpi, apt, wage); restoreHash(); });
         })
         .catch(err => {
             console.error(err);

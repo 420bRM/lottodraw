@@ -26,6 +26,8 @@
 // "비교: 서울 · 강남 아파트 평균가"(1인당 당첨금에서만)는 그 달 아파트 평균 매매가(서울 주황 · 강남 자주, seoul-apt.json — KB부동산,
 // tools/update-seoul-apt.js 가 받는다. 2008-12 이전은 지수로 거꾸로 환산한 추정이라 점선)를 겹친다. 켜면 세후로 바꾼다.
 // 세로축은 기본 화면과 똑같이 잡는다(자르지 않는다). 전체 기간에서 아파트 선이 낮게 깔리면 구간·로그 눈금으로 본다.
+// "비교: 최저임금"(2·3등에서만, 무료)은 그 회차 날짜의 최저임금 — 2등은 연봉(시급 × 209시간 × 12), 3등은 월급(× 209시간) —
+// 을 주황 선으로 겹친다. 시급은 min-wage.json(손으로 고친다, 매년 8월 다음 해 한 줄). until 뒤 회차는 그리지 않는다.
 //
 // 지표는 METRICS 에 한 줄씩 늘린다. 2·3등 1게임당(tier)은 페이지가 prize-data.json 을 받아 회차에 붙여 준 값(a2 · a3 · w2 · w3)이다 —
 // 그 값이 하나도 없으면 단추를 숨긴다. 판매액 · 4~5등도 같은 파일에 있다.
@@ -151,6 +153,22 @@
         return { v: v, ym: k, est: !!(apt.estimatedBefore && k < apt.estimatedBefore) };
     }
 
+    // 그 날짜에 적용되던 최저임금(min-wage.json). { hourly, from, to } — 첫 고시 전이나 until 뒤(아직 정해지지 않은 해)는 null.
+    // 기간은 from 부터 다음 기간 from 전날까지(마지막은 until 까지)
+    function wageAt(wage, date) {
+        if (!wage || !Array.isArray(wage.periods) || !date) return null;
+        const d = String(date).slice(0, 10);
+        const ps = wage.periods;
+        if (wage.until && d > wage.until) return null;
+        for (let k = ps.length - 1; k >= 0; k--) {
+            if (d >= ps[k].from) {
+                const to = k + 1 < ps.length ? ps[k + 1].from : null;
+                return ps[k].hourly > 0 ? { hourly: ps[k].hourly, from: ps[k].from, to: to } : null;
+            }
+        }
+        return null;
+    }
+
     // 그 회차 금액을 기준 달(cpi.latest) 돈 가치로 바꾸는 배수. 그 달 지수가 아직 없으면(최근 회차) 1배.
     function realFactor(cpi, date) {
         if (!cpi || !cpi.monthly || !cpi.latest || !date) return null;
@@ -238,6 +256,8 @@
 
     const fmtInt = n => Number(n).toLocaleString(lang() === 'en' ? 'en-US' : 'ko-KR');
     const fmtDec = n => Number(n).toLocaleString(lang() === 'en' ? 'en-US' : 'ko-KR', { maximumFractionDigits: 1 });
+    // 몇 년치 · 몇 달치: 1 넘으면 소수 한 자리(2.2년치), 1 아래는 두 자리(0.69달치)
+    const fmtDec2 = n => Number(n).toLocaleString(lang() === 'en' ? 'en-US' : 'ko-KR', { maximumFractionDigits: n >= 1 ? 1 : 2, minimumFractionDigits: n >= 1 ? 1 : 2 });
 
     // 1,604,686,625 → "16억 469만 원" / "1.60 bn KRW". 영문은 3등(100만 원대)도 읽히게 1,000만 원 아래는 소수 둘째 자리까지,
     // 100만 원 아래는 원 단위까지
@@ -312,6 +332,8 @@
         // 다른 모양(예전 강남 권역 · 강남구 단독 파일)이면 이름표가 맞지 않으니 비교 단추를 숨긴다
         const gn = apt && apt.gangnam && apt.gangnam.name === '강남3구' && apt.gangnam.sqm && apt.gangnam.monthly && apt.gangnam.latest ? apt.gangnam : null;
         const gnName = () => T('pc.cmp.gnName', { sqm: gn.sqm });
+        // 최저임금(min-wage.json): 2등은 연봉(월 209시간 × 12), 3등은 월급과 견준다. 파일이 없으면 단추를 숨긴다
+        const wage = opts && opts.wage && Array.isArray(opts.wage.periods) && opts.wage.periods.length && opts.wage.hoursPerMonth > 0 ? opts.wage : null;
         const all = draws.slice().sort((a, b) => a.round - b.round);
         const first = all[0].round;
         const indexOf = r => r - first;      // 회차는 1부터 빠짐없이 이어진다 (update-lotto-data.js 가 검사)
@@ -339,6 +361,24 @@
             }
             return cache[key];
         }
+        // 최저임금 비교선: 2등 → 그 회차 날짜의 최저임금 연봉, 3등 → 월급. { vals, at: [{ hourly, from, to }] }
+        const wageCache = {};
+        function wageSeries(metricId) {
+            if (!wageCache[metricId]) {
+                const yearly = metricId === 'second';
+                const at = all.map(d => wageAt(wage, d.date));
+                wageCache[metricId] = { at: at, vals: at.map(w => (w ? w.hourly * wage.hoursPerMonth * (yearly ? 12 : 1) : null)), yearly: yearly };
+            }
+            return wageCache[metricId];
+        }
+        // 기간 이름: 2007년부터는 "2026년", 그 전(9월~이듬해 8월)은 "2003.9~2004.8"
+        const wageTerm = w => {
+            const [y, m] = w.from.split('-').map(Number);
+            if (m === 1 && (!w.to || w.to === `${y + 1}-01-01`)) return T('pc.cmp.wageYearLabel', { y: y });
+            const end = w.to ? new Date(Date.UTC(+w.to.slice(0, 4), +w.to.slice(5, 7) - 1, 0)) : null;   // 다음 기간 시작 전 달
+            if (lang() === 'en') return ymLabel(w.from.slice(0, 7)) + '\u2013' + (end ? ymLabel(end.getUTCFullYear() + '-' + (end.getUTCMonth() + 1)) : '');
+            return `${y}.${m}~` + (end ? `${end.getUTCFullYear()}.${end.getUTCMonth() + 1}` : '');
+        };
         // 비교선: 회차마다 세후 1인당 당첨금, 그 달 서울 · 강남 아파트 평균가
         let cmpCache = null;
         function cmpSeries() {
@@ -381,6 +421,7 @@
             hover: null,         // 전체 배열의 칸 번호
             cmpApt: false,       // 비교: 서울 아파트 평균가 (1인당 당첨금에서만)
             cmpGn: false,        // 비교: 강남3구 84㎡ 아파트값 (1인당 당첨금에서만)
+            cmpWage: false,      // 비교: 최저임금 (2등 → 연봉, 3등 → 월급, 무료)
             net: false,          // 세금: 세후 실수령액으로 (이용권, 금액 지표만)
             candle: null,        // 봉 차트: null(선, 처음 화면) | 'm'(월봉, 무료) | 'q' · 'y'(이용권)
         };
@@ -411,6 +452,8 @@
             if (on && !state.unlocked) return flashNote();   // 물가 반영은 이용권
             if (byId(state.metric).unit !== 'won') return;
             state.real = on;
+            // 최저임금은 그 해 금액이라 지금 돈 가치와 함께 두지 않는다 — 봉이 지금 돈이면 주황 선과 어긋나고 'n년치'도 부푼다
+            if (on) state.cmpWage = false;
             state.pending = null;
             render();
         }
@@ -434,6 +477,10 @@
             T(gn ? 'pc.src.aptGn' : 'pc.src.apt'),
             safeLink(apt.link) ? el('a', { href: safeLink(apt.link), target: '_blank', rel: 'noopener', text: (apt.credit && (apt.credit[lang()] || apt.credit.ko)) || 'KB' }) : ((apt.credit && apt.credit.ko) || 'KB'),
             gn && gn.latest !== apt.latest ? T('pc.src.aptGnTail', { a: ymLabel(apt.latest), b: ymLabel(gn.latest) }) : T('pc.src.aptTail', { ym: ymLabel(apt.latest) }),
+        ] : []).concat(wage && metrics.some(m => m.id === 'second') ? [
+            T('pc.src.wage'),
+            safeLink(wage.link) ? el('a', { href: safeLink(wage.link), target: '_blank', rel: 'noopener', text: (wage.credit && (wage.credit[lang()] || wage.credit.ko)) || '' }) : ((wage.credit && wage.credit.ko) || ''),
+            T('pc.src.wageTail', { y: String(wage.until || '').slice(0, 4) }),
         ] : []));
 
         const chip = cell;
@@ -511,8 +558,21 @@
         const gnBtn = cell(T('pc.cmp.gn'), () => toggleCmp('cmpGn'));
         if (gn) gnBtn.title = T('pc.cmp.gnTitle', { sqm: gn.sqm });
         if (!gn) gnBtn.hidden = true;
-        const cmpRow = row(T('pc.row.compare'), [aptBtn, gnBtn], false, true);
-        if (!apt) cmpRow.hidden = true;
+        // 최저임금(무료): 2·3등에서만 그린다. 1등 지표에서 누르면 2등 1게임당으로 바꾼다.
+        // 최저임금은 그 해 금액(당시 금액)이라 물가 반영(지금 돈 가치)은 끈다 — 아파트 비교와 같은 까닭
+        function toggleWage() {
+            if (!byId(state.metric).tier) { state.metric = 'second'; state.cmpWage = true; }
+            else state.cmpWage = !state.cmpWage;
+            if (state.cmpWage) state.real = false;
+            state.pending = null;
+            render();
+        }
+        const wageBtn = cell(T('pc.cmp.wage'), () => toggleWage());
+        wageBtn.title = T('pc.cmp.wageTitle');
+        if (!wage || !metrics.some(m => m.id === 'second')) wageBtn.hidden = true;
+        if (!apt) { aptBtn.hidden = true; gnBtn.hidden = true; }
+        const cmpRow = row(T('pc.row.compare'), [aptBtn, gnBtn, wageBtn], false, true);
+        if (aptBtn.hidden && gnBtn.hidden && wageBtn.hidden) cmpRow.hidden = true;
         // 지표만 그래프 위 작은 상자에, 나머지 도구는 그래프 아래 상자에
         const tierBtns = metricBtns.filter(b => byId(b.dataset.v).tier);
         const metricBox = el('div', { className: 'pchart-tools pt-top' }, [
@@ -573,6 +633,7 @@
             render();
         }
         function pickRange(n) {
+            holdKey = '';   // 정해 둔 구간으로 건너뛰면 정보창 · 범례 높이를 새로 잰다 (붙잡는 건 옮기기 · 확대하는 동안만)
             setView(presetView(n), true);
         }
         function zoomBy(factor) {
@@ -628,6 +689,9 @@
             aptBtn.setAttribute('aria-pressed', String(state.metric === 'each' && state.cmpApt));
             gnBtn.setAttribute('aria-pressed', String(state.metric === 'each' && state.cmpGn && state.unlocked));
             lockIf(gnBtn, !state.unlocked);
+            const tierNow = byId(state.metric).tier;
+            wageBtn.textContent = T(state.metric === 'third' ? 'pc.cmp.wageMonth' : state.metric === 'second' ? 'pc.cmp.wageYear' : 'pc.cmp.wage');
+            wageBtn.setAttribute('aria-pressed', String(!!(state.cmpWage && tierNow && wage)));
             const netShown = !!(state.net && wonMetric && state.unlocked);
             netBtn.setAttribute('aria-pressed', String(netShown));
             grossBtn.setAttribute('aria-pressed', String(!netShown && wonMetric));
@@ -704,6 +768,8 @@
             const cs = metric.id === 'each' && ((state.cmpApt && apt) || gnOk) ? cmpSeries() : null;
             const aptVals = cs && state.cmpApt ? cs.aptV : null;  // 주황: 서울 아파트 평균가
             const gnVals = cs && gnOk ? cs.gnV : null;            // 자주: 강남3구 아파트값
+            const ws = state.cmpWage && wage && metric.tier ? wageSeries(metric.id) : null;
+            const wageVals = ws ? ws.vals : null;                 // 주황: 최저임금 연봉(2등) · 월급(3등)
             const start = state.view.s;
             const end = state.view.e;
             const useLog = state.unlocked && state.ind.log && metric.unit === 'won';
@@ -722,6 +788,7 @@
             shown.forEach(b => { if (b.h > vmax) vmax = b.h; if (b.l > 0 && b.l < vmin) vmin = b.l; });
             if (aptVals) scan(aptVals);
             if (gnVals) scan(gnVals);
+            if (wageVals) scan(wageVals);
             mas.forEach(n => scan(ser.ma[n]));
             const W = Math.max(280, Math.round(plot.clientWidth || 600));
             const H = W < 600 ? 240 : 320;
@@ -744,6 +811,7 @@
             if (grey) { pushTag(grey, 'pc-tag-real'); if (tags.length === 2 && tags[0].text === tags[1].text) tags.pop(); }
             if (aptVals) pushTag(aptVals, 'pc-tag-apt');
             if (gnVals) pushTag(gnVals, 'pc-tag-gn');
+            if (wageVals) pushTag(wageVals, 'pc-tag-wage');
             const tagW = tags.length ? Math.ceil(Math.max.apply(null, tags.map(t => measure(t.text))) + 2 * TAG_PAD) : 0;
             // 오른쪽도 그래프 영역으로 채운다 — 가로줄 · 바닥선은 오른쪽 끝(plotW)까지 긋는다. 선 · 봉 · 이동평균은 그보다 꼬리표 띠(band)만큼
             // 앞(pw)에서 끝나고(잘라 낸다), 마지막 값 꼬리표는 그 띠 안 선이 끝난 자리 바로 오른쪽에 둔다:
@@ -761,7 +829,7 @@
             const yInv = useLog
                 ? py => Math.exp(Math.log(yt.min) + (M.top + ph - py) / ph * (Math.log(yt.max) - Math.log(yt.min)))
                 : py => yt.min + (M.top + ph - py) / ph * (yt.max - yt.min);
-            S = { metric: metric, ser: ser, blue: blue, grey: grey, bars: bars, unit: unit, netOn: netOn, aptOn: !!aptVals, gnOn: !!gnVals, cs: cs, realOn: realOn, start: start, end: end, x: x, y: y, yInv: yInv, M: M, pw: pw, plotW: plotW, ph: ph, W: W, H: H, mas: mas, ok: ok, useLog: useLog, inAxis: inAxis };
+            S = { metric: metric, ser: ser, blue: blue, grey: grey, bars: bars, unit: unit, netOn: netOn, aptOn: !!aptVals, gnOn: !!gnVals, cs: cs, ws: ws, realOn: realOn, start: start, end: end, x: x, y: y, yInv: yInv, M: M, pw: pw, plotW: plotW, ph: ph, W: W, H: H, mas: mas, ok: ok, useLog: useLog, inAxis: inAxis };
 
             svgRoot.textContent = '';
             svgRoot.setAttribute('viewBox', `0 0 ${W} ${H}`);
@@ -839,6 +907,7 @@
                 if (start < cut) plain(gnVals, 'pc-gn pc-apt-est', 1.75, start, Math.min(end, cut));
                 if (end >= cut) plain(gnVals, 'pc-gn', 1.75, Math.max(start, cut), end);
             }
+            if (wageVals) plain(wageVals, 'pc-wage', 1.75);
             if (!unit) data.appendChild(svg('path', { class: 'pc-line', d: line, style: `stroke-width:${lw}px` }));
             // 봉: 기간이 차지하는 가로 폭의 70%가 몸통, 가운데 세로선이 꼬리(최고~최저)
             shown.forEach(b => {
@@ -929,7 +998,7 @@
             if (unit) {
                 items.push(['pc-key-up', T('pc.c.upKey')]);
                 items.push(['pc-key-down', T('pc.c.downKey')]);
-            } else if (mas.length || rolls.length || realOn || aptVals || gnVals || (state.unlocked && state.ind.avg)) {
+            } else if (mas.length || rolls.length || realOn || aptVals || gnVals || wageVals || (state.unlocked && state.ind.avg)) {
                 items.push(['pc-key-main', T(metric.key) + tagNet + (realOn ? ' (' + T('pc.real.nominal') + ')' : '')]);
             }
             if (realOn && !unit) items.push(['pc-key-real', T('pc.real') + ' (' + realAs() + ')']);
@@ -937,6 +1006,7 @@
                 items.push(['pc-key-apt', T('pc.cmp.aptLegend')]);
             }
             if (gnVals) items.push(['pc-key-gn', T('pc.cmp.gnLegend', { name: gnName() })]);
+            if (wageVals) items.push(['pc-key-wage', T(ws.yearly ? 'pc.cmp.wageLegendYear' : 'pc.cmp.wageLegendMonth')]);
             // 점선(추정) — 서울은 2008-12, 강남구는 2013-04 이전처럼 달이 다르면 둘 다 적는다
             const aptEstYm = aptVals && apt.estimatedBefore && cs.cut > start ? apt.actualFrom || apt.estimatedBefore : null;
             const gnEstYm = gnVals && gn.estimatedBefore && cs.gnCut > start ? gn.estimatedBefore : null;
@@ -978,6 +1048,12 @@
             if (bApt) parts.push(T(netOn ? 'pc.sum.aptBeat' : 'pc.sum.aptBeatGross', bApt));
             const bGn = gnVals ? beat(cs.gn) : null;
             if (bGn) parts.push(T(netOn ? 'pc.sum.gnBeat' : 'pc.sum.gnBeatGross', Object.assign({ name: gnName() }, bGn)));
+            if (wageVals) {
+                let tot = 0;
+                let cnt = 0;
+                for (let i = start; i <= end; i++) if (blue[i] != null && wageVals[i] > 0) { tot += blue[i] / wageVals[i]; cnt++; }
+                if (cnt) parts.push(T(ws.yearly ? 'pc.sum.wageYears' : 'pc.sum.wageMonths', { v: fmtDec2(tot / cnt) }));
+            }
             summary.textContent = parts.join(' · ');
             plot.setAttribute('aria-label', T('pc.plotAria', { metric: T(metric.key) }));
 
@@ -986,7 +1062,7 @@
             // 보는 구간에 1~87회가 있거나, 이동평균 · 봉이 그 회차들까지 끌어와 계산하면 안내한다
             const reach = Math.min(start - (mas.length ? Math.max.apply(null, mas) - 1 : 0), shown.length ? shown[0].s : start);
             const oldPrice = !!(metric.tier && all[Math.max(0, reach)].round < FIRST_1000_WON);
-            cmpNote.hidden = !(netOn || aptVals || gnVals || unit || oldPrice);
+            cmpNote.hidden = !(netOn || aptVals || gnVals || wageVals || unit || oldPrice);
             if (!cmpNote.hidden) {
                 cmpNote.textContent = [
                     oldPrice ? T('pc.tier.note') : '',
@@ -994,11 +1070,50 @@
                     netOn ? T('pc.cmp.noteTax') : '',
                     aptVals ? T(apt.estimatedBefore ? 'pc.cmp.noteAptEst' : 'pc.cmp.noteApt', { ym: ymLabel(apt.estimatedBefore || apt.actualFrom || apt.latest) }) : '',
                     gnVals ? T(gn.estimatedBefore ? 'pc.cmp.noteGnEst' : 'pc.cmp.noteGn', { sqm: gn.sqm, ym: ymLabel(gn.estimatedBefore || gn.latest) }) : '',
+                    wageVals ? T('pc.cmp.noteWage', { h: wage.hoursPerMonth, y: String(wage.until || '').slice(0, 4) }) : '',
                 ].filter(Boolean).join(' ');
             }
             renderNav(metric, ser, useLog);
             paintControls();
+            holdHeights();
             drawHover(null);
+        }
+
+        // 정보창 · 범례 높이를 붙잡아 둔다: 짚는 회차마다 정보창 줄 수가, 옮기기 · 확대로 구간이 바뀔 때마다 범례 항목(이월 · 추정)이
+        // 달라지면 그 아래 그래프가 위아래로 밀린다. 설정(지표 · 봉 · 비교 · 이동평균 · 세금 · 폭 · 언어)이 바뀔 때만 다시 재고,
+        // 그 사이에는 늘리기만 한다. 정보창은 보이는 구간의 여러 회차를 미리 채워 보고 가장 높은 값으로 — 짚기 전(안내 문장)에도 같은 높이
+        let holdKey = '';
+        const boxH = n => Math.ceil(n.getBoundingClientRect().height);   // 소수 픽셀까지 올려 잡아야 1px 도 출렁이지 않는다
+        let readoutMin = 0;
+        let legendMin = 0;
+        function holdHeights() {
+            root.classList.toggle('is-compact', S.W < 600);
+            root.classList.toggle('is-tier', !!S.metric.tier);   // 2·3등은 정보창 줄이 하나 더
+            const key = [state.metric, S.unit || '', S.netOn, S.realOn, S.aptOn, S.gnOn, !!S.ws, S.mas.join('.'), state.unlocked, !!state.ind.avg, S.W, lang()].join('|');
+            if (key !== holdKey) {
+                holdKey = key;
+                legendMin = 0;
+                legend.style.minHeight = '';
+                readout.style.minHeight = '';
+                const picks = new Set([S.start, S.end]);
+                const n = Math.min(16, S.end - S.start + 1);
+                for (let k = 0; k < n; k++) picks.add(Math.round(S.start + (S.end - S.start) * k / Math.max(1, n - 1)));
+                for (let i = S.start; i <= S.end; i++) if (all[i].firstPrizeWinners === 0) picks.add(i);   // 이월 회차는 "1등 없음" 문장이 길다(전체 14회)
+                let h = 0;
+                picks.forEach(i => { fillReadout(i); h = Math.max(h, boxH(readout)); });
+                // 표본에 없는 몇몇 회차(긴 금액 · 기간 이름 등)가 한 줄 더 쓰는 일이 있다 — 보이는 회차를 다 재는 대신(느리다) 한 줄을 더 잡는다
+                if (h && S.end - S.start + 1 > picks.size) h += Math.ceil(parseFloat(getComputedStyle(readout).lineHeight) || 17);
+                readoutMin = h;
+                if (h) readout.style.minHeight = h + 'px';
+            }
+            // 범례는 이 설정에서 한 번 보였으면 항목이 구간 밖으로 빠져도 자리를 남긴다
+            if (legend.hidden && legendMin) legend.hidden = false;
+            const lh = legend.hidden ? 0 : boxH(legend);
+            if (lh > legendMin) { legendMin = lh; legend.style.minHeight = lh + 'px'; }
+        }
+        function growReadout() {
+            const h = boxH(readout);
+            if (h > readoutMin) { readoutMin = h; readout.style.minHeight = h + 'px'; }
         }
 
         /* 아래 작은 그래프 (전체 기간) */
@@ -1049,8 +1164,6 @@
             if (state.unlocked && state.tool === 't' && state.pending && pointer && ok(state.pending.v)) {
                 layer.appendChild(svg('line', { class: 'pc-draw pc-draw-pending', x1: x(indexOf(state.pending.r)), y1: y(state.pending.v), x2: pointer.x, y2: pointer.y }));
             }
-            root.classList.toggle('is-compact', S.W < 600);
-            root.classList.toggle('is-tier', !!S.metric.tier);   // 2·3등은 정보창 줄이 하나 더 — 높이를 미리 더 잡는다
             if (state.hover === null) {
                 readout.textContent = '';
                 readout.appendChild(el('p', { className: 'pr-idle', text: T(coarse ? 'pc.readoutIdle' : 'pc.readoutIdleMouse') }));
@@ -1070,6 +1183,7 @@
             if (S.grey && ok(S.grey[i])) layer.appendChild(svg('circle', { class: 'pc-dot pc-dot-real', cx: x(i), cy: y(S.grey[i]), r: 4 }));
             if (S.aptOn && S.cs.apt[i] && ok(S.cs.apt[i].v)) layer.appendChild(svg('circle', { class: 'pc-dot pc-dot-apt', cx: x(i), cy: y(S.cs.apt[i].v), r: 4 }));
             if (S.gnOn && S.cs.gn[i] && ok(S.cs.gn[i].v)) layer.appendChild(svg('circle', { class: 'pc-dot pc-dot-gn', cx: x(i), cy: y(S.cs.gn[i].v), r: 4 }));
+            if (S.ws && ok(S.ws.vals[i])) layer.appendChild(svg('circle', { class: 'pc-dot pc-dot-wage', cx: x(i), cy: y(S.ws.vals[i]), r: 4 }));
             if (ok(S.blue[i])) layer.appendChild(svg('circle', { class: 'pc-dot', cx: x(i), cy: y(S.blue[i]), r: 5 }));
             // 축 꼬리표: 아래 가로축에 회차, 오른쪽 세로축에 값
             if (ok(hv)) axisTag(layer, state.tool && pointer ? pointer.y : y(hv), fmtValue(metric, hv, true), 'pc-tag-cross', 'left');
@@ -1082,6 +1196,7 @@
             layer.appendChild(xt);
 
             fillReadout(i);
+            growReadout();
         }
 
         // 짚은 회차 값의 이름표: 봉일 때는 고른 기준(지금 돈 가치 등), 선일 때 물가 반영이면 파란 선 = 당시 금액
@@ -1110,8 +1225,16 @@
         // 비교 줄들: [색 표시, 값, 이름]. 그 달 서울 · 강남 아파트 평균가, 세후로 몇 채
         function cmpLines(i, short) {
             const out = [];
-            const { metric, cs } = S;
-            if (!cs) return out;                         // 비교를 끈 화면
+            const { metric, cs, ws } = S;
+            // 최저임금: 그 회차 날짜의 연봉(2등) · 월급(3등)과, 보이는 선(세전/세후) 금액이 그 몇 년치 · 몇 달치인지
+            const w = ws ? ws.at[i] : null;
+            if (w) {
+                const wv = ws.vals[i];
+                out.push(['pc-key-wage', fmtValue(metric, wv, short), T(ws.yearly ? 'pc.cmp.wageYearAt' : 'pc.cmp.wageMonthAt', { p: wageTerm(w) })]);
+                if (S.blue[i] != null) out.push([null, T(ws.yearly ? 'pc.cmp.yearsVal' : 'pc.cmp.monthsVal', { n: fmtDec2(S.blue[i] / wv) }),
+                    T(ws.yearly ? 'pc.cmp.wageYearsOf' : 'pc.cmp.wageMonthsOf', { tax: T(S.netOn ? 'pc.tax.netTag' : 'pc.tax.grossTag') })]);
+            }
+            if (!cs) return out;                         // 아파트 비교를 끈 화면
             const mine = S.netOn ? cs.net : cs.gross;   // 보이는 선과 같은 기준(세후/세전)으로 "몇 채"
             const est = a => (a.est ? ' · ' + T('pc.cmp.estTag') : '');
             const a = S.aptOn ? cs.apt[i] : null;
@@ -1276,7 +1399,7 @@
         plot.addEventListener('dblclick', e => {
             if (!canMove() || !zoomed()) return;
             e.preventDefault();
-            setView({ s: 0, e: len - 1 }, true);
+            pickRange(0);   // 전체 기간 단추와 같다 — 정보창 · 범례 높이도 새로 잰다
         });
         // 두 손가락은 페이지 확대·스크롤 대신 그래프 확대로 (사파리는 gesturestart 로 페이지를 키운다)
         const stopTwo = e => { if (e.touches.length > 1 && canMove() && e.cancelable) e.preventDefault(); };
@@ -1479,6 +1602,7 @@
         zoomView: zoomView,
         afterTax: afterTax,
         aptAt: aptAt,
+        wageAt: wageAt,
         candles: candles,
         viewAround: viewAround,
         wheelWidth: wheelWidth,

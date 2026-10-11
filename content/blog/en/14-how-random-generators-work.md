@@ -20,7 +20,7 @@ This site's [number generator](/index.html#sec-generator) also uses the browser'
 3. It repeats step 2 until there are six numbers, counting the fixed numbers.
 4. If the finished combination matches any of the **16 special patterns** you have checked, it throws away the whole combination and starts again from step 1. It tries up to 10,000 times.
 
-Open the "History · attempt log" panel on screen and you can see exactly which combination was thrown away on which attempt, and because of which pattern.
+The "Attempt log" under the Generate button shows exactly which combination was thrown away on which attempt, and because of which pattern.
 
 ## Why this method is fair
 

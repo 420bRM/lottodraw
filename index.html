@@ -74,6 +74,20 @@
                     <p class="result-msg" id="result" role="status" aria-live="polite" data-i18n="gen.resultIdle">버튼을 누르면 위 자리에 번호가 채워집니다.</p>
                     <p class="result-hint" id="result-hint" data-i18n="gen.hint">혹시 모르죠, 이 번호가 이번 주 당첨번호일 수도 있습니다.</p>
                     <button type="button" class="btn btn-big" id="generate-btn" data-i18n="gen.go">번호 생성</button>
+                    <div class="gen-log">
+                        <div class="log">
+                            <div class="log-head">
+                                <strong data-i18n="gen.logTitle">생성 과정 로그</strong><span id="log-tail"></span>
+                                <div class="pager pager-mini" id="log-pager" role="group" aria-label="과정 로그 쪽 넘기기" data-i18n-attr="aria-label:gen.logPager" hidden>
+                                    <button type="button" data-dir="-1" aria-label="이전 쪽" data-i18n-attr="aria-label:gen.prevPage">‹</button>
+                                    <span class="pager-label"></span>
+                                    <button type="button" data-dir="1" aria-label="다음 쪽" data-i18n-attr="aria-label:gen.nextPage">›</button>
+                                    <span class="sr-only pager-live" aria-live="polite"></span>
+                                </div>
+                            </div>
+                            <div class="log-lines" id="log"></div>
+                        </div>
+                    </div>
                 </div>
 
                 <section class="card" aria-labelledby="picker-title">
@@ -124,7 +138,7 @@
             <div class="gen-extras">
                 <section class="card" data-react="index-history">
                     <details open>
-                        <summary class="card-title"><span data-i18n="gen.history">생성 이력 · 과정 로그</span></summary>
+                        <summary class="card-title"><span data-i18n="gen.history">생성 이력</span></summary>
                             <div class="card-body">
                                 <table class="history">
                                     <caption class="sr-only" data-i18n="gen.historyCap">오늘 생성한 번호 (최근 100개)</caption>
@@ -137,13 +151,13 @@
                                     <button type="button" class="btn btn-secondary btn-small" data-dir="1" data-i18n="gen.next">다음 ›</button>
                                     <span class="sr-only pager-live" aria-live="polite"></span>
                                 </div>
-                                <p class="muted" id="visitor-count"></p>
-                                <div class="log" id="log"></div>
-                                <div class="pager" id="log-pager" role="group" aria-label="과정 로그 쪽 넘기기" data-i18n-attr="aria-label:gen.logPager" hidden>
-                                    <button type="button" class="btn btn-secondary btn-small" data-dir="-1" data-i18n="gen.prev">‹ 이전</button>
-                                    <span class="pager-label"></span>
-                                    <button type="button" class="btn btn-secondary btn-small" data-dir="1" data-i18n="gen.next">다음 ›</button>
-                                    <span class="sr-only pager-live" aria-live="polite"></span>
+                                <div class="history-foot">
+                                    <p class="muted" id="visitor-count"></p>
+                                    <div class="history-actions">
+                                        <button type="button" class="btn btn-secondary btn-small" id="history-copy" data-i18n="gen.copy" disabled>번호 복사</button>
+                                        <button type="button" class="btn btn-secondary btn-small" id="history-print" data-i18n="gen.print" disabled>출력</button>
+                                        <span class="sr-only" id="history-live" aria-live="polite"></span>
+                                    </div>
                                 </div>
                             </div>
                         </details>
@@ -305,7 +319,9 @@
 <script src="js/premium-config.js"></script>
 <script src="js/license.js"></script>
 <script>
-    const today = new Date().toISOString().split('T')[0];
+    // 오늘 = 이 기기 시계의 날짜. 예전에는 UTC 날짜라 한국에서는 오전 9시에 "오늘"이 바뀌었다(복사 · 출력 머리줄의 날짜와 어긋남)
+    const now = new Date();
+    const today = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
     const clickKey = 'clickCount_' + today;
     const historyKey = 'numberHistory_' + today;
 
@@ -377,8 +393,14 @@
     }
     function setMessage(text, isError) {
         const el = document.getElementById('result');
+        const hint = document.getElementById('result-hint');
+        // 번호를 못 만들었을 때는 "이 번호가 당첨번호일 수도"가 맞지 않아 감춘다. 그 자리(줄 + 위아래 여백 8px)는 오류 문장 칸이
+        // 이어받아 칸 높이가 그대로 — 단추와 아래 카드가 움직이지 않는다. 번호를 만들면 되돌린다
+        if (isError && !hint.hidden) el.style.minHeight = (el.getBoundingClientRect().height + hint.getBoundingClientRect().height + 8) + 'px';
+        else if (!isError) el.style.minHeight = '';
         el.innerText = text;
         el.classList.toggle('error', !!isError);
+        hint.hidden = !!isError;
     }
 
     function bandOf(n) {
@@ -450,7 +472,7 @@
         let clickCount = storageGet(clickKey, '0');
         document.getElementById('visitor-count').innerText = I18N.f('gen.todayCount', { n: clickCount });
     }
-    // ---- 생성 이력 · 과정 로그: 쪽을 나눈다. PC(홈 카드가 두 칸이 되는 폭 900px 이상)는 5개, 휴대폰 · 좁은 화면은 10개씩.
+    // ---- 생성 이력 · 과정 로그(번호 생성 칸 아래): 쪽을 나눈다. PC(홈 카드가 두 칸이 되는 폭 900px 이상)는 5개, 휴대폰 · 좁은 화면은 10개씩.
     // 한 쪽에 다 들어가면 쪽 단추를 숨긴다 ----
     const HISTORY_MAX = 100;   // 오늘 이력은 최근 100개까지
     const pcQuery = typeof matchMedia === 'function' ? matchMedia('(min-width: 900px)') : null;
@@ -500,6 +522,8 @@
     function loadHistory(page) {
         const history = readHistory().slice().reverse();
         const size = pageSize();
+        document.getElementById('history-copy').disabled = !history.length;
+        document.getElementById('history-print').disabled = !history.length;
         historyPage = historyPager.set(history.length, page == null ? historyPage : page);
         const tbody = document.getElementById('history-body');
         tbody.innerHTML = '';
@@ -523,6 +547,81 @@
                 tbody.appendChild(tr);
             }
         }
+    }
+    // ---- 생성 이력 복사 · 출력: 오늘 생성한 번호(최근 100개)를 표와 같은 순서(최근 것이 먼저)로.
+    // 복사는 메모 · 메신저에 붙이기 좋게 한 줄에 한 조합, 출력은 용지 한 장(5게임 A~E)씩 묶어 판매점에서 옮겨 적기 좋게 ----
+    function historySets() {
+        return readHistory().slice().reverse()
+            .map(entry => String(entry).split(',').map(n => n.trim()).filter(Boolean))
+            .filter(nums => nums.length);
+    }
+    const todayLabel = () => now.toLocaleDateString(I18N.lang === 'en' ? 'en-US' : 'ko-KR');
+    const setsLabel = n => I18N.f(n === 1 ? 'gen.set1' : 'gen.sets', { n: n });
+    // 단추 글자를 잠깐 바꾼다. 폭은 그대로 두어(짧은 글자) 줄이 넘어가 손가락 밑에서 단추가 움직이지 않게 하고, 긴 문장은 화면 읽기 프로그램에만
+    function flashButton(btn, short, full) {
+        if (!btn.dataset.label) btn.dataset.label = btn.textContent;
+        if (!btn._flash) btn.style.minWidth = btn.offsetWidth + 'px';
+        btn.textContent = short;
+        clearTimeout(btn._flash);
+        btn._flash = setTimeout(() => { btn.textContent = btn.dataset.label; btn.style.minWidth = ''; btn._flash = 0; }, 1600);
+        const live = document.getElementById('history-live');
+        live.textContent = '';
+        setTimeout(() => { live.textContent = full; }, 50);   // 같은 문장도 다시 읽게
+    }
+    async function copyHistory() {
+        const sets = historySets();
+        if (!sets.length) return;
+        const text = [I18N.f('gen.copyHead', { sets: setsLabel(sets.length), date: todayLabel() })]
+            .concat(sets.map((nums, k) => (k + 1) + ') ' + nums.join(', '))).join('\n');
+        let ok = false;
+        try { await navigator.clipboard.writeText(text); ok = true; } catch (e) {
+            // 클립보드 API 가 없거나 막힌 브라우저 — 보이지 않는 글상자로 복사하고, 누른 단추로 초점을 되돌린다
+            const prev = document.activeElement;
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.setAttribute('readonly', '');
+            ta.style.cssText = 'position:fixed;left:-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            try { ok = document.execCommand('copy'); } catch (e2) { ok = false; }
+            ta.remove();
+            if (prev && prev.focus) prev.focus({ preventScroll: true });
+        }
+        flashButton(document.getElementById('history-copy'), I18N.t(ok ? 'gen.copiedShort' : 'gen.copyFailShort'), I18N.t(ok ? 'ui.copied' : 'ui.copyFail'));
+    }
+    // 출력: 숨겨 둔 종이(body 바로 아래 .print-sheet)를 채우고 인쇄 창을 연다. 인쇄하는 동안만 화면의 나머지를 감춘다(CSS @media print)
+    function printHistory() {
+        const sets = historySets();
+        if (!sets.length) return;
+        const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+        let sheet = document.getElementById('print-sheet');
+        if (!sheet) {
+            sheet = el('div', 'print-sheet');
+            sheet.id = 'print-sheet';
+            sheet.setAttribute('aria-hidden', 'true');
+            document.body.appendChild(sheet);
+        }
+        sheet.textContent = '';
+        sheet.appendChild(el('h1', null, I18N.t('gen.printTitle')));
+        sheet.appendChild(el('p', 'ps-meta', I18N.f('gen.printMeta', { date: todayLabel(), sets: setsLabel(sets.length) })));
+        for (let k = 0; k < sets.length; k += 5) {
+            const slip = el('section', 'ps-slip');
+            slip.appendChild(el('h2', null, I18N.f('gen.printSlip', { k: k / 5 + 1 })));
+            const table = el('table');
+            sets.slice(k, k + 5).forEach((nums, j) => {
+                const tr = el('tr');
+                tr.appendChild(el('th', null, 'ABCDE'[j]));
+                nums.forEach(n => tr.appendChild(el('td', null, n)));
+                table.appendChild(tr);
+            });
+            slip.appendChild(table);
+            sheet.appendChild(slip);
+        }
+        sheet.appendChild(el('p', 'ps-note', I18N.t('gen.printNote')));
+        document.body.classList.add('is-printing');
+        const done = () => { document.body.classList.remove('is-printing'); window.removeEventListener('afterprint', done); };
+        window.addEventListener('afterprint', done);
+        window.print();
     }
     function saveHistory(numStr) {
         let history = readHistory();
@@ -582,9 +681,10 @@
         const lines = kept.slice(p * size, (p + 1) * size);
         // 쪽이 여럿이면 짧은 쪽도 같은 높이로 (쪽 단추가 튀지 않게)
         if (kept.length > size) while (lines.length < size) lines.push('&nbsp;');
-        logDiv.innerHTML = '<strong>' + I18N.t('gen.logTitle') +
-            (logLines.length > kept.length ? I18N.f('gen.logTail', { n: kept.length }) : '') +
-            ':</strong><br>' + lines.join('<br>');
+        document.getElementById('log-tail').textContent = logLines.length > kept.length ? I18N.f('gen.logTail', { n: kept.length }) : '';
+        logDiv.innerHTML = kept.length ? lines.join('<br>') : '<span class="log-idle">' + I18N.t('gen.logIdle') + '</span>';
+        // PC 는 상자 높이가 정해져 긴 까닭이 접히면 안에서 스크롤된다 — 마지막 쪽은 고른 번호(맨 아래 줄)가 보이게 끝으로, 다른 쪽은 처음부터
+        logDiv.scrollTop = p === Math.ceil(kept.length / size) - 1 ? logDiv.scrollHeight : 0;
     }
     // 창 폭이 PC ↔ 휴대폰 경계를 넘으면 쪽 크기가 바뀐다 — 보고 있던 쪽의 첫 줄이 든 쪽으로 다시 그린다
     let shownSize = pageSize();
@@ -858,6 +958,9 @@
         setAllPatterns(true);
         updateDisplay();
         loadHistory();
+        renderLog();
+        document.getElementById('history-copy').addEventListener('click', copyHistory);
+        document.getElementById('history-print').addEventListener('click', printHistory);
         document.getElementById('generate-btn').addEventListener('click', generateNumbers);
         document.getElementById('reset-picker').addEventListener('click', resetPicker);
         document.getElementById('patterns-all').addEventListener('click', () => setAllPatterns(true));
