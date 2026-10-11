@@ -193,14 +193,14 @@
             reason ? el('p', { className: 'acct-reason', text: reason }) : null,
             el('p', { className: 'acct-lead', text: days
                 ? tr('acct.lead', '가입과 로그인은 무료이고, 구글 계정으로 바로 가입됩니다. 처음 가입하면 이용권 기능(5개월 통계 · 상세 분석 4종 · TOP 50 그래프 도구)을 {days}일 동안 열어 드립니다. {days}일이 지나도 무료 기능은 그대로 씁니다.', { days })
-                : tr('acct.leadFree', '가입과 로그인은 무료이고, 구글 계정으로 바로 가입됩니다.') }),
+                : tr('acct.leadFree', '로그인하여 100% 즐기기') }),
             el('ul', { className: 'acct-perks' }, days ? [
                 el('li', { text: tr('acct.perk1', '{days}일 무료 체험 (계정당 한 번)', { days }) }),
-                el('li', { text: tr('acct.perk2', '카드마다 ♥ 좋아요 · $ 대박 기원 남기기') }),
+                el('li', { text: tr('acct.perk2', '♥ 좋아요 · $ 대박 기원 남기기') }),
                 el('li', { text: tr('acct.perk3', '다른 기기에서 로그인해도 체험 이어 쓰기') }),
             ] : [
                 el('li', { text: tr('acct.perkChart', 'TOP 50 회차별 당첨금 그래프 보기') }),
-                el('li', { text: tr('acct.perk2', '카드마다 ♥ 좋아요 · $ 대박 기원 남기기') }),
+                el('li', { text: tr('acct.perk2', '♥ 좋아요 · $ 대박 기원 남기기') }),
                 el('li', { text: tr('acct.perkTalk', '실시간 채팅 · 블로그 댓글 · 랭킹') }),
             ]),
             slot,
