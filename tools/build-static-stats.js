@@ -872,6 +872,12 @@ const ABOUT = {};
     });
 })();
 
+// 목록 순서(홈 "통계별 자세히 보기", 통계 페이지의 "다른 로또 통계", 사이트맵)를 홈 카드 순서(js/stats-render.js)와 맞춘다.
+// 홀짝 · 저고 비율은 뒤로(2026-10-11)
+const STATS_ORDER = ['frequency', 'bonus', 'consecutive', 'sum', 'prize', 'trend', 'pair', 'gap', 'even-odd', 'low-high', 'ac', 'tail'];
+STATS.sort((a, b) => STATS_ORDER.indexOf(a.anchor.replace('stat-', '')) - STATS_ORDER.indexOf(b.anchor.replace('stat-', '')));
+if (STATS.some(p => STATS_ORDER.indexOf(p.anchor.replace('stat-', '')) < 0)) throw new Error('STATS_ORDER 에 없는 통계가 있다');
+
 /* ───── 회차별 당첨번호 ───── */
 
 // 이 회차까지의 누적 출현 횟수. 최신 회차에 따라 바뀌지 않도록 회차마다 따로 센다.

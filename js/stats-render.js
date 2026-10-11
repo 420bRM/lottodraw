@@ -198,8 +198,6 @@
             body: chartWithToggle(stats.bonus, T('sr.c.bonusAria')).concat([extremes(stats.bonus, T('sr.unitTimes'))]),
         });
 
-        specs.push({ id: 'stat-even-odd', tint: 'sage', title: T('sr.c.oddEven'), meta: scope, body: [hbars(stats.oddEven, total)] });
-        specs.push({ id: 'stat-low-high', tint: 'salmon', title: T('sr.c.lowHigh'), meta: T('sr.c.lowHighMeta'), body: [hbars(stats.lowHigh, total)] });
         specs.push({ id: 'stat-consecutive', tint: 'steel', title: T('sr.c.consecutive'), meta: T('sr.c.consecutiveMeta'), body: [hbars(stats.consecutive, total)] });
         specs.push({ id: 'stat-sum', tint: 'lime', title: T('sr.c.sum'), meta: scope, body: [hbars(stats.sum, total)] });
         specs.push({ id: 'stat-prize', tint: 'sky', title: T('sr.c.winners'), meta: T('sr.c.winnersMeta'), body: [hbars(stats.winners, total)] });
@@ -229,6 +227,11 @@
                     el('p', { className: 'card-note', text: T('sr.c.gapsNote') })],
             });
         }
+
+        // 홀짝 · 저고 비율은 뒤로(2026-10-11 — 3 · 4번에서 9 · 10번으로). 둘은 비슷한 크기라 한 줄에 나란히 온다.
+        // 통계 페이지 목록(tools/build-static-stats.js 의 STATS_ORDER)도 같은 순서다
+        specs.push({ id: 'stat-even-odd', tint: 'sage', title: T('sr.c.oddEven'), meta: scope, body: [hbars(stats.oddEven, total)] });
+        specs.push({ id: 'stat-low-high', tint: 'salmon', title: T('sr.c.lowHigh'), meta: T('sr.c.lowHighMeta'), body: [hbars(stats.lowHigh, total)] });
 
         if (stats.ac) {
             specs.push({
