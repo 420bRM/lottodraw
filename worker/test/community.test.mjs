@@ -44,9 +44,10 @@ function memoryDO() {
     return { _m: map, idFromName: n => n, get: () => ({ fetch: (url, init) => inst.fetch(new Request(url, init)) }) };
 }
 
+// 아래 시험들은 가입 체험을 켠 서버(SIGNUP_TRIAL_DAYS 3)로 돈다. 실서버 기본은 꺼짐(2026-10-11~) — '가입 체험 끔' 시험이 따로 본다
 function makeEnv(extra) {
     return Object.assign({
-        DB: memoryKV(), COMMUNITY: memoryDO(), GOOGLE_CLIENT_ID: CLIENT_ID,
+        DB: memoryKV(), COMMUNITY: memoryDO(), GOOGLE_CLIENT_ID: CLIENT_ID, SIGNUP_TRIAL_DAYS: '3',
         SITE_URL: 'https://www.lottodraw.kr', ALLOWED_ORIGINS: 'https://www.lottodraw.kr,https://lottodraw.kr', ADMIN_TOKEN: ADMIN,
     }, extra || {});
 }
@@ -111,6 +112,40 @@ test('로그인 설정: 클라이언트 ID 가 없으면 꺼져 있고, 넣으�
     assert.equal((await login(off)).data.error, 'no_login');
     const on = await fresh();
     assert.deepEqual((await call(on, 'GET', '/api/config')).data.login, { google: CLIENT_ID, trialDays: 3 });
+    const noTrial = await fresh({ SIGNUP_TRIAL_DAYS: undefined });
+    assert.deepEqual((await call(noTrial, 'GET', '/api/config')).data.login, { google: CLIENT_ID, trialDays: 0 }, '체험을 끄면 0');
+});
+
+test('가입 체험 끔(실서버 기본): 새 가입은 키 · 주문 · 체험 기록 없이 가입만, 텔레그램에 새 가입 알림, 예전 체험 키는 그대로', async () => {
+    // 체험을 켠 서버에서 한 명이 체험을 받은 뒤 …
+    const env = await fresh({ TELEGRAM_BOT_TOKEN: 't', TELEGRAM_CHAT_ID: '1' });
+    const old = await login(env, { sub: '2001', email: 'old@gmail.com' });
+    assert.equal(old.data.trialNew, true);
+    assert.ok([...env.COMMUNITY._m.keys()].some(k => k.startsWith('t:')), '체험을 받은 계정 기록이 있다');
+    // … 체험을 끈다 (SIGNUP_TRIAL_DAYS 를 지운 것과 같다)
+    delete env.SIGNUP_TRIAL_DAYS;
+    const sent = [];
+    const telegram = globalThis.fetch;
+    globalThis.fetch = async (url, init) => { if (String(url).startsWith('https://api.telegram.org/')) sent.push(JSON.parse(init.body).text); return telegram(url, init); };
+    const waits = [];
+    const res = await worker.fetch(new Request('https://api.lottodraw.kr/api/auth/google', { method: 'POST', headers: { Origin: ORIGIN, 'Content-Type': 'application/json' }, body: JSON.stringify({ credential: await idToken({ sub: '2002', email: 'new@gmail.com' }) }) }), env, { waitUntil: p => waits.push(p) });
+    await Promise.all(waits);
+    globalThis.fetch = telegram;
+    const a = await res.json();
+    assert.equal(res.status, 200, JSON.stringify(a));
+    assert.equal(a.isNew, true);
+    assert.equal(a.trialNew, false);
+    assert.equal(a.user.trial, null, '새 가입에는 체험 키가 없다');
+    assert.ok(sent.some(t => t.startsWith('새 가입')), '새 가입 알림: ' + JSON.stringify(sent));
+    const orders = (await call(env, 'GET', '/api/admin/orders?status=paid', { headers: asAdmin })).data.orders;
+    assert.equal(orders.length, 1, '체험 주문은 예전 것 하나뿐');
+    assert.ok(![...env.COMMUNITY._m.keys()].some(k => k.startsWith('t:')), '체험을 받은 계정 기록(t:)은 지운다');
+    // 예전에 받은 체험 키는 그대로, 다시 로그인해도 새로 받지 않는다
+    const again = await login(env, { sub: '2001', email: 'old@gmail.com' });
+    assert.equal(again.data.trialNew, false);
+    assert.equal(again.data.user.trial.key, old.data.user.trial.key);
+    const st = (await call(env, 'GET', '/api/admin/status', { headers: asAdmin })).data;
+    assert.deepEqual(st.login, { users: 2, trials: 1, trialDays: 0 }, '관리자 상태: 체험 꺼짐');
 });
 
 test('구글 가입: 처음 한 번 3일 무료 체험 키, 다시 로그인하면 같은 키, 메일은 보내지 않는다', async () => {
@@ -149,7 +184,7 @@ test('구글 가입: 처음 한 번 3일 무료 체험 키, 다시 로그인하�
 
     // 관리자 상태에 가입 수
     const st = (await call(env, 'GET', '/api/admin/status', { headers: asAdmin })).data;
-    assert.deepEqual(st.login, { users: 1, trials: 1 });
+    assert.deepEqual(st.login, { users: 1, trials: 1, trialDays: 3 });
 });
 
 test('구글 토큰 위조·다른 사이트·만료·미확인 이메일은 거절한다', async () => {

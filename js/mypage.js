@@ -62,7 +62,8 @@
     async function showPass(user) {
         const L = window.LottoLicense;
         const trial = user && user.trial;
-        const trialLine = user ? row(tr('my.trial', '무료 체험'), trial
+        // 무료 체험 줄은 체험을 받은 회원에게만(가입 체험은 2026-10-11부터 끔)
+        const trialLine = user && trial ? row(tr('my.trial', '무료 체험'), trial
             ? (trial.expiresAt > Date.now() ? tr('my.trialUntil', '{date}까지', { date: ymd(trial.expiresAt) }) : tr('my.trialOver', '끝났습니다 ({date})', { date: ymd(trial.expiresAt) }))
             : tr('my.trialNone', '받지 않음 (계정당 한 번)')) : null;
         const seePlans = el('a', { className: 'btn btn-mini', href: 'statistics.html', text: tr('my.seePlans', '이용권 보기') });

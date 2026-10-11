@@ -7,7 +7,8 @@
  *   카드     오른쪽 아래 "+" → ♥(좋아요)·$(대박 기원) 중 고르기. 수는 아이콘+숫자로 누구나 보고, 누르려면 로그인.
  *            카드가 없는 페이지는 본문 끝에 하나(약관·개인정보·문의·소개 페이지는 빼고).
  *   별명     처음 가입하면 정하라고 묻고(건너뛸 수 있음), "내 계정"에서 바꾼다. 머리글 단추에 보인다.
- *   체험 키  처음 가입하면 서버가 3일 무료 체험 키를 준다. 이 브라우저에 더 긴 이용권이 없으면 그 키를 넣는다.
+ *   체험 키  서버가 가입 체험을 켰을 때(SIGNUP_TRIAL_DAYS — 2026-10-11부터 끔) 처음 가입하면 무료 체험 키를 준다.
+ *            이미 받은 키는 기간까지 쓴다 — 이 브라우저에 더 긴 이용권이 없으면 그 키를 넣는다.
  */
 (function () {
     'use strict';
@@ -185,16 +186,22 @@
         closeModal();
         const slot = el('div', { className: 'acct-gbtn' }, [el('span', { className: 'acct-wait', text: tr('acct.loading', '구글 로그인 단추를 불러오는 중…') })]);
         const err = el('p', { className: 'acct-err', role: 'alert', hidden: '' });
-        const days = (login && login.trialDays) || 3;
+        const days = (login && login.trialDays) || 0;   // 가입 체험 일수 — 서버가 끄면(2026-10-11~ 기본) 0, 체험 이야기를 빼고 가입하면 되는 일만
         const box = el('div', { className: 'acct-dialog', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'acct-title' }, [
             el('button', { type: 'button', className: 'acct-x', 'aria-label': tr('acct.close', '닫기'), text: '×', on: { click: closeModal } }),
             el('h2', { id: 'acct-title', text: tr('acct.title', '로그인 · 가입') }),
             reason ? el('p', { className: 'acct-reason', text: reason }) : null,
-            el('p', { className: 'acct-lead', text: tr('acct.lead', '가입과 로그인은 무료이고, 구글 계정으로 바로 가입됩니다. 처음 가입하면 이용권 기능(5개월 통계 · 상세 분석 4종 · TOP 50 그래프 도구)을 {days}일 동안 열어 드립니다. {days}일이 지나도 무료 기능은 그대로 씁니다.', { days }) }),
-            el('ul', { className: 'acct-perks' }, [
+            el('p', { className: 'acct-lead', text: days
+                ? tr('acct.lead', '가입과 로그인은 무료이고, 구글 계정으로 바로 가입됩니다. 처음 가입하면 이용권 기능(5개월 통계 · 상세 분석 4종 · TOP 50 그래프 도구)을 {days}일 동안 열어 드립니다. {days}일이 지나도 무료 기능은 그대로 씁니다.', { days })
+                : tr('acct.leadFree', '가입과 로그인은 무료이고, 구글 계정으로 바로 가입됩니다.') }),
+            el('ul', { className: 'acct-perks' }, days ? [
                 el('li', { text: tr('acct.perk1', '{days}일 무료 체험 (계정당 한 번)', { days }) }),
                 el('li', { text: tr('acct.perk2', '카드마다 ♥ 좋아요 · $ 대박 기원 남기기') }),
                 el('li', { text: tr('acct.perk3', '다른 기기에서 로그인해도 체험 이어 쓰기') }),
+            ] : [
+                el('li', { text: tr('acct.perkChart', 'TOP 50 회차별 당첨금 그래프 보기') }),
+                el('li', { text: tr('acct.perk2', '카드마다 ♥ 좋아요 · $ 대박 기원 남기기') }),
+                el('li', { text: tr('acct.perkTalk', '실시간 채팅 · 블로그 댓글 · 랭킹') }),
             ]),
             slot,
             err,
@@ -347,7 +354,8 @@
             const myLink = el('a', { className: 'acct-my', href: root + 'mypage.html', text: tr('acct.mypage', '마이페이지 →') });
             if (/(^|\/)mypage\.html$/.test(location.pathname)) myLink.setAttribute('aria-current', 'page');
             menu.appendChild(myLink);
-            menu.appendChild(el('p', { className: 'acct-trial', text: trial
+            // 체험 줄: 받은 체험이 있거나 가입 체험이 켜져 있을 때만(꺼진 뒤 가입한 회원에게는 없다)
+            if (trial || (login && login.trialDays)) menu.appendChild(el('p', { className: 'acct-trial', text: trial
                 ? (trial.expiresAt > Date.now() ? tr('acct.trialUntil', '무료 체험: {until}까지', { until: fmtDate(trial.expiresAt) }) : tr('acct.trialOver', '무료 체험이 끝났습니다'))
                 : tr('acct.trialNone', '무료 체험은 계정당 한 번입니다') }));
             const sc = me.user && me.user.score;
@@ -395,7 +403,10 @@
     }
 
     async function withdraw() {
-        const ok = window.confirm(tr('acct.deleteConfirm', '탈퇴하면 계정과 누른 좋아요가 지워집니다.\n받은 무료 체험은 기간까지 이 브라우저에서 그대로 쓸 수 있지만, 다시 가입해도 체험은 다시 받을 수 없습니다.\n\n탈퇴할까요?'));
+        const hadTrial = !!(me && me.user && me.user.trial);
+        const ok = window.confirm(hadTrial
+            ? tr('acct.deleteConfirm', '탈퇴하면 계정과 누른 좋아요가 지워집니다.\n받은 무료 체험은 기간까지 이 브라우저에서 그대로 쓸 수 있지만, 다시 가입해도 체험은 다시 받을 수 없습니다.\n\n탈퇴할까요?')
+            : tr('acct.deleteConfirmPlain', '탈퇴하면 계정과 누른 좋아요가 지워집니다.\n\n탈퇴할까요?'));
         if (!ok) return;
         try {
             await request('/api/me/delete', { method: 'POST', auth: true, body: { confirm: true } });
