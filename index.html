@@ -90,7 +90,16 @@
                     <div class="tray" id="result-balls"></div>
                     <p class="result-msg" id="result" role="status" aria-live="polite" data-i18n="gen.resultIdle">버튼을 누르면 위 자리에 번호가 채워집니다.</p>
                     <p class="result-hint" id="result-hint" data-i18n="gen.hint">혹시 모르죠, 이 번호가 이번 주 당첨번호일 수도 있습니다.</p>
-                    <button type="button" class="btn btn-big" id="generate-btn" data-i18n="gen.go">번호 생성</button>
+                    <div class="gen-go">
+                        <button type="button" class="btn btn-big" id="generate-btn" data-i18n="gen.go">번호 생성</button>
+                        <button type="button" class="btn btn-big btn-five" id="generate-five" data-member aria-label="5게임 한 번에 생성" data-i18n-attr="aria-label:gen.goFiveAria"><span class="btn-label" data-i18n="gen.goFive">5게임</span><span class="lock-tag" hidden><span class="sr-only" data-i18n="gen.lockTag">로그인 필요</span></span></button>
+                    </div>
+                    <div class="gen-recent" id="gen-recent" data-member>
+                        <label class="gen-recent-label" for="recent-range"><span data-i18n="gen.recentLabel">직전 당첨 조합 제외</span><span class="lock-tag" hidden><span class="sr-only" data-i18n="gen.lockTag">로그인 필요</span></span></label>
+                        <input type="range" id="recent-range" min="0" max="10" step="1" value="0" disabled>
+                        <output class="gen-recent-value" id="recent-text" for="recent-range" data-i18n="gen.recentValOff">끔</output>
+                        <button type="button" class="member-cover" aria-label="로그인하면 쓸 수 있습니다" data-i18n-attr="aria-label:gen.memberAria" hidden></button>
+                    </div>
                     <div class="gen-log">
                         <div class="log">
                             <div class="log-head">
@@ -117,7 +126,10 @@
                             <p class="picker-summary" id="picker-summary" aria-live="polite" data-i18n="gen.sumIdle">고정수 0개 · 제외수 0개</p>
                             <p class="picker-warning" id="picker-warning" role="alert"></p>
                             <div class="picker-actions">
+                                <button type="button" class="btn btn-secondary" id="gen-save" data-member="account"><span class="btn-label" data-i18n="gen.saveSet">내 설정 저장</span><span class="lock-tag" hidden><span class="sr-only" data-i18n="gen.lockTag">로그인 필요</span></span></button>
+                                <button type="button" class="btn btn-secondary" id="gen-load" data-member="account"><span class="btn-label" data-i18n="gen.loadSet">불러오기</span><span class="lock-tag" hidden><span class="sr-only" data-i18n="gen.lockTag">로그인 필요</span></span></button>
                                 <button type="button" class="btn btn-secondary" id="reset-picker" data-i18n="gen.reset">선택 초기화</button>
+                                <span class="sr-only" id="gen-set-live" aria-live="polite"></span>
                             </div>
                         </div>
                     </section>
@@ -578,13 +590,14 @@
     const todayLabel = () => now.toLocaleDateString(I18N.lang === 'en' ? 'en-US' : 'ko-KR');
     const setsLabel = n => I18N.f(n === 1 ? 'gen.set1' : 'gen.sets', { n: n });
     // 단추 글자를 잠깐 바꾼다. 폭은 그대로 두어(짧은 글자) 줄이 넘어가 손가락 밑에서 단추가 움직이지 않게 하고, 긴 문장은 화면 읽기 프로그램에만
-    function flashButton(btn, short, full) {
-        if (!btn.dataset.label) btn.dataset.label = btn.textContent;
+    function flashButton(btn, short, full, liveId) {
+        const label = btn.querySelector('.btn-label') || btn;   // 자물쇠 표시가 든 단추는 글자 칸만 바꾼다
+        if (!btn.dataset.label) btn.dataset.label = label.textContent;
         if (!btn._flash) btn.style.minWidth = btn.offsetWidth + 'px';
-        btn.textContent = short;
+        label.textContent = short;
         clearTimeout(btn._flash);
-        btn._flash = setTimeout(() => { btn.textContent = btn.dataset.label; btn.style.minWidth = ''; btn._flash = 0; }, 1600);
-        const live = document.getElementById('history-live');
+        btn._flash = setTimeout(() => { label.textContent = btn.dataset.label; btn.style.minWidth = ''; btn._flash = 0; }, 1600);
+        const live = document.getElementById(liveId || 'history-live');
         live.textContent = '';
         setTimeout(() => { live.textContent = full; }, 50);   // 같은 문장도 다시 읽게
     }
@@ -724,43 +737,112 @@
         if (pcQuery.addEventListener) pcQuery.addEventListener('change', onPageSizeChange);
         else if (pcQuery.addListener) pcQuery.addListener(onPageSizeChange);
     }
-    function generateNumbers() {
-        updateClickCount();
-        setMessage('');
-        // 시도 로그를 배열에 모아 두고 마지막에 한 번만 그린다
-        logLines = [];
-        renderLog();
-        const includeNums = [...includeSet];
-        const uniqueExclude = new Set(excludeSet);
-        const checkedPatternIds = new Set();
-        for (let i = 1; i <= 16; i++) {
-            if (document.getElementById(`pattern${i}`).checked) checkedPatternIds.add(i);
+    // ---- 회원 기능: 직전 당첨 조합 제외 · 5게임 한 번에 · 내 설정 저장 (2026-10-11) ----
+    // 로그인하면(직전 당첨 조합 제외 · 5게임은 이용권이 있어도) 쓴다. 서버에 구글 로그인이 꺼져 있으면 잠그지 않는다 — TOP 50 그래프와 같은 규칙.
+    // 내 설정 저장은 계정에 남기므로 로그인만. 잠금은 화면에서만 거는 것이라 가입을 이끄는 용도다
+    const RECENT_STEPS = [0, 1, 2, 3, 5, 10, 20, 30, 50, 100, Infinity];   // 끌기 막대 칸 → 직전 몇 회(마지막 칸은 역대 전체)
+    let pastCombos = null;     // 최신 회차부터 [{ key: '1,5,8,16,28,33', round }] — 당첨번호 6개만(보너스 제외)
+    let passOk = false;        // 이 브라우저에 이용권이 열려 있다
+    let accountKnown = false;  // account.js 가 로그인 설정을 받아 왔다
+    const acct = () => window.LottoAccount;
+    const hasSession = () => {
+        if (acct() && acct().session) return !!acct().session();
+        try { const v = JSON.parse(localStorage.getItem('lottodraw.account') || 'null'); return !!(v && v.session); } catch (e) { return false; }
+    };
+    const loginOn = () => (accountKnown ? !!(acct() && acct().loginOn && acct().loginOn()) : true);   // 확인 전에는 켜져 있다고 보고 잠근다
+    const memberOk = () => passOk || hasSession() || !loginOn();
+    const savedGen = () => { const m = acct() && acct().me && acct().me(); return (m && m.user && m.user.gen) || null; };
+    const askLogin = key => { if (acct() && acct().openLogin) acct().openLogin(I18N.t(key)); };
+    const recentRange = () => document.getElementById('recent-range');
+    function recentCount() {
+        const v = RECENT_STEPS[+recentRange().value] || 0;
+        if (!v || !pastCombos || !memberOk()) return 0;
+        return v === Infinity ? pastCombos.length : Math.min(v, pastCombos.length);
+    }
+    function paintRecent() {
+        const v = RECENT_STEPS[+recentRange().value] || 0;
+        // 막대 끝 칸에는 짧게(끔 · 10회 · 전체 — 폭이 같아 끄는 동안 막대가 밀리지 않는다), 화면 읽기 프로그램에는 문장으로
+        document.getElementById('recent-text').textContent = !v ? I18N.t('gen.recentValOff') : v === Infinity ? I18N.t('gen.recentValAll') : I18N.f('gen.recentValN', { n: v });
+        recentRange().setAttribute('aria-valuetext', !v ? I18N.t('gen.recentOff')
+            : v === Infinity ? I18N.f('gen.recentAll', { n: pastCombos ? pastCombos.length.toLocaleString() : '' })
+            : I18N.f('gen.recentN', { n: v }));
+    }
+    function paintMember() {
+        const open = memberOk();
+        const signed = hasSession();
+        document.querySelectorAll('[data-member]').forEach(n => {
+            const ok = n.dataset.member === 'account' ? signed : open;
+            n.classList.toggle('is-locked', !ok);
+            n.querySelectorAll('.lock-tag').forEach(t => { t.hidden = ok; });
+        });
+        // 로그인이 꺼진 서버에는 계정이 없으니 내 설정 저장 · 불러오기를 숨긴다. 저장한 설정이 없으면 불러오기는 꺼 둔다
+        const save = document.getElementById('gen-save');
+        const load = document.getElementById('gen-load');
+        save.hidden = load.hidden = !loginOn();
+        load.disabled = signed && !savedGen();
+        const range = recentRange();
+        range.disabled = !open || !pastCombos;
+        document.querySelector('#gen-recent .member-cover').hidden = open;
+        if (!open && +range.value) range.value = 0;
+        paintRecent();
+    }
+    function currentSettings() {
+        const pat = [];
+        for (let i = 1; i <= 16; i++) if (document.getElementById(`pattern${i}`).checked) pat.push(i);
+        return { inc: [...includeSet], exc: [...excludeSet], pat: pat, recent: +recentRange().value };
+    }
+    async function saveSettings() {
+        const btn = document.getElementById('gen-save');
+        if (!hasSession()) return askLogin('gen.memberSave');
+        try {
+            await acct().saveGen(currentSettings());
+            flashButton(btn, I18N.t('gen.savedShort'), I18N.t('gen.saved'), 'gen-set-live');
+        } catch (e) {
+            flashButton(btn, I18N.t('gen.saveFailShort'), I18N.t('gen.saveFail'), 'gen-set-live');
         }
-        // 사전 검사 — 10,000번 돌려 봐야 결과가 같은 경우는 미리 잘라낸다
-        const pool = 45 - uniqueExclude.size - includeNums.length;
-        const needed = 6 - includeNums.length;
-        if (pool < needed) {
-            clearBalls();
-            setMessage(
-                I18N.f('gen.tooManyExcluded', { n: uniqueExclude.size - (needed - pool) }), true);
-            return;
+        paintMember();
+    }
+    function loadSettings() {
+        const btn = document.getElementById('gen-load');
+        if (!hasSession()) return askLogin('gen.memberSave');
+        const g = savedGen();
+        if (!g) return;
+        includeSet.clear();
+        excludeSet.clear();
+        (g.inc || []).forEach(n => includeSet.add(n));
+        (g.exc || []).forEach(n => { if (!includeSet.has(n)) excludeSet.add(n); });
+        for (let i = 1; i <= 16; i++) document.getElementById(`pattern${i}`).checked = (g.pat || []).includes(i);
+        recentRange().value = memberOk() ? Math.max(0, Math.min(RECENT_STEPS.length - 1, g.recent || 0)) : 0;
+        document.getElementById('picker-warning').textContent = '';
+        renderPicker();
+        paintRecent();
+        flashButton(btn, I18N.t('gen.loadedShort'), I18N.t('gen.loaded'), 'gen-set-live');
+    }
+    function initMember() {
+        const range = recentRange();
+        range.addEventListener('input', paintRecent);
+        document.querySelector('#gen-recent .member-cover').addEventListener('click', () => askLogin('gen.memberRecent'));
+        document.getElementById('generate-five').addEventListener('click', () => (memberOk() ? generateNumbers(5) : askLogin('gen.memberFive')));
+        document.getElementById('gen-save').addEventListener('click', saveSettings);
+        document.getElementById('gen-load').addEventListener('click', loadSettings);
+        const onAccount = () => { if (accountKnown) return; accountKnown = true; paintMember(); };
+        if (acct() && acct().ready) acct().ready.then(onAccount);
+        else document.addEventListener('lotto:account-ready', () => { if (acct() && acct().ready) acct().ready.then(onAccount); else onAccount(); }, { once: true });
+        setTimeout(onAccount, 6000);   // 로그인 스크립트를 못 받으면 잠그지 않는다
+        if (window.LottoLicense && LottoLicense.savedKey && LottoLicense.savedKey()) {
+            LottoLicense.unlockState().then(st => { passOk = !!(st && st.unlocked); paintMember(); }).catch(() => {});
         }
-        if (includeNums.length === 6) {
-            const fixedReason = checkInvalidPattern(includeNums, checkedPatternIds);
-            if (fixedReason) {
-                clearBalls();
-                setMessage(
-                    I18N.f('gen.fixedHitsPattern', { reason: fixedReason }), true);
-                return;
-            }
-        }
+        paintMember();
+    }
 
+    // 한 게임: 성공하면 { numbers, str, attempts }, 1만 번 안에 못 찾으면 null. 시도는 logLines 에 쌓는다(5게임이면 줄 앞에 "A · ")
+    function makeGame(rules, prefix) {
         let attempts = 0;
         const maxAttempts = 10000;
         while (attempts < maxAttempts) {
             attempts++;
-            let numbers = [...includeNums];
-            let pool = Array.from({length: 45}, (_, i) => i + 1).filter(n => !uniqueExclude.has(n) && !includeNums.includes(n));
+            let numbers = [...rules.includeNums];
+            let pool = Array.from({length: 45}, (_, i) => i + 1).filter(n => !rules.exclude.has(n) && !rules.includeNums.includes(n));
             while (numbers.length < 6 && pool.length > 0) {
                 const index = Math.floor(Math.random() * pool.length);
                 numbers.push(pool.splice(index, 1)[0]);
@@ -768,22 +850,81 @@
             if (numbers.length < 6) continue;
             numbers.sort((a, b) => a - b);
             const numStr = numbers.join(', ');
-            const invalidReason = checkInvalidPattern(numbers, checkedPatternIds);
+            const invalidReason = checkInvalidPattern(numbers, rules.patterns);
             if (invalidReason) {
-                logLines.push(I18N.f('gen.logSkip', { i: attempts, nums: numStr, reason: invalidReason }));
+                logLines.push(prefix + I18N.f('gen.logSkip', { i: attempts, nums: numStr, reason: invalidReason }));
                 continue;
             }
-            fillBalls(numbers);
-            setMessage(I18N.f('gen.done', { nums: numStr, i: attempts }));
-            logLines.push(I18N.f('gen.logKeep', { i: attempts, nums: numStr }));
-            renderLog();
-            saveHistory(numStr);
+            const pastRound = rules.past.get(numbers.join(','));
+            if (pastRound) {
+                logLines.push(prefix + I18N.f('gen.logSkipPast', { i: attempts, nums: numStr, round: pastRound }));
+                continue;
+            }
+            logLines.push(prefix + I18N.f('gen.logKeep', { i: attempts, nums: numStr }));
+            return { numbers: numbers, str: numStr, attempts: attempts };
+        }
+        return null;
+    }
+    // count: 1(번호 생성) 또는 5(5게임 — 용지 한 장 A~E)
+    function generateNumbers(count) {
+        count = count === 5 ? 5 : 1;
+        for (let k = 0; k < count; k++) updateClickCount();
+        setMessage('');
+        // 시도 로그를 배열에 모아 두고 마지막에 한 번만 그린다
+        logLines = [];
+        renderLog();
+        const includeNums = [...includeSet];
+        const rules = { includeNums: includeNums, exclude: new Set(excludeSet), patterns: new Set(), past: new Map() };
+        for (let i = 1; i <= 16; i++) {
+            if (document.getElementById(`pattern${i}`).checked) rules.patterns.add(i);
+        }
+        // 직전 N회 당첨 조합(6개 묶음, 보너스 제외)과 똑같은 조합은 뽑지 않는다
+        const n = recentCount();
+        for (let k = 0; k < n; k++) if (!rules.past.has(pastCombos[k].key)) rules.past.set(pastCombos[k].key, pastCombos[k].round);
+        // 사전 검사 — 10,000번 돌려 봐야 결과가 같은 경우는 미리 잘라낸다
+        const pool = 45 - rules.exclude.size - includeNums.length;
+        const needed = 6 - includeNums.length;
+        if (pool < needed) {
+            clearBalls();
+            setMessage(
+                I18N.f('gen.tooManyExcluded', { n: rules.exclude.size - (needed - pool) }), true);
             return;
         }
+        if (includeNums.length === 6) {
+            const fixedReason = checkInvalidPattern(includeNums, rules.patterns);
+            if (fixedReason) {
+                clearBalls();
+                setMessage(
+                    I18N.f('gen.fixedHitsPattern', { reason: fixedReason }), true);
+                return;
+            }
+            const pastRound = rules.past.get(includeNums.slice().sort((a, b) => a - b).join(','));
+            if (pastRound) {
+                clearBalls();
+                setMessage(I18N.f('gen.fixedIsPast', { round: pastRound }), true);
+                return;
+            }
+        }
+
+        const made = [];
+        for (let g = 0; g < count; g++) {
+            const game = makeGame(rules, count > 1 ? 'ABCDE'[g] + ' · ' : '');
+            if (!game) break;
+            made.push(game);
+        }
         renderLog();
-        clearBalls();
-        setMessage(
-            I18N.f('gen.giveUp', { n: maxAttempts.toLocaleString() }), true);
+        if (!made.length) {
+            clearBalls();
+            setMessage(
+                I18N.f('gen.giveUp', { n: (10000).toLocaleString() }), true);
+            return;
+        }
+        // 5게임은 E 부터 넣어, 최근 것부터 보이는 생성 이력 1쪽에 A~E 차례로 놓이게
+        made.slice().reverse().forEach(m => saveHistory(m.str));
+        fillBalls(made[0].numbers);
+        if (count === 1) setMessage(I18N.f('gen.done', { nums: made[0].str, i: made[0].attempts }));
+        else if (made.length === count) setMessage(I18N.t('gen.doneFive'));
+        else setMessage(I18N.f('gen.doneSome', { n: made.length }), true);
     }
 
     // ---- 전 회차 통계 ----
@@ -811,6 +952,8 @@
                 renderRecent(sorted.slice(0, 10));
                 renderFact(stats.gaps, sorted[0].round);
                 renderDetails(data.draws);
+                pastCombos = sorted.map(d => ({ key: d.numbers.slice().sort((a, b) => a - b).join(','), round: d.round }));
+                paintMember();
             })
             .catch(err => {
                 console.error(err);
@@ -986,7 +1129,8 @@
         renderLog();
         document.getElementById('history-copy').addEventListener('click', copyHistory);
         document.getElementById('history-print').addEventListener('click', printHistory);
-        document.getElementById('generate-btn').addEventListener('click', generateNumbers);
+        document.getElementById('generate-btn').addEventListener('click', () => generateNumbers(1));
+        initMember();
         document.getElementById('reset-picker').addEventListener('click', resetPicker);
         document.getElementById('patterns-all').addEventListener('click', () => setAllPatterns(true));
         document.getElementById('patterns-none').addEventListener('click', () => setAllPatterns(false));

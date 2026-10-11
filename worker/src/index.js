@@ -91,6 +91,7 @@ async function route(request, env, ctx) {
     if (path === '/api/me' && method === 'GET') return me(request, env);
     if (path === '/api/me/delete' && method === 'POST') return deleteMe(request, env, ctx);
     if (path === '/api/me/nickname' && method === 'POST') return setNickname(request, env);
+    if (path === '/api/me/generator' && method === 'POST') return saveGenerator(request, env);
     if (path === '/api/reactions' && method === 'GET') return getReactions(request, env, url);
     if (path === '/api/ranking' && method === 'GET') return getRanking(request, env);
     if (path === '/api/chat' && method === 'GET') return chatConnect(request, env);
@@ -740,6 +741,29 @@ async function setNickname(request, env) {
     if (r.error === 'need_points') throw new HttpError(402, 'need_points', `별명을 바꾸려면 ${r.cost}포인트가 필요합니다. (지금 ${r.avail}포인트)`);
     if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
     return json(request, env, { user: r.user, cost: r.cost || 0 });
+}
+
+// 번호 생성기 설정(로그인 회원). 고정수 6개까지 · 제외수 · 켠 패턴 번호(1~16) · 직전 당첨 조합 제외 칸(0~10, 화면의 끌기 막대 위치).
+// 받은 값을 그대로 믿지 않고 다듬어 저장한다. { gen: null } 이면 지운다
+const GEN_RECENT_MAX = 10;
+function cleanGen(raw) {
+    if (!raw || typeof raw !== 'object') return null;
+    const nums = (a, max) => (Array.isArray(a) ? [...new Set(a.map(Number).filter(n => Number.isInteger(n) && n >= 1 && n <= 45))].sort((x, y) => x - y).slice(0, max) : []);
+    const inc = nums(raw.inc, 6);
+    const exc = nums(raw.exc, 45).filter(n => !inc.includes(n));
+    const pat = Array.isArray(raw.pat) ? [...new Set(raw.pat.map(Number).filter(n => Number.isInteger(n) && n >= 1 && n <= 16))].sort((x, y) => x - y) : [];
+    const recent = Math.max(0, Math.min(GEN_RECENT_MAX, Math.floor(Number(raw.recent) || 0)));
+    return { inc, exc, pat, recent, at: Date.now() };
+}
+async function saveGenerator(request, env) {
+    const s = await sessionUser(request, env);
+    await limited(env.REACT_LIMIT, s.hash);
+    const body = await readJson(request);
+    const gen = body.gen === null ? null : cleanGen(body.gen);
+    if (body.gen !== null && !gen) throw new HttpError(400, 'bad_gen', '설정을 읽지 못했습니다.');
+    const r = await community(env, 'setGen', { sub: s.sub, gen });
+    if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
+    return json(request, env, { user: r.user });
 }
 
 function reactionIds(raw) {

@@ -624,6 +624,8 @@
         ready: ready,
         // 마이페이지(js/mypage.js)가 쓰는 길: 내 정보 새로 받기, 로그아웃, 탈퇴
         refresh: async () => { if (!login) return me; me = await loadMe(true); return me; },
+        // 홈 번호 생성기 설정 저장(gen = { inc, exc, pat, recent }, null 이면 지움). 저장한 뒤 내 정보를 새로 받는다
+        saveGen: async gen => { const got = await request('/api/me/generator', { method: 'POST', auth: true, body: { gen } }); me = await loadMe(true); return got.user; },
         logout: () => logout(),
         withdraw: () => withdraw(),
     };

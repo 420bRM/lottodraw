@@ -254,7 +254,7 @@ details[open] > summary.card-title { padding-bottom: 0; }
 .cell.exclude { background: #eee; color: #bbb; border-color: #eee; text-decoration: line-through; }
 .picker-summary { margin: 10px 0 0; font-size: 13px; font-weight: bold; }
 .picker-warning { margin: 4px 0 0; min-height: 1.4em; color: var(--error); font-size: 13px; }
-.picker-actions { display: flex; justify-content: flex-end; }
+.picker-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
 
 /* 패턴 체크 목록 — 두 칸을 같은 폭으로 두고 줄바꿈을 막아 행 높이를 맞춘다.
    한 줄이라도 접히면 그 줄부터 좌우 체크박스가 어긋나 보인다. */
@@ -285,6 +285,21 @@ details[open] > summary.card-title { padding-bottom: 0; }
 
 /* 로그/이력 */
 /* 생성 과정 로그 — 번호 생성 칸 맨 아래(2026-10-11, 생성 이력 카드에서 옮김). 단추 아래에 두어 줄 수가 바뀌어도 단추가 움직이지 않는다 */
+/* 번호 생성 · 5게임(회원) 단추 줄, 그 아래 직전 당첨 조합 제외 끌기 막대(회원) — 2026-10-11 */
+.gen-go { display: flex; gap: 8px; }
+.gen-go #generate-btn { flex: 1; min-width: 0; }
+.btn-five { padding-left: 14px; padding-right: 14px; background: #fff; color: var(--brand); border: 2px solid var(--brand); white-space: nowrap; }
+.btn-five:hover { background: #eef3fb; }
+/* 자물쇠: 로그인하면 쓰는 기능(글자는 화면 읽기 프로그램에만 "로그인 필요") — 글자 띠보다 좁아 단추 줄이 넘어가지 않는다 */
+.lock-tag { display: inline-block; width: 11px; height: 11px; margin-left: 5px; vertical-align: -1px; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 7V5a4 4 0 1 1 8 0v2h1a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h1zm2 0h4V5a2 2 0 1 0-4 0v2z'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 7V5a4 4 0 1 1 8 0v2h1a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h1zm2 0h4V5a2 2 0 1 0-4 0v2z'/%3E%3C/svg%3E") center / contain no-repeat; }
+/* 한 줄: 글자 | 끌기 막대 | 값(끔 · 10회 · 전체) — 단추 아래 높이를 덜 먹고, 값 칸 폭이 같아 끄는 동안 막대가 밀리지 않는다 */
+.gen-recent { position: relative; display: grid; grid-template-columns: auto minmax(60px, 1fr) 3.4em; align-items: center; gap: 8px; margin-top: 8px; text-align: left; }
+.gen-recent-value { color: var(--brand); font-size: 12px; font-weight: bold; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.gen-recent.is-locked .gen-recent-value { color: var(--muted); }
+.gen-recent-label { color: var(--text); font-size: 12px; font-weight: bold; white-space: nowrap; }
+.gen-recent input[type="range"] { width: 100%; margin: 0; accent-color: var(--brand); cursor: pointer; }
+.gen-recent.is-locked input[type="range"] { opacity: .45; }
+.member-cover { position: absolute; inset: 0; width: 100%; padding: 0; border: 0; background: transparent; cursor: pointer; }
 .gen-log { margin-top: 10px; text-align: left; }
 .log { padding: 6px 8px; background: #fafbfd; border: 1px solid var(--line); border-radius: 6px; font-size: 11.5px; line-height: 1.6; overflow-wrap: anywhere; }
 .log-idle { color: var(--muted); }
