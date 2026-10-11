@@ -1417,7 +1417,11 @@
             if (plot.contains(e.target) || state.hover === null) return;
             hideHover();
         });
+        // 그림도구 클릭(수평선 · 추세선)이 만든 두 번 클릭은 전체 기간으로 가지 않는다 — 첫 클릭이 선을 긋고 도구를 꺼서
+        // dblclick 때는 이미 canMove() 가 참이 된다. 그래서 그림도구가 받은 마지막 클릭 시각과 견준다
+        let toolClickAt = -Infinity;
         plot.addEventListener('dblclick', e => {
+            if (e.timeStamp - toolClickAt < 800) return;
             if (!canMove() || !zoomed()) return;
             e.preventDefault();
             pickRange(0);   // 전체 기간 단추와 같다 — 정보창 · 범례 높이도 새로 잰다
@@ -1468,6 +1472,7 @@
         plot.addEventListener('click', e => {
             if (swallowClick) { swallowClick = false; return; }
             if (!S || !state.unlocked || !state.tool) return;
+            toolClickAt = e.timeStamp;
             const p = pointAt(e);
             const v = S.yInv(p.y);
             const r = all[p.i].round;
