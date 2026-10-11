@@ -883,6 +883,21 @@ html.home { scroll-behavior: smooth; }
 .prose .pchart-source { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
 .pchart-source a { color: inherit; text-decoration: underline; }
 .prose h2.top-table-h { margin-top: 8px; }
+/* TOP 50 표 위 [당첨금 순위 | 최근 50회] 단추: 붙은 두 칸, 고른 쪽만 칠한다 */
+.top-view-btns { display: inline-flex; margin: 4px 0 10px; border: 1px solid var(--brand); border-radius: 8px; overflow: hidden; }
+.top-view-btn { min-height: 36px; margin: 0; padding: 0 16px; border: 0; background: #fff; color: var(--brand); font: bold 13px var(--font); cursor: pointer; }
+.top-view-btn + .top-view-btn { border-left: 1px solid var(--brand); }
+.top-view-btn:hover { background: #eef2f9; }
+.top-view-btn[aria-pressed="true"] { background: var(--brand); color: #fff; }
+/* TOP 50 표 넷(1등 · 2등 × 순위 · 최근 50회): 휴대폰에서 칸 글자가 한 글자씩 끊기지 않게 값은 한 줄로,
+   제목은 낱말 단위로 줄바꿈한다. 넘치면 표만 옆으로 밀어 본다(.table-scroll) */
+@media (max-width: 599px) {
+    .prose .data-table.top-table th, .prose .data-table.top-table td { padding: 6px 8px; font-size: 13px; }
+    .data-table.top-table th { word-break: keep-all; }
+    .data-table.top-table td { white-space: nowrap; }
+}
+/* 테두리 상자가 overflow 로 잘라 바깥 outline 이 안 보인다 — 안쪽 두 겹(파랑 · 흰색)이라 칠한 칸 · 흰 칸 어디서나 보인다 */
+.top-view-btn:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--brand), inset 0 0 0 4px #fff; }
 /* 1등 표 · 안내문 아래 2등 TOP 50 */
 .prose h2.top-second-h { margin-top: 36px; }
 /* 회차 페이지 등수별 당첨금 표: 칸 글자를 줄바꿈하지 않는다(좁은 화면은 옆으로 밀어 본다) */
