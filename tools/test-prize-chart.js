@@ -131,8 +131,13 @@ check('최저임금 기간이 날짜 순이고 금액이 오른다', wage.period
 check('첫 회차(2002-12-07)는 2002.9~2003.8 의 2,275원', hourly('2002-12-07') === 2275);
 check('2003-08-31 은 2,275원, 다음 날부터 2,510원', hourly('2003-08-31') === 2275 && hourly('2003-09-01') === 2510);
 check('2005.9~2006.12(16개월)는 3,100원', hourly('2005-09-03') === 3100 && hourly('2006-12-30') === 3100);
-check('2007년부터 1~12월', hourly('2007-01-06') === 3480 && hourly('2026-10-10') === 10320 && hourly('2027-12-31') === 10700);
-check('정해지지 않은 해(until 뒤)와 첫 고시 전은 없음', hourly('2028-01-01') === null && hourly('2002-08-31') === null);
+check('2007년부터 1~12월', hourly('2007-01-06') === 3480 && hourly('2026-10-10') === 10320 && hourly('2027-06-30') === 10700);
+// 매년 8월 다음 해 한 줄을 더하고 until 을 늘려도 그대로 통과하게 — until 날짜와 그 다음 날은 파일에서 읽는다
+const last = wage.periods[wage.periods.length - 1];
+const afterUntil = new Date(Date.parse(wage.until + 'T00:00:00Z') + 864e5).toISOString().slice(0, 10);
+check('until 날까지는 마지막 해 금액, 그 뒤(정해지지 않은 해)와 첫 고시 전은 없음',
+    hourly(wage.until) === last.hourly && hourly(afterUntil) === null && hourly('2002-08-31') === null);
+check('until 은 마지막 기간이 시작한 해의 12월 31일', wage.until === last.from.slice(0, 4) + '-12-31');
 check('월 209시간', wage.hoursPerMonth === 209 && P.wageAt(wage, '2026-10-10').hourly * wage.hoursPerMonth === 2156880);
 
 // 글자 (I18N 이 없으면 한국어)

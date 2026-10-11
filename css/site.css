@@ -288,6 +288,17 @@ details[open] > summary.card-title { padding-bottom: 0; }
 .gen-log { margin-top: 10px; text-align: left; }
 .log { padding: 6px 8px; background: #fafbfd; border: 1px solid var(--line); border-radius: 6px; font-size: 11.5px; line-height: 1.6; overflow-wrap: anywhere; }
 .log-idle { color: var(--muted); }
+/* 제목 줄 오른쪽에 작은 쪽 넘김 — 줄 아래에 따로 두면 쪽을 넘길 때마다 단추가 위아래로 움직이고, 줄 한 칸을 더 먹는다 */
+.log-head { display: flex; align-items: center; gap: 4px; min-height: 20px; }
+.log-head .pager { margin: 0 0 0 auto; gap: 4px; }
+.pager-mini button {
+    min-width: 22px; height: 20px; padding: 0 5px;
+    border: 1px solid var(--line); border-radius: 4px; background: #fff;
+    color: var(--text); font: bold 13px/1 var(--font); cursor: pointer;
+}
+.pager-mini button:hover:not(:disabled) { border-color: var(--brand); color: var(--brand); }
+.pager-mini button:disabled { opacity: .35; cursor: default; }
+.pager-mini .pager-label { min-width: 3.2em; font-size: 11px; }
 .history { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
 .history th, .history td { border: 1px solid var(--line); padding: 4px; text-align: center; }
 .history th { background: var(--head); }
@@ -568,9 +579,10 @@ html.home { scroll-behavior: smooth; }
 #sec-generator .cta { display: flex; flex-direction: column; justify-content: center; gap: 4px; }
 #sec-generator .cta h2 { font-size: 20px; }
 #sec-generator .result-msg { margin: 16px 0; }
-.gen-extras { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: stretch; margin-top: 14px; }
-/* 생성 이력 · 보렐 두 카드는 위아래 끝을 맞춘다(2026-10-11). 접은 카드는 제목 높이 그대로 둔다 */
-.gen-extras > .card:has(> details:not([open])) { align-self: start; }
+.gen-extras { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; margin-top: 14px; }
+/* 생성 이력 · 보렐 두 카드는 위아래 끝을 맞춘다(2026-10-11). 펼친 카드만 늘리고 접은 카드는 제목 높이 그대로 —
+   :has() 를 모르는 옛 브라우저는 예전처럼 제 높이 */
+.gen-extras > .card:has(> details[open]) { align-self: stretch; }
 /* 본문은 다 펼쳐 보인다(2026-10-11). 예전에는 첫 구간을 한 화면에 맞추려 높이를 12vh(낮은 화면 6vh)로 묶고 안에서
    스크롤시켰는데, 휴대폰에서는 두세 줄만 보였다. 생성 이력 · 과정 로그는 쪽을 넘겨(PC 5개 · 휴대폰 10개) 길이가 늘지 않는다 */
 .gen-extras .card-body { font-size: 12px; line-height: 1.55; }
@@ -587,7 +599,7 @@ html.home { scroll-behavior: smooth; }
 .history-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; margin-top: 8px; }
 .gen-extras .history-foot p { margin: 0; }
 .history-actions { display: flex; gap: 6px; margin-left: auto; }   /* 줄이 넘어가도 오른쪽에 */
-.history-actions .btn { min-height: 30px; margin: 0; }
+.history-actions .btn { min-height: 30px; margin: 0; white-space: nowrap; }
 
 /* ───── 홈 3구간: 10회차 미리보기 ───── */
 /* 좌우 기둥 높이를 맞춘다. 왼쪽 히트 그리드는 칸이 정사각형이라 폭으로 높이가
@@ -641,7 +653,12 @@ html.home { scroll-behavior: smooth; }
 /* PC 는 결과 칸이 옆 카드 높이만큼 늘어나 남는 세로가 있다 — 로그 제목 + 한 쪽(5줄) 자리를 미리 잡아 두면
    줄 수가 바뀌어도 가운데 맞춘 칸 안 내용(단추 포함)이 위아래로 움직이지 않는다. 테두리 상자는 쓴 줄만큼만 */
 @media (min-width: 900px) {
-    .gen-log { min-height: calc(6 * 11.5px * 1.6 + 14px); }
+    .gen-log { min-height: calc(20px + 5 * 11.5px * 1.6 + 14px); }
+    .log-lines { max-height: calc(5 * 11.5px * 1.6); overflow-y: auto; }   /* 긴 까닭이 두 줄로 접혀 넘치면 상자 안에서만 스크롤 */
+}
+/* 1100~1279px 는 결과 칸이 좁아 15px 결과 문장이 세 줄 — 두 줄 자리를 넘겨 첫 생성 때 단추와 아래 카드가 밀린다 */
+@media (min-width: 1100px) and (max-width: 1279px) {
+    #sec-generator .result-msg { font-size: 13px; }
 }
 @media (max-width: 1099px) {
     .gen-hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
@@ -810,12 +827,12 @@ html.home { scroll-behavior: smooth; }
 .pc-ma240 { stroke: var(--pc-ma240); }
 .pc-avg { stroke: #777; stroke-width: 1; }
 .pc-real { fill: none; stroke: var(--pc-real); stroke-width: 1; stroke-linejoin: round; }
-.pc-dot-real { fill: var(--pc-real); }
+.pc-dot.pc-dot-real { fill: var(--pc-real); }   /* 아래 .pc-dot(파랑)보다 세게 — 선 색과 같은 점 */
 .pc-apt, .pc-wage { fill: none; stroke: var(--pc-apt); stroke-linejoin: round; }
 .pc-apt-est { stroke-dasharray: 2 3; }
-.pc-dot-apt, .pc-dot-wage { fill: var(--pc-apt); }
+.pc-dot.pc-dot-apt, .pc-dot.pc-dot-wage { fill: var(--pc-apt); }
 .pc-gn { fill: none; stroke: var(--pc-gn); stroke-linejoin: round; }
-.pc-dot-gn { fill: var(--pc-gn); }
+.pc-dot.pc-dot-gn { fill: var(--pc-gn); }
 
 /* 꼬리표: 마지막 값(오른쪽, 파란·회색·주황 칠한 상자), 짚은 자리(왼쪽 축 · 아래 축, 검은 상자) */
 .pc-tag rect { stroke-width: 1; }
@@ -889,6 +906,7 @@ html.home { scroll-behavior: smooth; }
 .pr-balls .plus { font-size: 10px; }
 .pr-vals { display: flex; flex-wrap: wrap; gap: 0 14px; color: var(--muted); }
 .pchart-body.is-compact .pr-vals { gap: 0 10px; }
+.pchart-body.is-compact .pr-item { white-space: normal; }   /* 한 줄보다 긴 항목(영어 최저임금 기간 등)만 안에서 접힌다 — 나머지는 그대로 통째로 줄을 바꾼다 */
 .pr-item { white-space: nowrap; }
 .pr-item b { color: #000; font-variant-numeric: tabular-nums; }
 .pr-item .pchart-key { width: 10px; margin-right: 3px; }

@@ -376,6 +376,7 @@
             const [y, m] = w.from.split('-').map(Number);
             if (m === 1 && (!w.to || w.to === `${y + 1}-01-01`)) return T('pc.cmp.wageYearLabel', { y: y });
             const end = w.to ? new Date(Date.UTC(+w.to.slice(0, 4), +w.to.slice(5, 7) - 1, 0)) : null;   // 다음 기간 시작 전 달
+            if (lang() === 'en') return ymLabel(w.from.slice(0, 7)) + '\u2013' + (end ? ymLabel(end.getUTCFullYear() + '-' + (end.getUTCMonth() + 1)) : '');
             return `${y}.${m}~` + (end ? `${end.getUTCFullYear()}.${end.getUTCMonth() + 1}` : '');
         };
         // 비교선: 회차마다 세후 1인당 당첨금, 그 달 서울 · 강남 아파트 평균가
@@ -451,6 +452,8 @@
             if (on && !state.unlocked) return flashNote();   // 물가 반영은 이용권
             if (byId(state.metric).unit !== 'won') return;
             state.real = on;
+            // 최저임금은 그 해 금액이라 지금 돈 가치와 함께 두지 않는다 — 봉이 지금 돈이면 주황 선과 어긋나고 'n년치'도 부푼다
+            if (on) state.cmpWage = false;
             state.pending = null;
             render();
         }
@@ -1097,6 +1100,8 @@
                 for (let k = 0; k < n; k++) picks.add(Math.round(S.start + (S.end - S.start) * k / Math.max(1, n - 1)));
                 let h = 0;
                 picks.forEach(i => { fillReadout(i); h = Math.max(h, boxH(readout)); });
+                // 휴대폰은 줄이 좁아 표본에 없는 몇몇 회차(긴 금액 · 이월 회차 등)가 한 줄 더 쓴다 — 보이는 회차를 다 재는 대신(느리다) 한 줄을 더 잡는다
+                if (h && S.W < 600 && S.end - S.start + 1 > picks.size) h += Math.ceil(parseFloat(getComputedStyle(readout).lineHeight) || 17);
                 readoutMin = h;
                 if (h) readout.style.minHeight = h + 'px';
             }
@@ -1393,7 +1398,7 @@
         plot.addEventListener('dblclick', e => {
             if (!canMove() || !zoomed()) return;
             e.preventDefault();
-            setView({ s: 0, e: len - 1 }, true);
+            pickRange(0);   // 전체 기간 단추와 같다 — 정보창 · 범례 높이도 새로 잰다
         });
         // 두 손가락은 페이지 확대·스크롤 대신 그래프 확대로 (사파리는 gesturestart 로 페이지를 키운다)
         const stopTwo = e => { if (e.touches.length > 1 && canMove() && e.cancelable) e.preventDefault(); };
