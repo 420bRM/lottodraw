@@ -1332,8 +1332,9 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
     position: absolute; top: 8px; right: 10px; width: 32px; height: 32px;
     border: 0; background: none; color: var(--muted); font-size: 24px; line-height: 1; cursor: pointer;
 }
-.acct-reason { margin: 0 0 8px; padding: 6px 10px; border-radius: 6px; background: #fff4e5; font-weight: bold; }
+.acct-reason { margin: 0 0 8px; padding: 6px 10px; border-radius: 6px; background: #fff4e5; font-weight: bold; word-break: keep-all; }   /* 줄을 낱말 사이에서만 ("사용 가 / 능합니다" 막기) */
 .acct-lead { margin: 0 0 8px; }
+.acct-lead.is-short { text-align: center; }   /* 체험이 없을 때의 한 줄 "로그인하여 100% 즐기기" */
 .acct-perks { margin: 0 0 14px; padding-left: 20px; color: var(--muted); font-size: 14px; }
 .acct-gbtn { display: flex; justify-content: center; min-height: 44px; margin-bottom: 10px; color: var(--muted); font-size: 13px; text-align: center; }
 .acct-err { margin: 0 0 8px; color: var(--error); font-size: 13px; }
