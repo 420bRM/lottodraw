@@ -615,6 +615,12 @@ html.home { scroll-behavior: smooth; }
 .gen-extras .history-foot p { margin: 0; }
 .history-actions { display: flex; gap: 6px; margin-left: auto; }   /* 줄이 넘어가도 오른쪽에 */
 .history-actions .btn { min-height: 30px; margin: 0; white-space: nowrap; }
+/* 아주 좁은 휴대폰(~379px): 단추 셋(초기화 · 번호 복사 · 출력)이 "오늘 n회 생성"과 한 줄에 들도록 좌우 여백만 줄인다(320px 에서 두 자리 횟수까지) */
+@media (max-width: 379px) {
+    .history-foot { column-gap: 8px; }
+    .history-actions { gap: 4px; }
+    .history-actions .btn { padding-left: 6px; padding-right: 6px; }
+}
 
 /* ───── 홈 3구간: 10회차 미리보기 ───── */
 /* 좌우 기둥 높이를 맞춘다. 왼쪽 히트 그리드는 칸이 정사각형이라 폭으로 높이가
