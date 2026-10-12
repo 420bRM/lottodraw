@@ -183,6 +183,7 @@
                                 <div class="history-foot">
                                     <p class="muted" id="visitor-count"></p>
                                     <div class="history-actions">
+                                        <button type="button" class="btn btn-secondary btn-small" id="history-clear" data-i18n="gen.clear" aria-label="생성 이력 초기화" data-i18n-attr="aria-label:gen.clearAria" disabled>초기화</button>
                                         <button type="button" class="btn btn-secondary btn-small" id="history-copy" data-i18n="gen.copy" disabled>번호 복사</button>
                                         <button type="button" class="btn btn-secondary btn-small" id="history-print" data-i18n="gen.print" disabled>출력</button>
                                         <span class="sr-only" id="history-live" aria-live="polite"></span>
@@ -556,6 +557,7 @@
         const size = pageSize();
         document.getElementById('history-copy').disabled = !history.length;
         document.getElementById('history-print').disabled = !history.length;
+        document.getElementById('history-clear').disabled = !history.length;
         historyPage = historyPager.set(history.length, page == null ? historyPage : page);
         const tbody = document.getElementById('history-body');
         tbody.innerHTML = '';
@@ -660,6 +662,22 @@
         sheetPrint = true;
         document.body.classList.add('is-printing');
         window.print();
+    }
+    // 초기화: 오늘 생성 이력과 "오늘 n회 생성"을 지운다(되돌릴 수 없어 한 번 묻는다). 지난날 이력 · 횟수 칸도 함께 치운다 — 화면에는 오늘 것만 보이고 날마다 칸이 쌓이기만 했다
+    function clearHistory() {
+        const n = readHistory().length;
+        if (!n || !window.confirm(I18N.f('gen.clearConfirm', { sets: setsLabel(n) }))) return;
+        try {
+            Object.keys(localStorage).filter(k => /^(numberHistory|clickCount)_/.test(k)).forEach(k => localStorage.removeItem(k));
+        } catch (e) { /* 저장소를 못 쓰는 브라우저 — 지울 것도 없다 */ }
+        loadHistory(0);
+        updateDisplay();
+        // 누른 단추가 꺼지면 초점이 페이지 맨 위로 사라진다 — 카드 제목으로 옮겨 둔다
+        const head = document.querySelector('[data-react="index-history"] summary');
+        if (head) head.focus({ preventScroll: true });
+        const live = document.getElementById('history-live');
+        live.textContent = '';
+        setTimeout(() => { live.textContent = I18N.t('gen.cleared'); }, 50);
     }
     function saveHistory(numStr) {
         let history = readHistory();
@@ -1147,6 +1165,7 @@
         renderLog();
         document.getElementById('history-copy').addEventListener('click', copyHistory);
         document.getElementById('history-print').addEventListener('click', printHistory);
+        document.getElementById('history-clear').addEventListener('click', clearHistory);
         document.getElementById('generate-btn').addEventListener('click', () => generateNumbers(1));
         initMember();
         document.getElementById('reset-picker').addEventListener('click', resetPicker);
