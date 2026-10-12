@@ -191,7 +191,7 @@
             el('button', { type: 'button', className: 'acct-x', 'aria-label': tr('acct.close', '닫기'), text: '×', on: { click: closeModal } }),
             el('h2', { id: 'acct-title', text: tr('acct.title', '로그인 · 가입') }),
             reason ? el('p', { className: 'acct-reason', text: reason }) : null,
-            el('p', { className: 'acct-lead', text: days
+            el('p', { className: days ? 'acct-lead' : 'acct-lead is-short', text: days
                 ? tr('acct.lead', '가입과 로그인은 무료이고, 구글 계정으로 바로 가입됩니다. 처음 가입하면 이용권 기능(5개월 통계 · 상세 분석 4종 · TOP 50 그래프 도구)을 {days}일 동안 열어 드립니다. {days}일이 지나도 무료 기능은 그대로 씁니다.', { days })
                 : tr('acct.leadFree', '로그인하여 100% 즐기기') }),
             el('ul', { className: 'acct-perks' }, days ? [
