@@ -184,7 +184,8 @@
                                     <p class="muted" id="visitor-count"></p>
                                     <div class="history-actions">
                                         <button type="button" class="btn btn-secondary btn-small" id="history-clear" data-i18n="gen.clear" aria-label="생성 이력 초기화" data-i18n-attr="aria-label:gen.clearAria" disabled>초기화</button>
-                                        <button type="button" class="btn btn-secondary btn-small" id="history-copy" data-i18n="gen.copy" disabled>번호 복사</button>
+                                        <button type="button" class="btn btn-secondary btn-small" id="history-copy" data-i18n="gen.copy" aria-label="번호 복사" data-i18n-attr="aria-label:gen.copyAria" disabled>복사</button>
+                                        <button type="button" class="btn btn-secondary btn-small" id="history-share" data-i18n="gen.share" aria-label="번호 공유하기" data-i18n-attr="aria-label:gen.shareAria" hidden disabled>공유</button>
                                         <button type="button" class="btn btn-secondary btn-small" id="history-print" data-i18n="gen.print" disabled>출력</button>
                                         <span class="sr-only" id="history-live" aria-live="polite"></span>
                                     </div>
@@ -558,6 +559,7 @@
         document.getElementById('history-copy').disabled = !history.length;
         document.getElementById('history-print').disabled = !history.length;
         document.getElementById('history-clear').disabled = !history.length;
+        document.getElementById('history-share').disabled = !history.length;
         historyPage = historyPager.set(history.length, page == null ? historyPage : page);
         const tbody = document.getElementById('history-body');
         tbody.innerHTML = '';
@@ -603,11 +605,11 @@
         live.textContent = '';
         setTimeout(() => { live.textContent = full; }, 50);   // 같은 문장도 다시 읽게
     }
+    const historyLines = sets => sets.map((nums, k) => (k + 1) + ') ' + nums.join(', '));
     async function copyHistory() {
         const sets = historySets();
         if (!sets.length) return;
-        const text = [I18N.f('gen.copyHead', { sets: setsLabel(sets.length), date: todayLabel() })]
-            .concat(sets.map((nums, k) => (k + 1) + ') ' + nums.join(', '))).join('\n');
+        const text = [I18N.f('gen.copyHead', { sets: setsLabel(sets.length), date: todayLabel() })].concat(historyLines(sets)).join('\n');
         let ok = false;
         try { await navigator.clipboard.writeText(text); ok = true; } catch (e) {
             // 클립보드 API 가 없거나 막힌 브라우저 — 보이지 않는 글상자로 복사하고, 누른 단추로 초점을 되돌린다
@@ -624,12 +626,27 @@
         }
         flashButton(document.getElementById('history-copy'), I18N.t(ok ? 'gen.copiedShort' : 'gen.copyFailShort'), I18N.t(ok ? 'ui.copied' : 'ui.copyFail'));
     }
+    // 공유: 휴대폰 공유 창(Web Share — 카카오톡 · 문자 등)으로 복사와 같은 번호 줄 + 사이트 주소를 보낸다.
+    // 이 기능이 없는 브라우저(PC 대부분)는 단추를 숨긴다(블로그 공유 줄과 같게). 닫으면 그만, 막히면 복사로 대신한다
+    async function shareHistory() {
+        const sets = historySets();
+        if (!sets.length) return;
+        const text = [I18N.f('gen.shareHead', { sets: setsLabel(sets.length), date: todayLabel() })].concat(historyLines(sets)).join('\n') + '\n';
+        try {
+            await navigator.share({ title: I18N.t('gen.printTitle'), text: text, url: 'https://lottodraw.kr/' });
+        } catch (e) {
+            if (e && e.name !== 'AbortError') copyHistory();
+        }
+    }
     // 출력: 숨겨 둔 종이(body 바로 아래 .print-sheet)를 채우고 인쇄 창을 연다. 인쇄할 때 화면의 나머지를 감춘다(위 <style> 의 @media print).
-    // is-printing 은 afterprint 에 풀지 않는다 — 인쇄 화면을 그리기 전에 afterprint 를 보내는 브라우저가 있으면 홈 전체가 찍힌다.
-    // 대신 단추 없이 시작한 인쇄(Ctrl+P · 메뉴)의 beforeprint 에서 푼다
+    // 출력 상태(is-printing)는 인쇄 창을 닫고 페이지를 다시 만질 때(누르기 · 키) 푼다. afterprint 로 풀면 안 된다 — 안드로이드 크롬은
+    // window.print() 가 곧바로 돌아오며 beforeprint · afterprint 를 먼저 보내고, 시스템 인쇄 창이 미리보기를 그릴 때(용지 · 프린터를 바꿀 때마다)
+    // beforeprint 를 다시 보낸다. 그때 상태가 풀려 있어 홈 전체(8쪽)가 찍혔다(2026-10-12). 단추 없이 시작한 인쇄(Ctrl+P 는 키라 먼저 풀린다)는 평소 화면
     let sheetPrint = false;
     window.addEventListener('beforeprint', () => { if (!sheetPrint) document.body.classList.remove('is-printing'); });
-    window.addEventListener('afterprint', () => { sheetPrint = false; });
+    const endSheetPrint = () => { if (!sheetPrint) return; sheetPrint = false; document.body.classList.remove('is-printing'); };
+    document.addEventListener('pointerdown', endSheetPrint, true);
+    document.addEventListener('keydown', endSheetPrint, true);
     function printHistory() {
         const sets = historySets();
         if (!sets.length) return;
@@ -1166,6 +1183,11 @@
         document.getElementById('history-copy').addEventListener('click', copyHistory);
         document.getElementById('history-print').addEventListener('click', printHistory);
         document.getElementById('history-clear').addEventListener('click', clearHistory);
+        if (navigator.share) {
+            const shareBtn = document.getElementById('history-share');
+            shareBtn.hidden = false;
+            shareBtn.addEventListener('click', shareHistory);
+        }
         document.getElementById('generate-btn').addEventListener('click', () => generateNumbers(1));
         initMember();
         document.getElementById('reset-picker').addEventListener('click', resetPicker);
