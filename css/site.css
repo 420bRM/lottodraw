@@ -615,11 +615,16 @@ html.home { scroll-behavior: smooth; }
 .gen-extras .history-foot p { margin: 0; }
 .history-actions { display: flex; gap: 6px; margin-left: auto; }   /* 줄이 넘어가도 오른쪽에 */
 .history-actions .btn { min-height: 30px; margin: 0; white-space: nowrap; }
-/* 아주 좁은 휴대폰(~379px): 단추 셋(초기화 · 번호 복사 · 출력)이 "오늘 n회 생성"과 한 줄에 들도록 좌우 여백만 줄인다(320px 에서 두 자리 횟수까지) */
+/* 좁은 휴대폰(~379px): 단추 넷(초기화 · 복사 · 공유 · 출력)이 "오늘 n회 생성"과 한 줄에 들도록 좌우 여백을 줄인다(320px 에서 두 자리 횟수까지) */
 @media (max-width: 379px) {
     .history-foot { column-gap: 8px; }
     .history-actions { gap: 4px; }
     .history-actions .btn { padding-left: 6px; padding-right: 6px; }
+}
+@media (max-width: 339px) {
+    .history-foot { column-gap: 6px; }
+    .gen-extras .history-foot p { font-size: 12px; }
+    .history-actions .btn { padding-left: 5px; padding-right: 5px; }
 }
 
 /* ───── 홈 3구간: 10회차 미리보기 ───── */
