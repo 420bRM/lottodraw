@@ -24,6 +24,8 @@
 //   n:<별명 소문자>      계정 번호      — 별명이 겹치지 않게
 //   m:<회원 참조값>      계정 번호      — 주문에 남기는 되돌릴 수 없는 참조값(sha256) → 계정. 탈퇴하면 지운다
 //   c:<글>:<시각 16자리>-<무작위>  { id, at, sub, nick, text, staff } — 블로그 댓글. 계정은 cm(이 키들의 목록)으로 찾아 탈퇴 때 지운다
+//   b:<구글 계정 번호>   { nick, total, days, created } — 랭킹 색인. 별명이 있고 운영자가 아닌 회원만. u: 를 저장할 때 같이 맞춘다(saveUser)
+//   board                랭킹 색인 판(BOARD_VERSION) — 없으면 처음 랭킹을 볼 때 u: 를 한 번 훑어 b: 를 채운다
 //   meta                 { users, trials }
 //
 // 이름·사진은 받지 않는다. 이메일은 "로그인한 계정" 표시와 문의 응대에만 쓴다.
@@ -100,9 +102,84 @@ async function renameComments(storage, user) {
     }
 }
 
+// 랭킹 색인. 예전에는 랭킹을 볼 때마다 회원 기록(u:)을 다 읽었다 — 회원 n명이면 한 번에 n행이라 하루 읽기 한도를
+// 금방 쓰고, 5,000명이 넘으면 나머지는 순위에서 빠졌다. 이제 회원 기록을 저장할 때 b: 한 줄을 같이 맞추고,
+// 메모리에 점수 순으로 줄 세운 목록을 들고 있다가(처음 한 번 b: 를 읽어 만든다) 바뀐 회원만 빼고 다시 끼운다.
+const BOARD_VERSION = 1;
+const PAGE = 1000;
+
+function boardEntry(user) {
+    if (!user.nick || user.staff) return null;
+    const s = score(user);
+    return { nick: user.nick, total: s.total, days: s.days, created: user.createdAt || 0 };
+}
+const sameEntry = (a, b) => (!a && !b) || !!(a && b && a.nick === b.nick && a.total === b.total && a.days === b.days && a.created === b.created);
+// 점수 높은 순, 같으면 먼저 가입한 순. 계정 번호는 자리를 하나로 정하려고만 쓴다
+const order = (a, b) => (b.total - a.total) || (a.created - b.created) || (a.sub < b.sub ? -1 : a.sub > b.sub ? 1 : 0);
+function seat(list, x) {   // 줄에서 x 의 자리(이진 탐색)
+    let lo = 0, hi = list.length;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (order(list[mid], x) < 0) lo = mid + 1; else hi = mid; }
+    return lo;
+}
+function above(list, total) {   // total 보다 점수가 높은 회원 수. 같은 점수는 같은 순위라 순위 = above + 1
+    let lo = 0, hi = list.length;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (list[mid].total > total) lo = mid + 1; else hi = mid; }
+    return lo;
+}
+
 export class Community {
     constructor(state) {
         this.storage = state.storage;
+        this.board = null;          // { bySub, list } — 랭킹 줄(메모리). 처음 랭킹을 볼 때 만든다
+        this.boardLoading = null;
+    }
+
+    // 회원 기록은 늘 이걸로 저장한다 — 랭킹 색인이 함께 맞춰진다
+    async saveUser(user) {
+        await this.storage.put('u:' + user.sub, user);
+        await this.syncBoard(user.sub, boardEntry(user));
+    }
+
+    async syncBoard(sub, entry) {
+        const old = this.board ? this.board.bySub.get(sub) : await this.storage.get('b:' + sub);
+        if (sameEntry(old, entry)) return;
+        if (entry) await this.storage.put('b:' + sub, entry); else await this.storage.delete('b:' + sub);
+        if (this.boardLoading) await this.boardLoading.catch(() => {});   // 줄을 만드는 중이었으면 다 만든 뒤에 고친다
+        if (!this.board) return;
+        const { bySub, list } = this.board;
+        const prev = bySub.get(sub);
+        if (prev) list.splice(seat(list, prev), 1);
+        if (entry) { const x = Object.assign({ sub }, entry); list.splice(seat(list, x), 0, x); bySub.set(sub, x); }
+        else bySub.delete(sub);
+    }
+
+    async boardList() {
+        if (!this.board) {
+            if (!this.boardLoading) this.boardLoading = this.loadBoard().finally(() => { this.boardLoading = null; });
+            await this.boardLoading;
+        }
+        return this.board.list;
+    }
+
+    async loadBoard() {
+        if ((await this.storage.get('board')) !== BOARD_VERSION) {
+            // 색인이 생기기 전에 가입한 회원: u: 를 한 번만 훑어 b: 를 채운다
+            await this.each('u:', async u => { const e = boardEntry(u); if (e) await this.storage.put('b:' + u.sub, e); });
+            await this.storage.put('board', BOARD_VERSION);
+        }
+        const bySub = new Map();
+        await this.each('b:', (e, k) => { bySub.set(k.slice(2), Object.assign({ sub: k.slice(2) }, e)); });
+        this.board = { bySub, list: [...bySub.values()].sort(order) };
+    }
+
+    // prefix 로 시작하는 줄을 PAGE 개씩 끊어 읽는다(한 번에 다 올리지 않게)
+    async each(prefix, fn) {
+        let after = null;
+        for (;;) {
+            const page = await this.storage.list(Object.assign({ prefix, limit: PAGE }, after ? { startAfter: after } : {}));
+            for (const [k, v] of page) { await fn(v, k); after = k; }
+            if (page.size < PAGE) return;
+        }
     }
 
     async fetch(request) {
@@ -152,12 +229,12 @@ const OPS = {
         user.lastAt = now;
         if (ref && user.ref !== ref) { user.ref = ref; await this.storage.put('m:' + ref, sub); }
         const attended = attend(user, now);
-        await this.storage.put('u:' + sub, user);
+        await this.saveUser(user);
         // 발급은 처음 로그인한 요청이 한다. 단추를 두 번 눌러 겹친 요청은 건너뛰고(키가 두 개 생기지 않게),
         // 발급 도중 실패해 pending 이 1분 넘게 남았으면 다음 로그인 때 다시 발급한다.
         const pending = !!(user.trial && user.trial.pending);
         const needTrial = pending && (isNew || now - (user.trial.at || 0) > 60 * 1000);
-        if (needTrial && !isNew) { user.trial.at = now; await this.storage.put('u:' + sub, user); }
+        if (needTrial && !isNew) { user.trial.at = now; await this.saveUser(user); }
         return { isNew, needTrial, attended, user: view(user) };
     },
 
@@ -166,7 +243,7 @@ const OPS = {
         const user = await this.storage.get('u:' + sub);
         if (!user) return { error: 'no_user' };
         if (gen) user.gen = gen; else delete user.gen;
-        await this.storage.put('u:' + sub, user);
+        await this.saveUser(user);
         return { ok: true, user: view(user) };
     },
 
@@ -175,7 +252,7 @@ const OPS = {
         if (!user) return { ok: false };
         const first = !(user.trial && user.trial.key);
         user.trial = trial;
-        await this.storage.put('u:' + sub, user);
+        await this.saveUser(user);
         if (first) await this.bump('trials', 1);
         return { ok: true, user: view(user) };
     },
@@ -196,7 +273,7 @@ const OPS = {
         user.nick = nick;
         user.nickAt = now;
         user.spent = (user.spent || 0) + cost;
-        await this.storage.put('u:' + sub, user);
+        await this.saveUser(user);
         await renameComments(this.storage, user);
         return { ok: true, user: view(user), cost };
     },
@@ -206,7 +283,7 @@ const OPS = {
         const user = await this.storage.get('u:' + sub);
         if (!user) return { error: 'no_user' };
         user.staff = !!on;
-        await this.storage.put('u:' + sub, user);
+        await this.saveUser(user);
         return { ok: true };
     },
 
@@ -216,7 +293,7 @@ const OPS = {
         user.sess = (user.sess || []).concat(hash);
         while (user.sess.length > MAX_SESSIONS) await this.storage.delete('s:' + user.sess.shift());
         await this.storage.put('s:' + hash, { sub, exp });
-        await this.storage.put('u:' + sub, user);
+        await this.saveUser(user);
         return { ok: true };
     },
 
@@ -232,7 +309,7 @@ const OPS = {
         let attended = false;
         if (markAttend) {
             attended = attend(user, now);
-            if (attended) { user.lastAt = now; await this.storage.put('u:' + s.sub, user); }
+            if (attended) { user.lastAt = now; await this.saveUser(user); }
         }
         return { sub: s.sub, user: view(user), rx: user.rx || {}, attended };
     },
@@ -249,7 +326,7 @@ const OPS = {
         c.today += 1;
         c.h = h || '';
         user.chat = c;
-        await this.storage.put('u:' + sub, user);
+        await this.saveUser(user);
         return { counted: true, today: c.today };
     },
 
@@ -259,26 +336,22 @@ const OPS = {
         const user = sub && await this.storage.get('u:' + sub);
         if (!user) return { ok: false };
         user.buy = Math.max(0, (user.buy || 0) + amount);
-        await this.storage.put('u:' + sub, user);
+        await this.saveUser(user);
         return { ok: true };
     },
 
-    // 랭킹: 별명을 정한 회원만 공개 목록에 오른다(상위 50명). 내 순위는 별명이 없어도 알려 준다.
+    // 랭킹: 별명을 정한 회원만 공개 목록에 오른다(상위 50명). 내 순위는 별명이 없어도 알려 준다(별명 없는 나를 끼워 센다).
+    // 메모리의 랭킹 줄로 센다 — 회원이 몇 명이든 읽는 것은 내 기록 한 줄뿐이다.
     async ranking({ sub, limit }) {
-        const users = await this.storage.list({ prefix: 'u:', limit: 5000 });
-        const all = [];
-        for (const u of users.values()) if (!u.staff) all.push({ sub: u.sub, nick: u.nick || null, createdAt: u.createdAt || 0, s: score(u) });   // 운영자는 순위에서 뺀다
-        all.sort((a, b) => (b.s.total - a.s.total) || (a.createdAt - b.createdAt));
-        const named = all.filter(x => x.nick);
-        const rankOf = (list, x) => list.findIndex(y => y.s.total === x.s.total) + 1;   // 같은 점수는 같은 순위
-        const top = named.slice(0, limit || 50).map(x => ({ rank: rankOf(named, x), nick: x.nick, points: x.s.total, days: x.s.days }));
+        const list = await this.boardList();
+        const top = list.slice(0, limit || 50).map(x => ({ rank: above(list, x.total) + 1, nick: x.nick, points: x.total, days: x.days }));
         let me = null;
-        const mine = sub && all.find(x => x.sub === sub);
-        if (mine) {
-            const pool = mine.nick ? named : named.concat([mine]).sort((a, b) => (b.s.total - a.s.total) || (a.createdAt - b.createdAt));
-            me = Object.assign({ rank: rankOf(pool, mine), of: pool.length, nick: mine.nick }, hideSecret(mine.s));
+        const user = sub && await this.storage.get('u:' + sub);
+        if (user && !user.staff) {   // 운영자는 순위에서 뺀다
+            const s = score(user);
+            me = Object.assign({ rank: above(list, s.total) + 1, of: list.length + (user.nick ? 0 : 1), nick: user.nick || null }, hideSecret(s));
         }
-        return { top, me, total: named.length };
+        return { top, me, total: list.length };
     },
 
     async sessionDelete({ hash }) {
@@ -288,7 +361,7 @@ const OPS = {
             const user = await this.storage.get('u:' + s.sub);
             if (user) {
                 user.sess = (user.sess || []).filter(h => h !== hash);
-                await this.storage.put('u:' + s.sub, user);
+                await this.saveUser(user);
             }
         }
         return { ok: true };
@@ -309,6 +382,7 @@ const OPS = {
         if (user.nick) await this.storage.delete('n:' + user.nick.toLowerCase());
         if (user.ref) await this.storage.delete('m:' + user.ref);
         await this.storage.delete('u:' + sub);
+        await this.syncBoard(sub, null);
         await this.bump('users', -1);
         return { ok: true, trial: user.trial || null };
     },
@@ -326,7 +400,7 @@ const OPS = {
         const c = (await this.storage.get('r:' + item)) || { h: 0, d: 0, w: 0 };
         c[type] = Math.max(0, (c[type] || 0) + (on ? 1 : -1));
         await this.storage.put('r:' + item, c);
-        await this.storage.put('u:' + sub, user);
+        await this.saveUser(user);
         return { counts: { h: c.h || 0, d: c.d || 0, w: c.w || 0 }, mine: next };
     },
 
@@ -372,7 +446,7 @@ const OPS = {
         if (!user) return { error: 'no_user' };
         if (user.nick) await this.storage.delete('n:' + user.nick.toLowerCase());
         user.nick = null;
-        await this.storage.put('u:' + sub, user);
+        await this.saveUser(user);
         await renameComments(this.storage, user);
         return { ok: true };
     },
@@ -397,7 +471,7 @@ const OPS = {
         user.cm = (user.cm || []).concat(key);
         user.cmAt = now;
         user.cmDay = { day, n: d.n + 1 };
-        await this.storage.put('u:' + sub, user);
+        await this.saveUser(user);
         return { comment: pubComment(c, sub) };
     },
 
@@ -418,7 +492,7 @@ const OPS = {
         if (user) {
             user.cm = (user.cm || []).filter(k => k !== key);
             if (c.pt && user.cmPt) user.cmPt.n = Math.max(0, user.cmPt.n - 1);
-            await this.storage.put('u:' + c.sub, user);
+            await this.saveUser(user);
         }
         return { ok: true };
     },

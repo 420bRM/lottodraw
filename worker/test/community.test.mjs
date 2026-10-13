@@ -2,6 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import worker, { _resetForTests, Community } from '../src/index.js';
+import { score } from '../src/community.js';
 import { _resetGoogleForTests } from '../src/google.js';
 import { parseKey, b64urlEncode } from '../src/keys.js';
 
@@ -23,25 +24,39 @@ function memoryKV() {
     };
 }
 
-// Durable Object 흉내: 저장소는 Map, 요청은 클래스의 fetch 로 바로 넘긴다
+// Durable Object 흉내: 저장소는 Map, 요청은 클래스의 fetch 로 바로 넘긴다.
+// _reads: 읽은 줄 수와 list 한 접두어(실서버 요금의 "읽은 행"), restart(): 메모리를 비우고 다시 뜬 것처럼
 function memoryDO() {
     const map = new Map();
+    const reads = { rows: 0, lists: [] };
     const clone = v => (v === undefined ? undefined : structuredClone(v));
     const storage = {
         async get(k) {
-            if (Array.isArray(k)) { const out = new Map(); k.forEach(x => { if (map.has(x)) out.set(x, clone(map.get(x))); }); return out; }
+            if (Array.isArray(k)) { reads.rows += k.length; const out = new Map(); k.forEach(x => { if (map.has(x)) out.set(x, clone(map.get(x))); }); return out; }
+            reads.rows += 1;
             return clone(map.get(k));
         },
         async put(k, v) { map.set(k, clone(v)); },
-        async delete(k) { return map.delete(k); },
-        async list({ prefix }) {
+        async delete(k) {
+            if (Array.isArray(k)) { let n = 0; k.forEach(x => { if (map.delete(x)) n++; }); return n; }
+            return map.delete(k);
+        },
+        async list({ prefix, startAfter, limit, reverse } = {}) {
+            let keys = [...map.keys()].filter(k => k.startsWith(prefix || '') && (startAfter === undefined || k > startAfter)).sort();
+            if (reverse) keys.reverse();
+            if (limit) keys = keys.slice(0, limit);
+            reads.rows += keys.length;
+            reads.lists.push(prefix || '');
             const out = new Map();
-            [...map.keys()].filter(k => k.startsWith(prefix || '')).sort().forEach(k => out.set(k, clone(map.get(k))));
+            keys.forEach(k => out.set(k, clone(map.get(k))));
             return out;
         },
     };
-    const inst = new Community({ storage });
-    return { _m: map, idFromName: n => n, get: () => ({ fetch: (url, init) => inst.fetch(new Request(url, init)) }) };
+    let inst = new Community({ storage });
+    return {
+        _m: map, _reads: reads, restart() { inst = new Community({ storage }); },
+        idFromName: n => n, get: () => ({ fetch: (url, init) => inst.fetch(new Request(url, init)) }),
+    };
 }
 
 // 아래 시험들은 가입 체험을 켠 서버(SIGNUP_TRIAL_DAYS 3)로 돈다. 실서버 기본은 꺼짐(2026-10-11~) — '가입 체험 끔' 시험이 따로 본다
@@ -449,4 +464,128 @@ test('운영자 계정: 관리자가 지정하면 운영자 별명을 쓰고, �
 
     assert.equal((await call(env, 'POST', '/api/admin/members/OP/unstaff', { headers: asAdmin })).status, 200);
     assert.equal((await call(env, 'GET', '/api/me', { headers: auth(op) })).data.user.staff, false);
+});
+
+test('랭킹 색인: 볼 때 회원 기록을 다 읽지 않고, 점수 · 별명 · 운영자 · 탈퇴가 바로 반영되며, 다시 떠도 같다', async () => {
+    const env = await fresh();
+    const s = {};
+    for (const [sub, nick] of [['A', '가나'], ['B', '다라'], ['C', null], ['D', '마바']]) {
+        s[sub] = (await login(env, { sub, email: sub.toLowerCase() + '@gmail.com' })).data.session;
+        if (nick) await call(env, 'POST', '/api/me/nickname', { body: { nickname: nick }, headers: auth(s[sub]) });
+    }
+    const react = (sub, id) => call(env, 'POST', '/api/reactions', { body: { id, type: 'h' }, headers: auth(s[sub]) });
+    const board = async () => (await call(env, 'GET', '/api/ranking')).data.top.map(x => [x.rank, x.nick, x.points]);
+    await react('B', 'index-stat-sum');   // B 12점, 나머지 출석 10점
+    assert.deepEqual(await board(), [[1, '다라', 12], [2, '가나', 10], [2, '마바', 10]], '같은 점수는 같은 순위, 먼저 가입한 회원이 위');
+
+    // 줄을 만든 뒤에는 랭킹을 봐도 회원 기록을 훑지 않는다
+    const reads = env.COMMUNITY._reads;
+    reads.rows = 0; reads.lists.length = 0;
+    await board(); await board();
+    assert.equal(reads.rows, 0, '로그인하지 않은 랭킹은 저장소를 읽지 않는다');
+    const meC = (await call(env, 'GET', '/api/ranking', { headers: auth(s.C) })).data;
+    assert.deepEqual([meC.me.rank, meC.me.of, meC.me.nick, meC.me.total, meC.total], [2, 4, null, 10, 3], '별명 없는 C 는 자기를 끼워 센다');
+    assert.ok(reads.rows <= 3, '세션 · 내 기록만 읽는다: ' + reads.rows);
+    assert.deepEqual(reads.lists, []);
+
+    await react('D', 'index-stat-sum'); await react('D', 'index-stat-gap');
+    assert.deepEqual(await board(), [[1, '마바', 14], [2, '다라', 12], [3, '가나', 10]]);
+    await react('D', 'index-stat-gap');   // 취소
+    assert.deepEqual(await board(), [[1, '다라', 12], [1, '마바', 12], [3, '가나', 10]]);
+    await call(env, 'POST', '/api/admin/members/B/clear-nick', { headers: asAdmin });
+    await call(env, 'POST', '/api/admin/members/A/staff', { headers: asAdmin });
+    assert.deepEqual(await board(), [[1, '마바', 12]], '별명이 지워진 B · 운영자 A 는 빠진다');
+    await call(env, 'POST', '/api/admin/members/A/unstaff', { headers: asAdmin });
+    assert.equal((await call(env, 'POST', '/api/me/delete', { body: { confirm: true }, headers: auth(s.D) })).status, 200);
+    assert.deepEqual(await board(), [[1, '가나', 10]], '운영자를 풀면 돌아오고, 탈퇴한 D 는 빠진다');
+    assert.equal(env.COMMUNITY._m.has('b:D'), false);
+
+    // 다시 떠도 색인(b:)만 읽어 같은 줄
+    env.COMMUNITY.restart();
+    reads.lists.length = 0;
+    assert.deepEqual(await board(), [[1, '가나', 10]]);
+    assert.deepEqual(reads.lists, ['b:']);
+
+    // 색인이 생기기 전부터 있던 회원: 처음 한 번만 u: 를 훑어 색인을 채운다
+    for (const k of [...env.COMMUNITY._m.keys()]) if (k.startsWith('b:') || k === 'board') env.COMMUNITY._m.delete(k);
+    await call(env, 'POST', '/api/me/nickname', { body: { nickname: '사아' }, headers: auth(s.C) });
+    env.COMMUNITY.restart();
+    reads.lists.length = 0;
+    assert.deepEqual(await board(), [[1, '가나', 10], [1, '사아', 10]]);
+    assert.deepEqual(reads.lists, ['u:', 'b:']);
+    env.COMMUNITY.restart();
+    reads.lists.length = 0;
+    await board();
+    assert.deepEqual(reads.lists, ['b:'], '두 번째부터는 색인만');
+});
+
+// 예전 방식(회원 기록을 다 훑어 세기) 그대로 — 색인으로 센 결과와 견준다
+function scanRanking(map, sub, limit) {
+    const all = [];
+    for (const k of [...map.keys()].filter(k => k.startsWith('u:')).sort()) {
+        const u = map.get(k);
+        if (!u.staff) all.push({ sub: u.sub, nick: u.nick || null, createdAt: u.createdAt || 0, s: score(u) });
+    }
+    all.sort((a, b) => (b.s.total - a.s.total) || (a.createdAt - b.createdAt));
+    const named = all.filter(x => x.nick);
+    const rankOf = (list, x) => list.findIndex(y => y.s.total === x.s.total) + 1;
+    const top = named.slice(0, limit).map(x => ({ rank: rankOf(named, x), nick: x.nick, points: x.s.total, days: x.s.days }));
+    let me = null;
+    const mine = sub && all.find(x => x.sub === sub);
+    if (mine) {
+        const pool = mine.nick ? named : named.concat([mine]);
+        const pub = Object.assign({}, mine.s);
+        delete pub.chats; delete pub.comments;
+        me = Object.assign({ rank: rankOf(pool.sort((a, b) => (b.s.total - a.s.total) || (a.createdAt - b.createdAt)), mine), of: pool.length, nick: mine.nick }, pub);
+    }
+    return { top, me, total: named.length };
+}
+
+test('랭킹 색인: 무작위로 점수 · 별명 · 운영자 · 탈퇴를 바꿔도(다시 뜨기 · 색인 없던 때 포함) 다 훑어 센 것과 같다', async () => {
+    const ns = memoryDO();
+    const op = async (name, args) => (await ns.get().fetch('https://community/', { method: 'POST', body: JSON.stringify(Object.assign({ op: name }, args)) })).json();
+    let seed = 20261013;
+    const rnd = n => {   // mulberry32 — 늘 같은 순서의 난수
+        seed = (seed + 0x6D2B79F5) | 0;
+        let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) % n;
+    };
+    const subs = Array.from({ length: 40 }, (_, i) => 'S' + String(i).padStart(2, '0'));
+    let now = Date.UTC(2026, 9, 1);
+    const comments = [];
+    let tied = 0;   // 별명 있는 회원이 여럿이고 같은 점수가 있는 순간을 몇 번 견줬는지
+    const did = {};
+    for (let i = 1; i <= 1200; i++) {
+        const sub = subs[rnd(subs.length)];
+        const k = rnd(12);
+        if (k <= 1) { now += rnd(3) * 12 * 3600 * 1000; await op('login', { sub, email: sub + '@gmail.com', subHash: 'h' + sub, ref: 'ref-' + sub, now, trial: false }); }
+        else if (k <= 3) await op('react', { sub, item: 'card-' + rnd(6), type: ['h', 'd', 'w'][rnd(3)] });
+        else if (k === 4 || k === 11) { const nick = 'n' + rnd(50); await op('setNick', { sub, nick, key: nick, now }); }
+        else if (k === 5) await op('credit', { ref: 'ref-' + sub, amount: rnd(2) ? 1500 : -1500 });
+        else if (k === 6) await op('chatPoint', { sub, now: now += 1000, h: 'h' + rnd(4) });
+        else if (k === 7) {
+            const got = await op('commentAdd', { sub, post: 'p' + rnd(2), text: '댓글 열 글자를 넘게 써 봅니다 ' + rnd(100), now: now += 20000 });
+            if (got.comment) comments.push(got.comment);
+        } else if (k === 8 && comments.length) {
+            const c = comments.splice(rnd(comments.length), 1)[0];
+            await op('commentDelete', { post: 'p0', id: c.id, admin: true });
+            await op('commentDelete', { post: 'p1', id: c.id, admin: true });
+        } else if (k === 9) await op('setStaff', { sub, on: rnd(4) === 0 });
+        else if (k === 10 && rnd(3) === 0) { const name = rnd(2) ? 'clearNick' : 'userDelete'; if ((await op(name, { sub })).ok) did[name] = (did[name] || 0) + 1; }
+        if (i % 150 === 0) ns.restart();
+        if (i === 600) {   // 색인이 없던 때로
+            for (const key of [...ns._m.keys()]) if (key.startsWith('b:') || key === 'board') ns._m.delete(key);
+            ns.restart();
+        }
+        if (i % 20 === 0) {
+            for (const who of [null, subs[rnd(subs.length)]]) {
+                const want = scanRanking(ns._m, who, 10);
+                assert.deepEqual(await op('ranking', { sub: who, limit: 10 }), want, `${i}번째 바꾼 뒤 (${who})`);
+                if (want.total >= 5 && want.top.some((x, j) => j && x.rank === want.top[j - 1].rank)) tied++;
+            }
+        }
+    }
+    assert.ok(tied >= 10, '같은 점수가 섞인 랭킹을 충분히 견줘야 시험이 된다: ' + tied);
+    assert.ok(did.clearNick >= 3 && did.userDelete >= 3, '별명 지우기 · 탈퇴도 여러 번: ' + JSON.stringify(did));
 });
