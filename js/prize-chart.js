@@ -624,7 +624,8 @@
         // 로그인 전에 그래프 위에 얹는 안내
         const gate = el('div', { className: 'pchart-gate', hidden: '' }, [
             el('p', { className: 'pchart-gate-title', text: T('pc.gate.title') }),
-            el('p', { className: 'pchart-gate-sub', text: T('pc.gate.sub') }),
+            // 로그인하면 쓸 수 있는 것 — 로그인 창(js/account.js)의 목록과 같은 문장
+            el('ul', { className: 'pchart-gate-perks' }, ['acct.perkChart', 'acct.perkGen', 'acct.perk2', 'acct.perkTalk'].map(k => el('li', { text: T(k) }))),
             el('button', { type: 'button', className: 'btn', text: T('pc.gate.btn'), on: { click: () => {
                 if (g.LottoAccount && g.LottoAccount.openLogin) g.LottoAccount.openLogin(T('pc.gate.reason'));
             } } }),

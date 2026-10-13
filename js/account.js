@@ -200,6 +200,7 @@
                 el('li', { text: tr('acct.perk3', '다른 기기에서 로그인해도 체험 이어 쓰기') }),
             ] : [
                 el('li', { text: tr('acct.perkChart', 'TOP 50 회차별 당첨금 그래프 보기') }),
+                el('li', { text: tr('acct.perkGen', '5게임 동시 생성 · 당첨 조합 제외 · 설정 저장') }),
                 el('li', { text: tr('acct.perk2', '♥ 좋아요 · $ 대박 기원 남기기') }),
                 el('li', { text: tr('acct.perkTalk', '실시간 채팅 · 블로그 댓글 · 랭킹') }),
             ]),
