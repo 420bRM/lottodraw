@@ -69,6 +69,8 @@ const prizeOf = {};
 (prizeData ? prizeData.draws : []).forEach(p => { if (p.w5 > 0) prizeOf[p.round] = p; });
 // 회차 페이지에 등수별 표를 처음 넣은 날 — 그 전 회차들의 사이트맵 lastmod 를 이 날로 올려 검색엔진이 다시 읽게 한다
 const PRIZE_TABLE_SINCE = '2026-10-10';
+// 회차 페이지에 회차마다 다른 사실 · 메모를 넣은 날 (스팸 정책 점검). 그 전 회차들의 lastmod 를 이 날로 올린다
+const ROUND_FACTS_SINCE = '2026-10-13';
 const FIRST_1000_WON = 88;   // 1~87회는 1게임 2,000원, 88회부터 1,000원
 
 const stats = LottoStats.compute(draws, { pairTop: 20, trendTop: 10 });
@@ -897,6 +899,68 @@ const cumulative = {};
 const byRound = {};
 draws.forEach(d => { byRound[d.round] = d; });
 
+// 회차마다 다른 사실 (2026-10-13 스팸 정책 점검 — 숫자만 바뀐 틀 문장 대신 표 칸 · 링크 · 해당될 때만 나오는 문장).
+// 모두 "그 회차 당시" 기준이라 새 회차가 나와도 옛 회차 페이지는 바뀌지 않는다.
+const RECORD_FROM = 10;   // 1~9회는 무엇이든 "당시 기록"이 되므로 기록 문장을 달지 않는다
+const roundFacts = {};
+(() => {
+    const order = draws.slice().sort((x, y) => x.round - y.round);
+    const lastSeen = {};
+    const amounts = [];   // 지금까지 1등이 나온 회차의 1인당 금액
+    let maxW = 0, maxA = 0, minA = Infinity, maxW2 = 0, maxSales = 0, rollover = 0;
+    order.forEach((d, i) => {
+        const prev = order[i - 1];
+        const p = prizeOf[d.round];
+        const w = d.firstPrizeWinners;
+        const a = d.firstPrizeAmount || 0;
+        let best = 0, bestRound = null;
+        for (let j = 0; j < i; j++) {
+            const c = d.numbers.filter(n => order[j].numbers.includes(n)).length;
+            if (c >= best) { best = c; bestRound = order[j].round; }   // 같으면 가까운 회차
+        }
+        const f = {
+            gaps: d.numbers.map(n => ({ n, prev: lastSeen[n] || null })),
+            withPrev: prev ? d.numbers.filter(n => prev.numbers.includes(n)).sort(asc) : null,
+            best: bestRound ? { count: best, round: bestRound, nums: d.numbers.filter(n => byRound[bestRound].numbers.includes(n)).sort(asc) } : null,
+            rolloverBefore: rollover,
+            rank: null, ranked: 0, records: [],
+        };
+        if (w > 0) {
+            amounts.push(a);
+            f.rank = amounts.filter(x => x > a).length + 1;
+            f.ranked = amounts.length;
+        }
+        if (d.round >= RECORD_FROM) {
+            if (w > maxW) f.records.push('winners');
+            if (w > 0 && a > maxA) f.records.push('high');
+            if (w > 0 && a < minA) f.records.push('low');
+            if (p && p.w2 > maxW2) f.records.push('second');
+            if (p && p.sales > maxSales) f.records.push('sales');
+        }
+        if (typeof w === 'number') maxW = Math.max(maxW, w);
+        if (w > 0) { maxA = Math.max(maxA, a); minA = Math.min(minA, a); }
+        if (p) { maxW2 = Math.max(maxW2, p.w2); maxSales = Math.max(maxSales, p.sales); }
+        rollover = w === 0 ? rollover + 1 : 0;
+        d.numbers.forEach(n => { lastSeen[n] = d.round; });
+        roundFacts[d.round] = f;
+    });
+})();
+
+// 사람이 쓴 회차 메모 (content/round-notes.md). "## 회차" 다음 한국어 한 줄, "EN:" 영어 한 줄
+const roundNotes = {};
+(() => {
+    let src = '';
+    try { src = read('content/round-notes.md'); } catch (e) { return; }
+    src = src.replace(/<!--[\s\S]*?-->/g, '');
+    src.split(/^## +(\d+)\s*$/m).slice(1).forEach((v, i, arr) => {
+        if (i % 2) return;
+        const lines = arr[i + 1].split('\n').map(s => s.trim()).filter(Boolean);
+        const ko = lines.filter(s => !/^EN:/.test(s)).join(' ');
+        const enLine = (lines.find(s => /^EN:/.test(s)) || '').replace(/^EN:\s*/, '');
+        if (ko) roundNotes[Number(v)] = { ko, en: enLine };
+    });
+})();
+
 function roundPage(d) {
     const nums = d.numbers.slice().sort(asc);
     const odd = nums.filter(n => n % 2).length;
@@ -937,15 +1001,65 @@ function roundPage(d) {
             tierRow(4, '4개 번호 일치', '4 numbers', p.w4, p.a4),
             tierRow(5, '3개 번호 일치', '3 numbers', p.w5, p.a5),
         ], 'tier-table'),
-        pEn(`${d.round}회 총 판매액은 <strong>${wonExact(p.sales)}</strong>입니다. 당첨 게임 수는 한 사람이 같은 번호로 여러 게임을 산 경우도 따로 셉니다.`
+        pEn(`${d.round}회 총 판매액은 <strong>${wonExact(p.sales)}</strong>입니다.`
             + (d.round < FIRST_1000_WON ? ' 이 회차는 1게임이 2,000원이던 때(1~87회)입니다. 5등도 지금(5,000원)의 두 배인 10,000원이었습니다. 세후 칸은 지금 1게임 1,000원 기준으로 셉니다.' : '')
             + (TIER ? ` 88회 이후 2등·3등의 평균과 기록은 <a href="../${TIER_FILE}">2등·3등 당첨금 통계</a>에 있습니다.` : ''),
-            `Total sales for draw ${d.round} were <strong>${wonExactEn(p.sales)}</strong>. Winning games count each ticket line separately, even when one person bought the same numbers several times.`
+            `Total sales for draw ${d.round} were <strong>${wonExactEn(p.sales)}</strong>.`
             + (d.round < FIRST_1000_WON ? ' Back then (draws 1–87) one game cost 2,000 KRW, and 5th prize paid 10,000 KRW, twice today\'s 5,000. The after-tax column uses today\'s 1,000 KRW game.' : '')
             + (TIER ? ` Averages and records for 2nd and 3rd prize since draw 88 are in <a href="../${TIER_FILE}">2nd and 3rd prize statistics</a>.` : ''), 'note'),
     ] : [];
 
     const cum = cumulative[d.round];
+    const f = roundFacts[d.round];
+    const roundLink = r => `<a href="${r}.html" data-i18n-en="Draw ${r}">${r}회</a>`;
+    const factRows = [];
+    if (prev && f.withPrev) {
+        factRows.push([en('직전 회차와 같은 번호', 'Shared with the draw before'),
+            `${f.withPrev.length ? f.withPrev.join(', ') : en('없음', 'none')} · ${roundLink(prev.round)}`]);
+    }
+    if (f.best) {
+        factRows.push([en('번호가 가장 많이 겹친 지난 회차', 'Past draw with the most overlap'),
+            `${roundLink(f.best.round)} · ${en(`${f.best.count}개`, `${f.best.count}`)} (${f.best.nums.join(', ')})`]);
+    }
+    if (f.rank) {
+        factRows.push([en('1인당 1등 당첨금 순위 (당시)', 'Jackpot per winner, rank at the time'),
+            en(`${fmt(f.ranked)}회 중 ${fmt(f.rank)}위`, `#${fmt(f.rank)} of ${fmt(f.ranked)}`)]);
+    }
+    const gapRows = nums.map(n => {
+        const g = f.gaps.find(x => x.n === n);
+        return [ball(n), times(fmt(cum[n])),
+            g.prev ? roundLink(g.prev) : en('처음', 'first time'),
+            g.prev ? en(`${d.round - g.prev}회 만에`, `${d.round - g.prev} draw${d.round - g.prev > 1 ? 's' : ''} later`) : '—'];
+    });
+    // 해당될 때만 나오는 문장 — 사람이 쓴 메모가 먼저
+    const notes = [];
+    const note = roundNotes[d.round];
+    if (note) {
+        const rel = h => h.replace(/href="\//g, 'href="../');
+        notes.push(note.en ? pEn(rel(note.ko), rel(note.en)) : `<p>${rel(note.ko)}</p>`);
+    }
+    const items = [];
+    if (winners > 0 && f.rolloverBefore) {
+        items.push([`이 회차 1등 당첨금에는 직전 ${f.rolloverBefore}회 연속 이월된 금액이 더해졌습니다(${roundLink(prev.round)}).`,
+            `This draw's jackpot included money rolled over from ${f.rolloverBefore === 1 ? 'the previous draw' : `the previous ${f.rolloverBefore} draws`} (<a href="${prev.round}.html">draw ${prev.round}</a>).`]);
+    }
+    if (winners === 0 && f.rolloverBefore) {
+        items.push([`직전 회차에 이어 ${f.rolloverBefore + 1}회 연속 이월입니다.`, `That made ${f.rolloverBefore + 1} rollovers in a row.`]);
+    }
+    if (f.records.includes('winners')) items.push([`1등 당첨자 ${winners}명은 이 회차 당시까지 가장 많은 수였습니다.`, `${winners} first-prize winners was the most of any draw up to then.`]);
+    if (f.records.includes('high')) items.push([`1인당 1등 당첨금 ${won(amount)}은 이 회차 당시까지 가장 큰 금액이었습니다.`, `${wonEn(amount)} per winner was the largest jackpot share up to then.`]);
+    if (f.records.includes('low')) items.push([`1인당 1등 당첨금 ${won(amount)}은 이 회차 당시까지 가장 적은 금액이었습니다.`, `${wonEn(amount)} per winner was the smallest jackpot share up to then.`]);
+    if (f.records.includes('second')) items.push([`2등 ${fmt(p.w2)}게임은 이 회차 당시까지 가장 많은 수였습니다.`, `${fmt(p.w2)} second-prize games was the most of any draw up to then.`]);
+    if (f.records.includes('sales')) items.push([`총 판매액 ${won(p.sales)}은 이 회차 당시까지 가장 많았습니다.`, `Sales of ${wonEn(p.sales)} were the highest of any draw up to then.`]);
+    if (f.best && f.best.count >= 5) {
+        items.push([`당첨번호 6개 중 ${f.best.count}개(${f.best.nums.join(', ')})가 ${roundLink(f.best.round)} 당첨번호와 같습니다.`,
+            `${f.best.count} of the six numbers (${f.best.nums.join(', ')}) match <a href="${f.best.round}.html">draw ${f.best.round}</a>.`]);
+    }
+    const highlights = notes.length || items.length ? [
+        h2En('이 회차에서 눈여겨볼 점', 'What stands out in this draw'),
+        ...notes,
+        items.length ? '<ul>\n' + items.map(([ko, english]) => `<li data-i18n-en="${esc(english)}">${ko}</li>`).join('\n') + '\n</ul>' : '',
+    ].filter(Boolean) : [];
     return shell({
         file: `round/${d.round}.html`,
         base: '../',
@@ -969,9 +1083,13 @@ function roundPage(d) {
                 [en('AC값', 'AC value'), String(acValue(nums))],
                 [en('끝수합', 'Sum of last digits'), String(tailSum(nums))],
                 [en('번호대', 'By band'), bands],
+                ...factRows,
             ], 'kv-table'),
-            h2En(`${d.round}회까지 번호별 누적 출현`, `Cumulative appearances through draw ${d.round}`),
-            table([['번호', 'Number'], [`1~${d.round}회 출현`, `Appearances in draws 1–${d.round}`]], nums.map(n => [ball(n), times(fmt(cum[n]))])),
+            ...highlights,
+            h2En(`${d.round}회 번호별 출현 기록`, `How often draw ${d.round}'s numbers had appeared`),
+            table([['번호', 'Number'],
+                d.round > 1 ? [`1~${d.round}회 출현`, `Appearances in draws 1–${d.round}`] : ['1회 출현', 'Appearances in draw 1'],
+                ['직전 출현', 'Previous draw'], ['간격', 'Gap']], gapRows),
             [
                 '<nav class="round-nav" aria-label="회차 이동">',
                 prev ? `    <a class="btn btn-secondary" href="${prev.round}.html" data-i18n-en="← Draw ${prev.round}">← ${prev.round}회</a>` : '',
@@ -979,8 +1097,8 @@ function roundPage(d) {
                 next ? `    <a class="btn btn-secondary" href="${next.round}.html" data-i18n-en="Draw ${next.round} →">${next.round}회 →</a>` : '',
                 '</nav>',
             ].filter(Boolean).join('\n'),
-            pEn('세후 금액은 지금 세법으로 계산한 추정치입니다(200만 원 이하 비과세, 넘으면 구입비 1,000원을 뺀 뒤 3억 원까지 22%, 초과분 33%). 2022년까지는 5만 원만 넘어도 당첨금 전체에 세금을 매겼습니다. <a href="../tax.html">실수령액 계산기</a>에서 금액을 바꿔 계산해 볼 수 있습니다.',
-                'After-tax figures are estimates under current law: up to 2m KRW is tax-free; above that, the 1,000 KRW ticket price is deducted, then 22% applies up to 300m KRW and 33% to anything above. Until 2022 any prize over 50,000 KRW was taxed in full. Try other amounts in <a href="../tax.html">the after-tax calculator</a>.'),
+            pEn('세후 금액은 지금 세법으로 계산한 추정치입니다. 세율과 2022년까지의 옛 기준은 <a href="../tax.html">실수령액 계산기</a>에 있습니다.',
+                'After-tax figures are estimates under current law. Tax rates, and the older rule used until 2022, are in <a href="../tax.html">the after-tax calculator</a>.'),
         ],
     });
 }
@@ -1405,7 +1523,7 @@ function updateTaxAndTop() {
     const T = TIER;
     tax = replaceBetween('tax.html', tax, 'head', headBlock(
         '로또 실수령액 계산기 · 당첨금 세금 계산 (22%·33%) | lottodraw.kr',
-        `로또 당첨금에서 세금을 뗀 실수령액 계산기. 200만 원 이하 비과세, 3억 원까지 22%, 3억 원 초과분만 33%. 역대 1등 평균 ${won(avg)}의 세후 금액은 약 ${won(avg - lottoTax(avg))}.`
+        `로또 당첨금에서 세금을 뗀 실수령액 계산기. 200만 원 이하 비과세, 3억 원까지 22%, 초과분 33%. 역대 1등 평균 ${won(avg)}의 세후는 약 ${won(avg - lottoTax(avg))}.`
         + (T ? ` 2등 평균 ${wonAbout(T.mean2)}은 세후 약 ${wonAbout(T.mean2 - lottoTax(T.mean2))}, 3등 평균 ${wonAbout(T.mean3)}${lottoTax(T.mean3) ? `은 세후 약 ${wonAbout(T.mean3 - lottoTax(T.mean3))}` : '은 비과세'}.` : '')));
     // 2등 · 3등의 실제 금액(평균 · 최고 · 최저)으로 계산한 표. 평균은 만 원 단위로 반올림한 금액으로 센다
     // 휴대폰에서 옆으로 밀리지 않게 4칸: 구분(아래에 세율) · 당첨금 · 세금 · 실수령액. 금액은 만 원 단위로 반올림하고
@@ -1613,7 +1731,7 @@ function updateSitemap(blog) {
         ],
         (blog || []).map(b => entry(b.path, b.lastmod || kept(b.path), 'monthly', '0.6')),
         // 회차 페이지는 추첨 뒤 바뀌지 않는다. 직전 회차만 "다음 회차" 링크가 한 번 붙는다.
-        draws.map((d, i) => entry(`/round/${d.round}.html`, i <= 1 ? UPDATED : prizeOf[d.round] && d.date < PRIZE_TABLE_SINCE ? PRIZE_TABLE_SINCE : d.date, i === 0 ? 'weekly' : 'yearly', i < 10 ? '0.8' : '0.5')),
+        draws.map((d, i) => entry(`/round/${d.round}.html`, i <= 1 ? [UPDATED, ROUND_FACTS_SINCE].sort().pop() : [d.date, prizeOf[d.round] ? PRIZE_TABLE_SINCE : '', ROUND_FACTS_SINCE].sort().pop(), i === 0 ? 'weekly' : 'yearly', i < 10 ? '0.8' : '0.5')),
     );
 
     const xml = [
