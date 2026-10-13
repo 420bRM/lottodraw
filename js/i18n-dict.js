@@ -498,6 +498,21 @@ window.I18N_DICT = {
 
     /* ───── 홈: 통계 · 최근 10회차 (스크립트) ───── */
     'header.latestDraw': { ko: '제{n}회 {nums}', en: 'Draw {n}: {nums}' },
+    // 다음 회차 판매 마감 · 추첨 방송까지 (js/draw-countdown.js — 홈 제목 줄 상자, 다른 페이지 메뉴 아래 띠)
+    'cd.round':      { ko: '제{n}회', en: 'Draw {n}' },
+    'cd.date':       { ko: '{m}월 {d}일(토)', en: 'Sat, {mon} {d}' },
+    'cd.saleEnd':    { ko: '판매 마감까지', en: 'Sales close in' },
+    'cd.saleStart':  { ko: '판매 시작까지', en: 'Sales open in' },
+    'cd.sale':       { ko: '판매', en: 'Sales' },
+    'cd.closed':     { ko: '마감', en: 'Closed' },
+    'cd.drawIn':     { ko: '추첨 방송까지', en: 'Draw airs in' },
+    'cd.draw':       { ko: '추첨 방송', en: 'Draw' },
+    'cd.live':       { ko: '지금 방송 중', en: 'On air now' },
+    'cd.days':       { ko: '{d}일', en: '{d}d' },
+    'cd.am':         { ko: '오전 {t}', en: '{t} am' },
+    'cd.pm':         { ko: '오후 {t}', en: '{t} pm' },
+    'cd.at':         { ko: '{t}', en: '{t} KST' },
+    'cd.atMbc':      { ko: '{t} · MBC', en: '{t} KST · MBC' },
     'stats.scope':   { ko: '{from}~{to}회 ({n}회 추첨)', en: 'Draws {from}\u2013{to} ({n} draws)' },
     'stats.loadFail': { ko: '통계 데이터를 불러오지 못했습니다. 잠시 뒤 새로고침해 주세요.',
                         en: 'Could not load the statistics. Please refresh in a moment.' },

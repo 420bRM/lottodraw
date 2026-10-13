@@ -594,6 +594,79 @@ html.home { scroll-behavior: smooth; }
 #sec-generator .cta { display: flex; flex-direction: column; justify-content: center; gap: 4px; }
 #sec-generator .cta h2 { font-size: 20px; }
 #sec-generator .result-msg { margin: 16px 0; }
+/* 다음 회차 판매 마감 · 추첨 방송까지 남은 시간 (js/draw-countdown.js).
+   홈은 제목 줄 오른쪽 상자 — 제목 + 부제보다 낮게 잡아 첫 구간 높이가 늘지 않는다. 옆에 자리가 모자라면 제목 아래
+   오른쪽으로, 휴대폰은 한 줄을 다 쓰고 세 줄(회차 · 판매 · 방송). 다른 페이지는 메뉴 아래 한 줄 띠(.dc-strip).
+   .dc-pair(이름 + 남은 시간)는 상자에서는 풀어(display: contents) 칸마다 grid 자리에 놓고, 띠에서는 한 덩어리 */
+#sec-generator .eyebrow { flex-wrap: wrap; row-gap: 8px; }
+.draw-countdown {
+    display: grid;
+    grid-template-columns: auto auto auto;
+    grid-template-areas: "head sl dl" "head st dt";
+    margin-left: auto;
+    padding: 4px 0;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: var(--shadow);
+    line-height: 1.3;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+.draw-countdown[hidden], .dc-strip[hidden] { display: none; }
+.draw-countdown .dc-pair { display: contents; }
+.draw-countdown .dc-head { grid-area: head; align-self: center; display: flex; flex-direction: column; padding: 0 14px; }
+.draw-countdown .dc-sale .dc-label { grid-area: sl; }
+.draw-countdown .dc-sale .dc-time { grid-area: st; }
+.draw-countdown .dc-draw .dc-label { grid-area: dl; }
+.draw-countdown .dc-draw .dc-time { grid-area: dt; }
+.draw-countdown .dc-label, .draw-countdown .dc-time { padding: 0 14px; border-left: 1px solid var(--line); }
+.dc-round { color: var(--text); font-size: 13px; }
+.dc-date { color: var(--muted); font-size: 11px; }
+.dc-label { color: var(--text); font-size: 11.5px; font-weight: bold; }
+.dc-at { color: var(--muted); font-size: 10.5px; font-weight: normal; white-space: nowrap; }
+.dc-time { color: var(--brand); font-size: 20px; font-weight: bold; line-height: 1.2; }
+.is-closed .dc-sale .dc-time { color: var(--muted); }
+.is-live .dc-draw .dc-time { color: var(--error); }
+@media (max-width: 599px) {
+    .draw-countdown {
+        flex: 1 1 100%;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas: "head head" "sl st" "dl dt";
+        align-items: center;
+        column-gap: 10px;
+        padding: 5px 12px;
+        white-space: normal;
+    }
+    .draw-countdown .dc-head { display: block; padding: 0 0 2px; }
+    .draw-countdown .dc-label, .draw-countdown .dc-time { padding: 0; border: 0; }
+    .draw-countdown .dc-time { justify-self: end; font-size: 18px; white-space: nowrap; }
+}
+/* 다른 페이지: 메뉴 아래 한 줄 띠. 휴대폰은 날짜 · 시각을 빼고, 넘치면 덩어리째 다음 줄로 */
+.dc-strip {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: baseline;
+    gap: 2px 20px;
+    padding: 6px 16px;
+    background: #f4f7fc;
+    border-bottom: 1px solid #e4eaf4;
+    color: var(--text);
+    font-size: 12.5px;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+}
+.dc-strip .dc-head, .dc-strip .dc-pair { display: inline-flex; align-items: baseline; gap: 6px; white-space: nowrap; }
+.dc-strip .dc-round, .dc-strip .dc-label { font-size: 12.5px; }
+.dc-strip .dc-time { font-size: 14px; line-height: 1.5; }
+@media (max-width: 599px) {
+    .dc-strip { gap: 0 12px; padding: 5px 12px; }
+    .dc-strip .dc-date, .dc-strip .dc-at { display: none; }
+}
+@media print {
+    .dc-strip, .draw-countdown { display: none !important; }
+}
 .gen-extras { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; margin-top: 14px; }
 /* 생성 이력 · 보렐 두 카드는 위아래 끝을 맞춘다(2026-10-11). 펼친 카드만 늘리고 접은 카드는 제목 높이 그대로 —
    :has() 를 모르는 옛 브라우저는 예전처럼 제 높이 */

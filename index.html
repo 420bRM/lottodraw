@@ -82,6 +82,8 @@
                     <h1 id="gen-title" data-i18n="gen.h1">로또 통계 · 번호 생성기</h1>
                     <p data-i18n="gen.sub">16개 특수 패턴에 걸리는 조합을 걸러냅니다</p>
                 </div>
+                <!-- 다음 회차 판매 마감 · 추첨 방송까지 남은 시간 — js/draw-countdown.js 가 채우고 보인다 -->
+                <div class="draw-countdown" id="draw-countdown" hidden></div>
             </div>
 
             <div class="gen-hero">
@@ -352,6 +354,7 @@
 <script src="js/details.js"></script>
 <script src="js/premium-config.js"></script>
 <script src="js/license.js"></script>
+<script src="js/draw-countdown.js"></script>
 <script>
     // 오늘 = 이 기기 시계의 날짜. 예전에는 UTC 날짜라 한국에서는 오전 9시에 "오늘"이 바뀌었다(복사 · 출력 머리줄의 날짜와 어긋남)
     const now = new Date();
