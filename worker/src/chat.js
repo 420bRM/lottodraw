@@ -9,6 +9,9 @@
 // 저장 (이 방의 저장소)
 //   msg:<시각 16자리>-<무작위>  { id, at, nick, text, sub }   — 24시간 뒤 지운다. sub 는 관리자에게만 보인다
 //   ban:<구글 계정 번호>        { at, nick }   — 채팅 금지. 블로그 댓글 쓰기도 함께 막는다
+//
+// 접속 수는 사람 수다(2026-10-14): 같은 계정은 한 명, 로그인 전이면 같은 브라우저를 한 명으로 센다. 브라우저는 화면이
+// 주소에 붙여 오는 무작위 번호(?v=, 그 브라우저에 저장)로 알아보며, 소켓에 붙여 두기만 하고 저장소에는 남기지 않는다
 
 import { community } from './community.js';
 
@@ -18,6 +21,7 @@ const MAX_KEEP = 300;         // 저장해 두는 최대 개수
 const GAP_MS = 3000;          // 한 사람이 다음 메시지를 쓰기까지
 const MAX_LEN = 200;
 const MIN_POINT_LEN = 2;      // 점수를 받는 최소 글자 수(공백·기호 빼고)
+const BROWSER_ID = /^[A-Za-z0-9_-]{16,40}$/;   // 화면이 보내는 브라우저 번호(js/chat.js)
 
 // 홍보·연락처로 보이는 것. 걸리면 보내지 않고 이유를 알려 준다.
 const BLOCKS = [
@@ -62,7 +66,7 @@ export class ChatRoom {
             const pair = new WebSocketPair();
             const [client, server] = Object.values(pair);
             this.state.acceptWebSocket(server);
-            await this.welcome(server);
+            await this.welcome(server, url.searchParams.get('v'));
             return new Response(null, { status: 101, webSocket: client });
         }
         if (url.pathname === '/info') return reply({ online: this.online(), last: ((await this.recent()).slice(-1)[0] || {}).at || null });
@@ -90,15 +94,28 @@ export class ChatRoom {
         return reply({ error: 'not_found' }, 404);
     }
 
-    // 새로 들어온 소켓에 최근 메시지와 접속 수를 보내고, 모두에게 접속 수를 알린다
-    async welcome(ws) {
-        ws.serializeAttachment({});
+    // 새로 들어온 소켓에 최근 메시지와 접속 수를 보내고, 모두에게 접속 수를 알린다. v: 브라우저 번호(없거나 이상하면 버린다)
+    async welcome(ws, v) {
+        ws.serializeAttachment(BROWSER_ID.test(v || '') ? { v } : {});
         ws.send(JSON.stringify({ t: 'hello', history: (await this.recent()).map(pub), online: this.online() }));
         this.broadcastCount();
     }
 
-    // 닫히는 중인 소켓은 세지 않는다 (readyState 1 = 열림)
-    online() { return this.state.getWebSockets().filter(ws => ws.readyState === undefined || ws.readyState === 1).length; }
+    // 접속 수 = 사람 수. 로그인한 소켓은 계정, 아니면 브라우저 번호로 묶는다. 로그인 확인 전인 탭도 같은 브라우저의 다른 탭이
+    // 로그인돼 있으면 그 계정으로 친다. 번호가 없는 소켓(옛 화면)은 하나에 한 명. 닫히는 중인 소켓은 세지 않는다 (readyState 1 = 열림)
+    online() {
+        const open = this.state.getWebSockets()
+            .filter(ws => ws.readyState === undefined || ws.readyState === 1)
+            .map(ws => { try { return ws.deserializeAttachment() || {}; } catch (e) { return {}; } });
+        const owner = new Map();
+        for (const a of open) if (a.sub && a.v) owner.set(a.v, a.sub);
+        const people = new Set();
+        open.forEach((a, i) => {
+            const sub = a.sub || owner.get(a.v);
+            people.add(sub ? 'u:' + sub : a.v ? 'v:' + a.v : 's:' + i);
+        });
+        return people.size;
+    }
 
     async recent(limit) {
         const rows = await this.storage.list({ prefix: 'msg:', reverse: true, limit: limit || HISTORY });
@@ -129,9 +146,13 @@ export class ChatRoom {
             if (!/^[A-Za-z0-9_-]{20,100}$/.test(token)) return say({ t: 'auth', ok: false });
             const got = await community(this.env, 'sessionGet', { hash: await sha256('sess:' + token), now: Date.now() }).catch(() => ({}));
             if (!got.user) return say({ t: 'auth', ok: false });
+            const before = this.online();
             const att = { sub: got.sub, nick: got.user.nick || null, staff: !!got.user.staff };
+            if (me.v) att.v = me.v;
             ws.serializeAttachment(att);
-            return say({ t: 'auth', ok: true, nick: att.nick, banned: !!(await this.storage.get('ban:' + att.sub)) });
+            say({ t: 'auth', ok: true, nick: att.nick, banned: !!(await this.storage.get('ban:' + att.sub)) });
+            if (this.online() !== before) this.broadcastCount();   // 다른 브라우저의 같은 계정과 합쳐지면 줄어든다
+            return;
         }
 
         if (msg.t === 'say') {

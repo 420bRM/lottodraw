@@ -12,14 +12,27 @@
     if (!A || document.getElementById('chat-fab')) return;
 
     const OPEN_STORE = 'lottodraw.chat.open';
+    const VID_STORE = 'lottodraw.chat.vid';
     const api = () => String((window.PREMIUM_CONFIG && window.PREMIUM_CONFIG.apiBase) || 'https://api.lottodraw.kr').replace(/\/+$/, '');
-    const wsUrl = () => api().replace(/^http/, 'ws') + '/api/chat';
+    const wsUrl = () => api().replace(/^http/, 'ws') + '/api/chat?v=' + browserId();
     const tr = (key, ko, vars) => {
         let s = window.I18N ? window.I18N.t(key, ko) : ko;
         if (vars) s = String(s).replace(/\{(\w+)\}/g, (m, k) => (vars[k] !== undefined ? vars[k] : m));
         return s;
     };
     const safe = (fn, d) => { try { return fn(); } catch (e) { return d; } };
+
+    // 같은 브라우저의 여러 탭을 접속 수에서 한 명으로 세게 하는 무작위 번호. 서버는 연결 동안만 들고 있다
+    // (저장소가 막힌 브라우저는 탭마다 새 번호 — 예전처럼 탭마다 한 명)
+    function browserId() {
+        let v = safe(() => localStorage.getItem(VID_STORE), '') || '';
+        if (!/^[A-Za-z0-9_-]{16,40}$/.test(v)) {
+            v = safe(() => Array.from(crypto.getRandomValues(new Uint8Array(12)), b => b.toString(16).padStart(2, '0')).join(''), '')
+                || (Date.now().toString(36) + Math.random().toString(36).slice(2)).slice(0, 24).padEnd(16, '0');
+            safe(() => localStorage.setItem(VID_STORE, v));
+        }
+        return v;
+    }
 
     function el(tag, props, kids) {
         const n = document.createElement(tag);

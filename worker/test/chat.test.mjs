@@ -60,7 +60,9 @@ function setup() {
     const room = new ChatRoom({ storage: memoryStorage(), getWebSockets: () => sockets.filter(s => s.readyState === 1), acceptWebSocket: ws => sockets.push(ws) }, env);
     env.CHAT = { idFromName: n => n, get: () => ({ fetch: (u, i) => room.fetch(new Request(u, i)) }) };
     const join = () => { const ws = fakeSocket(); sockets.push(ws); ws.serializeAttachment({}); return ws; };
-    return { env, room, join, cStore: cInst.storage };
+    // 실제 연결처럼 들어온다: v = 화면이 주소에 붙여 오는 브라우저 번호
+    const enter = async v => { const ws = fakeSocket(); sockets.push(ws); await room.welcome(ws, v); return ws; };
+    return { env, room, join, enter, cStore: cInst.storage };
 }
 
 const call = async (env, method, path, { body, headers } = {}) => {
@@ -140,6 +142,51 @@ test('채팅: 읽기는 누구나, 쓰기는 로그인+별명, 3초에 한 번, 
     assert.equal(info.data.online, 3);
     assert.ok(info.data.last);
     assert.equal((await room.recent()).length, 1);
+});
+
+test('채팅 접속 수는 사람 수: 같은 브라우저의 여러 탭 · 같은 계정은 한 명, 번호 없는 옛 화면은 탭마다 한 명', async () => {
+    const { env, room, enter } = setup();
+    const PC = 'pc-browser-0123456789', PHONE = 'phone-browser-0123456789';
+    const sA = await member(env, 'A', '행운의곰');
+    const close = async ws => { ws.close(); await room.webSocketClose(ws); };
+
+    // 로그인 전: 같은 브라우저의 탭 셋은 한 명
+    const t1 = await enter(PC), t2 = await enter(PC), t3 = await enter(PC);
+    assert.equal(room.online(), 1);
+    assert.equal(t3.last('hello').online, 1);
+    assert.equal(t1.last('count').online, 1, '새 탭이 들어와도 모두에게 1명');
+    const phone = await enter(PHONE);
+    assert.equal(room.online(), 2, '다른 브라우저는 따로');
+    // 번호가 없거나 이상하면 소켓마다 한 명 (옛 화면)
+    const old1 = await enter(null), old2 = await enter('<b>짧음</b>');
+    assert.equal(room.online(), 4);
+    assert.equal(old2.deserializeAttachment().v, undefined, '이상한 번호는 버린다');
+
+    // PC 탭 하나만 로그인해도 같은 브라우저의 나머지 탭은 그 계정으로 친다
+    await send(room, t1, { t: 'auth', session: sA });
+    assert.equal(t1.last('auth').ok, true);
+    assert.equal(room.online(), 4);
+    assert.equal(t1.deserializeAttachment().v, PC, '로그인해도 브라우저 번호는 남는다');
+    // 휴대폰에서 같은 계정으로 로그인하면 PC 와 합쳐져 한 명 줄고, 모두에게 알린다
+    phone.sent.length = 0;
+    await send(room, phone, { t: 'auth', session: sA });
+    assert.equal(room.online(), 3);
+    assert.equal(phone.last('count').online, 3);
+    assert.equal((await call(env, 'GET', '/api/chat/info')).data.online, 3, '접힌 단추의 수도 같다');
+    // 다시 확인해도(별명 변경 등) 수가 그대로면 알리지 않는다
+    phone.sent.length = 0;
+    await send(room, phone, { t: 'auth', session: sA });
+    assert.equal(phone.last('count'), undefined);
+
+    // 탭을 닫으면: 같은 계정이 남아 있는 동안은 그대로, 다 닫아야 준다
+    await close(phone);
+    assert.equal(room.online(), 3);
+    await close(t1);
+    assert.equal(room.online(), 3, 'PC 의 로그인 탭이 닫혀도 남은 탭이 같은 브라우저');
+    await close(t2); await close(t3);
+    assert.equal(room.online(), 2);
+    await close(old1); await close(old2);
+    assert.equal(room.online(), 0);
 });
 
 test('채팅: 24시간 지난 메시지는 보이지 않고 지워진다', async () => {
