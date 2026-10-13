@@ -594,6 +594,39 @@ html.home { scroll-behavior: smooth; }
 #sec-generator .cta { display: flex; flex-direction: column; justify-content: center; gap: 4px; }
 #sec-generator .cta h2 { font-size: 20px; }
 #sec-generator .result-msg { margin: 16px 0; }
+/* 다음 추첨 방송까지 남은 시간 (js/draw-countdown.js) — 제목 줄 오른쪽. 제목 + 부제보다 낮게 잡아 첫 구간 높이가
+   늘지 않는다. 옆에 자리가 모자라면 제목 아래 오른쪽으로 내려가고, 휴대폰은 한 줄을 다 쓴다 */
+#sec-generator .eyebrow { flex-wrap: wrap; row-gap: 8px; }
+.draw-countdown {
+    display: grid;
+    grid-template-columns: auto auto;
+    grid-template-areas: "label time" "when time";
+    align-items: center;
+    column-gap: 14px;
+    margin-left: auto;
+    padding: 5px 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: var(--shadow);
+    line-height: 1.35;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+.draw-countdown[hidden] { display: none; }
+.dc-label { grid-area: label; color: var(--text); font-size: 12px; font-weight: bold; }
+.dc-when { grid-area: when; color: var(--muted); font-size: 11px; }
+.dc-time { grid-area: time; justify-self: end; color: var(--brand); font-size: 22px; font-weight: bold; line-height: 1.2; }
+.draw-countdown.is-live .dc-time { color: var(--error); }
+@media (max-width: 599px) {
+    .draw-countdown { flex: 1 1 100%; grid-template-columns: minmax(0, 1fr) auto; padding: 5px 12px; }
+    .dc-time { font-size: 20px; }
+}
+@media (max-width: 379px) {
+    .draw-countdown { column-gap: 10px; padding: 5px 10px; }
+    .dc-time { font-size: 18px; }
+    .dc-when { font-size: 10.5px; }
+}
 .gen-extras { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; margin-top: 14px; }
 /* 생성 이력 · 보렐 두 카드는 위아래 끝을 맞춘다(2026-10-11). 펼친 카드만 늘리고 접은 카드는 제목 높이 그대로 —
    :has() 를 모르는 옛 브라우저는 예전처럼 제 높이 */

@@ -498,6 +498,12 @@ window.I18N_DICT = {
 
     /* ───── 홈: 통계 · 최근 10회차 (스크립트) ───── */
     'header.latestDraw': { ko: '제{n}회 {nums}', en: 'Draw {n}: {nums}' },
+    // 다음 추첨 방송까지 (js/draw-countdown.js)
+    'cd.until':      { ko: '제{n}회 추첨 방송까지', en: 'Draw {n} goes live in' },
+    'cd.liveLabel':  { ko: '제{n}회 추첨', en: 'Draw {n}' },
+    'cd.live':       { ko: '지금 방송 중', en: 'On air now' },
+    'cd.days':       { ko: '{d}일', en: '{d}d' },
+    'cd.when':       { ko: '{m}월 {d}일(토) 오후 {hm} · MBC', en: 'Sat {mon} {d}, {hm} pm KST · MBC' },
     'stats.scope':   { ko: '{from}~{to}회 ({n}회 추첨)', en: 'Draws {from}\u2013{to} ({n} draws)' },
     'stats.loadFail': { ko: '통계 데이터를 불러오지 못했습니다. 잠시 뒤 새로고침해 주세요.',
                         en: 'Could not load the statistics. Please refresh in a moment.' },
