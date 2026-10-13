@@ -990,8 +990,11 @@ html.home { scroll-behavior: smooth; }
     text-align: center;
 }
 .prose .pchart-gate p { margin: 0 0 10px; }
-.prose .pchart-gate .pchart-gate-title { margin-bottom: 4px; color: var(--brand); font-size: 16px; font-weight: bold; }
-.prose .pchart-gate .pchart-gate-sub { color: var(--muted); font-size: 13px; }
+.prose .pchart-gate .pchart-gate-title { margin-bottom: 8px; color: var(--brand); font-size: 16px; font-weight: bold; }
+/* 로그인하면 쓸 수 있는 것: 상자는 가운데, 목록 줄은 왼쪽 맞춤(✓ 표시) */
+.prose .pchart-gate .pchart-gate-perks { display: inline-block; margin: 0 0 12px; padding: 0; list-style: none; color: var(--muted); font-size: 13px; line-height: 1.5; text-align: left; }
+.prose .pchart-gate .pchart-gate-perks li { position: relative; margin: 0 0 2px; padding-left: 18px; word-break: keep-all; }
+.prose .pchart-gate .pchart-gate-perks li::before { content: "✓"; position: absolute; left: 2px; color: var(--brand); font-weight: bold; }
 /* 짚은 회차 정보창 (떠 있는 툴팁 대신, PC · 휴대폰 공통) — 높이를 미리 잡아 짚어도 그래프가 덜 밀리게 */
 .pchart-readout {
     min-height: 76px; margin-top: 8px; padding: 7px 10px;
