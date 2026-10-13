@@ -1523,7 +1523,7 @@ function updateTaxAndTop() {
     const T = TIER;
     tax = replaceBetween('tax.html', tax, 'head', headBlock(
         '로또 실수령액 계산기 · 당첨금 세금 계산 (22%·33%) | lottodraw.kr',
-        `로또 당첨금에서 세금을 뗀 실수령액 계산기. 200만 원 이하 비과세, 3억 원까지 22%, 3억 원 초과분만 33%. 역대 1등 평균 ${won(avg)}의 세후 금액은 약 ${won(avg - lottoTax(avg))}.`
+        `로또 당첨금에서 세금을 뗀 실수령액 계산기. 200만 원 이하 비과세, 3억 원까지 22%, 초과분 33%. 역대 1등 평균 ${won(avg)}의 세후는 약 ${won(avg - lottoTax(avg))}.`
         + (T ? ` 2등 평균 ${wonAbout(T.mean2)}은 세후 약 ${wonAbout(T.mean2 - lottoTax(T.mean2))}, 3등 평균 ${wonAbout(T.mean3)}${lottoTax(T.mean3) ? `은 세후 약 ${wonAbout(T.mean3 - lottoTax(T.mean3))}` : '은 비과세'}.` : '')));
     // 2등 · 3등의 실제 금액(평균 · 최고 · 최저)으로 계산한 표. 평균은 만 원 단위로 반올림한 금액으로 센다
     // 휴대폰에서 옆으로 밀리지 않게 4칸: 구분(아래에 세율) · 당첨금 · 세금 · 실수령액. 금액은 만 원 단위로 반올림하고
