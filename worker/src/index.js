@@ -685,7 +685,7 @@ async function chatConnect(request, env) {
     if (!chatReady(env)) throw new HttpError(503, 'no_chat', '채팅이 아직 꺼져 있습니다.');
     if (request.headers.get('Upgrade') !== 'websocket') throw new HttpError(426, 'need_websocket', 'WebSocket 으로 연결해 주세요.');
     if (!allowedOrigin(request, env)) throw new HttpError(403, 'bad_origin', '허용되지 않은 곳에서 연결했습니다.');
-    await limited(env.LOGIN_LIMIT, 'chat:' + (request.headers.get('CF-Connecting-IP') || 'local'));
+    await limited(env.CHAT_LIMIT || env.LOGIN_LIMIT, 'chat:' + (request.headers.get('CF-Connecting-IP') || 'local'));
     return chatStub(env).fetch(request);
 }
 
