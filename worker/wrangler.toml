@@ -36,6 +36,16 @@ namespace_id = "1002"
   limit = 10
   period = 60
 
+# 실시간 채팅 연결: 같은 IP 에서 1분에 30번까지. PC 는 채팅을 펼친 채로 시작해 페이지를 옮길 때마다 다시 붙는다
+# (예전에는 로그인과 같은 1분 10번을 나눠 써서, 빨리 둘러보거나 한 IP 를 여럿이 쓰면 막혔다)
+[[ratelimits]]
+name = "CHAT_LIMIT"
+namespace_id = "1004"
+
+  [ratelimits.simple]
+  limit = 30
+  period = 60
+
 # 좋아요: 한 로그인에서 1분에 30번까지
 [[ratelimits]]
 name = "REACT_LIMIT"

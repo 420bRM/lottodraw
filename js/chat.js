@@ -1,6 +1,8 @@
 /* 실시간 채팅 (오른쪽 아래 말풍선). js/account.js 가 서버에서 채팅이 켜져 있을 때만 불러온다.
  *
- * - 접어 둔 채로 시작한다(빈 방이 망해 보이지 않게). 단추에는 지금 들어와 있는 사람 수.
+ * - PC(넓은 화면 + 마우스)는 펼친 채로 시작한다(2026-10-14). 닫으면 그 기기에서는 다음에도 닫힌 채로(다시 열면 다시 펼침).
+ *   휴대폰 · 태블릿은 접어 둔 채로 시작하고(화면을 가리지 않게), 이 탭에서 열어 두었으면 다음 페이지에서도 열어 둔다.
+ *   단추에는 지금 들어와 있는 사람 수.
  * - 열면 WebSocket 으로 붙고 최근 메시지(24시간 안)를 받는다. 닫으면 연결도 끊는다.
  * - 읽기는 누구나, 쓰기는 로그인하고 별명을 정한 회원만. 링크·연락처·홍보 문구는 서버가 막는다.
  * - 글은 전부 textContent 로만 그린다(HTML 로 해석하지 않는다).
@@ -11,7 +13,9 @@
     const A = window.LottoAccount;
     if (!A || document.getElementById('chat-fab')) return;
 
-    const OPEN_STORE = 'lottodraw.chat.open';
+    const OPEN_STORE = 'lottodraw.chat.open';   // 이 탭에서 열어 두었는지 (휴대폰 · 태블릿)
+    const PC_STORE = 'lottodraw.chat.pc';       // PC 에서 닫았는지('0') · 열었는지('1') — 기기에 남긴다
+    const isPc = () => safe(() => matchMedia('(min-width: 900px) and (hover: hover) and (pointer: fine)').matches, false);
     const VID_STORE = 'lottodraw.chat.vid';
     const api = () => String((window.PREMIUM_CONFIG && window.PREMIUM_CONFIG.apiBase) || 'https://api.lottodraw.kr').replace(/\/+$/, '');
     const wsUrl = () => api().replace(/^http/, 'ws') + '/api/chat?v=' + browserId();
@@ -195,16 +199,20 @@
         input.focus();
     }
 
-    function toggle(force) {
+    // auto: 페이지를 열 때 저절로 펼친 것 — 사람이 고른 것이 아니라 기억하지 않고, 입력칸으로 초점도 옮기지 않는다
+    function toggle(force, auto) {
         isOpen = force === undefined ? panel.hidden : !!force;
         panel.hidden = !isOpen;
         fab.hidden = isOpen;
         fab.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-        safe(() => sessionStorage.setItem(OPEN_STORE, isOpen ? '1' : ''));
+        if (!auto) {
+            safe(() => sessionStorage.setItem(OPEN_STORE, isOpen ? '1' : ''));
+            if (isPc()) safe(() => localStorage.setItem(PC_STORE, isOpen ? '1' : '0'));
+        }
         if (isOpen) {
             renderGate();
             connect();
-            if (!form.hidden) input.focus();
+            if (!auto && !form.hidden) input.focus();
         } else if (ws) {
             const w = ws; ws = null; w.onclose = null; w.close();
         }
@@ -219,5 +227,5 @@
 
     // 접힌 단추의 접속 수 (한 번만)
     fetch(api() + '/api/chat/info').then(r => r.json()).then(d => setOnline(d.online || 0)).catch(() => {});
-    if (safe(() => sessionStorage.getItem(OPEN_STORE), '') === '1') toggle(true);
+    if (isPc() ? safe(() => localStorage.getItem(PC_STORE), '') !== '0' : safe(() => sessionStorage.getItem(OPEN_STORE), '') === '1') toggle(true, true);
 })();
