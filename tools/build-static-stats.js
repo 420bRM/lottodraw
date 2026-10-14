@@ -799,7 +799,35 @@ const AC_COMBOS = [180, 858, 7873, 26292, 103461, 239998, 823318, 1148170, 26756
     const top = topBy(stats.ac);
     const total = AC_COMBOS.reduce((a, b) => a + b, 0);
     const theory = v => (AC_COMBOS[v] / total * 100).toFixed(1) + '%';
-    const rows = stats.ac.map((r, v) => [labEn(r), times(fmt(r.count)), pct(r.count, N), theory(v)]);
+    const sorted = nums => nums.slice().sort((a, b) => a - b);
+    // 값마다 예시: 그 AC값이 나온 가장 최근 회차. 당첨번호에 없는 값은 사전순으로 가장 앞선 조합(1·2·3·4·5·6 = AC 0 …)
+    function firstWithAc(v) {
+        const a = [1, 2, 3, 4, 5, 6];
+        for (;;) {
+            if (acValue(a) === v) return a.slice();
+            let i = 5;
+            while (i >= 0 && a[i] === 40 + i) i--;
+            if (i < 0) return null;
+            a[i]++;
+            for (let j = i + 1; j < 6; j++) a[j] = a[j - 1] + 1;
+        }
+    }
+    const example = v => {
+        const d = draws.find(x => acValue(sorted(x.numbers)) === v);
+        if (d) return `<a href="round/${d.round}.html" data-i18n-en="Draw ${d.round}">${d.round}회</a> ${sorted(d.numbers).join(' ')}`;
+        const c = firstWithAc(v);
+        return c ? `${c.join(' ')} <small>${en('(당첨번호 중에는 없음)', '(never drawn)')}</small>` : '';
+    };
+    const rows = stats.ac.map((r, v) => [labEn(r), times(fmt(r.count)), pct(r.count, N), theory(v), example(v)]);
+    // 계산 예: 가장 최근 회차
+    const last = draws[0];
+    const ln = sorted(last.numbers);
+    const pairs = [];
+    for (let i = 0; i < 6; i++) for (let j = i + 1; j < 6; j++) pairs.push(ln[j] - ln[i]);
+    const distinct = new Set(pairs).size;
+    const dupes = [...new Set(pairs.filter((d, i) => pairs.indexOf(d) !== i))].sort((a, b) => a - b);
+    const lastAc = distinct - 5;
+    const high = [7, 8, 9, 10].reduce((a, v) => a + AC_COMBOS[v], 0) / total * 100;
     STATS.push({
         file: 'statistics-ac.html', anchor: 'stat-ac', short: 'AC값', shortEn: 'AC value',
         title: `로또 AC값 통계 · AC값 계산기 (${RANGE})`,
@@ -820,9 +848,23 @@ const AC_COMBOS = [180, 858, 7873, 26292, 103461, 239998, 823318, 1148170, 26756
                 '<p class="calc-result" id="ac-out" role="status" aria-live="polite"></p>',
             ].join('\n'),
             h2En('역대 AC값 분포', 'AC values across all draws'),
-            table([['AC값', 'AC value'], ['나온 횟수', 'Draws'], ['비율', 'Share'], ['이론 확률', 'Theoretical']], rows),
-            pEn('예를 들어 1·2·3·4·5·6은 차이가 1~5뿐이라 AC값이 0입니다. 무작위로 뽑은 조합 대부분은 AC 7 이상입니다.',
-                'For example, 1·2·3·4·5·6 yields only the differences 1 to 5, so its AC value is 0. Most randomly drawn combinations come out at AC 7 or above.'),
+            table([['AC값', 'AC value'], ['나온 횟수', 'Draws'], ['비율', 'Share'], ['이론 확률', 'Theoretical'], ['예시 (가장 최근 회차)', 'Example (latest draw)']], rows, 'ac-table'),
+            `<h3 data-i18n-en="How to read the AC value">AC값 읽는 법</h3>`,
+            pEn(`<strong>계산 예</strong> — ${last.round}회 당첨번호 ${ln.join(' · ')}`,
+                `<strong>Worked example</strong> — draw ${last.round}: ${ln.join(' · ')}`),
+            [
+                '<ol>',
+                `<li data-i18n-en="${esc(`Take the difference for each of the 15 pairs: ${pairs.join(', ')}`)}">두 개씩 짝지은 15쌍의 차이를 구합니다: ${pairs.join(', ')}</li>`,
+                dupes.length
+                    ? `<li data-i18n-en="${esc(`Count the distinct values, counting repeats (${dupes.join(', ')}) once: ${distinct}`)}">서로 다른 값만 셉니다: 겹친 값(${dupes.join(', ')})은 한 번씩만 세어 ${distinct}개</li>`
+                    : `<li data-i18n-en="${esc('Count the distinct values: none repeat, so all 15 count')}">서로 다른 값만 셉니다: 겹치는 값이 없어 15개</li>`,
+                `<li data-i18n-en="${esc(`Subtract 5: ${distinct} − 5 = AC value ${lastAc}`)}">5를 뺍니다: ${distinct} − 5 = AC값 ${lastAc}</li>`,
+                '</ol>',
+            ].join('\n'),
+            pEn('5를 빼는 까닭: 번호 6개면 가장 작은 번호와 나머지 5개의 차이가 모두 달라 서로 다른 차이가 적어도 5개는 나옵니다. 그래서 5를 빼 0부터 셉니다. 1·2·3·4·5·6은 차이가 1~5 다섯 가지뿐이라 AC값이 0입니다.',
+                'Why subtract 5: with six numbers, the gaps from the smallest number to the other five are all different, so there are always at least five distinct differences. Subtracting 5 makes the scale start at 0. 1·2·3·4·5·6 only produces the differences 1 to 5, so its AC value is 0.'),
+            pEn(`<strong>낮을수록</strong> 번호 사이 간격이 되풀이되는 조합입니다 — 1·2·3·4·5·6처럼 붙어 있거나 5·10·15·20·25·30처럼 같은 간격이거나 한쪽에 몰린 조합. <strong>높을수록</strong> 간격이 제각각인 조합입니다. 사람이 손으로 고른 규칙적인 조합은 낮은 쪽에 몰리기 쉽고, 무작위로 뽑은 조합은 ${high.toFixed(1)}%가 AC 7 이상입니다.`,
+                `<strong>Low</strong> values mean the gaps between numbers repeat — runs like 1·2·3·4·5·6, even steps like 5·10·15·20·25·30, or numbers bunched together. <strong>High</strong> values mean the gaps all differ. Regular hand-picked sets tend to sit low, while ${high.toFixed(1)}% of random sets come out at AC 7 or above.`),
             pEn(`이론 확률은 45개 중 6개를 고르는 ${fmt(total)}조합 가운데 그 AC값인 조합의 비율입니다. AC 8(${theory(8)})·AC 10(${theory(10)})이 자주 나오는 것은 그런 조합이 원래 많기 때문이고, 실제 비율도 이론값과 거의 같습니다. 어느 조합이든 1등 확률은 1/${fmt(total)}로 같습니다.`,
                 `The theoretical share is the fraction of all ${fmt(total)} ways to choose six of 45 numbers that have that AC value. AC 8 (${theory(8)}) and AC 10 (${theory(10)}) come up often simply because there are more such combinations, and the actual shares sit close to theory. Every combination has the same 1 in ${fmt(total)} chance of winning first prize.`),
             `<p><a class="btn" href="index.html#gen-ac" data-i18n-en="Generate numbers with an AC value filter">AC값 조건으로 번호 뽑으러 가기</a></p>`,
@@ -1661,3 +1703,6 @@ if (updateAbout()) changed++;
 const urls = updateSitemap(blog.sitemap);
 console.log(`통계 ${STATS.length}쪽${TIER ? ' · 2·3등' : ''} · 회차 ${draws.length}쪽 · 전체 조회 · 확률 · 블로그 ${blog.posts}편 · 사이트맵 ${urls}개 (${RANGE}, 갱신일 ${UPDATED})`);
 console.log(`바뀐 생성 페이지: ${changed}쪽`);
+// 손 관리 페이지의 css · js 주소에 내용 지문을 붙인다(배포 직후 옛 파일과 섞이지 않게) — 위에서 index · tax · top · about 을 고친 뒤에
+const versioned = require(path.join(__dirname, 'asset-version.js'))();
+if (versioned) console.log(`css · js 지문을 바꾼 손 관리 페이지: ${versioned}쪽`);

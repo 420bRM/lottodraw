@@ -607,6 +607,39 @@ html.home { scroll-behavior: smooth; }
    오른쪽으로, 휴대폰은 한 줄을 다 쓰고 세 줄(회차 · 판매 · 방송). 다른 페이지는 메뉴 아래 한 줄 띠(.dc-strip).
    .dc-pair(이름 + 남은 시간)는 상자에서는 풀어(display: contents) 칸마다 grid 자리에 놓고, 띠에서는 한 덩어리 */
 #sec-generator .eyebrow { flex-wrap: wrap; row-gap: 8px; }
+/* "이번 번호" 칸 오른쪽 위 "사용법 보기" (js/tour.js) — 처음 온 브라우저에서는 맥박친다. 칸 위에 띄워 둬 제목 줄 · 칸 높이를 바꾸지 않는다 */
+#sec-generator .cta { position: relative; }
+.tour-btn {
+    position: absolute; top: 10px; right: 10px; z-index: 1;
+    padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; background: #fff;
+    color: var(--brand); font: bold 12px/1.4 var(--font); white-space: nowrap; cursor: pointer;
+}
+.tour-btn:hover { border-color: var(--brand); }
+.tour-btn.is-new { border-color: var(--brand); animation: tour-pulse 1.9s ease-out infinite; }
+@keyframes tour-pulse { 0% { box-shadow: 0 0 0 0 rgba(0, 48, 135, .35); } 70%, 100% { box-shadow: 0 0 0 9px rgba(0, 48, 135, 0); } }
+/* 둘러보기: 비추는 곳만 밝게(둘레 그림자로 나머지를 어둡게), 설명 상자. 누르기는 막지 않는다 */
+.tour { position: fixed; inset: 0; z-index: 98; pointer-events: none; }
+.tour[hidden] { display: none; }
+.tour-ring {
+    position: absolute; border-radius: 10px; pointer-events: none;
+    box-shadow: 0 0 0 9999px rgba(10, 20, 40, .62), 0 0 0 3px #ffd54a;
+    transition: left .3s cubic-bezier(.4, 0, .2, 1), top .3s cubic-bezier(.4, 0, .2, 1), width .3s cubic-bezier(.4, 0, .2, 1), height .3s cubic-bezier(.4, 0, .2, 1);
+}
+.tour-tip {
+    position: absolute; width: min(300px, calc(100vw - 28px)); padding: 14px 15px 12px; pointer-events: auto;
+    border-radius: 10px; background: #fff; box-shadow: 0 16px 40px rgba(0, 0, 0, .35); text-align: left;
+    transition: left .3s cubic-bezier(.4, 0, .2, 1), top .3s cubic-bezier(.4, 0, .2, 1);
+}
+.tour-step { margin: 0 0 6px; color: var(--brand); font-size: 12px; font-weight: bold; font-variant-numeric: tabular-nums; }
+.tour-text { margin: 0 0 12px; color: var(--text); font-size: 14px; line-height: 1.6; word-break: keep-all; }
+.tour-btns { display: flex; align-items: center; gap: 8px; }
+.tour-skip { margin-right: auto; padding: 6px 2px; border: 0; background: none; color: var(--muted); font-size: 13px; cursor: pointer; }
+.tour-skip:hover { color: var(--text); text-decoration: underline; }
+.tour-next { margin: 0; padding: 7px 16px; }
+@media (prefers-reduced-motion: reduce) {
+    .tour-btn.is-new { animation: none; background: #eef3ff; }
+    .tour-ring, .tour-tip { transition: none; }
+}
 .draw-countdown {
     display: grid;
     grid-template-columns: auto auto auto;
@@ -1181,6 +1214,9 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 .stat-scope { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
 .stat-lead { margin: 0 0 16px; font-size: 16px; line-height: 1.8; }
 .stat-page .data-table { font-variant-numeric: tabular-nums; }
+/* AC값 표: 휴대폰에서 "AC 0" · 제목 낱말이 둘로 쪼개지지 않게 */
+.ac-table th { word-break: keep-all; }
+.ac-table td:first-child { white-space: nowrap; }
 .stat-page .data-table th, .stat-page .data-table td { padding: 6px 10px; }
 /* 넓은 본문에서 순위 목록이 화면 끝까지 늘어나면 번호와 횟수가 멀어진다 */
 .stat-page .ball-list { max-width: 320px; }
