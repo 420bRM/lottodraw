@@ -58,7 +58,7 @@ This comes out almost the same as the average 1st prize per winner (about 2.0 bn
 | Draw with the most 1st-prize winners | Draw 1128 (2024), 63 winners, about 420m KRW each |
 | Draws rolled over with no 1st-prize winner | 14 |
 
-There are two averages because of how they are calculated. If you work out the per-winner prize for each draw and then average those, early draws with huge prizes, such as draw 19 at 40.7 bn KRW, each count as one vote and pull the average up a lot. If you average across every individual winner instead, you get about 2.0 bn KRW. The figure of around 2.6 bn KRW in the example on this site's [after-tax calculator](/tax.html) is the per-draw average.
+There are two averages because of how they are calculated. If you work out the per-winner prize for each draw and then average those, early draws with huge prizes, such as draw 19 at 40.7 bn KRW, each count as one vote and pull the average up a lot. If you average across every individual winner instead, you get about 2.0 bn KRW. That is the average quoted on the official lottery site and in the news. This site's [Top 50 1st prizes of all time](/top-prize.html) page shows both averages side by side.
 
 The draws with dozens of 1st-prize winners have one thing in common: the winning numbers contained patterns that people like to pick. For details, see [Why jackpots get split](/blog/why-jackpots-split.html).
 
