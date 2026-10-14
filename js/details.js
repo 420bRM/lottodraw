@@ -114,6 +114,8 @@
     }
 
     // 1등 당첨금 추이
+    // 평균은 두 가지를 같이 낸다(tools/build-static-stats.js 의 firstPrizeAvg 와 같은 식):
+    // avgWinner = 1등 총당첨금 ÷ 당첨자 수(동행복권 · 언론이 쓰는 값), avgAll = 회차마다의 1인당 금액 평균
     function prizeTrend(draws, count) {
         const rows = draws.slice().sort(byRoundDesc).slice(0, count || 20).map(d => ({
             round: d.round,
@@ -122,11 +124,13 @@
             winners: typeof d.firstPrizeWinners === 'number' ? d.firstPrizeWinners : null,
         }));
         const amounts = rows.map(r => r.amount).filter(a => a > 0);
-        const all = draws.map(d => d.firstPrizeAmount || 0).filter(a => a > 0);
+        const paid = draws.filter(d => d.firstPrizeWinners > 0 && d.firstPrizeAmount > 0);
+        const winners = paid.reduce((a, d) => a + d.firstPrizeWinners, 0);
         return {
             rows: rows,
             max: amounts.length ? Math.max.apply(null, amounts) : 0,
-            avgAll: all.length ? all.reduce((a, b) => a + b, 0) / all.length : 0,
+            avgAll: paid.length ? paid.reduce((a, d) => a + d.firstPrizeAmount, 0) / paid.length : 0,
+            avgWinner: winners ? paid.reduce((a, d) => a + d.firstPrizeAmount * d.firstPrizeWinners, 0) / winners : 0,
         };
     }
 
@@ -250,7 +254,7 @@
     function prizeCard(draws) {
         const t = prizeTrend(draws, 20);
         const body = [
-            el('p', { className: 'detail-lead', text: T('dt.prize.lead', { amount: won(Math.round(t.avgAll)) }) }),
+            el('p', { className: 'detail-lead', text: T('dt.prize.lead', { perWinner: won(Math.round(t.avgWinner)), perDraw: won(Math.round(t.avgAll)) }) }),
             el('ul', { className: 'hbars' }, t.rows.map(r => el('li', { className: 'hbar' }, [
                 el('span', { text: T('sr.drawNo', { n: r.round }) }),
                 el('span', { className: 'hbar-track', 'aria-hidden': 'true' }, [

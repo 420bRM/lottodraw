@@ -50,7 +50,9 @@
     const METRICS = [      // 맨 앞이 처음 보이는 지표
         { id: 'total', key: 'pc.m.total', unit: 'won', value: d => (paid(d) ? d.firstPrizeAmount * d.firstPrizeWinners : null) },
         { id: 'winners', key: 'pc.m.winners', unit: 'people', value: d => (typeof d.firstPrizeWinners === 'number' ? d.firstPrizeWinners : null) },
-        { id: 'each', key: 'pc.m.each', unit: 'won', value: d => (paid(d) ? d.firstPrizeAmount : null) },
+        // weight: 평균을 두 가지로 낸다 — 당첨자 1인 기준(당첨자 수로 가중, 동행복권 · 언론과 같은 값, 처음 값)과 회차 평균.
+        // 도구 상자 "평균 기준" 단추로 고른다 (tools/build-static-stats.js 의 firstPrizeAvg 와 같은 식)
+        { id: 'each', key: 'pc.m.each', unit: 'won', value: d => (paid(d) ? d.firstPrizeAmount : null), weight: d => (paid(d) ? d.firstPrizeWinners : null) },
         // 2·3등 1게임당. 빈칸이 두 가지다: 당첨 게임이 없던 회차(3 · 5회의 2등)는 null("없음"),
         // 자료가 아직 붙지 않은 회차(추첨 직후 집계 전)는 undefined("집계 전"). 둘 다 선 · 평균에서는 빈칸으로 다룬다(== null)
         { id: 'second', key: 'pc.m.second', unit: 'won', tier: true, value: d => (typeof d.w2 !== 'number' ? undefined : d.w2 > 0 && d.a2 > 0 ? d.a2 : null) },
@@ -248,10 +250,13 @@
         return { min: pow[0], max: pow[pow.length - 1], ticks: pow };
     }
 
-    // 보이는 구간 요약: 평균, 최고, 최저(같으면 최근 회차), 이월 수
-    function summarize(draws, values, start, end) {
+    // 보이는 구간 요약: 평균, 최고, 최저(같으면 최근 회차), 이월 수.
+    // weight(지표의 weight)를 주면 avgW(가중 평균 — 1인당 금액이면 당첨자 1인 기준 평균)도 낸다. avg 는 늘 회차 평균
+    function summarize(draws, values, start, end, weight) {
         let sum = 0;
         let cnt = 0;
+        let wSum = 0;
+        let wTot = 0;
         let hi = null;
         let lo = null;
         let roll = 0;
@@ -261,10 +266,12 @@
             if (v == null) continue;
             sum += v;
             cnt++;
+            const w = weight ? weight(draws[i]) : null;
+            if (w > 0) { wSum += v * w; wTot += w; }
             if (hi === null || v >= values[hi]) hi = i;
             if (lo === null || v <= values[lo]) lo = i;
         }
-        return { avg: cnt ? sum / cnt : null, hi: hi, lo: lo, rollovers: roll, count: end - start + 1 };
+        return { avg: cnt ? sum / cnt : null, avgW: wTot ? wSum / wTot : null, hi: hi, lo: lo, rollovers: roll, count: end - start + 1 };
     }
 
     /* ───── 글자 ───── */
@@ -444,6 +451,7 @@
             cmpGn: false,        // 비교: 강남3구 84㎡ 아파트값 (1인당 당첨금에서만)
             cmpWage: false,      // 비교: 최저임금 (2등 → 연봉, 3등 → 월급, 무료)
             net: false,          // 세금: 세후 실수령액으로 (이용권, 금액 지표만)
+            avgBy: 'winner',     // 평균 기준: 'winner'(당첨자 1인 기준, 동행복권과 같은 값) | 'draw'(회차 평균). 1인당 당첨금에서만
             candle: null,        // 봉 차트: null(선, 처음 화면) | 'm'(월봉, 무료) | 'q' · 'y'(이용권)
         };
         let drawings = store.get(DRAW_STORE) || {};
@@ -562,6 +570,16 @@
         const grossBtn = cell(T('pc.tax.gross'), () => setNet(false));
         const netBtn = cell(T('pc.tax.net'), () => setNet(true));
         const taxRow = row(T('pc.row.tax'), [grossBtn, netBtn], false, true);
+        // 평균 기준(무료): 당첨자 1인 기준(처음 값 — 동행복권 · 언론과 같은 값) / 회차 평균. 요약 · 평균선이 고른 쪽으로 잰다.
+        // weight 가 있는 지표(1인당 당첨금)에서만 고른다
+        function setAvgBy(v) {
+            if (!byId(state.metric).weight) return;
+            state.avgBy = v;
+            render();
+        }
+        const avgWinnerBtn = cell(T('pc.avg.winner'), () => setAvgBy('winner'));
+        const avgDrawBtn = cell(T('pc.avg.draw'), () => setAvgBy('draw'));
+        const avgRow = row(T('pc.row.avg'), [avgWinnerBtn, avgDrawBtn], false, true);
         // 비교: 서울 아파트(무료) · 강남3구(이용권). 1인당 당첨금에 그 달 아파트값을 겹치고, "몇 채"는 보이는 선(세후/세전) 기준.
         // 다른 지표에서 누르면 1인당 당첨금으로 바꾸고,
         // 켤 때 세후로 바꾼다 — "당첨되면 서울 집을 살 수 있나"는 세후로 봐야 맞다. 아파트값은 그 달 값(당시 금액)이라
@@ -603,6 +621,7 @@
         const pro = el('div', { className: 'pchart-tools is-locked' }, [
             realRow,
             taxRow,
+            avgRow,
             cmpRow,
             row(T('pc.row.candle'), candleChips, false),
             row(T('pc.pro.range'), rangeChips.concat([zoomIn, zoomOut]), false),
@@ -721,6 +740,12 @@
             lockIf(netBtn, !wonMetric || !state.unlocked);
             netBtn.title = wonMetric ? T('pc.tax.netTitle') : T('pc.tax.no');
             grossBtn.title = wonMetric ? '' : T('pc.tax.no');
+            const weighted = !!byId(state.metric).weight;
+            [[avgWinnerBtn, 'winner'], [avgDrawBtn, 'draw']].forEach(([c, v]) => {
+                c.setAttribute('aria-pressed', String(weighted && state.avgBy === v));
+                lockIf(c, !weighted);
+                c.title = weighted ? '' : T('pc.avg.no');
+            });
             pro.classList.toggle('is-locked', !state.unlocked);
             badge.hidden = !state.unlocked;
             proNote.hidden = state.unlocked;
@@ -796,7 +821,12 @@
             const end = state.view.e;
             const useLog = state.unlocked && state.ind.log && metric.unit === 'won';
             const mas = MA.filter(n => state.ind['ma' + n]);   // 이용권이 없으면 state.ind 는 늘 처음 값(DEFAULT_IND)
-            const sum = summarize(all, ser.vals, start, end);
+            const sum = summarize(all, ser.vals, start, end, metric.weight);
+            // 요약 · 평균선이 쓰는 평균 [값, 요약 글자 키, 평균선 글자 키, 범례 글자 키] — 1인당 당첨금은 "평균 기준" 단추를 따른다
+            const avgPick = sum.avgW == null ? [sum.avg, 'pc.sum.avg', 'pc.avgLabel', 'pc.i.avg']
+                : state.avgBy === 'draw' ? [sum.avg, 'pc.sum.avgDraw', 'pc.avgLabelDraw', 'pc.i.avgDraw']
+                    : [sum.avgW, 'pc.sum.avgW', 'pc.avgLabelW', 'pc.i.avgW'];
+            const avgLine = state.unlocked && state.ind.avg && avgPick[0] != null ? avgPick[0] : null;
             if (state.hover !== null && (state.hover < start || state.hover > end)) state.hover = null;
 
             // 세로 범위: 보이는 값과 켜 둔 이동평균
@@ -949,8 +979,8 @@
 
             // 보조지표
             mas.forEach(n => plain(ser.ma[n], 'pc-ma pc-ma' + n, Math.min(1.25, lw)));
-            if (state.unlocked && state.ind.avg && sum.avg != null && ok(sum.avg)) {
-                const yy = Math.round(y(sum.avg)) + 0.5;
+            if (avgLine != null && ok(avgLine)) {
+                const yy = Math.round(y(avgLine)) + 0.5;
                 data.appendChild(svg('line', { class: 'pc-avg', x1: M.left, x2: M.left + pw, y1: yy, y2: yy }));
             }
 
@@ -981,9 +1011,9 @@
 
             // 글자는 선 위에 (흰 테두리로 선과 겹쳐도 읽히게)
             const labels = svg('g', { class: 'pc-labels' });
-            if (state.unlocked && state.ind.avg && sum.avg != null && ok(sum.avg)) {
-                labels.appendChild(svg('text', { class: 'pc-label', x: M.left + pw - 4, y: y(sum.avg) - 5, 'text-anchor': 'end' },
-                    T('pc.avgLabel', { v: fmtValue(metric, sum.avg, true) })));
+            if (avgLine != null && ok(avgLine)) {
+                labels.appendChild(svg('text', { class: 'pc-label', x: M.left + pw - 4, y: y(avgLine) - 5, 'text-anchor': 'end' },
+                    T(avgPick[2], { v: fmtValue(metric, avgLine, true) })));
             }
             if (state.unlocked) {
                 myDrawings().forEach(dw => {
@@ -1038,7 +1068,7 @@
                 items.push(['pc-key-apt-est', T('pc.cmp.aptEst', { ym: ymLabel(aptEstYm || gnEstYm) })]);
             }
             mas.forEach(n => items.push(['pc-key-ma' + n, T('pc.i.ma', { n: n })]));
-            if (state.unlocked && state.ind.avg) items.push(['pc-key-avg', T('pc.i.avg')]);
+            if (state.unlocked && state.ind.avg) items.push(['pc-key-avg', T(avgPick[3])]);
             if (rolls.length) items.push(['pc-key-roll', T('pc.legend.roll')]);
             items.forEach(it => legend.appendChild(el('span', null, [el('i', { className: 'pchart-key ' + it[0], 'aria-hidden': 'true' }), it[1]])));
             legend.hidden = !items.length;
@@ -1049,7 +1079,7 @@
             const preset = RANGES.find(isPreset);
             const scopeLabel = preset === undefined ? T('pc.r.custom') : preset ? T('pc.r.n', { n: preset }) : T('pc.r.all');
             const parts = [T('pc.sum.scope', { label: scopeLabel, from: from, to: to }) + ' ' + T(metric.key) + tagNet + (realOn ? ' (' + realAs() + ')' : '')];
-            if (sum.avg != null) parts.push(T('pc.sum.avg', { v: fmtValue(metric, metric.unit === 'won' ? Math.round(sum.avg) : sum.avg) }));
+            if (avgPick[0] != null) parts.push(T(avgPick[1], { v: fmtValue(metric, metric.unit === 'won' ? Math.round(avgPick[0]) : avgPick[0]) }));
             if (sum.hi != null) parts.push(T('pc.sum.max', { r: all[sum.hi].round, v: fmtValue(metric, ser.vals[sum.hi]) }));
             if (sum.lo != null) parts.push(T('pc.sum.min', { r: all[sum.lo].round, v: fmtValue(metric, ser.vals[sum.lo]) }));
             if (sum.rollovers && !metric.tier) parts.push(T('pc.sum.roll', { n: sum.rollovers }));
@@ -1084,10 +1114,11 @@
             // 보는 구간에 1~87회가 있거나, 이동평균 · 봉이 그 회차들까지 끌어와 계산하면 안내한다
             const reach = Math.min(start - (mas.length ? Math.max.apply(null, mas) - 1 : 0), shown.length ? shown[0].s : start);
             const oldPrice = !!(metric.tier && all[Math.max(0, reach)].round < FIRST_1000_WON);
-            cmpNote.hidden = !(netOn || aptVals || gnVals || wageVals || unit || oldPrice);
+            cmpNote.hidden = !(netOn || aptVals || gnVals || wageVals || unit || oldPrice || metric.weight);
             if (!cmpNote.hidden) {
                 cmpNote.textContent = [
                     oldPrice ? T('pc.tier.note') : '',
+                    metric.weight ? T(state.avgBy === 'draw' ? 'pc.avg.noteDraw' : 'pc.avg.noteWinner') : '',
                     unit ? T('pc.c.note', { span: T('pc.c.span' + unit) }) : '',
                     netOn ? T('pc.cmp.noteTax') : '',
                     aptVals ? T(apt.estimatedBefore ? 'pc.cmp.noteAptEst' : 'pc.cmp.noteApt', { ym: ymLabel(apt.estimatedBefore || apt.actualFrom || apt.latest) }) : '',
@@ -1111,7 +1142,7 @@
         function holdHeights() {
             root.classList.toggle('is-compact', S.W < 600);
             root.classList.toggle('is-tier', !!S.metric.tier);   // 2·3등은 정보창 줄이 하나 더
-            const key = [state.metric, S.unit || '', S.netOn, S.realOn, S.aptOn, S.gnOn, !!S.ws, S.mas.join('.'), state.unlocked, !!state.ind.avg, S.W, lang()].join('|');
+            const key = [state.metric, S.unit || '', S.netOn, S.realOn, S.aptOn, S.gnOn, !!S.ws, S.mas.join('.'), state.unlocked, !!state.ind.avg, state.avgBy, S.W, lang()].join('|');
             if (key !== holdKey) {
                 holdKey = key;
                 legendMin = 0;

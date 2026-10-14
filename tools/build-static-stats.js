@@ -1450,16 +1450,33 @@ function updateHome(posts) {
     write('index.html', html);
 }
 
+// 1등 평균 당첨금은 두 가지로 센다. 하나만 적으면 다른 곳의 숫자와 달라 틀린 줄 안다 — 늘 둘을 같이 적는다
+//   perWinner (당첨자 1인 평균): 1등 총당첨금 ÷ 1등 당첨자 수. 동행복권 홈페이지 · 언론 보도가 쓰는 값
+//   perDraw   (회차 평균): 회차마다의 1인당 금액을 더해 회차 수로 나눈 값. 당첨자가 적어 금액이 컸던 회차
+//             (19회 1명 407억 원 등)도 한 회차로 똑같이 세어 perWinner 보다 크다
+// 이월(당첨자 0명) 회차는 둘 다 뺀다
+function firstPrizeAvg(list) {
+    const paid = list.filter(d => d.firstPrizeWinners > 0 && d.firstPrizeAmount > 0);
+    const winners = paid.reduce((a, d) => a + d.firstPrizeWinners, 0);
+    return {
+        draws: paid.length,
+        winners,
+        perWinner: Math.round(paid.reduce((a, d) => a + d.firstPrizeAmount * d.firstPrizeWinners, 0) / Math.max(1, winners)),
+        perDraw: Math.round(mean(paid.map(d => d.firstPrizeAmount))),
+    };
+}
+
 function updateTaxAndTop() {
     const known = draws.filter(d => d.firstPrizeAmount);
     const top = known.slice().sort((a, b) => b.firstPrizeAmount - a.firstPrizeAmount)[0];
-    const avg = Math.round(known.reduce((a, d) => a + d.firstPrizeAmount, 0) / Math.max(1, known.length));
+    const A = firstPrizeAvg(draws);
+    const afterTax = n => won(n - lottoTax(n));
 
     let tax = read('tax.html');
     const T = TIER;
     tax = replaceBetween('tax.html', tax, 'head', headBlock(
         '로또 실수령액 계산기 · 당첨금 세금 계산 (22%·33%) | lottodraw.kr',
-        `로또 당첨금에서 세금을 뗀 실수령액 계산기. 200만 원 이하 비과세, 3억 원까지 22%, 3억 원 초과분만 33%. 역대 1등 평균 ${won(avg)}의 세후 금액은 약 ${won(avg - lottoTax(avg))}.`
+        `로또 당첨금에서 세금을 뗀 실수령액 계산기. 200만 원 이하 비과세, 3억 원까지 22%, 3억 원 초과분만 33%. 역대 1등 평균은 당첨자 1인 기준 ${won(A.perWinner)}(세후 약 ${afterTax(A.perWinner)}), 회차 평균 ${won(A.perDraw)}(세후 약 ${afterTax(A.perDraw)}).`
         + (T ? ` 2등 평균 ${wonAbout(T.mean2)}은 세후 약 ${wonAbout(T.mean2 - lottoTax(T.mean2))}, 3등 평균 ${wonAbout(T.mean3)}${lottoTax(T.mean3) ? `은 세후 약 ${wonAbout(T.mean3 - lottoTax(T.mean3))}` : '은 비과세'}.` : '')));
     // 2등 · 3등의 실제 금액(평균 · 최고 · 최저)으로 계산한 표. 평균은 만 원 단위로 반올림한 금액으로 센다
     // 휴대폰에서 옆으로 밀리지 않게 4칸: 구분(아래에 세율) · 당첨금 · 세금 · 실수령액. 금액은 만 원 단위로 반올림하고
@@ -1497,7 +1514,7 @@ function updateTaxAndTop() {
     let tp = read('top-prize.html');
     tp = replaceBetween('top-prize.html', tp, 'head', headBlock(
         '역대 로또 1등 당첨금 순위 TOP 50 (1인당) | lottodraw.kr',
-        `로또 6/45 역대 1등 당첨금 1인당 금액 순위 TOP 50. 역대 최고는 ${top.round}회 ${won(top.firstPrizeAmount)}, ${RANGE} 1등 평균 당첨금은 ${won(avg)}. 2등 당첨금 순위 TOP 50과 최근 50회 1·2등 당첨금도 함께.`));
+        `로또 6/45 역대 1등 당첨금 1인당 금액 순위 TOP 50. 역대 최고는 ${top.round}회 ${won(top.firstPrizeAmount)}, ${RANGE} 1등 평균 당첨금은 당첨자 1인 기준 ${won(A.perWinner)}(회차 평균 ${won(A.perDraw)}). 2등 당첨금 순위 TOP 50과 최근 50회 1·2등 당첨금도 함께.`));
     // 표와 부제는 페이지의 스크립트가 그리는 것과 글자 하나까지 같게 미리 박아 둔다.
     // 화면은 그대로이고(스크립트가 같은 내용으로 다시 그린다), JS 를 돌리지 않는 검색 로봇도 표를 읽는다.
     // 페이지 스크립트의 행 모양을 바꾸면 여기도 같이 바꾼다
@@ -1569,15 +1586,21 @@ function updateTaxAndTop() {
     const paid = recent.filter(d => d.firstPrizeWinners > 0 && d.firstPrizeAmount > 0);
     const rolled = recent.filter(d => d.firstPrizeWinners === 0).length;
     const e1 = extremes(paid, d => d.firstPrizeAmount);
-    const avgRecent = mean(paid.map(d => d.firstPrizeAmount));
+    const R = firstPrizeAvg(recent);
     tp = replaceBetween('top-prize.html', tp, 'latest-note', paid.length
-        ? en(`* 최근 50회(${span}) 1인당 당첨금은 평균 ${wonAbout(avgRecent)}입니다(${RANGE} 전체 평균 ${won(avg)}). 가장 많았던 회차는 ${roundA(e1.hi.round)} ${won(e1.hi.firstPrizeAmount)}(${e1.hi.firstPrizeWinners}명), 가장 적었던 회차는 ${roundA(e1.lo.round)} ${won(e1.lo.firstPrizeAmount)}(${e1.lo.firstPrizeWinners}명)입니다.<br>`
+        ? en(`* 최근 50회(${span}) 1등 평균 당첨금은 당첨자 1인 기준 ${wonAbout(R.perWinner)}, 회차 평균 ${wonAbout(R.perDraw)}입니다. 가장 많았던 회차는 ${roundA(e1.hi.round)} ${won(e1.hi.firstPrizeAmount)}(${e1.hi.firstPrizeWinners}명), 가장 적었던 회차는 ${roundA(e1.lo.round)} ${won(e1.lo.firstPrizeAmount)}(${e1.lo.firstPrizeWinners}명)입니다.<br>`
             + '* 1인당 당첨금은 만 원 아래를 버렸고, 총 1등 당첨금은 1원 단위까지 정확한 금액입니다.'
             + (rolled ? '<br>* 이월은 1등 당첨자가 없어 당첨금이 다음 회차로 넘어간 회차입니다.' : ''),
-            `* In the latest 50 draws (${spanEn}) the amount per winner averaged ${wonAboutEn(avgRecent)} (all draws 1–${N}: ${wonEn(avg)}). The highest was ${roundAEn(e1.hi.round)} at ${wonEn(e1.hi.firstPrizeAmount)} (${plural(e1.hi.firstPrizeWinners, 'winner')}) and the lowest ${roundAEn(e1.lo.round)} at ${wonEn(e1.lo.firstPrizeAmount)} (${plural(e1.lo.firstPrizeWinners, 'winner')}).<br>`
+            `* In the latest 50 draws (${spanEn}) first prize averaged ${wonAboutEn(R.perWinner)} per winner and ${wonAboutEn(R.perDraw)} per draw. The highest was ${roundAEn(e1.hi.round)} at ${wonEn(e1.hi.firstPrizeAmount)} (${plural(e1.hi.firstPrizeWinners, 'winner')}) and the lowest ${roundAEn(e1.lo.round)} at ${wonEn(e1.lo.firstPrizeAmount)} (${plural(e1.lo.firstPrizeWinners, 'winner')}).<br>`
             + '* Amounts per winner are approximate; total first-prize figures are exact to the won.'
             + (rolled ? '<br>* A rollover means nobody won first prize, so the money moved on to the next draw.' : ''))
         : en('1등 당첨금 자료를 준비하고 있습니다.', 'First-prize data is being prepared.'));
+
+    // 1등 평균 두 가지와 차이 설명. [당첨금 순위 | 최근 50회] 어느 쪽을 봐도 1등 표 아래에 보인다
+    tp = replaceBetween('top-prize.html', tp, 'avg-note', A.draws
+        ? en(`* <strong>1등 평균 당첨금은 세는 방법이 두 가지입니다.</strong> 당첨자 1인 기준은 ${RANGE} 1등 총당첨금을 당첨자 ${fmt(A.winners)}명으로 나눈 <strong>${won(A.perWinner)}</strong>으로, 동행복권 홈페이지나 뉴스에서 말하는 평균이 이 방식입니다. 회차 평균은 1등이 나온 ${fmt(A.draws)}개 회차의 1인당 당첨금을 그대로 평균한 <strong>${won(A.perDraw)}</strong>입니다. 당첨자가 적어 금액이 컸던 회차(${top.round}회 ${top.firstPrizeWinners}명 ${fmt(Math.floor(top.firstPrizeAmount / 1e8))}억 원 등)도 다른 회차와 똑같이 한 번으로 세기 때문에 더 크게 나옵니다.`,
+            `* <strong>First prize can be averaged in two ways.</strong> Per winner: total first-prize money for draws 1–${N} divided by ${fmt(A.winners)} winners gives <strong>${wonEn(A.perWinner)}</strong>; this is the average quoted on the official lottery site and in the news. Per draw: averaging the per-winner amount of the ${fmt(A.draws)} draws that had a winner gives <strong>${wonEn(A.perDraw)}</strong>. It comes out higher because a draw with few winners and a huge share (draw ${top.round}: ${plural(top.firstPrizeWinners, 'winner')}, ${wonEn(top.firstPrizeAmount)}) counts the same as any other draw.`)
+        : '');
 
     // 2등 최근 50회. 2~5등이 아직 집계 전(추첨 직후)인 회차는 "집계 중"으로 두고 평균에서 뺀다
     const latestRows2 = seconds.length ? recent.map(d => {
