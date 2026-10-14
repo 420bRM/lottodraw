@@ -102,6 +102,16 @@ const top = draws.reduce((a, b) => (b.firstPrizeAmount > a.firstPrizeAmount ? b 
 check('전체 최고 1인당 금액이 TOP 50 1위와 같다', draws[all.hi].round === top.round, `${draws[all.hi].round} vs ${top.round}`);
 const avgPaid = draws.filter(d => d.firstPrizeWinners > 0).reduce((s, d) => s + d.firstPrizeAmount, 0) / (draws.length - rolls);
 check('평균은 이월 회차를 뺀 평균', Math.abs(all.avg - avgPaid) < 1, `${all.avg} vs ${avgPaid}`);
+// 1인당 금액은 평균이 두 가지: avgW = 1등 총당첨금 ÷ 당첨자 수(동행복권 · 언론과 같은 값), avg = 회차 평균
+const allW = P.summarize(draws, eachVals, 0, draws.length - 1, each.weight);
+const paidDraws = draws.filter(d => d.firstPrizeWinners > 0);
+const perWinner = paidDraws.reduce((s, d) => s + d.firstPrizeAmount * d.firstPrizeWinners, 0) / paidDraws.reduce((s, d) => s + d.firstPrizeWinners, 0);
+check('1인당 금액의 당첨자 1인 기준 평균 = 총당첨금 ÷ 당첨자 수', Math.abs(allW.avgW - perWinner) < 1, `${allW.avgW} vs ${perWinner}`);
+check('가중치를 줘도 회차 평균은 그대로', allW.avg === all.avg, `${allW.avg} vs ${all.avg}`);
+const d1047 = draws.slice(0, 1047);
+const w1047 = P.summarize(d1047, d1047.map(each.value), 0, 1046, each.weight);
+check('1~1047회 당첨자 1인 기준 평균이 언론 보도(20억 4,418만 원)와 같다', Math.floor(w1047.avgW / 1e4) === 204418, w1047.avgW);
+check('가중치가 없는 지표는 avgW 가 없다', all.avgW === null && !total.weight && !winners.weight);
 const w = P.summarize(draws, draws.map(winners.value), 0, draws.length - 1);
 check('당첨자 수 최저는 0명(이월)', draws.map(winners.value)[w.lo] === 0);
 const d = draws[draws.length - 1];
