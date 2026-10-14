@@ -147,7 +147,7 @@ function lottoTax(prize) {
 // 1~87회는 1게임이 2,000원이라 금액이 훨씬 크다 — 평균 · 최고 · 최저 · 연도별 표는 88회부터 센다
 const TIER_FILE = 'statistics-prize-2-3.html';
 const TIER_SINCE = '2026-10-10';   // 2·3등 통계 페이지와 다른 페이지의 링크를 넣은 날
-const ABOUT_SINCE = '2026-10-11';  // About 을 "로또 데이터 플랫폼" 소개 · 주요 기능 목록으로 고친 날
+const ABOUT_SINCE = '2026-10-14';  // About 에 한글 상호 "로또드로우" 를 넣은 날 (2026-10-11: "로또 데이터 플랫폼" 소개 · 주요 기능 목록)
 const mean = a => a.reduce((s, v) => s + v, 0) / Math.max(1, a.length);
 const median = a => {
     const s = a.slice().sort(asc);
@@ -522,13 +522,14 @@ const ABOUT = {};
         file: 'statistics-frequency.html', anchor: 'stat-frequency', short: '많이 나온 번호 순위', shortEn: 'Most frequent numbers',
         title: `로또 많이 나온 번호 순위 · 번호별 출현 횟수 (${RANGE})`,
         h1: '로또 많이 나온 번호 순위', h1En: 'Most Frequent Lotto Numbers',
-        desc: `로또 역대 ${RANGE} 가장 많이 나온 번호 순위와 1~45번 번호별 출현 횟수. 제일 많이 나온 번호는 ${numsText(e.top)} ${e.max}회, 가장 적게 나온 번호는 ${numsText(e.bottom)} ${e.min}회.`,
+        // "많이 나온 숫자 순위" 로 찾는 사람이 있어(서치어드바이저 2026-10) 설명과 소제목에 '숫자'를 함께 쓴다. 제목은 "많이 나온 번호 순위" 그대로 둔다
+        desc: `로또 역대 ${RANGE} 가장 많이 나온 번호·숫자 순위와 1~45번 번호별 출현 횟수. 제일 많이 나온 번호는 ${numsText(e.top)} ${e.max}회, 가장 적게 나온 번호는 ${numsText(e.bottom)} ${e.min}회.`,
         fact: `1위 ${numsText(e.top)} ${e.max}회 · 최소 ${numsText(e.bottom)} ${e.min}회`,
         factEn: `top ${e.top.map(r => r.number).join('·')} ${e.max}× · lowest ${e.bottom.map(r => r.number).join('·')} ${e.min}×`,
         lead: `역대 ${RANGE} 동안 제일 많이 나온 번호는 <strong>${numsText(e.top)}(${e.max}회)</strong>, 가장 적게 나온 번호는 <strong>${numsText(e.bottom)}(${e.min}회)</strong>입니다. 한 회차에 6개를 뽑으므로 번호 하나의 기대 출현은 ${f1(EXP_NUM)}회입니다.`,
         leadEn: `Across draws 1–${N}, the number drawn most often is <strong>${e.top.map(r => r.number).join('·')} (${e.max} times)</strong> and the one drawn least often is <strong>${e.bottom.map(r => r.number).join('·')} (${e.min} times)</strong>. Six numbers are drawn each time, so a single number is expected to appear ${f1(EXP_NUM)} times.`,
         body: [
-            h2En('많이 나온 번호 순위 Top 10', 'Top 10 most frequent numbers'),
+            h2En('많이 나온 번호·숫자 순위 Top 10', 'Top 10 most frequent numbers'),
             rankList(ranked.slice(0, 10), r => times(fmt(r.count))),
             h2En('적게 나온 번호 Top 10', 'Top 10 least frequent numbers'),
             rankList(ranked.slice(-10).reverse(), r => times(fmt(r.count))),
@@ -778,10 +779,11 @@ const ABOUT = {};
         file: 'statistics-gap.html', anchor: 'stat-gap', short: '미출수 (장기 미출현)', shortEn: 'Longest absences',
         title: `로또 미출수 · 장기 미출현 번호 순위 (${stats.latestRound}회 기준)`,
         h1: '로또 미출수 (오래 안 나온 번호)', h1En: 'Numbers Absent the Longest',
-        desc: `로또 ${stats.latestRound}회 기준 장기 미출수, 가장 오래 안 나온 번호 순위입니다. 1위 ${g[0].number}번은 ${g[0].gap}회차째 나오지 않았습니다.`,
+        // 검색은 붙여 쓴 "장기미출수" 가 대부분이다(서치어드바이저 2026-10). 설명 · 첫 문단에 그대로 쓴다
+        desc: `로또 ${stats.latestRound}회 기준 장기미출수, 가장 오래 안 나온 번호 순위입니다. 1위 ${g[0].number}번은 ${g[0].gap}회차째 나오지 않았습니다.`,
         fact: `1위 ${g[0].number}번 · ${g[0].gap}회차째 미출현`,
         factEn: `${g[0].number} \u2014 absent for ${g[0].gap} draws`,
-        lead: `미출수는 최근에 나오지 않은 번호입니다. ${stats.latestRound}회 기준으로 가장 오래 안 나온 번호는 <strong>${g[0].number}번</strong>으로, ${g[0].gap}회차째 나오지 않았습니다.`,
+        lead: `미출수는 최근에 나오지 않은 번호이고, 그 기간이 길수록 장기미출수라고 부릅니다. ${stats.latestRound}회 기준으로 가장 오래 안 나온 번호는 <strong>${g[0].number}번</strong>으로, ${g[0].gap}회차째 나오지 않았습니다.`,
         leadEn: `These are the numbers that have not come up recently. As of draw ${stats.latestRound}, the longest absence belongs to <strong>${g[0].number}</strong>, which has not appeared for ${g[0].gap} draws.`,
         body: [
             table([['순위', 'Rank'], ['번호', 'Number'], ['안 나온 기간', 'Absent for'], ['마지막으로 나온 회차', 'Last seen in draw']], rows),
