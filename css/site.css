@@ -298,6 +298,14 @@ details[open] > summary.card-title { padding-bottom: 0; }
 .gen-recent.is-locked .gen-recent-value { color: var(--muted); }
 .gen-recent-label { color: var(--text); font-size: 12px; font-weight: bold; white-space: nowrap; }
 .gen-recent input[type="range"] { width: 100%; margin: 0; accent-color: var(--brand); cursor: pointer; }
+/* 막대 둘(직전 당첨 조합 제외 · AC값)의 이름 · 막대 · 값 칸을 같은 세로줄에 맞춘다(subgrid 를 모르는 브라우저는 줄마다 따로) */
+.gen-sliders { display: grid; grid-template-columns: auto minmax(60px, 1fr) 3.4em; column-gap: 8px; }
+.gen-sliders .gen-recent { grid-column: 1 / -1; grid-template-columns: subgrid; }
+.gen-sliders .gen-recent + .gen-recent { margin-top: 6px; }
+/* AC값 통계 페이지의 "AC값 조건으로 번호 뽑으러 가기"(index.html#gen-ac)로 들어오면 번호 생성 단추까지 보이게 띄우고 잠깐 밝힌다 */
+#gen-ac { scroll-margin-top: 140px; }
+#gen-ac:target { animation: gen-target 2.4s ease-out; border-radius: 6px; }
+@keyframes gen-target { 0%, 40% { background: #fff4c2; box-shadow: 0 0 0 4px #fff4c2; } 100% { background: transparent; box-shadow: 0 0 0 4px transparent; } }
 .gen-recent.is-locked input[type="range"] { opacity: .45; }
 .member-cover { position: absolute; inset: 0; width: 100%; padding: 0; border: 0; background: transparent; cursor: pointer; }
 .gen-log { margin-top: 10px; text-align: left; }
@@ -1486,7 +1494,7 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 .chat-count { min-width: 18px; padding: 2px 6px; border-radius: 10px; background: #d61f69; font-size: 11px; text-align: center; }
 .chat-panel {
     position: fixed; right: 16px; bottom: 16px; z-index: 95;
-    display: flex; flex-direction: column; width: 340px; height: min(480px, calc(100vh - 32px));
+    display: flex; flex-direction: column; width: 340px; height: min(400px, calc(100vh - 32px));   /* PC 는 펼친 채로 시작해 덜 가리게 480 → 400 (2026-10-14) */
     border: 1px solid var(--line); border-radius: 14px; background: #fff; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); overflow: hidden;
 }
 .chat-panel[hidden] { display: none; }

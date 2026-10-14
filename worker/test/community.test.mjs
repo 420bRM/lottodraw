@@ -211,19 +211,23 @@ test('번호 생성기 설정: 로그인한 회원만 저장 · 다듬어 저장
     assert.equal((await call(env, 'POST', '/api/me/generator', { body: { gen: { inc: [1] } } })).status, 401);
     // 엉뚱한 값은 걸러 낸다: 범위 밖 · 겹침 · 고정수 7개 · 제외수와 고정수 겹침 · 패턴 번호 · 칸 범위
     const saved = await call(env, 'POST', '/api/me/generator', { headers: auth(s), body: { gen: {
-        inc: [7, 3, 3, 0, 46, 'x', 1, 2, 4, 5, 6], exc: [10, 3, 45, 45, 99], pat: [16, 1, 1, 17, 0], recent: 99, extra: 'nope' } } });
+        inc: [7, 3, 3, 0, 46, 'x', 1, 2, 4, 5, 6], exc: [10, 3, 45, 45, 99], pat: [16, 1, 1, 17, 0], recent: 99, ac: 12.7, extra: 'nope' } } });
     assert.equal(saved.status, 200, JSON.stringify(saved.data));
     const g = saved.data.user.gen;
     assert.deepEqual(g.inc, [1, 2, 3, 4, 5, 6]);
     assert.deepEqual(g.exc, [10, 45], '고정수와 겹친 제외수는 뺀다');
     assert.deepEqual(g.pat, [1, 16]);
     assert.equal(g.recent, 10);
+    assert.equal(g.ac, 10, 'AC값 조건은 0~10');
     assert.ok(!('extra' in g) && g.at > 0);
     // 내 정보에 나온다
     const me = await call(env, 'GET', '/api/me', { headers: auth(s) });
     assert.deepEqual(me.data.user.gen.inc, [1, 2, 3, 4, 5, 6]);
     // 이상한 본문은 거절
     assert.equal((await call(env, 'POST', '/api/me/generator', { headers: auth(s), body: { gen: 'x' } })).status, 400);
+    // AC값이 이상하면 끔(0)
+    const odd = await call(env, 'POST', '/api/me/generator', { headers: auth(s), body: { gen: { ac: 'x' } } });
+    assert.equal(odd.data.user.gen.ac, 0);
     // 지우기
     const cleared = await call(env, 'POST', '/api/me/generator', { headers: auth(s), body: { gen: null } });
     assert.equal(cleared.data.user.gen, null);

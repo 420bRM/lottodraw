@@ -793,9 +793,13 @@ const ABOUT = {};
     });
 })();
 
+// 1~45 에서 6개를 고르는 8,145,060조합을 AC값(0~10)별로 센 수 — 전부 세어 얻은 값이라 바뀌지 않는다
+const AC_COMBOS = [180, 858, 7873, 26292, 103461, 239998, 823318, 1148170, 2675680, 1609174, 1510056];
 (() => {
     const top = topBy(stats.ac);
-    const rows = stats.ac.map(r => [labEn(r), times(fmt(r.count)), pct(r.count, N)]);
+    const total = AC_COMBOS.reduce((a, b) => a + b, 0);
+    const theory = v => (AC_COMBOS[v] / total * 100).toFixed(1) + '%';
+    const rows = stats.ac.map((r, v) => [labEn(r), times(fmt(r.count)), pct(r.count, N), theory(v)]);
     STATS.push({
         file: 'statistics-ac.html', anchor: 'stat-ac', short: 'AC값', shortEn: 'AC value',
         title: `로또 AC값 통계 · AC값 계산기 (${RANGE})`,
@@ -816,9 +820,14 @@ const ABOUT = {};
                 '<p class="calc-result" id="ac-out" role="status" aria-live="polite"></p>',
             ].join('\n'),
             h2En('역대 AC값 분포', 'AC values across all draws'),
-            table([['AC값', 'AC value'], ['나온 횟수', 'Draws'], ['비율', 'Share']], rows),
+            table([['AC값', 'AC value'], ['나온 횟수', 'Draws'], ['비율', 'Share'], ['이론 확률', 'Theoretical']], rows),
             pEn('예를 들어 1·2·3·4·5·6은 차이가 1~5뿐이라 AC값이 0입니다. 무작위로 뽑은 조합 대부분은 AC 7 이상입니다.',
                 'For example, 1·2·3·4·5·6 yields only the differences 1 to 5, so its AC value is 0. Most randomly drawn combinations come out at AC 7 or above.'),
+            pEn(`이론 확률은 45개 중 6개를 고르는 ${fmt(total)}조합 가운데 그 AC값인 조합의 비율입니다. AC 8(${theory(8)})·AC 10(${theory(10)})이 자주 나오는 것은 그런 조합이 원래 많기 때문이고, 실제 비율도 이론값과 거의 같습니다. 어느 조합이든 1등 확률은 1/${fmt(total)}로 같습니다.`,
+                `The theoretical share is the fraction of all ${fmt(total)} ways to choose six of 45 numbers that have that AC value. AC 8 (${theory(8)}) and AC 10 (${theory(10)}) come up often simply because there are more such combinations, and the actual shares sit close to theory. Every combination has the same 1 in ${fmt(total)} chance of winning first prize.`),
+            `<p><a class="btn" href="index.html#gen-ac" data-i18n-en="Generate numbers with an AC value filter">AC값 조건으로 번호 뽑으러 가기</a></p>`,
+            pEn('홈 번호 생성기의 "AC값" 막대로 AC값이 6~10, 7~10 … 10인 조합만 뽑을 수 있습니다(로그인하면 무료).',
+                'The "AC value" slider in the home generator keeps only sets with an AC value of 6–10, 7–10 … or exactly 10 (free with sign-in).'),
         ],
         script: [
             '(function () {',

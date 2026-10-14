@@ -96,11 +96,19 @@
                         <button type="button" class="btn btn-big" id="generate-btn" data-i18n="gen.go">번호 생성</button>
                         <button type="button" class="btn btn-big btn-five" id="generate-five" data-member aria-label="5게임 한 번에 생성" data-i18n-attr="aria-label:gen.goFiveAria"><span class="btn-label" data-i18n="gen.goFive">5게임</span><span class="lock-tag" hidden><span class="sr-only" data-i18n="gen.lockTag">로그인 필요</span></span></button>
                     </div>
+                    <div class="gen-sliders">
                     <div class="gen-recent" id="gen-recent" data-member>
                         <label class="gen-recent-label" for="recent-range"><span data-i18n="gen.recentLabel">직전 당첨 조합 제외</span><span class="lock-tag" hidden><span class="sr-only" data-i18n="gen.lockTag">로그인 필요</span></span></label>
                         <input type="range" id="recent-range" min="0" max="10" step="1" value="0" disabled>
                         <output class="gen-recent-value" id="recent-text" for="recent-range" data-i18n="gen.recentValOff">끔</output>
                         <button type="button" class="member-cover" aria-label="로그인 전용" data-i18n-attr="aria-label:gen.memberAria" hidden></button>
+                    </div>
+                    <div class="gen-recent" id="gen-ac" data-member>
+                        <label class="gen-recent-label" for="ac-range"><span data-i18n="gen.acLabel">AC값</span><span class="lock-tag" hidden><span class="sr-only" data-i18n="gen.lockTag">로그인 필요</span></span></label>
+                        <input type="range" id="ac-range" min="0" max="5" step="1" value="0" disabled>
+                        <output class="gen-recent-value" id="ac-text" for="ac-range" data-i18n="gen.recentValOff">끔</output>
+                        <button type="button" class="member-cover" aria-label="로그인 전용" data-i18n-attr="aria-label:gen.memberAria" hidden></button>
+                    </div>
                     </div>
                     <div class="gen-log">
                         <div class="log">
@@ -775,10 +783,13 @@
         if (pcQuery.addEventListener) pcQuery.addEventListener('change', onPageSizeChange);
         else if (pcQuery.addListener) pcQuery.addListener(onPageSizeChange);
     }
-    // ---- 회원 기능: 직전 당첨 조합 제외 · 5게임 한 번에 · 내 설정 저장 (2026-10-11) ----
+    // ---- 회원 기능: 직전 당첨 조합 제외 · AC값 조건(2026-10-14) · 5게임 한 번에 · 내 설정 저장 (2026-10-11) ----
     // 로그인하면(직전 당첨 조합 제외 · 5게임은 이용권이 있어도) 쓴다. 서버에 구글 로그인이 꺼져 있으면 잠그지 않는다 — TOP 50 그래프와 같은 규칙.
     // 내 설정 저장은 계정에 남기므로 로그인만. 잠금은 화면에서만 거는 것이라 가입을 이끄는 용도다
     const RECENT_STEPS = [0, 1, 2, 3, 5, 10, 20, 30, 50, 100, Infinity];   // 끌기 막대 칸 → 직전 몇 회(마지막 칸은 역대 전체)
+    // AC값 조건: 막대 칸 → 이 값 이상(0 = 끔). AC값 = 번호 6개에서 두 개씩 뺀 차이 15개 중 서로 다른 값의 수 - 5 (0~10).
+    // 전체 8,145,060조합 중 AC 8 이 32.9%, 9 가 19.8%, 10 이 18.5% — 당첨번호의 비율도 이와 거의 같다(어느 조합이든 1등 확률은 같다)
+    const AC_STEPS = [0, 6, 7, 8, 9, 10];
     let pastCombos = null;     // 최신 회차부터 [{ key: '1,5,8,16,28,33', round }] — 당첨번호 6개만(보너스 제외)
     let pendingRecent = 0;     // 당첨 기록을 받기 전에 불러온 막대 칸
     let passOk = false;        // 이 브라우저에 이용권이 열려 있다
@@ -793,6 +804,18 @@
     const savedGen = () => { const m = acct() && acct().me && acct().me(); return (m && m.user && m.user.gen) || null; };
     const askLogin = key => { if (acct() && acct().openLogin) acct().openLogin(I18N.t(key)); };
     const recentRange = () => document.getElementById('recent-range');
+    const acRange = () => document.getElementById('ac-range');
+    const acMin = () => (memberOk() ? AC_STEPS[+acRange().value] || 0 : 0);
+    function acOf(sorted) {
+        const diffs = new Set();
+        for (let i = 0; i < sorted.length; i++) for (let j = i + 1; j < sorted.length; j++) diffs.add(sorted[j] - sorted[i]);
+        return diffs.size - (sorted.length - 1);
+    }
+    function paintAc() {
+        const v = AC_STEPS[+acRange().value] || 0;
+        document.getElementById('ac-text').textContent = !v ? I18N.t('gen.recentValOff') : v >= 10 ? '10' : I18N.f('gen.acValN', { n: v });
+        acRange().setAttribute('aria-valuetext', !v ? I18N.t('gen.acOff') : I18N.f(v >= 10 ? 'gen.acOnly10' : 'gen.acN', { n: v }));
+    }
     function recentCount() {
         const v = RECENT_STEPS[+recentRange().value] || 0;
         if (!v || !pastCombos || !memberOk()) return 0;
@@ -824,14 +847,20 @@
         const cover = document.querySelector('#gen-recent .member-cover');
         cover.hidden = open;
         cover.setAttribute('aria-label', I18N.t('gen.memberRecent'));
+        const acCover = document.querySelector('#gen-ac .member-cover');
+        acCover.hidden = open;
+        acCover.setAttribute('aria-label', I18N.t('gen.memberAc'));
+        acRange().disabled = !open;
         document.getElementById('generate-five').setAttribute('aria-label', I18N.t(open ? 'gen.goFiveAria' : 'gen.goFiveLocked'));
         if (!open && +range.value) range.value = 0;
+        if (!open && +acRange().value) acRange().value = 0;
         paintRecent();
+        paintAc();
     }
     function currentSettings() {
         const pat = [];
         for (let i = 1; i <= 16; i++) if (document.getElementById(`pattern${i}`).checked) pat.push(i);
-        return { inc: [...includeSet], exc: [...excludeSet], pat: pat, recent: +recentRange().value };
+        return { inc: [...includeSet], exc: [...excludeSet], pat: pat, recent: +recentRange().value, ac: AC_STEPS[+acRange().value] || 0 };
     }
     async function saveSettings() {
         const btn = document.getElementById('gen-save');
@@ -858,15 +887,20 @@
         const step = memberOk() ? Math.max(0, Math.min(RECENT_STEPS.length - 1, g.recent || 0)) : 0;
         if (pastCombos) recentRange().value = step;
         else pendingRecent = step;   // 당첨 기록을 받기 전에는 막대가 꺼져 있다 — 받은 뒤에 칸을 맞춘다(그 전에 뽑으면 빼지 않으므로 '끔'으로 보인다)
+        // AC값은 저장한 값 이하에서 가장 가까운 칸으로(막대에 없는 값이면)
+        acRange().value = memberOk() ? AC_STEPS.reduce((best, v, i) => (v <= (+g.ac || 0) ? i : best), 0) : 0;
         document.getElementById('picker-warning').textContent = '';
         renderPicker();
         paintRecent();
+        paintAc();
         flashButton(btn, I18N.t('gen.loadedShort'), I18N.t('gen.loaded'), 'gen-set-live');
     }
     function initMember() {
         const range = recentRange();
         range.addEventListener('input', paintRecent);
         document.querySelector('#gen-recent .member-cover').addEventListener('click', () => askLogin('gen.memberRecent'));
+        acRange().addEventListener('input', paintAc);
+        document.querySelector('#gen-ac .member-cover').addEventListener('click', () => askLogin('gen.memberAc'));
         document.getElementById('generate-five').addEventListener('click', () => (memberOk() ? generateNumbers(5) : askLogin('gen.memberFive')));
         document.getElementById('gen-save').addEventListener('click', saveSettings);
         document.getElementById('gen-load').addEventListener('click', loadSettings);
@@ -900,6 +934,13 @@
                 logLines.push(prefix + I18N.f('gen.logSkip', { i: attempts, nums: numStr, reason: invalidReason }));
                 continue;
             }
+            if (rules.acMin) {
+                const ac = acOf(numbers);
+                if (ac < rules.acMin) {
+                    logLines.push(prefix + I18N.f('gen.logSkipAc', { i: attempts, nums: numStr, ac: ac, min: rules.acMin }));
+                    continue;
+                }
+            }
             const key = numbers.join(',');
             const pastRound = rules.past.get(key);
             if (pastRound) {
@@ -925,7 +966,7 @@
         logLines = [];
         renderLog();
         const includeNums = [...includeSet];
-        const rules = { includeNums: includeNums, exclude: new Set(excludeSet), patterns: new Set(), past: new Map(), made: new Set() };
+        const rules = { includeNums: includeNums, exclude: new Set(excludeSet), patterns: new Set(), past: new Map(), made: new Set(), acMin: acMin() };
         for (let i = 1; i <= 16; i++) {
             if (document.getElementById(`pattern${i}`).checked) rules.patterns.add(i);
         }
@@ -947,6 +988,12 @@
                 clearBalls();
                 setMessage(
                     I18N.f('gen.fixedHitsPattern', { reason: fixedReason }), true);
+                return;
+            }
+            const fixedAc = acOf(includeNums.slice().sort((a, b) => a - b));
+            if (rules.acMin && fixedAc < rules.acMin) {
+                clearBalls();
+                setMessage(I18N.f('gen.fixedLowAc', { ac: fixedAc, min: rules.acMin }), true);
                 return;
             }
             const pastRound = rules.past.get(includeNums.slice().sort((a, b) => a - b).join(','));

@@ -753,7 +753,8 @@ function cleanGen(raw) {
     const exc = nums(raw.exc, 45).filter(n => !inc.includes(n));
     const pat = Array.isArray(raw.pat) ? [...new Set(raw.pat.map(Number).filter(n => Number.isInteger(n) && n >= 1 && n <= 16))].sort((x, y) => x - y) : [];
     const recent = Math.max(0, Math.min(GEN_RECENT_MAX, Math.floor(Number(raw.recent) || 0)));
-    return { inc, exc, pat, recent, at: Date.now() };
+    const ac = Math.max(0, Math.min(10, Math.floor(Number(raw.ac) || 0)));   // AC값 조건: 이 값 이상(0 = 끔)
+    return { inc, exc, pat, recent, ac, at: Date.now() };
 }
 async function saveGenerator(request, env) {
     const s = await sessionUser(request, env);
