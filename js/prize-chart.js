@@ -196,16 +196,18 @@
     }
 
     // 창 안의 빈 값(이월)은 빼고 평균한다. 창이 다 차기 전 회차는 null.
-    function movingAverage(values, n) {
+    // weights 를 주면 가중 평균 — 1인당 금액을 당첨자 수로 가중하면 창 안의 1등 총당첨금 ÷ 당첨자 수(당첨자 1인 기준)
+    function movingAverage(values, n, weights) {
         const out = new Array(values.length).fill(null);
+        const wt = i => (weights ? weights[i] : 1);
         let sum = 0;
         let cnt = 0;
         for (let i = 0; i < values.length; i++) {
             const v = values[i];
-            if (v != null) { sum += v; cnt++; }
+            if (v != null && wt(i) > 0) { sum += v * wt(i); cnt += wt(i); }
             if (i >= n) {
-                const old = values[i - n];
-                if (old != null) { sum -= old; cnt--; }
+                const j = i - n;
+                if (values[j] != null && wt(j) > 0) { sum -= values[j] * wt(j); cnt -= wt(j); }
             }
             if (i >= n - 1 && cnt > 0) out[i] = sum / cnt;
         }
@@ -368,7 +370,9 @@
         function seriesOf(metric, real, net) {
             real = !!(real && cpi && metric.unit === 'won');
             net = !!(net && metric.unit === 'won');
-            const key = metric.id + (real ? ':real' : '') + (net ? ':net' : '');
+            // 이동평균도 "평균 기준"을 따른다: 1인당 당첨금을 당첨자 1인 기준으로 보면 당첨자 수로 가중한다
+            const byWinner = !!(metric.weight && state.avgBy !== 'draw');
+            const key = metric.id + (real ? ':real' : '') + (net ? ':net' : '') + (byWinner ? ':w' : '');
             if (!cache[key]) {
                 const vals = all.map(d => {
                     let v = metric.value(d);
@@ -377,8 +381,9 @@
                     const f = realFactor(cpi, d.date);
                     return f ? v * f : v;
                 });
+                const weights = byWinner ? all.map(metric.weight) : null;
                 const ma = {};
-                MA.forEach(n => { ma[n] = movingAverage(vals, n); });
+                MA.forEach(n => { ma[n] = movingAverage(vals, n, weights); });
                 cache[key] = { vals: vals, ma: ma, real: real };
             }
             return cache[key];
@@ -570,8 +575,8 @@
         const grossBtn = cell(T('pc.tax.gross'), () => setNet(false));
         const netBtn = cell(T('pc.tax.net'), () => setNet(true));
         const taxRow = row(T('pc.row.tax'), [grossBtn, netBtn], false, true);
-        // 평균 기준(무료): 당첨자 1인 기준(처음 값 — 동행복권 · 언론과 같은 값) / 회차 평균. 요약 · 평균선이 고른 쪽으로 잰다.
-        // weight 가 있는 지표(1인당 당첨금)에서만 고른다
+        // 평균 기준(무료): 당첨자 1인 기준(처음 값 — 동행복권 · 언론과 같은 값) / 회차 평균. 요약 · 평균선 · 이동평균이 고른 쪽으로 잰다.
+        // weight 가 있는 지표(1인당 당첨금)에서만 그래프 위 지표 상자에 보인다
         function setAvgBy(v) {
             if (!byId(state.metric).weight) return;
             state.avgBy = v;
@@ -617,11 +622,11 @@
         const metricBox = el('div', { className: 'pchart-tools pt-top' }, [
             row(T('pc.row.metric'), metricBtns.filter(b => !byId(b.dataset.v).tier), false, true),
             tierBtns.length ? row(T('pc.row.tier'), tierBtns, false, true) : null,
+            avgRow,
         ]);
         const pro = el('div', { className: 'pchart-tools is-locked' }, [
             realRow,
             taxRow,
-            avgRow,
             cmpRow,
             row(T('pc.row.candle'), candleChips, false),
             row(T('pc.pro.range'), rangeChips.concat([zoomIn, zoomOut]), false),
@@ -740,12 +745,9 @@
             lockIf(netBtn, !wonMetric || !state.unlocked);
             netBtn.title = wonMetric ? T('pc.tax.netTitle') : T('pc.tax.no');
             grossBtn.title = wonMetric ? '' : T('pc.tax.no');
-            const weighted = !!byId(state.metric).weight;
-            [[avgWinnerBtn, 'winner'], [avgDrawBtn, 'draw']].forEach(([c, v]) => {
-                c.setAttribute('aria-pressed', String(weighted && state.avgBy === v));
-                lockIf(c, !weighted);
-                c.title = weighted ? '' : T('pc.avg.no');
-            });
+            avgRow.hidden = !byId(state.metric).weight;
+            avgWinnerBtn.setAttribute('aria-pressed', String(state.avgBy !== 'draw'));
+            avgDrawBtn.setAttribute('aria-pressed', String(state.avgBy === 'draw'));
             pro.classList.toggle('is-locked', !state.unlocked);
             badge.hidden = !state.unlocked;
             proNote.hidden = state.unlocked;

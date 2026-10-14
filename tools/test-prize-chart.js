@@ -17,6 +17,9 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 check('이동평균 기본', same(P.movingAverage([1, 2, 3, 4], 2), [null, 1.5, 2.5, 3.5]));
 check('이동평균은 빈 값을 건너뛴다', same(P.movingAverage([1, null, 3, 4, 5], 2), [null, 1, 3, 3.5, 4.5]));
 check('창이 전부 비면 null', same(P.movingAverage([null, null, 6], 2), [null, null, 6]));
+// 가중 이동평균: 1인당 금액을 당첨자 수로 가중 = 창 안 총당첨금 ÷ 당첨자 수
+check('가중 이동평균', same(P.movingAverage([10, 20, 30], 2, [1, 3, 1]), [null, 17.5, 22.5]));
+check('가중 이동평균은 이월(빈 값 · 0명)을 건너뛴다', same(P.movingAverage([10, null, 30], 2, [2, null, 1]), [null, 10, 30]));
 
 // 눈금
 check('사람 수 눈금은 정수', same(P.linearTicks(63, 5, true).ticks, [0, 20, 40, 60, 80]));
@@ -112,6 +115,10 @@ const d1047 = draws.slice(0, 1047);
 const w1047 = P.summarize(d1047, d1047.map(each.value), 0, 1046, each.weight);
 check('1~1047회 당첨자 1인 기준 평균이 언론 보도(20억 4,418만 원)와 같다', Math.floor(w1047.avgW / 1e4) === 204418, w1047.avgW);
 check('가중치가 없는 지표는 avgW 가 없다', all.avgW === null && !total.weight && !winners.weight);
+const maW = P.movingAverage(eachVals, 240, draws.map(each.weight));
+const last240 = draws.slice(-240).filter(d => d.firstPrizeWinners > 0);
+const exp240 = last240.reduce((s, d) => s + d.firstPrizeAmount * d.firstPrizeWinners, 0) / last240.reduce((s, d) => s + d.firstPrizeWinners, 0);
+check('240회 가중 이동평균 끝값 = 최근 240회 총당첨금 ÷ 당첨자 수', Math.abs(maW[maW.length - 1] - exp240) < 1, `${maW[maW.length - 1]} vs ${exp240}`);
 const w = P.summarize(draws, draws.map(winners.value), 0, draws.length - 1);
 check('당첨자 수 최저는 0명(이월)', draws.map(winners.value)[w.lo] === 0);
 const d = draws[draws.length - 1];
