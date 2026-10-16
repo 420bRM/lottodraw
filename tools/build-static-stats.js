@@ -828,6 +828,61 @@ const AC_COMBOS = [180, 858, 7873, 26292, 103461, 239998, 823318, 1148170, 26756
     const dupes = [...new Set(pairs.filter((d, i) => pairs.indexOf(d) !== i))].sort((a, b) => a - b);
     const lastAc = distinct - 5;
     const high = [7, 8, 9, 10].reduce((a, v) => a + AC_COMBOS[v], 0) / total * 100;
+    // AC값과 1등 당첨자 수 (2026-10-16): 회차마다 판매량으로 "무작위로 샀다면 나왔을 1등 인원"(기대 인원 = 판매 게임 수 ÷ C(45,6))을
+    // 어림해 실제 인원과 견준다. 1게임 1,000원이 된 88회부터. 판매량이 시기마다 달라 인원을 그대로 견주면 안 된다
+    const share = (() => {
+        const rows = draws.filter(d => d.round >= 88 && prizeOf[d.round] && prizeOf[d.round].sales > 0).map(d => {
+            const p = prizeOf[d.round], games = p.sales / 1000;
+            return { round: d.round, ac: acValue(sorted(d.numbers)), w1: d.firstPrizeWinners, a1: d.firstPrizeAmount, w2: p.w2, w3: p.w3,
+                e1: games / TOTAL, e2: games * 6 / TOTAL, e3: games * 228 / TOTAL };
+        });
+        if (rows.length < 100) return null;
+        const pooled = (sel, k) => sel.reduce((a, x) => a + x['w' + k], 0) / sel.reduce((a, x) => a + x['e' + k], 0);
+        const median = v => { const o = v.slice().sort((x, y) => x - y), m = o.length >> 1; return o.length % 2 ? o[m] : (o[m - 1] + o[m]) / 2; };
+        // 95% 범위: 회차를 다시 뽑는 부트스트랩. 씨앗을 고정해 자료가 같으면 쪽도 같게
+        let seed = 20261016;
+        const rand = () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+        const boot = sel => { const v = []; for (let b = 0; b < 2000; b++) { const pick = sel.map(() => sel[Math.floor(rand() * sel.length)]); v.push(pooled(pick, 1)); } v.sort((x, y) => x - y); return [v[50], v[1949]]; };
+        const band = (label, labelEn, f) => {
+            const sel = rows.filter(x => f(x.ac));
+            const won1 = sel.filter(x => x.w1 > 0);
+            return { label, labelEn, n: sel.length, r1: sel.length ? pooled(sel, 1) : 0, med: won1.length ? median(won1.map(x => x.a1)) : 0, sel };
+        };
+        const bands = [band('AC 0~5', 'AC 0–5', a => a <= 5)].concat([6, 7, 8, 9, 10].map(v => band('AC ' + v, 'AC ' + v, a => a === v)));
+        const all = band('전체', 'All', () => true);
+        const low = bands[0].sel, rest = rows.filter(x => x.ac > 5);
+        const fine = [band('AC 0~3', 'AC 0–3', a => a <= 3), band('AC 4', 'AC 4', a => a === 4), band('AC 5', 'AC 5', a => a === 5)];
+        // 1인당 금액이 '기대 인원이 나눴을 때'의 몇 배였나(중앙값) = 기대 ÷ 실제
+        const perHead = sel => median(sel.filter(x => x.w1 > 0).map(x => x.e1 / x.w1));
+        const top = rows.slice().sort((x, y) => y.w1 / y.e1 - x.w1 / x.e1 || x.round - y.round).slice(0, 3);
+        return { n: rows.length, bands, all, fine, ci: boot(low), lowR: pooled(low, 1), restR: pooled(rest, 1),
+            low2: pooled(low, 2), rest2: pooled(rest, 2), low3: pooled(low, 3), rest3: pooled(rest, 3),
+            headLow: perHead(low), headRest: perHead(rest), top };
+    })();
+    const eokShort = a => en(`${f1(a / 1e8)}억`, `${(a / 1e9).toFixed(2)}bn`);
+    const shareBody = !share ? [] : (() => {
+        const S = share, x2 = v => v.toFixed(2);
+        const strong = S.ci[0] > 1 && S.lowR > S.restR;
+        const pctLess = Math.round((1 - S.headLow / S.headRest) * 100);
+        const flat23 = [S.low2, S.rest2, S.low3, S.rest3].every(v => v > 0.94 && v < 1.06);
+        const topHigh = S.top.filter(t => t.ac >= 6).length;
+        const topKo = S.top.map(t => `<a href="round/${t.round}.html">${t.round}회</a> ${t.w1}명(기대 ${f1(t.e1)}명, AC ${t.ac})`).join(' · ');
+        const topEn = S.top.map(t => `<a href="round/${t.round}.html">draw ${t.round}</a>, ${t.w1} winners (expected ${f1(t.e1)}, AC ${t.ac})`).join('; ');
+        return [
+            h2En('AC값과 1등 당첨자 수', 'AC value and first-prize winners'),
+            pEn(`AC값이 낮은 조합은 사람이 손으로 고르기 쉬워 1등을 여럿이 나눠 가지지 않을까요? 88회(1게임 1,000원) 이후 ${fmt(S.n)}회를 회차마다 견줬습니다. 그 회차에 팔린 게임 수를 전체 조합 수(${fmt(TOTAL)})로 나누면 무작위로 샀을 때 나왔을 1등 인원(기대 인원)이 나오고, 실제 인원이 이보다 많으면 그 조합을 고른 사람이 많았다는 뜻입니다.`,
+                `Do low-AC sets, the kind people pick by hand, end up shared by more first-prize winners? We compared all ${fmt(S.n)} draws since draw 88 (1,000 KRW per game). Dividing the games sold in a draw by ${fmt(TOTAL)} gives the number of first-prize winners to expect if everyone picked at random; more actual winners than that means more people chose that set.`),
+            table([['AC값', 'AC value'], ['회차 수', 'Draws'], ['1등 당첨자 (기대 대비)', 'First-prize winners (vs expected)'], ['1등 1인당 (중앙값)', 'Per winner (median)']],
+                S.bands.concat([S.all]).map(b => [en(b.label, b.labelEn), en(`${fmt(b.n)}회`, fmt(b.n)), en(`${x2(b.r1)}배`, `${x2(b.r1)}×`), eokShort(b.med)]), 'ac-table'),
+            strong
+                ? pEn(`AC 0~5 회차는 1등이 기대보다 <strong>${x2(S.lowR)}배</strong> 나왔습니다(AC 6~10은 ${x2(S.restR)}배, 95% 범위 ${x2(S.ci[0])}~${x2(S.ci[1])}배). 1인당 금액은 기대 인원이 나눴을 때의 ${x2(S.headLow)}배(중앙값)로, AC 6~10(${x2(S.headRest)}배)보다 ${pctLess}%쯤 적었습니다. 낮을수록 더 몰렸습니다 — ${S.fine.map(f => `${f.label} ${fmt(f.n)}회 ${x2(f.r1)}배`).join(', ')}.`,
+                    `In AC 0–5 draws there were <strong>${x2(S.lowR)} times</strong> as many first-prize winners as expected (AC 6–10: ${x2(S.restR)} times; 95% range ${x2(S.ci[0])}–${x2(S.ci[1])}). Each winner got ${x2(S.headLow)} times the expected share (median), about ${pctLess}% less than in AC 6–10 draws (${x2(S.headRest)}). The lower the value, the bigger the crowd: ${S.fine.map(f => `${f.labelEn} ${fmt(f.n)} draws ${x2(f.r1)}×`).join(', ')}.`)
+                : pEn(`AC 0~5 회차의 1등은 기대의 ${x2(S.lowR)}배, AC 6~10은 ${x2(S.restR)}배로 뚜렷한 차이는 없습니다(AC 0~5의 95% 범위 ${x2(S.ci[0])}~${x2(S.ci[1])}배).`,
+                    `First-prize winners came to ${x2(S.lowR)} times the expected number in AC 0–5 draws and ${x2(S.restR)} times in AC 6–10 draws — no clear difference (95% range for AC 0–5: ${x2(S.ci[0])}–${x2(S.ci[1])}).`),
+            pEn(`${flat23 ? `2등(AC 0~5 ${x2(S.low2)}배 · 6~10 ${x2(S.rest2)}배)과 3등(${x2(S.low3)}배 · ${x2(S.rest3)}배)은 거의 차이가 없습니다. 모양 있는 조합을 통째로 고른 사람들이 6개를 다 맞혀 1등에서만 몰리는 것으로 보입니다.` : `2등은 AC 0~5 ${x2(S.low2)}배 · 6~10 ${x2(S.rest2)}배, 3등은 ${x2(S.low3)}배 · ${x2(S.rest3)}배입니다.`} 기대보다 가장 많이 나눈 회차는 ${topKo}입니다.${topHigh ? ' AC가 높아도 다른 까닭으로 사람이 몰리는 회차가 있어, AC값만으로 나눠 가질 사람 수를 가늠할 수는 없습니다.' : ''} AC 0~5 회차는 ${fmt(S.bands[0].n)}회뿐이라 수치가 앞으로 꽤 흔들릴 수 있고, 어느 조합이든 1등 확률은 같습니다.`,
+                `${flat23 ? `Second prize (AC 0–5 ${x2(S.low2)}×, 6–10 ${x2(S.rest2)}×) and third prize (${x2(S.low3)}×, ${x2(S.rest3)}×) barely differ — it looks as if people who pick a patterned set whole match all six, so the crowding shows up only in first prize.` : `Second prize: AC 0–5 ${x2(S.low2)}×, 6–10 ${x2(S.rest2)}×; third prize: ${x2(S.low3)}×, ${x2(S.rest3)}×.`} The draws shared most beyond expectation were ${topEn}.${topHigh ? ' High-AC sets can draw a crowd for other reasons too, so the AC value alone cannot tell you how many people you would share with.' : ''} There are only ${fmt(S.bands[0].n)} AC 0–5 draws, so these figures may still move, and every set has the same chance of winning.`),
+        ];
+    })();
     STATS.push({
         file: 'statistics-ac.html', anchor: 'stat-ac', short: 'AC값', shortEn: 'AC value',
         title: `로또 AC값 통계 · AC값 계산기 (${RANGE})`,
@@ -867,6 +922,7 @@ const AC_COMBOS = [180, 858, 7873, 26292, 103461, 239998, 823318, 1148170, 26756
                 `<strong>Low</strong> values mean the gaps between numbers repeat — runs like 1·2·3·4·5·6, even steps like 5·10·15·20·25·30, or numbers bunched together. <strong>High</strong> values mean the gaps all differ. Regular hand-picked sets tend to sit low, while ${high.toFixed(1)}% of random sets come out at AC 7 or above.`),
             pEn(`이론 확률은 45개 중 6개를 고르는 ${fmt(total)}조합 가운데 그 AC값인 조합의 비율입니다. AC 8(${theory(8)})·AC 10(${theory(10)})이 자주 나오는 것은 그런 조합이 원래 많기 때문이고, 실제 비율도 이론값과 거의 같습니다. 어느 조합이든 1등 확률은 1/${fmt(total)}로 같습니다.`,
                 `The theoretical share is the fraction of all ${fmt(total)} ways to choose six of 45 numbers that have that AC value. AC 8 (${theory(8)}) and AC 10 (${theory(10)}) come up often simply because there are more such combinations, and the actual shares sit close to theory. Every combination has the same 1 in ${fmt(total)} chance of winning first prize.`),
+            ...shareBody,
             `<p><a class="btn" href="index.html#gen-ac" data-i18n-en="Generate numbers with an AC value filter">AC값 조건으로 번호 뽑으러 가기</a></p>`,
             pEn('홈 번호 생성기의 "AC값" 막대로 AC값이 6~10, 7~10 … 10인 조합만 뽑을 수 있습니다(로그인하면 무료).',
                 'The "AC value" slider in the home generator keeps only sets with an AC value of 6–10, 7–10 … or exactly 10 (free with sign-in).'),
