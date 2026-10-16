@@ -1216,7 +1216,7 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 .stat-page .data-table { font-variant-numeric: tabular-nums; }
 /* AC값 표: 휴대폰에서 "AC 0" · 제목 낱말이 둘로 쪼개지지 않게 */
 .ac-table th { word-break: keep-all; }
-.ac-table td:first-child { white-space: nowrap; }
+.ac-table td:first-child, .ac-table td:nth-child(2) { white-space: nowrap; }
 .stat-page .data-table th, .stat-page .data-table td { padding: 6px 10px; }
 /* 넓은 본문에서 순위 목록이 화면 끝까지 늘어나면 번호와 횟수가 멀어진다 */
 .stat-page .ball-list { max-width: 320px; }
