@@ -861,84 +861,106 @@ const AC_COMBOS = [180, 858, 7873, 26292, 103461, 239998, 823318, 1148170, 26756
             headLow: perHead(low), headRest: perHead(rest), top };
     })();
     const eokShort = a => en(`${f1(a / 1e8)}억`, `${(a / 1e9).toFixed(2)}bn`);
-    // AC값별 1등 당첨자(기대 대비) 막대 — x축 AC값 0~10, 1배(기대) 선에서 위(많이 나눔) · 아래(적게)로. 그림은 빌드 때 HTML 로 찍고
-    // 높이는 % 라 휴대폰에서도 글자가 줄지 않는다. 10회 미만인 값은 옅게(믿기 어렵다). 짚거나 누르면 아래 스크립트가 풍선을 띄운다
-    // 그림의 모양은 이 쪽에 함께 싣는다 — 생성 페이지의 css/site.css 주소에는 지문(?v=)이 없어, 배포 직후 옛 site.css 와 만나면 그림이 깨진다.
-    // 색: 많이 나눔 빨강 · 적게 파랑(색약 검사 통과), 10회 미만은 옅게
-    const ACC_STYLE = `.ac-chart { --acc-up: #d9534f; --acc-down: #2a78d6; margin: 18px 0 8px; padding: 14px 14px 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
-.ac-chart figcaption { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; margin-bottom: 12px; font-size: 14px; }
-.acc-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; color: var(--muted); font-size: 12px; }
-.acc-legend > span { display: inline-flex; align-items: center; gap: 5px; }
-.acc-legend i { width: 10px; height: 10px; border-radius: 2px; background: var(--acc-up); }
-.acc-legend i.is-down { background: var(--acc-down); }
-.acc-wrap { display: flex; gap: 6px; }
-.acc-y { position: relative; flex: 0 0 auto; width: 3.2em; height: 210px; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
-.acc-y > span { position: absolute; right: 0; transform: translateY(50%); line-height: 1; white-space: nowrap; }
-.acc-plot { position: relative; flex: 1; height: 210px; }
-.acc-grids, .acc-cols { position: absolute; inset: 0; }
-.acc-grid { position: absolute; left: 0; right: 0; height: 0; border-top: 1px solid #eee; }
-.acc-grid.is-ref { border-top-color: #9a9a9a; }
-.acc-cols { display: flex; }
-.acc-col { position: relative; flex: 1; min-width: 0; height: 100%; margin: 0; padding: 0; border: 0; border-radius: 4px; background: transparent; cursor: pointer; }
-.acc-col:hover, .acc-col.is-on { background: rgba(0, 48, 135, .05); }
-.acc-col.is-empty { cursor: default; }
-.acc-bar { position: absolute; left: 50%; width: min(24px, 64%); transform: translateX(-50%) translateY(1px); }
-.acc-bar.is-up { background: var(--acc-up); border-radius: 4px 4px 0 0; }
-.acc-bar.is-down { background: var(--acc-down); border-radius: 0 0 4px 4px; transform: translateX(-50%) translateY(1px); }
-.acc-bar.is-few, .acc-legend i.is-few { opacity: .4; }
-.acc-tip {
-    position: absolute; top: -6px; z-index: 2; max-width: min(260px, 100%); padding: 6px 9px; transform: translateY(-100%);
-    border-radius: 6px; background: #1d2433; color: #fff; font-size: 12px; line-height: 1.45; pointer-events: none; word-break: keep-all;
-}
-.acc-tip[hidden] { display: none; }
-.acc-x { display: flex; margin: 6px 0 0 calc(3.2em + 6px); }
-.acc-x > span { flex: 1; min-width: 0; text-align: center; line-height: 1.25; }
-.acc-x b { display: block; color: var(--text); font-size: 12px; }
-.acc-x small { display: block; color: var(--muted); font-size: 10px; white-space: nowrap; }
-.acc-xtitle { margin: 6px 0 0; color: var(--muted); font-size: 12px; text-align: center; }
-@media (max-width: 420px) {
-    .ac-chart { padding: 12px 10px 8px; }
-    .acc-x small { font-size: 9px; letter-spacing: -.02em; }
-}
-@media (max-width: 359px) {
-    .acc-x small, .acc-xnote { display: none; }
-}`;
+    // AC값별 그래프 셋 (2026-10-16) — 번호 합계와 같은 SVG 막대 모양(dist-*). x축은 셋 다 AC값 0~10 으로 같고, y축은 그래프마다 하나(0부터).
+    // 단위가 다른 값(회차 수 · 배 · 억)을 한 그림에 겹치면 y축이 둘 셋이 되어 헷갈린다 — 위아래로 쌓고 단추로 하나씩 켜고 끈다.
+    // ① 출현 횟수(1회~, 이론 곡선) ② 1등 당첨자 기대 대비(88회~, 1배 점선) ③ 1등 1인당 중앙값(88회~, 전체 중앙값 점선).
+    // 막대를 짚거나 누르면 js/dist-balls.js 가 data-tip 글을 막대 위에 띄운다(없으면 <title> 툴팁). 10회 미만 값은 옅게
+    const ACC_STYLE = `.ac-figure { margin: 16px 0 10px; }
+.acc-toggles { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+.acc-toggles button { padding: 5px 12px; border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--muted); font: 13px/1.4 var(--font); cursor: pointer; }
+.acc-toggles button[aria-pressed="true"] { border-color: var(--brand); background: var(--brand); color: #fff; font-weight: bold; }
+.acc-panel { margin: 0 0 14px; }
+.acc-panel[hidden] { display: none; }
+.acc-ptitle { margin: 0 0 2px; color: var(--text); font-size: 14px; font-weight: bold; }
+.acc-ptitle small { margin-left: 6px; color: var(--muted); font-size: 12px; font-weight: normal; }
+.ac-figure .dist-bar.is-few { opacity: .22; }
+.ac-figure .dist-bar.is-on { opacity: .9; }
+.ac-figure .key-few { opacity: .22; }
+.ac-figure .dist-legend .key-mean { height: 0; border-top: 2px dashed var(--brand); background: none; opacity: .6; }`;
     const acChart = S => {
         const few = 10;
-        const max = Math.max(2, Math.ceil(Math.max(...S.perAc.map(b => b.r1)) * 2) / 2);
-        const pos = v => (v / max * 100).toFixed(2) + '%';
-        const ticks = [];
-        for (let t = 0; t <= max + 1e-9; t += 0.5) ticks.push(t);
-        const tickLab = t => (t === 0 ? '0' : `${t % 1 ? t.toFixed(1) : t}`);
-        const grid = ticks.map(t => `<span class="acc-grid${t === 1 ? ' is-ref' : ''}" style="bottom:${pos(t)}"></span>`).join('');
-        const yAxis = ticks.map(t => `<span style="bottom:${pos(t)}">${en(`${tickLab(t)}배`, `${tickLab(t)}×`)}</span>`).join('');
-        const cols = S.perAc.map((b, v) => {
-            const has = b.n > 0;
-            const up = b.r1 >= 1;
-            const lo = up ? 1 : b.r1, hi = up ? b.r1 : 1;
-            const bar = has ? `<span class="acc-bar ${up ? 'is-up' : 'is-down'}${b.n < few ? ' is-few' : ''}" style="bottom:${pos(lo)};height:calc(${pos(hi - lo)} + 2px)" aria-hidden="true"></span>` : '';
-            const ko = has ? `AC ${v} · ${fmt(b.n)}회 · 1등 당첨자가 기대의 ${b.r1.toFixed(2)}배${b.med ? ` · 1인당 중앙값 ${f1(b.med / 1e8)}억` : ''}${b.n < few ? ' · 회차가 적어 믿기 어려움' : ''}`
-                : `AC ${v} · 당첨번호 중에는 없음`;
-            const enT = has ? `AC ${v} · ${fmt(b.n)} draws · first-prize winners ${b.r1.toFixed(2)}× expected${b.med ? ` · median per winner ${(b.med / 1e9).toFixed(2)}bn KRW` : ''}${b.n < few ? ' · too few draws to rely on' : ''}`
-                : `AC ${v} · never drawn`;
-            return `<button type="button" class="acc-col${has ? '' : ' is-empty'}">${bar}<span class="sr-only" data-i18n-en="${esc(enT)}">${ko}</span></button>`;
-        }).join('');
-        const xs = S.perAc.map((b, v) => `<span><b>${v}</b><small>${b.n ? en(`${fmt(b.n)}회`, fmt(b.n)) : en('없음', '–')}</small></span>`).join('');
+        const W = 680, H = 210, L = 52, R = 12, T = 24, B = 40;
+        const slot = (W - L - R) / 11;
+        const cx = v => L + slot * (v + 0.5);
+        const r2 = v => Math.round(v * 10) / 10;
+        // 막대 · 눈금 · 점선 · 곡선 → svg 한 장
+        const panel = o => {
+            const yMax = o.yMax, Y = y => T + (H - T - B) * (1 - y / yMax);
+            const out = [];
+            for (let y = 0; y <= yMax + 1e-9; y += o.yStep) {
+                out.push(`<line class="dist-grid" x1="${L}" x2="${W - R}" y1="${r2(Y(y))}" y2="${r2(Y(y))}"/>`);
+                out.push(`<text class="dist-tick" x="${L - 6}" y="${r2(Y(y) + 4)}" text-anchor="end"${o.tickEn ? ` data-i18n-en="${esc(o.tickEn(y))}"` : ''}>${o.tick(y)}</text>`);
+            }
+            o.bars.forEach((b, v) => {
+                if (b == null) return;
+                const x = L + slot * v + 1, w = slot - 2, top = Y(b.y);
+                out.push(`<rect class="dist-bar${b.few ? ' is-few' : ''}" x="${r2(x)}" y="${r2(top)}" width="${r2(w)}" height="${r2(Y(0) - top)}" data-tip="${esc(b.tip)}" data-tip-en="${esc(b.tipEn)}"><title>${esc(b.tip)}</title></rect>`);
+            });
+            if (o.curve) out.push(`<polyline class="dist-curve" points="${o.curve.map((y, v) => `${r2(cx(v))},${r2(Y(y))}`).join(' ')}"/>`);
+            if (o.ref) {
+                out.push(`<line class="dist-mean" x1="${L}" x2="${W - R}" y1="${r2(Y(o.ref.y))}" y2="${r2(Y(o.ref.y))}"/>`);
+                out.push(`<text class="dist-mark" x="${W - R}" y="${r2(Y(o.ref.y) - 5)}" text-anchor="end" data-i18n-en="${esc(o.ref.labelEn)}">${o.ref.label}</text>`);
+            }
+            out.push(`<line class="dist-axis" x1="${L}" x2="${W - R}" y1="${H - B}" y2="${H - B}"/>`);
+            for (let v = 0; v <= 10; v++) out.push(`<text class="dist-tick" x="${r2(cx(v))}" y="${H - B + 16}" text-anchor="middle">${v}</text>`);
+            out.push(`<text class="dist-label" x="${r2((L + W - R) / 2)}" y="${H - 4}" text-anchor="middle" data-i18n-en="AC value">AC값</text>`);
+            return [
+                `<div class="acc-panel" data-panel="${o.id}"${o.on ? '' : ' hidden'}>`,
+                `<p class="acc-ptitle"><span data-i18n-en="${esc(o.titleEn)}">${o.title}</span><small data-i18n-en="${esc(o.subEn)}">${o.sub}</small></p>`,
+                `<svg class="dist-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.aria)}">`,
+                out.join('\n'),
+                '</svg>',
+                `<div class="dist-legend">${o.legend.join('')}</div>`,
+                '</div>',
+            ].join('\n');
+        };
+        const key = (cls, ko, english) => `<span><i class="${cls}"></i><span data-i18n-en="${esc(english)}">${ko}</span></span>`;
+        const fewKey = key('key-bar key-few', `옅은 막대: ${few}회 미만(믿기 어려움)`, `Faded bars: fewer than ${few} draws (unreliable)`);
+        // ① 출현 횟수 (전 회차) + 이론
+        const total = AC_COMBOS.reduce((a, b) => a + b, 0);
+        const counts = stats.ac.map(r => r.count);
+        const theo = AC_COMBOS.map(c => N * c / total);
+        const cMax = Math.max(...counts, ...theo);
+        const cStep = niceStep(cMax, 4);
+        const countPanel = panel({
+            id: 'count', on: true,
+            title: 'AC값별 출현 횟수', titleEn: 'Draws by AC value', sub: `1~${N}회`, subEn: `draws 1–${N}`,
+            aria: `AC값별 출현 횟수. 가장 많은 값은 AC ${counts.indexOf(Math.max(...counts))}`,
+            yMax: Math.ceil(cMax / cStep) * cStep, yStep: cStep, tick: y => fmt(y),
+            bars: counts.map((c, v) => (c ? { y: c, tip: `AC ${v} · ${fmt(c)}회 (${pct(c, N)}) · 이론 ${(AC_COMBOS[v] / total * 100).toFixed(1)}%`, tipEn: `AC ${v} · ${fmt(c)} draws (${pct(c, N)}) · theory ${(AC_COMBOS[v] / total * 100).toFixed(1)}%` } : null)),
+            curve: theo,
+            legend: [key('key-bar', '실제 나온 횟수', 'Actual draws'), key('key-curve', '이론(전체 조합 중 그 AC값의 비율)', 'Theory (share of all combinations)')],
+        });
+        // ② 1등 당첨자 기대 대비 (88회~)
+        const rMax = Math.max(2, Math.ceil(Math.max(...S.perAc.map(b => b.r1)) * 2) / 2);
+        const ratioPanel = panel({
+            id: 'ratio', on: true,
+            title: '1등 당첨자 수 (기대 대비)', titleEn: 'First-prize winners (vs expected)', sub: `88~${N}회`, subEn: `draws 88–${N}`,
+            aria: `AC값별 1등 당첨자 수의 기대 대비 배수. AC 0~5 는 ${S.lowR.toFixed(2)}배`,
+            yMax: rMax, yStep: 0.5, tick: y => `${y}배`, tickEn: y => `${y}×`,
+            bars: S.perAc.map((b, v) => (b.n ? { y: b.r1, few: b.n < few, tip: `AC ${v} · ${fmt(b.n)}회 · 1등 당첨자가 기대의 ${b.r1.toFixed(2)}배`, tipEn: `AC ${v} · ${fmt(b.n)} draws · ${b.r1.toFixed(2)}× the expected winners` } : null)),
+            ref: { y: 1, label: '기대 1배', labelEn: 'expected 1×' },
+            legend: [key('key-bar', '실제 ÷ 기대(판매량으로 어림)', 'Actual ÷ expected (from ticket sales)'), key('key-mean', '1배 = 기대만큼', '1× = as expected'), fewKey],
+        });
+        // ③ 1등 1인당 중앙값 (88회~, 당첨자가 있던 회차)
+        const meds = S.perAc.map(b => b.med / 1e8);
+        const mMax = Math.max(...meds, S.all.med / 1e8);
+        const mStep = niceStep(mMax, 4);
+        const moneyPanel = panel({
+            id: 'money', on: false,
+            title: '1등 1인당 당첨금 (중앙값)', titleEn: 'First prize per winner (median)', sub: `88~${N}회`, subEn: `draws 88–${N}`,
+            aria: `AC값별 1등 1인당 당첨금 중앙값. 전체 ${f1(S.all.med / 1e8)}억`,
+            yMax: Math.ceil(mMax / mStep) * mStep, yStep: mStep, tick: y => `${fmt(y)}억`, tickEn: y => `${(y / 10).toFixed(y % 10 ? 1 : 0)}bn`,
+            bars: S.perAc.map((b, v) => (b.n && b.med ? { y: b.med / 1e8, few: b.n < few, tip: `AC ${v} · 1인당 중앙값 ${f1(b.med / 1e8)}억 (${fmt(b.n)}회)`, tipEn: `AC ${v} · median ${(b.med / 1e9).toFixed(2)}bn KRW per winner (${fmt(b.n)} draws)` } : null)),
+            ref: { y: S.all.med / 1e8, label: `전체 ${f1(S.all.med / 1e8)}억`, labelEn: `all draws ${(S.all.med / 1e9).toFixed(2)}bn` },
+            legend: [key('key-bar', '그 AC값 회차의 1인당 1등 금액 중앙값', 'Median first prize per winner in those draws'), key('key-mean', '전체 회차 중앙값', 'Median across all draws'), fewKey],
+        });
+        const btn = (id, on, ko, english) => `<button type="button" data-panel="${id}" aria-pressed="${on}" data-i18n-en="${esc(english)}">${ko}</button>`;
         return [
             `<style>\n${ACC_STYLE}\n</style>`,
-            '<figure class="ac-chart">',
-            `<figcaption><strong data-i18n-en="First-prize winners by AC value (vs expected)">AC값별 1등 당첨자 수 (기대 대비)</strong>`,
-            '<span class="acc-legend">',
-            `<span><i class="is-up"></i>${en('기대보다 많이 나눔', 'More winners than expected')}</span>`,
-            `<span><i class="is-down"></i>${en('기대보다 적게', 'Fewer than expected')}</span>`,
-            `<span><i class="is-up is-few"></i>${en(`옅은 막대: ${few}회 미만`, `Faded: fewer than ${few} draws`)}</span>`,
-            '</span></figcaption>',
-            '<div class="acc-wrap">',
-            `<div class="acc-y" aria-hidden="true">${yAxis}</div>`,
-            `<div class="acc-plot"><div class="acc-grids" aria-hidden="true">${grid}</div><div class="acc-cols">${cols}</div><div class="acc-tip" role="status" aria-live="polite" hidden></div></div>`,
-            '</div>',
-            `<div class="acc-x" aria-hidden="true">${xs}</div>`,
-            `<p class="acc-xtitle" aria-hidden="true">${en('AC값', 'AC value')}<span class="acc-xnote">${en(' (아래 숫자는 그 AC값이 나온 회차 수)', ' (numbers below: draws with that value)')}</span></p>`,
+            '<figure class="dist-figure ac-figure">',
+            `<div class="acc-toggles" role="group" aria-label="보일 그래프 고르기">${btn('count', true, '출현 횟수', 'Draws')}${btn('ratio', true, '1등 당첨자 (기대 대비)', 'First-prize winners vs expected')}${btn('money', false, '1인당 당첨금', 'Prize per winner')}</div>`,
+            countPanel, ratioPanel, moneyPanel,
             '</figure>',
         ].join('\n');
     };
@@ -1030,27 +1052,18 @@ const AC_COMBOS = [180, 858, 7873, 26292, 103461, 239998, 823318, 1148170, 26756
             "    document.getElementById('ac-btn').addEventListener('click', run);",
             "    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') run(); });",
             '}());',
-            // AC값별 막대 풍선: 짚기 · 초점 · 누르기(휴대폰)로 그 막대의 글을 막대 위에 띄운다
+            // AC값별 그래프 켜고 끄기: 단추마다 그래프 하나(aria-pressed). 막대 풍선은 js/dist-balls.js
             '(function () {',
-            "    var fig = document.querySelector('.ac-chart');",
+            "    var fig = document.querySelector('.ac-figure');",
             '    if (!fig) return;',
-            "    var plot = fig.querySelector('.acc-plot'), tip = fig.querySelector('.acc-tip'), on = null;",
-            '    function show(b) {',
-            "        on = b; tip.textContent = b.querySelector('.sr-only').textContent; tip.hidden = false;",
-            "        fig.querySelectorAll('.acc-col.is-on').forEach(function (x) { x.classList.remove('is-on'); }); b.classList.add('is-on');",
-            '        var pr = plot.getBoundingClientRect(), br = b.getBoundingClientRect(), w = tip.offsetWidth;',
-            '        var left = br.left - pr.left + br.width / 2 - w / 2;',
-            "        tip.style.left = Math.max(0, Math.min(pr.width - w, left)) + 'px';",
-            '    }',
-            "    function hide(b) { if (b && b !== on) return; on = null; tip.hidden = true; fig.querySelectorAll('.acc-col.is-on').forEach(function (x) { x.classList.remove('is-on'); }); }",
-            "    fig.querySelectorAll('.acc-col').forEach(function (b) {",
-            "        b.addEventListener('pointerenter', function () { show(b); });",
-            "        b.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') hide(b); });",
-            "        b.addEventListener('focus', function () { show(b); });",
-            "        b.addEventListener('blur', function () { hide(b); });",
-            "        b.addEventListener('click', function () { show(b); });",
+            "    fig.querySelectorAll('.acc-toggles button').forEach(function (b) {",
+            "        b.addEventListener('click', function () {",
+            "            var on = b.getAttribute('aria-pressed') !== 'true';",
+            "            b.setAttribute('aria-pressed', on ? 'true' : 'false');",
+            "            var p = fig.querySelector('.acc-panel[data-panel=' + b.dataset.panel + ']');",
+            '            if (p) p.hidden = !on;',
+            '        });',
             '    });',
-            "    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') hide(); });",
             '}());',
         ].join('\n'),
     });
@@ -1524,7 +1537,7 @@ function statPage(p) {
         ]),
         script: p.script,
         // 번호 공을 쌓은 분포 그림이 있으면 짚을 때 밝게 띄우는 스크립트
-        scripts: p.body.some(s => String(s).includes('class="dist-ball"')) ? ['js/dist-balls.js'] : undefined,
+        scripts: p.body.some(s => String(s).includes('class="dist-ball"') || String(s).includes(' data-tip="')) ? ['js/dist-balls.js'] : undefined,
     });
 }
 

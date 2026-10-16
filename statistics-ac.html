@@ -131,58 +131,136 @@
 <p data-i18n-en="Second prize (AC 0–5 0.99×, 6–10 1.00×) and third prize (1.03×, 0.99×) barely differ — it looks as if people who pick a patterned set whole match all six, so the crowding shows up only in first prize. The draws shared most beyond expectation were &lt;a href=&quot;round/1128.html&quot;&gt;draw 1128&lt;/a&gt;, 63 winners (expected 13.7, AC 10); &lt;a href=&quot;round/546.html&quot;&gt;draw 546&lt;/a&gt;, 30 winners (expected 7.0, AC 9); &lt;a href=&quot;round/1019.html&quot;&gt;draw 1019&lt;/a&gt;, 50 winners (expected 12.6, AC 10). High-AC sets can draw a crowd for other reasons too, so the AC value alone cannot tell you how many people you would share with. There are only 69 AC 0–5 draws, so these figures may still move, and every set has the same chance of winning.">2등(AC 0~5 0.99배 · 6~10 1.00배)과 3등(1.03배 · 0.99배)은 거의 차이가 없습니다. 모양 있는 조합을 통째로 고른 사람들이 6개를 다 맞혀 1등에서만 몰리는 것으로 보입니다. 기대보다 가장 많이 나눈 회차는 <a href="round/1128.html">1128회</a> 63명(기대 13.7명, AC 10) · <a href="round/546.html">546회</a> 30명(기대 7.0명, AC 9) · <a href="round/1019.html">1019회</a> 50명(기대 12.6명, AC 10)입니다. AC가 높아도 다른 까닭으로 사람이 몰리는 회차가 있어, AC값만으로 나눠 가질 사람 수를 가늠할 수는 없습니다. AC 0~5 회차는 69회뿐이라 수치가 앞으로 꽤 흔들릴 수 있고, 어느 조합이든 1등 확률은 같습니다.</p>
 
 <style>
-.ac-chart { --acc-up: #d9534f; --acc-down: #2a78d6; margin: 18px 0 8px; padding: 14px 14px 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
-.ac-chart figcaption { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; margin-bottom: 12px; font-size: 14px; }
-.acc-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; color: var(--muted); font-size: 12px; }
-.acc-legend > span { display: inline-flex; align-items: center; gap: 5px; }
-.acc-legend i { width: 10px; height: 10px; border-radius: 2px; background: var(--acc-up); }
-.acc-legend i.is-down { background: var(--acc-down); }
-.acc-wrap { display: flex; gap: 6px; }
-.acc-y { position: relative; flex: 0 0 auto; width: 3.2em; height: 210px; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
-.acc-y > span { position: absolute; right: 0; transform: translateY(50%); line-height: 1; white-space: nowrap; }
-.acc-plot { position: relative; flex: 1; height: 210px; }
-.acc-grids, .acc-cols { position: absolute; inset: 0; }
-.acc-grid { position: absolute; left: 0; right: 0; height: 0; border-top: 1px solid #eee; }
-.acc-grid.is-ref { border-top-color: #9a9a9a; }
-.acc-cols { display: flex; }
-.acc-col { position: relative; flex: 1; min-width: 0; height: 100%; margin: 0; padding: 0; border: 0; border-radius: 4px; background: transparent; cursor: pointer; }
-.acc-col:hover, .acc-col.is-on { background: rgba(0, 48, 135, .05); }
-.acc-col.is-empty { cursor: default; }
-.acc-bar { position: absolute; left: 50%; width: min(24px, 64%); transform: translateX(-50%) translateY(1px); }
-.acc-bar.is-up { background: var(--acc-up); border-radius: 4px 4px 0 0; }
-.acc-bar.is-down { background: var(--acc-down); border-radius: 0 0 4px 4px; transform: translateX(-50%) translateY(1px); }
-.acc-bar.is-few, .acc-legend i.is-few { opacity: .4; }
-.acc-tip {
-    position: absolute; top: -6px; z-index: 2; max-width: min(260px, 100%); padding: 6px 9px; transform: translateY(-100%);
-    border-radius: 6px; background: #1d2433; color: #fff; font-size: 12px; line-height: 1.45; pointer-events: none; word-break: keep-all;
-}
-.acc-tip[hidden] { display: none; }
-.acc-x { display: flex; margin: 6px 0 0 calc(3.2em + 6px); }
-.acc-x > span { flex: 1; min-width: 0; text-align: center; line-height: 1.25; }
-.acc-x b { display: block; color: var(--text); font-size: 12px; }
-.acc-x small { display: block; color: var(--muted); font-size: 10px; white-space: nowrap; }
-.acc-xtitle { margin: 6px 0 0; color: var(--muted); font-size: 12px; text-align: center; }
-@media (max-width: 420px) {
-    .ac-chart { padding: 12px 10px 8px; }
-    .acc-x small { font-size: 9px; letter-spacing: -.02em; }
-}
-@media (max-width: 359px) {
-    .acc-x small, .acc-xnote { display: none; }
-}
+.ac-figure { margin: 16px 0 10px; }
+.acc-toggles { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+.acc-toggles button { padding: 5px 12px; border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--muted); font: 13px/1.4 var(--font); cursor: pointer; }
+.acc-toggles button[aria-pressed="true"] { border-color: var(--brand); background: var(--brand); color: #fff; font-weight: bold; }
+.acc-panel { margin: 0 0 14px; }
+.acc-panel[hidden] { display: none; }
+.acc-ptitle { margin: 0 0 2px; color: var(--text); font-size: 14px; font-weight: bold; }
+.acc-ptitle small { margin-left: 6px; color: var(--muted); font-size: 12px; font-weight: normal; }
+.ac-figure .dist-bar.is-few { opacity: .22; }
+.ac-figure .dist-bar.is-on { opacity: .9; }
+.ac-figure .key-few { opacity: .22; }
+.ac-figure .dist-legend .key-mean { height: 0; border-top: 2px dashed var(--brand); background: none; opacity: .6; }
 </style>
-<figure class="ac-chart">
-<figcaption><strong data-i18n-en="First-prize winners by AC value (vs expected)">AC값별 1등 당첨자 수 (기대 대비)</strong>
-<span class="acc-legend">
-<span><i class="is-up"></i><span data-i18n-en="More winners than expected">기대보다 많이 나눔</span></span>
-<span><i class="is-down"></i><span data-i18n-en="Fewer than expected">기대보다 적게</span></span>
-<span><i class="is-up is-few"></i><span data-i18n-en="Faded: fewer than 10 draws">옅은 막대: 10회 미만</span></span>
-</span></figcaption>
-<div class="acc-wrap">
-<div class="acc-y" aria-hidden="true"><span style="bottom:0.00%"><span data-i18n-en="0×">0배</span></span><span style="bottom:25.00%"><span data-i18n-en="0.5×">0.5배</span></span><span style="bottom:50.00%"><span data-i18n-en="1×">1배</span></span><span style="bottom:75.00%"><span data-i18n-en="1.5×">1.5배</span></span><span style="bottom:100.00%"><span data-i18n-en="2×">2배</span></span></div>
-<div class="acc-plot"><div class="acc-grids" aria-hidden="true"><span class="acc-grid" style="bottom:0.00%"></span><span class="acc-grid" style="bottom:25.00%"></span><span class="acc-grid is-ref" style="bottom:50.00%"></span><span class="acc-grid" style="bottom:75.00%"></span><span class="acc-grid" style="bottom:100.00%"></span></div><div class="acc-cols"><button type="button" class="acc-col is-empty"><span class="sr-only" data-i18n-en="AC 0 · never drawn">AC 0 · 당첨번호 중에는 없음</span></button><button type="button" class="acc-col is-empty"><span class="sr-only" data-i18n-en="AC 1 · never drawn">AC 1 · 당첨번호 중에는 없음</span></button><button type="button" class="acc-col"><span class="acc-bar is-up is-few" style="bottom:50.00%;height:calc(47.70% + 2px)" aria-hidden="true"></span><span class="sr-only" data-i18n-en="AC 2 · 3 draws · first-prize winners 1.95× expected · median per winner 1.36bn KRW · too few draws to rely on">AC 2 · 3회 · 1등 당첨자가 기대의 1.95배 · 1인당 중앙값 13.6억 · 회차가 적어 믿기 어려움</span></button><button type="button" class="acc-col"><span class="acc-bar is-up is-few" style="bottom:50.00%;height:calc(18.48% + 2px)" aria-hidden="true"></span><span class="sr-only" data-i18n-en="AC 3 · 4 draws · first-prize winners 1.37× expected · median per winner 1.55bn KRW · too few draws to rely on">AC 3 · 4회 · 1등 당첨자가 기대의 1.37배 · 1인당 중앙값 15.5억 · 회차가 적어 믿기 어려움</span></button><button type="button" class="acc-col"><span class="acc-bar is-up" style="bottom:50.00%;height:calc(8.03% + 2px)" aria-hidden="true"></span><span class="sr-only" data-i18n-en="AC 4 · 24 draws · first-prize winners 1.16× expected · median per winner 1.78bn KRW">AC 4 · 24회 · 1등 당첨자가 기대의 1.16배 · 1인당 중앙값 17.8억</span></button><button type="button" class="acc-col"><span class="acc-bar is-up" style="bottom:50.00%;height:calc(4.36% + 2px)" aria-hidden="true"></span><span class="sr-only" data-i18n-en="AC 5 · 38 draws · first-prize winners 1.09× expected · median per winner 1.91bn KRW">AC 5 · 38회 · 1등 당첨자가 기대의 1.09배 · 1인당 중앙값 19.1억</span></button><button type="button" class="acc-col"><span class="acc-bar is-down" style="bottom:49.64%;height:calc(0.36% + 2px)" aria-hidden="true"></span><span class="sr-only" data-i18n-en="AC 6 · 111 draws · first-prize winners 0.99× expected · median per winner 2.08bn KRW">AC 6 · 111회 · 1등 당첨자가 기대의 0.99배 · 1인당 중앙값 20.8억</span></button><button type="button" class="acc-col"><span class="acc-bar is-down" style="bottom:45.70%;height:calc(4.30% + 2px)" aria-hidden="true"></span><span class="sr-only" data-i18n-en="AC 7 · 162 draws · first-prize winners 0.91× expected · median per winner 2.23bn KRW">AC 7 · 162회 · 1등 당첨자가 기대의 0.91배 · 1인당 중앙값 22.3억</span></button><button type="button" class="acc-col"><span class="acc-bar is-up" style="bottom:50.00%;height:calc(0.13% + 2px)" aria-hidden="true"></span><span class="sr-only" data-i18n-en="AC 8 · 401 draws · first-prize winners 1.00× expected · median per winner 2.00bn KRW">AC 8 · 401회 · 1등 당첨자가 기대의 1.00배 · 1인당 중앙값 20.0억</span></button><button type="button" class="acc-col"><span class="acc-bar is-down" style="bottom:48.10%;height:calc(1.90% + 2px)" aria-hidden="true"></span><span class="sr-only" data-i18n-en="AC 9 · 203 draws · first-prize winners 0.96× expected · median per winner 2.12bn KRW">AC 9 · 203회 · 1등 당첨자가 기대의 0.96배 · 1인당 중앙값 21.2억</span></button><button type="button" class="acc-col"><span class="acc-bar is-up" style="bottom:50.00%;height:calc(2.42% + 2px)" aria-hidden="true"></span><span class="sr-only" data-i18n-en="AC 10 · 212 draws · first-prize winners 1.05× expected · median per winner 1.96bn KRW">AC 10 · 212회 · 1등 당첨자가 기대의 1.05배 · 1인당 중앙값 19.6억</span></button></div><div class="acc-tip" role="status" aria-live="polite" hidden></div></div>
+<figure class="dist-figure ac-figure">
+<div class="acc-toggles" role="group" aria-label="보일 그래프 고르기"><button type="button" data-panel="count" aria-pressed="true" data-i18n-en="Draws">출현 횟수</button><button type="button" data-panel="ratio" aria-pressed="true" data-i18n-en="First-prize winners vs expected">1등 당첨자 (기대 대비)</button><button type="button" data-panel="money" aria-pressed="false" data-i18n-en="Prize per winner">1인당 당첨금</button></div>
+<div class="acc-panel" data-panel="count">
+<p class="acc-ptitle"><span data-i18n-en="Draws by AC value">AC값별 출현 횟수</span><small data-i18n-en="draws 1–1245">1~1245회</small></p>
+<svg class="dist-chart" viewBox="0 0 680 210" role="img" aria-label="AC값별 출현 횟수. 가장 많은 값은 AC 8">
+<line class="dist-grid" x1="52" x2="668" y1="170" y2="170"/>
+<text class="dist-tick" x="46" y="174" text-anchor="end">0</text>
+<line class="dist-grid" x1="52" x2="668" y1="121.3" y2="121.3"/>
+<text class="dist-tick" x="46" y="125.3" text-anchor="end">200</text>
+<line class="dist-grid" x1="52" x2="668" y1="72.7" y2="72.7"/>
+<text class="dist-tick" x="46" y="76.7" text-anchor="end">400</text>
+<line class="dist-grid" x1="52" x2="668" y1="24" y2="24"/>
+<text class="dist-tick" x="46" y="28" text-anchor="end">600</text>
+<rect class="dist-bar" x="165" y="169.3" width="54" height="0.7" data-tip="AC 2 · 3회 (0.2%) · 이론 0.1%" data-tip-en="AC 2 · 3 draws (0.2%) · theory 0.1%"><title>AC 2 · 3회 (0.2%) · 이론 0.1%</title></rect>
+<rect class="dist-bar" x="221" y="169" width="54" height="1" data-tip="AC 3 · 4회 (0.3%) · 이론 0.3%" data-tip-en="AC 3 · 4 draws (0.3%) · theory 0.3%"><title>AC 3 · 4회 (0.3%) · 이론 0.3%</title></rect>
+<rect class="dist-bar" x="277" y="164.2" width="54" height="5.8" data-tip="AC 4 · 24회 (1.9%) · 이론 1.3%" data-tip-en="AC 4 · 24 draws (1.9%) · theory 1.3%"><title>AC 4 · 24회 (1.9%) · 이론 1.3%</title></rect>
+<rect class="dist-bar" x="333" y="160" width="54" height="10" data-tip="AC 5 · 41회 (3.3%) · 이론 2.9%" data-tip-en="AC 5 · 41 draws (3.3%) · theory 2.9%"><title>AC 5 · 41회 (3.3%) · 이론 2.9%</title></rect>
+<rect class="dist-bar" x="389" y="141.3" width="54" height="28.7" data-tip="AC 6 · 118회 (9.5%) · 이론 10.1%" data-tip-en="AC 6 · 118 draws (9.5%) · theory 10.1%"><title>AC 6 · 118회 (9.5%) · 이론 10.1%</title></rect>
+<rect class="dist-bar" x="445" y="127.7" width="54" height="42.3" data-tip="AC 7 · 174회 (14.0%) · 이론 14.1%" data-tip-en="AC 7 · 174 draws (14.0%) · theory 14.1%"><title>AC 7 · 174회 (14.0%) · 이론 14.1%</title></rect>
+<rect class="dist-bar" x="501" y="64.6" width="54" height="105.4" data-tip="AC 8 · 433회 (34.8%) · 이론 32.9%" data-tip-en="AC 8 · 433 draws (34.8%) · theory 32.9%"><title>AC 8 · 433회 (34.8%) · 이론 32.9%</title></rect>
+<rect class="dist-bar" x="557" y="116.5" width="54" height="53.5" data-tip="AC 9 · 220회 (17.7%) · 이론 19.8%" data-tip-en="AC 9 · 220 draws (17.7%) · theory 19.8%"><title>AC 9 · 220회 (17.7%) · 이론 19.8%</title></rect>
+<rect class="dist-bar" x="613" y="114.5" width="54" height="55.5" data-tip="AC 10 · 228회 (18.3%) · 이론 18.5%" data-tip-en="AC 10 · 228 draws (18.3%) · theory 18.5%"><title>AC 10 · 228회 (18.3%) · 이론 18.5%</title></rect>
+<polyline class="dist-curve" points="80,170 136,170 192,169.7 248,169 304,166.2 360,161.1 416,139.4 472,127.3 528,70.5 584,110.1 640,113.8"/>
+<line class="dist-axis" x1="52" x2="668" y1="170" y2="170"/>
+<text class="dist-tick" x="80" y="186" text-anchor="middle">0</text>
+<text class="dist-tick" x="136" y="186" text-anchor="middle">1</text>
+<text class="dist-tick" x="192" y="186" text-anchor="middle">2</text>
+<text class="dist-tick" x="248" y="186" text-anchor="middle">3</text>
+<text class="dist-tick" x="304" y="186" text-anchor="middle">4</text>
+<text class="dist-tick" x="360" y="186" text-anchor="middle">5</text>
+<text class="dist-tick" x="416" y="186" text-anchor="middle">6</text>
+<text class="dist-tick" x="472" y="186" text-anchor="middle">7</text>
+<text class="dist-tick" x="528" y="186" text-anchor="middle">8</text>
+<text class="dist-tick" x="584" y="186" text-anchor="middle">9</text>
+<text class="dist-tick" x="640" y="186" text-anchor="middle">10</text>
+<text class="dist-label" x="360" y="206" text-anchor="middle" data-i18n-en="AC value">AC값</text>
+</svg>
+<div class="dist-legend"><span><i class="key-bar"></i><span data-i18n-en="Actual draws">실제 나온 횟수</span></span><span><i class="key-curve"></i><span data-i18n-en="Theory (share of all combinations)">이론(전체 조합 중 그 AC값의 비율)</span></span></div>
 </div>
-<div class="acc-x" aria-hidden="true"><span><b>0</b><small><span data-i18n-en="–">없음</span></small></span><span><b>1</b><small><span data-i18n-en="–">없음</span></small></span><span><b>2</b><small><span data-i18n-en="3">3회</span></small></span><span><b>3</b><small><span data-i18n-en="4">4회</span></small></span><span><b>4</b><small><span data-i18n-en="24">24회</span></small></span><span><b>5</b><small><span data-i18n-en="38">38회</span></small></span><span><b>6</b><small><span data-i18n-en="111">111회</span></small></span><span><b>7</b><small><span data-i18n-en="162">162회</span></small></span><span><b>8</b><small><span data-i18n-en="401">401회</span></small></span><span><b>9</b><small><span data-i18n-en="203">203회</span></small></span><span><b>10</b><small><span data-i18n-en="212">212회</span></small></span></div>
-<p class="acc-xtitle" aria-hidden="true"><span data-i18n-en="AC value">AC값</span><span class="acc-xnote"><span data-i18n-en=" (numbers below: draws with that value)"> (아래 숫자는 그 AC값이 나온 회차 수)</span></span></p>
+<div class="acc-panel" data-panel="ratio">
+<p class="acc-ptitle"><span data-i18n-en="First-prize winners (vs expected)">1등 당첨자 수 (기대 대비)</span><small data-i18n-en="draws 88–1245">88~1245회</small></p>
+<svg class="dist-chart" viewBox="0 0 680 210" role="img" aria-label="AC값별 1등 당첨자 수의 기대 대비 배수. AC 0~5 는 1.16배">
+<line class="dist-grid" x1="52" x2="668" y1="170" y2="170"/>
+<text class="dist-tick" x="46" y="174" text-anchor="end" data-i18n-en="0×">0배</text>
+<line class="dist-grid" x1="52" x2="668" y1="133.5" y2="133.5"/>
+<text class="dist-tick" x="46" y="137.5" text-anchor="end" data-i18n-en="0.5×">0.5배</text>
+<line class="dist-grid" x1="52" x2="668" y1="97" y2="97"/>
+<text class="dist-tick" x="46" y="101" text-anchor="end" data-i18n-en="1×">1배</text>
+<line class="dist-grid" x1="52" x2="668" y1="60.5" y2="60.5"/>
+<text class="dist-tick" x="46" y="64.5" text-anchor="end" data-i18n-en="1.5×">1.5배</text>
+<line class="dist-grid" x1="52" x2="668" y1="24" y2="24"/>
+<text class="dist-tick" x="46" y="28" text-anchor="end" data-i18n-en="2×">2배</text>
+<rect class="dist-bar is-few" x="165" y="27.4" width="54" height="142.6" data-tip="AC 2 · 3회 · 1등 당첨자가 기대의 1.95배" data-tip-en="AC 2 · 3 draws · 1.95× the expected winners"><title>AC 2 · 3회 · 1등 당첨자가 기대의 1.95배</title></rect>
+<rect class="dist-bar is-few" x="221" y="70" width="54" height="100" data-tip="AC 3 · 4회 · 1등 당첨자가 기대의 1.37배" data-tip-en="AC 3 · 4 draws · 1.37× the expected winners"><title>AC 3 · 4회 · 1등 당첨자가 기대의 1.37배</title></rect>
+<rect class="dist-bar" x="277" y="85.3" width="54" height="84.7" data-tip="AC 4 · 24회 · 1등 당첨자가 기대의 1.16배" data-tip-en="AC 4 · 24 draws · 1.16× the expected winners"><title>AC 4 · 24회 · 1등 당첨자가 기대의 1.16배</title></rect>
+<rect class="dist-bar" x="333" y="90.6" width="54" height="79.4" data-tip="AC 5 · 38회 · 1등 당첨자가 기대의 1.09배" data-tip-en="AC 5 · 38 draws · 1.09× the expected winners"><title>AC 5 · 38회 · 1등 당첨자가 기대의 1.09배</title></rect>
+<rect class="dist-bar" x="389" y="97.5" width="54" height="72.5" data-tip="AC 6 · 111회 · 1등 당첨자가 기대의 0.99배" data-tip-en="AC 6 · 111 draws · 0.99× the expected winners"><title>AC 6 · 111회 · 1등 당첨자가 기대의 0.99배</title></rect>
+<rect class="dist-bar" x="445" y="103.3" width="54" height="66.7" data-tip="AC 7 · 162회 · 1등 당첨자가 기대의 0.91배" data-tip-en="AC 7 · 162 draws · 0.91× the expected winners"><title>AC 7 · 162회 · 1등 당첨자가 기대의 0.91배</title></rect>
+<rect class="dist-bar" x="501" y="96.8" width="54" height="73.2" data-tip="AC 8 · 401회 · 1등 당첨자가 기대의 1.00배" data-tip-en="AC 8 · 401 draws · 1.00× the expected winners"><title>AC 8 · 401회 · 1등 당첨자가 기대의 1.00배</title></rect>
+<rect class="dist-bar" x="557" y="99.8" width="54" height="70.2" data-tip="AC 9 · 203회 · 1등 당첨자가 기대의 0.96배" data-tip-en="AC 9 · 203 draws · 0.96× the expected winners"><title>AC 9 · 203회 · 1등 당첨자가 기대의 0.96배</title></rect>
+<rect class="dist-bar" x="613" y="93.5" width="54" height="76.5" data-tip="AC 10 · 212회 · 1등 당첨자가 기대의 1.05배" data-tip-en="AC 10 · 212 draws · 1.05× the expected winners"><title>AC 10 · 212회 · 1등 당첨자가 기대의 1.05배</title></rect>
+<line class="dist-mean" x1="52" x2="668" y1="97" y2="97"/>
+<text class="dist-mark" x="668" y="92" text-anchor="end" data-i18n-en="expected 1×">기대 1배</text>
+<line class="dist-axis" x1="52" x2="668" y1="170" y2="170"/>
+<text class="dist-tick" x="80" y="186" text-anchor="middle">0</text>
+<text class="dist-tick" x="136" y="186" text-anchor="middle">1</text>
+<text class="dist-tick" x="192" y="186" text-anchor="middle">2</text>
+<text class="dist-tick" x="248" y="186" text-anchor="middle">3</text>
+<text class="dist-tick" x="304" y="186" text-anchor="middle">4</text>
+<text class="dist-tick" x="360" y="186" text-anchor="middle">5</text>
+<text class="dist-tick" x="416" y="186" text-anchor="middle">6</text>
+<text class="dist-tick" x="472" y="186" text-anchor="middle">7</text>
+<text class="dist-tick" x="528" y="186" text-anchor="middle">8</text>
+<text class="dist-tick" x="584" y="186" text-anchor="middle">9</text>
+<text class="dist-tick" x="640" y="186" text-anchor="middle">10</text>
+<text class="dist-label" x="360" y="206" text-anchor="middle" data-i18n-en="AC value">AC값</text>
+</svg>
+<div class="dist-legend"><span><i class="key-bar"></i><span data-i18n-en="Actual ÷ expected (from ticket sales)">실제 ÷ 기대(판매량으로 어림)</span></span><span><i class="key-mean"></i><span data-i18n-en="1× = as expected">1배 = 기대만큼</span></span><span><i class="key-bar key-few"></i><span data-i18n-en="Faded bars: fewer than 10 draws (unreliable)">옅은 막대: 10회 미만(믿기 어려움)</span></span></div>
+</div>
+<div class="acc-panel" data-panel="money" hidden>
+<p class="acc-ptitle"><span data-i18n-en="First prize per winner (median)">1등 1인당 당첨금 (중앙값)</span><small data-i18n-en="draws 88–1245">88~1245회</small></p>
+<svg class="dist-chart" viewBox="0 0 680 210" role="img" aria-label="AC값별 1등 1인당 당첨금 중앙값. 전체 20.3억">
+<line class="dist-grid" x1="52" x2="668" y1="170" y2="170"/>
+<text class="dist-tick" x="46" y="174" text-anchor="end" data-i18n-en="0bn">0억</text>
+<line class="dist-grid" x1="52" x2="668" y1="121.3" y2="121.3"/>
+<text class="dist-tick" x="46" y="125.3" text-anchor="end" data-i18n-en="1bn">10억</text>
+<line class="dist-grid" x1="52" x2="668" y1="72.7" y2="72.7"/>
+<text class="dist-tick" x="46" y="76.7" text-anchor="end" data-i18n-en="2bn">20억</text>
+<line class="dist-grid" x1="52" x2="668" y1="24" y2="24"/>
+<text class="dist-tick" x="46" y="28" text-anchor="end" data-i18n-en="3bn">30억</text>
+<rect class="dist-bar is-few" x="165" y="104" width="54" height="66" data-tip="AC 2 · 1인당 중앙값 13.6억 (3회)" data-tip-en="AC 2 · median 1.36bn KRW per winner (3 draws)"><title>AC 2 · 1인당 중앙값 13.6억 (3회)</title></rect>
+<rect class="dist-bar is-few" x="221" y="94.4" width="54" height="75.6" data-tip="AC 3 · 1인당 중앙값 15.5억 (4회)" data-tip-en="AC 3 · median 1.55bn KRW per winner (4 draws)"><title>AC 3 · 1인당 중앙값 15.5억 (4회)</title></rect>
+<rect class="dist-bar" x="277" y="83.5" width="54" height="86.5" data-tip="AC 4 · 1인당 중앙값 17.8억 (24회)" data-tip-en="AC 4 · median 1.78bn KRW per winner (24 draws)"><title>AC 4 · 1인당 중앙값 17.8억 (24회)</title></rect>
+<rect class="dist-bar" x="333" y="77.2" width="54" height="92.8" data-tip="AC 5 · 1인당 중앙값 19.1억 (38회)" data-tip-en="AC 5 · median 1.91bn KRW per winner (38 draws)"><title>AC 5 · 1인당 중앙값 19.1억 (38회)</title></rect>
+<rect class="dist-bar" x="389" y="68.9" width="54" height="101.1" data-tip="AC 6 · 1인당 중앙값 20.8억 (111회)" data-tip-en="AC 6 · median 2.08bn KRW per winner (111 draws)"><title>AC 6 · 1인당 중앙값 20.8억 (111회)</title></rect>
+<rect class="dist-bar" x="445" y="61.3" width="54" height="108.7" data-tip="AC 7 · 1인당 중앙값 22.3억 (162회)" data-tip-en="AC 7 · median 2.23bn KRW per winner (162 draws)"><title>AC 7 · 1인당 중앙값 22.3억 (162회)</title></rect>
+<rect class="dist-bar" x="501" y="72.8" width="54" height="97.2" data-tip="AC 8 · 1인당 중앙값 20.0억 (401회)" data-tip-en="AC 8 · median 2.00bn KRW per winner (401 draws)"><title>AC 8 · 1인당 중앙값 20.0억 (401회)</title></rect>
+<rect class="dist-bar" x="557" y="66.6" width="54" height="103.4" data-tip="AC 9 · 1인당 중앙값 21.2억 (203회)" data-tip-en="AC 9 · median 2.12bn KRW per winner (203 draws)"><title>AC 9 · 1인당 중앙값 21.2억 (203회)</title></rect>
+<rect class="dist-bar" x="613" y="74.5" width="54" height="95.5" data-tip="AC 10 · 1인당 중앙값 19.6억 (212회)" data-tip-en="AC 10 · median 1.96bn KRW per winner (212 draws)"><title>AC 10 · 1인당 중앙값 19.6억 (212회)</title></rect>
+<line class="dist-mean" x1="52" x2="668" y1="71.3" y2="71.3"/>
+<text class="dist-mark" x="668" y="66.3" text-anchor="end" data-i18n-en="all draws 2.03bn">전체 20.3억</text>
+<line class="dist-axis" x1="52" x2="668" y1="170" y2="170"/>
+<text class="dist-tick" x="80" y="186" text-anchor="middle">0</text>
+<text class="dist-tick" x="136" y="186" text-anchor="middle">1</text>
+<text class="dist-tick" x="192" y="186" text-anchor="middle">2</text>
+<text class="dist-tick" x="248" y="186" text-anchor="middle">3</text>
+<text class="dist-tick" x="304" y="186" text-anchor="middle">4</text>
+<text class="dist-tick" x="360" y="186" text-anchor="middle">5</text>
+<text class="dist-tick" x="416" y="186" text-anchor="middle">6</text>
+<text class="dist-tick" x="472" y="186" text-anchor="middle">7</text>
+<text class="dist-tick" x="528" y="186" text-anchor="middle">8</text>
+<text class="dist-tick" x="584" y="186" text-anchor="middle">9</text>
+<text class="dist-tick" x="640" y="186" text-anchor="middle">10</text>
+<text class="dist-label" x="360" y="206" text-anchor="middle" data-i18n-en="AC value">AC값</text>
+</svg>
+<div class="dist-legend"><span><i class="key-bar"></i><span data-i18n-en="Median first prize per winner in those draws">그 AC값 회차의 1인당 1등 금액 중앙값</span></span><span><i class="key-mean"></i><span data-i18n-en="Median across all draws">전체 회차 중앙값</span></span><span><i class="key-bar key-few"></i><span data-i18n-en="Faded bars: fewer than 10 draws (unreliable)">옅은 막대: 10회 미만(믿기 어려움)</span></span></div>
+</div>
 </figure>
 
 <p><a class="btn" href="index.html#gen-ac" data-i18n-en="Generate numbers with an AC value filter">AC값 조건으로 번호 뽑으러 가기</a></p>
@@ -215,6 +293,7 @@
     </footer>
 </div>
 <script src="js/draw-countdown.js" defer></script>
+<script src="js/dist-balls.js" defer></script>
 <script>
 (function () {
     var input = document.getElementById('ac-input');
@@ -236,25 +315,16 @@
     input.addEventListener('keydown', function (e) { if (e.key === 'Enter') run(); });
 }());
 (function () {
-    var fig = document.querySelector('.ac-chart');
+    var fig = document.querySelector('.ac-figure');
     if (!fig) return;
-    var plot = fig.querySelector('.acc-plot'), tip = fig.querySelector('.acc-tip'), on = null;
-    function show(b) {
-        on = b; tip.textContent = b.querySelector('.sr-only').textContent; tip.hidden = false;
-        fig.querySelectorAll('.acc-col.is-on').forEach(function (x) { x.classList.remove('is-on'); }); b.classList.add('is-on');
-        var pr = plot.getBoundingClientRect(), br = b.getBoundingClientRect(), w = tip.offsetWidth;
-        var left = br.left - pr.left + br.width / 2 - w / 2;
-        tip.style.left = Math.max(0, Math.min(pr.width - w, left)) + 'px';
-    }
-    function hide(b) { if (b && b !== on) return; on = null; tip.hidden = true; fig.querySelectorAll('.acc-col.is-on').forEach(function (x) { x.classList.remove('is-on'); }); }
-    fig.querySelectorAll('.acc-col').forEach(function (b) {
-        b.addEventListener('pointerenter', function () { show(b); });
-        b.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') hide(b); });
-        b.addEventListener('focus', function () { show(b); });
-        b.addEventListener('blur', function () { hide(b); });
-        b.addEventListener('click', function () { show(b); });
+    fig.querySelectorAll('.acc-toggles button').forEach(function (b) {
+        b.addEventListener('click', function () {
+            var on = b.getAttribute('aria-pressed') !== 'true';
+            b.setAttribute('aria-pressed', on ? 'true' : 'false');
+            var p = fig.querySelector('.acc-panel[data-panel=' + b.dataset.panel + ']');
+            if (p) p.hidden = !on;
+        });
     });
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') hide(); });
 }());
 </script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9372871176021283" crossorigin="anonymous"></script>
