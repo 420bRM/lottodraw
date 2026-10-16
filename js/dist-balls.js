@@ -1,5 +1,6 @@
 // 번호 공을 쌓은 분포 그림(svg.dist-chart 안의 .dist-ball — 많이 나온 번호 순위 · About 미리 보기).
 // 공에 마우스를 올리면(휴대폰은 누르면) 그 공을 밝게 띄우고 나머지는 옅게, 공 위에 "34번 · 187회"를 바로 보인다.
+// data-tip 이 있는 막대(.dist-bar — AC값 그래프)도 같은 방식으로 막대 위에 그 글(영어 화면은 data-tip-en)을 띄운다.
 // 그림은 생성기(tools/build-static-stats.js)가 미리 그린 SVG 다. 이 스크립트가 없어도 CSS :hover 로 밝아지고 <title> 툴팁이 뜬다.
 (function () {
     'use strict';
@@ -12,11 +13,12 @@
     const fmt = v => Number(v).toLocaleString('ko-KR');
     const label = (n, c) => (window.I18N && window.I18N.lang === 'en' ? `No. ${n} · ${fmt(c)}×` : `${n}번 · ${fmt(c)}회`);
 
+    const PICK = '.dist-ball[data-n], .dist-bar[data-tip]';
     function enhance(svg) {
-        const balls = svg.querySelectorAll('.dist-ball[data-n]');
-        if (!balls.length) return;
+        const marks = svg.querySelectorAll(PICK);
+        if (!marks.length) return;
         // 바로 뜨는 이름표가 있으니, 늦게 떠서 겹치는 기본 툴팁(<title>)은 뺀다
-        balls.forEach(b => { const t = b.querySelector('title'); if (t) t.remove(); });
+        marks.forEach(b => { const t = b.querySelector('title'); if (t) t.remove(); });
         const tip = make('g', { class: 'dist-tip', visibility: 'hidden', 'aria-hidden': 'true' });
         const box = make('rect', { rx: 4, ry: 4 });
         const text = make('text', { 'text-anchor': 'middle' });
@@ -32,16 +34,25 @@
             on = b;
             b.classList.add('is-on');
             svg.classList.add('has-on');
+            const isBar = b.classList.contains('dist-bar');
             // 맨 앞으로 꺼내 이웃 공에 빛 테두리가 가리지 않게 (이름표는 늘 그 위)
-            if (b.nextSibling !== tip) svg.insertBefore(b, tip);
-            const c = b.querySelector('circle');
-            const cx = Number(c.getAttribute('cx'));
-            const cy = Number(c.getAttribute('cy'));
-            const r = Number(c.getAttribute('r'));
+            if (!isBar && b.nextSibling !== tip) svg.insertBefore(b, tip);
+            let cx, cy, r;
+            if (isBar) {
+                // 막대: 윗변 가운데 위에 띄운다(r 은 0 — 막대 끝에 바로 붙인다)
+                cx = Number(b.getAttribute('x')) + Number(b.getAttribute('width')) / 2;
+                cy = Number(b.getAttribute('y'));
+                r = 0;
+            } else {
+                const c = b.querySelector('circle');
+                cx = Number(c.getAttribute('cx'));
+                cy = Number(c.getAttribute('cy'));
+                r = Number(c.getAttribute('r'));
+            }
             // 그림이 줄어 보이는 휴대폰에서도 이름표 글자가 12px 쯤 되게 (공 번호보다 크게)
             const k = Math.min(1.6, Math.max(1, vb.width / (svg.getBoundingClientRect().width || vb.width)));
             text.style.fontSize = (12 * k).toFixed(1) + 'px';
-            text.textContent = label(b.dataset.n, b.dataset.c);
+            text.textContent = isBar ? (window.I18N && window.I18N.lang === 'en' && b.dataset.tipEn ? b.dataset.tipEn : b.dataset.tip) : label(b.dataset.n, b.dataset.c);
             tip.setAttribute('visibility', 'visible');
             const w = Math.ceil(text.getComputedTextLength() + 16 * k);
             const h = Math.round(20 * k);
@@ -63,14 +74,14 @@
         }
 
         svg.addEventListener('pointerover', e => {
-            const b = e.target.closest && e.target.closest('.dist-ball');
+            const b = e.target.closest && e.target.closest(PICK);
             if (b) show(b);
             else if (e.pointerType === 'mouse') hide();   // 공 사이 빈 곳
         });
         svg.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') hide(); });
         // 휴대폰: 누른 공을 켜 두고, 그림의 빈 곳이나 그림 밖을 누르면 끈다
         svg.addEventListener('click', e => {
-            const b = e.target.closest && e.target.closest('.dist-ball');
+            const b = e.target.closest && e.target.closest(PICK);
             if (b) show(b); else hide();
         });
         document.addEventListener('pointerdown', e => { if (on && !svg.contains(e.target)) hide(); });
