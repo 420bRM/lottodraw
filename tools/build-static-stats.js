@@ -855,11 +855,93 @@ const AC_COMBOS = [180, 858, 7873, 26292, 103461, 239998, 823318, 1148170, 26756
         // 1인당 금액이 '기대 인원이 나눴을 때'의 몇 배였나(중앙값) = 기대 ÷ 실제
         const perHead = sel => median(sel.filter(x => x.w1 > 0).map(x => x.e1 / x.w1));
         const top = rows.slice().sort((x, y) => y.w1 / y.e1 - x.w1 / x.e1 || x.round - y.round).slice(0, 3);
-        return { n: rows.length, bands, all, fine, ci: boot(low), lowR: pooled(low, 1), restR: pooled(rest, 1),
+        const perAc = AC_COMBOS.map((c, v) => band('AC ' + v, 'AC ' + v, a => a === v));
+        return { n: rows.length, bands, all, fine, perAc, ci: boot(low), lowR: pooled(low, 1), restR: pooled(rest, 1),
             low2: pooled(low, 2), rest2: pooled(rest, 2), low3: pooled(low, 3), rest3: pooled(rest, 3),
             headLow: perHead(low), headRest: perHead(rest), top };
     })();
     const eokShort = a => en(`${f1(a / 1e8)}억`, `${(a / 1e9).toFixed(2)}bn`);
+    // AC값별 1등 당첨자(기대 대비) 막대 — x축 AC값 0~10, 1배(기대) 선에서 위(많이 나눔) · 아래(적게)로. 그림은 빌드 때 HTML 로 찍고
+    // 높이는 % 라 휴대폰에서도 글자가 줄지 않는다. 10회 미만인 값은 옅게(믿기 어렵다). 짚거나 누르면 아래 스크립트가 풍선을 띄운다
+    // 그림의 모양은 이 쪽에 함께 싣는다 — 생성 페이지의 css/site.css 주소에는 지문(?v=)이 없어, 배포 직후 옛 site.css 와 만나면 그림이 깨진다.
+    // 색: 많이 나눔 빨강 · 적게 파랑(색약 검사 통과), 10회 미만은 옅게
+    const ACC_STYLE = `.ac-chart { --acc-up: #d9534f; --acc-down: #2a78d6; margin: 18px 0 8px; padding: 14px 14px 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+.ac-chart figcaption { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; margin-bottom: 12px; font-size: 14px; }
+.acc-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; color: var(--muted); font-size: 12px; }
+.acc-legend > span { display: inline-flex; align-items: center; gap: 5px; }
+.acc-legend i { width: 10px; height: 10px; border-radius: 2px; background: var(--acc-up); }
+.acc-legend i.is-down { background: var(--acc-down); }
+.acc-wrap { display: flex; gap: 6px; }
+.acc-y { position: relative; flex: 0 0 auto; width: 3.2em; height: 210px; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.acc-y > span { position: absolute; right: 0; transform: translateY(50%); line-height: 1; white-space: nowrap; }
+.acc-plot { position: relative; flex: 1; height: 210px; }
+.acc-grids, .acc-cols { position: absolute; inset: 0; }
+.acc-grid { position: absolute; left: 0; right: 0; height: 0; border-top: 1px solid #eee; }
+.acc-grid.is-ref { border-top-color: #9a9a9a; }
+.acc-cols { display: flex; }
+.acc-col { position: relative; flex: 1; min-width: 0; height: 100%; margin: 0; padding: 0; border: 0; border-radius: 4px; background: transparent; cursor: pointer; }
+.acc-col:hover, .acc-col.is-on { background: rgba(0, 48, 135, .05); }
+.acc-col.is-empty { cursor: default; }
+.acc-bar { position: absolute; left: 50%; width: min(24px, 64%); transform: translateX(-50%) translateY(1px); }
+.acc-bar.is-up { background: var(--acc-up); border-radius: 4px 4px 0 0; }
+.acc-bar.is-down { background: var(--acc-down); border-radius: 0 0 4px 4px; transform: translateX(-50%) translateY(1px); }
+.acc-bar.is-few, .acc-legend i.is-few { opacity: .4; }
+.acc-tip {
+    position: absolute; top: -6px; z-index: 2; max-width: min(260px, 100%); padding: 6px 9px; transform: translateY(-100%);
+    border-radius: 6px; background: #1d2433; color: #fff; font-size: 12px; line-height: 1.45; pointer-events: none; word-break: keep-all;
+}
+.acc-tip[hidden] { display: none; }
+.acc-x { display: flex; margin: 6px 0 0 calc(3.2em + 6px); }
+.acc-x > span { flex: 1; min-width: 0; text-align: center; line-height: 1.25; }
+.acc-x b { display: block; color: var(--text); font-size: 12px; }
+.acc-x small { display: block; color: var(--muted); font-size: 10px; white-space: nowrap; }
+.acc-xtitle { margin: 6px 0 0; color: var(--muted); font-size: 12px; text-align: center; }
+@media (max-width: 420px) {
+    .ac-chart { padding: 12px 10px 8px; }
+    .acc-x small { font-size: 9px; letter-spacing: -.02em; }
+}
+@media (max-width: 359px) {
+    .acc-x small, .acc-xnote { display: none; }
+}`;
+    const acChart = S => {
+        const few = 10;
+        const max = Math.max(2, Math.ceil(Math.max(...S.perAc.map(b => b.r1)) * 2) / 2);
+        const pos = v => (v / max * 100).toFixed(2) + '%';
+        const ticks = [];
+        for (let t = 0; t <= max + 1e-9; t += 0.5) ticks.push(t);
+        const tickLab = t => (t === 0 ? '0' : `${t % 1 ? t.toFixed(1) : t}`);
+        const grid = ticks.map(t => `<span class="acc-grid${t === 1 ? ' is-ref' : ''}" style="bottom:${pos(t)}"></span>`).join('');
+        const yAxis = ticks.map(t => `<span style="bottom:${pos(t)}">${en(`${tickLab(t)}배`, `${tickLab(t)}×`)}</span>`).join('');
+        const cols = S.perAc.map((b, v) => {
+            const has = b.n > 0;
+            const up = b.r1 >= 1;
+            const lo = up ? 1 : b.r1, hi = up ? b.r1 : 1;
+            const bar = has ? `<span class="acc-bar ${up ? 'is-up' : 'is-down'}${b.n < few ? ' is-few' : ''}" style="bottom:${pos(lo)};height:calc(${pos(hi - lo)} + 2px)" aria-hidden="true"></span>` : '';
+            const ko = has ? `AC ${v} · ${fmt(b.n)}회 · 1등 당첨자가 기대의 ${b.r1.toFixed(2)}배${b.med ? ` · 1인당 중앙값 ${f1(b.med / 1e8)}억` : ''}${b.n < few ? ' · 회차가 적어 믿기 어려움' : ''}`
+                : `AC ${v} · 당첨번호 중에는 없음`;
+            const enT = has ? `AC ${v} · ${fmt(b.n)} draws · first-prize winners ${b.r1.toFixed(2)}× expected${b.med ? ` · median per winner ${(b.med / 1e9).toFixed(2)}bn KRW` : ''}${b.n < few ? ' · too few draws to rely on' : ''}`
+                : `AC ${v} · never drawn`;
+            return `<button type="button" class="acc-col${has ? '' : ' is-empty'}">${bar}<span class="sr-only" data-i18n-en="${esc(enT)}">${ko}</span></button>`;
+        }).join('');
+        const xs = S.perAc.map((b, v) => `<span><b>${v}</b><small>${b.n ? en(`${fmt(b.n)}회`, fmt(b.n)) : en('없음', '–')}</small></span>`).join('');
+        return [
+            `<style>\n${ACC_STYLE}\n</style>`,
+            '<figure class="ac-chart">',
+            `<figcaption><strong data-i18n-en="First-prize winners by AC value (vs expected)">AC값별 1등 당첨자 수 (기대 대비)</strong>`,
+            '<span class="acc-legend">',
+            `<span><i class="is-up"></i>${en('기대보다 많이 나눔', 'More winners than expected')}</span>`,
+            `<span><i class="is-down"></i>${en('기대보다 적게', 'Fewer than expected')}</span>`,
+            `<span><i class="is-up is-few"></i>${en(`옅은 막대: ${few}회 미만`, `Faded: fewer than ${few} draws`)}</span>`,
+            '</span></figcaption>',
+            '<div class="acc-wrap">',
+            `<div class="acc-y" aria-hidden="true">${yAxis}</div>`,
+            `<div class="acc-plot"><div class="acc-grids" aria-hidden="true">${grid}</div><div class="acc-cols">${cols}</div><div class="acc-tip" role="status" aria-live="polite" hidden></div></div>`,
+            '</div>',
+            `<div class="acc-x" aria-hidden="true">${xs}</div>`,
+            `<p class="acc-xtitle" aria-hidden="true">${en('AC값', 'AC value')}<span class="acc-xnote">${en(' (아래 숫자는 그 AC값이 나온 회차 수)', ' (numbers below: draws with that value)')}</span></p>`,
+            '</figure>',
+        ].join('\n');
+    };
     const shareBody = !share ? [] : (() => {
         const S = share, x2 = v => v.toFixed(2);
         const strong = S.ci[0] > 1 && S.lowR > S.restR;
@@ -881,6 +963,7 @@ const AC_COMBOS = [180, 858, 7873, 26292, 103461, 239998, 823318, 1148170, 26756
                     `First-prize winners came to ${x2(S.lowR)} times the expected number in AC 0–5 draws and ${x2(S.restR)} times in AC 6–10 draws — no clear difference (95% range for AC 0–5: ${x2(S.ci[0])}–${x2(S.ci[1])}).`),
             pEn(`${flat23 ? `2등(AC 0~5 ${x2(S.low2)}배 · 6~10 ${x2(S.rest2)}배)과 3등(${x2(S.low3)}배 · ${x2(S.rest3)}배)은 거의 차이가 없습니다. 모양 있는 조합을 통째로 고른 사람들이 6개를 다 맞혀 1등에서만 몰리는 것으로 보입니다.` : `2등은 AC 0~5 ${x2(S.low2)}배 · 6~10 ${x2(S.rest2)}배, 3등은 ${x2(S.low3)}배 · ${x2(S.rest3)}배입니다.`} 기대보다 가장 많이 나눈 회차는 ${topKo}입니다.${topHigh ? ' AC가 높아도 다른 까닭으로 사람이 몰리는 회차가 있어, AC값만으로 나눠 가질 사람 수를 가늠할 수는 없습니다.' : ''} AC 0~5 회차는 ${fmt(S.bands[0].n)}회뿐이라 수치가 앞으로 꽤 흔들릴 수 있고, 어느 조합이든 1등 확률은 같습니다.`,
                 `${flat23 ? `Second prize (AC 0–5 ${x2(S.low2)}×, 6–10 ${x2(S.rest2)}×) and third prize (${x2(S.low3)}×, ${x2(S.rest3)}×) barely differ — it looks as if people who pick a patterned set whole match all six, so the crowding shows up only in first prize.` : `Second prize: AC 0–5 ${x2(S.low2)}×, 6–10 ${x2(S.rest2)}×; third prize: ${x2(S.low3)}×, ${x2(S.rest3)}×.`} The draws shared most beyond expectation were ${topEn}.${topHigh ? ' High-AC sets can draw a crowd for other reasons too, so the AC value alone cannot tell you how many people you would share with.' : ''} There are only ${fmt(S.bands[0].n)} AC 0–5 draws, so these figures may still move, and every set has the same chance of winning.`),
+            acChart(S),
         ];
     })();
     STATS.push({
@@ -946,6 +1029,28 @@ const AC_COMBOS = [180, 858, 7873, 26292, 103461, 239998, 823318, 1148170, 26756
             '    }',
             "    document.getElementById('ac-btn').addEventListener('click', run);",
             "    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') run(); });",
+            '}());',
+            // AC값별 막대 풍선: 짚기 · 초점 · 누르기(휴대폰)로 그 막대의 글을 막대 위에 띄운다
+            '(function () {',
+            "    var fig = document.querySelector('.ac-chart');",
+            '    if (!fig) return;',
+            "    var plot = fig.querySelector('.acc-plot'), tip = fig.querySelector('.acc-tip'), on = null;",
+            '    function show(b) {',
+            "        on = b; tip.textContent = b.querySelector('.sr-only').textContent; tip.hidden = false;",
+            "        fig.querySelectorAll('.acc-col.is-on').forEach(function (x) { x.classList.remove('is-on'); }); b.classList.add('is-on');",
+            '        var pr = plot.getBoundingClientRect(), br = b.getBoundingClientRect(), w = tip.offsetWidth;',
+            '        var left = br.left - pr.left + br.width / 2 - w / 2;',
+            "        tip.style.left = Math.max(0, Math.min(pr.width - w, left)) + 'px';",
+            '    }',
+            "    function hide(b) { if (b && b !== on) return; on = null; tip.hidden = true; fig.querySelectorAll('.acc-col.is-on').forEach(function (x) { x.classList.remove('is-on'); }); }",
+            "    fig.querySelectorAll('.acc-col').forEach(function (b) {",
+            "        b.addEventListener('pointerenter', function () { show(b); });",
+            "        b.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') hide(b); });",
+            "        b.addEventListener('focus', function () { show(b); });",
+            "        b.addEventListener('blur', function () { hide(b); });",
+            "        b.addEventListener('click', function () { show(b); });",
+            '    });',
+            "    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') hide(); });",
             '}());',
         ].join('\n'),
     });
