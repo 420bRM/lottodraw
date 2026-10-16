@@ -1052,9 +1052,9 @@ const AC_COMBOS = [180, 858, 7873, 26292, 103461, 239998, 823318, 1148170, 26756
         const topEn = S.top.map(t => `<a href="round/${t.round}.html">draw ${t.round}</a>, ${t.w1} winners (expected ${f1(t.e1)}, AC ${t.ac})`).join('; ');
         return [
             h2En('AC값과 1등 당첨자 수', 'AC value and first-prize winners'),
-            acChart(S),   // 그래프를 소제목 바로 아래에, 설명 · 표는 그 뒤에
             pEn(`AC값이 낮은 조합은 사람이 손으로 고르기 쉬워 1등을 여럿이 나눠 가지지 않을까요? 88회(1게임 1,000원) 이후 ${fmt(S.n)}회를 회차마다 견줬습니다. 그 회차에 팔린 게임 수를 전체 조합 수(${fmt(TOTAL)})로 나누면 무작위로 샀을 때 나왔을 1등 인원(기대 인원)이 나오고, 실제 인원이 이보다 많으면 그 조합을 고른 사람이 많았다는 뜻입니다.`,
                 `Do low-AC sets, the kind people pick by hand, end up shared by more first-prize winners? We compared all ${fmt(S.n)} draws since draw 88 (1,000 KRW per game). Dividing the games sold in a draw by ${fmt(TOTAL)} gives the number of first-prize winners to expect if everyone picked at random; more actual winners than that means more people chose that set.`),
+            acChart(S),   // 그래프는 "기대 인원" 뜻을 푼 설명 바로 아래, 표 위에
             table([['AC값', 'AC value'], ['회차 수', 'Draws'], ['1등 당첨자 (기대 대비)', 'First-prize winners (vs expected)'], ['1등 1인당 (중앙값)', 'Per winner (median)']],
                 S.bands.concat([S.all]).map(b => [en(b.label, b.labelEn), en(`${fmt(b.n)}회`, fmt(b.n)), en(`${x2(b.r1)}배`, `${x2(b.r1)}×`), eokShort(b.med)]), 'ac-table'),
             strong
