@@ -1052,6 +1052,7 @@ const AC_COMBOS = [180, 858, 7873, 26292, 103461, 239998, 823318, 1148170, 26756
         const topEn = S.top.map(t => `<a href="round/${t.round}.html">draw ${t.round}</a>, ${t.w1} winners (expected ${f1(t.e1)}, AC ${t.ac})`).join('; ');
         return [
             h2En('AC값과 1등 당첨자 수', 'AC value and first-prize winners'),
+            acChart(S),   // 그래프를 소제목 바로 아래에, 설명 · 표는 그 뒤에
             pEn(`AC값이 낮은 조합은 사람이 손으로 고르기 쉬워 1등을 여럿이 나눠 가지지 않을까요? 88회(1게임 1,000원) 이후 ${fmt(S.n)}회를 회차마다 견줬습니다. 그 회차에 팔린 게임 수를 전체 조합 수(${fmt(TOTAL)})로 나누면 무작위로 샀을 때 나왔을 1등 인원(기대 인원)이 나오고, 실제 인원이 이보다 많으면 그 조합을 고른 사람이 많았다는 뜻입니다.`,
                 `Do low-AC sets, the kind people pick by hand, end up shared by more first-prize winners? We compared all ${fmt(S.n)} draws since draw 88 (1,000 KRW per game). Dividing the games sold in a draw by ${fmt(TOTAL)} gives the number of first-prize winners to expect if everyone picked at random; more actual winners than that means more people chose that set.`),
             table([['AC값', 'AC value'], ['회차 수', 'Draws'], ['1등 당첨자 (기대 대비)', 'First-prize winners (vs expected)'], ['1등 1인당 (중앙값)', 'Per winner (median)']],
@@ -1063,7 +1064,6 @@ const AC_COMBOS = [180, 858, 7873, 26292, 103461, 239998, 823318, 1148170, 26756
                     `First-prize winners came to ${x2(S.lowR)} times the expected number in AC 0–5 draws and ${x2(S.restR)} times in AC 6–10 draws — no clear difference (95% range for AC 0–5: ${x2(S.ci[0])}–${x2(S.ci[1])}).`),
             pEn(`${flat23 ? `2등(AC 0~5 ${x2(S.low2)}배 · 6~10 ${x2(S.rest2)}배)과 3등(${x2(S.low3)}배 · ${x2(S.rest3)}배)은 거의 차이가 없습니다. 모양 있는 조합을 통째로 고른 사람들이 6개를 다 맞혀 1등에서만 몰리는 것으로 보입니다.` : `2등은 AC 0~5 ${x2(S.low2)}배 · 6~10 ${x2(S.rest2)}배, 3등은 ${x2(S.low3)}배 · ${x2(S.rest3)}배입니다.`} 기대보다 가장 많이 나눈 회차는 ${topKo}입니다.${topHigh ? ' AC가 높아도 다른 까닭으로 사람이 몰리는 회차가 있어, AC값만으로 나눠 가질 사람 수를 가늠할 수는 없습니다.' : ''} AC 0~5 회차는 ${fmt(S.bands[0].n)}회뿐이라 수치가 앞으로 꽤 흔들릴 수 있고, 어느 조합이든 1등 확률은 같습니다.`,
                 `${flat23 ? `Second prize (AC 0–5 ${x2(S.low2)}×, 6–10 ${x2(S.rest2)}×) and third prize (${x2(S.low3)}×, ${x2(S.rest3)}×) barely differ — it looks as if people who pick a patterned set whole match all six, so the crowding shows up only in first prize.` : `Second prize: AC 0–5 ${x2(S.low2)}×, 6–10 ${x2(S.rest2)}×; third prize: ${x2(S.low3)}×, ${x2(S.rest3)}×.`} The draws shared most beyond expectation were ${topEn}.${topHigh ? ' High-AC sets can draw a crowd for other reasons too, so the AC value alone cannot tell you how many people you would share with.' : ''} There are only ${fmt(S.bands[0].n)} AC 0–5 draws, so these figures may still move, and every set has the same chance of winning.`),
-            acChart(S),
         ];
     })();
     STATS.push({
