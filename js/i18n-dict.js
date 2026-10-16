@@ -853,13 +853,13 @@ window.I18N_DICT = {
 
     /* ───── 개인정보 처리방침 · 이용약관 · 문의 ─────
        법적 효력은 한국어 원문에 있다. 영문은 참고용이라고 두 쪽에 적어 둔다. */
-    'legal.effective': { en: 'Effective from 2026-10-14' },
+    'legal.effective': { en: 'Effective from 2026-10-16' },
     'tm.effective': { en: 'Effective from 2026-10-11' },
     'legal.authority': { en: 'This English text is provided for convenience. If the two versions differ, the Korean original governs.' },
 
     'pv.h1':   { en: 'Privacy Policy' },
     'pv.h2a':  { en: '1. What this site collects itself' },
-    'pv.p1':   { en: 'Signing up is optional; every free feature works without an account. The numbers you fix or exclude in the generator, and the history of numbers generated, stay in your own browser\u2019s storage (localStorage), are not transmitted anywhere, and disappear when you clear the site data in your browser. When you open the live chat, a random number stored in this browser is sent to the chat server so that several tabs of the same browser count as one person in the online count. It is used only for that count, and the server discards it when the connection closes without keeping it. Information is received only when you order a paid pass or sign in with Google, as set out in sections 3 and 4.' },
+    'pv.p1':   { en: 'Signing up is optional; every free feature works without an account. The numbers you fix or exclude in the generator, and the history of numbers generated, stay in your own browser\u2019s storage (localStorage), are not transmitted anywhere, and disappear when you clear the site data in your browser. When you open the live chat, a random number stored in this browser is sent to the chat server so that several tabs of the same browser count as one person in the online count. It is used only for that count, and the server discards it when the connection closes without keeping it. When you press the Share or Print button in the number generator, or a share button on a blog post, only which button was pressed is sent to the server and counted per day; your numbers, the post address and device information are not sent, and who pressed it is not recorded. Information is received only when you order a paid pass or sign in with Google, as set out in sections 3 and 4.' },
     'pv.h2b':  { en: '2. Advertising (Google AdSense)' },
     'pv.p2':   { en: 'This site shows Google AdSense advertising. Third-party vendors, including Google, may use cookies to serve ads based on your visits to this site and others. Personalized advertising can be turned off in <a href="https://adssettings.google.com" rel="noopener">Google Ad Settings</a>.' },
     'pv.h2c':  { en: '3. Ordering a paid pass' },

@@ -117,6 +117,7 @@
             renderSetup();
             await loadOrders();
             loadMembers();
+            loadTaps();
             loadChat();
             loadComments();
         } catch (err) {
@@ -253,6 +254,55 @@
         } catch (err) {
             say('members-status', '처리하지 못했습니다: ' + err.message, true);
         }
+    }
+
+    /* ───── 공유 · 출력 집계 ───── */
+
+    const TAPS = [['gen-share', '생성기 공유'], ['gen-print', '생성기 출력'], ['post-share', '글 공유'], ['post-sns', '글 SNS']];
+    const kstDay = ms => new Date(ms + 9 * 3600 * 1000).toISOString().slice(0, 10);
+
+    async function loadTaps() {
+        try {
+            const r = await call('/taps');
+            $('taps-card').hidden = false;
+            renderTaps(r.days || []);
+            say('taps-status', `${when(Date.now())} 기준`);
+        } catch (err) {
+            $('taps-card').hidden = err.status === 503;
+            if (err.status !== 503) say('taps-status', '집계를 불러오지 못했습니다: ' + err.message, true);
+        }
+    }
+
+    // 합계 표: 오늘 · 최근 7일 · 최근 30일 · 전체, 접어 둔 표: 최근 30일 하루씩(없는 날은 0)
+    function renderTaps(days) {
+        const byDay = new Map(days.map(d => [d.day, d]));
+        const now = Date.now();
+        const recent = Array.from({ length: 30 }, (_, i) => kstDay(now - i * 86400000));
+        const sum = list => {
+            const out = {};
+            TAPS.forEach(([k]) => { out[k] = list.reduce((n, d) => n + ((d && d[k]) || 0), 0); });
+            return out;
+        };
+        const rowOf = (label, c, strong) => {
+            const cells = TAPS.map(([k]) => el('td', { text: (c[k] || 0).toLocaleString('ko-KR') }));
+            const all = TAPS.reduce((n, [k]) => n + (c[k] || 0), 0);
+            return el('tr', {}, [el(strong ? 'th' : 'td', { text: label })].concat(cells, [el('td', { text: all.toLocaleString('ko-KR') })]));
+        };
+        const fill = (id, rows) => {
+            const t = $(id);
+            t.textContent = '';
+            t.appendChild(el('thead', {}, [el('tr', {}, ['', ...TAPS.map(x => x[1]), '합계'].map(h => el('th', { text: h })))]));
+            t.appendChild(el('tbody', {}, rows));
+        };
+        const today = byDay.get(recent[0]) || {};
+        fill('taps-table', [
+            rowOf('오늘', today, true),
+            rowOf('최근 7일', sum(recent.slice(0, 7).map(d => byDay.get(d))), true),
+            rowOf('최근 30일', sum(recent.map(d => byDay.get(d))), true),
+            rowOf('전체', sum(days), true),
+        ]);
+        fill('taps-days', recent.map(d => rowOf(d, byDay.get(d) || {})));
+        $('taps-sum').textContent = `오늘 공유 ${((today['gen-share'] || 0) + (today['post-share'] || 0) + (today['post-sns'] || 0)).toLocaleString('ko-KR')} · 출력 ${(today['gen-print'] || 0).toLocaleString('ko-KR')}`;
     }
 
     /* ───── 실시간 채팅 관리 ───── */
@@ -576,7 +626,8 @@
             if (t) login(t);
         });
         $('admin-logout').addEventListener('click', logout);
-        $('admin-reload').addEventListener('click', () => { loadOrders(); loadMembers(); });
+        $('admin-reload').addEventListener('click', () => { loadOrders(); loadMembers(); loadTaps(); });
+        $('taps-reload').addEventListener('click', loadTaps);
         $('members-reload').addEventListener('click', loadMembers);
         $('chat-reload').addEventListener('click', loadChat);
         $('comments-reload').addEventListener('click', loadComments);
