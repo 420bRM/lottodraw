@@ -861,10 +861,12 @@ const AC_COMBOS = [180, 858, 7873, 26292, 103461, 239998, 823318, 1148170, 26756
             headLow: perHead(low), headRest: perHead(rest), top };
     })();
     const eokShort = a => en(`${f1(a / 1e8)}억`, `${(a / 1e9).toFixed(2)}bn`);
-    // AC값별 그래프 셋 (2026-10-16) — 번호 합계와 같은 SVG 막대 모양(dist-*). x축은 셋 다 AC값 0~10 으로 같고, y축은 그래프마다 하나(0부터).
+    // AC값별 그래프 셋 (2026-10-16) — 번호 합계와 같은 SVG 모양(dist-*). x축은 셋 다 AC값 0~10 으로 같고, y축은 그래프마다 하나(0부터).
     // 단위가 다른 값(회차 수 · 배 · 억)을 한 그림에 겹치면 y축이 둘 셋이 되어 헷갈린다 — 위아래로 쌓고 단추로 하나씩 켜고 끈다.
-    // ① 출현 횟수(1회~, 이론 곡선) ② 1등 당첨자 기대 대비(88회~, 1배 점선) ③ 1등 1인당 중앙값(88회~, 전체 중앙값 점선).
-    // 막대를 짚거나 누르면 js/dist-balls.js 가 data-tip 글을 막대 위에 띄운다(없으면 <title> 툴팁). 10회 미만 값은 옅게
+    // ① 출현 횟수(1회~, 실제 + 이론) ② 1등 당첨자 기대 대비(88회~, 1배 점선) ③ 1등 1인당 중앙값(88회~, 전체 중앙값 점선).
+    // 막대 없이 선으로, 점 사이는 곡선으로 잇는다 — 단조 3차 곡선(Fritsch–Carlson, d3 의 curveMonotoneX 와 같다)이라
+    // 두 점 사이에서 값보다 튀어 오르거나 0 아래로 내려가는 가짜 봉우리가 생기지 않는다.
+    // 점을 짚거나 누르면 js/dist-balls.js 가 data-tip 글을 띄운다(없으면 <title> 툴팁). 10회 미만 값은 속 빈 점 · 옅은 선
     const ACC_STYLE = `.ac-figure { margin: 16px 0 10px; }
 .acc-toggles { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
 .acc-toggles button { padding: 5px 12px; border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--muted); font: 13px/1.4 var(--font); cursor: pointer; }
@@ -873,17 +875,53 @@ const AC_COMBOS = [180, 858, 7873, 26292, 103461, 239998, 823318, 1148170, 26756
 .acc-panel[hidden] { display: none; }
 .acc-ptitle { margin: 0 0 2px; color: var(--text); font-size: 14px; font-weight: bold; }
 .acc-ptitle small { margin-left: 6px; color: var(--muted); font-size: 12px; font-weight: normal; }
-.ac-figure .dist-bar.is-few { opacity: .22; }
-.ac-figure .dist-bar.is-on { opacity: .9; }
-.ac-figure .key-few { opacity: .22; }
-.ac-figure .dist-legend .key-mean { height: 0; border-top: 2px dashed var(--brand); background: none; opacity: .6; }`;
+.acc-line { fill: none; stroke: var(--brand); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.acc-line.is-theory { stroke: var(--ball-3); stroke-width: 2.5; }
+.acc-line.is-few { opacity: .3; }
+.acc-area { fill: var(--brand); opacity: .08; }
+.dist-dot circle:first-child { fill: var(--brand); stroke: #fff; stroke-width: 2; transform-box: fill-box; transform-origin: center; transition: transform .12s ease-out; }
+.dist-dot.is-few circle:first-child { fill: #fff; stroke: var(--brand); stroke-width: 2; opacity: .7; }
+.dist-dot .acc-hit { fill: transparent; }
+.dist-dot { cursor: pointer; }
+.dist-dot:hover circle:first-child, .dist-dot.is-on circle:first-child { transform: scale(1.45); }
+.acc-val { fill: var(--text); font-size: 12px; font-weight: bold; }
+.ac-figure .dist-legend .key-line { height: 0; border-top: 3px solid var(--brand); background: none; }
+.ac-figure .dist-legend .key-dot { width: 9px; height: 9px; border: 2px solid var(--brand); border-radius: 50%; background: #fff; opacity: .7; }
+.ac-figure .dist-legend .key-mean { height: 0; border-top: 2px dashed var(--brand); background: none; opacity: .6; }
+@media (prefers-reduced-motion: reduce) { .dist-dot circle:first-child { transition: none; } }`;
     const acChart = S => {
         const few = 10;
-        const W = 680, H = 210, L = 52, R = 12, T = 24, B = 40;
+        const W = 680, H = 220, L = 52, R = 16, T = 26, B = 40;
         const slot = (W - L - R) / 11;
         const cx = v => L + slot * (v + 0.5);
         const r2 = v => Math.round(v * 10) / 10;
-        // 막대 · 눈금 · 점선 · 곡선 → svg 한 장
+        // 단조 3차 곡선: [x, y] 점들 → 구간마다 베지어 조각 [{ i, d }] (점 사이에서 값의 범위를 넘지 않는다)
+        const monotone = pts => {
+            const n = pts.length;
+            if (n < 2) return [];
+            const d = [], m = new Array(n);
+            for (let i = 0; i < n - 1; i++) d.push((pts[i + 1][1] - pts[i][1]) / (pts[i + 1][0] - pts[i][0]));
+            m[0] = d[0]; m[n - 1] = d[n - 2];
+            for (let i = 1; i < n - 1; i++) m[i] = d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) / 2;
+            for (let i = 0; i < n - 1; i++) {
+                if (d[i] === 0) { m[i] = 0; m[i + 1] = 0; continue; }
+                const a = m[i] / d[i], b = m[i + 1] / d[i], h = a * a + b * b;
+                if (h > 9) { const t = 3 / Math.sqrt(h); m[i] = t * a * d[i]; m[i + 1] = t * b * d[i]; }
+            }
+            const segs = [];
+            for (let i = 0; i < n - 1; i++) {
+                const [x0, y0] = pts[i], [x1, y1] = pts[i + 1], dx = (x1 - x0) / 3;
+                segs.push(`C${r2(x0 + dx)},${r2(y0 + m[i] * dx)} ${r2(x1 - dx)},${r2(y1 - m[i + 1] * dx)} ${r2(x1)},${r2(y1)}`);
+            }
+            return segs;
+        };
+        // 값이 이어진 구간(빈 값에서 끊는다)마다 [{ v, y }]
+        const runs = vals => {
+            const out = []; let cur = [];
+            vals.forEach((y, v) => { if (y == null) { if (cur.length) out.push(cur); cur = []; } else cur.push({ v, y }); });
+            if (cur.length) out.push(cur);
+            return out;
+        };
         const panel = o => {
             const yMax = o.yMax, Y = y => T + (H - T - B) * (1 - y / yMax);
             const out = [];
@@ -891,16 +929,35 @@ const AC_COMBOS = [180, 858, 7873, 26292, 103461, 239998, 823318, 1148170, 26756
                 out.push(`<line class="dist-grid" x1="${L}" x2="${W - R}" y1="${r2(Y(y))}" y2="${r2(Y(y))}"/>`);
                 out.push(`<text class="dist-tick" x="${L - 6}" y="${r2(Y(y) + 4)}" text-anchor="end"${o.tickEn ? ` data-i18n-en="${esc(o.tickEn(y))}"` : ''}>${o.tick(y)}</text>`);
             }
-            o.bars.forEach((b, v) => {
-                if (b == null) return;
-                const x = L + slot * v + 1, w = slot - 2, top = Y(b.y);
-                out.push(`<rect class="dist-bar${b.few ? ' is-few' : ''}" x="${r2(x)}" y="${r2(top)}" width="${r2(w)}" height="${r2(Y(0) - top)}" data-tip="${esc(b.tip)}" data-tip-en="${esc(b.tipEn)}"><title>${esc(b.tip)}</title></rect>`);
+            if (o.ref) out.push(`<line class="dist-mean" x1="${L}" x2="${W - R}" y1="${r2(Y(o.ref.y))}" y2="${r2(Y(o.ref.y))}"/>`);
+            const dots = [], labels = [];
+            o.series.forEach(sr => {
+                runs(sr.vals).forEach(run => {
+                    const pts = run.map(p => [cx(p.v), Y(p.y)]);
+                    const segs = monotone(pts);
+                    if (sr.area && segs.length) {
+                        out.push(`<path class="acc-area" d="M${r2(pts[0][0])},${r2(Y(0))} L${r2(pts[0][0])},${r2(pts[0][1])} ${segs.join(' ')} L${r2(pts[pts.length - 1][0])},${r2(Y(0))} Z"/>`);
+                    }
+                    // 구간마다 따로 그려, 믿기 어려운 점(10회 미만)에 닿는 구간만 옅게
+                    segs.forEach((seg, i) => {
+                        const faint = sr.few && (sr.few[run[i].v] || sr.few[run[i + 1].v]);
+                        out.push(`<path class="acc-line${sr.cls ? ' ' + sr.cls : ''}${faint ? ' is-few' : ''}" d="M${r2(pts[i][0])},${r2(pts[i][1])} ${seg}"/>`);
+                    });
+                    if (!sr.tips) return;
+                    run.forEach((p, i) => {
+                        const isFew = sr.few && sr.few[p.v];
+                        dots.push(`<g class="dist-dot${isFew ? ' is-few' : ''}" data-tip="${esc(sr.tips[p.v])}" data-tip-en="${esc(sr.tipsEn[p.v])}"><title>${esc(sr.tips[p.v])}</title>`
+                            + `<circle cx="${r2(pts[i][0])}" cy="${r2(pts[i][1])}" r="5.5"/><circle class="acc-hit" cx="${r2(pts[i][0])}" cy="${r2(pts[i][1])}" r="16"/></g>`);
+                    });
+                });
+                // 이 그래프에서 말하고 싶은 점 하나에만 값을 적는다(나머지는 점을 짚으면)
+                if (sr.label != null) {
+                    const v = sr.label, y = Y(sr.vals[v]);
+                    labels.push(`<text class="acc-val" x="${r2(cx(v))}" y="${r2(y - 12)}" text-anchor="middle" data-i18n-en="${esc(sr.labelEn)}">${sr.labelKo}</text>`);
+                }
             });
-            if (o.curve) out.push(`<polyline class="dist-curve" points="${o.curve.map((y, v) => `${r2(cx(v))},${r2(Y(y))}`).join(' ')}"/>`);
-            if (o.ref) {
-                out.push(`<line class="dist-mean" x1="${L}" x2="${W - R}" y1="${r2(Y(o.ref.y))}" y2="${r2(Y(o.ref.y))}"/>`);
-                out.push(`<text class="dist-mark" x="${W - R}" y="${r2(Y(o.ref.y) - 5)}" text-anchor="end" data-i18n-en="${esc(o.ref.labelEn)}">${o.ref.label}</text>`);
-            }
+            // 기준선 이름은 왼쪽 끝에 — 오른쪽 끝(AC 10)에는 점과 선이 있어 겹친다. AC 0 · 1 은 당첨번호가 없어 비어 있다
+            if (o.ref) out.push(`<text class="dist-mark" x="${L + 6}" y="${r2(Y(o.ref.y) - 6)}" text-anchor="start" data-i18n-en="${esc(o.ref.labelEn)}">${o.ref.label}</text>`);
             out.push(`<line class="dist-axis" x1="${L}" x2="${W - R}" y1="${H - B}" y2="${H - B}"/>`);
             for (let v = 0; v <= 10; v++) out.push(`<text class="dist-tick" x="${r2(cx(v))}" y="${H - B + 16}" text-anchor="middle">${v}</text>`);
             out.push(`<text class="dist-label" x="${r2((L + W - R) / 2)}" y="${H - 4}" text-anchor="middle" data-i18n-en="AC value">AC값</text>`);
@@ -908,52 +965,69 @@ const AC_COMBOS = [180, 858, 7873, 26292, 103461, 239998, 823318, 1148170, 26756
                 `<div class="acc-panel" data-panel="${o.id}"${o.on ? '' : ' hidden'}>`,
                 `<p class="acc-ptitle"><span data-i18n-en="${esc(o.titleEn)}">${o.title}</span><small data-i18n-en="${esc(o.subEn)}">${o.sub}</small></p>`,
                 `<svg class="dist-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.aria)}">`,
-                out.join('\n'),
+                out.concat(labels, dots).join('\n'),
                 '</svg>',
                 `<div class="dist-legend">${o.legend.join('')}</div>`,
                 '</div>',
             ].join('\n');
         };
         const key = (cls, ko, english) => `<span><i class="${cls}"></i><span data-i18n-en="${esc(english)}">${ko}</span></span>`;
-        const fewKey = key('key-bar key-few', `옅은 막대: ${few}회 미만(믿기 어려움)`, `Faded bars: fewer than ${few} draws (unreliable)`);
+        const fewKey = key('key-dot', `속 빈 점: ${few}회 미만(믿기 어려움)`, `Hollow dots: fewer than ${few} draws (unreliable)`);
+        const argmax = (vals, ok) => vals.reduce((best, y, v) => (y != null && (!ok || ok(v)) && (best < 0 || y > vals[best]) ? v : best), -1);
         // ① 출현 횟수 (전 회차) + 이론
         const total = AC_COMBOS.reduce((a, b) => a + b, 0);
         const counts = stats.ac.map(r => r.count);
         const theo = AC_COMBOS.map(c => N * c / total);
         const cMax = Math.max(...counts, ...theo);
         const cStep = niceStep(cMax, 4);
+        const cTop = argmax(counts);
         const countPanel = panel({
             id: 'count', on: true,
             title: 'AC값별 출현 횟수', titleEn: 'Draws by AC value', sub: `1~${N}회`, subEn: `draws 1–${N}`,
-            aria: `AC값별 출현 횟수. 가장 많은 값은 AC ${counts.indexOf(Math.max(...counts))}`,
-            yMax: Math.ceil(cMax / cStep) * cStep, yStep: cStep, tick: y => fmt(y),
-            bars: counts.map((c, v) => (c ? { y: c, tip: `AC ${v} · ${fmt(c)}회 (${pct(c, N)}) · 이론 ${(AC_COMBOS[v] / total * 100).toFixed(1)}%`, tipEn: `AC ${v} · ${fmt(c)} draws (${pct(c, N)}) · theory ${(AC_COMBOS[v] / total * 100).toFixed(1)}%` } : null)),
-            curve: theo,
-            legend: [key('key-bar', '실제 나온 횟수', 'Actual draws'), key('key-curve', '이론(전체 조합 중 그 AC값의 비율)', 'Theory (share of all combinations)')],
+            aria: `AC값별 출현 횟수. 가장 많은 값은 AC ${cTop}(${fmt(counts[cTop])}회)`,
+            yMax: Math.ceil(cMax * 1.08 / cStep) * cStep, yStep: cStep, tick: y => fmt(y),
+            series: [
+                { cls: 'is-theory', vals: theo },
+                { area: true, vals: counts,
+                  tips: counts.map((c, v) => `AC ${v} · ${fmt(c)}회 (${pct(c, N)}) · 이론 ${(AC_COMBOS[v] / total * 100).toFixed(1)}%`),
+                  tipsEn: counts.map((c, v) => `AC ${v} · ${fmt(c)} draws (${pct(c, N)}) · theory ${(AC_COMBOS[v] / total * 100).toFixed(1)}%`),
+                  label: cTop, labelKo: `AC ${cTop} · ${fmt(counts[cTop])}회`, labelEn: `AC ${cTop} · ${fmt(counts[cTop])}` },
+            ],
+            legend: [key('key-line', '실제 나온 횟수', 'Actual draws'), key('key-curve', '이론(전체 조합 중 그 AC값의 비율)', 'Theory (share of all combinations)')],
         });
-        // ② 1등 당첨자 기대 대비 (88회~)
-        const rMax = Math.max(2, Math.ceil(Math.max(...S.perAc.map(b => b.r1)) * 2) / 2);
+        // ② 1등 당첨자 기대 대비 (88회~). 값을 적는 점은 믿을 만한(10회 이상) 점 중 가장 높은 것
+        const ratios = S.perAc.map(b => (b.n ? b.r1 : null));
+        const fewMask = S.perAc.map(b => b.n > 0 && b.n < few);
+        const rTop = argmax(ratios, v => !fewMask[v]);
+        const rMax = Math.max(2, Math.ceil(Math.max(...ratios.filter(v => v != null)) * 1.1 * 2) / 2);
         const ratioPanel = panel({
             id: 'ratio', on: true,
             title: '1등 당첨자 수 (기대 대비)', titleEn: 'First-prize winners (vs expected)', sub: `88~${N}회`, subEn: `draws 88–${N}`,
             aria: `AC값별 1등 당첨자 수의 기대 대비 배수. AC 0~5 는 ${S.lowR.toFixed(2)}배`,
             yMax: rMax, yStep: 0.5, tick: y => `${y}배`, tickEn: y => `${y}×`,
-            bars: S.perAc.map((b, v) => (b.n ? { y: b.r1, few: b.n < few, tip: `AC ${v} · ${fmt(b.n)}회 · 1등 당첨자가 기대의 ${b.r1.toFixed(2)}배`, tipEn: `AC ${v} · ${fmt(b.n)} draws · ${b.r1.toFixed(2)}× the expected winners` } : null)),
             ref: { y: 1, label: '기대 1배', labelEn: 'expected 1×' },
-            legend: [key('key-bar', '실제 ÷ 기대(판매량으로 어림)', 'Actual ÷ expected (from ticket sales)'), key('key-mean', '1배 = 기대만큼', '1× = as expected'), fewKey],
+            series: [{ vals: ratios, few: fewMask,
+                tips: S.perAc.map((b, v) => `AC ${v} · ${fmt(b.n)}회 · 1등 당첨자가 기대의 ${b.r1.toFixed(2)}배${b.n < few ? ' · 회차가 적어 믿기 어려움' : ''}`),
+                tipsEn: S.perAc.map((b, v) => `AC ${v} · ${fmt(b.n)} draws · ${b.r1.toFixed(2)}× the expected winners${b.n < few ? ' · too few draws to rely on' : ''}`),
+                label: rTop, labelKo: `${ratios[rTop].toFixed(2)}배`, labelEn: `${ratios[rTop].toFixed(2)}×` }],
+            legend: [key('key-line', '실제 ÷ 기대(판매량으로 어림)', 'Actual ÷ expected (from ticket sales)'), key('key-mean', '1배 = 기대만큼', '1× = as expected'), fewKey],
         });
         // ③ 1등 1인당 중앙값 (88회~, 당첨자가 있던 회차)
-        const meds = S.perAc.map(b => b.med / 1e8);
-        const mMax = Math.max(...meds, S.all.med / 1e8);
+        const meds = S.perAc.map(b => (b.n && b.med ? b.med / 1e8 : null));
+        const mMax = Math.max(...meds.filter(v => v != null), S.all.med / 1e8);
         const mStep = niceStep(mMax, 4);
+        const mLow = argmax(meds.map(v => (v == null ? null : -v)), v => !fewMask[v]);
         const moneyPanel = panel({
             id: 'money', on: false,
             title: '1등 1인당 당첨금 (중앙값)', titleEn: 'First prize per winner (median)', sub: `88~${N}회`, subEn: `draws 88–${N}`,
             aria: `AC값별 1등 1인당 당첨금 중앙값. 전체 ${f1(S.all.med / 1e8)}억`,
-            yMax: Math.ceil(mMax / mStep) * mStep, yStep: mStep, tick: y => `${fmt(y)}억`, tickEn: y => `${(y / 10).toFixed(y % 10 ? 1 : 0)}bn`,
-            bars: S.perAc.map((b, v) => (b.n && b.med ? { y: b.med / 1e8, few: b.n < few, tip: `AC ${v} · 1인당 중앙값 ${f1(b.med / 1e8)}억 (${fmt(b.n)}회)`, tipEn: `AC ${v} · median ${(b.med / 1e9).toFixed(2)}bn KRW per winner (${fmt(b.n)} draws)` } : null)),
+            yMax: Math.ceil(mMax * 1.1 / mStep) * mStep, yStep: mStep, tick: y => `${fmt(y)}억`, tickEn: y => `${(y / 10).toFixed(y % 10 ? 1 : 0)}bn`,
             ref: { y: S.all.med / 1e8, label: `전체 ${f1(S.all.med / 1e8)}억`, labelEn: `all draws ${(S.all.med / 1e9).toFixed(2)}bn` },
-            legend: [key('key-bar', '그 AC값 회차의 1인당 1등 금액 중앙값', 'Median first prize per winner in those draws'), key('key-mean', '전체 회차 중앙값', 'Median across all draws'), fewKey],
+            series: [{ vals: meds, few: fewMask,
+                tips: S.perAc.map((b, v) => `AC ${v} · 1인당 중앙값 ${f1(b.med / 1e8)}억 (${fmt(b.n)}회)${b.n < few ? ' · 믿기 어려움' : ''}`),
+                tipsEn: S.perAc.map((b, v) => `AC ${v} · median ${(b.med / 1e9).toFixed(2)}bn KRW per winner (${fmt(b.n)} draws)${b.n < few ? ' · unreliable' : ''}`),
+                label: mLow, labelKo: `${f1(meds[mLow])}억`, labelEn: `${(meds[mLow] / 10).toFixed(2)}bn` }],
+            legend: [key('key-line', '그 AC값 회차의 1인당 1등 금액 중앙값', 'Median first prize per winner in those draws'), key('key-mean', '전체 회차 중앙값', 'Median across all draws'), fewKey],
         });
         const btn = (id, on, ko, english) => `<button type="button" data-panel="${id}" aria-pressed="${on}" data-i18n-en="${esc(english)}">${ko}</button>`;
         return [

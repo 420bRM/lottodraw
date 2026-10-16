@@ -1,6 +1,6 @@
 // 번호 공을 쌓은 분포 그림(svg.dist-chart 안의 .dist-ball — 많이 나온 번호 순위 · About 미리 보기).
 // 공에 마우스를 올리면(휴대폰은 누르면) 그 공을 밝게 띄우고 나머지는 옅게, 공 위에 "34번 · 187회"를 바로 보인다.
-// data-tip 이 있는 막대(.dist-bar — AC값 그래프)도 같은 방식으로 막대 위에 그 글(영어 화면은 data-tip-en)을 띄운다.
+// data-tip 이 있는 막대(.dist-bar)나 선 그래프의 점(.dist-dot — AC값 그래프)도 같은 방식으로 그 위에 글(영어 화면은 data-tip-en)을 띄운다.
 // 그림은 생성기(tools/build-static-stats.js)가 미리 그린 SVG 다. 이 스크립트가 없어도 CSS :hover 로 밝아지고 <title> 툴팁이 뜬다.
 (function () {
     'use strict';
@@ -13,7 +13,7 @@
     const fmt = v => Number(v).toLocaleString('ko-KR');
     const label = (n, c) => (window.I18N && window.I18N.lang === 'en' ? `No. ${n} · ${fmt(c)}×` : `${n}번 · ${fmt(c)}회`);
 
-    const PICK = '.dist-ball[data-n], .dist-bar[data-tip]';
+    const PICK = '.dist-ball[data-n], .dist-bar[data-tip], .dist-dot[data-tip]';
     function enhance(svg) {
         const marks = svg.querySelectorAll(PICK);
         if (!marks.length) return;
@@ -52,7 +52,7 @@
             // 그림이 줄어 보이는 휴대폰에서도 이름표 글자가 12px 쯤 되게 (공 번호보다 크게)
             const k = Math.min(1.6, Math.max(1, vb.width / (svg.getBoundingClientRect().width || vb.width)));
             text.style.fontSize = (12 * k).toFixed(1) + 'px';
-            text.textContent = isBar ? (window.I18N && window.I18N.lang === 'en' && b.dataset.tipEn ? b.dataset.tipEn : b.dataset.tip) : label(b.dataset.n, b.dataset.c);
+            text.textContent = b.dataset.tip != null ? (window.I18N && window.I18N.lang === 'en' && b.dataset.tipEn ? b.dataset.tipEn : b.dataset.tip) : label(b.dataset.n, b.dataset.c);
             tip.setAttribute('visibility', 'visible');
             const w = Math.ceil(text.getComputedTextLength() + 16 * k);
             const h = Math.round(20 * k);
