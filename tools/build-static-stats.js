@@ -863,10 +863,10 @@ const AC_COMBOS = [180, 858, 7873, 26292, 103461, 239998, 823318, 1148170, 26756
     const eokShort = a => en(`${f1(a / 1e8)}억`, `${(a / 1e9).toFixed(2)}bn`);
     // AC값별 그래프 셋 (2026-10-16) — 번호 합계와 같은 SVG 모양(dist-*). x축은 셋 다 AC값 0~10 으로 같고, y축은 그래프마다 하나(0부터).
     // 단위가 다른 값(회차 수 · 배 · 억)을 한 그림에 겹치면 y축이 둘 셋이 되어 헷갈린다 — 위아래로 쌓고 단추로 하나씩 켜고 끈다.
-    // ① 출현 횟수(1회~, 주황 선) ② 1등 당첨자 기대 대비(88회~, 1배 점선) ③ 1등 1인당 중앙값(88회~, 전체 중앙값 점선).
+    // ① 출현 횟수(1회~, 주황 선) ② 1등 당첨자 기대 대비(88회~, 1배 점선) ③ 1등 1인당 중앙값(88회~, 전체 중앙값 점선) — 처음부터 셋 다 켠다.
     // 막대 없이 선으로, 점 사이는 곡선으로 잇는다 — 단조 3차 곡선(Fritsch–Carlson, d3 의 curveMonotoneX 와 같다)이라
     // 두 점 사이에서 값보다 튀어 오르거나 0 아래로 내려가는 가짜 봉우리가 생기지 않는다.
-    // 점은 숨겨 두고(선이 가리지 않게), 그 AC값 세로 칸을 짚거나 누르면 점 · 세로 안내선과 함께 js/dist-balls.js 가 data-tip 글을 띄운다
+    // 선 · 점은 셋 다 주황, 점은 작게(반지름 2.5 — 선을 가리지 않게). 그 AC값 세로 칸을 짚거나 누르면 점이 커지고 세로 안내선과 함께 js/dist-balls.js 가 data-tip 글을 띄운다
     // (없으면 <title> 툴팁). 표본이 10회 미만인 값에 닿는 구간은 옅은 선 — 오차가 크다
     const ACC_STYLE = `.ac-figure { margin: 16px 0 10px; }
 .acc-toggles { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
@@ -876,22 +876,20 @@ const AC_COMBOS = [180, 858, 7873, 26292, 103461, 239998, 823318, 1148170, 26756
 .acc-panel[hidden] { display: none; }
 .acc-ptitle { margin: 0 0 2px; color: var(--text); font-size: 14px; font-weight: bold; }
 .acc-ptitle small { margin-left: 6px; color: var(--muted); font-size: 12px; font-weight: normal; }
-.acc-line { fill: none; stroke: var(--brand); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
-.acc-line.is-count { stroke: var(--ball-3); }
-.acc-line.is-few { stroke: #b6c2db; }
+.acc-line { fill: none; stroke: var(--ball-3); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.acc-line.is-few { stroke: #f9b4b4; }
 .acc-area { fill: var(--brand); opacity: .08; }
 .acc-area.is-count { fill: var(--ball-3); opacity: .1; }
-.dist-dot circle { fill: var(--brand); stroke: #fff; stroke-width: 2; opacity: 0; transform-box: fill-box; transform-origin: center; transition: opacity .12s ease-out, transform .12s ease-out; }
-.dist-dot.is-count circle { fill: var(--ball-3); }
-.dist-dot.is-few circle { fill: #fff; stroke: var(--brand); }
+.dist-dot circle { fill: var(--ball-3); stroke: #fff; stroke-width: 1; transform-box: fill-box; transform-origin: center; transition: transform .12s ease-out; }
+.dist-dot.is-few circle { fill: #fff; stroke: #f08a8a; stroke-width: 1.2; }
 .dist-dot .acc-guide { stroke: #888; stroke-width: 1; opacity: 0; transition: opacity .12s ease-out; }
 .dist-dot .acc-hit { fill: transparent; }
 .dist-dot { cursor: pointer; }
-.dist-dot:hover circle, .dist-dot.is-on circle { opacity: 1; transform: scale(1.2); }
+.dist-dot:hover circle, .dist-dot.is-on circle { transform: scale(1.8); }
 .dist-dot:hover .acc-guide, .dist-dot.is-on .acc-guide { opacity: .45; }
 .acc-val { fill: var(--text); font-size: 12px; font-weight: bold; }
-.ac-figure .dist-legend .key-line { height: 0; border-top: 3px solid var(--brand); background: none; }
-.ac-figure .dist-legend .key-line.key-few { border-top-color: #b6c2db; }
+.ac-figure .dist-legend .key-line { height: 0; border-top: 3px solid var(--ball-3); background: none; }
+.ac-figure .dist-legend .key-line.key-few { border-top-color: #f9b4b4; }
 .ac-figure .dist-legend .key-mean { height: 0; border-top: 2px dashed var(--brand); background: none; opacity: .6; }
 @media (prefers-reduced-motion: reduce) { .dist-dot circle, .dist-dot .acc-guide { transition: none; } }`;
     const acChart = S => {
@@ -954,7 +952,7 @@ const AC_COMBOS = [180, 858, 7873, 26292, 103461, 239998, 823318, 1148170, 26756
                         const x = pts[i][0];
                         dots.push(`<g class="dist-dot${sr.cls ? ' ' + sr.cls : ''}${isFew ? ' is-few' : ''}" data-tip="${esc(sr.tips[p.v])}" data-tip-en="${esc(sr.tipsEn[p.v])}"><title>${esc(sr.tips[p.v])}</title>`
                             + `<line class="acc-guide" x1="${r2(x)}" x2="${r2(x)}" y1="${T}" y2="${H - B}"/>`
-                            + `<circle cx="${r2(x)}" cy="${r2(pts[i][1])}" r="5.5"/>`
+                            + `<circle cx="${r2(x)}" cy="${r2(pts[i][1])}" r="2.5"/>`
                             + `<rect class="acc-hit" x="${r2(x - slot / 2)}" y="${T}" width="${r2(slot)}" height="${H - T - B}"/></g>`);
                     });
                 });
@@ -1024,7 +1022,7 @@ const AC_COMBOS = [180, 858, 7873, 26292, 103461, 239998, 823318, 1148170, 26756
         const mStep = niceStep(mMax, 4);
         const mLow = argmax(meds.map(v => (v == null ? null : -v)), v => !fewMask[v]);
         const moneyPanel = panel({
-            id: 'money', on: false,
+            id: 'money', on: true,
             title: '1등 1인당 당첨금 (중앙값)', titleEn: 'First prize per winner (median)', sub: `88~${N}회`, subEn: `draws 88–${N}`,
             aria: `AC값별 1등 1인당 당첨금 중앙값. 전체 ${f1(S.all.med / 1e8)}억`,
             yMax: Math.ceil(mMax * 1.1 / mStep) * mStep, yStep: mStep, tick: y => `${fmt(y)}억`, tickEn: y => `${(y / 10).toFixed(y % 10 ? 1 : 0)}bn`,
@@ -1039,7 +1037,7 @@ const AC_COMBOS = [180, 858, 7873, 26292, 103461, 239998, 823318, 1148170, 26756
         return [
             `<style>\n${ACC_STYLE}\n</style>`,
             '<figure class="dist-figure ac-figure">',
-            `<div class="acc-toggles" role="group" aria-label="보일 그래프 고르기">${btn('count', true, '출현 횟수', 'Draws')}${btn('ratio', true, '1등 당첨자 (기대 대비)', 'First-prize winners vs expected')}${btn('money', false, '1인당 당첨금', 'Prize per winner')}</div>`,
+            `<div class="acc-toggles" role="group" aria-label="보일 그래프 고르기">${btn('count', true, '출현 횟수', 'Draws')}${btn('ratio', true, '1등 당첨자 (기대 대비)', 'First-prize winners vs expected')}${btn('money', true, '1인당 당첨금', 'Prize per winner')}</div>`,
             countPanel, ratioPanel, moneyPanel,
             '</figure>',
         ].join('\n');
