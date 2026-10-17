@@ -1,7 +1,8 @@
 // 일회용: 동행복권 1등 배출점 자료 위치 · 약관 확인 (출력만, 저장 안 함)
 const UA = 'Mozilla/5.0 (compatible; lottodraw.kr data updater)';
 const B = 'https://www.dhlottery.co.kr';
-const get = async u => { const r = await fetch(u, { headers: { 'User-Agent': UA } }); return { s: r.status, t: await r.text(), ct: r.headers.get('content-type') }; };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const get = async u => { let e; for (let i = 0; i < 5; i++) { try { const r = await fetch(u, { headers: { 'User-Agent': UA } }); return { s: r.status, t: await r.text(), ct: r.headers.get('content-type') }; } catch (x) { e = x; console.log('retry', u, x.cause && x.cause.code); await sleep(3000 * (i + 1)); } } return { s: 0, t: String(e), ct: '' }; };
 const flat = s => s.replace(/<script[\s\S]*?<\/script>/g, ' ').replace(/<style[\s\S]*?<\/style>/g, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
 (async () => {
   const p = await get(B + '/wnprchsplcsrch/home?ltGds=lt645&ltEpsd=1245');
