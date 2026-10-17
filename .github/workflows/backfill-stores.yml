@@ -1,0 +1,22 @@
+name: backfill-stores
+# 일회용: 1등 · 2등 판매점 전 회차 받기(262회~). 받은 stores-data.json 을 이 브랜치에 커밋한다. 머지 전에 지운다.
+on:
+  push:
+    branches: [claude/winning-stores]
+    paths: [.github/workflows/backfill-stores.yml]
+permissions:
+  contents: write
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - run: node tools/update-stores.js --full
+      - run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add stores-data.json
+          git commit -m "chore: 1등 · 2등 판매점 전 회차 받기 (262회~)" && git push origin HEAD:claude/winning-stores
