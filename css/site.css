@@ -1241,6 +1241,8 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 /* 2·3등 당첨금 통계 · 실수령액 표: 한글이 글자 단위로 끊기지 않게(띄어쓰기에서만 줄을 바꾼다).
    긴 설명은 칸 안 둘째 줄(.sub)로 내리고, 휴대폰에서는 글자를 줄여 표가 옆으로 밀리지 않게 한다 */
 .tier-stat th, .tier-stat td { word-break: keep-all; }
+/* 1등 판매점 30곳(statistics-stores.html): 칸 값을 한 줄로 두고 휴대폰에서는 표만 옆으로 민다(TOP 50 표와 같은 방식) */
+.store-top th, .store-top td { white-space: nowrap; }
 .tier-stat .sub { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; font-weight: normal; }
 .tier-glance td:first-child, .tier-records td:first-child, .tier-tax td:first-child { font-weight: bold; text-align: left; }
 /* 금액 칸은 "원"만 다음 줄로 떨어지지 않게 한 줄로 (첫 칸 이름표만 줄을 바꾼다) */

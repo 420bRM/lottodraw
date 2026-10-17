@@ -41,6 +41,6 @@ A lucky store does not change the odds, but a reputation as a lucky store does c
 | Why do lucky stores sell so many 1st prizes? | Because they sell a lot of tickets. |
 | What about stores that do well relative to their sales? | It is most likely the luck of a small sample. |
 
-This site does not cover records by store, but you can see how the number of 1st-prize winners is spread across draws in [1st-prize winner statistics](/statistics-prize.html). The time and travel cost of going to a lucky store do not change the odds of winning. Still, if you enjoy the trip, that can be reason enough in itself. It is just better not to mix up the value of that enjoyment with the odds.
+Records of 1st and 2nd prizes by retailer are in [1st-prize retailer statistics](/statistics-stores.html). Comparing each retailer's 2nd-prize count, in place of its unpublished sales, shows that places with more 1st prizes also have more 2nd prizes. You can see how the number of 1st-prize winners is spread across draws in [1st-prize winner statistics](/statistics-prize.html). The time and travel cost of going to a lucky store do not change the odds of winning. Still, if you enjoy the trip, that can be reason enough in itself. It is just better not to mix up the value of that enjoyment with the odds.
 
 > The number of stores is about 8,000, based on 2026 reports. The sales-per-1st-prize comparison uses figures reported by Seoul Shinmun (31 July 2015). Before 2004 one game cost 2,000 KRW, so sales-based figures for older stores cannot be compared directly.
