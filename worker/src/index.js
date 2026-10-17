@@ -12,18 +12,19 @@
 //   6) 내 번호 — 회원이 산 번호를 회차별로 저장(마이페이지가 당첨번호와 맞춰 등수를 보여 준다). 저장은 community.js 의 k:
 //   7) 이번 주 생성 번호 메일 — 구독한 회원에게 금요일 오전부터 생성기 기본 규칙으로 만든 5게임을 보낸다(weeklyMail).
 //      결제와 따로 돈다: 실패해도 주문 · 발급 · 지킴이에 영향이 없다. KV 를 쓰지 않는다.
+//   8) 공유 · 출력 집계 — 홈 생성기 공유 · 출력, 블로그 글 공유 단추의 하루 횟수(/api/tap). 관리자 페이지에서 본다.
 //
 // 키 확인은 브라우저가 공개키로 혼자 한다(js/license.js). 이 서버가 멈춰도
 // 이미 산 사람의 잠금은 풀린다. 서버가 필요한 건 "팔 때"뿐이다.
 //
 // 저장소: KV 하나(DB). order:<주문번호>, keyidx:<키번호>, amt:<금액>, hook:<알림해시>,
 //         meta:signing-key, meta:revoked, meta:hook, meta:hook-secret.
-//         회원·세션·좋아요는 Durable Object(COMMUNITY, community.js) — KV 쓰기 한도를 결제에 남겨 둔다.
+//         회원·세션·좋아요·공유 집계는 Durable Object(COMMUNITY, community.js) — KV 쓰기 한도를 결제에 남겨 둔다.
 // 비밀값과 설정은 README "4. 유료화" 와 worker/wrangler.toml 참고.
 
 import { generateKeyPair, importPrivate, importPublic, signKey, verifyKey, parseKey, hex32, publicOnly, keyId, b64urlEncode } from './keys.js';
 import { plansFor } from './plans.js';
-import { community, SESSION_DAYS, REACT_TYPES, ITEM_RE, POINTS, COMMENT } from './community.js';
+import { community, SESSION_DAYS, REACT_TYPES, ITEM_RE, POINTS, COMMENT, TAP_KINDS } from './community.js';
 import { verifyGoogleToken } from './google.js';
 import { saleRound, cleanGame, rankOf, kstParts, drawDay, saleEnd } from './lotto.js';
 
@@ -111,6 +112,7 @@ async function route(request, env, ctx) {
     if (path === '/api/comments' && method === 'GET') return getComments(request, env, url);
     if (path === '/api/comments' && method === 'POST') return addComment(request, env, ctx);
     if (path === '/api/comments/delete' && method === 'POST') return deleteComment(request, env);
+    if (path === '/api/tap' && method === 'POST') return tap(request, env);
 
     if (path.startsWith('/api/admin/')) {
         if (!adminOk(request, env)) throw new HttpError(401, 'unauthorized', '관리자 토큰이 맞지 않습니다.');
@@ -1006,6 +1008,20 @@ async function react(request, env) {
     return json(request, env, r);
 }
 
+/* ───── 공유 · 출력 집계 (index.html 생성기, js/share.js) ───── */
+
+// 브라우저는 sendBeacon(text/plain, 미리 묻기 없음)으로 {"k": 종류} 만 보내고 답을 보지 않는다.
+// 번호 · 기기 · 회원 정보는 받지 않는다. 우리 사이트(Origin)에서 온 것만 세고, 같은 IP 는 1분에 30번까지(TAP_LIMIT) — 부풀리기 · 저장소 한도 막기
+async function tap(request, env) {
+    if (!allowedOrigin(request, env)) throw new HttpError(403, 'bad_origin', '허용되지 않은 사이트입니다.');
+    const kind = String((await readJson(request)).k || '');
+    if (TAP_KINDS.indexOf(kind) === -1) throw new HttpError(400, 'bad_kind', '집계 종류가 올바르지 않습니다.');
+    if (!env.COMMUNITY) return new Response(null, { status: 204, headers: corsHeaders(request, env) });
+    await limited(env.TAP_LIMIT, 'tap:' + (request.headers.get('CF-Connecting-IP') || 'local'));
+    await community(env, 'tap', { kind, now: Date.now() });
+    return new Response(null, { status: 204, headers: corsHeaders(request, env) });
+}
+
 /* ───── 블로그 댓글 (js/comments.js) ───── */
 
 const POST_RE = /^[a-z0-9][a-z0-9-]{0,79}$/;   // 블로그 글 파일 이름(.html 뺀 것)
@@ -1154,6 +1170,11 @@ async function admin(request, env, sub, method, url) {
             }
         }
         return json(request, env, { cleaned: true });
+    }
+    // 공유 · 출력 집계 (날짜별)
+    if (sub === '/taps' && method === 'GET') {
+        if (!env.COMMUNITY) throw new HttpError(503, 'no_store', '집계 저장소가 없습니다.');
+        return json(request, env, await community(env, 'taps'));
     }
     // 회원 명부 · 카드별 좋아요 합계 (구글 로그인을 켰을 때)
     if (sub === '/members' && method === 'GET') {

@@ -32,6 +32,7 @@
 //   mw:<회차>            { cursor, sent, tries, done, at } — 그 회차 메일을 어디까지 보냈나. 2주 지나면 지운다
 //   mday                 { day, n } — 오늘(UTC 날짜, Resend 하루 한도 기준) 보낸 생성 번호 메일 수
 //   mailkey              수신 거부 링크 서명 · 메일 번호 씨앗용 비밀값(처음 쓸 때 만든다)
+//   e:<한국 날짜>        { gen-share, gen-print, post-share, post-sns } — 공유 · 출력 단추 하루 횟수(TAP_KINDS). 누가 눌렀는지는 없다
 //   meta                 { users, trials, subs }
 //
 // 이름·사진은 받지 않는다. 이메일은 "로그인한 계정" 표시, 문의 응대, 회원이 켠 "이번 주 생성 번호 메일"에만 쓴다.
@@ -85,6 +86,11 @@ function attend(user, now) {
     return true;
 }
 export const ITEM_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
+
+// 공유 · 출력 집계 종류. 복사는 세지 않는다
+//   gen-share: 홈 생성기 "공유"로 공유 창에서 보낼 곳을 고른 것(닫으면 세지 않는다), gen-print: 생성기 "출력"으로 인쇄 창을 연 것
+//   post-share: 블로그 글 "공유하기"로 보낼 곳을 고른 것, post-sns: 블로그 글의 X · 페이스북 · 네이버 · 밴드 공유 창을 연 것
+export const TAP_KINDS = ['gen-share', 'gen-print', 'post-share', 'post-sns'];
 
 // 블로그 댓글
 export const COMMENT = { max: 500, gapMs: 15000, daily: 30, list: 200 };   // 글자 수, 다음 댓글까지, 하루 최대, 한 글에 보여 주는 수
@@ -450,6 +456,22 @@ const OPS = {
 
     async stats() {
         return this.meta();
+    },
+
+    // 공유 · 출력 집계(index.js 의 /api/tap). 한국 날짜 하루에 한 줄, 종류별 횟수만
+    async tap({ kind, now }) {
+        const k = 'e:' + kstDay(now);
+        const day = (await this.storage.get(k)) || {};
+        day[kind] = (day[kind] || 0) + 1;
+        await this.storage.put(k, day);
+        return { ok: true };
+    },
+
+    // 관리자 페이지: 날짜별 집계, 최근 날짜가 먼저
+    async taps() {
+        const days = [];
+        await this.each('e:', (v, k) => { days.push(Object.assign({ day: k.slice(2) }, v)); });
+        return { days: days.reverse() };
     },
 
     // 관리자 페이지: 회원 명부와 카드별 좋아요 합계

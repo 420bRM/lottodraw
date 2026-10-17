@@ -88,7 +88,7 @@ async function main() {
     const latest = Math.max(...lotto.draws.map(x => x.round));
     let d = { shops: {}, rounds: {} };
     if (!FULL && fs.existsSync(FILE)) d = JSON.parse(fs.readFileSync(FILE, 'utf8'));
-    d.source = '동행복권 당첨 판매점 조회(wnprchsplcsrch/selectLtWnShp.do)';
+    d.source = '동행복권 당첨 판매점 조회';   // 조회 주소 이름은 적지 않는다 — 이 파일은 사이트에서 누구나 열어 본다
     d.note = 'shops: 판매점 번호 → [상호, 시도, 시군구, 폐점이면 1]. rounds: 회차 → { w1: [[판매점, A 자동 | M 수동 | S 반자동], …] 1등 게임마다 하나, w2: [판매점, …] 2등 게임마다 하나 }. 인터넷 판매는 시도 "인터넷"';
     d.from = FIRST;
     const have = Object.keys(d.rounds).map(Number);

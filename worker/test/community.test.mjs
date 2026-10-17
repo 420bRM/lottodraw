@@ -593,3 +593,32 @@ test('랭킹 색인: 무작위로 점수 · 별명 · 운영자 · 탈퇴를 바
     assert.ok(tied >= 10, '같은 점수가 섞인 랭킹을 충분히 견줘야 시험이 된다: ' + tied);
     assert.ok(did.clearNick >= 3 && did.userDelete >= 3, '별명 지우기 · 탈퇴도 여러 번: ' + JSON.stringify(did));
 });
+
+test('공유 · 출력 집계: 우리 사이트에서 보낸 종류만 한국 날짜별로 세고, 관리자만 본다', async () => {
+    const env = await fresh();
+    // 브라우저 sendBeacon 처럼 text/plain 으로 보낸다(미리 묻기 없음)
+    const tap = (body, origin = ORIGIN) => worker.fetch(new Request('https://api.lottodraw.kr/api/tap', {
+        method: 'POST', headers: Object.assign({ 'Content-Type': 'text/plain;charset=UTF-8' }, origin ? { Origin: origin } : {}), body: JSON.stringify(body),
+    }), env, ctx);
+    for (const k of ['gen-share', 'gen-print', 'gen-print', 'post-share', 'post-sns', 'post-sns', 'post-sns']) assert.equal((await tap({ k })).status, 204);
+    assert.equal((await tap({ k: 'gen-copy' })).status, 400, '복사 · 모르는 종류는 세지 않는다');
+    assert.equal((await tap({ k: 'gen-share' }, 'https://evil.example')).status, 403, '다른 사이트');
+    assert.equal((await tap({ k: 'gen-share' }, null)).status, 403, 'Origin 없음');
+
+    const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+    assert.equal((await call(env, 'GET', '/api/admin/taps')).status, 401);
+    const r = await call(env, 'GET', '/api/admin/taps', { headers: asAdmin });
+    assert.equal(r.status, 200);
+    assert.deepEqual(r.data.days, [{ day: today, 'gen-share': 1, 'gen-print': 2, 'post-share': 1, 'post-sns': 3 }]);
+    assert.ok(![...env.COMMUNITY._m.values()].some(v => JSON.stringify(v).includes('evil')), '누가 보냈는지는 남기지 않는다');
+
+    // 날짜가 바뀌면 줄이 새로 생기고, 최근 날짜가 먼저
+    env.COMMUNITY._m.set('e:2026-01-02', { 'gen-print': 5 });
+    env.COMMUNITY._m.set('e:2026-01-01', { 'gen-share': 1 });
+    const days = (await call(env, 'GET', '/api/admin/taps', { headers: asAdmin })).data.days.map(d => d.day);
+    assert.deepEqual(days, [today, '2026-01-02', '2026-01-01']);
+
+    // 같은 IP 가 너무 자주 보내면 막는다
+    env.TAP_LIMIT = { limit: async () => ({ success: false }) };
+    assert.equal((await tap({ k: 'gen-share' })).status, 429);
+});

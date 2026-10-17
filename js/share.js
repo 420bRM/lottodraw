@@ -6,12 +6,21 @@
  * - 카카오톡 전용 카드(PC 에서도 카톡으로 보내기)는 카카오 개발자 앱 키가 있어야 한다 — 아직 넣지 않았다.
  *
  * 블로그 글은 tools/build-blog.js 가 이 줄을 만든다. 다른 페이지에도 같은 모양으로 붙이면 된다.
+ *
+ * 집계(worker /api/tap): "공유하기"로 보낼 곳을 고른 것(post-share)과 X · 페이스북 · 네이버 · 밴드 창을 연 것(post-sns)만 센다.
+ * 단추 종류만 보내고 글 주소 · 기기 정보는 보내지 않는다. 링크 복사는 세지 않는다.
  */
 (function () {
     'use strict';
 
     const tr = (key, ko) => (window.I18N ? window.I18N.t(key, ko) : ko);
     const enc = encodeURIComponent;
+    const tap = k => {
+        try {
+            const api = String((window.PREMIUM_CONFIG && window.PREMIUM_CONFIG.apiBase) || 'https://api.lottodraw.kr').replace(/\/+$/, '');
+            if (navigator.sendBeacon) navigator.sendBeacon(api + '/api/tap', JSON.stringify({ k: k }));
+        } catch (e) { /* 집계는 덤 */ }
+    };
 
     function el(tag, props, text) {
         const n = document.createElement(tag);
@@ -46,7 +55,7 @@
 
         if (navigator.share) {
             const b = el('button', { type: 'button', className: 'share-btn is-main' }, tr('share.native', '공유하기 (카톡 등)'));
-            b.addEventListener('click', () => { navigator.share({ title: title, url: url }).catch(() => { /* 닫았거나 막힘 */ }); });
+            b.addEventListener('click', () => { navigator.share({ title: title, url: url }).then(() => tap('post-share'), () => { /* 닫았거나 막힘 */ }); });
             box.appendChild(b);
         }
         const c = el('button', { type: 'button', className: 'share-btn' }, tr('share.copy', '링크 복사'));
@@ -59,7 +68,9 @@
             [tr('share.naver', '네이버'), `https://share.naver.com/web/shareView?url=${enc(url)}&title=${enc(title)}`],
             [tr('share.band', '밴드'), `https://band.us/plugin/share?body=${enc(title + '\n' + url)}&route=${enc(url)}`],
         ].forEach(([label, href]) => {
-            box.appendChild(el('a', { className: 'share-btn', href: href, target: '_blank', rel: 'noopener noreferrer' }, label));
+            const a = el('a', { className: 'share-btn', href: href, target: '_blank', rel: 'noopener noreferrer' }, label);
+            a.addEventListener('click', () => tap('post-sns'));
+            box.appendChild(a);
         });
     }
 

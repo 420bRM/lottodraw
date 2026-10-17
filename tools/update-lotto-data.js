@@ -124,7 +124,8 @@ function validatePrize(list) {
 }
 // prize-data.json: 회차 하나에 한 줄 (diff 가 회차 단위로 보이게)
 function prizeJson(list, lastUpdated, eol) {
-    const head = { source: '동행복권 회차별 당첨 결과(selectPstLt645Info.do)', note: 'w2~w5: 당첨 게임 수, a2~a5: 1게임당 당첨금(원), sales: 회차 판매액(원). 1등은 lotto-data.json', lastUpdated: lastUpdated };
+    // source 에 동행복권 조회 주소 이름을 적지 않는다 — 이 파일은 사이트에서 누구나 열어 본다
+    const head = { source: '동행복권 회차별 당첨 결과', note: 'w2~w5: 당첨 게임 수, a2~a5: 1게임당 당첨금(원), sales: 회차 판매액(원). 1등은 lotto-data.json', lastUpdated: lastUpdated };
     const lines = list.map(p => '    ' + JSON.stringify(p));
     return '{' + eol + Object.keys(head).map(k => `  ${JSON.stringify(k)}: ${JSON.stringify(head[k])},`).join(eol) + eol
         + '  "draws": [' + eol + lines.join(',' + eol) + eol + '  ]' + eol + '}' + eol;

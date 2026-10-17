@@ -72,6 +72,21 @@
                 </div>
             </section>
 
+            <section class="card" id="taps-card" aria-labelledby="taps-t" hidden>
+                <h2 class="card-title" id="taps-t"><span>공유 · 출력 집계</span><small id="taps-sum"></small></h2>
+                <div class="card-body">
+                    <p class="members-tools"><button type="button" class="btn btn-secondary btn-mini" id="taps-reload">새로고침</button></p>
+                    <p class="license-status" id="taps-status" role="status"></p>
+                    <div class="table-wrap"><table class="data-table admin-table" id="taps-table"></table></div>
+                    <details class="members-rx">
+                        <summary>하루씩 (최근 30일)</summary>
+                        <div class="table-wrap"><table class="data-table admin-table" id="taps-days"></table></div>
+                    </details>
+                    <p class="card-note">날짜는 한국 시간. 공유는 공유 창에서 보낼 곳을 고른 것만(닫으면 빠짐), 출력은 인쇄 창을 연 횟수, SNS 는 X · 페이스북 · 네이버 · 밴드 창을 연 횟수입니다.
+                        복사는 세지 않습니다. 광고 차단기 · 오래된 브라우저에서 누른 것은 빠질 수 있어 실제보다 조금 적게 나옵니다.</p>
+                </div>
+            </section>
+
             <section class="card" id="comments-card" aria-labelledby="cmadm-t" hidden>
                 <h2 class="card-title" id="cmadm-t"><span>블로그 댓글 관리</span><small>최근 300개 · 막기는 채팅 금지와 같음</small></h2>
                 <div class="card-body">
@@ -195,6 +210,6 @@
 </div>
 
 <script src="js/premium-config.js?v=34bde874"></script>
-<script src="js/admin.js?v=b3715bcf"></script>
+<script src="js/admin.js?v=057f64ff"></script>
 </body>
 </html>
