@@ -1678,9 +1678,9 @@ function storesPage() {
     const TOPN = 30;
     const topTable = [
         h2En(`1등 많이 나온 판매점 ${TOPN}곳`, `Top ${TOPN} retailers by 1st prizes`),
-        table([['순위', 'Rank'], ['판매점', 'Retailer'], ['지역', 'Area'], ['1등', '1st'], ['2등', '2nd']],
-            S.top.slice(0, TOPN).map((x, i) => [rank(i + 1), shopName(x), where(x),
-                `<strong>${x.n1}</strong><span class="sub" data-i18n-en="${esc(howEn(x))}">${howText(x)}</span>`, fmt(x.n2)]), 'tier-stat store-top'),
+        table([['순위', 'Rank'], ['판매점', 'Retailer'], ['1등', '1st'], ['2등', '2nd'], ['지역', 'Area'], ['1등 방식', '1st by method']],
+            S.top.slice(0, TOPN).map((x, i) => [rank(i + 1), shopName(x), `<strong>${x.n1}</strong>`, fmt(x.n2), where(x),
+                `<span data-i18n-en="${esc(howEn(x))}">${howText(x)}</span>`]), 'tier-stat store-top'),
         pEn(`1등 횟수가 같으면 2등이 많은 곳을 위에 두었습니다. 지역은 지금(폐점했으면 마지막) 주소의 시도 · 시군구입니다. 순위는 지난 기록일 뿐, 앞으로 1등이 나올 곳을 뜻하지 않습니다.`,
             `Ties are broken by 2nd prizes. The area is the province and city of the current (or, if closed, last) address. The ranking is a record of the past and says nothing about where the next 1st prize will come from.`, 'note'),
     ];
