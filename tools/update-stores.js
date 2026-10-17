@@ -12,13 +12,13 @@
 //
 //   node tools/update-stores.js           새 회차 + 최근 3회차 다시 확인
 //   node tools/update-stores.js --full    262회부터 전부 다시
+//   node tools/update-stores.js --slow    빠진 회차까지 천천히(처음 채울 때). STORES_MAX_MINUTES=40 이면 40분 뒤 저장하고 멈춘다
 //
 // 실패해도 로또 갱신을 막지 않는다(워크플로에서 continue-on-error). 1등 판매점 수가 그 회차 1등 당첨자 수와
 // 다르면(추첨 직후 아직 안 올라옴 등) 그 회차는 저장하지 않고 다음 실행에 다시 받는다.
 'use strict';
 const fs = require('fs');
 const path = require('path');
-const https = require('https');
 
 const ROOT = path.resolve(__dirname, '..');
 const FILE = path.join(ROOT, 'stores-data.json');
@@ -27,23 +27,19 @@ const UA = 'Mozilla/5.0 (compatible; lottodraw.kr data updater)';
 const FIRST = 262;            // 이 회차부터 판매점 자료가 있다
 const RECHECK = 3;
 const FULL = process.argv.includes('--full');
-const DELAY = FULL ? 1000 : 300;
+const SLOW = FULL || process.argv.includes('--slow');   // 많이 받을 때(처음 한 번)는 천천히
+const DELAY = SLOW ? 1000 : 300;
+// 이 분이 지나면 받던 것까지 저장하고 멈춘다(다음 실행이 빠진 회차부터 잇는다). 0 = 끝까지
+const MAX_MIN = Number(process.env.STORES_MAX_MINUTES || 0);
 const INTERNET = '51100000';  // 동행복권 인터넷 판매 — 판매점 하나로 나온다
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-function getJson(url) {
-    return new Promise((resolve, reject) => {
-        const opts = Object.assign(require('url').parse(url), { headers: { 'User-Agent': UA, Accept: 'application/json' }, timeout: 20000 });
-        const req = https.get(opts, res => {
-            if (res.statusCode !== 200) { res.resume(); return reject(new Error('HTTP ' + res.statusCode)); }
-            let body = '';
-            res.setEncoding('utf8');
-            res.on('data', c => { body += c; });
-            res.on('end', () => { try { resolve(JSON.parse(body)); } catch (e) { reject(new Error('JSON 아님: ' + body.slice(0, 100))); } });
-        });
-        req.on('timeout', () => req.destroy(new Error('timeout')));
-        req.on('error', reject);
-    });
+// 요청마다 15초 상한(서버가 응답을 끌어도 멈추지 않게)
+async function getJson(url) {
+    const res = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'application/json' }, signal: AbortSignal.timeout(15000) });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const body = await res.text();
+    try { return JSON.parse(body); } catch (e) { throw new Error('JSON 아님: ' + body.slice(0, 100)); }
 }
 async function fetchRound(r) {
     let err;
@@ -102,7 +98,18 @@ async function main() {
     console.log(`판매점 자료 ${have.length}회차 보유. ${todo.length}회차를 받는다 (${todo[0] || '-'}~${todo[todo.length - 1] || '-'}).`);
 
     let changed = 0, skipped = [], failed = [];
-    for (const r of todo) {
+    const t0 = Date.now();
+    const save = () => {
+        const rs = Object.keys(d.rounds).map(Number);
+        d.lastRound = rs.length ? Math.max(...rs) : 0;
+        d.lastUpdated = lotto.lastUpdated;
+        fs.writeFileSync(FILE, serialize(d));
+    };
+    for (let i = 0; i < todo.length; i++) {
+        const r = todo[i];
+        if (MAX_MIN && Date.now() - t0 > MAX_MIN * 60e3) { console.log(`${MAX_MIN}분이 지나 ${r}회 앞에서 멈춘다 — 다음 실행이 잇는다`); break; }
+        if (i && i % 25 === 0) console.log(`  … ${r}회 (${i}/${todo.length}, ${Math.round((Date.now() - t0) / 1000)}초, 실패 ${failed.length})`);
+        if (changed && i % 50 === 0) save();   // 중간 저장(멈춰도 받은 데까지 남게)
         let list;
         try { list = await fetchRound(r); } catch (e) { failed.push(e.message); await sleep(DELAY); continue; }
         const w1 = [], w2 = [];
@@ -126,12 +133,10 @@ async function main() {
         await sleep(DELAY);
     }
     const rounds = Object.keys(d.rounds).map(Number);
-    d.lastRound = rounds.length ? Math.max(...rounds) : 0;
-    d.lastUpdated = lotto.lastUpdated;
     skipped.forEach(s => console.log('  ! ' + s));
     failed.forEach(s => console.log('  ✘ ' + s));
     if (!changed && fs.existsSync(FILE)) { console.log('바뀐 회차 없음'); setOutput('changed', 'false'); return; }
-    fs.writeFileSync(FILE, serialize(d));
+    save();
     console.log(`저장: ${changed}회차 바뀜, 모두 ${rounds.length}회차 · 판매점 ${Object.keys(d.shops).length}곳 (마지막 ${d.lastRound}회)`);
     setOutput('changed', 'true');
     if (failed.length > 20) process.exitCode = 1;

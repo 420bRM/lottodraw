@@ -1,22 +1,31 @@
 name: backfill-stores
-# 일회용: 1등 · 2등 판매점 전 회차 받기(262회~). 받은 stores-data.json 을 이 브랜치에 커밋한다. 머지 전에 지운다.
+# 일회용: 1등 · 2등 판매점 전 회차 받기(262회~). 45분씩 받고 그때까지 받은 것을 이 브랜치에 커밋한다 — 남으면 다시 실행해 잇는다.
+# 머지 전에 지운다.
 on:
   push:
     branches: [claude/winning-stores]
     paths: [.github/workflows/backfill-stores.yml]
+  workflow_dispatch: {}
 permissions:
   contents: write
+concurrency:
+  group: backfill-stores
 jobs:
   backfill:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: "20" }
-      - run: node tools/update-stores.js --full
-      - run: |
+      - run: node tools/update-stores.js --slow
+        env:
+          STORES_MAX_MINUTES: "45"
+      - if: always()
+        run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add stores-data.json
-          git commit -m "chore: 1등 · 2등 판매점 전 회차 받기 (262회~)" && git push origin HEAD:claude/winning-stores
+          git add stores-data.json || exit 0
+          git diff --cached --quiet && exit 0
+          git commit -m "chore: 1등 · 2등 판매점 받기 ($(node -e 'const d=require("./stores-data.json");console.log(Object.keys(d.rounds).length+"회차")'))"
+          git pull --rebase origin claude/winning-stores && git push origin HEAD:claude/winning-stores
