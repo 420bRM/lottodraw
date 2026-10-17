@@ -147,8 +147,7 @@ function lottoTax(prize) {
 // 1~87회는 1게임이 2,000원이라 금액이 훨씬 크다 — 평균 · 최고 · 최저 · 연도별 표는 88회부터 센다
 const TIER_FILE = 'statistics-prize-2-3.html';
 const TIER_SINCE = '2026-10-10';   // 2·3등 통계 페이지와 다른 페이지의 링크를 넣은 날
-const ABOUT_SINCE = '2026-10-17';  // About 주요 기능에 "당첨번호 데이터"를 넣은 날 (10-14: 한글 상호 "로또드로우", 10-11: "로또 데이터 플랫폼" 소개 · 주요 기능 목록)
-const DATA_SINCE = '2026-10-17';   // 데이터 제공 페이지(data.html)를 연 날
+const ABOUT_SINCE = '2026-10-14';  // About 에 한글 상호 "로또드로우" 를 넣은 날 (2026-10-11: "로또 데이터 플랫폼" 소개 · 주요 기능 목록)
 const mean = a => a.reduce((s, v) => s + v, 0) / Math.max(1, a.length);
 const median = a => {
     const s = a.slice().sort(asc);
@@ -1325,9 +1324,6 @@ function drawsPage() {
                 '<p class="calc-error" id="round-error" role="alert"></p>',
             ].join('\n'),
             table([['회차', 'Draw'], ['추첨일', 'Date'], ['당첨번호 + 보너스', 'Winning numbers + bonus'], ['1등', 'First-prize winners'], ['1인당 1등 당첨금', 'First prize per winner']], rows, 'draws-table'),
-            // 이 표를 긁어 가는 프로그램이 있다(2026-10) — 파일로 받는 길을 알려 준다(data.html)
-            pEn('이 표의 자료는 1~5등 당첨금까지 <a href="data.html">JSON · CSV 파일로 무료로 받을 수 있습니다</a>.',
-                'The data behind this table, with 1st–5th prizes, is free to download as <a href="data.html">JSON or CSV files</a>.', 'note'),
         ],
         script: [
             '(function () {',
@@ -1940,7 +1936,6 @@ function updateSitemap(blog) {
             entry('/top-prize.html', UPDATED, 'weekly', '0.7'),
             entry('/tax.html', TIER ? UPDATED : kept('/tax.html'), TIER ? 'weekly' : 'yearly', '0.7'),   // 2·3등 표가 매주 바뀐다
             entry('/about.html', atLeast('/about.html', ABOUT_SINCE), 'monthly', '0.5'),
-            entry('/data.html', atLeast('/data.html', DATA_SINCE), 'monthly', '0.5'),
             entry('/privacy.html', kept('/privacy.html'), 'yearly', '0.3'),
             entry('/terms.html', kept('/terms.html'), 'yearly', '0.3'),
             entry('/contact.html', kept('/contact.html'), 'yearly', '0.3'),
