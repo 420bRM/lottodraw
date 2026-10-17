@@ -1,5 +1,5 @@
 {
-  "source": "동행복권 당첨 판매점 조회(wnprchsplcsrch/selectLtWnShp.do)",
+  "source": "동행복권 당첨 판매점 조회",
   "note": "shops: 판매점 번호 → [상호, 시도, 시군구, 폐점이면 1]. rounds: 회차 → { w1: [[판매점, A 자동 | M 수동 | S 반자동], …] 1등 게임마다 하나, w2: [판매점, …] 2등 게임마다 하나 }. 인터넷 판매는 시도 \"인터넷\"",
   "from": 262,
   "lastRound": 1245,

@@ -1,5 +1,5 @@
 {
-  "source": "동행복권 회차별 당첨 결과(selectPstLt645Info.do)",
+  "source": "동행복권 회차별 당첨 결과",
   "note": "w2~w5: 당첨 게임 수, a2~a5: 1게임당 당첨금(원), sales: 회차 판매액(원). 1등은 lotto-data.json",
   "lastUpdated": "2026-10-17",
   "draws": [
