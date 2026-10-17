@@ -16,6 +16,7 @@
 //   draws.html               회차별 당첨번호 전체 조회
 //   probability.html         등수별 당첨 확률
 //   statistics-prize-2-3.html  2등·3등 당첨금 (prize-data.json 이 있을 때만)
+//   statistics-stores.html   1등 판매점 (stores-data.json 이 있을 때만 — tools/update-stores.js)
 //   index.html · tax.html · top-prize.html   <!-- seo:... --> 표식 사이만 고친다
 //   blog/                    블로그 목록과 글 (tools/build-blog.js 를 불러 만든다)
 //   sitemap.xml
@@ -147,7 +148,7 @@ function lottoTax(prize) {
 // 1~87회는 1게임이 2,000원이라 금액이 훨씬 크다 — 평균 · 최고 · 최저 · 연도별 표는 88회부터 센다
 const TIER_FILE = 'statistics-prize-2-3.html';
 const TIER_SINCE = '2026-10-10';   // 2·3등 통계 페이지와 다른 페이지의 링크를 넣은 날
-const ABOUT_SINCE = '2026-10-14';  // About 에 한글 상호 "로또드로우" 를 넣은 날 (2026-10-11: "로또 데이터 플랫폼" 소개 · 주요 기능 목록)
+const ABOUT_SINCE = '2026-10-17';  // About 주요 기능에 "내 번호 · 이번 주 생성 번호 메일" · "1등 판매점 통계" (2026-10-14: 한글 상호 "로또드로우", 2026-10-11: "로또 데이터 플랫폼" 소개 · 주요 기능 목록)
 const mean = a => a.reduce((s, v) => s + v, 0) / Math.max(1, a.length);
 const median = a => {
     const s = a.slice().sort(asc);
@@ -174,6 +175,44 @@ const TIER = (() => {
         max3: best(s3, 'a3', 1), min3: best(s3, 'a3', -1),
     };
 })();
+
+// 1등 판매점 통계의 자료 (페이지는 아래 storesPage — 설명은 그 위)
+const STORES_FILE = 'statistics-stores.html';
+const STORES_SINCE = '2026-10-17';   // 판매점 페이지와 링크를 넣은 날
+const STORES = (() => {
+    let d;
+    try { d = JSON.parse(read('stores-data.json')); } catch (e) { return null; }
+    const rounds = Object.keys(d.rounds).map(Number).sort(asc);
+    if (rounds.length < 100) return null;
+    const shop = id => d.shops[id] || ['(알 수 없음)', '', '', 0];
+    const by = new Map();   // 판매점 → { n1, A, M, S, n2, rounds1:Set }
+    const get = id => { if (!by.has(id)) by.set(id, { id, n1: 0, A: 0, M: 0, S: 0, n2: 0, r1: new Set() }); return by.get(id); };
+    const method = { A: 0, M: 0, S: 0, '': 0 };
+    let g1 = 0, g2 = 0, maxM = { round: 0, n: 0 };
+    const sido = new Map();
+    const addSido = (id, k) => { const s = shop(id)[1] || '기타'; if (!sido.has(s)) sido.set(s, { w1: 0, w2: 0 }); sido.get(s)[k]++; };
+    for (const r of rounds) {
+        const rec = d.rounds[r];
+        let m = 0;
+        for (const [id, how] of rec.w1) { const x = get(id); x.n1++; x.r1.add(r); if (how) x[how]++; method[how || '']++; g1++; addSido(id, 'w1'); if (how === 'M') m++; }
+        for (const id of rec.w2) { get(id).n2++; g2++; addSido(id, 'w2'); }
+        if (m > maxM.n) maxM = { round: r, n: m };
+    }
+    const all = [...by.values()].map(x => Object.assign(x, { name: shop(x.id)[0], sido: shop(x.id)[1], gu: shop(x.id)[2], closed: !!shop(x.id)[3] }));
+    const with1 = all.filter(x => x.n1 > 0);
+    // 1등 횟수 묶음별 판매점 수와 판매점당 평균 2등 횟수
+    const groups = [[1, 1, '1회', '1'], [2, 2, '2회', '2'], [3, 4, '3~4회', '3–4'], [5, 9, '5~9회', '5–9'], [10, Infinity, '10회 이상', '10+']].map(([lo, hi, ko, en]) => {
+        const xs = with1.filter(x => x.n1 >= lo && x.n1 <= hi);
+        return { ko, en, shops: xs.length, avg1: mean(xs.map(x => x.n1)), avg2: mean(xs.map(x => x.n2)) };
+    }).filter(g => g.shops);
+    const no1 = all.filter(x => !x.n1);
+    const top = with1.slice().sort((a, b) => (b.n1 - a.n1) || (b.n2 - a.n2) || (a.id < b.id ? -1 : 1));
+    const net = by.get('51100000') || null;
+    const netFirst = net ? rounds.find(r => d.rounds[r].w1.some(([id]) => id === '51100000') || d.rounds[r].w2.includes('51100000')) : null;
+    const last = rounds[rounds.length - 1];
+    return { d, rounds, first: rounds[0], last, g1, g2, method, maxM, sido, all, with1, groups, no1, top, net, netFirst, shop };
+})();
+
 
 function runsOf(numbers) {
     const nums = numbers.slice().sort(asc);
@@ -720,6 +759,8 @@ const ABOUT = {};
                 `The draw with the most first-prize winners was <a href="round/${most.round}.html">draw ${most.round}</a> (${most.date}), with ${most.firstPrizeWinners} of them. The more winners there are, the smaller each share. The largest individual payouts are listed in <a href="top-prize.html">the Top 50 jackpots</a>.`) : '',
             TIER ? pEn(`2등과 3등은 회차마다 수십에서 수천 게임이 나눠 받습니다. 평균 금액과 기록은 <a href="${TIER_FILE}">2등·3등 당첨금 통계</a>에 있습니다.`,
                 `2nd and 3rd prize are shared by dozens to thousands of games each draw. Their averages and records are in <a href="${TIER_FILE}">2nd and 3rd prize statistics</a>.`) : '',
+            STORES ? pEn(`1등이 어느 판매점에서 나왔는지는 <a href="${STORES_FILE}">1등 판매점 통계</a>에 정리했습니다(${STORES.first}회부터).`,
+                `Which retailers sold the 1st-prize tickets is in <a href="${STORES_FILE}">1st-prize retailer statistics</a> (from draw ${STORES.first}).`) : '',
         ],
     });
 })();
@@ -1390,9 +1431,9 @@ function probabilityPage() {
             pEn('확률을 올리는 방법은 서로 다른 조합을 더 많이 사는 것뿐이고, 그만큼 비용도 늘어납니다. 다만 번호 선택은 <strong>당첨됐을 때 나눠 가질 사람 수</strong>에 영향을 줍니다. 1·2·3·4·5·6이나 생일 날짜(1~31)처럼 많은 사람이 고르는 조합은 당첨자가 여럿 나와 1인당 금액이 줄어듭니다. <a href="index.html" data-i18n-en="The number generator">번호 생성기</a>는 이런 특수 패턴을 걸러냅니다.',
                 'The only way to raise the odds is to buy more distinct combinations, which costs proportionally more. What your choice does affect is <strong>how many people you would share a prize with</strong>. Combinations many people pick — 1·2·3·4·5·6, or dates from 1 to 31 — tend to produce several winners and a smaller share each. <a href="index.html">The number generator</a> filters out patterns like these.'),
             pEn('관련 통계: <a href="statistics-frequency.html">많이 나온 번호 순위</a> · <a href="statistics-prize.html">1등 당첨자 수</a>'
-                + (TIER ? ` · <a href="${TIER_FILE}">2등·3등 당첨금</a>` : '') + ' · <a href="tax.html">실수령액 계산기</a>',
+                + (TIER ? ` · <a href="${TIER_FILE}">2등·3등 당첨금</a>` : '') + (STORES ? ` · <a href="${STORES_FILE}">1등 판매점</a>` : '') + ' · <a href="tax.html">실수령액 계산기</a>',
                 'Related: <a href="statistics-frequency.html">most frequent numbers</a> · <a href="statistics-prize.html">first-prize winners</a>'
-                + (TIER ? ` · <a href="${TIER_FILE}">2nd and 3rd prizes</a>` : '') + ' · <a href="tax.html">after-tax calculator</a>'),
+                + (TIER ? ` · <a href="${TIER_FILE}">2nd and 3rd prizes</a>` : '') + (STORES ? ` · <a href="${STORES_FILE}">1st-prize retailers</a>` : '') + ' · <a href="tax.html">after-tax calculator</a>'),
         ],
     });
 }
@@ -1576,6 +1617,135 @@ function prizeTierPage() {
     });
 }
 
+/* ───── 1등 판매점 통계 (stores-data.json — tools/update-stores.js 가 받는다) ─────
+ * 핵심 메시지: 1등이 자주 나온 곳은 많이 팔린 곳일 가능성이 크다. 판매점별 판매량은 공개되지 않으므로,
+ * 같은 판매점의 2등 횟수를 판매량의 대리 지표로 쓴다 — 2등(5개 + 보너스)은 한 게임에 6/8,145,060 으로 1등보다
+ * 6배 잘 나오고, 판매 게임 수에 비례해 쌓인다. "명당 추천"처럼 읽히는 말은 쓰지 않는다(문구 규칙).
+ * 통계 12가지(STATS)에는 넣지 않는다 — 2·3등 페이지처럼 홈 목록 끝 · 확률 · 1등 당첨자 수 · 블로그에서 잇는다.
+ */
+function storesPage() {
+    const S = STORES;
+    const { first, last } = S;
+    const nR = S.rounds.length;
+    const ratio = S.g2 / S.g1;
+    const top1 = S.top[0];
+    const where = x => (x.sido === '인터넷' ? en('인터넷', 'Online') : esc([x.sido, x.gu].filter(Boolean).join(' ')) || '—');
+    const shopName = x => esc(x.name) + (x.closed ? ` <span class="muted" data-i18n-en="(closed)">(폐점)</span>` : '');
+    const howText = x => [x.A ? `자동 ${x.A}` : '', x.M ? `수동 ${x.M}` : '', x.S ? `반자동 ${x.S}` : ''].filter(Boolean).join(' · ');
+    const howEn = x => [x.A ? `auto ${x.A}` : '', x.M ? `manual ${x.M}` : '', x.S ? `semi-auto ${x.S}` : ''].filter(Boolean).join(' · ');
+    const once = S.with1.filter(x => x.n1 === 1).length;
+    const g = S.groups;
+    const lowG = g[0], highG = g[g.length - 1];
+    const rises = g.every((x, i) => i === 0 || x.avg2 >= g[i - 1].avg2);
+    const big2no1 = S.no1.filter(x => x.n2 >= 10).length;
+
+    const glance = [
+        h2En('한눈에 보기', 'At a glance'),
+        table([['항목', 'Measure'], ['값', 'Value']], [
+            [en('집계 회차', 'Draws covered'), en(`${first}~${last}회 (${fmt(nR)}회)`, `${first}–${last} (${fmt(nR)} draws)`)],
+            [en('1등 당첨 게임', '1st-prize games'), en(`${fmt(S.g1)}게임`, `${fmt(S.g1)}`)],
+            [en('1등이 한 번이라도 나온 판매점', 'Retailers with at least one 1st prize'), en(`${fmt(S.with1.length)}곳`, `${fmt(S.with1.length)}`)],
+            [en('그중 딱 한 번 나온 곳', '…of which exactly once'), en(`${fmt(once)}곳 (${pct(once, S.with1.length)})`, `${fmt(once)} (${pct(once, S.with1.length)})`)],
+            [en('2등 당첨 게임', '2nd-prize games'), en(`${fmt(S.g2)}게임 (1등의 ${f1(ratio)}배)`, `${fmt(S.g2)} (${f1(ratio)}× the 1st-prize games)`)],
+            [en('1등이 가장 많이 나온 곳', 'Most 1st prizes'), en(`${esc(top1.name)} · ${top1.n1}회`, `${esc(top1.name)} · ${top1.n1}`)],
+        ], 'tier-stat'),
+        pEn(`동행복권은 ${first}회(${draws.find(x => x.round === first).date.slice(0, 7).replace('-', '년 ')}월)부터 회차마다 1등 · 2등이 나온 판매점을 공개합니다. 그 앞 회차는 판매점 자료가 없어 셈에서 빠집니다. 1등 한 게임이 한 줄이라, 한 판매점에서 같은 회차에 1등이 여러 게임 나오면 그만큼 셉니다.`,
+            `Dong-haeng Lottery has published the retailers behind every 1st and 2nd prize since draw ${first}; earlier draws have no retailer data and are left out. Each winning game counts once, so a retailer that sold several 1st-prize games in one draw is counted that many times.`, 'note'),
+    ];
+
+    const message = [
+        h2En('1등이 자주 나온 곳은 많이 팔린 곳일 가능성이 큽니다', 'Retailers with many 1st prizes most likely just sell a lot'),
+        pEn(`어느 판매점에서 사든 한 게임이 1등이 될 확률은 8,145,060분의 1입니다. 판매점 단말기는 번호를 기록할 뿐 추첨에 영향을 주지 못합니다. 그러니 한 판매점의 1등 횟수는 <strong>그곳에서 팔린 게임 수</strong>를 따라갑니다. 문제는 판매점별 판매량이 공개되지 않는다는 점입니다.`,
+            `Wherever you buy, a game has a 1 in 8,145,060 chance of winning 1st prize. The retailer's terminal only records numbers; it has no part in the draw. So the number of 1st prizes a retailer produces tracks <strong>how many games it sold</strong>. The catch is that sales per retailer are not published.`),
+        pEn(`그래서 공개된 다른 숫자, <strong>같은 판매점의 2등 횟수</strong>로 판매량을 가늠합니다. 2등(5개 + 보너스)은 한 게임에 6/8,145,060으로 1등보다 6배 잘 나오고, 역시 팔린 게임 수에 비례해 쌓입니다. 실제로 이 기간 2등은 1등의 ${f1(ratio)}배 나왔습니다. 1등이 많이 나온 곳이 정말 "운이 좋은 곳"이라면 2등은 다른 곳과 비슷해야 하고, 많이 팔린 곳이라면 2등도 1등만큼 많아야 합니다.`,
+            `So we gauge sales with another published number: <strong>the same retailer's 2nd-prize count</strong>. A 2nd prize (five numbers plus the bonus) is six times as likely per game as a 1st prize (6 in 8,145,060) and also piles up in proportion to games sold. Over this period there were ${f1(ratio)} times as many 2nd prizes as 1st. If retailers with many 1st prizes were simply "lucky places", their 2nd-prize counts should look like everyone else's; if they just sell a lot, their 2nd prizes should be just as plentiful.`),
+        table([['1등 횟수', '1st prizes'], ['판매점 수', 'Retailers'], ['판매점당 평균 1등', 'Avg 1st per retailer'], ['판매점당 평균 2등', 'Avg 2nd per retailer']],
+            g.map(x => [en(x.ko, x.en), fmt(x.shops), f1(x.avg1), `<strong>${f1(x.avg2)}</strong>`]), 'tier-stat'),
+        pEn(rises
+            ? `1등이 많이 나온 판매점일수록 2등도 많이 나왔습니다. 1등이 한 번 나온 곳은 2등이 평균 ${f1(lowG.avg2)}번, ${highG.ko} 나온 곳은 평균 ${f1(highG.avg2)}번입니다. 1등과 2등은 서로 다른 게임에서 따로 나오는데도 같이 늘어난다는 것은, 둘 다 같은 원인 — <strong>많이 팔림</strong> — 을 따라간다는 뜻으로 읽는 것이 가장 자연스럽습니다.`
+            : `1등 횟수 묶음별 2등 평균은 위와 같습니다. 1등과 2등은 서로 다른 게임에서 따로 나오므로, 두 숫자가 함께 움직이는 정도가 판매량의 차이를 보여 줍니다.`,
+            rises
+                ? `The more 1st prizes a retailer produced, the more 2nd prizes it produced too: ${f1(lowG.avg2)} on average where 1st prize came once, ${f1(highG.avg2)} where it came ${highG.en} times. 1st and 2nd prizes come from different games, so the fact that they rise together is most naturally read as both following one cause — <strong>high sales</strong>.`
+                : `The table shows the average number of 2nd prizes by 1st-prize count. 1st and 2nd prizes come from different games, so how far the two move together reflects differences in sales.`),
+        pEn(`반대로 2등이 10번 넘게 나왔는데 1등은 한 번도 없는 판매점도 ${fmt(big2no1)}곳 있습니다. 많이 팔아도 1등은 운에 따라 0번일 수 있습니다. "1등 ○회 배출" 현수막은 1등이 나온 곳만 보여 주고, 같은 만큼 팔고도 1등이 없는 곳은 보여 주지 않습니다(생존자 편향).`,
+            `On the other hand, ${fmt(big2no1)} retailers have had more than ten 2nd prizes but never a 1st. Even with high sales, 1st prize can come zero times by chance. A "1st prize ○ times" banner shows only the places where it happened, not those that sold as much and got none (survivorship bias).`),
+        S.net ? pEn(`1등이 가장 많이 나온 "판매점"은 동행복권 인터넷 판매입니다(${S.netFirst}회부터, 1등 ${S.net.n1}게임 · 2등 ${fmt(S.net.n2)}게임). 전국에서 한 창구로 가장 많이 팔리니 1등도 가장 많이 나옵니다. 판매량이 1등 횟수를 정한다는 것을 가장 뚜렷하게 보여 주는 예입니다.`,
+            `The "retailer" with the most 1st prizes is Dong-haeng Lottery's own online sales (from draw ${S.netFirst}: ${S.net.n1} 1st-prize and ${fmt(S.net.n2)} 2nd-prize games). It is the single outlet that sells the most nationwide, so it produces the most 1st prizes — the clearest example of sales deciding the count.`) : '',
+        pEn(`판매량이 공개되지 않으므로 이 페이지는 "어디가 효율이 좋은가"를 가리지 않습니다. 2등 횟수도 운이 섞인 숫자라 판매량을 그대로 재지는 못합니다. 어느 판매점에서 사도 당첨 확률은 같습니다.`,
+            `Because sales are not published, this page does not rank retailers by "efficiency". 2nd-prize counts are themselves partly luck and only approximate sales. Your odds are the same wherever you buy.`, 'note'),
+    ];
+
+    const TOPN = 30;
+    const topTable = [
+        h2En(`1등 많이 나온 판매점 ${TOPN}곳`, `Top ${TOPN} retailers by 1st prizes`),
+        table([['순위', 'Rank'], ['판매점', 'Retailer'], ['1등', '1st'], ['2등', '2nd'], ['지역', 'Area'], ['1등 방식', '1st by method']],
+            S.top.slice(0, TOPN).map((x, i) => [rank(i + 1), shopName(x), `<strong>${x.n1}</strong>`, fmt(x.n2), where(x),
+                `<span data-i18n-en="${esc(howEn(x))}">${howText(x)}</span>`]), 'tier-stat store-top'),
+        pEn(`1등 횟수가 같으면 2등이 많은 곳을 위에 두었습니다. 지역은 지금(폐점했으면 마지막) 주소의 시도 · 시군구입니다. 순위는 지난 기록일 뿐, 앞으로 1등이 나올 곳을 뜻하지 않습니다.`,
+            `Ties are broken by 2nd prizes. The area is the province and city of the current (or, if closed, last) address. The ranking is a record of the past and says nothing about where the next 1st prize will come from.`, 'note'),
+    ];
+
+    const sidoRows = [...S.sido.entries()].sort((a, b) => b[1].w1 - a[1].w1);
+    const region = [
+        h2En('지역별 1등 · 2등', '1st and 2nd prizes by area'),
+        pEn(`지역마다 1등 비율과 2등 비율을 나란히 놓았습니다. 두 비율이 비슷하면, 1등이 많은 지역은 그만큼 많이 팔린 지역이라는 뜻입니다.`,
+            `Each area's share of 1st prizes sits next to its share of 2nd prizes. Where the two shares are close, an area with many 1st prizes is simply one that sells more.`),
+        table([['지역', 'Area'], ['1등', '1st'], ['1등 비율', '1st share'], ['2등', '2nd'], ['2등 비율', '2nd share']],
+            sidoRows.map(([k, v]) => [k === '인터넷' ? en('인터넷', 'Online') : k === '기타' ? en('주소 없음', 'No address') : esc(k), fmt(v.w1), pct(v.w1, S.g1), fmt(v.w2), pct(v.w2, S.g2)]), 'tier-stat'),
+    ];
+
+    const m = S.method;
+    const methods = [
+        h2En('자동 · 수동 · 반자동', 'Auto, manual and semi-auto'),
+        table([['방식', 'Method'], ['1등', '1st'], ['비율', 'Share']], [
+            [en('자동', 'Auto'), fmt(m.A), pct(m.A, S.g1)], [en('수동', 'Manual'), fmt(m.M), pct(m.M, S.g1)], [en('반자동', 'Semi-auto'), fmt(m.S), pct(m.S, S.g1)],
+        ].concat(m[''] ? [[en('표시 없음', 'Not shown'), fmt(m['']), pct(m[''], S.g1)]] : []), 'tier-stat'),
+        pEn(`구매 방식별 판매 비율이 공개되지 않아, 이 비율로 어느 방식이 유리한지 말할 수는 없습니다. 자동이든 수동이든 한 게임의 1등 확률은 같습니다.`
+            + (S.maxM.n >= 10 ? ` 수동은 같은 번호를 여러 사람이 고르면 한 회차에 몰려 나옵니다 — ${S.maxM.round}회에는 수동 1등이 ${S.maxM.n}게임이었습니다.` : ''),
+            `Sales by purchase method are not published, so these shares cannot say which method "works better". A game's chance of 1st prize is the same either way.`
+            + (S.maxM.n >= 10 ? ` Manual wins can bunch up when many people choose the same numbers — draw ${S.maxM.round} had ${S.maxM.n} manual 1st-prize games.` : '')),
+    ];
+
+    const rec = S.d.rounds[last];
+    const latestBlock = [
+        h2En(`${last}회 1등 판매점`, `1st-prize retailers, draw ${last}`),
+        table([['판매점', 'Retailer'], ['지역', 'Area'], ['방식', 'Method']],
+            rec.w1.map(([id, how]) => { const s = S.shop(id); const x = { name: s[0], sido: s[1], gu: s[2], closed: !!s[3] }; return [shopName(x), where(x), how === 'A' ? en('자동', 'Auto') : how === 'M' ? en('수동', 'Manual') : how === 'S' ? en('반자동', 'Semi-auto') : '—']; }), 'tier-stat'),
+        pEn(`${last}회 2등은 ${fmt(rec.w2.length)}게임이 나왔습니다. 그 회차의 당첨번호와 등수별 당첨금은 <a href="round/${last}.html">${last}회 당첨번호</a>에 있습니다.`,
+            `${fmt(rec.w2.length)} games won 2nd prize in draw ${last}. The winning numbers and prizes by tier are on <a href="round/${last}.html">draw ${last}</a>.`),
+    ];
+
+    const title = `로또 1등 판매점 통계 · 1등 많이 나온 곳 순위와 지역 (${first}~${last}회)`;
+    const desc = `로또 1등 판매점(배출점) ${first}~${last}회 통계. 1등이 나온 판매점 ${fmt(S.with1.length)}곳 중 ${pct(once, S.with1.length)}는 한 번뿐이고, 1등이 많이 나온 곳은 2등도 그만큼 많아 많이 팔린 곳일 가능성이 큽니다. 1등 많이 나온 판매점 순위, 지역별 · 자동/수동 비율, ${last}회 1등 판매점.`;
+    return shell({
+        file: STORES_FILE,
+        crumbs: [['index.html#sec-stats', '로또 통계', null, 'Lotto statistics'], [null, '1등 판매점', null, '1st-prize retailers']],
+        title,
+        h1: '로또 1등 판매점 통계', h1En: 'Lotto 1st-Prize Retailer Statistics',
+        desc,
+        scope: en(`${first}~${last}회 기준 · 매주 추첨 후 자동 갱신 (마지막 갱신 ${UPDATED}) · 출처: 동행복권 당첨 판매점 조회`, `Draws ${first}–${last} · updated automatically after each draw (last update ${UPDATED}) · source: Dong-haeng Lottery winning-retailer search`),
+        lead: en(`동행복권이 공개하는 회차별 1등 · 2등 판매점 기록을 모았습니다. 결론부터 말하면, <strong>1등이 자주 나온 곳은 많이 팔린 곳일 가능성이 큽니다.</strong> 판매점별 판매량은 공개되지 않아, 같은 판매점의 2등 횟수로 그 판매량을 가늠했습니다.`,
+            `This page collects the 1st- and 2nd-prize retailers Dong-haeng Lottery publishes for each draw. In short: <strong>retailers with many 1st prizes most likely just sell a lot.</strong> Sales per retailer are not published, so we gauge them with each retailer's 2nd-prize count.`),
+        ld: [{
+            '@type': 'Dataset',
+            name: title,
+            description: desc,
+            url: `${SITE}/${STORES_FILE}`,
+            isAccessibleForFree: true,
+            dateModified: UPDATED,
+            temporalCoverage: `${draws.find(x => x.round === first).date}/${(draws.find(x => x.round === last) || LATEST).date}`,
+            creator: { '@type': 'Organization', name: 'lottodraw.kr', url: SITE + '/' },
+            keywords: ['로또 1등 판매점', '로또 1등 배출점', '로또 판매점 순위', '로또 명당'],
+        }],
+        body: [].concat(glance, message, topTable, region, methods, latestBlock, [
+            pEn('함께 읽기: <a href="blog/lucky-store-myth.html">로또 명당은 정말 있을까</a> · <a href="statistics-prize.html">1등 당첨자 수</a> · <a href="probability.html">로또 확률</a> · <a href="draws.html">회차별 당첨번호</a>',
+                'Read next: <a href="blog/lucky-store-myth.html">are there really lucky lottery stores?</a> · <a href="statistics-prize.html">first-prize winners</a> · <a href="probability.html">lotto odds</a> · <a href="draws.html">all winning numbers</a>'),
+            h2En('다른 로또 통계', 'Other statistics'),
+            relatedLinks(STORES_FILE),
+        ]),
+    });
+}
+
 /* ───── 통계 페이지 렌더 ───── */
 
 function relatedLinks(current) {
@@ -1685,6 +1855,8 @@ function updateHome(posts) {
         '                    <li><a href="probability.html" data-i18n-en="Lotto odds">로또 확률</a><span data-i18n-en="1st 1/8,145,060 · 5th 1/45">1등 1/8,145,060 · 5등 1/45</span></li>',
         ...(TIER ? [`                    <li><a href="${TIER_FILE}" data-i18n-en="${esc('2nd & 3rd prizes')}">2등·3등 당첨금</a>`
             + `<span data-i18n-en="${esc(`average: 2nd ${wonAboutEn(TIER.mean2)} · 3rd ${wonAboutEn(TIER.mean3)}`)}">평균 2등 ${wonAbout(TIER.mean2)} · 3등 ${wonAbout(TIER.mean3)}</span></li>`] : []),
+        ...(STORES ? [`                    <li><a href="${STORES_FILE}" data-i18n-en="1st-prize retailers">1등 판매점</a>`
+            + `<span data-i18n-en="${esc(`${fmt(STORES.with1.length)} retailers since draw ${STORES.first}`)}">${STORES.first}회 이후 ${fmt(STORES.with1.length)}곳</span></li>`] : []),
         `                    <li><a href="top-prize.html" data-i18n-en="Top 50 prizes">역대 당첨금 TOP 50</a>` +
             // 금액은 TOP 50 표처럼 억 원 단위 — 만 원까지 적으면 칸이 두 줄로 넘친다
             `<span data-i18n-en="${esc(`highest per winner ${wonEn(top.firstPrizeAmount)} (draw ${top.round})`)}">1인당 최고 ${(top.firstPrizeAmount / 1e8).toFixed(0)}억 원 (${top.round}회)</span></li>`,
@@ -1930,8 +2102,9 @@ function updateSitemap(blog) {
     ].concat(
         STATS.map(p => entry('/' + p.file, UPDATED, 'weekly', '0.8')),
         TIER ? [entry('/' + TIER_FILE, UPDATED, 'weekly', '0.8')] : [],
+        STORES ? [entry('/' + STORES_FILE, UPDATED, 'weekly', '0.8')] : [],
         [
-            entry('/probability.html', TIER ? atLeast('/probability.html', TIER_SINCE) : kept('/probability.html'), 'yearly', '0.7'),
+            entry('/probability.html', STORES ? atLeast('/probability.html', STORES_SINCE) : TIER ? atLeast('/probability.html', TIER_SINCE) : kept('/probability.html'), 'yearly', '0.7'),
             entry('/statistics.html', UPDATED, 'weekly', '0.7'),
             entry('/top-prize.html', UPDATED, 'weekly', '0.7'),
             entry('/tax.html', TIER ? UPDATED : kept('/tax.html'), TIER ? 'weekly' : 'yearly', '0.7'),   // 2·3등 표가 매주 바뀐다
@@ -1969,6 +2142,7 @@ draws.forEach(d => { if (write(`round/${d.round}.html`, roundPage(d))) changed++
 if (write('draws.html', drawsPage())) changed++;
 if (write('probability.html', probabilityPage())) changed++;
 if (TIER && write(TIER_FILE, prizeTierPage())) changed++;
+if (STORES && write(STORES_FILE, storesPage())) changed++;
 // 블로그는 원고(content/blog/)로 만든다. 같은 틀을 쓰고 사이트맵에 같이 넣으려고 여기서 부른다
 const blog = require(path.join(__dirname, 'build-blog.js'))({ shell, write, SITE, OG_IMAGE });
 changed += blog.changed;
@@ -1976,7 +2150,7 @@ updateHome(blog.posts);
 updateTaxAndTop();
 if (updateAbout()) changed++;
 const urls = updateSitemap(blog.sitemap);
-console.log(`통계 ${STATS.length}쪽${TIER ? ' · 2·3등' : ''} · 회차 ${draws.length}쪽 · 전체 조회 · 확률 · 블로그 ${blog.posts}편 · 사이트맵 ${urls}개 (${RANGE}, 갱신일 ${UPDATED})`);
+console.log(`통계 ${STATS.length}쪽${TIER ? ' · 2·3등' : ''}${STORES ? ' · 1등 판매점' : ''} · 회차 ${draws.length}쪽 · 전체 조회 · 확률 · 블로그 ${blog.posts}편 · 사이트맵 ${urls}개 (${RANGE}, 갱신일 ${UPDATED})`);
 console.log(`바뀐 생성 페이지: ${changed}쪽`);
 // 손 관리 페이지의 css · js 주소에 내용 지문을 붙인다(배포 직후 옛 파일과 섞이지 않게) — 위에서 index · tax · top · about 을 고친 뒤에
 const versioned = require(path.join(__dirname, 'asset-version.js'))();

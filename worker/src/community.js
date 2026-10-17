@@ -26,15 +26,27 @@
 //   c:<글>:<시각 16자리>-<무작위>  { id, at, sub, nick, text, staff } — 블로그 댓글. 계정은 cm(이 키들의 목록)으로 찾아 탈퇴 때 지운다
 //   b:<구글 계정 번호>   { nick, total, days, created } — 랭킹 색인. 별명이 있고 운영자가 아닌 회원만. u: 를 저장할 때 같이 맞춘다(saveUser)
 //   board                랭킹 색인 판(BOARD_VERSION) — 없으면 처음 랭킹을 볼 때 u: 를 한 번 훑어 b: 를 채운다
+//   k:<구글 계정 번호>   { g: [{ id, r, n, s, at }] } — 내 번호(산 번호). r 회차, n 번호 6개, s 'm' 직접 입력 · 'g' 생성기에서 저장.
+//                        본인에게만 보인다. 등수는 저장하지 않는다 — 보는 쪽(마이페이지)이 lotto-data.json 으로 그때그때 맞춘다
+//   ms:<구글 계정 번호>  { ref, at, last: { r, n } } — 이번 주 생성 번호 메일 구독. last 는 지난번 메일로 보낸 번호(다음 메일에 결과 한 줄)
+//   mw:<회차>            { cursor, sent, tries, done, at } — 그 회차 메일을 어디까지 보냈나. 2주 지나면 지운다
+//   mday                 { day, n } — 오늘(UTC 날짜, Resend 하루 한도 기준) 보낸 생성 번호 메일 수
+//   mailkey              수신 거부 링크 서명 · 메일 번호 씨앗용 비밀값(처음 쓸 때 만든다)
 //   e:<한국 날짜>        { gen-share, gen-print, post-share, post-sns } — 공유 · 출력 단추 하루 횟수(TAP_KINDS). 누가 눌렀는지는 없다
-//   meta                 { users, trials }
+//   meta                 { users, trials, subs }
 //
-// 이름·사진은 받지 않는다. 이메일은 "로그인한 계정" 표시와 문의 응대에만 쓴다.
+// 이름·사진은 받지 않는다. 이메일은 "로그인한 계정" 표시, 문의 응대, 회원이 켠 "이번 주 생성 번호 메일"에만 쓴다.
+
+import { makeGames, seeded } from './lotto.js';
 
 export const SESSION_DAYS = 30;
 const TRIAL_MEMORY_DAYS = 365;
 const MAX_SESSIONS = 5;
 const DAY = 86400 * 1000;
+
+// 내 번호: 한 회차에 20게임(용지 4장), 모두 600게임, 최근 104회차(2년)까지. 넘치면 오래된 회차부터 지운다
+export const MYNUM = { perRound: 20, total: 600, rounds: 104 };
+const gameKey = n => n.join(',');
 
 export const REACT_TYPES = ['h', 'd', 'w'];   // ♥ 좋아요, $ 대박 기원, ₩ 원화
 
@@ -202,6 +214,25 @@ export class Community {
     }
 
     async meta() { return (await this.storage.get('meta')) || { users: 0, trials: 0 }; }
+
+    // 메일 비밀값(HMAC). 처음 쓸 때 만들어 저장한다
+    async mailKey() {
+        if (this.mailHmac) return this.mailHmac;
+        let raw = await this.storage.get('mailkey');
+        if (!raw) {
+            raw = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32))));
+            await this.storage.put('mailkey', raw);
+        }
+        const bytes = Uint8Array.from(atob(raw), c => c.charCodeAt(0));
+        this.mailHmac = await crypto.subtle.importKey('raw', bytes, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+        return this.mailHmac;
+    }
+    async mac(text) {
+        return new Uint8Array(await crypto.subtle.sign('HMAC', await this.mailKey(), new TextEncoder().encode(text)));
+    }
+    async unsubToken(ref) {
+        return b64url((await this.mac('unsub:' + ref)).slice(0, 16));
+    }
     async bump(field, by) {
         const m = await this.meta();
         m[field] = Math.max(0, (m[field] || 0) + by);
@@ -387,6 +418,8 @@ const OPS = {
         for (let i = 0; i < (user.cm || []).length; i += 128) await this.storage.delete(user.cm.slice(i, i + 128));   // 내가 쓴 블로그 댓글
         if (user.nick) await this.storage.delete('n:' + user.nick.toLowerCase());
         if (user.ref) await this.storage.delete('m:' + user.ref);
+        await this.storage.delete('k:' + sub);   // 내 번호
+        if (await this.storage.delete('ms:' + sub)) await this.bump('subs', -1);   // 생성 번호 메일 구독
         await this.storage.delete('u:' + sub);
         await this.syncBoard(sub, null);
         await this.bump('users', -1);
@@ -528,6 +561,137 @@ const OPS = {
         return { comments: all.slice(0, limit || 200), total: all.length };
     },
 };
+
+/* ───── 내 번호 · 이번 주 생성 번호 메일 ───── */
+// OPS 에 합친다(아래 Object.assign). 번호는 index.js 가 다듬어(cleanGame) 넘긴다
+const NUM_OPS = {
+    async numbersGet({ sub }) {
+        const k = (await this.storage.get('k:' + sub)) || { g: [] };
+        return { games: k.g };
+    },
+
+    // games: [[6개], …] 같은 회차. 같은 회차에 이미 있는 조합은 건너뛴다
+    async numbersAdd({ sub, round, games, src, now }) {
+        const user = await this.storage.get('u:' + sub);
+        if (!user) return { error: 'no_user' };
+        const k = (await this.storage.get('k:' + sub)) || { g: [] };
+        const have = new Set(k.g.filter(x => x.r === round).map(x => gameKey(x.n)));
+        let room = MYNUM.perRound - have.size;
+        let added = 0, dup = 0, full = 0;
+        for (const n of games) {
+            if (have.has(gameKey(n))) { dup++; continue; }
+            if (room <= 0) { full++; continue; }
+            have.add(gameKey(n));
+            k.g.push({ id: Math.random().toString(36).slice(2, 10), r: round, n, s: src === 'g' ? 'g' : 'm', at: now });
+            room--;
+            added++;
+        }
+        // 최근 회차가 앞으로, 같은 회차는 넣은 차례대로
+        k.g.sort((a, b) => (b.r - a.r) || (a.at - b.at));
+        const rounds = [...new Set(k.g.map(x => x.r))];
+        if (rounds.length > MYNUM.rounds) { const keep = new Set(rounds.slice(0, MYNUM.rounds)); k.g = k.g.filter(x => keep.has(x.r)); }
+        if (k.g.length > MYNUM.total) k.g = k.g.slice(0, MYNUM.total);
+        if (added) await this.storage.put('k:' + sub, k);
+        return { games: k.g, added, dup, full };
+    },
+
+    // 한 게임(id) 또는 한 회차(round) 지우기
+    async numbersDelete({ sub, id, round }) {
+        const k = await this.storage.get('k:' + sub);
+        if (!k) return { games: [] };
+        const before = k.g.length;
+        k.g = k.g.filter(x => (id ? x.id !== id : x.r !== round));
+        if (k.g.length !== before) {
+            if (k.g.length) await this.storage.put('k:' + sub, k); else await this.storage.delete('k:' + sub);
+        }
+        return { games: k.g, removed: before - k.g.length };
+    },
+
+    // 메일 켜기 · 끄기 (회원이 직접)
+    async mailSet({ sub, on, ref, now }) {
+        const user = await this.storage.get('u:' + sub);
+        if (!user) return { error: 'no_user' };
+        const cur = await this.storage.get('ms:' + sub);
+        if (on && !cur) { await this.storage.put('ms:' + sub, { ref, at: now, last: null }); await this.bump('subs', 1); }
+        if (!on && cur) { await this.storage.delete('ms:' + sub); await this.bump('subs', -1); }
+        return { mail: !!on };
+    },
+    async mailGet({ sub }) {
+        return { mail: !!(await this.storage.get('ms:' + sub)) };
+    },
+
+    // 수신 거부 링크(로그인 없이). 참조값 + 서명이 맞으면 끈다. 이미 꺼져 있어도 ok
+    async mailUnsub({ ref, token }) {
+        if (!ref || !token || token !== await this.unsubToken(ref)) return { error: 'bad_token' };
+        const sub = await this.storage.get('m:' + ref);
+        if (sub && await this.storage.delete('ms:' + sub)) await this.bump('subs', -1);
+        return { ok: true };
+    },
+
+    // 이번 회차에 보낼 다음 묶음(최대 limit 명). 번호는 (비밀값, 회차, 계정)으로 정해지는 씨앗으로 만든다 —
+    // 보낸 뒤 기록(mailCommit)이 실패해 다시 보내더라도 같은 번호가 간다. 저장은 하지 않는다
+    async mailPrepare({ round, limit, count }) {
+        const st = (await this.storage.get('mw:' + round)) || { cursor: '', sent: 0, tries: 0, done: false };
+        if (st.done) return { items: [], state: st };
+        const page = await this.storage.list(Object.assign({ prefix: 'ms:', limit }, st.cursor ? { startAfter: st.cursor } : {}));
+        const subs = [...page.keys()].map(k => k.slice(3));
+        const users = subs.length ? await this.storage.get(subs.map(s => 'u:' + s)) : new Map();
+        const items = [];
+        let cursor = st.cursor;
+        for (const sub of subs) {
+            cursor = 'ms:' + sub;
+            const m = page.get('ms:' + sub);
+            const u = users.get('u:' + sub);
+            if (!u || !u.email) continue;
+            const games = makeGames(seeded(await this.mac('gen:' + round + ':' + sub)), count);
+            items.push({ sub, ref: m.ref, email: u.email, token: await this.unsubToken(m.ref), games, last: m.last && m.last.r < round ? m.last : null });
+        }
+        return { items, cursor, more: page.size === limit, state: st };
+    },
+
+    // 보낸 묶음 기록: 지난번 번호를 이번 번호로 바꾸고, 어디까지 보냈는지 · 오늘 몇 통인지 올린다
+    async mailCommit({ round, cursor, items, sent, done, now, day }) {
+        for (const it of items || []) {
+            const m = await this.storage.get('ms:' + it.sub);
+            if (m) { m.last = { r: round, n: it.games }; await this.storage.put('ms:' + it.sub, m); }
+        }
+        const st = (await this.storage.get('mw:' + round)) || { cursor: '', sent: 0, tries: 0, done: false };
+        st.cursor = cursor || st.cursor;
+        st.sent += sent || 0;
+        st.tries = 0;
+        st.at = now;
+        if (done) st.done = true;
+        await this.storage.put('mw:' + round, st);
+        if (sent) {
+            const d = (await this.storage.get('mday')) || { day: '', n: 0 };
+            if (d.day !== day) { d.day = day; d.n = 0; }
+            d.n += sent;
+            await this.storage.put('mday', d);
+        }
+        // 지난 회차 기록은 2주 뒤 지운다
+        await this.storage.delete(['mw:' + (round - 2), 'mw:' + (round - 3)]);
+        return { state: st };
+    },
+
+    // 보내기 실패: 세 번 연달아 실패하면 그 회차는 그만둔다(index.js 가 알린다)
+    async mailFail({ round, now, max }) {
+        const st = (await this.storage.get('mw:' + round)) || { cursor: '', sent: 0, tries: 0, done: false };
+        st.tries += 1;
+        st.at = now;
+        if (st.tries >= (max || 3)) { st.done = true; st.gaveUp = true; }
+        await this.storage.put('mw:' + round, st);
+        return { state: st };
+    },
+
+    async mailStatus({ round, day }) {
+        const st = (await this.storage.get('mw:' + round)) || null;
+        const d = (await this.storage.get('mday')) || { day: '', n: 0 };
+        return { state: st, today: d.day === day ? d.n : 0, subs: (await this.meta()).subs || 0 };
+    },
+};
+Object.assign(OPS, NUM_OPS);
+
+const b64url = bytes => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
 function view(user) {
     const trial = user.trial && user.trial.key ? { key: user.trial.key, keyId: user.trial.keyId, expiresAt: user.trial.expiresAt } : null;

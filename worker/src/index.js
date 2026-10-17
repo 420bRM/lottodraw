@@ -9,7 +9,10 @@
 //      구매자가 문의하면 판매자가 관리자 페이지에서 "환불 처리"를 누른다: 키 정지, 카드는 결제 취소까지.
 //   4) 지킴이 — 한 시간마다 입금 알림 연결이 살아 있는지 보고, 끊기면 판매자에게 알린다.
 //   5) 회원 — 구글 로그인, 좋아요(하트·달러). 가입 무료 체험 키(1회)는 SIGNUP_TRIAL_DAYS 를 넣을 때만 — 2026-10-11부터 끔. 저장은 community.js.
-//   6) 공유 · 출력 집계 — 홈 생성기 공유 · 출력, 블로그 글 공유 단추의 하루 횟수(/api/tap). 관리자 페이지에서 본다.
+//   6) 내 번호 — 회원이 산 번호를 회차별로 저장(마이페이지가 당첨번호와 맞춰 등수를 보여 준다). 저장은 community.js 의 k:
+//   7) 이번 주 생성 번호 메일 — 구독한 회원에게 금요일 오전부터 생성기 기본 규칙으로 만든 5게임을 보낸다(weeklyMail).
+//      결제와 따로 돈다: 실패해도 주문 · 발급 · 지킴이에 영향이 없다. KV 를 쓰지 않는다.
+//   8) 공유 · 출력 집계 — 홈 생성기 공유 · 출력, 블로그 글 공유 단추의 하루 횟수(/api/tap). 관리자 페이지에서 본다.
 //
 // 키 확인은 브라우저가 공개키로 혼자 한다(js/license.js). 이 서버가 멈춰도
 // 이미 산 사람의 잠금은 풀린다. 서버가 필요한 건 "팔 때"뿐이다.
@@ -23,6 +26,7 @@ import { generateKeyPair, importPrivate, importPublic, signKey, verifyKey, parse
 import { plansFor } from './plans.js';
 import { community, SESSION_DAYS, REACT_TYPES, ITEM_RE, POINTS, COMMENT, TAP_KINDS } from './community.js';
 import { verifyGoogleToken } from './google.js';
+import { saleRound, cleanGame, rankOf, kstParts, drawDay, saleEnd } from './lotto.js';
 
 import { chatStub, checkText } from './chat.js';
 
@@ -47,8 +51,10 @@ class HttpError extends Error {
 
 export default {
     // 한 시간마다: 입금 알림 연결이 살아 있는지 확인 (wrangler.toml [triggers])
+    // 이번 주 생성 번호 메일도 같은 한 시간 예약에서 돈다 — 따로 waitUntil 에 넣어 한쪽이 실패해도 다른 쪽은 그대로 간다
     async scheduled(event, env, ctx) {
         ctx.waitUntil(watchdog(env));
+        ctx.waitUntil(weeklyMail(env, Date.now()).catch(err => console.error('weekly mail', err)));
     },
     async fetch(request, env, ctx) {
         try {
@@ -93,6 +99,11 @@ async function route(request, env, ctx) {
     if (path === '/api/me/delete' && method === 'POST') return deleteMe(request, env, ctx);
     if (path === '/api/me/nickname' && method === 'POST') return setNickname(request, env);
     if (path === '/api/me/generator' && method === 'POST') return saveGenerator(request, env);
+    if (path === '/api/me/numbers' && method === 'GET') return getNumbers(request, env);
+    if (path === '/api/me/numbers' && method === 'POST') return addNumbers(request, env);
+    if (path === '/api/me/numbers/delete' && method === 'POST') return deleteNumbers(request, env);
+    if (path === '/api/me/mail' && method === 'POST') return setMail(request, env);
+    if (path === '/api/mail/unsubscribe' && (method === 'GET' || method === 'POST')) return unsubscribe(request, env, url);
     if (path === '/api/reactions' && method === 'GET') return getReactions(request, env, url);
     if (path === '/api/ranking' && method === 'GET') return getRanking(request, env);
     if (path === '/api/chat' && method === 'GET') return chatConnect(request, env);
@@ -769,6 +780,209 @@ async function saveGenerator(request, env) {
     return json(request, env, { user: r.user });
 }
 
+/* ───── 내 번호 (마이페이지 · 홈 생성기 "내 번호에 저장") ───── */
+
+// 저장한 번호 + 지금 판매 중인 회차 + 메일 구독 여부. 등수는 화면이 lotto-data.json 으로 맞춘다(서버는 저장만)
+async function getNumbers(request, env) {
+    const s = await sessionUser(request, env);
+    const [k, m] = await Promise.all([community(env, 'numbersGet', { sub: s.sub }), community(env, 'mailGet', { sub: s.sub })]);
+    return json(request, env, { games: k.games, saleRound: saleRound(Date.now()), mail: m.mail, mailReady: mailReady(env) });
+}
+
+// { round, games: [[6개], …], src: 'm' | 'g' }. 회차는 1회 ~ 지금 판매 중인 회차, 빼면 지금 판매 중인 회차(홈 생성기 — 기기 시계를 믿지 않는다)
+async function addNumbers(request, env) {
+    const s = await sessionUser(request, env);
+    await limited(env.REACT_LIMIT, s.hash);
+    const body = await readJson(request);
+    const now = Date.now();
+    const top = saleRound(now);
+    const round = body.round === undefined || body.round === null ? top : Number(body.round);
+    if (!Number.isInteger(round) || round < 1 || round > top) throw new HttpError(400, 'bad_round', `회차는 1~${top}회 사이로 골라 주세요.`);
+    const raw = Array.isArray(body.games) ? body.games : [];
+    if (!raw.length || raw.length > 20) throw new HttpError(400, 'bad_games', '한 번에 1~20게임까지 저장할 수 있습니다.');
+    const games = raw.map(cleanGame);
+    const bad = games.findIndex(g => !g);
+    if (bad !== -1) throw new HttpError(400, 'bad_games', `${bad + 1}번째 게임을 확인해 주세요. 1~45 사이의 서로 다른 번호 6개여야 합니다.`);
+    const r = await community(env, 'numbersAdd', { sub: s.sub, round, games, src: body.src === 'g' ? 'g' : 'm', now });
+    if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
+    return json(request, env, { games: r.games, added: r.added, dup: r.dup, full: r.full, saleRound: top });
+}
+
+// { id } 한 게임, 또는 { round } 그 회차 전부
+async function deleteNumbers(request, env) {
+    const s = await sessionUser(request, env);
+    await limited(env.REACT_LIMIT, s.hash);
+    const body = await readJson(request);
+    const id = typeof body.id === 'string' && /^[a-z0-9]{1,12}$/.test(body.id) ? body.id : null;
+    const round = Number.isInteger(body.round) && body.round > 0 ? body.round : null;
+    if (!id && !round) throw new HttpError(400, 'bad_id', '지울 번호를 고르지 못했습니다.');
+    const r = await community(env, 'numbersDelete', { sub: s.sub, id, round: id ? null : round });
+    return json(request, env, { games: r.games, removed: r.removed });
+}
+
+/* ───── 이번 주 생성 번호 메일 ─────
+ * 구독은 회원이 마이페이지에서 직접 켜고 끈다. 메일마다 수신 거부 링크(로그인 없이 한 번에 끔)를 넣는다.
+ * 보내는 때: 금요일 09시(한국)부터 한 시간 예약(:17)마다 한 묶음씩, 토요일 18시까지(판매 마감 20시 전). 밤 9시 ~ 아침 9시는 쉰다.
+ * Resend 무료 한도(하루 100통 · 한 달 3,000통)를 키 메일과 나눠 쓴다 — 하루에 WEEKLY_MAIL_DAILY(기본 80)통까지만
+ * 보내고, 남은 구독자는 다음 날(토요일 09시 UTC 날짜가 바뀐 뒤) 이어서 보낸다. 자세한 셈은 README.
+ */
+const WEEKLY = { games: 5, startDow: 5, startHour: 9, nightHour: 21, endDow: 6, endHour: 18, batch: 100, daily: 80, rounds: 4 };
+
+async function setMail(request, env) {
+    const s = await sessionUser(request, env);
+    await limited(env.REACT_LIMIT, s.hash);
+    const body = await readJson(request);
+    if (typeof body.on !== 'boolean') throw new HttpError(400, 'bad_mail', '켜기 · 끄기를 골라 주세요.');
+    if (body.on && !mailReady(env)) throw new HttpError(503, 'no_mail', '메일 발송이 아직 꺼져 있습니다.');
+    const r = await community(env, 'mailSet', { sub: s.sub, on: body.on, ref: await memberRef(s.sub), now: Date.now() });
+    if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
+    return json(request, env, { mail: r.mail });
+}
+
+// 메일의 수신 거부 링크. GET 은 확인 단추가 있는 쪽(메일 보안 검사기가 링크를 미리 열어도 꺼지지 않게),
+// POST(단추 · 메일 앱의 "구독 취소" — List-Unsubscribe-Post)는 바로 끈다
+async function unsubscribe(request, env, url) {
+    const ref = String(url.searchParams.get('r') || '').slice(0, 64);
+    const token = String(url.searchParams.get('t') || '').slice(0, 64);
+    const page = (title, msg, form) => new Response(`<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${title} | lottodraw.kr</title>
+<style>body{font:16px/1.6 system-ui,sans-serif;max-width:32rem;margin:3rem auto;padding:0 16px;color:#1f2a44;background:#fff}h1{font-size:1.3rem}button{font:inherit;padding:.6rem 1.2rem;border:0;border-radius:6px;background:#1f2a44;color:#fff;cursor:pointer}a{color:#2456c8}</style></head>
+<body><h1>${title}</h1><p>${msg}</p>${form || ''}<p><a href="${siteUrl(env)}/mypage.html">마이페이지</a>에서 언제든 다시 켤 수 있습니다.</p></body></html>`,
+        { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' } });
+    if (!loginReady(env) || !/^[A-Za-z0-9_-]{20,64}$/.test(ref) || !/^[A-Za-z0-9_-]{16,64}$/.test(token)) {
+        return page('링크를 확인해 주세요', '수신 거부 링크가 올바르지 않습니다. 마이페이지에서 메일을 끌 수 있습니다.');
+    }
+    if (request.method === 'GET') {
+        return page('이번 주 생성 번호 메일 수신 거부', '아래 단추를 누르면 이 메일을 더 보내지 않습니다.',
+            `<form method="post" action="?r=${encodeURIComponent(ref)}&amp;t=${encodeURIComponent(token)}"><button type="submit">수신 거부</button></form>`);
+    }
+    const r = await community(env, 'mailUnsub', { ref, token });
+    if (r.error) return page('링크를 확인해 주세요', '수신 거부 링크가 올바르지 않습니다. 마이페이지에서 메일을 끌 수 있습니다.');
+    return page('수신 거부되었습니다', '이번 주 생성 번호 메일을 더 보내지 않습니다.');
+}
+
+const weeklyDaily = env => { const n = Math.floor(Number(env.WEEKLY_MAIL_DAILY)); return n > 0 ? Math.min(n, 5000) : WEEKLY.daily; };
+const utcDay = now => new Date(now).toISOString().slice(0, 10);
+
+// 보내는 때인가: 금 09:00 ~ 21:00, 토 09:00 ~ 18:00 (한국 시각). 밤 9시 ~ 아침 8시는 보내지 않는다
+function inWindow(now) {
+    const { dow, hour } = kstParts(now);
+    if (hour < WEEKLY.startHour || hour >= WEEKLY.nightHour) return false;
+    if (dow === WEEKLY.startDow) return true;
+    if (dow === WEEKLY.endDow) return hour < WEEKLY.endHour;
+    return false;
+}
+
+// 직전 회차 당첨번호. lotto-data.json 은 최신 회차가 맨 앞이라 앞부분만 읽는다(무료 요금제 CPU 10ms 를 아끼려고 전체를 풀지 않는다)
+async function latestDraw(env) {
+    try {
+        const res = await fetch(siteUrl(env) + '/lotto-data.json', { headers: { Range: 'bytes=0-1023' }, cf: { cacheTtl: 300 } });
+        if (!res.ok && res.status !== 206) return null;
+        const head = (await res.text()).slice(0, 2048);
+        const m = head.match(/"round":\s*(\d+),\s*"date":\s*"[^"]*",\s*"numbers":\s*\[([\d,\s]+)\],\s*"bonus":\s*(\d+)/);
+        if (!m) return null;
+        return { round: Number(m[1]), numbers: m[2].split(',').map(Number), bonus: Number(m[3]) };
+    } catch (e) { return null; }
+}
+
+const RANK_TXT = ['낙첨', '1등', '2등', '3등', '4등', '5등'];
+// 지난번 메일 번호의 결과 한 줄
+function lastLine(last, draw) {
+    if (!last || !draw || draw.round !== last.r) return '';
+    const res = last.n.map(g => rankOf(g, draw));
+    // 가장 좋은 게임: 등수가 높은 것(1등이 가장 좋다), 모두 낙첨이면 많이 맞은 것
+    const best = res.slice().sort((a, b) => ((a.rank || 9) - (b.rank || 9)) || (b.match - a.match))[0];
+    const wins = res.filter(x => x.rank).map(x => RANK_TXT[x.rank]);
+    const head = `지난주(${last.r}회) 받은 번호 ${last.n.length}게임 결과: `;
+    return wins.length
+        ? head + `${wins.join(' · ')} 당첨 — 가장 좋은 게임 ${RANK_TXT[best.rank]}(${best.match}개 일치${best.bonus ? ' + 보너스' : ''})`
+        : head + `모두 낙첨(가장 많이 맞은 게임 ${best.match}개 일치)`;
+}
+
+function weeklyText(env, round, games, last, draw, unsubUrl) {
+    const mmdd = drawDay(round);
+    const line = lastLine(last, draw);
+    return [
+        `${round}회 이번 주 생성 번호입니다. 추첨은 ${mmdd} 오후 8시 35분입니다.`,
+        `lottodraw.kr 번호 생성기와 같은 규칙(특수 패턴 16가지 제외)으로 무작위로 만든 ${games.length}게임입니다.`,
+        '',
+        ...games.map((g, i) => `${'ABCDE'[i] || i + 1}   ${g.map(n => String(n).padStart(2, ' ')).join('  ')}`),
+        '',
+        line,
+        line ? '' : null,
+        '어느 조합이든 1등 확률은 8,145,060분의 1로 같습니다. 생성 번호는 다음 회차를 예측하지 않고, 당첨 확률을 바꾸지 않습니다.',
+        `판매 마감: ${mmdd} 오후 8시 · 19세 미만은 복권을 살 수 없습니다.`,
+        '',
+        `산 번호를 저장해 두면 추첨 뒤 등수를 바로 보여 드립니다: ${siteUrl(env)}/mypage.html`,
+        '',
+        '이 메일은 lottodraw.kr 마이페이지에서 "이번 주 생성 번호 메일"을 켠 회원에게 보냅니다.',
+        `수신 거부: ${unsubUrl}`,
+        '문의: contact@lottodraw.kr',
+    ].filter(x => x !== null).join('\n');
+}
+
+// 한 시간 예약에서 부른다. 보내는 때가 아니거나, 이번 회차를 다 보냈거나, 오늘 몫을 다 썼으면 아무것도 하지 않는다
+async function weeklyMail(env, now) {
+    if (!mailReady(env) || !loginReady(env) || !inWindow(now)) return { skipped: 'window' };
+    const round = saleRound(now);
+    if (now >= saleEnd(round)) return { skipped: 'closed' };
+    const day = utcDay(now);
+    const status = await community(env, 'mailStatus', { round, day });
+    if (status.state && status.state.done) return { skipped: 'done' };
+    let budget = weeklyDaily(env) - status.today;
+    if (budget <= 0) return { skipped: 'budget' };
+    const api = String(env.API_ORIGIN || 'https://api.lottodraw.kr').replace(/\/+$/, '');
+    const from = env.WEEKLY_MAIL_FROM || env.MAIL_FROM;
+    let draw;
+    let total = 0;
+    for (let loop = 0; loop < WEEKLY.rounds && budget > 0; loop++) {
+        const prep = await community(env, 'mailPrepare', { round, limit: Math.min(WEEKLY.batch, budget), count: WEEKLY.games });
+        if (!prep.items.length) {
+            await community(env, 'mailCommit', { round, cursor: prep.cursor, items: [], sent: 0, done: !prep.more, now, day });
+            if (prep.more) continue;   // 이메일 없는 계정만 있던 묶음 — 다음 묶음으로
+            break;
+        }
+        if (draw === undefined) draw = prep.items.some(x => x.last) ? await latestDraw(env) : null;
+        const emails = prep.items.map(it => {
+            const unsubUrl = `${api}/api/mail/unsubscribe?r=${encodeURIComponent(it.ref)}&t=${encodeURIComponent(it.token)}`;
+            return {
+                from, to: [it.email], reply_to: 'contact@lottodraw.kr',
+                subject: `[lottodraw.kr] ${round}회 이번 주 생성 번호`,
+                text: weeklyText(env, round, it.games, it.last, draw, unsubUrl),
+                headers: { 'List-Unsubscribe': `<${unsubUrl}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
+            };
+        });
+        let ok = false, why = '';
+        try {
+            // 같은 묶음을 다시 보내게 되면(기록 실패 등) Resend 가 한 번만 보낸다(24시간)
+            const res = await fetch('https://api.resend.com/emails/batch', {
+                method: 'POST',
+                headers: { Authorization: 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json', 'Idempotency-Key': `weekly-${round}-${prep.cursor}` },
+                body: JSON.stringify(emails),
+            });
+            ok = res.ok;
+            if (!ok) { try { why = String(JSON.parse(await res.text()).message || '').slice(0, 120); } catch (e) { why = ''; } why = `HTTP ${res.status}` + (why ? ': ' + why : ''); }
+        } catch (e) { why = '메일 서버 연결 실패'; }
+        if (!ok) {
+            const f = await community(env, 'mailFail', { round, now, max: 3 });
+            if (f.state.gaveUp) await notify(env, `이번 주 생성 번호 메일 ${round}회: 세 번 연달아 보내지 못해 이번 회차는 멈춥니다 (${why}). 지금까지 ${f.state.sent}통.`);
+            return { failed: why };
+        }
+        await community(env, 'mailCommit', { round, cursor: prep.cursor, items: prep.items.map(x => ({ sub: x.sub, games: x.games })), sent: emails.length, done: !prep.more, now, day });
+        total += emails.length;
+        budget -= emails.length;
+        if (!prep.more) {
+            const st = await community(env, 'mailStatus', { round, day });
+            await notify(env, `이번 주 생성 번호 메일 ${round}회 발송 끝: ${st.state ? st.state.sent : total}통 (구독 ${st.subs}명)`);
+            return { sent: total, done: true };
+        }
+    }
+    // 오늘 몫을 다 썼는데 아직 남았다 — 토요일까지 못 끝낼 것 같으면(토요일인데 남음) 알린다
+    if (budget <= 0 && kstParts(now).dow === WEEKLY.endDow) {
+        await notify(env, `이번 주 생성 번호 메일 ${round}회: 하루 한도(${weeklyDaily(env)}통)를 다 써서 일부 구독자에게 보내지 못할 수 있습니다. 구독자가 늘었으면 Resend 요금제 · WEEKLY_MAIL_DAILY 를 확인하세요.`);
+    }
+    return { sent: total, done: false };
+}
+
 function reactionIds(raw) {
     const ids = String(raw || '').split(',').map(s => s.trim()).filter(Boolean);
     if (!ids.length || ids.length > 30 || !ids.every(i => ITEM_RE.test(i))) throw new HttpError(400, 'bad_ids', '항목 이름이 올바르지 않습니다.');
@@ -895,6 +1109,7 @@ async function admin(request, env, sub, method, url) {
             },
             notify: { telegram: !!(env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID), url: !!env.NOTIFY_URL },
             mail: mailReady(env),
+            weekly: loginReady(env) ? await community(env, 'mailStatus', { round: saleRound(Date.now()), day: utcDay(Date.now()) }).then(x => Object.assign(x, { round: saleRound(Date.now()), daily: weeklyDaily(env) })).catch(() => null) : null,
             login: loginReady(env) ? Object.assign(await community(env, 'stats').catch(() => ({ error: true })), { trialDays: signupTrialDays(env) }) : null,
         });
     }
@@ -1212,6 +1427,7 @@ async function revoke(env, id) {
 let cachedSigner = null;
 
 export function _resetForTests() { cachedSigner = null; }
+export const _weeklyMailForTests = weeklyMail;
 
 async function signer(env, fresh) {
     if (cachedSigner) return cachedSigner;

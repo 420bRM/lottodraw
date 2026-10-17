@@ -406,8 +406,8 @@
     async function withdraw() {
         const hadTrial = !!(me && me.user && me.user.trial);
         const ok = window.confirm(hadTrial
-            ? tr('acct.deleteConfirm', '탈퇴하면 계정과 누른 좋아요가 지워집니다.\n받은 무료 체험은 기간까지 이 브라우저에서 그대로 쓸 수 있지만, 다시 가입해도 체험은 다시 받을 수 없습니다.\n\n탈퇴할까요?')
-            : tr('acct.deleteConfirmPlain', '탈퇴하면 계정과 누른 좋아요가 지워집니다.\n\n탈퇴할까요?'));
+            ? tr('acct.deleteConfirm', '탈퇴하면 계정, 누른 좋아요, 저장한 내 번호와 메일 구독이 지워집니다.\n받은 무료 체험은 기간까지 이 브라우저에서 그대로 쓸 수 있지만, 다시 가입해도 체험은 다시 받을 수 없습니다.\n\n탈퇴할까요?')
+            : tr('acct.deleteConfirmPlain', '탈퇴하면 계정, 누른 좋아요, 저장한 내 번호와 메일 구독이 지워집니다.\n\n탈퇴할까요?'));
         if (!ok) return;
         try {
             await request('/api/me/delete', { method: 'POST', auth: true, body: { confirm: true } });
@@ -637,6 +637,11 @@
         },
         logout: () => logout(),
         withdraw: () => withdraw(),
+        // 로그인이 필요한 회원 API(내 번호 · 생성 번호 메일 — 마이페이지 · 홈 생성기). 로그인이 끝났으면 이 브라우저에서도 로그아웃한다
+        call: async (path, opts) => {
+            try { return await request(path, Object.assign({ auth: true }, opts || {})); }
+            catch (e) { if (e.status === 401) { signOutLocal(); renderHeader(); } throw e; }
+        },
     };
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);

@@ -36,26 +36,40 @@ jobs:
         id: fetch
         run: node tools/update-lotto-data.js
 
+      # 1등 · 2등 판매점(stores-data.json). 동행복권은 추첨 뒤 판매점을 조금 늦게 올리기도 해서 회차가 그대로여도 돌고,
+      # 실패해도 로또 갱신은 그대로 간다(continue-on-error). 새 회차 + 최근 3회차만, 요청 사이 0.3초
+      - name: 1등 판매점 수집
+        id: stores
+        continue-on-error: true
+        run: node tools/update-stores.js
+
       # 검색엔진이 읽을 정적 통계 페이지·사이트맵·홈 제목을 새 회차로 다시 쓴다.
       # 블로그(blog/)도 여기서 같이 만든다 — 머리글의 최신 회차가 바뀌고, 원고(content/blog/)를
       # 고치고 생성을 잊었다면 이때 반영된다
       - name: 정적 통계 페이지 생성
-        if: steps.fetch.outputs.changed == 'true'
+        if: steps.fetch.outputs.changed == 'true' || steps.stores.outputs.changed == 'true'
         run: node tools/build-static-stats.js
 
       - name: 변경분 커밋
-        if: steps.fetch.outputs.changed == 'true'
+        id: commit
+        if: steps.fetch.outputs.changed == 'true' || steps.stores.outputs.changed == 'true'
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add lotto-data.json prize-data.json index.html about.html tax.html top-prize.html sitemap.xml statistics-*.html draws.html probability.html round/ blog/
-          git commit -m "chore: 로또 ${{ steps.fetch.outputs.latest }}회차까지 반영"
+          git add lotto-data.json prize-data.json stores-data.json index.html about.html tax.html top-prize.html sitemap.xml statistics-*.html draws.html probability.html round/ blog/
+          if git diff --cached --quiet; then echo "바뀐 파일 없음"; exit 0; fi
+          if [ "${{ steps.fetch.outputs.changed }}" = "true" ]; then
+            git commit -m "chore: 로또 ${{ steps.fetch.outputs.latest }}회차까지 반영"
+          else
+            git commit -m "chore: 1등 판매점 갱신"
+          fi
           git push origin HEAD:html
+          echo "pushed=true" >> "$GITHUB_OUTPUT"
 
       # GITHUB_TOKEN 으로 푸시한 커밋은 Pages 빌드를 트리거하지 않는다(GitHub 문서).
       # 그래서 빌드를 API로 직접 요청한다.
       - name: Pages 재배포 요청
-        if: steps.fetch.outputs.changed == 'true'
+        if: steps.commit.outputs.pushed == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh api --method POST "repos/${{ github.repository }}/pages/builds"
