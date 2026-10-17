@@ -615,6 +615,10 @@ html.home { scroll-behavior: smooth; }
     color: var(--brand); font: bold 12px/1.4 var(--font); white-space: nowrap; cursor: pointer;
 }
 .tour-btn:hover { border-color: var(--brand); }
+/* 왼쪽 위 "＋ 내 번호" — 방금 만든 번호를 이번 회차 내 번호에 저장(로그인). 사용법 보기와 같은 모양 */
+.tour-btn.mynum-btn { right: auto; left: 10px; }
+.tour-btn.mynum-btn:disabled { color: var(--muted); cursor: default; }
+.tour-btn.mynum-btn.is-locked { color: var(--muted); }
 .tour-btn.is-new { border-color: var(--brand); animation: tour-pulse 1.9s ease-out infinite; }
 @keyframes tour-pulse { 0% { box-shadow: 0 0 0 0 rgba(0, 48, 135, .35); } 70%, 100% { box-shadow: 0 0 0 9px rgba(0, 48, 135, 0); } }
 /* 둘러보기: 비추는 곳만 밝게(둘레 그림자로 나머지를 어둡게), 설명 상자. 누르기는 막지 않는다 */
@@ -1613,6 +1617,42 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 .btn.my-danger { color: var(--error); }
 .acct-menu .acct-my { font-weight: bold; }
 @media (max-width: 699px) { .my-grid { grid-template-columns: minmax(0, 1fr); } }
+/* 마이페이지 내 번호 (js/mypage.js) — 요약 · 입력 · 회차별 목록 */
+.my-wide { grid-column: 1 / -1; }
+.my-sum { margin: 8px 0 12px; }
+.my-sum-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-bottom: 8px; }
+.my-sum select, .my-num-inputs select { padding: 5px 6px; border: 1px solid var(--line); border-radius: 6px; background: #fff; font: inherit; font-size: 14px; }
+.my-sum-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.my-sum-grid div { padding: 8px 4px; border-radius: 8px; background: #f3f6fb; text-align: center; }
+.my-sum-grid b { display: block; color: var(--text); font-size: 18px; line-height: 1.3; font-variant-numeric: tabular-nums; }
+.my-sum-grid .my-hit b { color: var(--brand); }
+.my-sum-grid span { color: var(--muted); font-size: 12px; }
+.my-num-form { margin: 8px 0 4px; }
+.my-num-inputs { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: 6px; }
+.my-num-inputs textarea { min-height: 3.4em; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; font: inherit; font-size: 14px; line-height: 1.5; resize: vertical; }
+.my-rounds { display: grid; gap: 10px; margin-top: 12px; }
+.my-round { padding-top: 10px; border-top: 1px solid #f0f0f0; }
+.my-round-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 14px; }
+.my-draw { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 3px; }
+.my-plus { color: var(--muted); font-size: 12px; }
+.my-games { display: grid; gap: 4px; margin: 6px 0 0; padding: 0; list-style: none; }
+.my-games li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 4px 0; font-size: 13px; }
+.my-balls { display: inline-flex; gap: 3px; }
+.mball.my-miss { background: #e9ecf1; color: #8a93a3; text-shadow: none; }
+.my-res { color: var(--muted); }
+.my-win .my-res { color: var(--brand); font-weight: bold; }
+.my-x { margin-left: auto; padding: 2px 8px; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--muted); font-size: 12px; cursor: pointer; }
+.my-x:hover { color: var(--error); border-color: var(--error); }
+/* 회차 줄: 회차 | 당첨번호(넘치면 칸 안에서 줄바꿈) | 지우기, 게임 줄: 번호 | × 그 아래 결과 — 휴대폰에서 단추만 따로 떨어지지 않게 */
+.my-round-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; }
+.my-games li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; }
+@media (max-width: 479px) {
+    .my-games li { grid-template-columns: minmax(0, 1fr) auto; }
+    .my-games .my-res { grid-row: 2; grid-column: 1 / -1; }
+    .my-sum-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .my-num-inputs { grid-template-columns: minmax(0, 1fr) auto; }
+    .my-num-inputs textarea { grid-column: 1 / -1; grid-row: 2; }
+}
 
 /* ───── 공유 줄 (js/share.js) ───── */
 .share-bar { margin: 28px 0 8px; padding: 12px 14px; border: 1px solid #c9d1de; background: #f6f8fb; }
