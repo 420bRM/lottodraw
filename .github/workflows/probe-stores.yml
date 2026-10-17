@@ -1,0 +1,15 @@
+name: probe-stores
+# 일회용: 1등 배출점 자료 확인. 머지하지 않는다.
+on:
+  push:
+    branches: [claude/probe-stores]
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - run: node tools/probe-stores.js $(cat tools/probe-urls.txt)

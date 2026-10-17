@@ -1,0 +1,7 @@
+https://www.dhlottery.co.kr/robots.txt
+https://dhlottery.co.kr/robots.txt
+https://www.dhlottery.co.kr/
+https://www.dhlottery.co.kr/store.do?method=topStore&pageGubun=L645
+https://www.dhlottery.co.kr/store.do?method=topStore&pageGubun=L645&drwNo=1245
+https://www.dhlottery.co.kr/wnprchsplcsrch/home
+https://www.dhlottery.co.kr/lt645/result
