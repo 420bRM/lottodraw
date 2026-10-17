@@ -16,7 +16,7 @@ const crypto = require('crypto');
 
 const ROOT = path.join(__dirname, '..');
 const PAGES = ['index.html', 'about.html', 'contact.html', 'privacy.html', 'terms.html', 'statistics.html',
-    'tax.html', 'top-prize.html', 'mypage.html', 'ranking.html', 'admin.html'];
+    'tax.html', 'top-prize.html', 'mypage.html', 'ranking.html', 'admin.html', 'data.html'];
 const REF = /((?:src|href)=")((?:js|css)\/[\w.-]+\.(?:js|css))(?:\?v=[0-9a-f]*)?(")/g;
 
 function run() {

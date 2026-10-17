@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로또 당첨번호 데이터 무료 제공 (JSON · CSV) | lottodraw.kr</title>
+    <meta name="description" content="로또 6/45 1회부터 최신 회차까지 당첨번호 · 보너스 · 1~5등 당첨금 · 판매액을 JSON 파일과 CSV(엑셀)로 무료 제공합니다. 가입 · 키 없이 바로 받고, 매주 추첨 후 자동 갱신됩니다.">
+    <link rel="canonical" href="https://www.lottodraw.kr/data.html">
+    <meta name="google-adsense-account" content="ca-pub-9372871176021283">
+    <link rel="icon" href="/favicon.ico" sizes="32x32">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="stylesheet" href="css/site.css?v=f720922f">
+    <script src="js/i18n-dict.js?v=b0d02c53"></script>
+    <script src="js/i18n.js?v=3cb171da"></script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"Dataset","name":"로또 6/45 전 회차 당첨번호 · 당첨금 데이터","alternateName":"Lotto 6/45 winning numbers and prizes, every draw","description":"동행복권 로또 6/45의 1회(2002-12-07)부터 최신 회차까지 회차별 당첨번호 6개와 보너스 번호, 1등 당첨자 수와 1게임당 당첨금, 2~5등 당첨 게임 수와 1게임당 당첨금, 회차 판매액. 매주 토요일 추첨 결과가 나오면 자동으로 갱신됩니다.","url":"https://www.lottodraw.kr/data.html","isAccessibleForFree":true,"license":"https://www.lottodraw.kr/data.html#terms","inLanguage":"ko","temporalCoverage":"2002-12-07/..","keywords":["로또 당첨번호","로또 당첨번호 JSON","로또 API","로또 당첨번호 엑셀","Lotto 6/45"],"creator":{"@type":"Organization","name":"lottodraw.kr","url":"https://www.lottodraw.kr/"},"distribution":[{"@type":"DataDownload","name":"lotto-data.json","encodingFormat":"application/json","contentUrl":"https://www.lottodraw.kr/lotto-data.json"},{"@type":"DataDownload","name":"prize-data.json","encodingFormat":"application/json","contentUrl":"https://www.lottodraw.kr/prize-data.json"}]}</script>
+    <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "91c08d8a39d944e69c10024f2314b955"}'></script><!-- End Cloudflare Web Analytics -->
+    <style>
+        /* 이 페이지에만 쓰는 코드 상자 · 주소 줄 */
+        .data-code { overflow-x: auto; margin: 0 0 16px; padding: 12px 14px; background: var(--head); border: 1px solid var(--line); border-radius: 8px; font-size: 13px; line-height: 1.55; }
+        .prose code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.92em; overflow-wrap: anywhere; }
+        .data-code code { font-size: inherit; overflow-wrap: normal; }
+        .data-status { padding: 10px 14px; background: var(--head); border-radius: 8px; }
+        .data-files td:first-child { text-align: left; }
+        .data-files td:last-child { text-align: left; }
+        .data-fields td, .data-fields th { text-align: left; white-space: normal; }
+        .data-fields td:first-child code { overflow-wrap: anywhere; }
+        .data-credit { white-space: pre-wrap; overflow-wrap: anywhere; }
+        .data-copy { margin-left: 6px; }
+    </style>
+</head>
+<body>
+<div class="page">
+    <header class="banner">
+        <a class="brand" href="index.html">
+            <span class="brand-name">LOTTODRAW.KR</span>
+            <span class="brand-tag" data-i18n="brand.tag">당첨번호부터 통계·당첨금까지, 로또 데이터 플랫폼</span>
+        </a>
+        <div class="banner-right">
+            <div class="lang-switch" role="group" aria-label="Language">
+                <button type="button" data-lang-btn="ko">KO</button><button type="button" data-lang-btn="en">EN</button>
+            </div>
+        </div>
+    </header>
+    <nav class="nav" aria-label="주 메뉴" data-i18n-attr="aria-label:nav.aria">
+        <ul>
+            <li><a href="index.html" data-i18n="nav.index">생성기 · 통계</a></li>
+            <li><a href="draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="top-prize.html" data-i18n="nav.topPrize">TOP 50 당첨금</a></li>
+            <li><a href="tax.html" data-i18n="nav.tax">실수령액 계산</a></li>
+            <li><a href="blog/index.html" data-i18n="nav.blog">블로그</a></li>
+            <li><a href="about.html" data-i18n="nav.about">ABOUT</a></li>
+        </ul>
+    </nav>
+
+    <main class="prose">
+        <h1 data-i18n="od.h1">로또 당첨번호 데이터 (JSON · CSV)</h1>
+        <p class="intro" data-i18n="od.intro">로또 6/45 1회부터 최신 회차까지 당첨번호와 1~5등 당첨금을 JSON 파일로 무료 제공합니다. 가입이나 키 없이 바로 받을 수 있고, 앱 · 엑셀 · 블로그 · 연구 어디에 쓰셔도 됩니다. 쓰실 때 출처로 lottodraw.kr 링크를 남겨 주십시오.</p>
+        <p class="data-status" id="data-status" role="status" data-i18n="od.statusStatic">매주 토요일 추첨 결과가 나오면 자동으로 갱신됩니다.</p>
+
+        <h2 data-i18n="od.filesH">파일 주소</h2>
+        <div class="table-wrap">
+            <table class="data-table data-files">
+                <thead><tr><th data-i18n="od.colFile">파일</th><th data-i18n="od.colHas">담긴 것</th></tr></thead>
+                <tbody>
+                    <tr>
+                        <td><a href="lotto-data.json"><code>https://www.lottodraw.kr/lotto-data.json</code></a><button type="button" class="btn btn-secondary btn-mini data-copy" data-copy="https://www.lottodraw.kr/lotto-data.json" data-i18n="od.copy">복사</button></td>
+                        <td data-i18n="od.lottoHas">회차, 추첨일, 당첨번호 6개, 보너스 번호, 1등 당첨자 수, 1등 1게임당 당첨금</td>
+                    </tr>
+                    <tr>
+                        <td><a href="prize-data.json"><code>https://www.lottodraw.kr/prize-data.json</code></a><button type="button" class="btn btn-secondary btn-mini data-copy" data-copy="https://www.lottodraw.kr/prize-data.json" data-i18n="od.copy">복사</button></td>
+                        <td data-i18n="od.prizeHas">2~5등 당첨 게임 수와 1게임당 당첨금, 회차 판매액</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <p data-i18n="od.cors">다른 사이트의 웹 페이지에서도 바로 불러올 수 있습니다(CORS 허용). 두 파일 모두 최신 회차가 맨 앞에 옵니다.</p>
+
+        <h2 data-i18n="od.csvH">CSV(엑셀)로 받기</h2>
+        <p data-i18n="od.csvP">두 파일을 회차별로 합쳐 CSV 파일 하나로 내려받습니다. 엑셀에서 바로 열립니다.</p>
+        <p><button type="button" class="btn" id="csv-btn" data-i18n="od.csvBtn">CSV 내려받기</button></p>
+        <p class="calc-error" id="csv-error" role="alert"></p>
+
+        <h2 data-i18n="od.whenH">갱신 시점</h2>
+        <p data-i18n="od.whenP">추첨은 매주 토요일 오후 8시 35분입니다. 결과가 나오면 보통 그날 밤 새 회차가 들어가고, 늦어도 일요일 새벽에는 들어갑니다. 1등 금액이 늦게 확정되는 경우를 대비해 월요일 오전까지 최근 회차를 한 번 더 확인합니다. 자동으로 받는 프로그램이라면 토요일 밤이나 일요일 · 월요일에 한 번 받으면 충분합니다 — 몇 분마다 받을 필요는 없습니다.</p>
+
+        <h2 data-i18n="od.formatH">형식</h2>
+        <h3><code>lotto-data.json</code></h3>
+        <pre class="data-code"><code>{
+  "totalDraws": 1245,
+  "lastUpdated": "2026-10-10",
+  "draws": [
+    {
+      "round": 1245,
+      "date": "2026-10-10",
+      "numbers": [4, 5, 25, 28, 32, 42],
+      "bonus": 12,
+      "firstPrizeWinners": 10,
+      "firstPrizeAmount": 3006515775
+    },
+    …
+  ]
+}</code></pre>
+        <div class="table-wrap">
+            <table class="data-table data-fields">
+                <thead><tr><th data-i18n="od.colField">항목</th><th data-i18n="od.colMeaning">뜻</th></tr></thead>
+                <tbody>
+                    <tr><td><code>totalDraws</code></td><td data-i18n="od.fTotal">들어 있는 회차 수</td></tr>
+                    <tr><td><code>lastUpdated</code></td><td data-i18n="od.fUpdated">마지막으로 반영한 추첨일 (YYYY-MM-DD)</td></tr>
+                    <tr><td><code>draws</code></td><td data-i18n="od.fDraws">회차 목록. 최신 회차가 맨 앞</td></tr>
+                    <tr><td><code>round</code></td><td data-i18n="od.fRound">회차</td></tr>
+                    <tr><td><code>date</code></td><td data-i18n="od.fDate">추첨일 (YYYY-MM-DD)</td></tr>
+                    <tr><td><code>numbers</code></td><td data-i18n="od.fNumbers">당첨번호 6개, 작은 수부터</td></tr>
+                    <tr><td><code>bonus</code></td><td data-i18n="od.fBonus">보너스 번호</td></tr>
+                    <tr><td><code>firstPrizeWinners</code></td><td data-i18n="od.fWinners">1등 당첨 게임 수. 0이면 1등이 없어 이월된 회차</td></tr>
+                    <tr><td><code>firstPrizeAmount</code></td><td data-i18n="od.fAmount">1등 1게임당 당첨금 (원, 세전). 1등이 없으면 0</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3><code>prize-data.json</code></h3>
+        <pre class="data-code"><code>{
+  "lastUpdated": "2026-10-10",
+  "draws": [
+    { "round": 1245, "w2": 91, "a2": 55064392, "w3": 3102, "a3": 1615365,
+      "w4": 163177, "a4": 50000, "w5": 2786728, "a5": 5000, "sales": 124358734000 },
+    …
+  ]
+}</code></pre>
+        <div class="table-wrap">
+            <table class="data-table data-fields">
+                <thead><tr><th data-i18n="od.colField">항목</th><th data-i18n="od.colMeaning">뜻</th></tr></thead>
+                <tbody>
+                    <tr><td><code>w2</code> ~ <code>w5</code></td><td data-i18n="od.fW">2~5등 당첨 게임 수</td></tr>
+                    <tr><td><code>a2</code> ~ <code>a5</code></td><td data-i18n="od.fA">2~5등 1게임당 당첨금 (원, 세전)</td></tr>
+                    <tr><td><code>sales</code></td><td data-i18n="od.fSales">그 회차 판매액 (원)</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <p data-i18n-html="od.fExtra">두 파일에는 설명용 항목(<code>source</code>, <code>note</code>)이 더 있을 수 있습니다. 회차는 <code>round</code> 로 맞춰 합치면 됩니다.</p>
+
+        <h2 data-i18n="od.exampleH">예시 코드</h2>
+        <h3>JavaScript</h3>
+        <pre class="data-code"><code>const res = await fetch('https://www.lottodraw.kr/lotto-data.json');
+const { draws } = await res.json();
+const latest = draws[0];
+console.log(latest.round, latest.numbers, latest.bonus);</code></pre>
+        <h3>Python</h3>
+        <pre class="data-code"><code>import requests
+
+draws = requests.get('https://www.lottodraw.kr/lotto-data.json', timeout=10).json()['draws']
+latest = draws[0]
+print(latest['round'], latest['numbers'], latest['bonus'])</code></pre>
+
+        <h2 id="terms" data-i18n="od.termsH">이용 조건</h2>
+        <ul>
+            <li data-i18n="od.t1">무료입니다. 개인 · 상업 목적 모두 가입이나 신청 없이 쓰실 수 있습니다.</li>
+            <li data-i18n="od.t2">쓰시는 화면이나 글에 출처로 lottodraw.kr 과 링크(https://www.lottodraw.kr/)를 보이게 남겨 주십시오. 아래 문구를 그대로 붙여 넣으셔도 됩니다.</li>
+            <li data-i18n="od.t3">원자료는 동행복권이 발표한 추첨 결과입니다. 옮기는 과정에서 잘못이 생길 수 있으니, 당첨 확인처럼 중요한 일은 동행복권 공식 결과로 확인하십시오. 이 자료를 써서 생긴 일에 대해 lottodraw.kr 은 책임지지 않습니다.</li>
+            <li data-i18n="od.t4">항목을 빼거나 이름을 바꿔야 할 때는 이 페이지에 먼저 알립니다. 새 항목은 알림 없이 더해질 수 있습니다.</li>
+            <li data-i18n="od.t5">사이트 화면(회차별 당첨번호 표 등)을 긁어 가기보다 위 파일을 받으시는 편이 빠르고 정확합니다.</li>
+        </ul>
+        <pre class="data-code data-credit"><code id="credit-html">&lt;a href="https://www.lottodraw.kr/"&gt;로또 데이터: lottodraw.kr&lt;/a&gt;</code></pre>
+        <p><button type="button" class="btn btn-secondary btn-mini" id="credit-copy" data-i18n="od.creditCopy">출처 문구 복사</button></p>
+        <p data-i18n-html="od.contact">다른 형식이 필요하거나 자료에서 잘못을 찾으시면 <a href="mailto:contact@lottodraw.kr">contact@lottodraw.kr</a> 로 알려 주십시오.</p>
+
+        <p class="page-actions"><a class="btn" href="draws.html" data-i18n="od.back">회차별 당첨번호 보기</a></p>
+    </main>
+
+    <footer class="footer">
+        <p><a href="privacy.html" data-i18n="footer.privacy">개인정보 처리방침</a> · <a href="terms.html" data-i18n="footer.terms">이용약관</a> · <a href="contact.html" data-i18n="footer.contact">문의</a></p>
+        <p data-i18n-html="footer.copy">&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권</p>
+    </footer>
+</div>
+<script>
+(function () {
+    'use strict';
+    const t = (k, ko) => (window.I18N ? I18N.t(k, ko) : ko);
+    const f = (k, vars) => (window.I18N ? I18N.f(k, vars) : k);
+    const en = () => !!(window.I18N && I18N.lang === 'en');
+
+    // 복사: 클립보드가 막힌 브라우저는 보이지 않는 글상자로
+    async function copyText(text, btn) {
+        let ok = false;
+        try { await navigator.clipboard.writeText(text); ok = true; } catch (e) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.setAttribute('readonly', '');
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            try { ok = document.execCommand('copy'); } catch (e2) { ok = false; }
+            ta.remove();
+            btn.focus();
+        }
+        const old = btn.textContent;
+        btn.textContent = ok ? t('od.copied', '복사했습니다') : t('od.copyFail', '복사하지 못했습니다');
+        setTimeout(() => { btn.textContent = old; }, 1600);
+    }
+    document.querySelectorAll('[data-copy]').forEach(b => b.addEventListener('click', () => copyText(b.dataset.copy, b)));
+    if (en()) document.getElementById('credit-html').textContent = '<a href="https://www.lottodraw.kr/">Lotto data: lottodraw.kr</a>';
+    document.getElementById('credit-copy').addEventListener('click', e => copyText(document.getElementById('credit-html').textContent, e.currentTarget));
+
+    // 지금 파일에 든 회차 · 갱신일. CSV 도 같은 자료로 만든다
+    let lotto = null;
+    let prize = null;
+    const load = () => Promise.all([
+        lotto || fetch('lotto-data.json', { cache: 'no-cache' }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(d => (lotto = d)),
+        prize || fetch('prize-data.json', { cache: 'no-cache' }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(d => (prize = d)),
+    ]);
+    load().then(() => {
+        const draws = lotto.draws || [];
+        if (!draws.length) return;
+        const status = document.getElementById('data-status');
+        status.removeAttribute('data-i18n');   // 나중에 번역을 다시 칠해도 이 문장을 정적 문구로 되돌리지 않게
+        status.textContent = f('od.status', {
+            from: draws[draws.length - 1].round, to: draws[0].round, date: lotto.lastUpdated || draws[0].date,
+        });
+    }).catch(() => { /* 그대로 둔다(정적 문구) */ });
+
+    // 엑셀이 한글을 깨뜨리지 않게 앞에 BOM 을 붙인다. 순서는 파일과 같게(최신 회차 먼저)
+    function csv() {
+        const byRound = new Map((prize.draws || []).map(p => [p.round, p]));
+        const head = en()
+            ? ['round', 'date', 'n1', 'n2', 'n3', 'n4', 'n5', 'n6', 'bonus', 'first_winners', 'first_prize_per_game',
+                'second_winners', 'second_prize_per_game', 'third_winners', 'third_prize_per_game',
+                'fourth_winners', 'fourth_prize_per_game', 'fifth_winners', 'fifth_prize_per_game', 'sales']
+            : ['회차', '추첨일', '번호1', '번호2', '번호3', '번호4', '번호5', '번호6', '보너스', '1등 당첨 게임 수', '1등 1게임당 당첨금',
+                '2등 당첨 게임 수', '2등 1게임당 당첨금', '3등 당첨 게임 수', '3등 1게임당 당첨금',
+                '4등 당첨 게임 수', '4등 1게임당 당첨금', '5등 당첨 게임 수', '5등 1게임당 당첨금', '판매액'];
+        const v = x => (x == null ? '' : String(x));
+        const rows = lotto.draws.map(d => {
+            const p = byRound.get(d.round) || {};
+            return [d.round, d.date].concat(d.numbers, [d.bonus, d.firstPrizeWinners, d.firstPrizeAmount,
+                p.w2, p.a2, p.w3, p.a3, p.w4, p.a4, p.w5, p.a5, p.sales]).map(v).join(',');
+        });
+        return '﻿' + [head.join(',')].concat(rows).join('\r\n') + '\r\n';
+    }
+    document.getElementById('csv-btn').addEventListener('click', () => {
+        const err = document.getElementById('csv-error');
+        err.textContent = '';
+        load().then(() => {
+            const draws = lotto.draws;
+            const blob = new Blob([csv()], { type: 'text/csv;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `lottodraw-${draws[draws.length - 1].round}-${draws[0].round}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+        }).catch(() => { err.textContent = t('od.csvFail', '자료를 불러오지 못했습니다. 잠시 뒤 다시 눌러 주십시오.'); });
+    });
+}());
+</script>
+</body>
+</html>
