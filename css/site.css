@@ -276,7 +276,9 @@ details[open] > summary.card-title { padding-bottom: 0; }
 }
 .patterns label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .patterns input { flex: none; margin: 0; }
-.patterns-actions { display: flex; gap: 8px; margin-top: 10px; }
+.patterns-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+/* 패턴 카드의 내 설정 저장 · 불러오기(회원, 2026-10-17) — 오른쪽에 붙이고, 한 줄에 다 들지 않으면 다음 줄 오른쪽으로 */
+.patterns-set { display: flex; gap: 6px; margin-left: auto; }
 
 /* 생성기 구간에서는 카드 세로를 꽉 채우도록 체크 목록을 고르게 벌린다 */
 #sec-generator #patterns-title + .card-body { display: flex; flex-direction: column; }
