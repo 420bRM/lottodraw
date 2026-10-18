@@ -977,6 +977,9 @@ window.I18N_DICT = {
     'blog.next':     { ko: '다음 글', en: 'Next' },
     'blog.prevNextAria': { ko: '이전 글과 다음 글', en: 'Previous and next articles' },
     'blog.readMore': { ko: '이어서 읽기 <span class="arrow">→</span>', en: 'Keep reading <span class="arrow">→</span>' },
+    'blog.sortAria': { ko: '정렬', en: 'Sort' },
+    'blog.sortBase': { ko: '기본 순서', en: 'Default order' },
+    'blog.sortViews': { ko: '많이 읽은 순', en: 'Most read' },
     // 조회수(js/views.js). {n} 에 1,234 처럼 쉼표를 찍은 수가 들어간다
     'views.n':       { ko: '조회 {n}', en: '{n} views' },
     'views.one':     { ko: '조회 {n}', en: '{n} view' },
