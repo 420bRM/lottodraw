@@ -34,6 +34,7 @@
 //   mday                 { day, n } — 오늘(UTC 날짜, Resend 하루 한도 기준) 보낸 결과 메일 수
 //   mailkey              수신 거부 링크 서명용 비밀값(처음 쓸 때 만든다)
 //   e:<한국 날짜>        { gen-share, gen-print, post-share, post-sns } — 공유 · 출력 단추 하루 횟수(TAP_KINDS). 누가 눌렀는지는 없다
+//   v:<글>               조회수(숫자) — 블로그 글마다 한 줄(누구나 본다). 같은 브라우저의 같은 글은 하루 한 번만 온다(js/views.js). 누가 읽었는지는 없다
 //   meta                 { users, trials, subs }
 //
 // 이름·사진은 받지 않는다. 이메일은 "로그인한 계정" 표시, 문의 응대, 회원이 켠 "추첨 결과 메일"에만 쓴다.
@@ -464,6 +465,19 @@ const OPS = {
         day[kind] = (day[kind] || 0) + 1;
         await this.storage.put(k, day);
         return { ok: true };
+    },
+
+    // 블로그 조회수(index.js 의 /api/view · /api/views). 글마다 한 줄, 횟수만
+    async view({ post }) {
+        const n = ((await this.storage.get('v:' + post)) || 0) + 1;
+        await this.storage.put('v:' + post, n);
+        return { views: { [post]: n } };
+    },
+    async views({ posts }) {
+        const got = await this.storage.get(posts.map(p => 'v:' + p));
+        const out = {};
+        posts.forEach(p => { out[p] = got.get('v:' + p) || 0; });
+        return { views: out };
     },
 
     // 관리자 페이지: 날짜별 집계, 최근 날짜가 먼저

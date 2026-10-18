@@ -114,6 +114,8 @@ async function route(request, env, ctx) {
     if (path === '/api/comments' && method === 'POST') return addComment(request, env, ctx);
     if (path === '/api/comments/delete' && method === 'POST') return deleteComment(request, env);
     if (path === '/api/tap' && method === 'POST') return tap(request, env);
+    if (path === '/api/view' && method === 'POST') return view(request, env);
+    if (path === '/api/views' && method === 'GET') return getViews(request, env, url);
 
     if (path.startsWith('/api/admin/')) {
         if (!adminOk(request, env)) throw new HttpError(401, 'unauthorized', '관리자 토큰이 맞지 않습니다.');
@@ -1026,6 +1028,29 @@ async function tap(request, env) {
     await limited(env.TAP_LIMIT, 'tap:' + (request.headers.get('CF-Connecting-IP') || 'local'));
     await community(env, 'tap', { kind, now: Date.now() });
     return new Response(null, { status: 204, headers: corsHeaders(request, env) });
+}
+
+/* ───── 블로그 조회수 (js/views.js) ───── */
+
+// 글을 열면 브라우저가 {"p": 글 이름} 만 보내고(text/plain, 미리 묻기 없음) 센 뒤의 수를 받는다. 같은 브라우저의 같은 글은
+// 하루 한 번만 보낸다(브라우저가 거른다). 기기 · 회원 정보는 받지 않는다. 우리 사이트(Origin)에서 온 것만, 같은 IP 1분 60번까지(VIEW_LIMIT).
+// 스크립트를 돌리는 검색 로봇 · 측정 도구는 세지 않는다(스크립트를 안 돌리는 로봇은 애초에 보내지 않는다)
+const BOT_UA = /bot|crawl|spider|slurp|yeti|daum\/|headless|lighthouse/i;
+
+async function view(request, env) {
+    if (!allowedOrigin(request, env)) throw new HttpError(403, 'bad_origin', '허용되지 않은 사이트입니다.');
+    const post = postId((await readJson(request)).p);
+    if (!env.COMMUNITY || BOT_UA.test(request.headers.get('User-Agent') || '')) return json(request, env, { views: {} });
+    await limited(env.VIEW_LIMIT, 'view:' + (request.headers.get('CF-Connecting-IP') || 'local'));
+    return json(request, env, await community(env, 'view', { post }));
+}
+
+// 글별 조회수. 누구나 본다(목록은 카드의 글 이름을 한 번에 보낸다)
+async function getViews(request, env, url) {
+    const ids = String(url.searchParams.get('ids') || '').split(',').map(s => s.trim()).filter(Boolean);
+    if (!ids.length || ids.length > 100 || !ids.every(i => POST_RE.test(i))) throw new HttpError(400, 'bad_ids', '글 이름이 올바르지 않습니다.');
+    const got = env.COMMUNITY ? await community(env, 'views', { posts: [...new Set(ids)] }) : { views: {} };
+    return json(request, env, got, 200, { 'Cache-Control': 'public, max-age=60' }, true);
 }
 
 /* ───── 블로그 댓글 (js/comments.js) ───── */

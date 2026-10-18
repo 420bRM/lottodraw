@@ -1350,6 +1350,8 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 .cat-dot[data-band="3"] { background: var(--ball-3); }
 .cat-dot[data-band="5"] { background: var(--ball-5); }
 .post-cat { display: inline-flex; align-items: center; gap: 6px; }
+.post-views { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }   /* 조회수 (js/views.js) */
+.stat-scope .post-views::before { content: "·"; margin: 0 7px 0 6px; }
 
 /* 목록: 한 줄에 한 편. 본문 앞부분을 미리 보여 주고 아래로 갈수록 흐리게 덮는다 */
 .blog-index .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 20px; padding: 0; list-style: none; }

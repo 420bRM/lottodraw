@@ -899,7 +899,7 @@ window.I18N_DICT = {
 
     'pv.h1':   { en: 'Privacy Policy' },
     'pv.h2a':  { en: '1. What this site collects itself' },
-    'pv.p1':   { en: 'Signing up is optional; every free feature works without an account. The numbers you fix or exclude in the generator, and the history of numbers generated, stay in your own browser\u2019s storage (localStorage), are not transmitted anywhere, and disappear when you clear the site data in your browser. When you open the live chat, a random number stored in this browser is sent to the chat server so that several tabs of the same browser count as one person in the online count. It is used only for that count, and the server discards it when the connection closes without keeping it. When you press the Share or Print button in the number generator, or a share button on a blog post, only which button was pressed is sent to the server and counted per day; your numbers, the post address and device information are not sent, and who pressed it is not recorded. Information is received only when you order a paid pass or sign in with Google, as set out in sections 3 and 4.' },
+    'pv.p1':   { en: 'Signing up is optional; every free feature works without an account. The numbers you fix or exclude in the generator, and the history of numbers generated, stay in your own browser\u2019s storage (localStorage), are not transmitted anywhere, and disappear when you clear the site data in your browser. When you open the live chat, a random number stored in this browser is sent to the chat server so that several tabs of the same browser count as one person in the online count. It is used only for that count, and the server discards it when the connection closes without keeping it. When you press the Share or Print button in the number generator, or a share button on a blog post, only which button was pressed is sent to the server and counted per day; your numbers, the post address and device information are not sent, and who pressed it is not recorded. When you open a blog post, only which post it is is sent to the server to count views per post. The same post is counted once a day per browser, and for that the date it was counted is kept in this browser\u2019s storage. Device information is not sent, and who read it is not recorded. Information is received only when you order a paid pass or sign in with Google, as set out in sections 3 and 4.' },
     'pv.h2b':  { en: '2. Advertising (Google AdSense)' },
     'pv.p2':   { en: 'This site shows Google AdSense advertising. Third-party vendors, including Google, may use cookies to serve ads based on your visits to this site and others. Personalized advertising can be turned off in <a href="https://adssettings.google.com" rel="noopener">Google Ad Settings</a>.' },
     'pv.h2c':  { en: '3. Ordering a paid pass' },
@@ -977,6 +977,9 @@ window.I18N_DICT = {
     'blog.next':     { ko: '다음 글', en: 'Next' },
     'blog.prevNextAria': { ko: '이전 글과 다음 글', en: 'Previous and next articles' },
     'blog.readMore': { ko: '이어서 읽기 <span class="arrow">→</span>', en: 'Keep reading <span class="arrow">→</span>' },
+    // 조회수(js/views.js). {n} 에 1,234 처럼 쉼표를 찍은 수가 들어간다
+    'views.n':       { ko: '조회 {n}', en: '{n} views' },
+    'views.one':     { ko: '조회 {n}', en: '{n} view' },
 
     /* ───── 로그인 · 좋아요 (js/account.js) ───── */
     'acct.login':     { ko: '로그인', en: 'Sign in' },

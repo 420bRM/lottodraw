@@ -630,3 +630,49 @@ test('공유 · 출력 집계: 우리 사이트에서 보낸 종류만 한국 �
     env.TAP_LIMIT = { limit: async () => ({ success: false }) };
     assert.equal((await tap({ k: 'gen-share' })).status, 429);
 });
+
+test('블로그 조회수: 우리 사이트에서 연 글만 세고, 누구나 글별 수를 본다', async () => {
+    const env = await fresh();
+    // 브라우저 fetch(text/plain) 처럼 보낸다(미리 묻기 없음)
+    const view = async (body, { origin = ORIGIN, ua = 'Mozilla/5.0 (iPhone) Safari/604.1' } = {}) => {
+        const res = await worker.fetch(new Request('https://api.lottodraw.kr/api/view', {
+            method: 'POST', body: JSON.stringify(body),
+            headers: Object.assign({ 'Content-Type': 'text/plain;charset=UTF-8', 'User-Agent': ua }, origin ? { Origin: origin } : {}),
+        }), env, ctx);
+        return { status: res.status, data: await res.json(), cors: res.headers.get('Access-Control-Allow-Origin') };
+    };
+    let r = await view({ p: 'lotto-tax-guide' });
+    assert.equal(r.status, 200);
+    assert.deepEqual(r.data.views, { 'lotto-tax-guide': 1 }, '센 뒤의 수를 돌려준다');
+    assert.equal(r.cors, ORIGIN, '글 페이지가 돌려받은 수를 읽을 수 있다');
+    await view({ p: 'lotto-tax-guide' });
+    await view({ p: 'is-number-34-special' });
+
+    assert.equal((await view({ p: 'Bad Slug!' })).status, 400, '글 이름 모양이 아니면 거절');
+    assert.equal((await view({})).status, 400);
+    assert.equal((await view({ p: 'lotto-tax-guide' }, { origin: 'https://evil.example' })).status, 403, '다른 사이트');
+    assert.equal((await view({ p: 'lotto-tax-guide' }, { origin: null })).status, 403, 'Origin 없음');
+    for (const ua of ['Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)', 'Mozilla/5.0 (compatible; Yeti/1.1; +https://naver.me/spd)',
+        'Mozilla/5.0 (X11; Linux x86_64) HeadlessChrome/120.0', 'Mozilla/5.0 Chrome/120.0 Chrome-Lighthouse']) {
+        r = await view({ p: 'lotto-tax-guide' }, { ua });
+        assert.equal(r.status, 200);
+        assert.deepEqual(r.data.views, {}, '로봇은 세지 않는다: ' + ua);
+    }
+
+    // 읽기: 아무 사이트에서나(CORS *), 없는 글은 0
+    const g = await call(env, 'GET', '/api/views?ids=lotto-tax-guide,is-number-34-special,why-jackpots-split,lotto-tax-guide', { headers: { Origin: 'https://elsewhere.example' } });
+    assert.equal(g.status, 200);
+    assert.deepEqual(g.data.views, { 'lotto-tax-guide': 2, 'is-number-34-special': 1, 'why-jackpots-split': 0 });
+    assert.equal(g.headers.get('Access-Control-Allow-Origin'), '*');
+    assert.match(g.headers.get('Cache-Control'), /max-age=60/);
+    assert.equal((await call(env, 'GET', '/api/views')).status, 400);
+    assert.equal((await call(env, 'GET', '/api/views?ids=a,B')).status, 400);
+    assert.equal((await call(env, 'GET', '/api/views?ids=' + Array.from({ length: 101 }, (_, i) => 'p' + i).join(','))).status, 400, '한 번에 100개까지');
+    assert.equal(env.COMMUNITY._m.get('v:lotto-tax-guide'), 2, '글마다 숫자 한 줄');
+    assert.ok(![...env.COMMUNITY._m.values()].some(v => JSON.stringify(v).includes('iPhone')), '누가 읽었는지는 남기지 않는다');
+
+    // 같은 IP 가 너무 자주 보내면 막는다
+    env.VIEW_LIMIT = { limit: async () => ({ success: false }) };
+    assert.equal((await view({ p: 'lotto-tax-guide' })).status, 429);
+    assert.equal(env.COMMUNITY._m.get('v:lotto-tax-guide'), 2);
+});

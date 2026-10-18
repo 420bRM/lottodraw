@@ -234,6 +234,8 @@ function preview(post) {
 const catOf = name => CATEGORIES.find(c => c.name === name) || { name, en: undefined, band: undefined };
 const catDot = c => `<span class="cat-dot"${c.band ? ` data-band="${c.band}"` : ''} aria-hidden="true"></span>`;
 const catBadge = c => `<span class="post-cat">${catDot(c)}<span${tr(c.en && esc(c.en))}>${esc(c.name)}</span></span>`;
+// 조회수 자리. 수는 js/views.js 가 worker 에서 받아 채운다(빌드는 매주라 미리 적지 않는다)
+const viewsTag = slug => `<span class="post-views" data-post="${esc(slug)}" hidden></span>`;
 
 module.exports = function buildBlog(ctx) {
     const { shell, write, SITE, OG_IMAGE } = ctx;
@@ -361,7 +363,7 @@ module.exports = function buildBlog(ctx) {
             h1: p.title,
             h1En: p.en && p.en.title,
             desc: p.description,
-            scope: catBadge(p.category),
+            scope: catBadge(p.category) + viewsTag(p.slug),
             lead: `<span${tr(p.en && esc(p.en.description))}>${esc(p.description)}</span>`,
             ld: [{
                 '@type': 'BlogPosting',
@@ -378,7 +380,7 @@ module.exports = function buildBlog(ctx) {
                 publisher: { '@type': 'Organization', name: 'lottodraw.kr', url: SITE + '/' },
             }],
             body: [toc, p.body, share, related, postNav],
-            scripts: ['js/share.js'],
+            scripts: ['js/share.js', 'js/views.js'],
         }));
     });
 
@@ -394,7 +396,7 @@ module.exports = function buildBlog(ctx) {
     const cards = posts.map(p => {
         const pv = preview(p);
         return `<li class="post-card" data-cat="${esc(p.category.name)}" data-pick="${p.pick}">`
-            + `<div class="post-head">${catBadge(p.category)}</div>`
+            + `<div class="post-head">${catBadge(p.category)}${viewsTag(p.slug)}</div>`
             + `<h2 class="post-title"><a href="${p.slug}.html"${tr(p.en && esc(p.en.title))}>${esc(p.title)}</a></h2>`
             + `<p class="post-desc"${tr(p.en && esc(p.en.description))}>${esc(p.description)}</p>`
             + `<div class="post-preview" aria-hidden="true"${tr(pv.en)}>${pv.ko}</div>`
@@ -426,6 +428,7 @@ module.exports = function buildBlog(ctx) {
             blogPost: posts.map(p => ({ '@type': 'BlogPosting', headline: p.title, url: `${SITE}/${OUT}/${p.slug}.html`, datePublished: p.date })),
         }],
         body: [chips, '<ol class="post-list">' + cards.join('\n') + '</ol>'],
+        scripts: ['js/views.js'],
         // 목록 순서와 카테고리 단추.
         // 처음: 흥미도(data-pick) + 무작위로 줄 세운다 — 방문할 때마다 조금씩 다르다.
         // 단추: 그 카테고리 글을 맨 위로 가나다순으로 모으고, 나머지는 흐리게 그 아래에 둔다.
