@@ -28,16 +28,15 @@
 //   board                랭킹 색인 판(BOARD_VERSION) — 없으면 처음 랭킹을 볼 때 u: 를 한 번 훑어 b: 를 채운다
 //   k:<구글 계정 번호>   { g: [{ id, r, n, s, at }] } — 내 번호(산 번호). r 회차, n 번호 6개, s 'm' 직접 입력 · 'g' 생성기에서 저장.
 //                        본인에게만 보인다. 등수는 저장하지 않는다 — 보는 쪽(마이페이지)이 lotto-data.json 으로 그때그때 맞춘다
-//   ms:<구글 계정 번호>  { ref, at, last: { r, n } } — 이번 주 생성 번호 메일 구독. last 는 지난번 메일로 보낸 번호(다음 메일에 결과 한 줄)
-//   mw:<회차>            { cursor, sent, tries, done, at } — 그 회차 메일을 어디까지 보냈나. 2주 지나면 지운다
-//   mday                 { day, n } — 오늘(UTC 날짜, Resend 하루 한도 기준) 보낸 생성 번호 메일 수
-//   mailkey              수신 거부 링크 서명 · 메일 번호 씨앗용 비밀값(처음 쓸 때 만든다)
+//   ms:<구글 계정 번호>  { ref, at } — 추첨 결과 메일 구독 (2026-10-17 의 이번 주 생성 번호 메일 구독이 그대로 이어진다. 그때 쓰던 last 칸은 쓰지 않는다)
+//   mr:<회차>            { cursor, sent, tries, done, at } — 그 회차 결과 메일을 어디까지 보냈나. 2주 지나면 지운다
+//                        (mw:<회차> 는 예전 생성 번호 메일의 같은 기록 — 남은 것은 같은 회차 결과 메일을 보낼 때 치운다)
+//   mday                 { day, n } — 오늘(UTC 날짜, Resend 하루 한도 기준) 보낸 결과 메일 수
+//   mailkey              수신 거부 링크 서명용 비밀값(처음 쓸 때 만든다)
 //   e:<한국 날짜>        { gen-share, gen-print, post-share, post-sns } — 공유 · 출력 단추 하루 횟수(TAP_KINDS). 누가 눌렀는지는 없다
 //   meta                 { users, trials, subs }
 //
-// 이름·사진은 받지 않는다. 이메일은 "로그인한 계정" 표시, 문의 응대, 회원이 켠 "이번 주 생성 번호 메일"에만 쓴다.
-
-import { makeGames, seeded } from './lotto.js';
+// 이름·사진은 받지 않는다. 이메일은 "로그인한 계정" 표시, 문의 응대, 회원이 켠 "추첨 결과 메일"에만 쓴다.
 
 export const SESSION_DAYS = 30;
 const TRIAL_MEMORY_DAYS = 365;
@@ -419,7 +418,7 @@ const OPS = {
         if (user.nick) await this.storage.delete('n:' + user.nick.toLowerCase());
         if (user.ref) await this.storage.delete('m:' + user.ref);
         await this.storage.delete('k:' + sub);   // 내 번호
-        if (await this.storage.delete('ms:' + sub)) await this.bump('subs', -1);   // 생성 번호 메일 구독
+        if (await this.storage.delete('ms:' + sub)) await this.bump('subs', -1);   // 추첨 결과 메일 구독
         await this.storage.delete('u:' + sub);
         await this.syncBoard(sub, null);
         await this.bump('users', -1);
@@ -562,7 +561,7 @@ const OPS = {
     },
 };
 
-/* ───── 내 번호 · 이번 주 생성 번호 메일 ───── */
+/* ───── 내 번호 · 추첨 결과 메일 ───── */
 // OPS 에 합친다(아래 Object.assign). 번호는 index.js 가 다듬어(cleanGame) 넘긴다
 const NUM_OPS = {
     async numbersGet({ sub }) {
@@ -612,7 +611,7 @@ const NUM_OPS = {
         const user = await this.storage.get('u:' + sub);
         if (!user) return { error: 'no_user' };
         const cur = await this.storage.get('ms:' + sub);
-        if (on && !cur) { await this.storage.put('ms:' + sub, { ref, at: now, last: null }); await this.bump('subs', 1); }
+        if (on && !cur) { await this.storage.put('ms:' + sub, { ref, at: now }); await this.bump('subs', 1); }
         if (!on && cur) { await this.storage.delete('ms:' + sub); await this.bump('subs', -1); }
         return { mail: !!on };
     },
@@ -628,63 +627,61 @@ const NUM_OPS = {
         return { ok: true };
     },
 
-    // 이번 회차에 보낼 다음 묶음(최대 limit 명). 번호는 (비밀값, 회차, 계정)으로 정해지는 씨앗으로 만든다 —
-    // 보낸 뒤 기록(mailCommit)이 실패해 다시 보내더라도 같은 번호가 간다. 저장은 하지 않는다
-    async mailPrepare({ round, limit, count }) {
-        const st = (await this.storage.get('mw:' + round)) || { cursor: '', sent: 0, tries: 0, done: false };
+    // 그 회차 결과 메일을 보낼 다음 묶음(구독자 최대 limit 명을 훑는다). 그 회차 번호를 내 번호에 저장한 구독자만 —
+    // 저장한 번호가 없으면 건너뛴다(보낼 것이 당첨번호뿐이다). 등수는 index.js 가 당첨번호와 맞춘다
+    async mailPrepare({ round, limit }) {
+        const st = (await this.storage.get('mr:' + round)) || { cursor: '', sent: 0, tries: 0, done: false };
         if (st.done) return { items: [], state: st };
         const page = await this.storage.list(Object.assign({ prefix: 'ms:', limit }, st.cursor ? { startAfter: st.cursor } : {}));
         const subs = [...page.keys()].map(k => k.slice(3));
         const users = subs.length ? await this.storage.get(subs.map(s => 'u:' + s)) : new Map();
+        const nums = subs.length ? await this.storage.get(subs.map(s => 'k:' + s)) : new Map();
         const items = [];
         let cursor = st.cursor;
         for (const sub of subs) {
             cursor = 'ms:' + sub;
             const m = page.get('ms:' + sub);
             const u = users.get('u:' + sub);
-            if (!u || !u.email) continue;
-            const games = makeGames(seeded(await this.mac('gen:' + round + ':' + sub)), count);
-            items.push({ sub, ref: m.ref, email: u.email, token: await this.unsubToken(m.ref), games, last: m.last && m.last.r < round ? m.last : null });
+            const k = nums.get('k:' + sub);
+            const games = k ? k.g.filter(x => x.r === round).map(x => x.n) : [];
+            if (!u || !u.email || !games.length) continue;
+            items.push({ sub, ref: m.ref, email: u.email, token: await this.unsubToken(m.ref), games });
         }
         return { items, cursor, more: page.size === limit, state: st };
     },
 
-    // 보낸 묶음 기록: 지난번 번호를 이번 번호로 바꾸고, 어디까지 보냈는지 · 오늘 몇 통인지 올린다
-    async mailCommit({ round, cursor, items, sent, done, now, day }) {
-        for (const it of items || []) {
-            const m = await this.storage.get('ms:' + it.sub);
-            if (m) { m.last = { r: round, n: it.games }; await this.storage.put('ms:' + it.sub, m); }
-        }
-        const st = (await this.storage.get('mw:' + round)) || { cursor: '', sent: 0, tries: 0, done: false };
+    // 보낸 묶음 기록: 어디까지 보냈는지 · 오늘 몇 통인지 올린다
+    async mailCommit({ round, cursor, sent, done, now, day }) {
+        const st = (await this.storage.get('mr:' + round)) || { cursor: '', sent: 0, tries: 0, done: false };
         st.cursor = cursor || st.cursor;
         st.sent += sent || 0;
         st.tries = 0;
         st.at = now;
         if (done) st.done = true;
-        await this.storage.put('mw:' + round, st);
+        await this.storage.put('mr:' + round, st);
         if (sent) {
             const d = (await this.storage.get('mday')) || { day: '', n: 0 };
             if (d.day !== day) { d.day = day; d.n = 0; }
             d.n += sent;
             await this.storage.put('mday', d);
         }
-        // 지난 회차 기록은 2주 뒤 지운다
-        await this.storage.delete(['mw:' + (round - 2), 'mw:' + (round - 3)]);
+        // 지난 회차 기록은 2주 뒤 지운다. 예전 생성 번호 메일의 같은 회차 기록(mw:, 1246회 하나뿐)도 함께
+        await this.storage.delete(['mr:' + (round - 2), 'mr:' + (round - 3), 'mw:' + round]);
         return { state: st };
     },
 
     // 보내기 실패: 세 번 연달아 실패하면 그 회차는 그만둔다(index.js 가 알린다)
     async mailFail({ round, now, max }) {
-        const st = (await this.storage.get('mw:' + round)) || { cursor: '', sent: 0, tries: 0, done: false };
+        const st = (await this.storage.get('mr:' + round)) || { cursor: '', sent: 0, tries: 0, done: false };
         st.tries += 1;
         st.at = now;
         if (st.tries >= (max || 3)) { st.done = true; st.gaveUp = true; }
-        await this.storage.put('mw:' + round, st);
+        await this.storage.put('mr:' + round, st);
         return { state: st };
     },
 
     async mailStatus({ round, day }) {
-        const st = (await this.storage.get('mw:' + round)) || null;
+        const st = (await this.storage.get('mr:' + round)) || null;
         const d = (await this.storage.get('mday')) || { day: '', n: 0 };
         return { state: st, today: d.day === day ? d.n : 0, subs: (await this.meta()).subs || 0 };
     },

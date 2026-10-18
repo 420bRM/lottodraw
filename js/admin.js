@@ -150,7 +150,7 @@
             [s.mail, '키 메일 발송', '켜짐 — 이메일을 적은 구매자에게 키를 메일로도 보냅니다', 'RESEND_API_KEY · MAIL_FROM 을 넣으면 키를 구매자 이메일로도 보냅니다 (README 4번)'],
             [s.login && !s.login.error, '구글 로그인 · 좋아요', s.login ? `켜짐 — 가입 ${s.login.users || 0}명 · 가입 무료 체험 ${s.login.trialDays ? s.login.trialDays + '일 켜짐' : '꺼짐'}(지금까지 ${s.login.trials || 0}건)` : '',
                 s.login && s.login.error ? '켜 두었지만 회원 저장소에 연결하지 못했습니다 — 잠시 뒤 새로 고쳐 보세요' : 'GOOGLE_CLIENT_ID 를 넣으면 켜집니다 (README 4번 8단계)'],
-            [s.mail && s.weekly, '이번 주 생성 번호 메일', s.weekly ? `켜짐 — 구독 ${s.weekly.subs}명 · ${s.weekly.round}회 ${s.weekly.state ? (s.weekly.state.gaveUp ? '보내기 실패로 멈춤' : s.weekly.state.done ? '발송 끝' : '보내는 중') + ` ${s.weekly.state.sent}통` : '금요일 09시부터 발송'} · 오늘 ${s.weekly.today}/${s.weekly.daily}통` : '',
+            [s.mail && s.weekly, '추첨 결과 메일', s.weekly ? `켜짐 — 구독 ${s.weekly.subs}명 · ${s.weekly.round}회 ${s.weekly.state ? (s.weekly.state.gaveUp ? '보내기 실패로 멈춤' : s.weekly.state.done ? '발송 끝' : '보내는 중') + ` ${s.weekly.state.sent}통` : '일요일 09시부터 발송'} · 오늘 ${s.weekly.today}/${s.weekly.daily}통` : '',
                 '키 메일(Resend)과 구글 로그인이 켜져 있으면 저절로 켜집니다'],
             [s.hooks.alive, '입금 자동 확인', '켜짐 (휴대폰 연결 살아 있음)', '꺼짐 — 위 "입금 알림 연결"을 설정하면 새벽에도 자동으로 열립니다'],
         ];

@@ -148,7 +148,7 @@ function lottoTax(prize) {
 // 1~87회는 1게임이 2,000원이라 금액이 훨씬 크다 — 평균 · 최고 · 최저 · 연도별 표는 88회부터 센다
 const TIER_FILE = 'statistics-prize-2-3.html';
 const TIER_SINCE = '2026-10-10';   // 2·3등 통계 페이지와 다른 페이지의 링크를 넣은 날
-const ABOUT_SINCE = '2026-10-17';  // About 주요 기능에 "내 번호 · 이번 주 생성 번호 메일" · "1등 판매점 통계" (2026-10-14: 한글 상호 "로또드로우", 2026-10-11: "로또 데이터 플랫폼" 소개 · 주요 기능 목록)
+const ABOUT_SINCE = '2026-10-18';  // About 주요 기능 "내 번호 · 추첨 결과 메일"(2026-10-17 "이번 주 생성 번호 메일"에서 바꿈) · "1등 판매점 통계" (2026-10-14: 한글 상호 "로또드로우", 2026-10-11: "로또 데이터 플랫폼" 소개 · 주요 기능 목록)
 const mean = a => a.reduce((s, v) => s + v, 0) / Math.max(1, a.length);
 const median = a => {
     const s = a.slice().sort(asc);

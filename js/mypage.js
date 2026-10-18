@@ -1,4 +1,4 @@
-/* 마이페이지 (mypage.html). 내 번호 · 내 정보 · 이용권 · 생성 번호 메일 · 점수/랭킹 · 계정 관리를 한곳에 모은다.
+/* 마이페이지 (mypage.html). 내 번호 · 내 정보 · 이용권 · 추첨 결과 메일 · 점수/랭킹 · 계정 관리를 한곳에 모은다.
  *
  * 로그인 정보는 js/account.js(LottoAccount)가, 이용권은 js/license.js(LottoLicense)가 이미 하는 일을 그대로 쓴다.
  * 순위는 /api/ranking(랭킹 페이지와 같은 길), 내 번호 · 메일 구독은 /api/me/numbers · /api/me/mail 에 묻는다.
@@ -284,12 +284,12 @@
         if (!on) toggle.classList.remove('btn-secondary');
         if (!ready && !on) toggle.disabled = true;
         fill('my-mail', [
-            el('p', { text: tr('my.mailLead', '매주 금요일 오전 9시쯤, 홈 번호 생성기와 같은 규칙(특수 패턴 16가지 제외)으로 만든 5게임을 메일로 보냅니다. 지난주 받은 번호의 결과도 한 줄 붙입니다.') }),
+            el('p', { text: tr('my.mailLead', '추첨 다음 날(일요일) 오전에 그 회차 당첨번호와, 위 내 번호에 저장한 그 회차 번호의 등수 · 맞은 번호를 메일로 보냅니다. 그 회차 번호를 저장하지 않은 주에는 보내지 않습니다.') }),
             row(tr('my.mailState', '상태'), on ? tr('my.mailIsOn', '받는 중') : tr('my.mailIsOff', '받지 않음')),
             row(tr('my.email', '이메일'), email || ''),
             el('div', { className: 'my-actions' }, [toggle]),
             !ready ? el('p', { className: 'my-muted', text: tr('my.mailNotReady', '메일 발송을 준비하고 있습니다.') }) : null,
-            el('p', { className: 'my-muted', text: tr('my.mailNote', '이번 주 생성 번호는 다음 회차를 예측하지 않고, 당첨 확률을 바꾸지 않습니다. 메일마다 수신 거부 링크가 있고, 여기서도 언제든 끌 수 있습니다. 광고는 넣지 않습니다.') }),
+            el('p', { className: 'my-muted', text: tr('my.mailNote', '당첨 여부는 복권 실물과 동행복권에서 한 번 더 확인해 주세요. 메일마다 수신 거부 링크가 있고, 여기서도 언제든 끌 수 있습니다. 광고는 넣지 않습니다.') }),
         ]);
     }
 
