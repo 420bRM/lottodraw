@@ -234,7 +234,8 @@ function preview(post) {
 const catOf = name => CATEGORIES.find(c => c.name === name) || { name, en: undefined, band: undefined };
 const catDot = c => `<span class="cat-dot"${c.band ? ` data-band="${c.band}"` : ''} aria-hidden="true"></span>`;
 const catBadge = c => `<span class="post-cat">${catDot(c)}<span${tr(c.en && esc(c.en))}>${esc(c.name)}</span></span>`;
-// 조회수 자리. 수는 js/views.js 가 worker 에서 받아 채운다(빌드는 매주라 미리 적지 않는다)
+// 조회수 자리. 수는 js/views.js 가 worker 에서 받아 채운다(빌드는 매주라 미리 적지 않는다).
+// 숫자는 글에서만 보인다 — 목록 카드의 자리는 숨긴 채 "많이 읽은 순" 정렬에만 쓴다
 const viewsTag = slug => `<span class="post-views" data-post="${esc(slug)}" hidden></span>`;
 
 module.exports = function buildBlog(ctx) {
