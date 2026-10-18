@@ -150,7 +150,7 @@ function lottoTax(prize) {
 // 1~87회는 1게임이 2,000원이라 금액이 훨씬 크다 — 평균 · 최고 · 최저 · 연도별 표는 88회부터 센다
 const TIER_FILE = 'statistics-prize-2-3.html';
 const TIER_SINCE = '2026-10-10';   // 2·3등 통계 페이지와 다른 페이지의 링크를 넣은 날
-const ABOUT_SINCE = '2026-10-18';  // About 주요 기능 "내 번호 · 추첨 결과 메일"(2026-10-17 "이번 주 생성 번호 메일"에서 바꿈) · "1등 판매점 통계" (2026-10-14: 한글 상호 "로또드로우", 2026-10-11: "로또 데이터 플랫폼" 소개 · 주요 기능 목록)
+const ABOUT_SINCE = '2026-10-18';  // About 주요 기능 "내 번호 · 추첨 결과 메일"(2026-10-17 "이번 주 생성 번호 메일"에서 바꿈) · "1등 판매점 통계" · 거리 삼각형 (2026-10-14: 한글 상호 "로또드로우", 2026-10-11: "로또 데이터 플랫폼" 소개 · 주요 기능 목록)
 const mean = a => a.reduce((s, v) => s + v, 0) / Math.max(1, a.length);
 const median = a => {
     const s = a.slice().sort(asc);
@@ -836,52 +836,62 @@ const ABOUT = {};
     });
 })();
 
-// AC값 계산기 + 차이 삼각형 (statistics-ac.html 의 인라인 스크립트 — 소스를 그대로 페이지에 싣는다. 브라우저에서 돈다).
-// 번호 6개를 받아 AC값을 적고, #ac-tri 에 차이 15개를 거꾸로 선 삼각형으로 그린다. 겹친 값은 같은 색 + 두 번호로 잇는 선,
-// 아래 목록에 겹침마다 "같은 간격 두 쌍"(차이가 둘씩 겹친다)인지 "3항 등차"(하나)인지 적는다. 처음엔 data-example(최근 회차)로 그린다
+// 차이(거리) 삼각형 — AC값 페이지 계산기(브라우저)와 About(빌드 때 미리 그림)가 같이 쓴다. 페이지에는 소스를 그대로 싣는다(ES5, 바깥 값을 쓰지 않는다).
+// 맨 위 줄은 번호 6개, 아래로 한 줄씩 내려갈수록 더 멀리 떨어진 두 번호의 차이(1칸 → 5칸). 칸은 두 번호의 한가운데 아래라 거꾸로 선 삼각형이 된다.
+// acTri: 칸 15개 · 값별 짝 · 겹친 값과 그 색. acTriSvg: 그림(겹친 값은 같은 색 칸 + 두 번호로 잇는 선). row(k) → [줄 이름, <text> 에 더할 속성]
+function acTri(nums) {
+    var COLORS = ['#e8590c', '#0c8599', '#7048e8', '#d6336c', '#5c940d', '#1971c2'];
+    var cells = [], byD = {}, color = {};
+    for (var k = 1; k < 6; k++) for (var i = 0; i + k < 6; i++) {
+        var d = nums[i + k] - nums[i];
+        cells.push({ k: k, i: i, d: d });
+        (byD[d] = byD[d] || []).push([nums[i], nums[i + k]]);
+    }
+    var reps = Object.keys(byD).map(Number).filter(function (v) { return byD[v].length > 1; }).sort(function (a, b) { return a - b; });
+    reps.forEach(function (v, j) { color[v] = COLORS[j % COLORS.length]; });
+    var distinct = Object.keys(byD).length;
+    return { cells: cells, byD: byD, reps: reps, color: color, distinct: distinct, ac: distinct - 5 };
+}
+function acTriSvg(nums, row, aria) {
+    var t = acTri(nums);
+    var band = function (n) { return n <= 10 ? 1 : n <= 20 ? 2 : n <= 30 ? 3 : n <= 40 ? 4 : 5; };
+    var S = 54, L = 40, T = 20, RH = 31, CW = 34, CH = 22;
+    var X = function (pos) { return L + S * pos; };
+    var W = L + S * 5 + 20, H = T + RH * 5 + 16;
+    var links = [], body = [], rows = [];
+    t.cells.forEach(function (c) {
+        var cx = X(c.i + c.k / 2), cy = T + RH * c.k, col = t.color[c.d];
+        if (col) links.push('<path class="ac-tri-link" stroke="' + col + '" fill="none" d="M' + X(c.i) + ',' + (T + 13) + ' L' + cx + ',' + (cy - CH / 2) + ' L' + X(c.i + c.k) + ',' + (T + 13) + '"/>');
+        body.push('<g class="ac-tri-cell' + (col ? ' is-rep' : '') + '"><rect x="' + (cx - CW / 2) + '" y="' + (cy - CH / 2) + '" width="' + CW + '" height="' + CH + '" rx="4"'
+            + (col ? ' style="fill:' + col + ';fill-opacity:.14;stroke:' + col + ';stroke-width:1.5"' : '') + '/>'
+            + '<text x="' + cx + '" y="' + (cy + 4) + '" text-anchor="middle"' + (col ? ' style="fill:' + col + '"' : '') + '>' + c.d + '</text></g>');
+    });
+    for (var k = 1; k < 6; k++) { var r = row(k); rows.push('<text class="ac-tri-row" x="4" y="' + (T + RH * k + 4) + '"' + (r[1] || '') + '>' + r[0] + '</text>'); }
+    var balls = nums.map(function (n, j) {
+        return '<g class="ac-tri-num"><circle cx="' + X(j) + '" cy="' + T + '" r="13" style="fill:var(--ball-' + band(n) + ')"/><text x="' + X(j) + '" y="' + (T + 4) + '" text-anchor="middle">' + n + '</text></g>';
+    });
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + String(aria).replace(/&/g, '&amp;').replace(/"/g, '&quot;') + '">'
+        + links.join('') + rows.join('') + body.join('') + balls.join('') + '</svg>';
+}
+
+// AC값 계산기 (statistics-ac.html 의 인라인 스크립트, acTri · acTriSvg 와 함께 싣는다).
+// 번호 6개를 받아 AC값을 적고, 계산기 위 #ac-tri 에 차이 삼각형을 그린다. 아래 목록에 겹침마다
+// "같은 간격 두 쌍"(차이가 둘씩 겹친다)인지 "3항 등차"(하나)인지 적는다. 처음엔 data-example(최근 회차)로 그린다
 function acCalculator() {
     var input = document.getElementById('ac-input');
     var out = document.getElementById('ac-out');
     var box = document.getElementById('ac-tri');
     var EN = !!(window.I18N && window.I18N.lang === 'en');
-    var COLORS = ['#e8590c', '#0c8599', '#7048e8', '#d6336c', '#5c940d', '#1971c2'];
     var esc = function (s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
-    var band = function (n) { return n <= 10 ? 1 : n <= 20 ? 2 : n <= 30 ? 3 : n <= 40 ? 4 : 5; };
     function draw(nums, caption) {
         if (!box) return;
-        var cells = [], byD = {}, k, i;
-        for (k = 1; k < 6; k++) for (i = 0; i + k < 6; i++) {
-            var d = nums[i + k] - nums[i];
-            cells.push({ k: k, i: i, d: d });
-            (byD[d] = byD[d] || []).push([nums[i], nums[i + k]]);
-        }
-        var reps = Object.keys(byD).map(Number).filter(function (d) { return byD[d].length > 1; }).sort(function (a, b) { return a - b; });
-        var color = {};
-        reps.forEach(function (d, j) { color[d] = COLORS[j % COLORS.length]; });
-        var S = 54, L = 40, T = 20, RH = 31, CW = 34, CH = 22;
-        var X = function (pos) { return L + S * pos; };
-        var W = L + S * 5 + 20, H = T + RH * 5 + 16;
-        var links = [], body = [];
-        cells.forEach(function (c) {
-            var cx = X(c.i + c.k / 2), cy = T + RH * c.k, col = color[c.d];
-            if (col) {
-                links.push('<path class="ac-tri-link" stroke="' + col + '" fill="none" d="M' + X(c.i) + ',' + (T + 13) + ' L' + cx + ',' + (cy - CH / 2) + ' L' + X(c.i + c.k) + ',' + (T + 13) + '"/>');
-            }
-            body.push('<g class="ac-tri-cell' + (col ? ' is-rep' : '') + '"><rect x="' + (cx - CW / 2) + '" y="' + (cy - CH / 2) + '" width="' + CW + '" height="' + CH + '" rx="4"'
-                + (col ? ' style="fill:' + col + ';fill-opacity:.14;stroke:' + col + ';stroke-width:1.5"' : '') + '/>'
-                + '<text x="' + cx + '" y="' + (cy + 4) + '" text-anchor="middle"' + (col ? ' style="fill:' + col + '"' : '') + '>' + c.d + '</text></g>');
-        });
-        var rows = [];
-        for (k = 1; k < 6; k++) rows.push('<text class="ac-tri-row" x="4" y="' + (T + RH * k + 4) + '">' + (EN ? k + ' apart' : k + '칸') + '</text>');
-        var balls = nums.map(function (n, j) {
-            return '<g class="ac-tri-num"><circle cx="' + X(j) + '" cy="' + T + '" r="13" style="fill:var(--ball-' + band(n) + ')"/><text x="' + X(j) + '" y="' + (T + 4) + '" text-anchor="middle">' + n + '</text></g>';
-        });
-        var distinct = Object.keys(byD).length, ac = distinct - 5;
+        var t = acTri(nums), byD = t.byD, reps = t.reps, color = t.color;
+        var distinct = t.distinct, ac = t.ac;
         var aria = EN ? 'Difference triangle of ' + nums.join(', ') + ': ' + distinct + ' distinct differences, AC value ' + ac
             : nums.join(', ') + '의 차이 삼각형: 서로 다른 차이 ' + distinct + '개, AC값 ' + ac;
         var html = [];
         if (caption) html.push('<p class="ac-tri-cap">' + esc(caption) + '</p>');
-        html.push('<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(aria) + '">' + links.join('') + rows.join('') + body.join('') + balls.join('') + '</svg>');
+        html.push(acTriSvg(nums, function (k) { return [EN ? k + ' apart' : k + '칸']; }, aria));
         html.push('<p class="ac-tri-cap">' + (EN ? 'Top: the six numbers. Each row down: the difference between numbers that many places apart (bottom = largest − smallest). Same colour = same value.'
             : '맨 위: 번호 6개 · 한 줄 내려갈수록 더 멀리 떨어진 두 번호의 차이(맨 아래 = 가장 큰 번호 − 가장 작은 번호) · 같은 색 = 같은 값') + '</p>');
         html.push('<p class="ac-tri-sum">' + (EN ? 'Of the 15 differences, <strong>' + distinct + '</strong> are distinct → ' + distinct + ' − 5 = <strong>AC ' + ac + '</strong>'
@@ -1020,23 +1030,6 @@ const AC_ONE_PAIR = 2141646;
             headLow: perHead(low), headRest: perHead(rest), top };
     })();
     const eokShort = a => en(`${f1(a / 1e8)}억`, `${(a / 1e9).toFixed(2)}bn`);
-    // 계산기의 차이 삼각형 (2026-10-18): 맨 위 줄은 번호 6개, 아래로 한 줄씩 내려갈수록 더 멀리 떨어진 두 번호의 차이(1칸 → 5칸).
-    // 칸은 두 번호의 한가운데 아래에 놓여 거꾸로 선 삼각형이 된다. 겹친 값은 같은 색 칸 + 두 번호로 잇는 선 — 어디서 겹쳐 AC 가 줄었는지 보인다
-    const AC_TRI_STYLE = `.ac-tri { margin: 6px 0 14px; }
-.ac-tri svg { display: block; width: 100%; max-width: 420px; height: auto; margin: 0 auto; font-family: var(--font); }
-.ac-tri-num circle { stroke: #fff; stroke-width: 1; }
-.ac-tri-num text { fill: #fff; font-size: 12px; font-weight: bold; }
-.ac-tri-cell rect { fill: #fff; stroke: #d9d9d9; }
-.ac-tri-cell text { fill: var(--text); font-size: 12px; font-variant-numeric: tabular-nums; }
-.ac-tri-cell.is-rep text { font-weight: bold; }
-.ac-tri-link { stroke-width: 1.5; opacity: .45; }
-.ac-tri-row { fill: var(--muted); font-size: 10px; }
-.prose .ac-tri-cap { margin: 4px 0 8px; color: var(--muted); font-size: 12px; text-align: center; }
-.prose .ac-tri-sum { margin: 6px 0 4px; font-size: 14px; }
-.ac-tri-list { margin: 0; padding: 0; list-style: none; font-size: 13px; }
-.prose .ac-tri-list li { margin: 3px 0; }
-.ac-tri-sw { display: inline-block; min-width: 1.9em; margin-right: 6px; padding: 0 4px; border: 1.5px solid; border-radius: 4px; text-align: center; font-weight: bold; font-variant-numeric: tabular-nums; }
-.prose .ac-tri-why { margin: 6px 0 0; color: var(--muted); font-size: 13px; }`;
     // AC값별 그래프 셋 (2026-10-16) — 번호 합계와 같은 SVG 모양(dist-*). x축은 셋 다 AC값 0~10 으로 같고, y축은 그래프마다 하나(0부터).
     // 단위가 다른 값(회차 수 · 배 · 억)을 한 그림에 겹치면 y축이 둘 셋이 되어 헷갈린다 — 위아래로 쌓고 단추로 하나씩 켜고 끈다.
     // ① 출현 횟수(1회~, 주황 선) ② 1등 당첨자 기대 대비(88회~, 1배 점선) ③ 1등 1인당 중앙값(88회~, 전체 중앙값 점선) — 처음부터 셋 다 켠다.
@@ -1268,15 +1261,14 @@ const AC_ONE_PAIR = 2141646;
         body: [
             h2En('AC값 계산기', 'AC value calculator'),
             [
-                `<style>\n${AC_TRI_STYLE}\n</style>`,
+                // 차이 삼각형(계산기 위): 스크립트가 그린다. 처음엔 가장 최근 회차로, 번호를 넣고 계산하면 그 번호로 다시 그린다
+                `<div class="ac-tri" id="ac-tri" data-example="${ln.join(' ')}" data-round="${last.round}"></div>`,
                 '<div class="calc-form">',
                 '    <label for="ac-input">번호 6개</label>',
                 '    <input type="text" id="ac-input" inputmode="numeric" autocomplete="off" placeholder="예: 7 13 16 23 24 43">',
                 '    <button type="button" class="btn" id="ac-btn">계산하기</button>',
                 '</div>',
                 '<p class="calc-result" id="ac-out" role="status" aria-live="polite"></p>',
-                // 차이 삼각형: 스크립트가 그린다. 처음엔 가장 최근 회차로 보여 준다
-                `<div class="ac-tri" id="ac-tri" data-example="${ln.join(' ')}" data-round="${last.round}"></div>`,
             ].join('\n'),
             h2En('역대 AC값 분포', 'AC values across all draws'),
             table([['AC값', 'AC value'], ['나온 횟수', 'Draws'], ['비율', 'Share'], ['이론 확률', 'Theoretical'], ['예시 (가장 최근 회차)', 'Example (latest draw)']], rows, 'ac-table'),
@@ -1311,7 +1303,7 @@ const AC_ONE_PAIR = 2141646;
                 'The "AC value" slider in the home generator keeps only sets with an AC value of 5–10, 6–10 … or 10; press "exact" beside it to keep a single value, such as AC 8 only (free with sign-in).'),
         ],
         script: [
-            `(${acCalculator.toString()}());`,
+            `(function () {\n${acTri.toString()}\n${acTriSvg.toString()}\n(${acCalculator.toString()}());\n}());`,
             // AC값별 그래프 켜고 끄기: 단추마다 그래프 하나(aria-pressed). 막대 풍선은 js/dist-balls.js
             '(function () {',
             "    var fig = document.querySelector('.ac-figure');",
@@ -2312,7 +2304,26 @@ function updateTaxAndTop() {
 
 /* ───── 사이트맵 ───── */
 
-// About: "자료를 둘러보며 로또를 즐겨 보세요" — 통계 페이지 두 곳(많이 나온 번호 · 번호 합계)의 그림을 맛보기로 옮겨 싣고
+// About 의 거리 삼각형 (2026-10-18): 가장 최근 회차 당첨번호로 AC값 페이지 계산기와 같은 그림을 빌드 때 그려 넣는다(스크립트 없이 보인다).
+// 줄 이름 · 설명은 영어 화면에서 바뀌게 data-i18n-en 을 단다. 자세한 겹침 설명은 AC값 페이지가 한다
+function aboutTriangle() {
+    const last = draws[0];
+    const nums = last.numbers.slice().sort((a, b) => a - b);
+    const t = acTri(nums);
+    const svgHtml = acTriSvg(nums, k => [`${k}칸`, ` data-i18n-en="${k} apart"`],
+        `${last.round}회 당첨번호 ${nums.join(', ')}의 거리 삼각형: 서로 다른 거리 ${t.distinct}개, AC값 ${t.ac}`);
+    const reps = t.reps.join(', ');
+    return [
+        '<figure class="ac-tri">',
+        svgHtml,
+        `<figcaption class="ac-tri-cap" data-i18n-en="${esc(`Top: the winning numbers of draw ${last.round}. Each row down: the gap between numbers that many places apart. Same colour = same gap.`)}">맨 위: ${last.round}회 당첨번호 · 한 줄 내려갈수록 더 멀리 떨어진 두 번호의 거리 · 같은 색 = 같은 거리</figcaption>`,
+        '</figure>',
+        pEn(`번호 6개 사이의 거리는 모두 15개입니다. ${last.round}회는 그중 서로 다른 거리가 <strong>${t.distinct}개</strong>라 AC값이 ${t.distinct} − 5 = <strong>${t.ac}</strong>입니다${reps ? `(겹친 거리: ${reps})` : ''}. 같은 거리가 많이 겹칠수록 AC값이 낮고, 하나도 겹치지 않으면 10입니다.`,
+            `Six numbers have 15 gaps between them. In draw ${last.round}, <strong>${t.distinct}</strong> of them are distinct, so the AC value is ${t.distinct} − 5 = <strong>${t.ac}</strong>${reps ? ` (repeated gaps: ${reps})` : ''}. The more gaps repeat, the lower the AC value; with no repeats at all it is 10.`),
+    ].join('\n');
+}
+
+// About: "자료를 둘러보며 로또를 즐겨 보세요" — 통계 페이지 세 곳(많이 나온 번호 · 번호 합계 · AC값)의 그림을 맛보기로 옮겨 싣고
 // 둘러볼 곳을 잇는다. 그림 읽는 법(정규분포 등)은 여기서 설명하지 않는다 — 각 통계 페이지가 한다. 그림은 매주 다시 만든다
 function updateAbout() {
     const more = (href, ko, english) => `<p class="about-more"><a href="${href}" data-i18n-en="${esc(english)}">${ko}</a></p>`;
@@ -2328,6 +2339,9 @@ function updateAbout() {
         `<h3 data-i18n-en="What do the six numbers add up to?">당첨번호 6개를 더하면 얼마일까요?</h3>`,
         ABOUT.sum.figure,
         more('statistics-sum.html', '번호 합계 분포 보기 →', 'See the sums of the numbers →'),
+        `<h3 data-i18n-en="How many different gaps lie between the numbers?">번호 사이의 거리는 몇 가지일까요?</h3>`,
+        aboutTriangle(),
+        more('statistics-ac.html', 'AC값 계산기에서 내 번호로 그려 보기 →', 'Draw your own numbers in the AC value calculator →'),
         `<p class="about-explore"><span data-i18n-en="More to explore:">더 둘러보기:</span> `
             + [
                 link('index.html#sec-stats', '통계 12가지', '12 sets of statistics'),
