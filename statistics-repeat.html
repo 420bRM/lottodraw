@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<!-- 이 파일은 tools/build-static-stats.js 가 매주 다시 만든다. 직접 고치면 덮어쓰인다. -->
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로또 당첨번호 중복 · 같은 번호 나온 적 있을까 (1~1246회) | lottodraw.kr</title>
+    <meta name="description" content="로또 1~1246회 당첨번호를 회차끼리 모두 견줬습니다. 6개가 모두 같은 회차는 아직 없고, 5개가 같은 회차는 21쌍입니다. 같은 번호가 다시 나올 확률과 생일 문제, 5개 일치 회차 목록.">
+    <link rel="canonical" href="https://www.lottodraw.kr/statistics-repeat.html">
+    <meta property="og:title" content="로또 당첨번호 중복 · 같은 번호 나온 적 있을까 (1~1246회) | lottodraw.kr">
+    <meta property="og:description" content="로또 1~1246회 당첨번호를 회차끼리 모두 견줬습니다. 6개가 모두 같은 회차는 아직 없고, 5개가 같은 회차는 21쌍입니다. 같은 번호가 다시 나올 확률과 생일 문제, 5개 일치 회차 목록.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://www.lottodraw.kr/statistics-repeat.html">
+    <meta property="og:site_name" content="lottodraw.kr">
+    <meta property="og:image" content="https://www.lottodraw.kr/img/og-default.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="로또 당첨번호 중복 · 같은 번호 나온 적 있을까 (1~1246회) | lottodraw.kr">
+    <meta name="twitter:description" content="로또 1~1246회 당첨번호를 회차끼리 모두 견줬습니다. 6개가 모두 같은 회차는 아직 없고, 5개가 같은 회차는 21쌍입니다. 같은 번호가 다시 나올 확률과 생일 문제, 5개 일치 회차 목록.">
+    <meta name="twitter:image" content="https://www.lottodraw.kr/img/og-default.png">
+    <meta name="google-adsense-account" content="ca-pub-9372871176021283">
+    <link rel="icon" href="/favicon.ico" sizes="32x32">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="stylesheet" href="css/site.css">
+    <script src="js/i18n-dict.js"></script>
+    <script src="js/i18n.js"></script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Dataset","name":"로또 당첨번호 중복 · 같은 번호 나온 적 있을까 (1~1246회)","description":"로또 1~1246회 당첨번호를 회차끼리 모두 견줬습니다. 6개가 모두 같은 회차는 아직 없고, 5개가 같은 회차는 21쌍입니다. 같은 번호가 다시 나올 확률과 생일 문제, 5개 일치 회차 목록.","url":"https://www.lottodraw.kr/statistics-repeat.html","isAccessibleForFree":true,"dateModified":"2026-10-17","temporalCoverage":"2002-12-07/2026-10-17","creator":{"@type":"Organization","name":"lottodraw.kr","url":"https://www.lottodraw.kr/"},"keywords":["로또 당첨번호 중복","로또 같은 번호","로또 중복 당첨번호","로또 생일 문제"]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://www.lottodraw.kr/"},{"@type":"ListItem","position":2,"name":"로또 통계","item":"https://www.lottodraw.kr/index.html#sec-stats"},{"@type":"ListItem","position":3,"name":"당첨번호 중복","item":"https://www.lottodraw.kr/statistics-repeat.html"}]}]}</script>
+    <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "91c08d8a39d944e69c10024f2314b955"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+<body>
+<div class="page">
+    <header class="banner">
+        <a class="brand" href="index.html">
+            <span class="brand-name">LOTTODRAW.KR</span>
+            <span class="brand-tag" data-i18n="brand.tag">당첨번호부터 통계·당첨금까지, 로또 데이터 플랫폼</span>
+        </a>
+        <div class="banner-right">
+            <p class="latest-callout" data-i18n-en="Draw 1246: 16 22 23 24 27 28 &lt;span class=&quot;bonus-sep&quot;&gt;+&lt;/span&gt; 6">제1246회 16 22 23 24 27 28 <span class="bonus-sep">+</span> 6</p>
+            <a class="sticker" href="statistics.html" data-i18n-html="header.sticker">최근 <b>5개월</b> 통계</a>
+            <div class="lang-switch" role="group" aria-label="Language">
+                <button type="button" data-lang-btn="ko">KO</button><button type="button" data-lang-btn="en">EN</button>
+            </div>
+        </div>
+    </header>
+
+    <nav class="nav" aria-label="주 메뉴" data-i18n-attr="aria-label:nav.aria">
+        <ul>
+            <li><a href="index.html" data-i18n="nav.index">생성기 · 통계</a></li>
+            <li><a href="draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="top-prize.html" data-i18n="nav.topPrize">TOP 50 당첨금</a></li>
+            <li><a href="tax.html" data-i18n="nav.tax">실수령액 계산</a></li>
+            <li><a href="blog/index.html" data-i18n="nav.blog">블로그</a></li>
+            <li><a href="about.html" data-i18n="nav.about">ABOUT</a></li>
+        </ul>
+    </nav>
+
+    <main class="prose stat-page">
+        <nav class="breadcrumb" aria-label="현재 위치" data-i18n-attr="aria-label:crumb.aria"><a href="index.html" data-i18n="crumb.home">홈</a> › <a href="index.html#sec-stats" data-i18n-en="Lotto statistics">로또 통계</a> › <span data-i18n-en="Repeated numbers">당첨번호 중복</span></nav>
+        <h1 data-i18n-en="Repeated Winning Numbers">로또 당첨번호 중복 (같은 번호가 또 나온 적)</h1>
+        <p class="stat-scope"><span data-i18n-en="Draws 1–1246 · 2002-12-07 ~ 2026-10-17 · updated automatically after each draw (last update 2026-10-17)">1~1246회 · 2002-12-07 ~ 2026-10-17 · 매주 추첨 후 자동 갱신 (마지막 갱신 2026-10-17)</span></p>
+        <p class="stat-lead"><span data-i18n-en="Comparing every pair of draws from 1 to 1246, &lt;strong&gt;no two draws have ever had the same six numbers.&lt;/strong&gt; Even counting the bonus ball as a seventh number, there are none. The closest calls share five of the six numbers: 21 pairs of draws.">1~1246회 당첨번호를 회차끼리 모두 견줘 보면 <strong>6개가 모두 같은 회차는 아직 한 번도 없습니다.</strong> 보너스 번호까지 7개로 봐도 없습니다. 가장 가까웠던 것은 6개 중 5개가 같은 회차로, 21쌍입니다.</span></p>
+
+<h2 data-i18n-en="At a glance">한눈에 보기</h2>
+
+<div class="table-scroll">
+<table class="data-table tier-stat tier-glance">
+<thead><tr><th scope="col" data-i18n-en="Measure">항목</th><th scope="col" data-i18n-en="Value">값</th></tr></thead>
+<tbody>
+<tr><td><span data-i18n-en="Pairs of draws compared">견준 회차 쌍</span></td><td><span data-i18n-en="775,635">775,635쌍</span></td></tr>
+<tr><td><span data-i18n-en="Pairs with all six the same">6개가 모두 같은 쌍</span></td><td><span data-i18n-en="&lt;strong&gt;0&lt;/strong&gt;&lt;span class=&quot;sub&quot;&gt;expected 0.10&lt;/span&gt;"><strong>0쌍</strong><span class="sub">기대 0.10쌍</span></span></td></tr>
+<tr><td><span data-i18n-en="Pairs with all seven the same, bonus included">보너스까지 7개가 같은 쌍</span></td><td><span data-i18n-en="0">0쌍</span></td></tr>
+<tr><td><span data-i18n-en="Pairs sharing five numbers">6개 중 5개가 같은 쌍</span></td><td><span data-i18n-en="21&lt;span class=&quot;sub&quot;&gt;expected 22.3&lt;/span&gt;">21쌍<span class="sub">기대 22.3쌍</span></span></td></tr>
+<tr><td><span data-i18n-en="Chance of at least one exact repeat by now">지금까지 한 번이라도 6개가 같았을 확률</span></td><td>9.1%</td></tr>
+<tr><td><span data-i18n-en="When that chance passes 50%">그 확률이 50%를 넘는 때</span></td><td><span data-i18n-en="around draw 3,361 (about 2067)">약 3,361회 (2067년 무렵)</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<p class="note" data-i18n-en="1,246 draws can be paired up in 1,246 × 1,245 ÷ 2 = 775,635 ways. The expected count is how many such pairs random draws would produce on average.">1,246회에서 두 회차를 고르는 방법은 1,246 × 1,245 ÷ 2 = 775,635가지입니다. 기대 쌍 수는 번호를 무작위로 뽑을 때 평균적으로 나오는 쌍 수입니다.</p>
+
+<h2 data-i18n-en="Why it has not happened yet">왜 아직 한 번도 없을까</h2>
+
+<p data-i18n-en="The chance that two draws share all six numbers is 1 in 8,145,060. With 775,635 pairs of draws, the expected number of exact repeats is 775,635 ÷ 8,145,060 ≈ &lt;strong&gt;0.10&lt;/strong&gt;, which works out to about a &lt;strong&gt;9.1%&lt;/strong&gt; chance of at least one. Not having seen one yet is the more natural outcome.">두 회차의 당첨번호 6개가 모두 같을 확률은 8,145,060분의 1입니다. 회차 쌍이 775,635개이니 6개가 같은 쌍은 평균 775,635 ÷ 8,145,060 ≈ <strong>0.10쌍</strong> 나올 것으로 기대됩니다. 한 쌍이라도 나왔을 확률로 바꾸면 약 <strong>9.1%</strong>입니다. 아직 한 번도 없는 쪽이 자연스럽습니다.</p>
+
+<p data-i18n-en="This is the &lt;strong&gt;birthday problem&lt;/strong&gt;. There are only 365 birthdays, yet with just 23 people the chance that two share one passes 50%, because the number of pairs grows roughly with the square of the group size. Lotto has 8,145,060 possible &quot;birthdays&quot;, so by the same arithmetic it takes about &lt;strong&gt;3,361 draws&lt;/strong&gt; to pass 50% — around 2067 at one draw a week. The birthday problem, and why comparing many things makes coincidences common, are covered in &lt;a href=&quot;blog/pair-numbers-multiple-comparisons.html&quot;&gt;are pair numbers real?&lt;/a&gt;">이 계산은 <strong>생일 문제</strong>와 같습니다. 생일은 365가지뿐인데 23명만 모여도 생일이 같은 두 사람이 있을 확률이 50%를 넘습니다. 사람이 늘면 견줄 쌍이 사람 수의 제곱에 가깝게 늘기 때문입니다. 로또의 "생일"은 8,145,060가지라 같은 계산으로 약 <strong>3,361회</strong>가 쌓여야 50%를 넘습니다. 매주 한 번 추첨이 이어진다면 2067년 무렵입니다. 생일 문제와 "많이 견주면 우연의 일치가 흔해진다"는 원리는 <a href="blog/pair-numbers-multiple-comparisons.html">궁합수는 진짜 있을까</a>에서 더 자세히 다룹니다.</p>
+
+<p data-i18n-en="The chance that the next draw exactly matches one of the past 1,246 is 1,246 ÷ 8,145,060, about 1 in 6,537. Numbers that have already won are neither less nor more likely to come up. Playing a past winning line gives the same 1 in 8,145,060 chance as any other combination.">다음 회차 당첨번호가 지난 1,246회 중 어느 한 회차와 똑같이 나올 확률은 1,246 ÷ 8,145,060, 약 6,537분의 1입니다. 이미 나온 번호라고 덜 나오거나 더 나오지 않습니다. 지난 당첨번호 한 줄을 그대로 사도 1등 확률은 다른 조합과 똑같이 8,145,060분의 1입니다.</p>
+
+<h2 data-i18n-en="Pairs of draws by numbers shared">같은 번호 개수별 회차 쌍</h2>
+
+<p data-i18n-en="Each of the 775,635 pairs was compared and the shared numbers counted. The expected count is the number of pairs times the chance that two draws share k numbers, C(6,k) × C(39,6−k) ÷ 8,145,060.">775,635쌍을 하나하나 견줘 같은 번호가 몇 개인지 셌습니다. 기대 쌍 수는 회차 쌍 수에 두 회차가 k개 겹칠 확률 C(6,k) × C(39,6−k) ÷ 8,145,060을 곱한 값입니다.</p>
+
+<div class="table-scroll">
+<table class="data-table tier-stat">
+<thead><tr><th scope="col" data-i18n-en="Numbers shared">같은 번호</th><th scope="col" data-i18n-en="Actual pairs">실제 쌍</th><th scope="col" data-i18n-en="Expected">기대 쌍</th><th scope="col" data-i18n-en="Would have won">등수로 치면</th></tr></thead>
+<tbody>
+<tr><td><span data-i18n-en="6">6개</span></td><td><strong>0</strong></td><td>0.10</td><td><span data-i18n-en="1st">1등</span></td></tr>
+<tr><td><span data-i18n-en="5">5개</span></td><td><strong>21</strong></td><td>22.3</td><td><span data-i18n-en="2nd or 3rd">2등 또는 3등</span></td></tr>
+<tr><td><span data-i18n-en="4">4개</span></td><td><strong>1,001</strong></td><td>1,058</td><td><span data-i18n-en="4th">4등</span></td></tr>
+<tr><td><span data-i18n-en="3">3개</span></td><td><strong>17,361</strong></td><td>17,406</td><td><span data-i18n-en="5th">5등</span></td></tr>
+<tr><td><span data-i18n-en="2">2개</span></td><td><strong>117,679</strong></td><td>117,489</td><td><span data-i18n-en="nothing">낙첨</span></td></tr>
+<tr><td><span data-i18n-en="1">1개</span></td><td><strong>328,129</strong></td><td>328,968</td><td><span data-i18n-en="nothing">낙첨</span></td></tr>
+<tr><td><span data-i18n-en="0">0개</span></td><td><strong>311,444</strong></td><td>310,692</td><td><span data-i18n-en="nothing">낙첨</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<p class="note" data-i18n-en="In every row the actual count is close to what random draws would give. &quot;Would have won&quot; is the prize the earlier draw's numbers would have won in the later draw. With five in common it is 2nd prize if the remaining number is the later draw's bonus ball, otherwise 3rd.">어느 줄이든 실제 쌍 수가 무작위로 뽑을 때의 기대와 가깝습니다. "등수로 치면"은 앞 회차 당첨번호를 뒤 회차에 그대로 샀을 때의 등수입니다. 5개가 같으면 남은 번호가 뒤 회차 보너스 번호일 때 2등, 아니면 3등입니다.</p>
+
+<h2 data-i18n-en="21 pairs sharing five numbers">6개 중 5개가 같은 회차 21쌍</h2>
+
+<p data-i18n-en="Pairs where replaying the earlier draw's numbers in the later draw would have won at least 3rd prize (five matched). Most recent first; the different numbers read earlier → later.">앞 회차 당첨번호를 뒤 회차에 그대로 다시 샀다면 3등(5개 일치) 이상이었을 회차 쌍입니다. 최근 것부터 적었고, 다른 번호는 앞 회차 → 뒤 회차 순입니다.</p>
+
+<div class="table-scroll">
+<table class="data-table tier-stat">
+<thead><tr><th scope="col" data-i18n-en="Draws">회차</th><th scope="col" data-i18n-en="Shared numbers">같은 번호</th><th scope="col" data-i18n-en="Different">다른 번호</th></tr></thead>
+<tbody>
+<tr><td><a href="round/233.html" data-i18n-en="Draw 233">233회</a> → <a href="round/1226.html" data-i18n-en="Draw 1226">1226회</a><span class="sub" data-i18n-en="993 draws apart">993회 차이</span></td><td><span class="row-balls"><span class="mball" data-band="1">4</span><span class="mball" data-band="1">6</span><span class="mball" data-band="2">13</span><span class="mball" data-band="2">17</span><span class="mball" data-band="3">28</span></span></td><td><span class="row-balls">40 → 26</span></td></tr>
+<tr><td><a href="round/344.html" data-i18n-en="Draw 344">344회</a> → <a href="round/1219.html" data-i18n-en="Draw 1219">1219회</a><span class="sub" data-i18n-en="875 draws apart">875회 차이</span></td><td><span class="row-balls"><span class="mball" data-band="1">1</span><span class="mball" data-band="1">2</span><span class="mball" data-band="2">15</span><span class="mball" data-band="3">28</span><span class="mball" data-band="5">45</span></span></td><td><span class="row-balls">34 → 39</span></td></tr>
+<tr><td><a href="round/434.html" data-i18n-en="Draw 434">434회</a> → <a href="round/1194.html" data-i18n-en="Draw 1194">1194회</a><span class="sub" data-i18n-en="760 draws apart">760회 차이</span></td><td><span class="row-balls"><span class="mball" data-band="1">3</span><span class="mball" data-band="2">13</span><span class="mball" data-band="3">24</span><span class="mball" data-band="4">33</span><span class="mball" data-band="4">37</span></span></td><td><span class="row-balls">20 → 15</span></td></tr>
+<tr><td><a href="round/192.html" data-i18n-en="Draw 192">192회</a> → <a href="round/1079.html" data-i18n-en="Draw 1079">1079회</a><span class="sub" data-i18n-en="887 draws apart">887회 차이</span></td><td><span class="row-balls"><span class="mball" data-band="1">4</span><span class="mball" data-band="1">8</span><span class="mball" data-band="2">18</span><span class="mball" data-band="4">37</span><span class="mball" data-band="5">45</span></span></td><td><span class="row-balls">11 → 24</span></td></tr>
+<tr><td><a href="round/401.html" data-i18n-en="Draw 401">401회</a> → <a href="round/1050.html" data-i18n-en="Draw 1050">1050회</a><span class="sub" data-i18n-en="649 draws apart">649회 차이</span></td><td><span class="row-balls"><span class="mball" data-band="1">6</span><span class="mball" data-band="2">12</span><span class="mball" data-band="4">31</span><span class="mball" data-band="4">38</span><span class="mball" data-band="5">43</span></span></td><td><span class="row-balls">18 → 35</span></td></tr>
+<tr><td><a href="round/916.html" data-i18n-en="Draw 916">916회</a> → <a href="round/1031.html" data-i18n-en="Draw 1031">1031회</a><span class="sub" data-i18n-en="115 draws apart">115회 차이</span></td><td><span class="row-balls"><span class="mball" data-band="1">6</span><span class="mball" data-band="3">22</span><span class="mball" data-band="4">32</span><span class="mball" data-band="4">35</span><span class="mball" data-band="4">36</span></span></td><td><span class="row-balls">21 → 7</span></td></tr>
+<tr><td><a href="round/569.html" data-i18n-en="Draw 569">569회</a> → <a href="round/980.html" data-i18n-en="Draw 980">980회</a><span class="sub" data-i18n-en="411 draws apart">411회 차이</span></td><td><span class="row-balls"><span class="mball" data-band="1">3</span><span class="mball" data-band="2">13</span><span class="mball" data-band="3">23</span><span class="mball" data-band="3">24</span><span class="mball" data-band="4">35</span></span></td><td><span class="row-balls">6 → 16</span></td></tr>
+<tr><td><a href="round/106.html" data-i18n-en="Draw 106">106회</a> → <a href="round/952.html" data-i18n-en="Draw 952">952회</a><span class="sub" data-i18n-en="846 draws apart">846회 차이</span></td><td><span class="row-balls"><span class="mball" data-band="1">4</span><span class="mball" data-band="2">12</span><span class="mball" data-band="3">22</span><span class="mball" data-band="3">24</span><span class="mball" data-band="4">33</span></span></td><td><span class="row-balls">10 → 41</span></td></tr>
+<tr><td><a href="round/614.html" data-i18n-en="Draw 614">614회</a> → <a href="round/930.html" data-i18n-en="Draw 930">930회</a><span class="sub" data-i18n-en="316 draws apart">316회 차이</span></td><td><span class="row-balls"><span class="mball" data-band="1">8</span><span class="mball" data-band="3">21</span><span class="mball" data-band="3">25</span><span class="mball" data-band="4">39</span><span class="mball" data-band="5">44</span></span></td><td><span class="row-balls">40 → 38</span></td></tr>
+<tr><td><a href="round/751.html" data-i18n-en="Draw 751">751회</a> → <a href="round/928.html" data-i18n-en="Draw 928">928회</a><span class="sub" data-i18n-en="177 draws apart">177회 차이</span></td><td><span class="row-balls"><span class="mball" data-band="1">3</span><span class="mball" data-band="1">4</span><span class="mball" data-band="2">20</span><span class="mball" data-band="3">28</span><span class="mball" data-band="5">44</span></span></td><td><span class="row-balls">16 → 10</span></td></tr>
+<tr><td><a href="round/578.html" data-i18n-en="Draw 578">578회</a> → <a href="round/911.html" data-i18n-en="Draw 911">911회</a><span class="sub" data-i18n-en="333 draws apart">333회 차이</span></td><td><span class="row-balls"><span class="mball" data-band="1">5</span><span class="mball" data-band="2">12</span><span class="mball" data-band="2">14</span><span class="mball" data-band="4">32</span><span class="mball" data-band="5">42</span></span></td><td><span class="row-balls">34 → 4</span></td></tr>
+<tr><td><a href="round/626.html" data-i18n-en="Draw 626">626회</a> → <a href="round/832.html" data-i18n-en="Draw 832">832회</a><span class="sub" data-i18n-en="206 draws apart">206회 차이</span></td><td><span class="row-balls"><span class="mball" data-band="2">13</span><span class="mball" data-band="2">14</span><span class="mball" data-band="3">26</span><span class="mball" data-band="4">40</span><span class="mball" data-band="5">43</span></span></td><td><span class="row-balls">33 → 19</span></td></tr>
+<tr><td><a href="round/451.html" data-i18n-en="Draw 451">451회</a> → <a href="round/786.html" data-i18n-en="Draw 786">786회</a><span class="sub" data-i18n-en="335 draws apart">335회 차이</span></td><td><span class="row-balls"><span class="mball" data-band="2">12</span><span class="mball" data-band="2">15</span><span class="mball" data-band="2">20</span><span class="mball" data-band="3">24</span><span class="mball" data-band="3">30</span></span></td><td><span class="row-balls">38 → 16</span></td></tr>
+<tr><td><a href="round/283.html" data-i18n-en="Draw 283">283회</a> → <a href="round/782.html" data-i18n-en="Draw 782">782회</a><span class="sub" data-i18n-en="499 draws apart">499회 차이</span></td><td><span class="row-balls"><span class="mball" data-band="1">6</span><span class="mball" data-band="2">18</span><span class="mball" data-band="4">31</span><span class="mball" data-band="4">38</span><span class="mball" data-band="5">45</span></span></td><td><span class="row-balls">8 → 34</span></td></tr>
+<tr><td><a href="round/638.html" data-i18n-en="Draw 638">638회</a> → <a href="round/764.html" data-i18n-en="Draw 764">764회</a><span class="sub" data-i18n-en="126 draws apart">126회 차이</span></td><td><span class="row-balls"><span class="mball" data-band="1">7</span><span class="mball" data-band="3">22</span><span class="mball" data-band="3">24</span><span class="mball" data-band="4">31</span><span class="mball" data-band="4">34</span></span></td><td><span class="row-balls">18 → 36</span></td></tr>
+<tr><td><a href="round/422.html" data-i18n-en="Draw 422">422회</a> → <a href="round/743.html" data-i18n-en="Draw 743">743회</a><span class="sub" data-i18n-en="321 draws apart">321회 차이</span></td><td><span class="row-balls"><span class="mball" data-band="2">15</span><span class="mball" data-band="2">19</span><span class="mball" data-band="3">21</span><span class="mball" data-band="4">34</span><span class="mball" data-band="5">44</span></span></td><td><span class="row-balls">8 → 41</span></td></tr>
+<tr><td><a href="round/555.html" data-i18n-en="Draw 555">555회</a> → <a href="round/729.html" data-i18n-en="Draw 729">729회</a><span class="sub" data-i18n-en="174 draws apart">174회 차이</span></td><td><span class="row-balls"><span class="mball" data-band="2">11</span><span class="mball" data-band="2">17</span><span class="mball" data-band="3">21</span><span class="mball" data-band="3">26</span><span class="mball" data-band="4">36</span></span></td><td><span class="row-balls">24 → 45</span></td></tr>
+<tr><td><a href="round/472.html" data-i18n-en="Draw 472">472회</a> → <a href="round/654.html" data-i18n-en="Draw 654">654회</a><span class="sub" data-i18n-en="182 draws apart">182회 차이</span></td><td><span class="row-balls"><span class="mball" data-band="2">16</span><span class="mball" data-band="3">26</span><span class="mball" data-band="4">31</span><span class="mball" data-band="4">36</span><span class="mball" data-band="5">43</span></span></td><td><span class="row-balls">25 → 21</span></td></tr>
+<tr><td><a href="round/64.html" data-i18n-en="Draw 64">64회</a> → <a href="round/640.html" data-i18n-en="Draw 640">640회</a><span class="sub" data-i18n-en="576 draws apart">576회 차이</span></td><td><span class="row-balls"><span class="mball" data-band="2">14</span><span class="mball" data-band="2">15</span><span class="mball" data-band="2">18</span><span class="mball" data-band="3">21</span><span class="mball" data-band="3">26</span></span></td><td><span class="row-balls">36 → 35</span></td></tr>
+<tr><td><a href="round/117.html" data-i18n-en="Draw 117">117회</a> → <a href="round/440.html" data-i18n-en="Draw 440">440회</a><span class="sub" data-i18n-en="323 draws apart">323회 차이</span></td><td><span class="row-balls"><span class="mball" data-band="1">10</span><span class="mball" data-band="3">22</span><span class="mball" data-band="4">34</span><span class="mball" data-band="4">36</span><span class="mball" data-band="5">44</span></span></td><td><span class="row-balls">5 → 28</span></td></tr>
+<tr><td><a href="round/4.html" data-i18n-en="Draw 4">4회</a> → <a href="round/258.html" data-i18n-en="Draw 258">258회</a><span class="sub" data-i18n-en="254 draws apart">254회 차이</span></td><td><span class="row-balls"><span class="mball" data-band="2">14</span><span class="mball" data-band="3">27</span><span class="mball" data-band="3">30</span><span class="mball" data-band="4">31</span><span class="mball" data-band="4">40</span></span></td><td><span class="row-balls">42 → 38</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<p data-i18n-en="Five of &lt;a href=&quot;round/451.html&quot;&gt;draw 451&lt;/a&gt;'s six numbers match &lt;a href=&quot;round/786.html&quot;&gt;draw 786&lt;/a&gt;, and the sixth (38) is &lt;a href=&quot;round/786.html&quot;&gt;draw 786&lt;/a&gt;'s bonus ball, so replaying &lt;a href=&quot;round/451.html&quot;&gt;draw 451&lt;/a&gt;'s numbers in &lt;a href=&quot;round/786.html&quot;&gt;draw 786&lt;/a&gt; would have won &lt;strong&gt;2nd prize&lt;/strong&gt;."><a href="round/451.html">451회</a> 당첨번호 6개 가운데 5개는 <a href="round/786.html">786회</a> 당첨번호와 같고, 남은 하나(38)는 <a href="round/786.html">786회</a> 보너스 번호입니다. <a href="round/451.html">451회</a> 번호를 <a href="round/786.html">786회</a>에 그대로 샀다면 <strong>2등</strong>입니다.</p>
+
+<p data-i18n-en="The most recent is &lt;a href=&quot;round/1226.html&quot;&gt;draw 1226&lt;/a&gt; (2026-05-30), which shared 4, 6, 13, 17, 28 with &lt;a href=&quot;round/233.html&quot;&gt;draw 233&lt;/a&gt;. The two draws in a pair are as few as 115 and as many as 993 draws apart.">가장 최근은 <a href="round/1226.html">1226회</a>(2026-05-30)로, <a href="round/233.html">233회</a>와 겹친 번호는 4, 6, 13, 17, 28입니다. 두 회차 사이는 짧게는 115회, 길게는 993회 떨어져 있습니다.</p>
+
+<p data-i18n-en="See also: &lt;a href=&quot;statistics-pair.html&quot;&gt;number pairs&lt;/a&gt; · &lt;a href=&quot;probability.html&quot;&gt;lotto odds&lt;/a&gt; · &lt;a href=&quot;blog/pair-numbers-multiple-comparisons.html&quot;&gt;are pair numbers real?&lt;/a&gt; · &lt;a href=&quot;draws.html&quot;&gt;all winning numbers&lt;/a&gt;">함께 보기: <a href="statistics-pair.html">궁합수 순위</a> · <a href="probability.html">로또 확률</a> · <a href="blog/pair-numbers-multiple-comparisons.html">궁합수는 진짜 있을까</a> · <a href="draws.html">회차별 당첨번호</a></p>
+
+<h2 data-i18n-en="Other statistics">다른 로또 통계</h2>
+
+<ul class="stat-links"><li><a href="statistics-frequency.html" data-i18n-en="Most frequent numbers">많이 나온 번호 순위</a><span data-i18n-en="top 34 187× · lowest 9 137×">1위 34번 187회 · 최소 9번 137회</span></li><li><a href="statistics-bonus.html" data-i18n-en="Bonus ball">보너스 번호</a><span data-i18n-en="most 2 36× · fewest 29 18×">최다 2번 36회 · 최소 29번 18회</span></li><li><a href="statistics-consecutive.html" data-i18n-en="Consecutive numbers">연속번호</a><span data-i18n-en="with a run 51.8% (theory 52.9%)">연속번호 포함 51.8% (이론 52.9%)</span></li><li><a href="statistics-sum.html" data-i18n-en="Sum of numbers">번호 합계</a><span data-i18n-en="average 138.3 · most common band 120~139">평균 138.3 · 최다 구간 120~139</span></li><li><a href="statistics-prize.html" data-i18n-en="First-prize winners">1등 당첨자 수</a><span data-i18n-en="14 rollovers · 8.6 winners on average">이월 14회 · 평균 8.6명</span></li><li><a href="statistics-trend.html" data-i18n-en="Hot and cold, last 50 draws">최근 50회 많이·적게</a><span data-i18n-en="most 31 (11×) · fewest 14 (3×)">최다 31번 11회 · 최소 14번 3회</span></li><li><a href="statistics-pair.html" data-i18n-en="Number pairs">궁합수 순위</a><span data-i18n-en="top pair 11·21, 34×">1위 11·21번 34회</span></li><li><a href="statistics-gap.html" data-i18n-en="Longest absences">미출수 (장기 미출현)</a><span data-i18n-en="45 — absent for 22 draws">1위 45번 · 22회차째 미출현</span></li><li><a href="statistics-even-odd.html" data-i18n-en="Odd / even split">홀짝 비율</a><span data-i18n-en="most common 3 odd / 3 even 33.2%">최다 홀3 짝3 33.2%</span></li><li><a href="statistics-low-high.html" data-i18n-en="Low / high split">저고 비율</a><span data-i18n-en="most common 3 low / 3 high 33.0%">최다 저3 고3 33.0%</span></li><li><a href="statistics-ac.html" data-i18n-en="AC value">AC값</a><span data-i18n-en="most common AC 8 34.8%">최다 AC 8 34.8%</span></li><li><a href="statistics-tail.html" data-i18n-en="Last digits">끝수 · 끝수합</a><span data-i18n-en="last-digit sum averages 26.0 · digit 7 most frequent">끝수합 평균 26.0 · 끝수 7 최다</span></li></ul>
+
+        <p class="page-disclaimer" data-i18n="disclaimer.page">지난 추첨 기록을 정리한 것이며 다음 회차를 예측하지 않습니다. 어떤 6개를 고르든 1등 확률은 1/8,145,060으로 같습니다. 당첨번호 출처: 동행복권.</p>
+    </main>
+
+    <footer class="footer">
+        <ul class="footer-nav">
+            <li><a href="index.html" data-i18n="footer.home">HOME</a></li>
+            <li><a href="draws.html" data-i18n="nav.draws">당첨번호</a></li>
+            <li><a href="statistics.html" data-i18n="nav.statistics">5개월 통계</a></li>
+            <li><a href="top-prize.html" data-i18n="footer.top">TOP 50</a></li>
+            <li><a href="tax.html" data-i18n="footer.tax">실수령액</a></li>
+            <li><a href="blog/index.html" data-i18n="nav.blog">블로그</a></li>
+            <li><a href="about.html" data-i18n="nav.about">ABOUT</a></li>
+        </ul>
+        <p><a href="privacy.html" data-i18n="footer.privacy">개인정보 처리방침</a> · <a href="terms.html" data-i18n="footer.terms">이용약관</a> · <a href="contact.html" data-i18n="footer.contact">문의</a></p>
+        <p data-i18n-html="footer.copy">&copy; 2026 lottodraw.kr · 당첨번호 출처: 동행복권</p>
+    </footer>
+</div>
+<script src="js/draw-countdown.js" defer></script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9372871176021283" crossorigin="anonymous"></script>
+</body>
+</html>

@@ -31,6 +31,8 @@ A famous example of the same principle is the **birthday problem**. How many peo
 
 The 990 pairs in lotto are far more comparisons than in the birthday problem. If there were no surprising pairs at all, that would be the more surprising thing.
 
+The same arithmetic works for whole draws. Draws 1–1246 can be paired up in 775,635 ways, and the chance that two draws share all six numbers is 1 in 8,145,060. That puts the chance of at least one exact repeat so far at about 9% — and indeed there has not been one yet. Pairs of draws sharing five of the six numbers: about 22 expected from random draws, 21 in reality. With 8,145,060 possible 'birthdays', it takes about 3,361 draws for that chance to pass 50%. The draw-by-draw list is in [repeated winning numbers](/statistics-repeat.html).
+
 ## Principle 2: multiple comparisons and the Texas sharpshooter
 
 In statistics this is called the **multiple comparisons problem**. If you run one test at a 5% significance level, there is a 5% chance of wrongly concluding by chance that a result is 'significant'. But if you run 990 tests, about 50 will come out significant by chance even when there is no real effect. So when you make many comparisons, you make the threshold stricter in line with the number of comparisons. With the simplest method, the **Bonferroni correction**, a result across 990 pairs has to pass a level of 0.05÷990, or about 0.005%, before it counts as meaningful.
