@@ -35,6 +35,8 @@
 //   mailkey              수신 거부 링크 서명용 비밀값(처음 쓸 때 만든다)
 //   e:<한국 날짜>        { gen-share, gen-print, post-share, post-sns } — 공유 · 출력 단추 하루 횟수(TAP_KINDS). 누가 눌렀는지는 없다
 //   v:<글>               조회수(숫자) — 블로그 글마다 한 줄(누구나 본다). 같은 브라우저의 같은 글은 하루 한 번만 온다(js/views.js). 누가 읽었는지는 없다
+//   vbase                { n: { 글: 수 }, until, at } — 조회수 시작값: 직접 세기 전(until 까지)의 Cloudflare Web Analytics 페이지뷰(tools/seed-views.js).
+//                        보이는 조회수 = v:<글> + 이 값. 관리자가 통째로 갈아 끼운다
 //   meta                 { users, trials, subs }
 //
 // 이름·사진은 받지 않는다. 이메일은 "로그인한 계정" 표시, 문의 응대, 회원이 켠 "추첨 결과 메일"에만 쓴다.
@@ -150,6 +152,12 @@ export class Community {
         this.storage = state.storage;
         this.board = null;          // { bySub, list } — 랭킹 줄(메모리). 처음 랭킹을 볼 때 만든다
         this.boardLoading = null;
+        this.viewBase = null;       // vbase(조회수 시작값) — 조회수를 읽을 때마다 꺼내지 않게 들고 있는다
+    }
+
+    async baseViews() {
+        if (!this.viewBase) this.viewBase = (await this.storage.get('vbase')) || { n: {} };
+        return this.viewBase.n;
     }
 
     // 회원 기록은 늘 이걸로 저장한다 — 랭킹 색인이 함께 맞춰진다
@@ -468,16 +476,33 @@ const OPS = {
     },
 
     // 블로그 조회수(index.js 의 /api/view · /api/views). 글마다 한 줄, 횟수만
+    // 돌려주는 수에는 시작값(vbase)을 더한다
     async view({ post }) {
         const n = ((await this.storage.get('v:' + post)) || 0) + 1;
         await this.storage.put('v:' + post, n);
-        return { views: { [post]: n } };
+        return { views: { [post]: n + ((await this.baseViews())[post] || 0) } };
     },
     async views({ posts }) {
         const got = await this.storage.get(posts.map(p => 'v:' + p));
+        const base = await this.baseViews();
         const out = {};
-        posts.forEach(p => { out[p] = got.get('v:' + p) || 0; });
+        posts.forEach(p => { out[p] = (got.get('v:' + p) || 0) + (base[p] || 0); });
         return { views: out };
+    },
+
+    // 관리자: 시작값을 통째로 갈아 끼운다(같은 값으로 다시 넣어도 두 번 더해지지 않는다). n 은 index.js 가 다듬어 넘긴다
+    async setViewBase({ n, until, now }) {
+        const rec = { n, until, at: now };
+        await this.storage.put('vbase', rec);
+        this.viewBase = rec;
+        return { ok: true, posts: Object.keys(n).length };
+    },
+    // 관리자: 글별 직접 센 수와 시작값
+    async viewStats() {
+        const counted = {};
+        await this.each('v:', (n, k) => { counted[k.slice(2)] = n; });
+        const rec = (await this.storage.get('vbase')) || { n: {} };
+        return { counted, base: rec.n, until: rec.until || null, at: rec.at || null };
     },
 
     // 관리자 페이지: 날짜별 집계, 최근 날짜가 먼저
