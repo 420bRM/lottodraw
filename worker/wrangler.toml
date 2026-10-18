@@ -64,7 +64,17 @@ namespace_id = "1005"
   limit = 30
   period = 60
 
-# 회원·로그인 세션·좋아요·공유 집계 저장소 (src/community.js). 결제용 KV 와 나눠 KV 쓰기 한도를 결제에 남긴다.
+# 블로그 조회수(/api/view): 같은 IP 에서 1분에 60번까지. 같은 글은 브라우저가 하루 한 번만 보내니 사람은 닿지 않는다.
+# 통신사 공용 IP(여럿이 한 IP)를 생각해 공유 집계보다 넉넉히 둔다
+[[ratelimits]]
+name = "VIEW_LIMIT"
+namespace_id = "1006"
+
+  [ratelimits.simple]
+  limit = 60
+  period = 60
+
+# 회원·로그인 세션·좋아요·공유 집계·블로그 조회수 저장소 (src/community.js). 결제용 KV 와 나눠 KV 쓰기 한도를 결제에 남긴다.
 # 무료 요금제는 SQLite 저장 방식만 쓸 수 있다.
 [[durable_objects.bindings]]
 name = "COMMUNITY"
