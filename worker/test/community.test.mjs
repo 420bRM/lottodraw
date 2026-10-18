@@ -676,3 +676,40 @@ test('블로그 조회수: 우리 사이트에서 연 글만 세고, 누구나 �
     assert.equal((await view({ p: 'lotto-tax-guide' })).status, 429);
     assert.equal(env.COMMUNITY._m.get('v:lotto-tax-guide'), 2);
 });
+
+test('블로그 조회수 시작값: 관리자가 통째로 갈아 끼우고, 보이는 수 = 직접 센 수 + 시작값', async () => {
+    const env = await fresh();
+    const view = p => worker.fetch(new Request('https://api.lottodraw.kr/api/view', {
+        method: 'POST', body: JSON.stringify({ p }), headers: { Origin: ORIGIN, 'Content-Type': 'text/plain;charset=UTF-8' },
+    }), env, ctx).then(r => r.json());
+    const views = ids => call(env, 'GET', '/api/views?ids=' + ids).then(r => r.data.views);
+    await view('lotto-tax-guide');
+    await view('lotto-tax-guide');
+
+    const base = { 'lotto-tax-guide': 120, 'is-number-34-special': 45, 'why-jackpots-split': 0 };
+    assert.equal((await call(env, 'POST', '/api/admin/views/base', { body: { base } })).status, 401, '관리자만');
+    let r = await call(env, 'POST', '/api/admin/views/base', { headers: asAdmin, body: { base, until: '2026-10-18T09:41:00Z' } });
+    assert.equal(r.status, 200);
+    assert.equal(r.data.posts, 2, '0 은 담지 않는다');
+    assert.deepEqual(await views('lotto-tax-guide,is-number-34-special,why-jackpots-split'), { 'lotto-tax-guide': 122, 'is-number-34-special': 45, 'why-jackpots-split': 0 });
+    assert.deepEqual((await view('is-number-34-special')).views, { 'is-number-34-special': 46 }, '센 뒤의 수에도 시작값이 붙는다');
+
+    // 같은 값을 다시 넣어도 두 번 더해지지 않는다. 서버가 다시 떠도(메모리 비움) 그대로
+    await call(env, 'POST', '/api/admin/views/base', { headers: asAdmin, body: { base, until: '2026-10-18T09:41:00Z' } });
+    env.COMMUNITY.restart();
+    assert.deepEqual(await views('lotto-tax-guide,is-number-34-special'), { 'lotto-tax-guide': 122, 'is-number-34-special': 46 });
+
+    r = await call(env, 'GET', '/api/admin/views', { headers: asAdmin });
+    assert.equal(r.status, 200);
+    assert.deepEqual(r.data.counted, { 'lotto-tax-guide': 2, 'is-number-34-special': 1 });
+    assert.deepEqual(r.data.base, { 'lotto-tax-guide': 120, 'is-number-34-special': 45 });
+    assert.equal(r.data.until, '2026-10-18T09:41:00Z');
+    assert.equal((await call(env, 'GET', '/api/admin/views')).status, 401);
+
+    for (const bad of [null, [], { 'Bad Slug': 1 }, { a: -1 }, { a: 1.5 }, { a: '10' }]) {
+        assert.equal((await call(env, 'POST', '/api/admin/views/base', { headers: asAdmin, body: { base: bad } })).status, 400, JSON.stringify(bad).slice(0, 40));
+    }
+    // 빈 값으로 갈아 끼우면 시작값이 빠진다
+    await call(env, 'POST', '/api/admin/views/base', { headers: asAdmin, body: { base: {} } });
+    assert.deepEqual(await views('lotto-tax-guide,is-number-34-special'), { 'lotto-tax-guide': 2, 'is-number-34-special': 1 });
+});

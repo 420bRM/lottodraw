@@ -1208,6 +1208,23 @@ async function admin(request, env, sub, method, url) {
         if (!env.COMMUNITY) throw new HttpError(503, 'no_store', '집계 저장소가 없습니다.');
         return json(request, env, await community(env, 'taps'));
     }
+    // 블로그 조회수: 글별 직접 센 수와 시작값(GET), 시작값 갈아 끼우기(POST — tools/seed-views.js). 보이는 수 = 직접 센 수 + 시작값
+    if (sub === '/views' && method === 'GET') {
+        if (!env.COMMUNITY) throw new HttpError(503, 'no_store', '집계 저장소가 없습니다.');
+        return json(request, env, await community(env, 'viewStats'));
+    }
+    if (sub === '/views/base' && method === 'POST') {
+        if (!env.COMMUNITY) throw new HttpError(503, 'no_store', '집계 저장소가 없습니다.');
+        const body = await readJson(request);
+        const base = body.base && typeof body.base === 'object' && !Array.isArray(body.base) ? body.base : null;
+        const entries = base ? Object.entries(base) : [];
+        if (!base || !entries.every(([k, v]) => POST_RE.test(k) && Number.isInteger(v) && v >= 0 && v <= 1e8)) {
+            throw new HttpError(400, 'bad_base', '시작값은 {"글 이름": 0 이상의 정수} 모양이어야 합니다.');
+        }
+        const n = {};
+        entries.forEach(([k, v]) => { if (v) n[k] = v; });
+        return json(request, env, await community(env, 'setViewBase', { n, until: String(body.until || '').slice(0, 40), now: Date.now() }));
+    }
     // 회원 명부 · 카드별 좋아요 합계 (구글 로그인을 켰을 때)
     if (sub === '/members' && method === 'GET') {
         needLogin(env);
