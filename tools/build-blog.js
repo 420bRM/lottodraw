@@ -58,6 +58,7 @@ const RELATED = {
     consecutive:   ['statistics-consecutive.html', '연속번호 통계', 'Consecutive numbers', '연속번호가 나온 회차 비율', 'Share of draws with consecutive numbers'],
     'prize-stats': ['statistics-prize.html', '1등 당첨자 수 통계', '1st-prize winners per draw', '회차별 당첨자 수 분포와 이월 횟수', 'How many winners each draw had, and rollovers'],
     stores: ['statistics-stores.html', '1등 판매점 통계', '1st-prize retailer statistics', '1등 많이 나온 곳 순위 · 지역 · 2등과 견주기', 'Top retailers, areas and the 2nd-prize check'],
+    repeat:        ['statistics-repeat.html', '당첨번호 중복', 'Repeated winning numbers', '6개 · 5개가 같은 회차와 생일 문제', 'Draws sharing six or five numbers, and the birthday problem'],
     'prize-tiers': ['statistics-prize-2-3.html', '2등·3등 당첨금 통계', '2nd & 3rd prize statistics', '평균·최고·최저와 연도별 흐름', 'Averages, records and the year-by-year picture'],
     probability:   ['probability.html', '로또 확률', 'Lotto odds', '등수별 당첨 확률과 계산 방법', 'Odds for each prize tier and how they are worked out'],
     tax:           ['tax.html', '실수령액 계산기', 'After-tax calculator', '당첨금을 넣으면 세금과 실수령액', 'Enter a prize to see the tax and take-home amount'],

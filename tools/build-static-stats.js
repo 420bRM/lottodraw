@@ -17,6 +17,7 @@
 //   probability.html         등수별 당첨 확률
 //   statistics-prize-2-3.html  2등·3등 당첨금 (prize-data.json 이 있을 때만)
 //   statistics-stores.html   1등 판매점 (stores-data.json 이 있을 때만 — tools/update-stores.js)
+//   statistics-repeat.html   당첨번호 중복 (회차와 회차를 통째로 견줌)
 //   index.html · tax.html · top-prize.html   <!-- seo:... --> 표식 사이만 고친다
 //   blog/                    블로그 목록과 글 (tools/build-blog.js 를 불러 만든다)
 //   sitemap.xml
@@ -213,6 +214,54 @@ const STORES = (() => {
     const netFirst = net ? rounds.find(r => d.rounds[r].w1.some(([id]) => id === '51100000') || d.rounds[r].w2.includes('51100000')) : null;
     const last = rounds[rounds.length - 1];
     return { d, rounds, first: rounds[0], last, g1, g2, method, maxM, sido, all, with1, groups, no1, top, net, netFirst, shop };
+})();
+
+// 당첨번호 중복 — 회차와 회차를 통째로 견준다 (페이지는 아래 repeatPage). lotto-data.json 만 쓰므로 늘 만든다
+const REPEAT_FILE = 'statistics-repeat.html';
+const REPEAT_SINCE = '2026-10-18';   // 중복 페이지와 링크 · 확률 페이지 문단을 넣은 날
+const REPEAT = (() => {
+    const order = draws.slice().sort((a, b) => a.round - b.round);
+    const byK = new Array(7).fill(0);   // 겹친 번호 수 → 회차 쌍 수
+    const close = [];                   // 5개 이상 같은 쌍
+    let seven = 0;                      // 보너스까지 7개가 같은 쌍
+    const key7 = d => d.numbers.concat(d.bonus).sort(asc).join(',');
+    order.forEach((a, i) => {
+        const has = new Array(46).fill(false);
+        a.numbers.forEach(n => { has[n] = true; });
+        for (let j = i + 1; j < order.length; j++) {
+            const b = order[j];
+            let k = 0;
+            for (const n of b.numbers) if (has[n]) k++;
+            byK[k]++;
+            if (k < 5) continue;
+            if (key7(a) === key7(b)) seven++;
+            close.push({ a, b, k, same: b.numbers.filter(n => has[n]).sort(asc),
+                onlyA: a.numbers.filter(n => !b.numbers.includes(n)), onlyB: b.numbers.filter(n => !has[n]) });
+        }
+    });
+    close.sort((x, y) => y.b.round - x.b.round || y.a.round - x.a.round);
+    // 한쪽 회차 번호 6개가 다른 회차의 당첨번호 5개 + 보너스에 다 들어 있으면, 그 번호로 그 회차를 샀을 때 2등
+    const second = [];
+    close.filter(c => c.k === 5).forEach(c => {
+        if (c.onlyA[0] === c.b.bonus) second.push({ from: c.a, to: c.b });
+        if (c.onlyB[0] === c.a.bonus) second.push({ from: c.b, to: c.a });
+    });
+    // 생일 문제: n회 동안 6개가 같은 쌍이 하나도 없을 확률 p = (1 − 1/T)(1 − 2/T)…(1 − (n−1)/T)
+    let p = 1, n = 1, chance = null, half = null;
+    while (chance === null || half === null) {
+        if (n === order.length) chance = 1 - p;
+        if (half === null && p <= 0.5) half = n;
+        p *= 1 - n / TOTAL;
+        n++;
+    }
+    const last = order[order.length - 1];
+    // 매주 한 번 추첨이 이어진다고 보고 half 회차가 되는 해
+    const halfYear = new Date(Date.parse(last.date) + (half - last.round) * 7 * 864e5).getUTCFullYear();
+    const distinct = new Set(order.map(d => d.numbers.slice().sort(asc).join(','))).size;
+    return {
+        pairs: order.length * (order.length - 1) / 2, byK, close, seven, second, chance, half, halfYear, distinct,
+        pK: k => comb(6, k) * comb(39, 6 - k) / TOTAL,   // 두 회차가 k개 겹칠 확률
+    };
 })();
 
 
@@ -806,6 +855,8 @@ const ABOUT = {};
             table([['순위', 'Rank'], ['번호 쌍', 'Pair'], ['함께 나온 횟수', 'Times together']], rows),
             pEn('쌍은 모두 990가지라 그중 가장 많은 쌍은 기대값보다 꽤 높게 나오는 게 보통입니다. 번호 하나를 골라 그 번호의 궁합수를 보는 기능은 <a href="index.html#detail-head">홈의 상세 분석</a>(이용권)에 있습니다.',
                 'There are 990 possible pairs, so the busiest one normally sits well above the expected count. To pick a number and see the numbers drawn with it, use <a href="index.html#detail-head">the detailed analysis on the home page</a> (paid).'),
+            pEn(`번호 두 개 대신 회차 두 개를 통째로 견주면, ${RANGE}에서 6개가 모두 같은 회차${REPEAT.byK[6] ? `가 ${REPEAT.byK[6]}쌍,` : '는 아직 없고'} 5개가 같은 회차는 ${REPEAT.byK[5]}쌍입니다. 회차끼리 견준 기록은 <a href="${REPEAT_FILE}">당첨번호 중복</a>에 있습니다.`,
+                `Compare whole draws instead of two numbers and, across draws 1–${N}, ${REPEAT.byK[6] ? `${REPEAT.byK[6]} pair${REPEAT.byK[6] > 1 ? 's' : ''} of draws had all six numbers in common` : 'no two draws have had all six numbers in common yet'}, while ${REPEAT.byK[5]} pairs share five. The draw-by-draw comparison is in <a href="${REPEAT_FILE}">repeated winning numbers</a>.`),
         ],
     });
 })();
@@ -1530,8 +1581,19 @@ function roundPage(d) {
     if (f.records.includes('second')) items.push([`2등 ${fmt(p.w2)}게임은 이 회차 당시까지 가장 많은 수였습니다.`, `${fmt(p.w2)} second-prize games was the most of any draw up to then.`]);
     if (f.records.includes('sales')) items.push([`총 판매액 ${won(p.sales)}은 이 회차 당시까지 가장 많았습니다.`, `Sales of ${wonEn(p.sales)} were the highest of any draw up to then.`]);
     if (f.best && f.best.count >= 5) {
-        items.push([`당첨번호 6개 중 ${f.best.count}개(${f.best.nums.join(', ')})가 ${roundLink(f.best.round)} 당첨번호와 같습니다.`,
-            `${f.best.count} of the six numbers (${f.best.nums.join(', ')}) match <a href="${f.best.round}.html">draw ${f.best.round}</a>.`]);
+        // 5개가 같고 그 회차의 남은 번호가 이 회차 보너스면, 그 회차 번호로 이 회차를 샀을 때 2등이다
+        const left = byRound[f.best.round].numbers.find(n => !d.numbers.includes(n));
+        const second = f.best.count === 5 && left === d.bonus;
+        items.push([(f.best.count === 6
+            ? `당첨번호 6개가 모두 ${roundLink(f.best.round)} 당첨번호와 같습니다.`
+            : `당첨번호 6개 중 ${f.best.count}개(${f.best.nums.join(', ')})가 ${roundLink(f.best.round)} 당첨번호와 같습니다.`)
+            + (second ? ` ${f.best.round}회의 남은 번호 하나(${left})가 이 회차 보너스 번호여서, ${f.best.round}회 번호를 이 회차에 그대로 샀다면 2등입니다.` : '')
+            + ` 회차끼리 번호가 겹친 기록은 <a href="../${REPEAT_FILE}">당첨번호 중복</a>에 있습니다.`,
+            (f.best.count === 6
+                ? `All six numbers match <a href="${f.best.round}.html">draw ${f.best.round}</a>.`
+                : `${f.best.count} of the six numbers (${f.best.nums.join(', ')}) match <a href="${f.best.round}.html">draw ${f.best.round}</a>.`)
+            + (second ? ` Draw ${f.best.round}'s remaining number (${left}) is this draw's bonus ball, so replaying draw ${f.best.round}'s numbers here would have won 2nd prize.` : '')
+            + ` Every draw-to-draw overlap is in <a href="../${REPEAT_FILE}">repeated winning numbers</a>.`]);
     }
     const highlights = notes.length || items.length ? [
         h2En('이 회차에서 눈여겨볼 점', 'What stands out in this draw'),
@@ -1673,15 +1735,18 @@ function probabilityPage() {
             h2En('얼마나 드문 일일까', 'How rare is it, really'),
             pEn(`매주 한 게임씩 산다면 1등 조합 수만큼 사는 데 ${fmt(TOTAL)}주, 약 ${fmt(years)}년이 걸립니다.`,
                 `Buying one game a week, covering every combination would take ${fmt(TOTAL)} weeks — roughly ${fmt(years)} years.`),
+            // 회차에 따라 바뀌지 않는 숫자만 쓴다 (이 페이지는 매주 바뀌지 않는다)
+            pEn(`조합이 이렇게 많아서 같은 당첨번호가 두 번 나오는 일도 드뭅니다. 다만 생일 문제처럼 회차가 쌓일수록 가능성이 빠르게 커져, 약 ${fmt(REPEAT.half)}회가 되면 6개가 모두 같은 두 회차가 한 번이라도 나왔을 확률이 50%를 넘습니다. 지금까지의 기록은 <a href="${REPEAT_FILE}">당첨번호 중복</a>에 있습니다.`,
+                `With this many combinations, the same winning numbers coming up twice is rare too. But as with the birthday problem the chance grows quickly as draws pile up: by about draw ${fmt(REPEAT.half)} it passes 50% that some two draws have matched all six. The record so far is in <a href="${REPEAT_FILE}">repeated winning numbers</a>.`),
             h2En('자동과 수동, 확률이 다를까', 'Quick pick or self-pick: any difference?'),
             pEn('같습니다. 자동은 기계가 번호를 고르고 수동은 사람이 고를 뿐, 한 게임이 8,145,060개 조합 중 하나라는 점은 똑같습니다. 많이 나온 번호나 안 나온 번호를 골라도 확률은 달라지지 않습니다.',
                 'They are the same. A quick pick lets the machine choose and a self-pick lets you choose, but either way one game is one of 8,145,060 combinations. Picking frequent or absent numbers does not change that.'),
             h2En('확률을 높이는 방법이 있을까', 'Is there any way to improve the odds?'),
             pEn('확률을 올리는 방법은 서로 다른 조합을 더 많이 사는 것뿐이고, 그만큼 비용도 늘어납니다. 다만 번호 선택은 <strong>당첨됐을 때 나눠 가질 사람 수</strong>에 영향을 줍니다. 1·2·3·4·5·6이나 생일 날짜(1~31)처럼 많은 사람이 고르는 조합은 당첨자가 여럿 나와 1인당 금액이 줄어듭니다. <a href="index.html" data-i18n-en="The number generator">번호 생성기</a>는 이런 특수 패턴을 걸러냅니다.',
                 'The only way to raise the odds is to buy more distinct combinations, which costs proportionally more. What your choice does affect is <strong>how many people you would share a prize with</strong>. Combinations many people pick — 1·2·3·4·5·6, or dates from 1 to 31 — tend to produce several winners and a smaller share each. <a href="index.html">The number generator</a> filters out patterns like these.'),
-            pEn('관련 통계: <a href="statistics-frequency.html">많이 나온 번호 순위</a> · <a href="statistics-prize.html">1등 당첨자 수</a>'
+            pEn(`관련 통계: <a href="statistics-frequency.html">많이 나온 번호 순위</a> · <a href="${REPEAT_FILE}">당첨번호 중복</a> · <a href="statistics-prize.html">1등 당첨자 수</a>`
                 + (TIER ? ` · <a href="${TIER_FILE}">2등·3등 당첨금</a>` : '') + (STORES ? ` · <a href="${STORES_FILE}">1등 판매점</a>` : '') + ' · <a href="tax.html">실수령액 계산기</a>',
-                'Related: <a href="statistics-frequency.html">most frequent numbers</a> · <a href="statistics-prize.html">first-prize winners</a>'
+                `Related: <a href="statistics-frequency.html">most frequent numbers</a> · <a href="${REPEAT_FILE}">repeated winning numbers</a> · <a href="statistics-prize.html">first-prize winners</a>`
                 + (TIER ? ` · <a href="${TIER_FILE}">2nd and 3rd prizes</a>` : '') + (STORES ? ` · <a href="${STORES_FILE}">1st-prize retailers</a>` : '') + ' · <a href="tax.html">after-tax calculator</a>'),
         ],
     });
@@ -1995,6 +2060,134 @@ function storesPage() {
     });
 }
 
+/* ───── 당첨번호 중복 ───── */
+
+// 숫자는 위의 REPEAT 에서 온다. 6개가 같은 쌍이 생겨도 문장이 맞도록 n6 에 조건을 건다
+function repeatPage() {
+    const R = REPEAT;
+    const n6 = R.byK[6], n5 = R.byK[5];
+    const exp = k => R.pairs * R.pK(k);
+    const expText = v => (v < 1 ? v.toFixed(2) : v < 100 ? f1(v) : fmt(Math.round(v)));
+    const chance = (R.chance * 100).toFixed(1) + '%';
+    const later = R.half > N;   // 50%를 넘는 회차가 아직 오지 않았다
+    // 문단 안 링크(문단째 영문으로 바뀐다)와 표 칸 링크(링크 혼자 바뀐다)
+    const ko = d => `<a href="round/${d.round}.html">${d.round}회</a>`;
+    const enL = d => `<a href="round/${d.round}.html">draw ${d.round}</a>`;
+    const cell = d => `<a href="round/${d.round}.html" data-i18n-en="Draw ${d.round}">${d.round}회</a>`;
+    const exact = R.close.filter(c => c.k === 6);
+
+    const lead = n6
+        ? en(`${RANGE} 당첨번호를 회차끼리 모두 견줘 보면 <strong>6개가 모두 같은 회차가 ${n6}쌍</strong> 있습니다(${exact.map(c => `${ko(c.a)} · ${ko(c.b)}`).join(', ')}). 6개 중 5개가 같은 회차는 ${n5}쌍입니다.`,
+            `Comparing every pair of draws from 1 to ${N}, <strong>${n6} pair${n6 > 1 ? 's' : ''} of draws had exactly the same six numbers</strong> (${exact.map(c => `${enL(c.a)} and ${enL(c.b)}`).join(', ')}). ${n5} pairs share five of the six.`)
+        : en(`${RANGE} 당첨번호를 회차끼리 모두 견줘 보면 <strong>6개가 모두 같은 회차는 아직 한 번도 없습니다.</strong>${R.seven ? '' : ' 보너스 번호까지 7개로 봐도 없습니다.'} 가장 가까웠던 것은 6개 중 5개가 같은 회차로, ${n5}쌍입니다.`,
+            `Comparing every pair of draws from 1 to ${N}, <strong>no two draws have ever had the same six numbers.</strong>${R.seven ? '' : ' Even counting the bonus ball as a seventh number, there are none.'} The closest calls share five of the six numbers: ${n5} pairs of draws.`);
+
+    const glance = [
+        h2En('한눈에 보기', 'At a glance'),
+        table([['항목', 'Measure'], ['값', 'Value']], [
+            [en('견준 회차 쌍', 'Pairs of draws compared'), en(`${fmt(R.pairs)}쌍`, fmt(R.pairs))],
+            [en('6개가 모두 같은 쌍', 'Pairs with all six the same'),
+                en(`<strong>${n6}쌍</strong><span class="sub">기대 ${expText(exp(6))}쌍</span>`, `<strong>${n6}</strong><span class="sub">expected ${expText(exp(6))}</span>`)],
+            [en('보너스까지 7개가 같은 쌍', 'Pairs with all seven the same, bonus included'), en(`${R.seven}쌍`, String(R.seven))],
+            [en('6개 중 5개가 같은 쌍', 'Pairs sharing five numbers'),
+                en(`${n5}쌍<span class="sub">기대 ${expText(exp(5))}쌍</span>`, `${n5}<span class="sub">expected ${expText(exp(5))}</span>`)],
+            [en('지금까지 한 번이라도 6개가 같았을 확률', 'Chance of at least one exact repeat by now'), chance],
+            later ? [en('그 확률이 50%를 넘는 때', 'When that chance passes 50%'),
+                en(`약 ${fmt(R.half)}회 (${R.halfYear}년 무렵)`, `around draw ${fmt(R.half)} (about ${R.halfYear})`)] : null,
+        ].filter(Boolean), 'tier-stat tier-glance'),
+        pEn(`${fmt(N)}회에서 두 회차를 고르는 방법은 ${fmt(N)} × ${fmt(N - 1)} ÷ 2 = ${fmt(R.pairs)}가지입니다. 기대 쌍 수는 번호를 무작위로 뽑을 때 평균적으로 나오는 쌍 수입니다.`,
+            `${fmt(N)} draws can be paired up in ${fmt(N)} × ${fmt(N - 1)} ÷ 2 = ${fmt(R.pairs)} ways. The expected count is how many such pairs random draws would produce on average.`, 'note'),
+    ];
+
+    const why = [
+        h2En(n6 ? '같은 번호가 또 나온 것은 이상한 일일까' : '왜 아직 한 번도 없을까', n6 ? 'Is an exact repeat strange?' : 'Why it has not happened yet'),
+        pEn(`두 회차의 당첨번호 6개가 모두 같을 확률은 ${fmt(TOTAL)}분의 1입니다. 회차 쌍이 ${fmt(R.pairs)}개이니 6개가 같은 쌍은 평균 ${fmt(R.pairs)} ÷ ${fmt(TOTAL)} ≈ <strong>${expText(exp(6))}쌍</strong> 나올 것으로 기대됩니다. 한 쌍이라도 나왔을 확률로 바꾸면 약 <strong>${chance}</strong>입니다.`
+            + (n6 ? ' 드물지만 무작위 추첨에서도 일어날 수 있는 일입니다.' : ' 아직 한 번도 없는 쪽이 자연스럽습니다.'),
+            `The chance that two draws share all six numbers is 1 in ${fmt(TOTAL)}. With ${fmt(R.pairs)} pairs of draws, the expected number of exact repeats is ${fmt(R.pairs)} ÷ ${fmt(TOTAL)} ≈ <strong>${expText(exp(6))}</strong>, which works out to about a <strong>${chance}</strong> chance of at least one.`
+            + (n6 ? ' Rare, but well within what random draws can produce.' : ' Not having seen one yet is the more natural outcome.')),
+        pEn(`이 계산은 <strong>생일 문제</strong>와 같습니다. 생일은 365가지뿐인데 23명만 모여도 생일이 같은 두 사람이 있을 확률이 50%를 넘습니다. 사람이 늘면 견줄 쌍이 사람 수의 제곱에 가깝게 늘기 때문입니다. 로또의 "생일"은 ${fmt(TOTAL)}가지라 `
+            + (later ? `같은 계산으로 약 <strong>${fmt(R.half)}회</strong>가 쌓여야 50%를 넘습니다. 매주 한 번 추첨이 이어진다면 ${R.halfYear}년 무렵입니다.` : `약 ${fmt(R.half)}회에서 50%를 넘는데, 추첨은 이미 그 회차를 지났습니다.`)
+            + ' 생일 문제와 "많이 견주면 우연의 일치가 흔해진다"는 원리는 <a href="blog/pair-numbers-multiple-comparisons.html">궁합수는 진짜 있을까</a>에서 더 자세히 다룹니다.',
+            `This is the <strong>birthday problem</strong>. There are only 365 birthdays, yet with just 23 people the chance that two share one passes 50%, because the number of pairs grows roughly with the square of the group size. Lotto has ${fmt(TOTAL)} possible "birthdays", so `
+            + (later ? `by the same arithmetic it takes about <strong>${fmt(R.half)} draws</strong> to pass 50% — around ${R.halfYear} at one draw a week.` : `the chance passes 50% at about draw ${fmt(R.half)}, which the lottery has already reached.`)
+            + ' The birthday problem, and why comparing many things makes coincidences common, are covered in <a href="blog/pair-numbers-multiple-comparisons.html">are pair numbers real?</a>'),
+        pEn(`다음 회차 당첨번호가 지난 ${fmt(N)}회${R.distinct < N ? `(서로 다른 조합 ${fmt(R.distinct)}가지)` : ''} 중 어느 한 회차와 똑같이 나올 확률은 ${fmt(R.distinct)} ÷ ${fmt(TOTAL)}, 약 ${fmt(Math.round(TOTAL / R.distinct))}분의 1입니다. 이미 나온 번호라고 덜 나오거나 더 나오지 않습니다. 지난 당첨번호 한 줄을 그대로 사도 1등 확률은 다른 조합과 똑같이 ${fmt(TOTAL)}분의 1입니다.`,
+            `The chance that the next draw exactly matches one of the past ${fmt(N)}${R.distinct < N ? ` (${fmt(R.distinct)} distinct combinations)` : ''} is ${fmt(R.distinct)} ÷ ${fmt(TOTAL)}, about 1 in ${fmt(Math.round(TOTAL / R.distinct))}. Numbers that have already won are neither less nor more likely to come up. Playing a past winning line gives the same 1 in ${fmt(TOTAL)} chance as any other combination.`),
+    ];
+
+    const tierKo = ['낙첨', '낙첨', '낙첨', '5등', '4등', '2등 또는 3등', '1등'];
+    const tierEn = ['nothing', 'nothing', 'nothing', '5th', '4th', '2nd or 3rd', '1st'];
+    // 문장용 어림 기준 — 회차 쌍끼리는 회차를 나눠 써서 독립이 아니므로 검정으로 쓰지 않는다
+    const fits = [0, 1, 2, 3, 4, 5, 6].every(k => Math.abs(R.byK[k] - exp(k)) <= 3 * Math.sqrt(exp(k)));
+    const dist = [
+        h2En('같은 번호 개수별 회차 쌍', 'Pairs of draws by numbers shared'),
+        pEn(`${fmt(R.pairs)}쌍을 하나하나 견줘 같은 번호가 몇 개인지 셌습니다. 기대 쌍 수는 회차 쌍 수에 두 회차가 k개 겹칠 확률 C(6,k) × C(39,6−k) ÷ ${fmt(TOTAL)}을 곱한 값입니다.`,
+            `Each of the ${fmt(R.pairs)} pairs was compared and the shared numbers counted. The expected count is the number of pairs times the chance that two draws share k numbers, C(6,k) × C(39,6−k) ÷ ${fmt(TOTAL)}.`),
+        table([['같은 번호', 'Numbers shared'], ['실제 쌍', 'Actual pairs'], ['기대 쌍', 'Expected'], ['등수로 치면', 'Would have won']],
+            [6, 5, 4, 3, 2, 1, 0].map(k => [en(`${k}개`, String(k)), `<strong>${fmt(R.byK[k])}</strong>`, expText(exp(k)), en(tierKo[k], tierEn[k])]), 'tier-stat'),
+        pEn((fits ? '어느 줄이든 실제 쌍 수가 무작위로 뽑을 때의 기대와 가깝습니다. ' : '')
+            + '"등수로 치면"은 앞 회차 당첨번호를 뒤 회차에 그대로 샀을 때의 등수입니다. 5개가 같으면 남은 번호가 뒤 회차 보너스 번호일 때 2등, 아니면 3등입니다.',
+            (fits ? 'In every row the actual count is close to what random draws would give. ' : '')
+            + '"Would have won" is the prize the earlier draw\'s numbers would have won in the later draw. With five in common it is 2nd prize if the remaining number is the later draw\'s bonus ball, otherwise 3rd.', 'note'),
+    ];
+
+    const gaps = R.close.map(c => c.b.round - c.a.round);
+    const newest = R.close[0];
+    const closeBlock = R.close.length ? [
+        h2En(n6 ? `6개 또는 5개가 같은 회차 ${R.close.length}쌍` : `6개 중 5개가 같은 회차 ${n5}쌍`,
+            n6 ? `${R.close.length} pairs sharing six or five numbers` : `${n5} pairs sharing five numbers`),
+        pEn('앞 회차 당첨번호를 뒤 회차에 그대로 다시 샀다면 3등(5개 일치) 이상이었을 회차 쌍입니다. 최근 것부터 적었고, 다른 번호는 앞 회차 → 뒤 회차 순입니다.',
+            'Pairs where replaying the earlier draw\'s numbers in the later draw would have won at least 3rd prize (five matched). Most recent first; the different numbers read earlier → later.'),
+        // 휴대폰(360px)에서 표가 옆으로 밀리지 않게 칸을 셋으로: 회차 쌍(아래 줄에 간격) · 같은 번호 · 다른 번호
+        table([['회차', 'Draws'], ['같은 번호', 'Shared numbers'], ['다른 번호', 'Different']],
+            R.close.map(c => [`${cell(c.a)} → ${cell(c.b)}`
+                + `<span class="sub" data-i18n-en="${fmt(c.b.round - c.a.round)} draws apart">${fmt(c.b.round - c.a.round)}회 차이</span>`,
+                `<span class="row-balls">${c.same.map(ball).join('')}</span>`,
+                c.k === 6 ? en('없음', 'none') : `<span class="row-balls">${c.onlyA[0]} → ${c.onlyB[0]}</span>`]), 'tier-stat'),
+        ...R.second.map(s => {
+            const x = s.to.bonus;
+            return pEn(`${ko(s.from)} 당첨번호 6개 가운데 5개는 ${ko(s.to)} 당첨번호와 같고, 남은 하나(${x})는 ${ko(s.to)} 보너스 번호입니다. ${ko(s.from)} 번호를 ${ko(s.to)}에 그대로 샀다면 <strong>2등</strong>입니다.`,
+                `Five of ${enL(s.from)}'s six numbers match ${enL(s.to)}, and the sixth (${x}) is ${enL(s.to)}'s bonus ball, so replaying ${enL(s.from)}'s numbers in ${enL(s.to)} would have won <strong>2nd prize</strong>.`);
+        }),
+        pEn(`가장 최근은 ${ko(newest.b)}(${newest.b.date})로, ${ko(newest.a)}와 겹친 번호는 ${newest.same.join(', ')}입니다.`
+            + (gaps.length > 1 ? ` 두 회차 사이는 짧게는 ${fmt(Math.min(...gaps))}회, 길게는 ${fmt(Math.max(...gaps))}회 떨어져 있습니다.` : ''),
+            `The most recent is ${enL(newest.b)} (${newest.b.date}), which shared ${newest.same.join(', ')} with ${enL(newest.a)}.`
+            + (gaps.length > 1 ? ` The two draws in a pair are as few as ${fmt(Math.min(...gaps))} and as many as ${fmt(Math.max(...gaps))} draws apart.` : '')),
+    ] : [];
+
+    const title = `로또 당첨번호 중복 · 같은 번호 나온 적 있을까 (${RANGE})`;
+    const desc = `로또 ${RANGE} 당첨번호를 회차끼리 모두 견줬습니다. `
+        + (n6 ? `6개가 모두 같은 회차 ${n6}쌍, 5개가 같은 회차 ${n5}쌍. ` : `6개가 모두 같은 회차는 아직 없고, 5개가 같은 회차는 ${n5}쌍입니다. `)
+        + '같은 번호가 다시 나올 확률과 생일 문제, 5개 일치 회차 목록.';
+    return shell({
+        file: REPEAT_FILE,
+        crumbs: [['index.html#sec-stats', '로또 통계', null, 'Lotto statistics'], [null, '당첨번호 중복', null, 'Repeated numbers']],
+        title,
+        h1: '로또 당첨번호 중복 (같은 번호가 또 나온 적)', h1En: 'Repeated Winning Numbers',
+        desc,
+        scope: en(`${RANGE} · ${PERIOD} · 매주 추첨 후 자동 갱신 (마지막 갱신 ${UPDATED})`,
+            `Draws 1–${N} · ${PERIOD} · updated automatically after each draw (last update ${UPDATED})`),
+        lead,
+        ld: [{
+            '@type': 'Dataset',
+            name: title,
+            description: desc,
+            url: `${SITE}/${REPEAT_FILE}`,
+            isAccessibleForFree: true,
+            dateModified: UPDATED,
+            temporalCoverage: `${stats.oldestDate}/${stats.latestDate}`,
+            creator: { '@type': 'Organization', name: 'lottodraw.kr', url: SITE + '/' },
+            keywords: ['로또 당첨번호 중복', '로또 같은 번호', '로또 중복 당첨번호', '로또 생일 문제'],
+        }],
+        body: [].concat(glance, why, dist, closeBlock, [
+            pEn('함께 보기: <a href="statistics-pair.html">궁합수 순위</a> · <a href="probability.html">로또 확률</a> · <a href="blog/pair-numbers-multiple-comparisons.html">궁합수는 진짜 있을까</a> · <a href="draws.html">회차별 당첨번호</a>',
+                'See also: <a href="statistics-pair.html">number pairs</a> · <a href="probability.html">lotto odds</a> · <a href="blog/pair-numbers-multiple-comparisons.html">are pair numbers real?</a> · <a href="draws.html">all winning numbers</a>'),
+            h2En('다른 로또 통계', 'Other statistics'),
+            relatedLinks(REPEAT_FILE),
+        ]),
+    });
+}
+
 /* ───── 통계 페이지 렌더 ───── */
 
 function relatedLinks(current) {
@@ -2101,6 +2294,10 @@ function updateHome(posts) {
             `<span${p.factEn ? ` data-i18n-en="${esc(p.factEn)}"` : ''}>${esc(p.fact)}</span></li>`).join('\n'),
         `                    <li><a href="draws.html" data-i18n-en="All winning numbers">회차별 당첨번호</a>` +
             `<span data-i18n-en="latest: draw ${LATEST.round}, ${latestNums.join(' ')} + ${LATEST.bonus}">최신 ${LATEST.round}회 ${latestNums.join(' ')} + ${LATEST.bonus}</span></li>`,
+        `                    <li><a href="${REPEAT_FILE}" data-i18n-en="Repeated numbers">당첨번호 중복</a>`
+            + (REPEAT.byK[6]
+                ? `<span data-i18n-en="${esc(`${REPEAT.byK[6]} exact repeats · ${REPEAT.byK[5]} pairs share 5`)}">6개 같은 회차 ${REPEAT.byK[6]}쌍 · 5개 ${REPEAT.byK[5]}쌍</span></li>`
+                : `<span data-i18n-en="${esc(`no exact repeat yet · ${REPEAT.byK[5]} pairs share 5`)}">6개 같은 회차 없음 · 5개 ${REPEAT.byK[5]}쌍</span></li>`),
         '                    <li><a href="probability.html" data-i18n-en="Lotto odds">로또 확률</a><span data-i18n-en="1st 1/8,145,060 · 5th 1/45">1등 1/8,145,060 · 5등 1/45</span></li>',
         ...(TIER ? [`                    <li><a href="${TIER_FILE}" data-i18n-en="${esc('2nd & 3rd prizes')}">2등·3등 당첨금</a>`
             + `<span data-i18n-en="${esc(`average: 2nd ${wonAboutEn(TIER.mean2)} · 3rd ${wonAboutEn(TIER.mean3)}`)}">평균 2등 ${wonAbout(TIER.mean2)} · 3등 ${wonAbout(TIER.mean3)}</span></li>`] : []),
@@ -2374,8 +2571,10 @@ function updateSitemap(blog) {
         STATS.map(p => entry('/' + p.file, UPDATED, 'weekly', '0.8')),
         TIER ? [entry('/' + TIER_FILE, UPDATED, 'weekly', '0.8')] : [],
         STORES ? [entry('/' + STORES_FILE, UPDATED, 'weekly', '0.8')] : [],
+        [entry('/' + REPEAT_FILE, [UPDATED, REPEAT_SINCE].sort().pop(), 'weekly', '0.8')],
         [
-            entry('/probability.html', STORES ? atLeast('/probability.html', STORES_SINCE) : TIER ? atLeast('/probability.html', TIER_SINCE) : kept('/probability.html'), 'yearly', '0.7'),
+            // 마지막으로 크게 바뀐 날: 중복 문단 · 링크(REPEAT_SINCE). 그 앞은 판매점(STORES_SINCE) · 2·3등(TIER_SINCE) 링크
+            entry('/probability.html', atLeast('/probability.html', REPEAT_SINCE), 'yearly', '0.7'),
             entry('/statistics.html', UPDATED, 'weekly', '0.7'),
             entry('/top-prize.html', UPDATED, 'weekly', '0.7'),
             entry('/tax.html', TIER ? UPDATED : kept('/tax.html'), TIER ? 'weekly' : 'yearly', '0.7'),   // 2·3등 표가 매주 바뀐다
@@ -2414,6 +2613,7 @@ if (write('draws.html', drawsPage())) changed++;
 if (write('probability.html', probabilityPage())) changed++;
 if (TIER && write(TIER_FILE, prizeTierPage())) changed++;
 if (STORES && write(STORES_FILE, storesPage())) changed++;
+if (write(REPEAT_FILE, repeatPage())) changed++;
 // 블로그는 원고(content/blog/)로 만든다. 같은 틀을 쓰고 사이트맵에 같이 넣으려고 여기서 부른다
 const blog = require(path.join(__dirname, 'build-blog.js'))({ shell, write, SITE, OG_IMAGE });
 changed += blog.changed;
@@ -2421,7 +2621,7 @@ updateHome(blog.posts);
 updateTaxAndTop();
 if (updateAbout()) changed++;
 const urls = updateSitemap(blog.sitemap);
-console.log(`통계 ${STATS.length}쪽${TIER ? ' · 2·3등' : ''}${STORES ? ' · 1등 판매점' : ''} · 회차 ${draws.length}쪽 · 전체 조회 · 확률 · 블로그 ${blog.posts}편 · 사이트맵 ${urls}개 (${RANGE}, 갱신일 ${UPDATED})`);
+console.log(`통계 ${STATS.length}쪽${TIER ? ' · 2·3등' : ''}${STORES ? ' · 1등 판매점' : ''} · 중복 · 회차 ${draws.length}쪽 · 전체 조회 · 확률 · 블로그 ${blog.posts}편 · 사이트맵 ${urls}개 (${RANGE}, 갱신일 ${UPDATED})`);
 console.log(`바뀐 생성 페이지: ${changed}쪽`);
 // 손 관리 페이지의 css · js 주소에 내용 지문을 붙인다(배포 직후 옛 파일과 섞이지 않게) — 위에서 index · tax · top · about 을 고친 뒤에
 const versioned = require(path.join(__dirname, 'asset-version.js'))();
