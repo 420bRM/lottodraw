@@ -1358,6 +1358,15 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 .blog-index .chip-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border: 1px solid var(--line); border-radius: 999px; background: #fff; color: #000; font: inherit; font-size: 14px; cursor: pointer; }
 .blog-index .chip-btn .count { opacity: .7; }
 .blog-index .chip-btn[aria-pressed="true"] { border-color: var(--brand); background: var(--brand); color: #fff; }
+/* 정렬: 기본 순서 · 많이 읽은 순 (조회수를 받아 오면 보인다) */
+.blog-index .post-sort { display: flex; justify-content: flex-end; margin: -6px 0 12px; }
+.blog-index .post-sort[hidden] { display: none; }
+.blog-index .sort-btns { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.blog-index .sort-btn { min-height: 32px; margin: 0; padding: 0 12px; border: 0; background: #fff; color: var(--muted); font: inherit; font-size: 13px; cursor: pointer; }
+.blog-index .sort-btn + .sort-btn { border-left: 1px solid var(--line); }
+.blog-index .sort-btn:hover { background: #f5f7fb; }
+.blog-index .sort-btn[aria-pressed="true"] { background: #eef2f9; color: var(--brand); font-weight: bold; }
+.blog-index .sort-btn:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--brand); }
 .post-list { display: flex; flex-direction: column; gap: 18px; margin: 0; padding: 0; list-style: none; }
 .post-card { position: relative; padding: 18px 20px 0; border: 1px solid #e3e8f2; border-radius: 10px; background: #fff; box-shadow: var(--shadow); transition: border-color .2s, box-shadow .2s, opacity .3s; }
 /* 카테고리 단추를 누르면 다른 카테고리 글은 아래로 내려가며 흐려진다 */

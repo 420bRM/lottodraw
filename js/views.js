@@ -3,7 +3,8 @@
  * - 자리: <span class="post-views" data-post="글 이름" hidden> — 글은 제목 아래 카테고리 옆, 목록은 카드 머리.
  * - 글: 열면 worker /api/view 에 글 이름만 보내 하나 세고, 돌아온 수를 적는다. 같은 브라우저의 같은 글은
  *   하루(이 기기 날짜) 한 번만 센다 — 센 날을 localStorage 에 둔다. 그날 다시 열면 읽기만 한다(/api/views).
- * - 목록: 카드의 글 이름을 모아 /api/views 로 한 번에 읽는다.
+ * - 목록: 카드의 글 이름을 모아 /api/views 로 한 번에 읽는다. 받은 수는 자리마다 data-n 에도 적고(숨긴 수 포함)
+ *   document 에 'ld:views' 를 알린다 — 목록의 "많이 읽은 순" 정렬(tools/build-blog.js)이 이걸 쓴다.
  * - MIN 보다 작은 수는 적지 않는다. 서버가 안 되면 아무것도 안 보인다(조회수는 덤).
  */
 (function () {
@@ -31,10 +32,13 @@
     function show(views) {
         spots.forEach(s => {
             const n = views && views[s.getAttribute('data-post')];
-            if (typeof n !== 'number' || n < MIN) return;
+            if (typeof n !== 'number') return;
+            s.setAttribute('data-n', n);
+            if (n < MIN) return;
             s.textContent = tr(n === 1 ? 'views.one' : 'views.n', '조회 {n}').replace('{n}', n.toLocaleString('ko-KR'));
             s.hidden = false;
         });
+        document.dispatchEvent(new CustomEvent('ld:views'));
     }
 
     const read = ids => fetch(api + '/api/views?ids=' + ids.map(encodeURIComponent).join(','))
