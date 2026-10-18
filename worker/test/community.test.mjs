@@ -226,8 +226,16 @@ test('번호 생성기 설정: 로그인한 회원만 저장 · 다듬어 저장
     // 이상한 본문은 거절
     assert.equal((await call(env, 'POST', '/api/me/generator', { headers: auth(s), body: { gen: 'x' } })).status, 400);
     // AC값이 이상하면 끔(0)
-    const odd = await call(env, 'POST', '/api/me/generator', { headers: auth(s), body: { gen: { ac: 'x' } } });
+    const odd = await call(env, 'POST', '/api/me/generator', { headers: auth(s), body: { gen: { ac: 'x', acExact: true } } });
     assert.equal(odd.data.user.gen.ac, 0);
+    assert.equal(odd.data.user.gen.acExact, false, 'AC값 조건이 꺼져 있으면 "이 값만"도 끔');
+    // "이 값만": true 일 때만 켠다(문자열 · 숫자는 끔). 예전 설정(acExact 없음)은 범위(이상)로
+    const exact = await call(env, 'POST', '/api/me/generator', { headers: auth(s), body: { gen: { ac: 8, acExact: true } } });
+    assert.equal(exact.data.user.gen.ac, 8);
+    assert.equal(exact.data.user.gen.acExact, true);
+    const loose = await call(env, 'POST', '/api/me/generator', { headers: auth(s), body: { gen: { ac: 8, acExact: 'yes' } } });
+    assert.equal(loose.data.user.gen.acExact, false);
+    assert.equal(g.acExact, false, '없으면 범위(이상)');
     // 지우기
     const cleared = await call(env, 'POST', '/api/me/generator', { headers: auth(s), body: { gen: null } });
     assert.equal(cleared.data.user.gen, null);

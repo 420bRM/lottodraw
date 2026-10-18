@@ -768,7 +768,8 @@ function cleanGen(raw) {
     const pat = Array.isArray(raw.pat) ? [...new Set(raw.pat.map(Number).filter(n => Number.isInteger(n) && n >= 1 && n <= 16))].sort((x, y) => x - y) : [];
     const recent = Math.max(0, Math.min(GEN_RECENT_MAX, Math.floor(Number(raw.recent) || 0)));
     const ac = Math.max(0, Math.min(10, Math.floor(Number(raw.ac) || 0)));   // AC값 조건: 이 값 이상(0 = 끔)
-    return { inc, exc, pat, recent, ac, at: Date.now() };
+    const acExact = raw.acExact === true && ac > 0;                          // true 면 "이 값만": AC값이 딱 ac 인 조합만(2026-10-18)
+    return { inc, exc, pat, recent, ac, acExact, at: Date.now() };
 }
 async function saveGenerator(request, env) {
     const s = await sessionUser(request, env);

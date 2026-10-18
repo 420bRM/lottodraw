@@ -836,8 +836,113 @@ const ABOUT = {};
     });
 })();
 
+// AC값 계산기 + 차이 삼각형 (statistics-ac.html 의 인라인 스크립트 — 소스를 그대로 페이지에 싣는다. 브라우저에서 돈다).
+// 번호 6개를 받아 AC값을 적고, #ac-tri 에 차이 15개를 거꾸로 선 삼각형으로 그린다. 겹친 값은 같은 색 + 두 번호로 잇는 선,
+// 아래 목록에 겹침마다 "같은 간격 두 쌍"(차이가 둘씩 겹친다)인지 "3항 등차"(하나)인지 적는다. 처음엔 data-example(최근 회차)로 그린다
+function acCalculator() {
+    var input = document.getElementById('ac-input');
+    var out = document.getElementById('ac-out');
+    var box = document.getElementById('ac-tri');
+    var EN = !!(window.I18N && window.I18N.lang === 'en');
+    var COLORS = ['#e8590c', '#0c8599', '#7048e8', '#d6336c', '#5c940d', '#1971c2'];
+    var esc = function (s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
+    var band = function (n) { return n <= 10 ? 1 : n <= 20 ? 2 : n <= 30 ? 3 : n <= 40 ? 4 : 5; };
+    function draw(nums, caption) {
+        if (!box) return;
+        var cells = [], byD = {}, k, i;
+        for (k = 1; k < 6; k++) for (i = 0; i + k < 6; i++) {
+            var d = nums[i + k] - nums[i];
+            cells.push({ k: k, i: i, d: d });
+            (byD[d] = byD[d] || []).push([nums[i], nums[i + k]]);
+        }
+        var reps = Object.keys(byD).map(Number).filter(function (d) { return byD[d].length > 1; }).sort(function (a, b) { return a - b; });
+        var color = {};
+        reps.forEach(function (d, j) { color[d] = COLORS[j % COLORS.length]; });
+        var S = 54, L = 40, T = 20, RH = 31, CW = 34, CH = 22;
+        var X = function (pos) { return L + S * pos; };
+        var W = L + S * 5 + 20, H = T + RH * 5 + 16;
+        var links = [], body = [];
+        cells.forEach(function (c) {
+            var cx = X(c.i + c.k / 2), cy = T + RH * c.k, col = color[c.d];
+            if (col) {
+                links.push('<path class="ac-tri-link" stroke="' + col + '" fill="none" d="M' + X(c.i) + ',' + (T + 13) + ' L' + cx + ',' + (cy - CH / 2) + ' L' + X(c.i + c.k) + ',' + (T + 13) + '"/>');
+            }
+            body.push('<g class="ac-tri-cell' + (col ? ' is-rep' : '') + '"><rect x="' + (cx - CW / 2) + '" y="' + (cy - CH / 2) + '" width="' + CW + '" height="' + CH + '" rx="4"'
+                + (col ? ' style="fill:' + col + ';fill-opacity:.14;stroke:' + col + ';stroke-width:1.5"' : '') + '/>'
+                + '<text x="' + cx + '" y="' + (cy + 4) + '" text-anchor="middle"' + (col ? ' style="fill:' + col + '"' : '') + '>' + c.d + '</text></g>');
+        });
+        var rows = [];
+        for (k = 1; k < 6; k++) rows.push('<text class="ac-tri-row" x="4" y="' + (T + RH * k + 4) + '">' + (EN ? k + ' apart' : k + '칸') + '</text>');
+        var balls = nums.map(function (n, j) {
+            return '<g class="ac-tri-num"><circle cx="' + X(j) + '" cy="' + T + '" r="13" style="fill:var(--ball-' + band(n) + ')"/><text x="' + X(j) + '" y="' + (T + 4) + '" text-anchor="middle">' + n + '</text></g>';
+        });
+        var distinct = Object.keys(byD).length, ac = distinct - 5;
+        var aria = EN ? 'Difference triangle of ' + nums.join(', ') + ': ' + distinct + ' distinct differences, AC value ' + ac
+            : nums.join(', ') + '의 차이 삼각형: 서로 다른 차이 ' + distinct + '개, AC값 ' + ac;
+        var html = [];
+        if (caption) html.push('<p class="ac-tri-cap">' + esc(caption) + '</p>');
+        html.push('<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(aria) + '">' + links.join('') + rows.join('') + body.join('') + balls.join('') + '</svg>');
+        html.push('<p class="ac-tri-cap">' + (EN ? 'Top: the six numbers. Each row down: the difference between numbers that many places apart (bottom = largest − smallest). Same colour = same value.'
+            : '맨 위: 번호 6개 · 한 줄 내려갈수록 더 멀리 떨어진 두 번호의 차이(맨 아래 = 가장 큰 번호 − 가장 작은 번호) · 같은 색 = 같은 값') + '</p>');
+        html.push('<p class="ac-tri-sum">' + (EN ? 'Of the 15 differences, <strong>' + distinct + '</strong> are distinct → ' + distinct + ' − 5 = <strong>AC ' + ac + '</strong>'
+            : '차이 15개 중 서로 다른 값 <strong>' + distinct + '개</strong> → ' + distinct + ' − 5 = <strong>AC ' + ac + '</strong>') + '</p>');
+        var why = '';
+        if (!reps.length) {
+            html.push('<p class="ac-tri-why">' + (EN ? 'No difference repeats, so all 15 count: AC 10. A set like this is called a Golomb ruler.'
+                : '겹치는 차이가 없어 15개가 모두 다릅니다(AC 10). 이런 조합을 골롬 자(Golomb ruler)라고 부릅니다.') + '</p>');
+        } else {
+            var items = reps.map(function (d) {
+                var ps = byD[d], chain = false, apart = false;
+                for (var a = 0; a < ps.length; a++) for (var b = a + 1; b < ps.length; b++) {
+                    var p = ps[a], q = ps[b];
+                    if (p[1] === q[0] || q[1] === p[0]) chain = true;
+                    else if (p[0] !== q[0] && p[1] !== q[1]) {
+                        apart = true;
+                        if (!why) {
+                            var lo = p[0] < q[0] ? p : q, hi = lo === p ? q : p;
+                            why = EN ? lo.join('·') + ' and ' + hi.join('·') + ' share the gap ' + d + ', so ' + lo[0] + '·' + hi[0] + ' and ' + lo[1] + '·' + hi[1] + ' automatically share a gap too (' + (hi[0] - lo[0]) + '). That is why coincidences come in twos and the AC value drops by 2.'
+                                : '두 쌍 ' + lo.join('·') + ', ' + hi.join('·') + '의 간격이 똑같으니(' + d + '), ' + lo[0] + '·' + hi[0] + ', ' + lo[1] + '·' + hi[1] + '의 간격도 저절로 똑같아집니다(' + (hi[0] - lo[0]) + '). 이렇게 겹침이 둘씩 생겨 AC값이 2씩 줄어듭니다.';
+                        }
+                    }
+                }
+                var tag = chain && apart ? (EN ? 'evenly spaced + matching pairs' : '3항 등차 · 같은 간격 두 쌍')
+                    : chain ? (EN ? 'evenly spaced (3-term progression)' : '3항 등차') : (EN ? 'two pairs, same gap' : '같은 간격 두 쌍');
+                return '<li><span class="ac-tri-sw" style="color:' + color[d] + ';border-color:' + color[d] + '">' + d + '</span>'
+                    + ps.map(function (x) { return x.join('·'); }).join(', ') + ' — ' + tag + (EN ? ' (' + ps.length + '×, counted once)' : ' (' + ps.length + '번, 한 번만 셈)') + '</li>';
+            });
+            html.push('<ul class="ac-tri-list">' + items.join('') + '</ul>');
+            if (why) html.push('<p class="ac-tri-why">' + why + '</p>');
+        }
+        box.innerHTML = html.join('');
+    }
+    function run() {
+        var nums = (input.value.match(/[0-9]+/g) || []).map(Number);
+        var uniq = nums.filter(function (v, i, a) { return a.indexOf(v) === i; });
+        if (uniq.length !== 6 || uniq.some(function (n) { return n < 1 || n > 45; })) {
+            out.textContent = EN ? 'Enter six different numbers between 1 and 45.' : '1~45 사이의 서로 다른 번호 6개를 넣어 주세요.';
+            return;
+        }
+        uniq.sort(function (a, b) { return a - b; });
+        var diffs = {};
+        for (var i = 0; i < 6; i++) for (var j = i + 1; j < 6; j++) diffs[uniq[j] - uniq[i]] = true;
+        var ac = Object.keys(diffs).length - 5;
+        var joined = uniq.join(', ');
+        out.textContent = EN ? ('AC value of ' + joined + ' is ' + ac + '.') : (joined + ' 의 AC값은 ' + ac + '입니다.');
+        draw(uniq, '');
+    }
+    document.getElementById('ac-btn').addEventListener('click', run);
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') run(); });
+    if (box && box.dataset.example) {
+        var ex = box.dataset.example.split(' ').map(Number);
+        if (ex.length === 6) draw(ex, EN ? 'Example: draw ' + box.dataset.round : '예시: ' + box.dataset.round + '회 당첨번호');
+    }
+}
+
 // 1~45 에서 6개를 고르는 8,145,060조합을 AC값(0~10)별로 센 수 — 전부 세어 얻은 값이라 바뀌지 않는다
 const AC_COMBOS = [180, 858, 7873, 26292, 103461, 239998, 823318, 1148170, 2675680, 1609174, 1510056];
+// 그중 "같은 간격 두 쌍"(a·b 와 c·d 의 간격이 같다 — 그러면 a·c 와 b·d 간격도 저절로 같다)이 하나뿐이고 3항 등차는 없는 조합 수.
+// 차이가 한 번에 2개 겹쳐 모두 AC 8 이다(AC 8 이 튀어나오고 9 가 움푹한 까닭). 역시 전부 세어 얻은 값
+const AC_ONE_PAIR = 2141646;
 (() => {
     const top = topBy(stats.ac);
     const total = AC_COMBOS.reduce((a, b) => a + b, 0);
@@ -871,6 +976,17 @@ const AC_COMBOS = [180, 858, 7873, 26292, 103461, 239998, 823318, 1148170, 26756
     const dupes = [...new Set(pairs.filter((d, i) => pairs.indexOf(d) !== i))].sort((a, b) => a - b);
     const lastAc = distinct - 5;
     const high = [7, 8, 9, 10].reduce((a, v) => a + AC_COMBOS[v], 0) / total * 100;
+    // 이론 분포의 모양과 실제와의 견줌 (2026-10-18): 평균 · 표준편차, 값마다 기대 횟수와 우연 범위(이항분포 ±2σ)
+    const ACX = (() => {
+        const mean = AC_COMBOS.reduce((a, c, v) => a + c * v, 0) / total;
+        const sd = Math.sqrt(AC_COMBOS.reduce((a, c, v) => a + c * (v - mean) ** 2, 0) / total);
+        const expect = AC_COMBOS.map(c => {
+            const p = c / total, e = N * p, s = Math.sqrt(N * p * (1 - p));
+            return { e, lo: Math.max(0, e - 2 * s), hi: e + 2 * s };
+        });
+        const outside = stats.ac.map((r, v) => (r.count < expect[v].lo || r.count > expect[v].hi ? v : -1)).filter(v => v >= 0);
+        return { mean, sd, expect, outside, inside: AC_COMBOS.length - outside.length, num: x => (x < 10 ? f1(x) : fmt(Math.round(x))) };
+    })();
     // AC값과 1등 당첨자 수 (2026-10-16): 회차마다 판매량으로 "무작위로 샀다면 나왔을 1등 인원"(기대 인원 = 판매 게임 수 ÷ C(45,6))을
     // 어림해 실제 인원과 견준다. 1게임 1,000원이 된 88회부터. 판매량이 시기마다 달라 인원을 그대로 견주면 안 된다
     const share = (() => {
@@ -904,6 +1020,23 @@ const AC_COMBOS = [180, 858, 7873, 26292, 103461, 239998, 823318, 1148170, 26756
             headLow: perHead(low), headRest: perHead(rest), top };
     })();
     const eokShort = a => en(`${f1(a / 1e8)}억`, `${(a / 1e9).toFixed(2)}bn`);
+    // 계산기의 차이 삼각형 (2026-10-18): 맨 위 줄은 번호 6개, 아래로 한 줄씩 내려갈수록 더 멀리 떨어진 두 번호의 차이(1칸 → 5칸).
+    // 칸은 두 번호의 한가운데 아래에 놓여 거꾸로 선 삼각형이 된다. 겹친 값은 같은 색 칸 + 두 번호로 잇는 선 — 어디서 겹쳐 AC 가 줄었는지 보인다
+    const AC_TRI_STYLE = `.ac-tri { margin: 6px 0 14px; }
+.ac-tri svg { display: block; width: 100%; max-width: 420px; height: auto; margin: 0 auto; font-family: var(--font); }
+.ac-tri-num circle { stroke: #fff; stroke-width: 1; }
+.ac-tri-num text { fill: #fff; font-size: 12px; font-weight: bold; }
+.ac-tri-cell rect { fill: #fff; stroke: #d9d9d9; }
+.ac-tri-cell text { fill: var(--text); font-size: 12px; font-variant-numeric: tabular-nums; }
+.ac-tri-cell.is-rep text { font-weight: bold; }
+.ac-tri-link { stroke-width: 1.5; opacity: .45; }
+.ac-tri-row { fill: var(--muted); font-size: 10px; }
+.prose .ac-tri-cap { margin: 4px 0 8px; color: var(--muted); font-size: 12px; text-align: center; }
+.prose .ac-tri-sum { margin: 6px 0 4px; font-size: 14px; }
+.ac-tri-list { margin: 0; padding: 0; list-style: none; font-size: 13px; }
+.prose .ac-tri-list li { margin: 3px 0; }
+.ac-tri-sw { display: inline-block; min-width: 1.9em; margin-right: 6px; padding: 0 4px; border: 1.5px solid; border-radius: 4px; text-align: center; font-weight: bold; font-variant-numeric: tabular-nums; }
+.prose .ac-tri-why { margin: 6px 0 0; color: var(--muted); font-size: 13px; }`;
     // AC값별 그래프 셋 (2026-10-16) — 번호 합계와 같은 SVG 모양(dist-*). x축은 셋 다 AC값 0~10 으로 같고, y축은 그래프마다 하나(0부터).
     // 단위가 다른 값(회차 수 · 배 · 억)을 한 그림에 겹치면 y축이 둘 셋이 되어 헷갈린다 — 위아래로 쌓고 단추로 하나씩 켜고 끈다.
     // ① 출현 횟수(1회~, 주황 선) ② 1등 당첨자 기대 대비(88회~, 1배 점선) ③ 1등 1인당 중앙값(88회~, 전체 중앙값 점선) — 처음부터 셋 다 켠다.
@@ -922,7 +1055,8 @@ const AC_COMBOS = [180, 858, 7873, 26292, 103461, 239998, 823318, 1148170, 26756
 .acc-line { fill: none; stroke: var(--ball-3); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 .acc-line.is-few { stroke: #f9b4b4; }
 .acc-area { fill: var(--brand); opacity: .08; }
-.acc-area.is-count { fill: var(--ball-3); opacity: .1; }
+.acc-theory { fill: var(--brand); opacity: .13; }
+.acc-range { fill: none; stroke: var(--brand); stroke-width: 1.5; opacity: .5; }
 .dist-dot circle { fill: var(--ball-3); stroke: #fff; stroke-width: 1; transform-box: fill-box; transform-origin: center; transition: transform .12s ease-out; }
 .dist-dot.is-few circle { fill: #fff; stroke: #f08a8a; stroke-width: 1.2; }
 .dist-dot .acc-guide { stroke: #888; stroke-width: 1; opacity: 0; transition: opacity .12s ease-out; }
@@ -934,6 +1068,8 @@ const AC_COMBOS = [180, 858, 7873, 26292, 103461, 239998, 823318, 1148170, 26756
 .ac-figure .dist-legend .key-line { height: 0; border-top: 3px solid var(--ball-3); background: none; }
 .ac-figure .dist-legend .key-line.key-few { border-top-color: #f9b4b4; }
 .ac-figure .dist-legend .key-mean { height: 0; border-top: 2px dashed var(--brand); background: none; opacity: .6; }
+.ac-figure .dist-legend .key-theory { background: var(--brand); opacity: .2; }
+.ac-figure .dist-legend .key-range { width: 10px; height: 12px; background: linear-gradient(var(--brand), var(--brand)) center / 1.5px 100% no-repeat; opacity: .6; }
 @media (prefers-reduced-motion: reduce) { .dist-dot circle, .dist-dot .acc-guide { transition: none; } }`;
     const acChart = S => {
         const few = 10;
@@ -976,6 +1112,7 @@ const AC_COMBOS = [180, 858, 7873, 26292, 103461, 239998, 823318, 1148170, 26756
                 out.push(`<text class="dist-tick" x="${L - 6}" y="${r2(Y(y) + 4)}" text-anchor="end"${o.tickEn ? ` data-i18n-en="${esc(o.tickEn(y))}"` : ''}>${o.tick(y)}</text>`);
             }
             if (o.ref) out.push(`<line class="dist-mean" x1="${L}" x2="${W - R}" y1="${r2(Y(o.ref.y))}" y2="${r2(Y(o.ref.y))}"/>`);
+            if (o.under) out.push(...o.under(Y));   // 선 아래에 깔 것(출현 횟수의 이론 막대 · 우연 범위)
             const dots = [], labels = [];
             o.series.forEach(sr => {
                 runs(sr.vals).forEach(run => {
@@ -1023,24 +1160,34 @@ const AC_COMBOS = [180, 858, 7873, 26292, 103461, 239998, 823318, 1148170, 26756
         const key = (cls, ko, english) => `<span><i class="${cls}"></i><span data-i18n-en="${esc(english)}">${ko}</span></span>`;
         const fewKey = key('key-line key-few', `옅은 선: 표본 ${few}회 미만(오차가 큼)`, `Faded line: sample under ${few} draws (wide margin of error)`);
         const argmax = (vals, ok) => vals.reduce((best, y, v) => (y != null && (!ok || ok(v)) && (best < 0 || y > vals[best]) ? v : best), -1);
-        // ① 출현 횟수 (전 회차). 이론값은 점을 짚으면 글로
-        const total = AC_COMBOS.reduce((a, b) => a + b, 0);
+        // ① 출현 횟수 (전 회차) + 이론 기대 횟수 막대 · 우연 범위(2026-10-18). 한 회차의 AC값이 v 일 확률 p = 그런 조합 수 ÷ 8,145,060 이고,
+        // N회 중 나온 횟수는 이항분포(평균 Np, 표준편차 √(Np(1−p)))를 따른다 — 실제 점이 막대 위 세로선(±2σ, 약 95%) 안이면 우연으로 충분히 나올 만한 값
         const counts = stats.ac.map(r => r.count);
-        const cMax = Math.max(...counts);
-        const cStep = niceStep(cMax, 4);
         const cTop = argmax(counts);
+        const exp = ACX.expect;
+        const cMax = Math.max(...counts, ...exp.map(x => x.hi));
+        const cStep = niceStep(cMax, 4);
+        const theoryUnder = Y => exp.flatMap((x, v) => {
+            const bw = slot * 0.5, cap = slot * 0.16, X = cx(v), yLo = r2(Y(x.lo)), yHi = r2(Y(x.hi));
+            return [
+                `<rect class="acc-theory" x="${r2(X - bw / 2)}" y="${r2(Y(x.e))}" width="${r2(bw)}" height="${r2(Y(0) - Y(x.e))}"/>`,
+                `<path class="acc-range" d="M${r2(X - cap)},${yLo} H${r2(X + cap)} M${r2(X)},${yLo} V${yHi} M${r2(X - cap)},${yHi} H${r2(X + cap)}"/>`,
+            ];
+        });
         const countPanel = panel({
             id: 'count', on: true,
             title: 'AC값별 출현 횟수', titleEn: 'Draws by AC value', sub: `1~${N}회`, subEn: `draws 1–${N}`,
-            aria: `AC값별 출현 횟수. 가장 많은 값은 AC ${cTop}(${fmt(counts[cTop])}회)`,
+            aria: `AC값별 출현 횟수와 이론 기대 횟수. 가장 많은 값은 AC ${cTop}(${fmt(counts[cTop])}회), 11개 값 중 ${ACX.inside}개가 우연 범위 안`,
             yMax: Math.ceil(cMax * 1.08 / cStep) * cStep, yStep: cStep, tick: y => fmt(y),
+            under: theoryUnder,
             series: [
-                { cls: 'is-count', area: true, vals: counts,
-                  tips: counts.map((c, v) => `AC ${v} · ${fmt(c)}회 (${pct(c, N)}) · 이론 ${(AC_COMBOS[v] / total * 100).toFixed(1)}%`),
-                  tipsEn: counts.map((c, v) => `AC ${v} · ${fmt(c)} draws (${pct(c, N)}) · theory ${(AC_COMBOS[v] / total * 100).toFixed(1)}%`),
+                { vals: counts,
+                  tips: counts.map((c, v) => `AC ${v} · ${fmt(c)}회 (${pct(c, N)}) · 기대 ${ACX.num(exp[v].e)}회, 우연 범위 ${ACX.num(exp[v].lo)}~${ACX.num(exp[v].hi)}회`),
+                  tipsEn: counts.map((c, v) => `AC ${v} · ${fmt(c)} draws (${pct(c, N)}) · expected ${ACX.num(exp[v].e)}, chance range ${ACX.num(exp[v].lo)}–${ACX.num(exp[v].hi)}`),
                   label: cTop, labelKo: `AC ${cTop} · ${fmt(counts[cTop])}회`, labelEn: `AC ${cTop} · ${fmt(counts[cTop])}` },
             ],
-            legend: [],
+            legend: [key('key-line', '실제 출현 횟수', 'Actual draws'), key('key-theory', '막대: 이론상 기대 횟수', 'Bars: expected by theory'),
+                key('key-range', '세로선: 우연 범위(±2σ, 약 95%)', 'Whiskers: chance range (±2σ, about 95%)')],
         });
         // ② 1등 당첨자 기대 대비 (88회~). 값을 적는 점은 믿을 만한(10회 이상) 점 중 가장 높은 것
         const ratios = S.perAc.map(b => (b.n ? b.r1 : null));
@@ -1121,12 +1268,15 @@ const AC_COMBOS = [180, 858, 7873, 26292, 103461, 239998, 823318, 1148170, 26756
         body: [
             h2En('AC값 계산기', 'AC value calculator'),
             [
+                `<style>\n${AC_TRI_STYLE}\n</style>`,
                 '<div class="calc-form">',
                 '    <label for="ac-input">번호 6개</label>',
                 '    <input type="text" id="ac-input" inputmode="numeric" autocomplete="off" placeholder="예: 7 13 16 23 24 43">',
                 '    <button type="button" class="btn" id="ac-btn">계산하기</button>',
                 '</div>',
                 '<p class="calc-result" id="ac-out" role="status" aria-live="polite"></p>',
+                // 차이 삼각형: 스크립트가 그린다. 처음엔 가장 최근 회차로 보여 준다
+                `<div class="ac-tri" id="ac-tri" data-example="${ln.join(' ')}" data-round="${last.round}"></div>`,
             ].join('\n'),
             h2En('역대 AC값 분포', 'AC values across all draws'),
             table([['AC값', 'AC value'], ['나온 횟수', 'Draws'], ['비율', 'Share'], ['이론 확률', 'Theoretical'], ['예시 (가장 최근 회차)', 'Example (latest draw)']], rows, 'ac-table'),
@@ -1148,31 +1298,20 @@ const AC_COMBOS = [180, 858, 7873, 26292, 103461, 239998, 823318, 1148170, 26756
                 `<strong>Low</strong> values mean the gaps between numbers repeat — runs like 1·2·3·4·5·6, even steps like 5·10·15·20·25·30, or numbers bunched together. <strong>High</strong> values mean the gaps all differ. Regular hand-picked sets tend to sit low, while ${high.toFixed(1)}% of random sets come out at AC 7 or above.`),
             pEn(`이론 확률은 45개 중 6개를 고르는 ${fmt(total)}조합 가운데 그 AC값인 조합의 비율입니다. AC 8(${theory(8)})·AC 10(${theory(10)})이 자주 나오는 것은 그런 조합이 원래 많기 때문이고, 실제 비율도 이론값과 거의 같습니다. 어느 조합이든 1등 확률은 1/${fmt(total)}로 같습니다.`,
                 `The theoretical share is the fraction of all ${fmt(total)} ways to choose six of 45 numbers that have that AC value. AC 8 (${theory(8)}) and AC 10 (${theory(10)}) come up often simply because there are more such combinations, and the actual shares sit close to theory. Every combination has the same 1 in ${fmt(total)} chance of winning first prize.`),
+            (() => {
+                const out = ACX.outside, few = out.length > 0 && out.length <= 2;
+                const chartKo = share ? ` 아래 "AC값별 출현 횟수" 그래프의 막대가 이 이론값이고, 실제 ${fmt(N)}회는 11개 값 중 ${ACX.inside}개가 우연 범위 안에 있습니다${out.length ? `(벗어난 값: AC ${out.join('·')}${few ? ' — 범위가 95%라 11개 중 한두 개는 우연으로도 벗어납니다' : ''})` : ''}.` : '';
+                const chartEn = share ? ` The bars in the "Draws by AC value" chart below are these theoretical values; in the actual ${fmt(N)} draws, ${ACX.inside} of the 11 values sit inside the chance range${out.length ? ` (outside: AC ${out.join(', ')}${few ? ' — with a 95% range, one or two of eleven fall outside by chance alone' : ''})` : ''}.` : '';
+                return pEn(`<strong>AC값은 종 모양(정규분포)이 아닙니다.</strong> 위쪽이 10에서 막혀 낮은 쪽으로 꼬리가 길고(이론 평균 ${ACX.mean.toFixed(2)}, 표준편차 ${ACX.sd.toFixed(2)}), AC 8이 튀어나오고 9가 움푹합니다. 차이가 겹치는 방식이 두 가지뿐이기 때문입니다. 3·8과 20·25처럼 <strong>같은 간격이 두 쌍</strong> 생기면 3·20과 8·25의 간격(17)도 저절로 같아져 서로 다른 차이가 한 번에 2개 줄고(AC 10 → 8), 5·12·19처럼 <strong>세 수가 같은 간격</strong>(3항 등차)이면 1개만 줄어듭니다(AC 10 → 9). 무작위 조합의 ${(AC_ONE_PAIR / total * 100).toFixed(1)}%가 앞의 겹침 하나만 가진 조합이라 AC 8이 가장 흔합니다. 겹침이 하나도 없는 AC 10 조합을 수학에서는 골롬 자(Golomb ruler)라고 부릅니다.${chartKo}`,
+                    `<strong>The AC value is not bell-shaped (not a normal distribution).</strong> It is capped at 10, so it has a long tail toward low values (theoretical mean ${ACX.mean.toFixed(2)}, standard deviation ${ACX.sd.toFixed(2)}), and AC 8 sticks out while 9 dips. That is because differences can coincide in only two ways. When <strong>two pairs share a gap</strong>, like 3·8 and 20·25, the gaps 3·20 and 8·25 (17) automatically match too, so two distinct differences vanish at once (AC 10 → 8). When <strong>three numbers are evenly spaced</strong>, like 5·12·19, only one vanishes (AC 10 → 9). ${(AC_ONE_PAIR / total * 100).toFixed(1)}% of random sets have exactly one coincidence of the first kind, which makes AC 8 the most common value. An AC 10 set, with no coincidence at all, is what mathematicians call a Golomb ruler.${chartEn}`);
+            })(),
             ...shareBody,
             `<p><a class="btn" href="index.html#gen-ac" data-i18n-en="Generate numbers with an AC value filter">AC값 조건으로 번호 뽑으러 가기</a></p>`,
-            pEn('홈 번호 생성기의 "AC값" 막대로 AC값이 6~10, 7~10 … 10인 조합만 뽑을 수 있습니다(로그인하면 무료).',
-                'The "AC value" slider in the home generator keeps only sets with an AC value of 6–10, 7–10 … or exactly 10 (free with sign-in).'),
+            pEn('홈 번호 생성기의 "AC값" 막대로 AC값이 5~10, 6~10 … 10인 조합만 뽑을 수 있고, 옆의 "이 값만"을 누르면 AC 8처럼 딱 한 값인 조합만 뽑습니다(로그인하면 무료).',
+                'The "AC value" slider in the home generator keeps only sets with an AC value of 5–10, 6–10 … or 10; press "exact" beside it to keep a single value, such as AC 8 only (free with sign-in).'),
         ],
         script: [
-            '(function () {',
-            "    var input = document.getElementById('ac-input');",
-            "    var out = document.getElementById('ac-out');",
-            '    function run() {',
-            "        var nums = (input.value.match(/[0-9]+/g) || []).map(Number);",
-            '        var uniq = nums.filter(function (v, i, a) { return a.indexOf(v) === i; });',
-            '        if (uniq.length !== 6 || uniq.some(function (n) { return n < 1 || n > 45; })) {',
-            "            out.textContent = (window.I18N && I18N.lang === 'en') ? 'Enter six different numbers between 1 and 45.' : '1~45 사이의 서로 다른 번호 6개를 넣어 주세요.';",
-            '            return;',
-            '        }',
-            '        var diffs = {};',
-            '        for (var i = 0; i < 6; i++) for (var j = i + 1; j < 6; j++) diffs[Math.abs(uniq[i] - uniq[j])] = true;',
-            '        var ac = Object.keys(diffs).length - 5;',
-            "        var joined = uniq.sort(function (a, b) { return a - b; }).join(', ');",
-            "        out.textContent = (window.I18N && I18N.lang === 'en') ? ('AC value of ' + joined + ' is ' + ac + '.') : (joined + ' 의 AC값은 ' + ac + '입니다.');",
-            '    }',
-            "    document.getElementById('ac-btn').addEventListener('click', run);",
-            "    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') run(); });",
-            '}());',
+            `(${acCalculator.toString()}());`,
             // AC값별 그래프 켜고 끄기: 단추마다 그래프 하나(aria-pressed). 막대 풍선은 js/dist-balls.js
             '(function () {',
             "    var fig = document.querySelector('.ac-figure');",
