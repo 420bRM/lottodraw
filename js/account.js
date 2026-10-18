@@ -637,7 +637,7 @@
         },
         logout: () => logout(),
         withdraw: () => withdraw(),
-        // 로그인이 필요한 회원 API(내 번호 · 생성 번호 메일 — 마이페이지 · 홈 생성기). 로그인이 끝났으면 이 브라우저에서도 로그아웃한다
+        // 로그인이 필요한 회원 API(내 번호 · 추첨 결과 메일 — 마이페이지 · 홈 생성기). 로그인이 끝났으면 이 브라우저에서도 로그아웃한다
         call: async (path, opts) => {
             try { return await request(path, Object.assign({ auth: true }, opts || {})); }
             catch (e) { if (e.status === 401) { signOutLocal(); renderHeader(); } throw e; }

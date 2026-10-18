@@ -1,12 +1,11 @@
-// 내 번호 저장 · 등수 확인 · 이번 주 생성 번호 메일. 구글 서버 · Resend 대신 가짜를 넣는다.
+// 내 번호 저장 · 등수 확인 · 추첨 결과 메일. 구글 서버 · Resend 대신 가짜를 넣는다.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import vm from 'node:vm';
-import worker, { _resetForTests, _weeklyMailForTests as weeklyMail, Community } from '../src/index.js';
+import worker, { _resetForTests, _resultMailForTests as resultMail, Community } from '../src/index.js';
 import { _resetGoogleForTests } from '../src/google.js';
 import { b64urlEncode } from '../src/keys.js';
-import { saleRound, rankOf, patternHit, makeGames, seeded, cleanGame, ALL_PATTERNS, sat } from '../src/lotto.js';
+import { saleRound, rankOf, cleanGame, sat } from '../src/lotto.js';
 import { MYNUM } from '../src/community.js';
 
 const ADMIN = 'admin-token-0123456789abcdef';
@@ -158,40 +157,6 @@ test('등수: 6개 1등 · 5개+보너스 2등 · 5개 3등 · 4개 4등 · 3개
     for (const bad of [[1, 2, 3, 4, 5], [1, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5], [1, 2, 3, 4, 5, 46], [1, 2, 3, 4, 5, 6.5], 'x', null]) assert.equal(cleanGame(bad), null, JSON.stringify(bad));
 });
 
-test('특수 패턴 16가지가 홈 생성기(index.html)와 같다 — 무작위 조합 3만 개', () => {
-    const html = fs.readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
-    const code = html.slice(html.indexOf('    function isPrime(n) {'), html.indexOf('    // 시도 로그:'));
-    const box = { I18N: { t: k => k } };
-    vm.runInNewContext(code + '\nthis.check = checkInvalidPattern;', box);
-    let rnd = seeded(new Uint8Array(16).map((_, i) => i * 37 + 1));
-    let hits = 0;
-    for (let i = 0; i < 30000; i++) {
-        const pool = Array.from({ length: 45 }, (_, k) => k + 1);
-        const nums = [];
-        // 패턴에 잘 걸리게 절반은 좁은 범위에서 뽑는다
-        const span = i % 2 ? 45 : 6 + Math.floor(rnd() * 30);
-        const narrow = pool.slice(0, span);
-        while (nums.length < 6) nums.push(narrow.splice(Math.floor(rnd() * narrow.length), 1)[0]);
-        const ids = new Set([...ALL_PATTERNS].filter(() => rnd() < 0.6));
-        const site = box.check(nums, ids);
-        const ours = patternHit(nums, ids);
-        assert.equal(site === null ? 0 : Number(site.slice('gen.r'.length)), ours, JSON.stringify([nums, [...ids]]));
-        if (ours) hits++;
-    }
-    assert.ok(hits > 3000, '패턴에 걸린 조합도 충분히 견줬다: ' + hits);
-});
-
-test('생성: 5게임, 서로 다르고 패턴에 안 걸린다. 같은 씨앗이면 같은 번호', () => {
-    const seed = new Uint8Array(32).map((_, i) => i);
-    const a = makeGames(seeded(seed), 5);
-    const b = makeGames(seeded(seed), 5);
-    assert.deepEqual(a, b);
-    assert.equal(a.length, 5);
-    assert.equal(new Set(a.map(g => g.join())).size, 5);
-    for (const g of a) { assert.deepEqual(cleanGame(g), g); assert.equal(patternHit(g, ALL_PATTERNS), 0); }
-    assert.notDeepEqual(makeGames(seeded(seed.map(x => x ^ 1)), 5), a);
-});
-
 /* ───── 내 번호 API ───── */
 
 test('내 번호: 저장 · 같은 조합 건너뜀 · 잘못된 번호 · 회차 범위 · 지우기', async () => {
@@ -264,126 +229,151 @@ test('탈퇴하면 내 번호와 메일 구독도 지운다', async () => {
     assert.equal((await call(env, 'GET', '/api/admin/status', { headers: asAdmin })).data.weekly.subs, 0);
 });
 
-/* ───── 이번 주 생성 번호 메일 ───── */
+/* ───── 추첨 결과 메일 ───── */
 
-const FRI = kstTime(2026, 10, 16, 9, 17);    // 1246회 주 금요일 09:17
-const SAT = kstTime(2026, 10, 17, 9, 17);
-async function subscribers(env, n) {
+const R = 1246;                               // 2026-10-17(토) 추첨
+const SUN = kstTime(2026, 10, 18, 9, 17);     // 그 다음 일요일 09:17
+const MON = kstTime(2026, 10, 19, 9, 17);
+const WIN = [4, 5, 25, 28, 32, 42], BONUS = 12;
+// 가짜 lotto-data.json 앞부분(최신 회차가 맨 앞)
+const head = (round, nums, bonus) => `{\n  "totalDraws": ${round},\n  "lastUpdated": "x",\n  "draws": [\n    {\n      "round": ${round},\n      "date": "x",\n      "numbers": [\n        ${nums.join(',\n        ')}\n      ],\n      "bonus": ${bonus},`;
+// 구독자 n 명. games 가 있으면 R 회 번호로 저장한다(내 번호)
+async function subscribers(env, n, games) {
     const out = [];
     for (let i = 0; i < n; i++) {
         const s = await login(env, { sub: String(5000 + i), email: `m${i}@gmail.com` });
         assert.equal((await call(env, 'POST', '/api/me/mail', { headers: auth(s), body: { on: true } })).data.mail, true);
+        if (games) assert.equal((await call(env, 'POST', '/api/me/numbers', { headers: auth(s), body: { round: R, games } })).status, 200);
         out.push(s);
     }
     return out;
 }
+const sentTo = () => resend.flatMap(b => b.body.map(m => m.to[0])).sort();
 
-test('메일: 금요일 09시 전 · 밤 9시 ~ 아침 9시 · 토요일 18시 뒤 · 다른 요일에는 보내지 않는다', async () => {
+test('결과 메일: 일 · 월요일 09~21시에만 보낸다(토요일 추첨 직후 · 밤 · 다른 요일은 쉰다)', async () => {
     const env = await fresh();
-    await subscribers(env, 1);
-    for (const t of [kstTime(2026, 10, 16, 8, 59), kstTime(2026, 10, 16, 21, 17), kstTime(2026, 10, 17, 3, 17), kstTime(2026, 10, 17, 18, 0), kstTime(2026, 10, 15, 12, 0), kstTime(2026, 10, 18, 12, 0)]) {
-        assert.equal((await weeklyMail(env, t)).skipped, 'window');
+    drawHead = head(R, WIN, BONUS);
+    await subscribers(env, 1, [[1, 2, 3, 4, 5, 6]]);
+    for (const t of [kstTime(2026, 10, 17, 21, 17), kstTime(2026, 10, 18, 8, 59), kstTime(2026, 10, 18, 21, 17), kstTime(2026, 10, 19, 3, 17), kstTime(2026, 10, 19, 21, 0), kstTime(2026, 10, 20, 12, 0), kstTime(2026, 10, 23, 9, 17)]) {
+        assert.equal((await resultMail(env, t)).skipped, 'window', new Date(t + KST).toISOString());
     }
     assert.equal(resend.length, 0);
-    assert.equal((await weeklyMail(await fresh({ RESEND_API_KEY: '' }), FRI)).skipped, 'window', '메일 설정이 없으면 하지 않는다');
+    assert.equal((await resultMail(await fresh({ RESEND_API_KEY: '' }), SUN)).skipped, 'window', '메일 설정이 없으면 하지 않는다');
+    drawHead = null;
 });
 
-test('메일: 금요일에 구독자마다 5게임 · "이번 주 생성 번호" · 수신 거부 링크, 다시 돌아도 두 번 보내지 않는다, KV 는 건드리지 않는다', async () => {
+test('결과 메일: 사이트에 그 회차 당첨번호가 올라오기 전에는 기다린다', async () => {
+    const env = await fresh();
+    await subscribers(env, 1, [[1, 2, 3, 4, 5, 6]]);
+    drawHead = null;
+    assert.equal((await resultMail(env, SUN)).skipped, 'no_draw', '파일을 못 읽음');
+    drawHead = head(R - 1, WIN, BONUS);
+    assert.equal((await resultMail(env, SUN + 3600e3)).skipped, 'no_draw', '아직 지난 회차가 최신');
+    assert.equal(resend.length, 0);
+    drawHead = head(R, WIN, BONUS);
+    assert.deepEqual(await resultMail(env, SUN + 2 * 3600e3), { sent: 1, done: true });
+    drawHead = null;
+});
+
+test('결과 메일: 당첨번호 · 저장한 번호의 등수와 맞은 번호 · 회차 페이지 링크, 그 회차 번호가 없는 구독자는 건너뛴다', async () => {
     const env = await fresh({ TELEGRAM_BOT_TOKEN: 't', TELEGRAM_CHAT_ID: '1' });
-    await subscribers(env, 3);
+    drawHead = head(R, WIN, BONUS);
+    const games = [[4, 5, 25, 28, 32, 12], [4, 5, 25, 1, 2, 3], [6, 7, 8, 9, 10, 11]];   // 2등 · 5등 · 낙첨
+    await subscribers(env, 2, games);
+    // 그 회차 번호가 없는 구독자 · 지난 회차 번호만 있는 구독자
+    const s3 = await login(env, { sub: '6000', email: 'none@gmail.com' });
+    await call(env, 'POST', '/api/me/mail', { headers: auth(s3), body: { on: true } });
+    const s4 = await login(env, { sub: '6001', email: 'old@gmail.com' });
+    await call(env, 'POST', '/api/me/mail', { headers: auth(s4), body: { on: true } });
+    await call(env, 'POST', '/api/me/numbers', { headers: auth(s4), body: { round: R - 1, games: [games[0]] } });
+    // 예전 생성 번호 메일(같은 회차)이 남긴 기록은 막지 않고 치운다
+    env.COMMUNITY._m.set('mw:' + R, { cursor: 'ms:9999', sent: 1, tries: 0, done: true });
     const kvBefore = JSON.stringify([...env.DB._m.entries()]);
-    const r = await weeklyMail(env, FRI);
-    assert.deepEqual(r, { sent: 3, done: true });
+    const r = await resultMail(env, SUN);
+    assert.deepEqual(r, { sent: 2, done: true });
+    assert.deepEqual(sentTo(), ['m0@gmail.com', 'm1@gmail.com'], '그 회차 번호를 저장한 구독자에게만');
     assert.equal(resend.length, 1, '한 묶음(batch)으로');
-    const mails = resend[0].body;
-    assert.equal(mails.length, 3);
-    for (const m of mails) {
-        assert.equal(m.subject, '[lottodraw.kr] 1246회 이번 주 생성 번호');
-        assert.match(m.text, /1246회 이번 주 생성 번호입니다\. 추첨은 10월 17일\(토\) 오후 8시 35분/);
-        assert.equal((m.text.match(/^[A-E]   /gm) || []).length, 5, m.text);
-        assert.doesNotMatch(m.subject + m.text, /추천|예측해|적중|확률 상승|확률을 높/);
-        assert.match(m.text, /예측하지 않고/);
+    for (const m of resend[0].body) {
+        assert.equal(m.subject, `[lottodraw.kr] ${R}회 당첨번호와 내 번호 결과`);
+        assert.match(m.text, /^10월 17일\(토\) 1246회 추첨 결과입니다\./);
+        assert.match(m.text, /당첨번호: 4 · 5 · 25 · 28 · 32 · 42 \+ 보너스 12/);
+        assert.match(m.text, /내 번호에 저장한 1246회 번호 3게임 중 2게임 당첨 — 2등 1게임 · 5등 1게임/);
+        assert.match(m.text, /1\) {2}4 · 5 · 12 · 25 · 28 · 32 {2}→ {2}2등 \(맞은 번호 4 · 5 · 25 · 28 · 32 \+ 보너스 12\)/);
+        assert.match(m.text, /2\) {2}1 · 2 · 3 · 4 · 5 · 25 {2}→ {2}5등 \(맞은 번호 4 · 5 · 25\)/);
+        assert.match(m.text, /3\) {2}6 · 7 · 8 · 9 · 10 · 11 {2}→ {2}낙첨 \(맞은 번호 없음\)/);
+        assert.match(m.text, /https:\/\/www\.lottodraw\.kr\/round\/1246\.html/);
+        assert.match(m.text, /https:\/\/www\.lottodraw\.kr\/mypage\.html/);
+        assert.match(m.text, /복권 실물과 동행복권에서 한 번 더 확인/);
+        assert.doesNotMatch(m.text, /^[A-E] {3}/m, '생성 번호는 보내지 않는다');
+        assert.doesNotMatch(m.subject + m.text, /추천|예측|적중|확률 상승|확률을 높|생성 번호/);
         const url = m.text.match(/수신 거부: (\S+)/)[1];
         assert.equal(m.headers['List-Unsubscribe'], `<${url}>`);
         assert.equal(m.headers['List-Unsubscribe-Post'], 'List-Unsubscribe=One-Click');
         assert.doesNotMatch(url, /500\d/, '링크에 구글 계정 번호가 없다');
     }
-    assert.equal(new Set(mails.map(m => m.to[0])).size, 3);
-    assert.notEqual(mails[0].text.split('\n')[3], mails[1].text.split('\n')[3], '회원마다 번호가 다르다');
-    assert.ok(resend[0].headers['Idempotency-Key'].startsWith('weekly-1246-'));
-    assert.equal((await weeklyMail(env, FRI + 3600e3)).skipped, 'done');
+    assert.ok(resend[0].headers['Idempotency-Key'].startsWith(`result-${R}-`));
+    assert.ok(!env.COMMUNITY._m.has('mw:' + R), '예전 기록을 치웠다');
+    assert.equal((await resultMail(env, SUN + 3600e3)).skipped, 'done', '다시 돌아도 두 번 보내지 않는다');
     assert.equal(resend.length, 1);
     assert.equal(JSON.stringify([...env.DB._m.entries()]), kvBefore, '결제 KV 는 그대로');
+    drawHead = null;
 });
 
-test('메일: 하루 한도를 넘으면 나머지는 다음 날(토요일) 보낸다', async () => {
-    const env = await fresh({ WEEKLY_MAIL_DAILY: '2' });
-    await subscribers(env, 3);
-    assert.deepEqual(await weeklyMail(env, FRI), { sent: 2, done: false });
-    assert.equal((await weeklyMail(env, FRI + 3600e3)).skipped, 'budget', '같은 날은 더 보내지 않는다');
-    assert.deepEqual(await weeklyMail(env, SAT), { sent: 1, done: true });
-    const to = resend.flatMap(b => b.body.map(m => m.to[0])).sort();
-    assert.deepEqual(to, ['m0@gmail.com', 'm1@gmail.com', 'm2@gmail.com'], '한 사람에 한 통씩');
-});
-
-test('메일: Resend 가 실패하면 다음 시간에 다시, 세 번 연달아 실패하면 그 회차는 멈추고 알린다. 사이트 API 는 그대로', async () => {
-    const env = await fresh({ TELEGRAM_BOT_TOKEN: 't', TELEGRAM_CHAT_ID: '1' });
-    const [s] = await subscribers(env, 1);
-    resendFail = 1;
-    assert.match((await weeklyMail(env, FRI)).failed, /429/);
-    assert.deepEqual(await weeklyMail(env, FRI + 3600e3), { sent: 1, done: true }, '두 번째에 보낸다');
-    // 다음 주: 세 번 실패
-    resendFail = 3;
-    const NEXT = FRI + 7 * 86400e3;
-    for (let i = 0; i < 3; i++) await weeklyMail(env, NEXT + i * 3600e3);
-    assert.equal((await weeklyMail(env, NEXT + 4 * 3600e3)).skipped, 'done', '멈췄다');
-    assert.equal(resend.length, 1);
-    // 그동안 사이트 · 결제는 그대로
-    assert.equal((await call(env, 'GET', '/api/config')).status, 200);
-    assert.equal((await call(env, 'GET', '/api/me/numbers', { headers: auth(s) })).status, 200);
-});
-
-test('메일: 지난주 받은 번호 결과 한 줄 (당첨번호가 갱신됐을 때만)', async () => {
+test('결과 메일: 모두 낙첨이면 "모두 낙첨", 보낼 사람이 없으면 메일 없이 끝낸다', async () => {
     const env = await fresh();
-    await subscribers(env, 1);
-    await weeklyMail(env, FRI);   // 1246회 메일
-    const games = resend[0].body[0].text.split('\n').filter(l => /^[A-E]   /.test(l)).map(l => l.slice(4).trim().split(/\s+/).map(Number));
-    assert.equal(games.length, 5);
-    assert.doesNotMatch(resend[0].body[0].text, /지난주/, '첫 메일에는 없다');
-    const head = (round, nums, bonus) => `{\n  "totalDraws": ${round},\n  "lastUpdated": "x",\n  "draws": [\n    {\n      "round": ${round},\n      "date": "x",\n      "numbers": [\n        ${nums.join(',\n        ')}\n      ],\n      "bonus": ${bonus},`;
-    // 1246회가 아직 반영되지 않았으면(최신이 1245회) 줄이 없다
-    drawHead = head(1245, [4, 5, 25, 28, 32, 42], 12);
+    drawHead = head(R, WIN, BONUS);
+    await subscribers(env, 1, [[6, 7, 8, 9, 10, 11], [4, 6, 7, 8, 9, 10]]);
+    await resultMail(env, SUN);
+    assert.match(resend[0].body[0].text, /번호 2게임 모두 낙첨/);
+    assert.match(resend[0].body[0].text, /2\) {2}4 · 6 · 7 · 8 · 9 · 10 {2}→ {2}낙첨 \(맞은 번호 4\)/);
     const env2 = await fresh();
-    await subscribers(env2, 1);
-    await weeklyMail(env2, FRI);
-    const g = resend[0].body[0].text.split('\n').filter(l => /^[A-E]   /.test(l)).map(l => l.slice(4).trim().split(/\s+/).map(Number));
-    const NEXT = FRI + 7 * 86400e3;
-    await weeklyMail(env2, NEXT);
-    assert.doesNotMatch(resend[1].body[0].text, /지난주/);
-    // 1246회 당첨번호 = A 게임 5개 + (다섯 게임 어디에도 없는 번호), 보너스 = A 의 여섯째 → A 는 2등
-    const env3 = await fresh();
-    await subscribers(env3, 1);
-    await weeklyMail(env3, FRI);
-    const g3 = resend[0].body[0].text.split('\n').filter(l => /^[A-E]   /.test(l)).map(l => l.slice(4).trim().split(/\s+/).map(Number));
-    const unused = Array.from({ length: 45 }, (_, i) => i + 1).find(n => !g3.flat().includes(n));
-    drawHead = head(1246, [...g3[0].slice(0, 5), unused].sort((x, y) => x - y), g3[0][5]);
-    await weeklyMail(env3, NEXT);
-    const text = resend[1].body[0].text;
-    assert.match(text, /지난주\(1246회\) 받은 번호 5게임 결과: 2등/, text);
-    assert.match(text, /가장 좋은 게임 2등\(5개 일치 \+ 보너스\)/);
-    assert.equal(resend[1].body[0].subject, '[lottodraw.kr] 1247회 이번 주 생성 번호');
-    void g; void games;
+    await subscribers(env2, 3);
+    assert.deepEqual(await resultMail(env2, SUN), { sent: 0, done: true });
+    assert.equal(resend.length, 0);
+    assert.equal((await resultMail(env2, SUN + 3600e3)).skipped, 'done');
+    drawHead = null;
+});
+
+test('결과 메일: 하루 한도를 넘으면 나머지는 다음 날(월요일) 보낸다', async () => {
+    const env = await fresh({ WEEKLY_MAIL_DAILY: '2' });
+    drawHead = head(R, WIN, BONUS);
+    await subscribers(env, 3, [[1, 2, 3, 4, 5, 6]]);
+    assert.deepEqual(await resultMail(env, SUN), { sent: 2, done: false });
+    assert.equal((await resultMail(env, SUN + 3600e3)).skipped, 'budget', '같은 날은 더 보내지 않는다');
+    assert.deepEqual(await resultMail(env, MON), { sent: 1, done: true });
+    assert.deepEqual(sentTo(), ['m0@gmail.com', 'm1@gmail.com', 'm2@gmail.com'], '한 사람에 한 통씩');
+    drawHead = null;
+});
+
+test('결과 메일: Resend 가 실패하면 다음 시간에 다시, 세 번 연달아 실패하면 그 회차는 멈추고 알린다. 사이트 API 는 그대로', async () => {
+    const env = await fresh({ TELEGRAM_BOT_TOKEN: 't', TELEGRAM_CHAT_ID: '1' });
+    drawHead = head(R, WIN, BONUS);
+    await subscribers(env, 1, [[1, 2, 3, 4, 5, 6]]);
+    resendFail = 1;
+    assert.match((await resultMail(env, SUN)).failed, /429/);
+    assert.deepEqual(await resultMail(env, SUN + 3600e3), { sent: 1, done: true }, '두 번째에 보낸다');
+    const env2 = await fresh({ TELEGRAM_BOT_TOKEN: 't', TELEGRAM_CHAT_ID: '1' });
+    const [s] = await subscribers(env2, 1, [[1, 2, 3, 4, 5, 6]]);
+    resendFail = 3;
+    for (let i = 0; i < 3; i++) await resultMail(env2, SUN + i * 3600e3);
+    assert.equal((await resultMail(env2, SUN + 4 * 3600e3)).skipped, 'done', '멈췄다');
+    assert.equal(resend.length, 0);
+    assert.equal((await call(env2, 'GET', '/api/config')).status, 200);
+    assert.equal((await call(env2, 'GET', '/api/me/numbers', { headers: auth(s) })).status, 200);
     drawHead = null;
 });
 
 test('수신 거부: 링크를 열기만 해서는 꺼지지 않고(GET), 단추 · 메일 앱(POST)으로 끈다. 서명이 틀리면 거절', async () => {
     const env = await fresh();
-    const [s] = await subscribers(env, 1);
-    await weeklyMail(env, FRI);
+    drawHead = head(R, WIN, BONUS);
+    const [s] = await subscribers(env, 1, [[1, 2, 3, 4, 5, 6]]);
+    await resultMail(env, SUN);
     const url = new URL(resend[0].body[0].text.match(/수신 거부: (\S+)/)[1]);
     const get = await worker.fetch(new Request(url, { method: 'GET' }), env, ctx);
     assert.equal(get.status, 200);
-    assert.match(await get.text(), /<form method="post"/);
+    const page = await get.text();
+    assert.match(page, /<form method="post"/);
+    assert.match(page, /추첨 결과 메일 수신 거부/);
     assert.equal((await call(env, 'GET', '/api/me/numbers', { headers: auth(s) })).data.mail, true, 'GET 만으로는 그대로');
     const forged = new URL(url); forged.searchParams.set('t', 'A'.repeat(22));
     assert.match(await (await worker.fetch(new Request(forged, { method: 'POST' }), env, ctx)).text(), /올바르지 않습니다/);
@@ -392,10 +382,12 @@ test('수신 거부: 링크를 열기만 해서는 꺼지지 않고(GET), 단추
     assert.match(await post.text(), /수신 거부되었습니다/);
     assert.equal((await call(env, 'GET', '/api/me/numbers', { headers: auth(s) })).data.mail, false);
     assert.equal((await call(env, 'GET', '/api/admin/status', { headers: asAdmin })).data.weekly.subs, 0);
-    // 다음 주에는 보내지 않는다
+    // 다시 보낼 때가 와도(그 회차 기록을 지워 흉내) 보내지 않는다
+    env.COMMUNITY._m.delete('mr:' + R);
     resend = [];
-    await weeklyMail(env, FRI + 7 * 86400e3);
+    await resultMail(env, SUN + 3600e3);
     assert.equal(resend.length, 0);
+    drawHead = null;
 });
 
 test('메일을 켜려면 메일 발송 설정이 있어야 한다', async () => {
