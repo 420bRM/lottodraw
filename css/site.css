@@ -1326,6 +1326,22 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 .dist-legend .key-ball { width: 10px; border-radius: 50%; background: var(--ball-1); opacity: 1; }
 .dist-legend .key-curve { height: 0; border-top: 2.5px solid var(--ball-3); }
 .dist-legend .key-band { background: var(--brand); opacity: .12; }
+/* 차이(거리) 삼각형 — AC값 페이지 계산기 위 · About. 그림은 tools/build-static-stats.js 의 acTriSvg (2026-10-18) */
+.ac-tri { margin: 6px 0 14px; }
+.ac-tri svg { display: block; width: 100%; max-width: 420px; height: auto; margin: 0 auto; font-family: var(--font); }
+.ac-tri-num circle { stroke: #fff; stroke-width: 1; }
+.ac-tri-num text { fill: #fff; font-size: 12px; font-weight: bold; }
+.ac-tri-cell rect { fill: #fff; stroke: #d9d9d9; }
+.ac-tri-cell text { fill: var(--text); font-size: 12px; font-variant-numeric: tabular-nums; }
+.ac-tri-cell.is-rep text { font-weight: bold; }
+.ac-tri-link { stroke-width: 1.5; opacity: .45; }
+.ac-tri-row { fill: var(--muted); font-size: 10px; }
+.prose .ac-tri-cap { margin: 4px 0 8px; color: var(--muted); font-size: 12px; text-align: center; }
+.prose .ac-tri-sum { margin: 6px 0 4px; font-size: 14px; }
+.ac-tri-list { margin: 0; padding: 0; list-style: none; font-size: 13px; }
+.prose .ac-tri-list li { margin: 3px 0; }
+.ac-tri-sw { display: inline-block; min-width: 1.9em; margin-right: 6px; padding: 0 4px; border: 1.5px solid; border-radius: 4px; text-align: center; font-weight: bold; font-variant-numeric: tabular-nums; }
+.prose .ac-tri-why { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
 
 /* ───── 블로그 (blog/ — tools/build-blog.js 가 만든다) ───── */
 .cat-dot { display: inline-block; flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--ball-4); }
