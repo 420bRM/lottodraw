@@ -141,15 +141,21 @@
         set: setLang,
     };
 
-    // 로그인·좋아요(js/account.js)를 붙인다. 공개 페이지는 모두 이 파일을 읽으므로 여기서 한 번에 —
-    // 페이지마다 <script> 를 따로 넣지 않는다. 같은 폴더의 account.js 를 쓴다(blog/·round/ 에서도 맞는 주소).
+    // 낮/밤 모드(2026-10-21): 이 파일은 머리에서 바로 읽히므로, 고른 모드를 그리기 전에 붙여 깜빡이지 않게 한다.
+    // 단추는 js/theme.js(채팅 말풍선 위), 색은 css/site.css 의 :root[data-theme="dark"]
+    try { if (localStorage.getItem('lottodraw.theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark'); } catch (e) { /* 프라이빗 모드 */ }
+
+    // 로그인·좋아요(js/account.js)와 낮/밤 단추(js/theme.js)를 붙인다. 공개 페이지는 모두 이 파일을 읽으므로 여기서 한 번에 —
+    // 페이지마다 <script> 를 따로 넣지 않는다. 같은 폴더의 파일을 쓴다(blog/·round/ 에서도 맞는 주소).
     (function loadAccount() {
         const me = document.currentScript;
         if (!me || !me.src || !document.createElement) return;
-        const s = document.createElement('script');
-        s.src = me.src.replace(/i18n\.js(\?.*)?$/, 'account.js');
-        s.defer = true;
-        document.head.appendChild(s);
+        ['account.js', 'theme.js'].forEach(name => {
+            const s = document.createElement('script');
+            s.src = me.src.replace(/i18n\.js(\?.*)?$/, name);
+            s.defer = true;
+            document.head.appendChild(s);
+        });
     })();
 
     // 영어로 볼 때만 잠시 가린다. 한국어(대다수)는 가리는 일 없이 그대로 그려진다.

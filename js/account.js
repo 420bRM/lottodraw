@@ -19,6 +19,7 @@
     const NOTE_STORE = 'lottodraw.account.note';        // sessionStorage: 새로 고친 뒤 띄울 안내
     const KEY_STORE = 'lottodraw.premium.key';          // js/license.js 와 같은 자리
     const AUTO_NICK_STORE = 'lottodraw.account.autoNick'; // 자동 별명을 알린 별명(한 번만 알린다)
+    const NICK_ASK_STORE = 'lottodraw.account.nickAsk';   // 별명을 정하라고 물은 때의 자동 별명 날짜(nickDue) — 한 번만 묻는다
     const CACHE_MS = 10 * 60 * 1000;
     const NO_BAR = ['privacy', 'terms', 'contact', 'about', 'admin', 'ranking', 'mypage'];
 
@@ -276,6 +277,7 @@
         // 이미 별명이 있으면 바꾸는 데 포인트를 쓴다(운영자 · 자동으로 붙은 별명은 무료)
         const u = me && me.user;
         const paid = !!(u && u.nick && !u.staff && !u.nickAuto);
+        if (first && u && !u.nick && u.nickDue) local.set(NICK_ASK_STORE, u.nickDue);
         const avail = u && u.score ? u.score.avail : 0;
         const input = el('input', { type: 'text', id: 'acct-nick', className: 'acct-input', maxlength: '12', autocomplete: 'nickname',
             value: (me && me.user && me.user.nick) || '', placeholder: tr('acct.nickPh', '예: 행운의곰') });
@@ -604,8 +606,11 @@
         if (me && me.user) applyTrial(me.user.trial);
         renderHeader();
         showNote();
-        // 가입 3일 뒤 자동 별명이 붙은 뒤 처음 들르면 한 번 알린다
         const u = me && me.user;
+        // 별명이 없으면 자동 별명이 붙기 전에 한 번 직접 정할 기회를 준다. 가입할 때 물었으면(openNick 이 적어 둔다) 다시 묻지 않는다 —
+        // 이 기능 전에 가입한 회원 · 관리자가 별명을 지운 회원이 여기서 한 번 받는다
+        if (u && !u.nick && u.nickDue && !u.staff && local.get(NICK_ASK_STORE) !== u.nickDue && !document.getElementById('acct-modal')) openNick(true);
+        // 가입 3일 뒤 자동 별명이 붙은 뒤 처음 들르면 한 번 알린다
         if (u && u.nickAuto && local.get(AUTO_NICK_STORE) !== u.nick) {
             local.set(AUTO_NICK_STORE, u.nick);
             toast(tr('acct.nickAutoGiven', '별명이 "{nick}"(으)로 자동으로 붙었습니다. 한 번은 무료로 바꿀 수 있습니다.', { nick: u.nick }),

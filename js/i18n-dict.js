@@ -1081,6 +1081,8 @@ window.I18N_DICT = {
     'acct.nickCost':  { ko: '별명을 바꾸면 {cost}포인트를 씁니다. 지금 쓸 수 있는 포인트: {avail}', en: 'Changing your nickname uses {cost} points. Points available now: {avail}' },
     'acct.nickChangePaid': { ko: '별명 바꾸기 ({cost}P)', en: 'Change nickname ({cost}P)' },
     // 자동 별명(가입 3일 뒤, worker/src/community.js autoNicks)
+    'theme.toDark':   { ko: '밤 모드로 보기', en: 'Switch to dark mode' },
+    'theme.toLight':  { ko: '낮 모드로 보기', en: 'Switch to light mode' },
     'acct.nickChangeFree': { ko: '별명 바꾸기 (한 번 무료)', en: 'Change nickname (free once)' },
     'acct.nickAutoFree': { ko: '자동으로 붙은 별명입니다. 한 번은 포인트 없이 바꿀 수 있습니다.', en: 'This nickname was given automatically. You can change it once without spending points.' },
     'acct.nickDue':   { ko: '{date}까지 정하지 않으면 별명이 자동으로 붙습니다. 자동 별명은 한 번 무료로 바꿀 수 있습니다.', en: 'If you do not choose one by {date}, a nickname is given automatically. You can change an automatic nickname once for free.' },
