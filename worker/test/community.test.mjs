@@ -1,8 +1,8 @@
 // 회원(구글 로그인) · 무료 체험 · 좋아요 · 탈퇴. 구글 서버 대신 시험용 RSA 키로 ID 토큰을 만들어 넣는다.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import worker, { _resetForTests, Community } from '../src/index.js';
-import { score } from '../src/community.js';
+import worker, { _resetForTests, Community, NICK_RE, NICK_RESERVED } from '../src/index.js';
+import { score, NICK_WORDS, AUTO_NICK_DAYS } from '../src/community.js';
 import { _resetGoogleForTests } from '../src/google.js';
 import { parseKey, b64urlEncode } from '../src/keys.js';
 
@@ -398,6 +398,102 @@ test('별명: 정하고 바꾸고, 겹치거나 규칙에 안 맞으면 거절, 
     await call(env, 'POST', '/api/me/delete', { body: { confirm: true }, headers: auth(a.session) });
     give('B', 5000);
     assert.equal((await nick(b.session, 'LuckyBear')).status, 200);
+});
+
+// 저장소에 바로 묻는다(한 시간 예약이 부르는 것과 같은 길) — 시각을 옮겨 가며 본다
+const op = async (env, body) => (await env.COMMUNITY.get().fetch('https://community/', { method: 'POST', body: JSON.stringify(body) })).json();
+const DAYMS = 86400 * 1000;
+const AUTO_RE = new RegExp(`^(${NICK_WORDS.adj.join('|')})(${NICK_WORDS.noun.join('|')})[1-9][0-9]{3}$`);
+
+test('자동 별명 낱말: 모든 조합이 별명 규칙(2~12자)에 맞고 막힌 낱말이 없으며, 숫자 4자리가 붙는다', () => {
+    assert.equal(AUTO_NICK_DAYS, 3);
+    for (const a of NICK_WORDS.adj) for (const n of NICK_WORDS.noun) for (const d of ['1000', '9999']) {
+        const nick = a + n + d;
+        assert.ok(NICK_RE.test(nick), nick);
+        assert.ok(!NICK_RESERVED.test(nick), nick);
+    }
+    assert.equal(new Set(NICK_WORDS.adj).size, NICK_WORDS.adj.length);
+    assert.equal(new Set(NICK_WORDS.noun).size, NICK_WORDS.noun.length);
+});
+
+test('자동 별명: 가입하고 3일 안에 별명을 정하지 않으면 한 시간 예약이 붙이고, 랭킹에 나오며, 한 번은 포인트 없이 바꾼다', async () => {
+    const env = await fresh();
+    const me = async s => (await call(env, 'GET', '/api/me', { headers: auth(s) })).data.user;
+    const nick = (s, nickname) => call(env, 'POST', '/api/me/nickname', { body: { nickname }, headers: auth(s) });
+    const t0 = Date.now();
+    const a = (await login(env, { sub: 'A', email: 'a@gmail.com' })).data;   // 별명 없이 둔다
+    const b = (await login(env, { sub: 'B', email: 'b@gmail.com' })).data;   // 바로 정한다
+    assert.equal((await nick(b.session, '정한별명')).status, 200);
+
+    const due = (await me(a.session)).nickDue;
+    assert.ok(due >= t0 + 3 * DAYMS && due <= Date.now() + 3 * DAYMS, '가입 3일 뒤');
+    assert.equal((await me(b.session)).nickDue, null);
+    assert.equal(env.COMMUNITY._m.has('q:A'), true);
+    assert.equal(env.COMMUNITY._m.has('q:B'), false, '별명을 정하면 대기열에서 빠진다');
+
+    // 한 시간 예약이 실제로 부른다(처음이라 예전 회원 훑기 표시도 남는다). 아직 3일 전이라 붙이지 않는다
+    const waits = [];
+    await worker.scheduled({}, env, { waitUntil: p => waits.push(p) });
+    await Promise.all(waits);
+    assert.equal(env.COMMUNITY._m.get('nickq'), 1);
+    assert.equal((await me(a.session)).nick, null);
+    assert.deepEqual((await op(env, { op: 'autoNicks', now: due - 1 })).named, []);
+
+    // 3일이 지나면 붙는다: 형용사 + 동물 + 숫자 4자리
+    const got = (await op(env, { op: 'autoNicks', now: due })).named;
+    assert.equal(got.length, 1);
+    assert.match(got[0], AUTO_RE);
+    const u = await me(a.session);
+    assert.equal(u.nick, got[0]);
+    assert.equal(u.nickAuto, true);
+    assert.equal(u.nickDue, null);
+    assert.equal(env.COMMUNITY._m.has('q:A'), false);
+    assert.equal(env.COMMUNITY._m.get('n:' + got[0].toLowerCase()), 'A', '다른 사람이 같은 별명을 못 쓴다');
+    assert.equal((await nick(b.session, got[0])).data.error, 'taken_nick');
+    assert.deepEqual((await op(env, { op: 'autoNicks', now: due + 3600 * 1000 })).named, [], '한 번만 붙인다');
+    assert.ok((await call(env, 'GET', '/api/ranking')).data.top.some(x => x.nick === got[0]), '별명이 생겨 랭킹에 나온다');
+
+    // 한 번은 포인트 없이 바꾸고(출석 10점뿐이어도), 그 뒤로는 보통처럼 500포인트
+    const changed = await nick(a.session, '내가정한별명');
+    assert.equal(changed.status, 200);
+    assert.equal(changed.data.cost, 0);
+    assert.equal(changed.data.user.nickAuto, false);
+    assert.equal(env.COMMUNITY._m.has('n:' + got[0].toLowerCase()), false, '자동 별명은 풀린다');
+    assert.equal((await nick(a.session, '또바꿈')).data.error, 'need_points');
+});
+
+test('자동 별명: 예전 회원은 그때부터 3일, 관리자가 별명을 지우면 다시 3일, 운영자 · 탈퇴한 회원은 붙이지 않는다', async () => {
+    const env = await fresh();
+    const m = env.COMMUNITY._m;
+    // 이 기능 전에 가입해 별명이 없는 회원(한 달 전 가입) — 대기열 기록이 없다
+    await login(env, { sub: 'OLD', email: 'old@gmail.com' });
+    const old = m.get('u:OLD'); delete old.nickDue; old.createdAt -= 30 * DAYMS; m.set('u:OLD', old); m.delete('q:OLD');
+    // 운영자(별명 없음), 곧 탈퇴할 회원
+    await login(env, { sub: 'STAFF', email: 'staff@gmail.com' });
+    assert.equal((await call(env, 'POST', '/api/admin/members/STAFF/staff', { headers: asAdmin })).status, 200);
+    const gone = (await login(env, { sub: 'GONE', email: 'gone@gmail.com' })).data;
+    await call(env, 'POST', '/api/me/delete', { body: { confirm: true }, headers: auth(gone.session) });
+    assert.equal(m.has('q:GONE'), false, '탈퇴하면 대기열에서도 지운다');
+
+    const T = Date.now();
+    assert.deepEqual((await op(env, { op: 'autoNicks', now: T })).named, [], '예전 회원에게 바로 붙이지 않는다');
+    assert.equal(m.get('u:OLD').nickDue, T + 3 * DAYMS, '처음 도는 때부터 3일');
+    const r = (await op(env, { op: 'autoNicks', now: T + 3 * DAYMS })).named;
+    assert.equal(r.length, 1, '운영자에게는 붙이지 않는다');
+    assert.equal(m.get('u:OLD').nick, r[0]);
+    assert.equal(m.get('u:STAFF').nick, undefined);
+    assert.equal(m.has('q:STAFF'), false);
+
+    // 관리자가 (자동) 별명을 지우면 새로 3일
+    const list = (await call(env, 'GET', '/api/admin/members', { headers: asAdmin })).data.members;
+    assert.equal(list.find(x => x.sub === 'OLD').nickAuto, true, '관리자 명부에 자동 별명 표시');
+    assert.equal((await call(env, 'POST', '/api/admin/members/OLD/clear-nick', { headers: asAdmin })).status, 200);
+    const due2 = m.get('u:OLD').nickDue;
+    assert.ok(due2 > T + 3 * DAYMS, '지운 때부터 3일');
+    assert.equal(m.get('u:OLD').nickAuto, undefined);
+    assert.deepEqual((await op(env, { op: 'autoNicks', now: due2 - 1 })).named, []);
+    assert.equal((await op(env, { op: 'autoNicks', now: due2 })).named.length, 1);
+    assert.equal(m.get('u:OLD').nickAuto, true);
 });
 
 test('₩ 원화 반응도 따로 켜고 끈다', async () => {

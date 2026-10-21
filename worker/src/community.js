@@ -8,6 +8,7 @@
 //   u:<구글 계정 번호>   { sub, ref, email, nick, createdAt, lastAt, trial, rx, sess, att, buy, spent, staff }
 //                        spent: 쓴 포인트(별명 바꾸기 등) — 랭킹은 모은 점수(total)로, 쓸 수 있는 포인트는 total - spent
 //                        staff: 운영자 계정 — 랭킹에서 빠지고, 채팅에 "운영자" 표시, 운영자다운 별명 허용, 별명 바꾸기 무료
+//                        nickDue: 이때까지 별명을 정하지 않으면 자동 별명을 붙인다(가입 3일 뒤). nickAuto: 자동으로 붙은 별명 — 한 번은 포인트 없이 바꾼다
 //                        att: { days, last } — 출석한 날 수와 마지막 출석일(한국 날짜)
 //                        chat: { n, day, today, h } — (공지하지 않는 규칙) 점수를 받은 채팅 수(전체), 오늘(한국 날짜)의 수, 마지막 메시지 해시(같은 말 반복 거르기)
 //                        buy: 로그인한 채 산 이용권 금액 합계(원) — 랭킹 점수용
@@ -22,6 +23,9 @@
 //                        가입 체험을 끈 동안(SIGNUP_TRIAL_DAYS 없음 — 2026-10-11부터 기본)은 쓸모가 없어 로그인 때 지운다
 //   r:<항목>             { h, d }      — 좋아요 수 (누구나 본다. 관리자 페이지에는 카드별 합계 표)
 //   n:<별명 소문자>      계정 번호      — 별명이 겹치지 않게
+//   q:<구글 계정 번호>   { due }        — 별명이 없는 회원(자동 별명 대기열). due 가 지나면 한 시간 예약이 자동 별명을 붙인다(autoNicks).
+//                        별명을 정하거나 탈퇴하면 지운다. 예약은 이 줄만 읽어 회원 수와 상관없이 가볍다
+//   nickq                자동 별명 대기열 판(1) — 없으면 처음 한 번 u: 를 훑어, 이 기능 전에 가입해 별명이 없는 회원을 그때부터 3일로 넣는다
 //   m:<회원 참조값>      계정 번호      — 주문에 남기는 되돌릴 수 없는 참조값(sha256) → 계정. 탈퇴하면 지운다
 //   c:<글>:<시각 16자리>-<무작위>  { id, at, sub, nick, text, staff } — 블로그 댓글. 계정은 cm(이 키들의 목록)으로 찾아 탈퇴 때 지운다
 //   b:<구글 계정 번호>   { nick, total, days, created } — 랭킹 색인. 별명이 있고 운영자가 아닌 회원만. u: 를 저장할 때 같이 맞춘다(saveUser)
@@ -60,6 +64,16 @@ export const CHAT_POINTS = { per: 0.1, daily: 50 };
 // 블로그 댓글 점수 — 역시 공지하지 않는다. 댓글 하나에 1점, 하루 5개(5점)까지, 공백·기호 빼고 10자 이상, 바로 앞 댓글과 같은 말은 빼고.
 // 댓글이 지워지면(본인·관리자) 그 점수도 뺀다.
 export const COMMENT_POINTS = { per: 1, daily: 5, minLen: 10 };
+// 자동 별명 (2026-10-21): 가입하고 AUTO_NICK_DAYS 일 안에 별명을 정하지 않으면 "형용사 + 동물 + 숫자 4자리"(예: 행운의수달4821)를 붙인다.
+// 낱말은 4자 이하라 가장 길어도 12자(별명 규칙 2~12자 안). 숫자로 자동 별명인 것이 드러나고, 한 번은 포인트 없이 바꾼다.
+// 모두 좋은 뜻의 낱말만 — 고치면 index.js 의 NICK_RE · NICK_RESERVED 에 걸리지 않는지 시험(community.test.mjs)이 본다
+export const AUTO_NICK_DAYS = 3;
+export const NICK_WORDS = {
+    adj: ['행운의', '반짝이는', '설레는', '든든한', '씩씩한', '느긋한', '신나는', '용감한', '다정한', '똑똑한', '부지런한', '명랑한', '기분좋은', '두근두근', '복많은', '꿈꾸는'],
+    noun: ['곰', '토끼', '고양이', '강아지', '다람쥐', '펭귄', '수달', '여우', '부엉이', '거북이', '고래', '판다', '햄스터', '돌고래', '너구리', '코알라', '사슴', '참새', '오리', '호랑이'],
+};
+const rand = n => crypto.getRandomValues(new Uint32Array(1))[0] % n;
+export const autoNickName = () => NICK_WORDS.adj[rand(NICK_WORDS.adj.length)] + NICK_WORDS.noun[rand(NICK_WORDS.noun.length)] + (1000 + rand(9000));
 const tenth = x => Math.round(x * 10) / 10;   // 채팅 점수(0.1)가 섞여 소수 첫째 자리까지 쓴다
 const kstDay = ms => new Date(ms + 9 * 3600 * 1000).toISOString().slice(0, 10);
 
@@ -160,6 +174,16 @@ export class Community {
         return this.viewBase.n;
     }
 
+    // 자동 별명 대기열(q:). 회원 기록(user)은 부른 쪽이 저장한다
+    async queueNick(user, now) {
+        user.nickDue = now + AUTO_NICK_DAYS * DAY;
+        await this.storage.put('q:' + user.sub, { due: user.nickDue });
+    }
+    async unqueueNick(user) {
+        delete user.nickDue;
+        await this.storage.delete('q:' + user.sub);
+    }
+
     // 회원 기록은 늘 이걸로 저장한다 — 랭킹 색인이 함께 맞춰진다
     async saveUser(user) {
         await this.storage.put('u:' + user.sub, user);
@@ -255,6 +279,7 @@ const OPS = {
         const isNew = !user;
         if (!user) {
             user = { sub, email, createdAt: now, lastAt: now, trial: null, rx: {}, sess: [] };
+            await this.queueNick(user, now);
             if (trial) {
                 const used = await this.storage.get('t:' + subHash);
                 if (!used || now - used.at > TRIAL_MEMORY_DAYS * DAY) {
@@ -310,7 +335,7 @@ const OPS = {
         if (user.nick === nick) return { ok: true, user: view(user), cost: 0 };
         const owner = await this.storage.get('n:' + key);
         if (owner && owner !== sub) return { error: 'taken' };
-        const cost = user.nick && !user.staff ? POINTS.nickChange : 0;
+        const cost = user.nick && !user.staff && !user.nickAuto ? POINTS.nickChange : 0;   // 자동 별명은 한 번 무료
         const avail = score(user).avail;
         if (cost && avail < cost) return { error: 'need_points', cost, avail };
         if (user.nick && user.nick.toLowerCase() !== key) await this.storage.delete('n:' + user.nick.toLowerCase());
@@ -318,6 +343,8 @@ const OPS = {
         user.nick = nick;
         user.nickAt = now;
         user.spent = (user.spent || 0) + cost;
+        delete user.nickAuto;
+        await this.unqueueNick(user);
         await this.saveUser(user);
         await renameComments(this.storage, user);
         return { ok: true, user: view(user), cost };
@@ -328,6 +355,7 @@ const OPS = {
         const user = await this.storage.get('u:' + sub);
         if (!user) return { error: 'no_user' };
         user.staff = !!on;
+        if (!on && !user.nick && !user.nickDue) await this.queueNick(user, Date.now());
         await this.saveUser(user);
         return { ok: true };
     },
@@ -425,6 +453,7 @@ const OPS = {
         for (const h of user.sess || []) await this.storage.delete('s:' + h);
         for (let i = 0; i < (user.cm || []).length; i += 128) await this.storage.delete(user.cm.slice(i, i + 128));   // 내가 쓴 블로그 댓글
         if (user.nick) await this.storage.delete('n:' + user.nick.toLowerCase());
+        await this.storage.delete('q:' + sub);   // 자동 별명 대기열
         if (user.ref) await this.storage.delete('m:' + user.ref);
         await this.storage.delete('k:' + sub);   // 내 번호
         if (await this.storage.delete('ms:' + sub)) await this.bump('subs', -1);   // 추첨 결과 메일 구독
@@ -522,7 +551,7 @@ const OPS = {
                 sub: u.sub, ref: u.ref || null, email: u.email, nick: u.nick || null, createdAt: u.createdAt, lastAt: u.lastAt,
                 trial: u.trial && u.trial.keyId ? { keyId: u.trial.keyId, expiresAt: u.trial.expiresAt } : null,
                 hearts: rx.filter(m => m.includes('h')).length, dollars: rx.filter(m => m.includes('d')).length,
-                wons: rx.filter(m => m.includes('w')).length, score: score(u), buy: u.buy || 0, staff: !!u.staff,
+                wons: rx.filter(m => m.includes('w')).length, score: score(u), buy: u.buy || 0, staff: !!u.staff, nickAuto: !!u.nickAuto,
             });
         }
         members.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -539,9 +568,49 @@ const OPS = {
         if (!user) return { error: 'no_user' };
         if (user.nick) await this.storage.delete('n:' + user.nick.toLowerCase());
         user.nick = null;
+        delete user.nickAuto;
+        if (!user.staff) await this.queueNick(user, Date.now());   // 새 별명을 정하지 않으면 3일 뒤 자동 별명
         await this.saveUser(user);
         await renameComments(this.storage, user);
         return { ok: true };
+    },
+
+    // 한 시간 예약(index.js scheduled): 별명 없이 AUTO_NICK_DAYS 일이 지난 회원에게 자동 별명을 붙인다.
+    // 처음 한 번은 u: 를 훑어 이 기능 전에 가입해 별명이 없는 회원을 대기열에 넣는다 — 바로 붙이지 않고 그때부터 3일
+    async autoNicks({ now }) {
+        if ((await this.storage.get('nickq')) !== 1) {
+            await this.each('u:', async u => {
+                if (u.nick || u.staff || u.nickDue) return;
+                await this.queueNick(u, now);
+                await this.storage.put('u:' + u.sub, u);
+            });
+            await this.storage.put('nickq', 1);
+        }
+        const due = [];
+        await this.each('q:', (q, k) => { if (q.due <= now) due.push(k.slice(2)); });
+        const named = [];
+        for (const sub of due) {
+            const user = await this.storage.get('u:' + sub);
+            if (!user || user.nick || user.staff) {   // 그새 정했거나 운영자가 됐으면 대기열에서만 뺀다
+                if (user && user.nickDue) { delete user.nickDue; await this.storage.put('u:' + sub, user); }
+                await this.storage.delete('q:' + sub);
+                continue;
+            }
+            let nick = null;
+            for (let i = 0; i < 30 && !nick; i++) {
+                const c = autoNickName();
+                if (!(await this.storage.get('n:' + c.toLowerCase()))) nick = c;
+            }
+            if (!nick) continue;   // 다 겹치면 다음 시간에 다시
+            await this.storage.put('n:' + nick.toLowerCase(), sub);
+            user.nick = nick;
+            user.nickAt = now;
+            user.nickAuto = true;
+            await this.unqueueNick(user);
+            await this.saveUser(user);
+            named.push(nick);
+        }
+        return { named };
     },
 
     /* ───── 블로그 댓글 ───── */
@@ -731,7 +800,10 @@ const b64url = bytes => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').
 
 function view(user) {
     const trial = user.trial && user.trial.key ? { key: user.trial.key, keyId: user.trial.keyId, expiresAt: user.trial.expiresAt } : null;
-    return { email: user.email, nick: user.nick || null, createdAt: user.createdAt, trial, score: pubScore(user), staff: !!user.staff, gen: user.gen || null };
+    return {
+        email: user.email, nick: user.nick || null, createdAt: user.createdAt, trial, score: pubScore(user), staff: !!user.staff, gen: user.gen || null,
+        nickAuto: !!(user.nick && user.nickAuto), nickDue: !user.nick && user.nickDue ? user.nickDue : null,
+    };
 }
 
 function reply(data, status) {

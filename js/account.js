@@ -18,6 +18,7 @@
     const CONFIG_STORE = 'lottodraw.account.config';    // sessionStorage { at, login }
     const NOTE_STORE = 'lottodraw.account.note';        // sessionStorage: 새로 고친 뒤 띄울 안내
     const KEY_STORE = 'lottodraw.premium.key';          // js/license.js 와 같은 자리
+    const AUTO_NICK_STORE = 'lottodraw.account.autoNick'; // 자동 별명을 알린 별명(한 번만 알린다)
     const CACHE_MS = 10 * 60 * 1000;
     const NO_BAR = ['privacy', 'terms', 'contact', 'about', 'admin', 'ranking', 'mypage'];
 
@@ -69,6 +70,7 @@
         return data;
     }
 
+    const monthDay = ms => new Date(ms).toLocaleDateString(lang() === 'en' ? 'en-US' : 'ko-KR', { month: 'long', day: 'numeric' });
     const fmtDate = ms => {
         const d = new Date(ms);
         const p = n => String(n).padStart(2, '0');
@@ -271,9 +273,9 @@
 
     function openNick(first) {
         closeModal();
-        // 이미 별명이 있으면 바꾸는 데 포인트를 쓴다(운영자는 무료)
+        // 이미 별명이 있으면 바꾸는 데 포인트를 쓴다(운영자 · 자동으로 붙은 별명은 무료)
         const u = me && me.user;
-        const paid = !!(u && u.nick && !u.staff);
+        const paid = !!(u && u.nick && !u.staff && !u.nickAuto);
         const avail = u && u.score ? u.score.avail : 0;
         const input = el('input', { type: 'text', id: 'acct-nick', className: 'acct-input', maxlength: '12', autocomplete: 'nickname',
             value: (me && me.user && me.user.nick) || '', placeholder: tr('acct.nickPh', '예: 행운의곰') });
@@ -323,6 +325,8 @@
                 ? tr('acct.nickLeadFirst', '사이트에서 쓸 별명입니다. 나중에 "내 계정"에서 바꿀 수 있습니다.')
                 : tr('acct.nickLead', '사이트에서 쓸 별명입니다. 다른 사람과 겹치지 않아야 합니다.') }),
             paid ? el('p', { className: 'acct-reason', text: tr('acct.nickCost', '별명을 바꾸면 {cost}포인트를 씁니다. 지금 쓸 수 있는 포인트: {avail}', { cost: nickCost(), avail: avail }) }) : null,
+            u && u.nickAuto ? el('p', { className: 'acct-reason', text: tr('acct.nickAutoFree', '자동으로 붙은 별명입니다. 한 번은 포인트 없이 바꿀 수 있습니다.') }) : null,
+            u && !u.nick && u.nickDue ? el('p', { className: 'acct-reason', text: tr('acct.nickDue', '{date}까지 정하지 않으면 별명이 자동으로 붙습니다. 자동 별명은 한 번 무료로 바꿀 수 있습니다.', { date: monthDay(u.nickDue) }) }) : null,
             form,
         ]);
         const modal = el('div', { id: 'acct-modal', className: 'acct-modal', on: { click: e => { if (e.target === modal) closeModal(); } } }, [box]);
@@ -363,7 +367,9 @@
             if (me.user && me.user.staff) menu.appendChild(el('p', { className: 'acct-staff', text: tr('acct.staff', '운영자 계정') }));
             if (sc) menu.appendChild(el('a', { className: 'acct-score', href: root + 'ranking.html', text: tr('acct.score2', '내 점수 {n}점 · 포인트 {avail} · 랭킹 보기 →', { n: sc.total, avail: sc.avail != null ? sc.avail : sc.total }) }));
             menu.appendChild(el('a', { href: root + 'statistics.html', text: tr('acct.goStats', '5개월 통계 보기 →') }));
-            menu.appendChild(el('button', { type: 'button', text: me.user && me.user.nick ? (me.user.staff ? tr('acct.nickChange', '별명 바꾸기') : tr('acct.nickChangePaid', '별명 바꾸기 ({cost}P)', { cost: nickCost() })) : tr('acct.nickSet', '별명 정하기'),
+            menu.appendChild(el('button', { type: 'button', text: me.user && me.user.nick
+                ? (me.user.staff ? tr('acct.nickChange', '별명 바꾸기') : me.user.nickAuto ? tr('acct.nickChangeFree', '별명 바꾸기 (한 번 무료)') : tr('acct.nickChangePaid', '별명 바꾸기 ({cost}P)', { cost: nickCost() }))
+                : tr('acct.nickSet', '별명 정하기'),
                 on: { click: () => { menu.hidden = true; openNick(false); } } }));
             menu.appendChild(el('button', { type: 'button', text: tr('acct.logout', '로그아웃'), on: { click: logout } }));
             menu.appendChild(el('button', { type: 'button', className: 'acct-danger', text: tr('acct.delete', '회원 탈퇴'), on: { click: withdraw } }));
@@ -598,6 +604,13 @@
         if (me && me.user) applyTrial(me.user.trial);
         renderHeader();
         showNote();
+        // 가입 3일 뒤 자동 별명이 붙은 뒤 처음 들르면 한 번 알린다
+        const u = me && me.user;
+        if (u && u.nickAuto && local.get(AUTO_NICK_STORE) !== u.nick) {
+            local.set(AUTO_NICK_STORE, u.nick);
+            toast(tr('acct.nickAutoGiven', '별명이 "{nick}"(으)로 자동으로 붙었습니다. 한 번은 무료로 바꿀 수 있습니다.', { nick: u.nick }),
+                { href: root + 'mypage.html', text: tr('acct.nickAutoGo', '마이페이지에서 바꾸기 →') });
+        }
         if (attendedToday && !document.getElementById('acct-toast')) toast(tr('acct.attended', '오늘 출석 +{n}점', { n: attendedToday }), { href: root + 'ranking.html', text: tr('acct.goRanking', '랭킹 보기 →') });
         renderReactions();
         // 실시간 채팅(js/chat.js) — 서버가 켜 두었을 때만, 관리자 페이지는 빼고

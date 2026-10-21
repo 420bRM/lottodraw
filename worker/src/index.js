@@ -9,6 +9,7 @@
 //      구매자가 문의하면 판매자가 관리자 페이지에서 "환불 처리"를 누른다: 키 정지, 카드는 결제 취소까지.
 //   4) 지킴이 — 한 시간마다 입금 알림 연결이 살아 있는지 보고, 끊기면 판매자에게 알린다.
 //   5) 회원 — 구글 로그인, 좋아요(하트·달러). 가입 무료 체험 키(1회)는 SIGNUP_TRIAL_DAYS 를 넣을 때만 — 2026-10-11부터 끔. 저장은 community.js.
+//      가입하고 3일 안에 별명을 정하지 않으면 한 시간 예약이 자동 별명(예: 행운의수달4821)을 붙인다(autoNicks, 한 번은 무료로 바꾼다).
 //   6) 내 번호 — 회원이 산 번호를 회차별로 저장(마이페이지가 당첨번호와 맞춰 등수를 보여 준다). 저장은 community.js 의 k:
 //   7) 추첨 결과 메일 — 구독한 회원에게 일요일 오전부터 그 회차 당첨번호와 내 번호에 저장한 번호의 등수를 보낸다(resultMail).
 //      그 회차 번호를 저장하지 않은 회원에게는 보내지 않는다.
@@ -52,10 +53,11 @@ class HttpError extends Error {
 
 export default {
     // 한 시간마다: 입금 알림 연결이 살아 있는지 확인 (wrangler.toml [triggers])
-    // 추첨 결과 메일도 같은 한 시간 예약에서 돈다 — 따로 waitUntil 에 넣어 한쪽이 실패해도 다른 쪽은 그대로 간다
+    // 추첨 결과 메일 · 자동 별명(가입 3일 뒤)도 같은 한 시간 예약에서 돈다 — 따로 waitUntil 에 넣어 한쪽이 실패해도 다른 쪽은 그대로 간다
     async scheduled(event, env, ctx) {
         ctx.waitUntil(watchdog(env));
         ctx.waitUntil(resultMail(env, Date.now()).catch(err => console.error('result mail', err)));
+        if (loginReady(env)) ctx.waitUntil(community(env, 'autoNicks', { now: Date.now() }).catch(err => console.error('auto nick', err)));
     },
     async fetch(request, env, ctx) {
         try {
@@ -741,8 +743,8 @@ async function deleteMe(request, env, ctx) {
 }
 
 // 별명: 한글·영문·숫자·밑줄 2~12자. 운영자로 오해할 만한 이름은 막는다.
-const NICK_RE = /^[가-힣a-zA-Z0-9_]{2,12}$/;
-const NICK_RESERVED = /(admin|관리자|운영자|lottodraw|로또드로우|동행복권|official|공식)/i;
+export const NICK_RE = /^[가-힣a-zA-Z0-9_]{2,12}$/;
+export const NICK_RESERVED = /(admin|관리자|운영자|lottodraw|로또드로우|동행복권|official|공식)/i;
 
 async function setNickname(request, env) {
     const s = await sessionUser(request, env);
