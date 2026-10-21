@@ -203,10 +203,20 @@
     const krw = n => (I18N.lang === 'en' ? (n < 0 ? '-₩' : '₩') + fmt(Math.abs(n)) : (n < 0 ? '-' : '') + fmt(Math.abs(n)) + '원');
     const roundLink = r => el('a', { href: 'round/' + r + '.html', text: T('rc.roundN', { n: r }) });
 
+    // 처음 열면 빈 카드 대신 예시를 펼쳐 둔다: 마지막 회차의 2등 조합(당첨번호 앞 5개 + 보너스).
+    // 그 회차에 2등이 된 번호라는 걸 위에 밝혀 둔다 — 지난 기록으로 만든 예시일 뿐이다.
+    function secondPrizeExample(draws) {
+        const d = draws.slice().sort(byRoundDesc)[0];
+        if (!d) return null;
+        return { round: d.round, bonus: d.bonus, picks: d.numbers.slice().sort(asc).slice(0, 5).concat([d.bonus]).sort(asc) };
+    }
+
     function reportCard(draws) {
+        const example = secondPrizeExample(draws);
         const input = el('input', {
             type: 'text', id: 'report-input', inputmode: 'numeric', autocomplete: 'off',
-            maxlength: '30', placeholder: T('dt.report.ph'), 'aria-label': T('dt.report.t'),
+            maxlength: '30', placeholder: T('dt.report.ph', { nums: (example ? example.picks : [3, 11, 19, 27, 34, 42]).join(' ') }),
+            'aria-label': T('dt.report.t'),
         });
         const out = el('div', { className: 'report-out' });
         const status = el('p', { className: 'license-status', id: 'report-status', role: 'status', 'aria-live': 'polite' });
@@ -244,10 +254,9 @@
         }
 
         let runs = 0;   // 받는 동안 다시 누르면 마지막 것만 그린다
-        function run() {
+        function draw(picks, ex) {
             const R = window.LottoReport;
             const mine = ++runs;
-            const picks = R ? R.parsePicks(input.value) : null;
             status.classList.remove('error');
             out.textContent = '';
             refit();
@@ -260,10 +269,17 @@
             loadPrizes().then(list => {
                 if (mine !== runs) return;
                 status.textContent = '';
+                if (ex) out.appendChild(el('p', { className: 'report-example', text: T('dt.report.example', { r: ex.round, b: ex.bonus }) }));
                 show(R.compute(draws, list, picks));
             });
         }
+        const run = () => draw(window.LottoReport ? LottoReport.parsePicks(input.value) : null);
         input.addEventListener('keydown', e => { if (e.key === 'Enter') run(); });
+
+        // js/report.js 는 defer 라 아직 없을 수 있다 — 그때는 문서를 다 읽은 뒤에
+        const showExample = () => { if (example && window.LottoReport && !runs) draw(example.picks, example); };
+        if (window.LottoReport) showExample();
+        else if (document.readyState !== 'complete') document.addEventListener('DOMContentLoaded', showExample, { once: true });
 
         return card({
             id: 'detail-report', title: T('dt.report.t'), meta: T('dt.allDraws'),

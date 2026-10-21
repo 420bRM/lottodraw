@@ -1279,6 +1279,7 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 .report-out .rc-ranks th, .report-out .rc-ranks td { padding: 4px 2px; font-size: 12px; }
 .report-out .rc-near .strategy-nums { gap: 2px; }
 .report-sub { font-weight: bold; color: var(--text); }
+.report-out .report-example { padding: 6px 10px; border-radius: 8px; background: var(--hl, #fff7d6); color: var(--text); font-size: 12px; }
 .report-out .btn { justify-self: start; margin: 0; }
 .vaxis-all span { font-size: 9px; letter-spacing: -0.04em; }
 .chart-tools { display: flex; justify-content: flex-end; margin-bottom: 6px; }
