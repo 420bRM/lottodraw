@@ -534,7 +534,7 @@ test('랭킹: 출석(하루 한 번)·반응·로그인한 채 산 이용권으�
     let r = (await call(env, 'GET', '/api/ranking')).data;
     assert.deepEqual(r.top, [{ rank: 1, nick: '첫째', points: 10 + 4 + buyPts, days: 1 }], '별명 없는 B 는 공개 목록에 없다');
     assert.equal(r.me, null);
-    assert.deepEqual(r.points, { attend: 10, react: 2, buyPer100: 10, nickChange: 500 });
+    assert.deepEqual(r.points, { attend: 10, react: 2, buyPer100: 10, nickChange: 500, dayPass: 300 });
 
     // 내 순위: 별명이 없어도 알려 준다
     r = (await call(env, 'GET', '/api/ranking', { headers: auth(b.session) })).data;
@@ -696,6 +696,91 @@ test('랭킹 색인: 무작위로 점수 · 별명 · 운영자 · 탈퇴를 바
     }
     assert.ok(tied >= 10, '같은 점수가 섞인 랭킹을 충분히 견줘야 시험이 된다: ' + tied);
     assert.ok(did.clearNick >= 3 && did.userDelete >= 3, '별명 지우기 · 탈퇴도 여러 번: ' + JSON.stringify(did));
+});
+
+test('포인트로 1일 이용권: 300포인트로 24시간 키, 랭킹 점수는 그대로, 살아 있는 동안 다시 못 쓰고, 발급이 실패하면 포인트를 돌려준다', async () => {
+    const env = await fresh({ SIGNUP_TRIAL_DAYS: '' });
+    const a = (await login(env, { sub: 'A', email: 'a@gmail.com' })).data;
+    const pass = () => call(env, 'POST', '/api/me/point-pass', { headers: auth(a.session) });
+    const me = async () => (await call(env, 'GET', '/api/me', { headers: auth(a.session) })).data;
+    assert.equal((await call(env, 'POST', '/api/me/point-pass')).status, 401, '로그인 필요');
+    assert.equal((await me()).points.dayPass, 300);
+
+    // 가입한 날 출석 10점뿐이면 모자란다
+    let r = await pass();
+    assert.equal(r.status, 402);
+    assert.equal(r.data.error, 'need_points');
+    const u = env.COMMUNITY._m.get('u:A'); u.buy = 3000; env.COMMUNITY._m.set('u:A', u);   // 300점 + 출석 10점
+
+    r = await pass();
+    assert.equal(r.status, 200);
+    assert.equal(r.data.cost, 300);
+    const p = parseKey(r.data.key);
+    assert.equal(p.plan, 'pday');
+    assert.equal(p.expiresAt - p.issuedAt, 86400, '24시간');
+    const sc = (await me()).user.score;
+    assert.deepEqual([sc.total, sc.spent, sc.avail], [310, 300, 10], '랭킹 점수는 그대로, 쓸 수 있는 포인트만 준다');
+    assert.equal((await me()).user.pointPass.key, r.data.key, '다른 기기에서도 내 정보로 받는다');
+
+    // 관리자 주문 목록에 0원 "포인트로 열기"로 남고, 정지 · 조회가 같은 길
+    const orders = (await call(env, 'GET', '/api/admin/orders?status=paid', { headers: asAdmin })).data.orders;
+    const o = orders.find(x => x.m === 'points');
+    assert.ok(o, '주문으로 남는다');
+    assert.equal(o.a, 0);
+
+    // 살아 있는 동안은 또 쓰지 않는다(포인트를 더 모아도)
+    const u2 = env.COMMUNITY._m.get('u:A'); u2.buy = 9000; env.COMMUNITY._m.set('u:A', u2);
+    r = await pass();
+    assert.equal(r.status, 409);
+    assert.equal(r.data.error, 'active');
+    // 끝나면 다시 쓸 수 있다
+    const u3 = env.COMMUNITY._m.get('u:A'); u3.ppass.expiresAt = Date.now() - 1000; env.COMMUNITY._m.set('u:A', u3);
+    r = await pass();
+    assert.equal(r.status, 200);
+    assert.equal((await me()).user.score.spent, 600);
+    assert.equal(env.COMMUNITY._m.get('u:A').ppassN, 2);
+
+    // 서명 키가 없어 발급하지 못하면 쓴 포인트를 돌려준다
+    const env2 = makeEnv({ SIGNUP_TRIAL_DAYS: '' });   // 서명 키를 만들지 않은 서버
+    _resetForTests();
+    const b = (await login(env2, { sub: 'B', email: 'b@gmail.com' })).data;
+    const ub = env2.COMMUNITY._m.get('u:B'); ub.buy = 5000; env2.COMMUNITY._m.set('u:B', ub);
+    r = await call(env2, 'POST', '/api/me/point-pass', { headers: auth(b.session) });
+    assert.equal(r.status, 503);
+    const back = env2.COMMUNITY._m.get('u:B');
+    assert.equal(back.spent || 0, 0, '포인트를 돌려받는다');
+    assert.equal(back.ppass, undefined);
+});
+
+test('결제 흐름 집계: 결제 페이지 · 고름은 화면이, 주문 · 입금 · 포인트로 열기는 서버가 센다(화면에서는 못 보냄), 로봇은 세지 않는다', async () => {
+    const env = await fresh({ SIGNUP_TRIAL_DAYS: '', BANK_NAME: '우리은행', BANK_ACCOUNT: '1002-123-456789', BANK_HOLDER: '홍길동' });
+    const tap = (k, ua) => worker.fetch(new Request('https://api.lottodraw.kr/api/tap', {
+        method: 'POST', headers: Object.assign({ 'Content-Type': 'text/plain;charset=UTF-8', Origin: ORIGIN }, ua ? { 'User-Agent': ua } : {}), body: JSON.stringify({ k }),
+    }), env, ctx);
+    assert.equal((await tap('pay-view')).status, 204);
+    assert.equal((await tap('pay-view')).status, 204);
+    assert.equal((await tap('pay-view', 'Mozilla/5.0 (compatible; Googlebot/2.1)')).status, 204, '로봇은 받기만 하고 세지 않는다');
+    assert.equal((await tap('pay-pick')).status, 204);
+    for (const k of ['pay-order', 'pay-paid', 'pay-point']) assert.equal((await tap(k)).status, 400, k + ' 는 화면에서 못 보낸다');
+
+    const waits = [];
+    const wctx = { waitUntil: p => waits.push(p) };
+    const res = await worker.fetch(new Request('https://api.lottodraw.kr/api/orders', { method: 'POST', headers: { Origin: ORIGIN, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: 'round', method: 'bank', name: '홍길동', agree: true }) }), env, wctx);
+    const order = (await res.json()).order;
+    await Promise.all(waits);
+    assert.equal((await call(env, 'POST', `/api/admin/orders/${order.id}/confirm`, { headers: asAdmin })).status, 200);
+    assert.equal((await call(env, 'POST', `/api/admin/orders/${order.id}/confirm`, { headers: asAdmin })).status, 200, '두 번 눌러도');
+
+    const a = (await login(env, { sub: 'A', email: 'a@gmail.com' })).data;
+    const u = env.COMMUNITY._m.get('u:A'); u.buy = 3000; env.COMMUNITY._m.set('u:A', u);
+    const pw = [];
+    await worker.fetch(new Request('https://api.lottodraw.kr/api/me/point-pass', { method: 'POST', headers: { Origin: ORIGIN, Authorization: 'Bearer ' + a.session } }), env, { waitUntil: p => pw.push(p) });
+    await Promise.all(pw);
+
+    const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+    const day = (await call(env, 'GET', '/api/admin/taps', { headers: asAdmin })).data.days.find(d => d.day === today);
+    assert.deepEqual(day, { day: today, 'pay-view': 2, 'pay-pick': 1, 'pay-order': 1, 'pay-paid': 1, 'pay-point': 1 });
 });
 
 test('공유 · 출력 집계: 우리 사이트에서 보낸 종류만 한국 날짜별로 세고, 관리자만 본다', async () => {
