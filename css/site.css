@@ -1240,7 +1240,19 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 /* ───── 상세 분석 · 잠금 카드 ───── */
 .section-head { margin: 24px 0 10px; color: var(--brand); font-size: 18px; }
 .section-head small { margin-left: 6px; padding: 2px 8px; border-radius: 10px; background: var(--brand-bg, var(--brand)); color: #fff; font-size: 11px; font-weight: bold; vertical-align: middle; }
-.locked-card .card-body { display: grid; gap: 10px; justify-items: start; color: var(--muted); font-size: 13px; }
+/* 상세 분석 4종: 제목 · 안내 · 본문 · 주석 칸을 한 줄의 카드끼리 같은 높이로(subgrid) — 안내가 길어도 본문이 같은 높이에서
+   시작하고 주석은 카드 맨 아래에 나란히 놓인다. 잠긴 카드는 제목 · 설명 · 단추 세 칸. subgrid 를 모르는 브라우저는 카드마다 따로 */
+.detail-card { grid-row: span 4; display: grid; grid-template-rows: auto auto 1fr auto; grid-template-rows: subgrid; row-gap: 0; }
+.locked-card { grid-row: span 3; display: grid; grid-template-rows: auto auto 1fr; grid-template-rows: subgrid; row-gap: 0; }
+.detail-intro { margin: 0; padding: 10px 16px 0; font-size: 13px; }
+.detail-intro.is-help { color: var(--muted); }
+.detail-main { min-width: 0; padding: 10px 16px 0; font-size: 14px; }
+.locked-card .detail-main { padding-bottom: 14px; }
+.detail-note { margin: 0; padding: 10px 16px 14px; color: var(--muted); font-size: 12px; }
+.detail-note:empty { padding-top: 0; }
+/* 1등 당첨금 추이: 금액 · 당첨자 수가 길어(18억 8,102만 · 16명) 고정 칸을 넘쳤다 — 회차 · 금액 칸은 가장 긴 줄에 맞추고 막대가 남는 폭을 쓴다 */
+#detail-prize .hbars { grid-template-columns: auto minmax(0, 1fr) auto; column-gap: 8px; }
+#detail-prize .hbar { grid-column: 1 / -1; grid-template-columns: 4.4em minmax(0, 1fr) 11em; grid-template-columns: subgrid; }
 .detail-open-bar { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; padding: 14px 16px; border: 2px solid var(--brand); border-radius: 12px; background: var(--surface, #fff); }
 .detail-open-bar p { margin: 0; font-weight: bold; color: var(--brand); }
 .ready-card .lock-mark { background: var(--brand-bg, var(--brand)); color: #fff; }

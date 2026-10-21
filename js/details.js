@@ -45,14 +45,28 @@
 
     const ball = n => el('span', { className: 'mball', dataset: { band: bandOf(n) }, text: String(n) });
 
+    // 상세 분석 카드는 네 칸: 제목 · 안내(intro) · 본문 · 주석(note). 한 줄에 놓인 카드끼리 칸마다 높이를 맞춘다
+    // (css .detail-card — subgrid). 안내가 사용법이면 help 로 흐리게.
+    const intro = (text, help) => el('p', { className: 'detail-intro' + (help ? ' is-help' : ''), text: text });
+    const note = text => el('p', { className: 'detail-note', text: text || '' });
+
     function card(o) {
-        return el('section', { className: 'card' + (o.span ? ' span-2' : ''), id: o.id, 'aria-labelledby': o.id + '-t' }, [
+        return el('section', { className: 'card detail-card', id: o.id, 'aria-labelledby': o.id + '-t' }, [
             el('h3', { className: 'card-title', id: o.id + '-t' }, [
                 el('span', { text: o.title }),
-                o.meta ? el('small', { text: o.meta }) : null,
+                o.meta ? el('small', { id: o.id + '-meta', text: o.meta }) : null,
             ]),
-            el('div', { className: 'card-body' }, o.body),
+            o.intro,
+            el('div', { className: 'detail-main' }, o.body),
+            o.note || note(),
         ]);
+    }
+
+    // 목록은 넉넉히(FILL_MAX) 그려 두고 min 개만 보인다. 옆 카드가 길면 fitAll() 이 그 높이까지 더 연다
+    const FILL_MAX = 40;
+    function fillList(tag, className, min, items, meta) {
+        items.forEach((li, i) => { li.hidden = i >= min; });
+        return el(tag, { className: className, dataset: meta ? { min: min, meta: meta } : { min: min } }, items);
     }
 
     /* ───── 계산 ───── */
@@ -119,22 +133,23 @@
     /* ───── 카드 ───── */
 
     function consecutiveCard(draws) {
-        const data = consecutiveRounds(draws, 12);
-        const body = [
-            el('p', { className: 'detail-lead', text: T('dt.runs.lead', { of: fmt(data.of), n: fmt(data.total), pct: (data.total / data.of * 100).toFixed(1) }) }),
-            el('ul', { className: 'run-list' }, data.rows.map(r => el('li', null, [
+        const data = consecutiveRounds(draws, FILL_MAX);
+        return card({
+            id: 'detail-runs', title: T('dt.runs.t'), meta: T('dt.allDraws'),
+            intro: intro(T('dt.runs.lead', { of: fmt(data.of), n: fmt(data.total), pct: (data.total / data.of * 100).toFixed(1) })),
+            body: [fillList('ul', 'run-list', 12, data.rows.map(r => el('li', null, [
                 el('span', { className: 'run-round', text: T('sr.drawNo', { n: r.round }) }),
                 el('span', { className: 'run-groups' }, r.groups.map(g =>
                     el('span', { className: 'run-group' }, g.map(ball)))),
                 el('span', { className: 'run-tail', text: T('dt.runs.inRow', { n: r.longest >= 3 ? r.longest : 2 }) }),
-            ]))),
-            el('p', { className: 'card-note', text: T('dt.runs.note') }),
-        ];
-        return card({ id: 'detail-runs', title: T('dt.runs.t'), meta: T('dt.allDraws'), body: body });
+            ])))],
+            note: note(T('dt.runs.note')),
+        });
     }
 
     function partnerCard(draws) {
         const box = el('div', { className: 'partner-out' });
+        const recentNote = note();
         const grid = el('div', { className: 'number-grid partner-grid', role: 'group', 'aria-label': T('dt.pickNumber') });
         let current = null;
 
@@ -146,19 +161,18 @@
                 if (on) b.dataset.band = bandOf(n); else delete b.dataset.band;
                 b.setAttribute('aria-pressed', on ? 'true' : 'false');
             });
-            const p = partners(draws, n, 10);
+            const p = partners(draws, n, 20);
             box.textContent = '';
             box.appendChild(el('p', { className: 'detail-lead', text: T('dt.partner.lead', { n: n, c: fmt(p.appearances) }) }));
-            box.appendChild(el('ol', { className: 'ball-list' }, p.top.map((row, i) => el('li', null, [
+            box.appendChild(fillList('ol', 'ball-list', 10, p.top.map((row, i) => el('li', null, [
                 el('span', { className: 'lead', text: T('sr.rank', { n: i + 1 }) }),
                 ball(row.number),
                 el('span', { className: 'tail', text: T('sr.times', { n: fmt(row.count) }) }),
             ]))));
             const recent = p.rounds.slice(0, 3);
-            if (recent.length) {
-                box.appendChild(el('p', { className: 'card-note', text: T('dt.partner.recent', { n: n,
-                    list: recent.map(r => T('dt.roundWith', { r: r.round, nums: r.numbers.join('·') })).join(', ') }) }));
-            }
+            recentNote.textContent = recent.length ? T('dt.partner.recent', { n: n,
+                list: recent.map(r => T('dt.roundWith', { r: r.round, nums: r.numbers.join('·') })).join(', ') }) : '';
+            refit();
         }
 
         for (let n = 1; n <= 45; n++) {
@@ -171,12 +185,10 @@
 
         const latest = draws.slice().sort(byRoundDesc)[0];
         const first = latest ? latest.numbers.slice().sort(asc)[0] : 1;
-        const body = [
-            el('p', { className: 'picker-help', text: T('dt.partner.help') }),
-            grid,
-            box,
-        ];
-        const c = card({ id: 'detail-partner', title: T('dt.partner.t'), meta: T('dt.allDraws'), body: body });
+        const c = card({
+            id: 'detail-partner', title: T('dt.partner.t'), meta: T('dt.allDraws'),
+            intro: intro(T('dt.partner.help'), true), body: [grid, box], note: recentNote,
+        });
         show(first);
         return c;
     }
@@ -228,7 +240,7 @@
             ]))) : el('p', { className: 'muted', text: T('rc.noNear') }));
             if (r.unknown) out.appendChild(el('p', { className: 'card-note', text: T('rc.unknown', { n: r.unknown }) }));
             out.appendChild(el('a', { className: 'btn btn-secondary', href: 'report.html?n=' + r.picks.join(','), text: T('dt.report.full') }));
-            out.appendChild(el('p', { className: 'card-note', text: T('rc.note') }));
+            refit();
         }
 
         let runs = 0;   // 받는 동안 다시 누르면 마지막 것만 그린다
@@ -238,6 +250,7 @@
             const picks = R ? R.parsePicks(input.value) : null;
             status.classList.remove('error');
             out.textContent = '';
+            refit();
             if (!picks) {
                 status.textContent = T(R ? 'rc.err' : 'rc.loadFail');
                 status.classList.add('error');
@@ -252,32 +265,38 @@
         }
         input.addEventListener('keydown', e => { if (e.key === 'Enter') run(); });
 
-        const body = [
-            el('p', { className: 'picker-help', text: T('dt.report.help') }),
-            el('div', { className: 'license-form' }, [
-                input,
-                el('button', { type: 'button', className: 'btn', text: T('dt.report.go'), on: { click: run } }),
-            ]),
-            status,
-            out,
-        ];
-        return card({ id: 'detail-report', title: T('dt.report.t'), meta: T('dt.allDraws'), body: body });
+        return card({
+            id: 'detail-report', title: T('dt.report.t'), meta: T('dt.allDraws'),
+            intro: intro(T('dt.report.help'), true),
+            body: [
+                el('div', { className: 'license-form' }, [
+                    input,
+                    el('button', { type: 'button', className: 'btn', text: T('dt.report.go'), on: { click: run } }),
+                ]),
+                status,
+                out,
+            ],
+            note: note(T('rc.note')),
+        });
     }
 
     function prizeCard(draws) {
-        const t = prizeTrend(draws, 20);
+        const t = prizeTrend(draws, FILL_MAX);
         const body = [
-            el('p', { className: 'detail-lead', text: T('dt.prize.lead', { perWinner: won(Math.round(t.avgWinner)), perDraw: won(Math.round(t.avgAll)) }) }),
-            el('ul', { className: 'hbars' }, t.rows.map(r => el('li', { className: 'hbar' }, [
+            fillList('ul', 'hbars', 20, t.rows.map(r => el('li', { className: 'hbar' }, [
                 el('span', { text: T('sr.drawNo', { n: r.round }) }),
                 el('span', { className: 'hbar-track', 'aria-hidden': 'true' }, [
                     el('span', { className: 'hbar-fill', style: 'width:' + (t.max ? r.amount / t.max * 100 : 0) + '%;display:block' }),
                 ]),
                 el('span', { className: 'hbar-val', text: won(r.amount) + (r.winners ? ' · ' + T('dt.winners', { n: r.winners }) : '') }),
-            ]))),
-            el('p', { className: 'card-note', text: T('dt.prize.note') }),
+            ])), 'detail-prize-meta'),
         ];
-        return card({ id: 'detail-prize', title: T('dt.prize.t'), meta: T('dt.last20'), body: body });
+        return card({
+            id: 'detail-prize', title: T('dt.prize.t'), meta: T('dt.lastN', { n: 20 }),
+            intro: intro(T('dt.prize.lead', { perWinner: won(Math.round(t.avgWinner)), perDraw: won(Math.round(t.avgAll)) })),
+            body: body,
+            note: note(T('dt.prize.note')),
+        });
     }
 
     /* ───── 잠금 화면 ───── */
@@ -299,16 +318,51 @@
                 el('span', { text: T(spec.key + '.t') }),
                 el('small', { className: 'lock-mark', text: T(onOpen ? 'dt.ready' : 'dt.locked') }),
             ]),
-            el('div', { className: 'card-body' }, [
-                el('p', { text: T(spec.key + '.desc') }),
-                action,
-            ]),
+            intro(T(spec.key + '.desc'), true),
+            el('div', { className: 'detail-main' }, [action]),
         ]);
+    }
+
+    /* ───── 높이 맞추기 ───── */
+
+    // 한 줄에 놓인 카드는 높이가 같다. 성적표 결과처럼 옆 카드가 길어지면 목록을 그 높이까지 더 보여 준다
+    // — 늘 보이는 min 개 말고는 남는 자리만 채우고, 카드를 더 늘리지는 않는다. 휴대폰(한 줄에 카드 하나)은 늘 min 개.
+    let fitting = null;   // 지금 열어 둔 상세 분석 칸
+    function fitAll() {
+        const box = fitting;
+        if (!box || !box.isConnected || !box.getClientRects().length) return;
+        const lists = Array.prototype.slice.call(box.querySelectorAll('[data-min]'));
+        lists.forEach(list => Array.prototype.forEach.call(list.children, (li, i) => { li.hidden = i >= Number(list.dataset.min); }));
+        lists.forEach(list => {
+            // 카드 위끝에서 잰다 — 화면 위쪽에서 줄을 늘리면 브라우저가 스크롤을 옮겨(scroll anchoring) 화면 좌표가 그대로라서
+            const card = list.closest('.card');
+            const below = () => list.getBoundingClientRect().bottom - card.getBoundingClientRect().top;
+            const limit = list.closest('.detail-main').getBoundingClientRect().bottom - card.getBoundingClientRect().top;
+            let shown = Number(list.dataset.min);
+            for (; shown < list.children.length; shown++) {
+                list.children[shown].hidden = false;
+                if (below() > limit + 1) { list.children[shown].hidden = true; break; }
+            }
+            const meta = list.dataset.meta && document.getElementById(list.dataset.meta);
+            if (meta) meta.textContent = T('dt.lastN', { n: Math.min(shown, list.children.length) });
+        });
+    }
+    let fitQueued = false;
+    function refit() {
+        if (fitQueued || !fitting) return;
+        fitQueued = true;
+        requestAnimationFrame(() => { fitQueued = false; fitAll(); });
+    }
+    let lastWidth = 0;
+    if (typeof window !== 'undefined' && window.addEventListener) {
+        // 휴대폰은 스크롤할 때도 resize 가 온다(주소창) — 폭이 바뀐 때만
+        window.addEventListener('resize', () => { if (window.innerWidth !== lastWidth) { lastWidth = window.innerWidth; refit(); } });
     }
 
     function render(container, draws, opts) {
         opts = opts || {};
         container.textContent = '';
+        fitting = null;
         if (opts.locked || opts.onOpen) {
             if (opts.onOpen) {
                 container.appendChild(el('div', { className: 'detail-open-bar' }, [
@@ -323,6 +377,10 @@
         container.appendChild(partnerCard(draws));
         container.appendChild(reportCard(draws));
         container.appendChild(prizeCard(draws));
+        fitting = container;
+        lastWidth = window.innerWidth;
+        refit();
+        if (document.fonts && document.fonts.ready) document.fonts.ready.then(refit);
     }
 
     return {
