@@ -8,7 +8,7 @@
     <link rel="icon" href="/favicon.ico" sizes="32x32">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    <link rel="stylesheet" href="css/site.css?v=4766fa9e">
+    <link rel="stylesheet" href="css/site.css?v=762d142c">
 </head>
 <body>
 <!-- 판매자 전용. 관리자 토큰(Worker 의 ADMIN_TOKEN)이 없으면 아무것도 할 수 없다.
@@ -72,6 +72,19 @@
                 </div>
             </section>
 
+            <section class="card" id="pay-card" aria-labelledby="pay-t" hidden>
+                <h2 class="card-title" id="pay-t"><span>결제 흐름</span><small id="pay-sum"></small></h2>
+                <div class="card-body">
+                    <div class="table-wrap"><table class="data-table admin-table" id="pay-table"></table></div>
+                    <details class="members-rx">
+                        <summary>하루씩 (최근 30일)</summary>
+                        <div class="table-wrap"><table class="data-table admin-table" id="pay-days"></table></div>
+                    </details>
+                    <p class="card-note">2026-10-21부터 셉니다. 결제 페이지는 이용권이 없어 결제 화면이 보인 것(같은 브라우저 하루 한 번), 고름은 "구매하기"로 주문서를 연 것(페이지마다 한 번),
+                        주문은 주문을 만든 것, 입금은 키가 발급된 것(계좌이체 · 카드), 포인트는 포인트로 1일 이용권을 연 것입니다. 앞의 둘은 화면이 보내 광고 차단기 등으로 조금 적게,
+                        스크립트를 돌리는 로봇은 빠집니다. 뒤의 셋은 서버가 셉니다. 주문률 = 주문 ÷ 결제 페이지, 입금률 = 입금 ÷ 주문.</p>
+                </div>
+            </section>
             <section class="card" id="taps-card" aria-labelledby="taps-t" hidden>
                 <h2 class="card-title" id="taps-t"><span>공유 · 출력 집계</span><small id="taps-sum"></small></h2>
                 <div class="card-body">
@@ -152,7 +165,8 @@
                             <label>종류
                                 <select id="issue-plan">
                                     <option value="day">1일 이용권</option>
-                                    <option value="week">1주 이용권</option>
+                                    <option value="round">이번 회차 이용권 (토요일 밤 12시까지)</option>
+                                    <option value="week">1주 이용권 (지금은 팔지 않음)</option>
                                     <option value="month" selected>1개월 이용권</option>
                                     <option value="lifetime">평생 이용권</option>
                                     <option value="custom">기간 직접 입력</option>
@@ -209,7 +223,7 @@
     </main>
 </div>
 
-<script src="js/premium-config.js?v=34bde874"></script>
-<script src="js/admin.js?v=b3591bc9"></script>
+<script src="js/premium-config.js?v=ca702ca6"></script>
+<script src="js/admin.js?v=daccce1d"></script>
 </body>
 </html>

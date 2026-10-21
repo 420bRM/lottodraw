@@ -25,7 +25,7 @@
 // 비밀값과 설정은 README "4. 유료화" 와 worker/wrangler.toml 참고.
 
 import { generateKeyPair, importPrivate, importPublic, signKey, verifyKey, parseKey, hex32, publicOnly, keyId, b64urlEncode } from './keys.js';
-import { plansFor } from './plans.js';
+import { plansFor, roundEndsAt } from './plans.js';
 import { community, SESSION_DAYS, REACT_TYPES, ITEM_RE, POINTS, COMMENT, TAP_KINDS } from './community.js';
 import { verifyGoogleToken } from './google.js';
 import { saleRound, cleanGame, rankOf, kstParts, drawDay } from './lotto.js';
@@ -101,6 +101,7 @@ async function route(request, env, ctx) {
     if (path === '/api/me' && method === 'GET') return me(request, env);
     if (path === '/api/me/delete' && method === 'POST') return deleteMe(request, env, ctx);
     if (path === '/api/me/nickname' && method === 'POST') return setNickname(request, env);
+    if (path === '/api/me/point-pass' && method === 'POST') return pointPass(request, env, ctx);
     if (path === '/api/me/generator' && method === 'POST') return saveGenerator(request, env);
     if (path === '/api/me/numbers' && method === 'GET') return getNumbers(request, env);
     if (path === '/api/me/numbers' && method === 'POST') return addNumbers(request, env);
@@ -146,11 +147,18 @@ function bankInfo(env) {
     };
 }
 
+// 판매하는 이용권만(1주 이용권은 이번 회차 이용권으로 바뀌어 팔지 않는다 — plans.js)
 function publicPlans(env) {
     const plans = plansFor(env);
     const out = {};
-    Object.keys(plans).forEach(id => { out[id] = { amount: plans[id].amount, days: plans[id].days }; });
+    Object.keys(plans).forEach(id => { if (plans[id].sale !== false) out[id] = { amount: plans[id].amount, days: plans[id].days }; });
     return out;
+}
+
+// 결제 흐름 집계(관리자 페이지 "결제 흐름"): 주문 · 입금(발급) · 포인트로 열기는 서버가 센다. 실패해도 주문 · 발급은 그대로
+async function payTap(env, kind) {
+    if (!env.COMMUNITY) return;
+    try { await community(env, 'tap', { kind, now: Date.now() }); } catch (e) { console.error('pay tap', kind, e); }
 }
 
 async function getConfig(request, env) {
@@ -185,7 +193,7 @@ async function createOrder(request, env, ctx, url) {
     }
     const body = await readJson(request);
     const plans = plansFor(env);
-    if (!has(plans, body.plan)) throw new HttpError(400, 'bad_plan', '이용권 종류가 올바르지 않습니다.');
+    if (!has(plans, body.plan) || plans[body.plan].sale === false) throw new HttpError(400, 'bad_plan', '이용권 종류가 올바르지 않습니다.');
     const plan = plans[body.plan];
     const method = body.method;
     const methods = methodsOf(env);
@@ -246,6 +254,7 @@ async function createOrder(request, env, ctx, url) {
         payurl = r.payurl;
     }
     await save(env, order);
+    ctx.waitUntil(payTap(env, 'pay-order'));
     ctx.waitUntil(notify(env, [
         `새 주문 ${order.id} (입금되면 자동 발급)`,
         `${order.planName} ${won(order.amount)} · ${method === 'bank' ? '계좌이체' : '카드(페이앱)'}`,
@@ -650,6 +659,34 @@ async function googleLogin(request, env, ctx) {
     return json(request, env, { session: token, user, isNew: r.isNew, trialNew, attended: !!r.attended, points: POINTS }, 200);
 }
 
+// 포인트로 1일 이용권(2026-10-21): 로그인 회원이 모은 포인트(POINTS.dayPass)로 24시간 키를 받는다. 랭킹 점수는 그대로, 쓸 수 있는 포인트만 준다.
+// 키는 무료 체험처럼 주문으로 남긴다(관리자 주문 목록 · 정지 · 조회가 같은 길, 0원, 메일 없음, 이메일은 주문에 적지 않는다).
+// 포인트를 먼저 쓰고 발급하며, 발급이 실패하면 포인트를 돌려준다
+async function pointPass(request, env, ctx) {
+    const s = await sessionUser(request, env);
+    await limited(env.REACT_LIMIT, s.hash);
+    const now = Date.now();
+    const r = await community(env, 'spendForPass', { sub: s.sub, now });
+    if (r.error === 'need_points') throw new HttpError(402, 'need_points', `포인트가 모자랍니다. 1일 이용권은 ${r.cost}포인트입니다. (지금 ${r.avail}포인트)`);
+    if (r.error === 'active') throw new HttpError(409, 'active', '포인트로 연 이용권이 아직 남아 있습니다.');
+    if (r.error === 'busy') throw new HttpError(409, 'busy', '처리하고 있습니다. 잠시 뒤 다시 확인해 주세요.');
+    if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
+    const order = {
+        id: await freshId(env), tokenHash: '', plan: 'pday', planName: '1일 이용권(포인트)',
+        listPrice: 0, amount: 0, method: 'points', name: '포인트', contact: '', memberRef: await memberRef(s.sub),
+        status: 'pending', createdAt: now, deadline: now, log: [{ at: now, what: 'created', by: 'points' }],
+    };
+    try {
+        await confirm(env, order, 'points');
+    } catch (e) {
+        await community(env, 'refundPointPass', { sub: s.sub, cost: r.cost }).catch(() => null);
+        throw e;
+    }
+    const got = await community(env, 'setPointPass', { sub: s.sub, pass: { orderId: order.id, keyId: order.keyId, key: order.key, expiresAt: order.expiresAt, at: now } });
+    ctx.waitUntil(payTap(env, 'pay-point'));
+    return json(request, env, { key: order.key, expiresAt: order.expiresAt, cost: r.cost, user: got.user });
+}
+
 // 무료 체험 키는 주문처럼 남긴다(관리자 페이지에서 보이고, 정지·조회가 같은 길로 된다). 0원, 메일은 보내지 않는다.
 // 이메일은 주문에 적지 않는다 — 계정에만 있고 탈퇴하면 지워진다.
 async function issueTrial(env, sub, days) {
@@ -1026,7 +1063,7 @@ async function tap(request, env) {
     if (!allowedOrigin(request, env)) throw new HttpError(403, 'bad_origin', '허용되지 않은 사이트입니다.');
     const kind = String((await readJson(request)).k || '');
     if (TAP_KINDS.indexOf(kind) === -1) throw new HttpError(400, 'bad_kind', '집계 종류가 올바르지 않습니다.');
-    if (!env.COMMUNITY) return new Response(null, { status: 204, headers: corsHeaders(request, env) });
+    if (!env.COMMUNITY || BOT_UA.test(request.headers.get('User-Agent') || '')) return new Response(null, { status: 204, headers: corsHeaders(request, env) });
     await limited(env.TAP_LIMIT, 'tap:' + (request.headers.get('CF-Connecting-IP') || 'local'));
     await community(env, 'tap', { kind, now: Date.now() });
     return new Response(null, { status: 204, headers: corsHeaders(request, env) });
@@ -1179,8 +1216,8 @@ async function admin(request, env, sub, method, url) {
         const token = b64urlEncode(crypto.getRandomValues(new Uint8Array(16)));
         const now = Date.now();
         const order = {
-            id: await freshId(env), tokenHash: await sha256(token), plan: 'week', planName: plans.week.name,
-            listPrice: plans.week.amount, amount: await pickAmount(env, plans.week.amount, allPending), method: 'bank',
+            id: await freshId(env), tokenHash: await sha256(token), plan: 'day', planName: plans.day.name,
+            listPrice: plans.day.amount, amount: await pickAmount(env, plans.day.amount, allPending), method: 'bank',
             name: '자동점검', contact: '', status: 'pending', createdAt: now, deadline: now + 3600 * 1000,
             agreedAt: now, test: true, log: [{ at: now, what: 'created', by: 'selftest' }],
         };
@@ -1368,8 +1405,13 @@ async function confirm(env, order, by) {
     if (!s) throw new HttpError(503, 'no_signing_key', '서명 키가 아직 없습니다. 관리자 페이지에서 "서명 키 만들기"를 먼저 눌러 주세요.');
     const plans = plansFor(env);
     const now = Math.floor(Date.now() / 1000);
-    const days = order.plan === 'custom' || order.plan === 'trial' ? (order.days || 0) : plans[order.plan].days;
-    const expiresAt = days ? now + days * 86400 : 0;
+    let expiresAt;
+    if (order.plan === 'round') {
+        expiresAt = Math.floor(roundEndsAt(now * 1000) / 1000);   // 판매 중인 회차의 토요일 밤 12시까지 — 발급(입금 확인) 때 정한다
+    } else {
+        const days = order.plan === 'custom' || order.plan === 'trial' ? (order.days || 0) : order.plan === 'pday' ? 1 : plans[order.plan].days;
+        expiresAt = days ? now + days * 86400 : 0;
+    }
     // 키 번호는 주문번호에서 정해진다. 확인 버튼과 자동 확인이 겹쳐 키가 두 번 만들어져도
     // 번호가 같아서, 환불하면 둘 다 정지된다.
     const id = new DataView(await crypto.subtle.digest('SHA-256', new TextEncoder().encode('key:' + order.id))).getUint32(0);
@@ -1382,6 +1424,7 @@ async function confirm(env, order, by) {
     await creditMember(env, order, 1);
     await save(env, order);
     await env.DB.put('keyidx:' + order.keyId, order.id);   // 환불 요청 때 키 → 주문 찾기
+    if ((order.method === 'bank' || order.method === 'payapp') && !order.test) await payTap(env, 'pay-paid');
     if (mailReady(env) && order.contact && !order.test) {
         const r = await mailKey(env, order);   // 실패해도 발급은 그대로다 (관리자 페이지에서 다시 보낼 수 있다)
         await save(env, order);

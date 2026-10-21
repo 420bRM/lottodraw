@@ -457,6 +457,10 @@ details[open] > summary.card-title { padding-bottom: 0; }
 .plan ul { margin: 0; padding: 0; list-style: none; color: var(--muted); font-size: 14px; }
 .plan-note { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
 .plan.featured { border: 2px solid var(--brand); box-shadow: 0 10px 20px rgba(0, 48, 135, 0.15); }
+/* 이번 회차 이용권: 언제까지 · 남은 시간(1초마다, js/premium.js) */
+.plan-until { margin: -4px 0 0; color: var(--text); font-size: 13px; font-weight: bold; text-align: center; }
+.plan-left { margin: -6px 0 0; color: var(--error); font-size: 15px; font-weight: bold; font-variant-numeric: tabular-nums; }
+.plan-left[hidden], .plan-points[hidden], #point-note[hidden] { display: none; }
 .license-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .license-form { display: flex; flex-wrap: wrap; gap: 8px; }
 .license-form input {
@@ -1598,6 +1602,41 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 .rank-me-line { margin: 0; }
 .rank-table { width: 100%; }
 .rank-table tr.top1 td { font-weight: bold; background: var(--hl, #fff8e1); }
+
+/* ───── 내 번호 성적표 (report.html, js/report.js) ───── */
+.rc-form { grid-template-columns: minmax(0, 1fr); }
+.rc-form .btn { margin: 0; }
+.rc-form .btn + .btn { justify-self: start; }
+@media (min-width: 600px) { .rc-form { grid-template-columns: minmax(0, 1fr) auto auto; max-width: 640px; } .rc-form label { grid-column: 1 / -1; } }
+.rc-card { margin: 12px 0 16px; }
+.rc-picks { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 0 0 8px; }
+.rc-picks .mball { width: 34px; height: 34px; font-size: 15px; }
+.rc-range { margin: 0 0 12px; color: var(--muted); font-size: 14px; text-align: center; }
+.rc-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0 0 12px; }
+.rc-tiles div { padding: 12px 8px; border-radius: 10px; background: var(--soft, #f3f6fb); text-align: center; }
+.rc-tiles span { display: block; color: var(--muted); font-size: 13px; }
+.rc-tiles b { display: block; margin-top: 2px; color: var(--fg, #000); font-size: 20px; font-variant-numeric: tabular-nums; }
+/* 손익: 국내 관례대로 이익 빨강 · 손실 파랑 */
+.rc-tiles .is-loss b, .rc-years td.is-loss { color: var(--won, #1e5bd8); }
+.rc-tiles .is-gain b, .rc-years td.is-gain { color: var(--error); }
+.rc-ranks th, .rc-ranks td { text-align: center; }
+.rc-best { margin: 12px 0 0; font-size: 15px; text-align: center; }
+.rc-more { margin: 0 0 20px; }
+.rc-more .card-body h3 { margin: 18px 0 8px; color: var(--text); font-size: 16px; }
+.rc-teaser { margin: 0 0 12px; padding-left: 20px; }
+.rc-near li { flex-wrap: wrap; row-gap: 4px; }
+.rc-near .mball, .rc-wins .mball { width: 22px; height: 22px; font-size: 10.5px; }
+.rc-wins th, .rc-wins td, .rc-years th, .rc-years td { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rc-wins .strategy-nums { flex-wrap: nowrap; }   /* 좁으면 표만 옆으로 밀어 본다(.table-wrap) */
+.rc-fifth { margin: 10px 0 0; }
+.rc-fifth summary { cursor: pointer; color: var(--brand); font-weight: bold; }
+.result-hint a { color: inherit; }
+/* 휴대폰: 금액이 길어(18억 원대도 나온다) 세 칸이 모자라다 — 한 줄에 하나씩, 이름 왼쪽 · 금액 오른쪽 */
+@media (max-width: 599px) {
+    .rc-tiles { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+    .rc-tiles div { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 8px 12px; text-align: left; }
+    .rc-tiles b { margin: 0; font-size: 17px; }
+}
 
 /* ───── 낮/밤 모드 단추 (js/theme.js) ─────
    오른쪽 아래, 채팅 말풍선 · 창 바로 위(자리는 스크립트가 bottom · right 로 맞춘다). 채팅이 없으면 오른쪽 아래 */

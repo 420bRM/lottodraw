@@ -603,7 +603,7 @@
         try { login = await loadConfig(); } catch (e) { return; }
         if (!login || !login.google) return;
         me = await loadMe(false);
-        if (me && me.user) applyTrial(me.user.trial);
+        if (me && me.user) { applyTrial(me.user.trial); applyTrial(me.user.pointPass); }   // 포인트로 연 1일 이용권도 다른 기기에서 그대로
         renderHeader();
         showNote();
         const u = me && me.user;

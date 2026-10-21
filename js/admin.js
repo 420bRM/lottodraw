@@ -7,8 +7,8 @@
     const TOKEN_STORE = 'lottodraw.admin.token';
     const $ = id => document.getElementById(id);
     const STATUS = { pending: '입금 대기', paid: '발급 완료', refund_requested: '환불 요청', refunded: '환불', cancelled: '취소' };
-    const METHOD = { bank: '계좌이체', payapp: '카드(페이앱)', manual: '직접 발급', trial: '가입 무료 체험' };
-    const PLAN = { day: '1일', week: '1주', month: '1개월', lifetime: '평생', trial: '3일 체험', custom: '기간 지정' };
+    const METHOD = { bank: '계좌이체', payapp: '카드(페이앱)', manual: '직접 발급', trial: '가입 무료 체험', points: '포인트로 열기' };
+    const PLAN = { day: '1일', round: '이번 회차', pday: '1일(포인트)', week: '1주', month: '1개월', lifetime: '평생', trial: '3일 체험', custom: '기간 지정' };
 
     let token = null;
     let tab = 'pending';
@@ -267,7 +267,9 @@
         try {
             const r = await call('/taps');
             $('taps-card').hidden = false;
+            $('pay-card').hidden = false;
             renderTaps(r.days || []);
+            renderPay(r.days || []);
             say('taps-status', `${when(Date.now())} 기준`);
         } catch (err) {
             $('taps-card').hidden = err.status === 503;
@@ -305,6 +307,39 @@
         ]);
         fill('taps-days', recent.map(d => rowOf(d, byDay.get(d) || {})));
         $('taps-sum').textContent = `오늘 공유 ${((today['gen-share'] || 0) + (today['post-share'] || 0) + (today['post-sns'] || 0)).toLocaleString('ko-KR')} · 출력 ${(today['gen-print'] || 0).toLocaleString('ko-KR')}`;
+    }
+
+    // 결제 흐름: 같은 하루 집계(e:<날짜>)의 결제 종류. 단계별 수와 주문률 · 입금률
+    const PAY = [['pay-view', '결제 페이지'], ['pay-pick', '고름'], ['pay-order', '주문'], ['pay-paid', '입금'], ['pay-point', '포인트']];
+    function renderPay(days) {
+        const byDay = new Map(days.map(d => [d.day, d]));
+        const now = Date.now();
+        const recent = Array.from({ length: 30 }, (_, i) => kstDay(now - i * 86400000));
+        const sum = list => {
+            const out = {};
+            PAY.forEach(([k]) => { out[k] = list.reduce((n, d) => n + ((d && d[k]) || 0), 0); });
+            return out;
+        };
+        const pct = (a, b) => (b ? Math.round(a / b * 1000) / 10 + '%' : '—');
+        const rowOf = (label, c, strong) => el('tr', {}, [el(strong ? 'th' : 'td', { text: label })].concat(
+            PAY.map(([k]) => el('td', { text: (c[k] || 0).toLocaleString('ko-KR') })),
+            [el('td', { text: pct(c['pay-order'] || 0, c['pay-view'] || 0) }), el('td', { text: pct(c['pay-paid'] || 0, c['pay-order'] || 0) })]));
+        const fill = (id, rows) => {
+            const t = $(id);
+            t.textContent = '';
+            t.appendChild(el('thead', {}, [el('tr', {}, ['', ...PAY.map(x => x[1]), '주문률', '입금률'].map(h => el('th', { text: h })))]));
+            t.appendChild(el('tbody', {}, rows));
+        };
+        const today = byDay.get(recent[0]) || {};
+        const week = sum(recent.slice(0, 7).map(d => byDay.get(d)));
+        fill('pay-table', [
+            rowOf('오늘', today, true),
+            rowOf('최근 7일', week, true),
+            rowOf('최근 30일', sum(recent.map(d => byDay.get(d))), true),
+            rowOf('전체', sum(days), true),
+        ]);
+        fill('pay-days', recent.map(d => rowOf(d, byDay.get(d) || {})));
+        $('pay-sum').textContent = `최근 7일 결제 페이지 ${(week['pay-view'] || 0).toLocaleString('ko-KR')} · 주문 ${(week['pay-order'] || 0).toLocaleString('ko-KR')} · 입금 ${(week['pay-paid'] || 0).toLocaleString('ko-KR')}`;
     }
 
     /* ───── 실시간 채팅 관리 ───── */
@@ -480,10 +515,10 @@
             ]),
             el('div', { className: 'card-body' }, [
                 el('p', { className: 'admin-line' }, [
-                    el('b', { text: `${PLAN[o.p] || o.p} · ${o.m === 'manual' || o.m === 'trial' ? '무료' : won(o.a)}` }),
+                    el('b', { text: `${PLAN[o.p] || o.p} · ${o.m === 'manual' || o.m === 'trial' || o.m === 'points' ? '무료' : won(o.a)}` }),
                     ` · ${METHOD[o.m] || o.m} · ${when(o.c)}`,
                 ]),
-                o.n && o.m !== 'trial' ? el('p', { className: 'admin-line' }, ['입금자명/받는 사람: ', el('b', { text: o.n })]) : null,
+                o.n && o.m !== 'trial' && o.m !== 'points' ? el('p', { className: 'admin-line' }, ['입금자명/받는 사람: ', el('b', { text: o.n })]) : null,
                 orderMember(o) ? memberLine(orderMember(o)) : null,
                 o.k ? el('p', { className: 'admin-line', text: '키 번호 ' + o.k.toUpperCase() }) : null,
                 el('p', { className: 'co-actions' }, actions),

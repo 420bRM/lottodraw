@@ -13,6 +13,7 @@
 //                        chat: { n, day, today, h } — (공지하지 않는 규칙) 점수를 받은 채팅 수(전체), 오늘(한국 날짜)의 수, 마지막 메시지 해시(같은 말 반복 거르기)
 //                        buy: 로그인한 채 산 이용권 금액 합계(원) — 랭킹 점수용
 //                        trial: { orderId, keyId, key, expiresAt } — 가입 때 한 번 주는 무료 체험 키
+//                        ppass: { orderId, keyId, key, expiresAt, at } — 포인트로 연 1일 이용권(가장 최근 것), ppassN: 포인트로 연 횟수
 //                        gen:   { inc, exc, pat, recent, ac, acExact, at } — 저장한 번호 생성기 설정(고정수 · 제외수 · 켠 패턴 번호 · 직전 당첨 조합 제외 칸 · AC값 조건과 "이 값만"). 본인에게만 보인다
 //                        rx:    { 항목: 'h' | 'd' | 'hd' } — 내가 누른 좋아요
 //                        sess:  로그인 세션 해시 (최근 5개)
@@ -57,7 +58,7 @@ const gameKey = n => n.join(',');
 export const REACT_TYPES = ['h', 'd', 'w'];   // ♥ 좋아요, $ 대박 기원, ₩ 원화
 
 // 랭킹 점수. 바꾸려면 여기만 고친다(이용약관 7조 문구도 같이).
-export const POINTS = { attend: 10, react: 2, buyPer100: 10, nickChange: 500 };   // buyPer100: 이용권 100원마다 몇 점, nickChange: 별명 바꾸기에 쓰는 포인트
+export const POINTS = { attend: 10, react: 2, buyPer100: 10, nickChange: 500, dayPass: 300 };   // buyPer100: 이용권 100원마다 몇 점, nickChange: 별명 바꾸기에 쓰는 포인트, dayPass: 1일 이용권을 여는 포인트
 // 채팅 점수 — 공지하지 않는 규칙이라 POINTS(회원에게 내려 보내는 값)와 따로 둔다.
 // per: 메시지 하나에 몇 점, daily: 하루에 점수를 받는 메시지 수 상한(50개 = 5점)
 export const CHAT_POINTS = { per: 0.1, daily: 50 };
@@ -106,7 +107,9 @@ export const ITEM_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
 // 공유 · 출력 집계 종류. 복사는 세지 않는다
 //   gen-share: 홈 생성기 "공유"로 공유 창에서 보낼 곳을 고른 것(닫으면 세지 않는다), gen-print: 생성기 "출력"으로 인쇄 창을 연 것
 //   post-share: 블로그 글 "공유하기"로 보낼 곳을 고른 것, post-sns: 블로그 글의 X · 페이스북 · 네이버 · 밴드 공유 창을 연 것
-export const TAP_KINDS = ['gen-share', 'gen-print', 'post-share', 'post-sns'];
+//   pay-view: 결제 페이지를 연 것(같은 브라우저 하루 한 번), pay-pick: 이용권을 골라 주문서를 연 것(js/premium.js)
+//   — 주문 · 입금(발급) · 포인트로 열기(pay-order · pay-paid · pay-point)는 서버가 직접 센다(index.js payTap). 화면에서는 보낼 수 없다
+export const TAP_KINDS = ['gen-share', 'gen-print', 'post-share', 'post-sns', 'pay-view', 'pay-pick'];
 
 // 블로그 댓글
 export const COMMENT = { max: 500, gapMs: 15000, daily: 30, list: 200 };   // 글자 수, 다음 댓글까지, 하루 최대, 한 글에 보여 주는 수
@@ -404,6 +407,40 @@ const OPS = {
     },
 
     // 로그인한 채 산 이용권: 결제되면 +금액, 환불되면 -금액 (랭킹 점수용)
+    // 포인트로 1일 이용권(2026-10-21). 쓸 수 있는 포인트(total - spent)에서 POINTS.dayPass 를 쓴다 — 랭킹 점수는 그대로.
+    // 포인트로 연 이용권이 아직 살아 있으면 쓰지 않는다(두 번 눌러 포인트만 나가는 것을 막는다). 키는 index.js 가 발급해 setPointPass 로 붙이고,
+    // 발급이 실패하면 refundPointPass 로 돌려준다
+    async spendForPass({ sub, now }) {
+        const user = await this.storage.get('u:' + sub);
+        if (!user) return { error: 'no_user' };
+        const p = user.ppass;
+        if (p && p.expiresAt > now) return { error: 'active', expiresAt: p.expiresAt };
+        if (p && p.pending && now - p.at < 60 * 1000) return { error: 'busy' };
+        const cost = POINTS.dayPass;
+        const avail = score(user).avail;
+        if (avail < cost) return { error: 'need_points', cost, avail };
+        user.spent = tenth((user.spent || 0) + cost);
+        user.ppass = { pending: true, at: now };
+        await this.saveUser(user);
+        return { ok: true, cost };
+    },
+    async setPointPass({ sub, pass }) {
+        const user = await this.storage.get('u:' + sub);
+        if (!user) return { error: 'no_user' };
+        user.ppass = pass;
+        user.ppassN = (user.ppassN || 0) + 1;
+        await this.saveUser(user);
+        return { ok: true, user: view(user) };
+    },
+    async refundPointPass({ sub, cost }) {
+        const user = await this.storage.get('u:' + sub);
+        if (!user) return { error: 'no_user' };
+        user.spent = Math.max(0, tenth((user.spent || 0) - cost));
+        delete user.ppass;
+        await this.saveUser(user);
+        return { ok: true };
+    },
+
     async credit({ ref, amount }) {
         const sub = await this.storage.get('m:' + ref);
         const user = sub && await this.storage.get('u:' + sub);
@@ -551,7 +588,7 @@ const OPS = {
                 sub: u.sub, ref: u.ref || null, email: u.email, nick: u.nick || null, createdAt: u.createdAt, lastAt: u.lastAt,
                 trial: u.trial && u.trial.keyId ? { keyId: u.trial.keyId, expiresAt: u.trial.expiresAt } : null,
                 hearts: rx.filter(m => m.includes('h')).length, dollars: rx.filter(m => m.includes('d')).length,
-                wons: rx.filter(m => m.includes('w')).length, score: score(u), buy: u.buy || 0, staff: !!u.staff, nickAuto: !!u.nickAuto,
+                wons: rx.filter(m => m.includes('w')).length, score: score(u), buy: u.buy || 0, staff: !!u.staff, nickAuto: !!u.nickAuto, pointPasses: u.ppassN || 0,
             });
         }
         members.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -803,6 +840,7 @@ function view(user) {
     return {
         email: user.email, nick: user.nick || null, createdAt: user.createdAt, trial, score: pubScore(user), staff: !!user.staff, gen: user.gen || null,
         nickAuto: !!(user.nick && user.nickAuto), nickDue: !user.nick && user.nickDue ? user.nickDue : null,
+        pointPass: user.ppass && user.ppass.key ? { key: user.ppass.key, keyId: user.ppass.keyId, expiresAt: user.ppass.expiresAt } : null,
     };
 }
 

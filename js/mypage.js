@@ -229,7 +229,7 @@
             const tag = !res ? tr('my.numWait', '추첨 전') : res.rank ? tr('my.tier' + res.rank, res.rank + '등') + ' · ' + tr('my.numMatch', '{m}개 일치', { m: res.match }) + (res.bonus ? ' + ' + tr('my.numBonus', '보너스') : '') : tr('my.numLose', '낙첨') + ' · ' + tr('my.numMatch', '{m}개 일치', { m: res.match });
             return el('li', { className: res && res.rank ? 'my-win' : '' }, [
                 el('span', { className: 'my-balls' }, g.n.map(n => ball(n, d ? d.numbers.indexOf(n) !== -1 || (res.bonus && n === d.bonus) : undefined))),
-                el('span', { className: 'my-res', text: tag }),
+                el('span', { className: 'my-res' }, [tag + ' · ', el('a', { href: 'report.html?n=' + g.n.slice().sort((a, b) => a - b).join(','), text: tr('rc.myLink', '성적표') })]),
                 el('button', { type: 'button', className: 'my-x', 'aria-label': tr('my.numDelOne', '이 게임 지우기'), text: '×', on: { click: () => remove({ id: g.id }, tr('my.numDelOneQ', '{nums} 을(를) 지울까요?', { nums: g.n.join(' ') })) } }),
             ]);
         });

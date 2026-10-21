@@ -2307,6 +2307,7 @@ function updateHome(posts) {
             // 금액은 TOP 50 표처럼 억 원 단위 — 만 원까지 적으면 칸이 두 줄로 넘친다
             `<span data-i18n-en="${esc(`highest per winner ${wonEn(top.firstPrizeAmount)} (draw ${top.round})`)}">1인당 최고 ${(top.firstPrizeAmount / 1e8).toFixed(0)}억 원 (${top.round}회)</span></li>`,
         '                    <li><a href="tax.html" data-i18n-en="After-tax calculator">실수령액 계산기</a><span data-i18n-en="22% up to 300m KRW · 33% above">3억 원까지 22% · 초과분 33%</span></li>',
+        '                    <li><a href="report.html" data-i18n-en="My numbers report card">내 번호 성적표</a><span data-i18n-en="If you had played them since draw 1">1회부터 샀다면 쓴 돈 · 받은 돈</span></li>',
         ...(posts ? [`                    <li><a href="blog/index.html" data-i18n-en="Blog">블로그</a><span data-i18n-en="${posts} articles on claiming, tax and statistics">수령·세금·통계 해설 ${posts}편</span></li>`] : []),
         '                </ul>',
         '            </nav>',
@@ -2578,6 +2579,7 @@ function updateSitemap(blog) {
             entry('/statistics.html', UPDATED, 'weekly', '0.7'),
             entry('/top-prize.html', UPDATED, 'weekly', '0.7'),
             entry('/tax.html', TIER ? UPDATED : kept('/tax.html'), TIER ? 'weekly' : 'yearly', '0.7'),   // 2·3등 표가 매주 바뀐다
+            entry('/report.html', UPDATED, 'weekly', '0.7'),   // 내 번호 성적표(2026-10-21) — 회차가 늘 때마다 계산 범위가 바뀐다
             entry('/about.html', atLeast('/about.html', ABOUT_SINCE), 'monthly', '0.5'),
             entry('/privacy.html', kept('/privacy.html'), 'yearly', '0.3'),
             entry('/terms.html', kept('/terms.html'), 'yearly', '0.3'),
