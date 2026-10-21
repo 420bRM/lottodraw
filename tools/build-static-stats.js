@@ -2307,7 +2307,7 @@ function updateHome(posts) {
             // 금액은 TOP 50 표처럼 억 원 단위 — 만 원까지 적으면 칸이 두 줄로 넘친다
             `<span data-i18n-en="${esc(`highest per winner ${wonEn(top.firstPrizeAmount)} (draw ${top.round})`)}">1인당 최고 ${(top.firstPrizeAmount / 1e8).toFixed(0)}억 원 (${top.round}회)</span></li>`,
         '                    <li><a href="tax.html" data-i18n-en="After-tax calculator">실수령액 계산기</a><span data-i18n-en="22% up to 300m KRW · 33% above">3억 원까지 22% · 초과분 33%</span></li>',
-        '                    <li><a href="report.html" data-i18n-en="My numbers report card">내 번호 성적표</a><span data-i18n-en="If you had played them since draw 1">1회부터 샀다면 쓴 돈 · 받은 돈</span></li>',
+        // 내 번호 성적표는 이 목록이 아니라 아래 상세 분석(이용권) 카드에 둔다(2026-10-21)
         ...(posts ? [`                    <li><a href="blog/index.html" data-i18n-en="Blog">블로그</a><span data-i18n-en="${posts} articles on claiming, tax and statistics">수령·세금·통계 해설 ${posts}편</span></li>`] : []),
         '                </ul>',
         '            </nav>',
