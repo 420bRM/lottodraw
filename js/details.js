@@ -2,7 +2,7 @@
 // 5개월 통계 페이지에서는 결제한 사람만 들어오므로 처음부터 열어 둔다.
 //
 // 네 카드 모두 전 회차 기록을 쓴다. 기간을 자르면 "몇 회차 전에 나왔나" 같은 값이
-// 잘려서 답이 달라진다.
+// 잘려서 답이 달라진다. 내 번호 성적표 카드는 js/report.js(LottoReport)로 계산한다.
 (function (root, factory) {
     if (typeof module === 'object' && module.exports) module.exports = factory();
     else root.LottoDetails = factory();
@@ -95,24 +95,6 @@
         return { number: number, appearances: rounds.length, top: list.slice(0, top || 10), rounds: rounds };
     }
 
-    // 고른 6개가 과거 회차와 몇 개나 겹쳤는지
-    function matchHistory(draws, picks) {
-        const set = {};
-        picks.forEach(n => { set[n] = true; });
-        const dist = [0, 0, 0, 0, 0, 0, 0];
-        let best = 0;
-        let bestRows = [];
-        draws.forEach(d => {
-            let hit = 0;
-            d.numbers.forEach(n => { if (set[n]) hit++; });
-            dist[hit]++;
-            if (hit > best) { best = hit; bestRows = [d]; }
-            else if (hit === best && best > 0) bestRows.push(d);
-        });
-        bestRows = bestRows.slice().sort(byRoundDesc).slice(0, 5);
-        return { picks: picks.slice().sort(asc), best: best, bestRows: bestRows, dist: dist, rounds: draws.length };
-    }
-
     // 1등 당첨금 추이
     // 평균은 두 가지를 같이 낸다(tools/build-static-stats.js 의 firstPrizeAvg 와 같은 식):
     // avgWinner = 1등 총당첨금 ÷ 당첨자 수(동행복권 · 언론이 쓰는 값), avgAll = 회차마다의 1인당 금액 평균
@@ -199,56 +181,87 @@
         return c;
     }
 
-    function matchCard(draws) {
-        const input = el('input', {
-            type: 'text', id: 'match-input', inputmode: 'numeric', autocomplete: 'off',
-            maxlength: '30', placeholder: T('dt.match.ph'),
-        });
-        const out = el('div', { className: 'match-out' });
-        const status = el('p', { className: 'license-status', id: 'match-status', role: 'status', 'aria-live': 'polite' });
+    // 내 번호 성적표: 1회부터 매주 이 번호로 1게임씩 샀다면(report.html 과 같은 계산).
+    // 2~5등 금액(prize-data.json)은 처음 누를 때 받는다. 당첨 회차 전체 · 연도별은 report.html 에서 이어 본다.
+    let prizes = null;
+    const loadPrizes = () => prizes || (prizes = fetch('prize-data.json')
+        .then(r => (r.ok ? r.json() : { draws: [] }))
+        .then(p => p.draws || [])
+        .catch(() => []));
+    const krw = n => (I18N.lang === 'en' ? (n < 0 ? '-₩' : '₩') + fmt(Math.abs(n)) : (n < 0 ? '-' : '') + fmt(Math.abs(n)) + '원');
+    const roundLink = r => el('a', { href: 'round/' + r + '.html', text: T('rc.roundN', { n: r }) });
 
+    function reportCard(draws) {
+        const input = el('input', {
+            type: 'text', id: 'report-input', inputmode: 'numeric', autocomplete: 'off',
+            maxlength: '30', placeholder: T('dt.report.ph'), 'aria-label': T('dt.report.t'),
+        });
+        const out = el('div', { className: 'report-out' });
+        const status = el('p', { className: 'license-status', id: 'report-status', role: 'status', 'aria-live': 'polite' });
+
+        function show(r) {
+            const set = {};
+            r.picks.forEach(n => { set[n] = true; });
+            // 아까웠던 회차의 당첨번호: 맞힌 번호만 색, 나머지는 흐리게
+            const hitBall = n => (set[n] ? ball(n) : el('span', { className: 'mball my-miss', text: String(n) }));
+            const best = r.best;
+            out.appendChild(el('p', { className: 'detail-lead' }, [el('span', { className: 'strategy-nums' }, r.picks.map(ball))]));
+            out.appendChild(el('p', { className: 'card-note', text: T('rc.range', { from: r.from, to: r.to, fromDate: r.fromDate, toDate: r.toDate, games: fmt(r.games) }) }));
+            out.appendChild(el('div', { className: 'rc-tiles' }, [
+                el('div', null, [el('span', { text: T('rc.spent') }), el('b', { text: krw(r.spent) })]),
+                el('div', null, [el('span', { text: T('rc.won') }), el('b', { text: krw(r.won) })]),
+                el('div', { className: r.net < 0 ? 'is-loss' : 'is-gain' }, [el('span', { text: T('rc.net') }), el('b', { text: krw(r.net) })]),
+            ]));
+            out.appendChild(el('div', { className: 'table-wrap' }, [el('table', { className: 'data-table rc-ranks' }, [
+                el('thead', null, [el('tr', null, [1, 2, 3, 4, 5].map(k => el('th', { text: T('rc.rank' + k) })))]),
+                el('tbody', null, [el('tr', null, [1, 2, 3, 4, 5].map(k => el('td', { text: T('rc.times', { n: fmt(r.ranks[k]) }) })))]),
+            ])]));
+            out.appendChild(best
+                ? el('p', null, [T('rc.bestPre'), roundLink(best.round), ` (${best.date}) `, el('b', { text: T('rc.rank' + best.rank) }),
+                    ' · ' + (best.amount ? krw(best.amount) : T('rc.unknownAmt'))])
+                : el('p', { text: T('rc.noWin') }));
+            out.appendChild(el('p', { className: 'report-sub', text: T('rc.nearH') }));
+            out.appendChild(r.near.length ? el('ul', { className: 'ball-list rc-near' }, r.near.map(row => el('li', null, [
+                el('span', { className: 'lead' }, [roundLink(row.round)]),
+                el('span', { className: 'strategy-nums' }, row.numbers.map(hitBall).concat([el('span', { className: 'plus', text: '+' }), hitBall(row.bonus)])),
+                el('span', { className: 'tail', text: T('rc.hits', { n: row.hits }) + (row.bonusHit ? ' + ' + T('rc.bonus') : '') + (row.rank ? ' · ' + T('rc.rank' + row.rank) : '') }),
+            ]))) : el('p', { className: 'muted', text: T('rc.noNear') }));
+            if (r.unknown) out.appendChild(el('p', { className: 'card-note', text: T('rc.unknown', { n: r.unknown }) }));
+            out.appendChild(el('a', { className: 'btn btn-secondary', href: 'report.html?n=' + r.picks.join(','), text: T('dt.report.full') }));
+            out.appendChild(el('p', { className: 'card-note', text: T('rc.note') }));
+        }
+
+        let runs = 0;   // 받는 동안 다시 누르면 마지막 것만 그린다
         function run() {
-            const picks = (input.value.match(/\d+/g) || []).map(Number);
-            const uniq = picks.filter((v, i, a) => a.indexOf(v) === i);
+            const R = window.LottoReport;
+            const mine = ++runs;
+            const picks = R ? R.parsePicks(input.value) : null;
             status.classList.remove('error');
             out.textContent = '';
-            if (uniq.length !== 6 || uniq.some(n => n < 1 || n > 45)) {
-                status.textContent = T('dt.match.err');
+            if (!picks) {
+                status.textContent = T(R ? 'rc.err' : 'rc.loadFail');
                 status.classList.add('error');
                 return;
             }
-            status.textContent = '';
-            const m = matchHistory(draws, uniq);
-            out.appendChild(el('p', { className: 'detail-lead' }, [
-                el('span', { className: 'strategy-nums' }, m.picks.map(ball)),
-            ]));
-            out.appendChild(el('p', { text: T('dt.match.lead', { n: fmt(m.rounds), best: m.best }) }));
-            if (m.bestRows.length) {
-                out.appendChild(el('ul', { className: 'ball-list' }, m.bestRows.map(d => el('li', null, [
-                    el('span', { className: 'lead', text: T('sr.drawNo', { n: d.round }) }),
-                    el('span', { className: 'strategy-nums' }, d.numbers.slice().sort(asc).map(ball)),
-                ]))));
-            }
-            out.appendChild(el('ul', { className: 'hbars' }, [6, 5, 4, 3].map(h => el('li', { className: 'hbar' }, [
-                el('span', { text: T('dt.match.hits', { n: h }) }),
-                el('span', { className: 'hbar-track', 'aria-hidden': 'true' }, [
-                    el('span', { className: 'hbar-fill', style: 'width:' + (m.dist[h] / Math.max(1, m.dist[3]) * 100) + '%;display:block' }),
-                ]),
-                el('span', { className: 'hbar-val', text: T('sr.times', { n: fmt(m.dist[h]) }) }),
-            ]))));
-            out.appendChild(el('p', { className: 'card-note', text: T('dt.match.note') }));
+            status.textContent = T('rc.loading');
+            loadPrizes().then(list => {
+                if (mine !== runs) return;
+                status.textContent = '';
+                show(R.compute(draws, list, picks));
+            });
         }
+        input.addEventListener('keydown', e => { if (e.key === 'Enter') run(); });
 
         const body = [
-            el('p', { className: 'picker-help', text: T('dt.match.help') }),
+            el('p', { className: 'picker-help', text: T('dt.report.help') }),
             el('div', { className: 'license-form' }, [
                 input,
-                el('button', { type: 'button', className: 'btn', text: T('dt.match.go'), on: { click: run } }),
+                el('button', { type: 'button', className: 'btn', text: T('dt.report.go'), on: { click: run } }),
             ]),
             status,
             out,
         ];
-        return card({ id: 'detail-match', title: T('dt.match.t'), meta: T('dt.allDraws'), body: body });
+        return card({ id: 'detail-report', title: T('dt.report.t'), meta: T('dt.allDraws'), body: body });
     }
 
     function prizeCard(draws) {
@@ -272,7 +285,7 @@
     const LOCKED = [
         { id: 'detail-runs', key: 'dt.runs' },
         { id: 'detail-partner', key: 'dt.partner' },
-        { id: 'detail-match', key: 'dt.match' },
+        { id: 'detail-report', key: 'dt.report' },
         { id: 'detail-prize', key: 'dt.prize' },
     ];
 
@@ -308,7 +321,7 @@
         }
         container.appendChild(consecutiveCard(draws));
         container.appendChild(partnerCard(draws));
-        container.appendChild(matchCard(draws));
+        container.appendChild(reportCard(draws));
         container.appendChild(prizeCard(draws));
     }
 
@@ -317,7 +330,6 @@
         runsOf: runsOf,
         consecutiveRounds: consecutiveRounds,
         partners: partners,
-        matchHistory: matchHistory,
         prizeTrend: prizeTrend,
         won: won,
     };

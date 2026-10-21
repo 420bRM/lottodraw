@@ -1255,8 +1255,19 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 .partner-grid { margin-bottom: 12px; }
 .partner-grid .cell { min-height: 26px; font-size: 12px; }
 .partner-out { display: grid; gap: 6px; }
-.match-out { display: grid; gap: 8px; margin-top: 10px; font-size: 13px; }
-.match-out p { margin: 0; }
+/* 상세 분석 · 내 번호 성적표 카드: 카드 폭이 300px 남짓이라 쓴 돈 · 받은 돈 · 손익은 한 줄에 하나씩(휴대폰 성적표와 같은 모양) */
+.report-out { display: grid; gap: 8px; margin-top: 10px; font-size: 13px; }
+.report-out:empty { display: none; }
+#report-status:empty { min-height: 0; margin: 0; }   /* 결과 위에 빈 줄을 남기지 않는다 */
+.report-out p { margin: 0; }
+.report-out .rc-tiles { grid-template-columns: minmax(0, 1fr); gap: 6px; margin: 0; }
+.report-out .rc-tiles div { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 8px 12px; text-align: left; }
+.report-out .rc-tiles b { margin: 0; font-size: 16px; }
+.report-out .data-table { margin: 0; }
+.report-out .rc-ranks th, .report-out .rc-ranks td { padding: 4px 2px; font-size: 12px; }
+.report-out .rc-near .strategy-nums { gap: 2px; }
+.report-sub { font-weight: bold; color: var(--text); }
+.report-out .btn { justify-self: start; margin: 0; }
 .vaxis-all span { font-size: 9px; letter-spacing: -0.04em; }
 .chart-tools { display: flex; justify-content: flex-end; margin-bottom: 6px; }
 .btn-small { padding: 4px 10px; font-size: 12px; }
