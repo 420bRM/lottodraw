@@ -18,6 +18,7 @@
     };
     const $ = id => document.getElementById(id);
     const num = n => Number(n || 0).toLocaleString(window.I18N && window.I18N.lang === 'en' ? 'en-US' : 'ko-KR');
+    const monthDay = ms => new Date(ms).toLocaleDateString(window.I18N && window.I18N.lang === 'en' ? 'en-US' : 'ko-KR', { month: 'long', day: 'numeric' });
     const ymd = ms => {
         const d = new Date(ms);
         if (isNaN(d)) return '';
@@ -298,8 +299,10 @@
     function showProfile(user) {
         const A = window.LottoAccount;
         fill('my-profile', [
-            row(tr('my.nick', '별명'), user.nick || tr('my.nickNone', '아직 없음'),
-                A && A.openNick ? btn(user.nick ? tr('my.nickChange', '바꾸기') : tr('my.nickSet', '정하기'), () => A.openNick(!user.nick)) : null),
+            row(tr('my.nick', '별명'),
+                user.nick ? (user.nickAuto ? tr('my.nickAuto', '{nick} (자동)', { nick: user.nick }) : user.nick)
+                    : user.nickDue ? tr('my.nickNoneDue', '아직 없음 · {date}에 자동으로 붙습니다', { date: monthDay(user.nickDue) }) : tr('my.nickNone', '아직 없음'),
+                A && A.openNick ? btn(user.nick ? (user.nickAuto ? tr('my.nickChangeFree', '무료로 바꾸기') : tr('my.nickChange', '바꾸기')) : tr('my.nickSet', '정하기'), () => A.openNick(!user.nick)) : null),
             row(tr('my.email', '이메일'), user.email || ''),
             row(tr('my.joined', '가입일'), ymd(user.createdAt)),
             user.staff ? row(tr('my.role', '구분'), tr('my.staff', '운영자 계정')) : null,

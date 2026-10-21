@@ -117,8 +117,8 @@
 <style>
 .ac-figure { margin: 16px 0 10px; }
 .acc-toggles { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
-.acc-toggles button { padding: 5px 12px; border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--muted); font: 13px/1.4 var(--font); cursor: pointer; }
-.acc-toggles button[aria-pressed="true"] { border-color: var(--brand); background: var(--brand); color: #fff; font-weight: bold; }
+.acc-toggles button { padding: 5px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface, #fff); color: var(--muted); font: 13px/1.4 var(--font); cursor: pointer; }
+.acc-toggles button[aria-pressed="true"] { border-color: var(--brand-bg, var(--brand)); background: var(--brand-bg, var(--brand)); color: #fff; font-weight: bold; }
 .acc-panel { margin: 0 0 14px; }
 .acc-panel[hidden] { display: none; }
 .acc-ptitle { margin: 0 0 2px; color: var(--text); font-size: 14px; font-weight: bold; }
@@ -128,9 +128,9 @@
 .acc-area { fill: var(--brand); opacity: .08; }
 .acc-theory { fill: var(--brand); opacity: .13; }
 .acc-range { fill: none; stroke: var(--brand); stroke-width: 1.5; opacity: .5; }
-.dist-dot circle { fill: var(--ball-3); stroke: #fff; stroke-width: 1; transform-box: fill-box; transform-origin: center; transition: transform .12s ease-out; }
-.dist-dot.is-few circle { fill: #fff; stroke: #f08a8a; stroke-width: 1.2; }
-.dist-dot .acc-guide { stroke: #888; stroke-width: 1; opacity: 0; transition: opacity .12s ease-out; }
+.dist-dot circle { fill: var(--ball-3); stroke: var(--surface, #fff); stroke-width: 1; transform-box: fill-box; transform-origin: center; transition: transform .12s ease-out; }
+.dist-dot.is-few circle { fill: var(--surface, #fff); stroke: #f08a8a; stroke-width: 1.2; }
+.dist-dot .acc-guide { stroke: var(--faint, #888); stroke-width: 1; opacity: 0; transition: opacity .12s ease-out; }
 .dist-dot .acc-hit { fill: transparent; }
 .dist-dot { cursor: pointer; }
 .dist-dot:hover circle, .dist-dot.is-on circle { transform: scale(1.8); }
