@@ -114,7 +114,7 @@ jobs:
         continue-on-error: true
         run: |
           for i in 1 2 3 4 5 6; do
-            if curl -fsS https://api.lottodraw.kr/api/config; then echo; exit 0; fi
+            if curl -fsS -A lottodraw-smoke https://api.lottodraw.kr/api/config; then echo; exit 0; fi
             sleep 20
           done
           echo "::warning::https://api.lottodraw.kr 에 아직 연결되지 않습니다. 몇 분 뒤 다시 확인하거나, Cloudflare 대시보드에서 Worker 의 Custom Domain 을 확인하세요."
@@ -142,7 +142,7 @@ jobs:
             exit 0
           fi
           # 새 배포 직후에는 도메인이 붙는 데 잠깐 걸릴 수 있다
-          for i in $(seq 1 12); do curl -fsS "$API_BASE/api/config" > /dev/null && break; sleep 10; done
+          for i in $(seq 1 12); do curl -fsS -A lottodraw-smoke "$API_BASE/api/config" > /dev/null && break; sleep 10; done
           node worker/test/live-smoke.mjs
 
       - name: 점검 실패 알림

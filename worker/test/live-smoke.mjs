@@ -12,6 +12,16 @@ const require = createRequire(import.meta.url);
 const API = String(process.env.API_BASE || 'https://api.lottodraw.kr').replace(/\/+$/, '');
 const ADMIN = process.env.ADMIN_TOKEN || '';
 
+// Cloudflare 기록에서 우리 점검을 알아보도록 이름을 단다. Node fetch 기본값("node")은 낯선 봇으로 보인다.
+// js/license.js 가 부르는 fetch 에도 붙도록 전역 fetch 를 감싼다.
+const UA = 'lottodraw-smoke';
+const nodeFetch = globalThis.fetch;
+globalThis.fetch = (input, init = {}) => {
+    const headers = new Headers(init.headers);
+    if (!headers.has('User-Agent')) headers.set('User-Agent', UA);
+    return nodeFetch(input, { ...init, headers });
+};
+
 let failed = false;
 const step = (ok, msg) => {
     console.log(`${ok ? '✔' : '✘'} ${msg}`);
