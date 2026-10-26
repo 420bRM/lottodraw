@@ -318,7 +318,6 @@ const NAV = [
     ['tax.html', '실수령액 계산', 'nav.tax'],
     ['blog/index.html', '블로그', 'nav.blog'],
     ['about.html', 'ABOUT', 'nav.about'],
-    ['store-map.html', '판매점 지도', 'nav.storeMap'],   // 2026-10-26 — 생성기 · 통계와 따로 둔 지도 페이지
 ];
 
 // 언어 전환 단추. 사전과 엔진은 js/i18n-dict.js · js/i18n.js 에 있다.
@@ -2303,24 +2302,38 @@ function storeMapPage(md) {
             <button type="button" class="sm-bars" id="sm-bars" aria-pressed="false" title="막대 지도 (로그인 회원)" data-i18n-attr="title:sm.barsTitle" data-i18n-en="Bars">막대</button>
             <button type="button" class="sm-3d" id="sm-3d" aria-pressed="false">3D</button>
         </div>
-        <div class="sm-row">
+        <div class="sm-row sm-searchbox">
             <input type="search" class="sm-search" id="sm-search" placeholder="판매점 이름 찾기" data-i18n-attr="placeholder:sm.search" aria-label="판매점 이름 찾기" autocomplete="off">
+            <ul class="sm-found" id="sm-found" hidden></ul>
         </div>
-        <ul class="sm-found" id="sm-found" hidden></ul>
         <div class="sm-chips" role="group" aria-label="보이는 판매점" data-i18n-attr="aria-label:sm.layers">
             <button type="button" class="sm-chip" data-layer="w1" aria-pressed="true"><span class="sm-dot sm-dot-1"></span><span data-i18n-en="1st prize">1등 나온 곳</span></button>
             <button type="button" class="sm-chip" data-layer="w2" aria-pressed="true"><span class="sm-dot sm-dot-2"></span><span data-i18n-en="2nd only">2등만 나온 곳</span></button>
             ${md.all ? `<button type="button" class="sm-chip" data-layer="all" aria-pressed="false"><span class="sm-dot sm-dot-a"></span><span data-i18n-en="Other retailers">일반 판매점</span></button>` : ''}
             <button type="button" class="sm-chip" data-layer="closed" aria-pressed="false"><span class="sm-dot sm-dot-c"></span><span data-i18n-en="Closed">폐점 포함</span></button>
         </div>
-        <div class="sm-chips sm-modes" role="group" aria-label="1등 방식 (로그인 회원)" data-i18n-attr="aria-label:sm.modes">
-            <span class="sm-modes-label" data-i18n-en="1st by">1등 방식</span>
-            <button type="button" class="sm-chip sm-mode" data-mode="A" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Auto">자동</span></button>
-            <button type="button" class="sm-chip sm-mode" data-mode="M" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Manual">수동</span></button>
-            <button type="button" class="sm-chip sm-mode" data-mode="S" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Semi">반자동</span></button>
-        </div>
+        <p class="sm-pcnote" data-i18n-en="On a PC you can see the top 50 retailers as a list.">PC에서 보면 1등 많은 50곳을 목록으로 볼 수 있습니다.</p>
     </div>
-    <aside class="sm-card" id="sm-card" hidden aria-live="polite"></aside>
+    <!-- 오른쪽(PC): 1등 많은 50곳 목록 + 그 아래 판매점 카드. 휴대폰은 목록을 감추고 카드만 아래쪽에 -->
+    <div class="sm-right">
+        <aside class="sm-top50" id="sm-top50" aria-labelledby="sm-top50-h">
+            <h2 id="sm-top50-h" data-i18n-en="Top 50 by 1st prizes">1등 많은 50곳</h2>
+            <ol class="sm-top50-list" id="sm-top50-list"></ol>
+        </aside>
+        <aside class="sm-card" id="sm-card" hidden aria-live="polite"></aside>
+    </div>
+    <!-- 왼쪽 아래: 1등 방식(로그인 회원) · 끌기 막대(낮은 횟수부터 흐리게) — "시도별 · 안내" 위 -->
+    <div class="sm-bl">
+        <div class="sm-chips sm-modes" role="group" aria-label="1등 방식 (로그인 회원)" data-i18n-attr="aria-label:sm.modes">
+                <span class="sm-modes-label" data-i18n-en="1st by">1등 방식</span>
+                <button type="button" class="sm-chip sm-mode" data-mode="A" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Auto">자동</span></button>
+                <button type="button" class="sm-chip sm-mode" data-mode="M" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Manual">수동</span></button>
+                <button type="button" class="sm-chip sm-mode" data-mode="S" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Semi">반자동</span></button>
+        </div>
+        <label class="sm-fade"><span data-i18n-en="Fade low counts">적게 나온 곳 흐리게</span>
+            <input type="range" id="sm-fade" min="0" max="100" value="0" aria-describedby="sm-fade-v">
+            <output id="sm-fade-v">모두</output></label>
+    </div>
     <details class="sm-info" id="sm-info">
         <summary data-i18n-en="By province · about">시도별 · 안내</summary>
         <div class="sm-info-body">
@@ -2781,7 +2794,11 @@ const STORE_MAP = STORES ? storeMapData() : null;
 if (STORE_MAP_READY()) {
     if (write(STORE_MAP_DATA, JSON.stringify({ first: STORES.first, last: STORES.last, updated: UPDATED, sido: STORE_MAP.sidoNames,
         cols: ['lat', 'lng', 'w1', 'w2', 'name', 'sido', 'gu', 'closed', 'auto', 'manual', 'semi'], rows: STORE_MAP.rows }) + '\n')) changed++;
-    if (write(STORE_MAP_ROUNDS, JSON.stringify({ last: STORES.last, note: '1등: 회차 × 4 + 방식(0 모름 · 1 자동 · 2 수동 · 3 반자동), 2등: 회차 — store-map-data.json 의 rows 와 같은 차례', rows: STORE_MAP.rounds }) + '\n')) changed++;
+    // 카드에 회차 날짜 · 당첨번호도 보여 준다(2026-10-26) — 판매점 자료가 있는 회차만: { 회차: [날짜, 번호 6개, 보너스] }
+    const drawInfo = {};
+    for (const d of draws) if (d.round >= STORES.first) drawInfo[d.round] = [d.date, d.numbers, d.bonus];
+    if (write(STORE_MAP_ROUNDS, JSON.stringify({ last: STORES.last, note: '1등: 회차 × 4 + 방식(0 모름 · 1 자동 · 2 수동 · 3 반자동), 2등: 회차 — store-map-data.json 의 rows 와 같은 차례. draws: { 회차: [날짜, 번호, 보너스] }',
+        rows: STORE_MAP.rounds, draws: drawInfo }) + '\n')) changed++;
     if (STORE_MAP.all && write(STORE_MAP_ALL, JSON.stringify({ updated: STORE_MAP.all.updated, sido: STORE_MAP.all.sido,
         cols: ['lat', 'lng', 'name', 'sido', 'gu'], rows: STORE_MAP.all.rows }) + '\n')) changed++;
     if (write(STORE_MAP_FILE, storeMapPage(STORE_MAP))) changed++;

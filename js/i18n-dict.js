@@ -439,6 +439,7 @@ window.I18N_DICT = {
     /* ───── 홈: 번호 생성기 ───── */
     'gen.h1':        { en: 'Lotto Statistics & Number Generator' },
     'gen.sub':       { en: 'Filters out combinations that match 16 unusual patterns' },
+    'gen.mapGo':     { ko: '판매점 지도 →', en: 'Retailer map →' },   // 생성기 제목 아래 지도 단추(2026-10-26)
     'gen.thisPick':  { en: 'This pick' },
     'gen.resultIdle': { en: 'Press the button and the numbers appear above.' },
     'gen.go':        { en: 'Generate' },

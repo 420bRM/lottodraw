@@ -666,6 +666,10 @@ html.home { scroll-behavior: smooth; }
     color: var(--brand); font: bold 12px/1.4 var(--font); white-space: nowrap; cursor: pointer;
 }
 .tour-btn:hover { border-color: var(--brand); }
+/* 생성기 제목 아래 "판매점 지도 →" — 지도 페이지의 "← 생성기로" 와 같은 모양 */
+.map-go { display: inline-block; margin-top: 8px; padding: 7px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface, #fff);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .1); color: var(--brand); font-size: 14px; font-weight: bold; text-decoration: none; }
+.map-go:hover { border-color: var(--brand); }
 /* 왼쪽 위 "＋ 내 번호" — 방금 만든 번호를 이번 회차 내 번호에 저장(로그인). 사용법 보기와 같은 모양 */
 .tour-btn.mynum-btn { right: auto; left: 10px; }
 .tour-btn.mynum-btn:disabled { color: var(--muted); cursor: default; }
