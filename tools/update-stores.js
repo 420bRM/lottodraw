@@ -67,7 +67,9 @@ function place(x) {
         const hit = SIDO.find(([k]) => parts[0] && parts[0].startsWith(k));
         if (!hit) continue;
         const gu = /[시군구]$/.test(parts[1] || '') ? parts[1] : '';
-        return [hit[1] === '전남' && /구$/.test(gu) ? '광주' : hit[1], gu];
+        // "전남광주"는 광주와 전남을 함께 적은 것 — 구(동 · 서 · 남 · 북 · 광산구)면 광주, 시 · 군이면 전남
+        if (hit[0] === '전남광주' || hit[1] === '전남') return [/구$/.test(gu) ? '광주' : '전남', gu];
+        return [hit[1], gu];
     }
     return ['', ''];
 }

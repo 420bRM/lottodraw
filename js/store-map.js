@@ -186,7 +186,8 @@
         });
         map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right');
         map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: false }, trackUserLocation: false }), 'bottom-right');   // 내 위치는 이 기기 안에서만 쓴다(서버로 보내지 않는다)
-        map.on('load', () => { koreanLabels(); buildings(); addStores(); });
+        // 처음 화면: 위쪽 도구에 가리지 않게 우리나라 전체를 맞춘다
+        map.on('load', () => { koreanLabels(); buildings(); addStores(); map.fitBounds([[125.8, 33.1], [129.7, 38.6]], { padding: pad(), duration: 0 }); });
         map.on('error', e => { if (e && e.error && /style|tiles/i.test(String(e.error.message))) console.warn('map', e.error); });
         initControls();
         initSearch();
