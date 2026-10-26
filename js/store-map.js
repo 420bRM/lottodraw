@@ -589,6 +589,36 @@
         });
     }
 
+    // ───── 이색 판매점(끝과 끝 · 외딴 곳 …) — 왼쪽 아래 목록 + 지도 위 별 표시. 자료는 store-map-data.json 의 fun(생성기가 계산) ─────
+    function openFun(k) {
+        const f = (data.fun || [])[k];
+        if (!f) return;
+        document.getElementById('sm-fun').hidden = true;
+        document.getElementById('sm-fun-btn').setAttribute('aria-expanded', 'false');
+        map.flyTo({ center: [f.lng, f.lat], zoom: f.zoom, pitch: 0, bearing: 0, padding: pad(), essential: true });
+        const [t, i] = f.ref;
+        if (t === 'w') open(i, false);
+        else if (all) openAll(i, false);
+        else { shown.all = true; root.querySelector('.sm-chip[data-layer="all"]').setAttribute('aria-pressed', 'true'); applyLayers(); const wait = () => (all ? openAll(i, false) : setTimeout(wait, 200)); wait(); }
+    }
+    function initFun() {
+        const btn = document.getElementById('sm-fun-btn'), box = document.getElementById('sm-fun');
+        if (!btn || !data.fun) return;
+        btn.addEventListener('click', () => { box.hidden = !box.hidden; btn.setAttribute('aria-expanded', String(!box.hidden)); });
+        box.querySelectorAll('.sm-fun-item').forEach(b => b.addEventListener('click', () => openFun(Number(b.dataset.k))));
+        // 지도 위 별 표시 — 누르면 그 판매점으로
+        data.fun.forEach((f, k) => {
+            const el = document.createElement('button');
+            el.type = 'button';
+            el.className = 'sm-star';
+            el.textContent = f.icon;
+            el.title = T(f.title, f.titleEn) + ' — ' + f.name;
+            el.setAttribute('aria-label', el.title);
+            el.addEventListener('click', e => { e.stopPropagation(); openFun(k); });
+            new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -6] }).setLngLat([f.lng, f.lat]).addTo(map);
+        });
+    }
+
     // PC 오른쪽 위: 1등 많은 50곳(고른 1등 방식 기준, 폐점 제외)
     function renderTop() {
         const ol = document.getElementById('sm-top50-list');
@@ -676,7 +706,7 @@
         // 처음 화면: 서울 전체(2026-10-26 사장님 — 전국은 시도별 표 · 줌아웃으로)
         const fromLink = /[#&]map=/.test(location.hash);   // 링크로 받은 화면이면 그대로
         map.on('load', () => {
-            koreanLabels(); whiteModel(); addStores(); landmarks(); renderTop(); initVisits();
+            koreanLabels(); whiteModel(); addStores(); landmarks(); renderTop(); initVisits(); initFun();
             if (!fromLink) map.fitBounds([[126.8, 37.43], [127.18, 37.7]], { padding: pad(), duration: 0 });
             else if (map.getPitch() > 5) { const d3 = document.getElementById('sm-3d'); d3.setAttribute('aria-pressed', 'true'); d3.textContent = '2D'; }   // 기울어진 화면 링크
         });

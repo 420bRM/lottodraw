@@ -2234,8 +2234,61 @@ function storeMapData() {
         for (const id of rec.w2) at(id)[1].push(r);
     }
     const rounds = rows.map(({ id }) => (won.get(id) || [[], []]).map(a => a.slice().reverse()));
-    return { rows: rows.map(x => x.row), ids: rows.map(x => x.id), rounds, noCoord, sidoNames, all: storeMapAll(sidoNames) };
+    const md = { rows: rows.map(x => x.row), ids: rows.map(x => x.id), rounds, noCoord, sidoNames, all: storeMapAll(sidoNames) };
+    md.fun = storeMapFun(md);
+    return md;
 }
+// 이색 판매점(2026-10-26 사장님): 끝과 끝 · 외딴 곳 · 1등끼리 가장 가까운 곳 등. 지도의 "🏆 이색 판매점" 목록 · 별 표시 · 블로그 글이 쓴다.
+// 문을 연 판매점(폐점 제외)만. ref: 지도에서 열 카드 — ['w', 지도 자료 행] 또는 ['a', 일반 판매점 행]
+function storeMapFun(md) {
+    const S = STORES;
+    const pts = [];
+    md.rows.forEach((r, i) => { if (!r[7]) pts.push({ lat: r[0], lng: r[1], w1: r[2], w2: r[3], name: r[4], sido: md.sidoNames[r[5]], gu: r[6], ref: ['w', i] }); });
+    if (md.all) md.all.rows.forEach((r, i) => pts.push({ lat: r[0], lng: r[1], w1: 0, w2: 0, name: r[2], sido: md.all.sido[r[3]], gu: r[4], ref: ['a', i] }));
+    if (pts.length < 1000) return [];
+    const rad = Math.PI / 180;
+    const dist = (a, b) => 6371e3 * Math.hypot((b.lng - a.lng) * rad * Math.cos((a.lat + b.lat) / 2 * rad), (b.lat - a.lat) * rad);
+    const place = x => [x.sido, x.gu].filter(Boolean).join(' ');
+    const won = x => (x.w1 ? `1등 ${x.w1}번` : '') + (x.w1 && x.w2 ? ' · ' : '') + (x.w2 ? `2등 ${x.w2}번` : '') || '1등 · 2등 기록 없음';
+    const wonEn = x => (x.w1 ? `${x.w1} × 1st` : '') + (x.w1 && x.w2 ? ' · ' : '') + (x.w2 ? `${x.w2} × 2nd` : '') || 'no 1st or 2nd prize yet';
+    const by = (k, sign) => pts.reduce((m, x) => (!m || sign * (x[k] - m[k]) < 0 ? x : m), null);
+    const item = (key, icon, title, titleEn, x, text, textEn, zoom) => ({ key, icon, title, titleEn, name: x.name, place: place(x), lat: x.lat, lng: x.lng, ref: x.ref, text, textEn, zoom: zoom || 14 });
+    const out = [];
+    const s = by('lat', 1), n = by('lat', -1), w = by('lng', 1), e = by('lng', -1);
+    out.push(item('south', '⬇️', '가장 남쪽 판매점', 'Southernmost', s, `북위 ${s.lat.toFixed(2)}° · ${won(s)}`, `${s.lat.toFixed(2)}°N · ${wonEn(s)}`));
+    out.push(item('north', '⬆️', '가장 북쪽 판매점', 'Northernmost', n, `북위 ${n.lat.toFixed(2)}° · ${won(n)}`, `${n.lat.toFixed(2)}°N · ${wonEn(n)}`));
+    out.push(item('west', '⬅️', '가장 서쪽 판매점', 'Westernmost', w, `동경 ${w.lng.toFixed(2)}° · ${won(w)}`, `${w.lng.toFixed(2)}°E · ${wonEn(w)}`));
+    out.push(item('east', '➡️', '가장 동쪽 판매점', 'Easternmost', e, `동경 ${e.lng.toFixed(2)}° · ${won(e)}`, `${e.lng.toFixed(2)}°E · ${wonEn(e)}`));
+    // 가장 외딴 곳: 가장 가까운 다른 판매점까지가 가장 먼 곳(위도 0.5° 띠로 거른다)
+    const byLat = pts.slice().sort((a, b) => a.lat - b.lat);
+    let far = null;
+    byLat.forEach((a, i) => {
+        let m = Infinity;
+        for (let j = i - 1; j >= 0 && a.lat - byLat[j].lat < 2; j--) m = Math.min(m, dist(a, byLat[j]));
+        for (let j = i + 1; j < byLat.length && byLat[j].lat - a.lat < 2; j++) m = Math.min(m, dist(a, byLat[j]));
+        if (!far || m > far.m) far = { x: a, m };
+    });
+    out.push(item('remote', '🏝️', '가장 외딴 판매점', 'Most remote', far.x, `가장 가까운 판매점까지 ${Math.round(far.m / 1000)}km · ${won(far.x)}`, `${Math.round(far.m / 1000)} km to the next retailer · ${wonEn(far.x)}`, 12));
+    // 1등이 나온 판매점끼리 가장 가까운 두 곳(같은 자리 · 1m 안은 빼고)
+    const w1 = byLat.filter(x => x.w1 > 0);
+    let pair = null;
+    w1.forEach((a, i) => { for (let j = i + 1; j < w1.length && (w1[j].lat - a.lat) * 111320 < 300; j++) { const d = dist(a, w1[j]); if (d > 1 && (!pair || d < pair.d)) pair = { a, b: w1[j], d }; } });
+    if (pair) out.push(Object.assign(item('pair', '👯', '1등 판매점끼리 가장 가까운 곳', 'Closest 1st-prize pair', pair.a,
+        `${pair.a.name} ↔ ${pair.b.name}, ${Math.round(pair.d)}m 거리 · 두 곳 다 1등이 나왔습니다`, `${pair.a.name} ↔ ${pair.b.name}, ${Math.round(pair.d)} m apart · both sold a 1st prize`, 17),
+        { name: `${pair.a.name} · ${pair.b.name}` }));
+    // 판매점이 가장 몰린 곳(1등이 나온 곳 둘레 500m)
+    let dense = null;
+    w1.forEach(a => { let c = 0; for (const b of byLat) if (Math.abs(b.lat - a.lat) < 0.005 && dist(a, b) < 500) c++; if (!dense || c > dense.c) dense = { a, c }; });
+    out.push(item('dense', '🏙️', '판매점이 가장 몰린 곳', 'Densest spot', dense.a, `이 판매점 둘레 500m 안에 판매점 ${dense.c}곳`, `${dense.c} retailers within 500 m`, 15));
+    // 고속도로 휴게소 중 1등이 가장 많이 나온 곳
+    const rest = pts.filter(x => /휴게소/.test(x.name) && x.w1 > 0).sort((a, b) => b.w1 - a.w1)[0];
+    if (rest) out.push(item('rest', '🛣️', '1등이 가장 많이 나온 휴게소', 'Top highway rest stop', rest, `${won(rest)} · 휴게소 판매점 ${pts.filter(x => /휴게소/.test(x.name)).length}곳 중`, `${wonEn(rest)} · among ${pts.filter(x => /휴게소/.test(x.name)).length} rest-stop retailers`));
+    // 섬(울릉 · 옹진 · 신안 · 완도)에서 1등이 나온 판매점
+    const isle = pts.filter(x => /^(울릉군|옹진군|신안군|완도군)$/.test(x.gu) && x.w1 > 0).sort((a, b) => b.w1 - a.w1)[0];
+    if (isle) out.push(item('island', '⛴️', '섬에서 1등이 나온 판매점', '1st prize on an island', isle, `${place(isle)} · ${won(isle)}`, `${wonEn(isle)}`, 13));
+    return out.map(x => Object.assign(x, { lat: Math.round(x.lat * 1e4) / 1e4, lng: Math.round(x.lng * 1e4) / 1e4 }));
+}
+
 // 일반 판매점: [위도, 경도, 상호, 시도 번호, 시군구] — 1등 · 2등 판매점(폐점 포함)은 위 자료에 있으니 뺀다
 function storeMapAll(sidoNames) {
     if (!ALL_SHOPS) return null;
@@ -2329,6 +2382,12 @@ function storeMapPage(md) {
     </div>
     <!-- 왼쪽 아래: 1등 방식(로그인 회원) · 끌기 막대(낮은 횟수부터 흐리게) — "시도별 · 안내" 위 -->
     <div class="sm-bl">
+        ${md.fun && md.fun.length ? `<button type="button" class="sm-fun-btn" id="sm-fun-btn" aria-expanded="false" aria-controls="sm-fun" data-i18n-en="🏆 Unusual retailers">🏆 이색 판매점</button>
+        <div class="sm-fun" id="sm-fun" hidden>
+            <h2 data-i18n-en="Unusual retailers">이색 판매점</h2>
+            <ol>${md.fun.map((f, k) => `<li><button type="button" class="sm-fun-item" data-k="${k}"><span class="sm-fun-ico" aria-hidden="true">${f.icon}</span><span><b data-i18n-en="${esc(f.titleEn)}">${esc(f.title)}</b><span class="sm-fun-name">${esc(f.name)} <small>${esc(f.place)}</small></span><small data-i18n-en="${esc(f.textEn)}">${esc(f.text)}</small></span></button></li>`).join('')}</ol>
+            <p class="sm-small" data-i18n-en="Open retailers only, from Dong-haeng Lottery data. More in the blog post.">문을 연 판매점 기준(동행복권 자료). <a href="blog/lotto-store-extremes.html">블로그 글로 보기</a></p>
+        </div>` : ''}
         <div class="sm-chips sm-modes" role="group" aria-label="1등 방식 (로그인 회원)" data-i18n-attr="aria-label:sm.modes">
                 <span class="sm-modes-label" data-i18n-en="1st by">1등 방식</span>
                 <button type="button" class="sm-chip sm-mode" data-mode="A" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Auto">자동</span></button>
@@ -2798,7 +2857,7 @@ if (STORES && write(STORES_FILE, storesPage())) changed++;
 const STORE_MAP = STORES ? storeMapData() : null;
 if (STORE_MAP_READY()) {
     if (write(STORE_MAP_DATA, JSON.stringify({ first: STORES.first, last: STORES.last, updated: UPDATED, sido: STORE_MAP.sidoNames,
-        cols: ['lat', 'lng', 'w1', 'w2', 'name', 'sido', 'gu', 'closed', 'auto', 'manual', 'semi'], rows: STORE_MAP.rows }) + '\n')) changed++;
+        cols: ['lat', 'lng', 'w1', 'w2', 'name', 'sido', 'gu', 'closed', 'auto', 'manual', 'semi'], rows: STORE_MAP.rows, fun: STORE_MAP.fun }) + '\n')) changed++;
     // 카드에 회차 날짜 · 당첨번호도 보여 준다(2026-10-26) — 판매점 자료가 있는 회차만: { 회차: [날짜, 번호 6개, 보너스] }
     const drawInfo = {};
     for (const d of draws) if (d.round >= STORES.first) drawInfo[d.round] = [d.date, d.numbers, d.bonus];

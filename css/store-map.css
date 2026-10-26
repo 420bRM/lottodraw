@@ -58,6 +58,23 @@ body.sm-full #theme-btn { display: none !important; }
 .sm-fade input { width: 96px; margin: 0; accent-color: #f07a1a; }
 .sm-fade output { min-width: 56px; color: var(--brand, #003087); font-weight: bold; }
 
+/* 이색 판매점: 단추 · 목록(왼쪽 아래 위로 펼침) · 지도 위 별 */
+.sm-fun-btn { padding: 3px 9px; border: 1px solid #e9c46a; border-radius: 999px; background: #fff8e6; color: #8a5a00; box-shadow: 0 1px 5px rgba(0, 0, 0, .12); font: inherit; font-size: 10.5px; font-weight: bold; cursor: pointer; }
+.sm-fun { position: absolute; left: 0; bottom: calc(100% + 6px); box-sizing: border-box; width: min(340px, calc(100vw - 12px)); max-height: 55vh; overflow: auto; padding: 10px 10px 6px;
+    border-radius: 12px; background: var(--surface, #fff); color: var(--fg, #333); box-shadow: 0 8px 28px rgba(0, 0, 0, .25); }
+.sm-fun[hidden] { display: none; }
+.sm-fun h2 { margin: 0 4px 6px; font-size: 14px; }
+.sm-fun ol { margin: 0; padding: 0; list-style: none; }
+.sm-fun-item { display: flex; gap: 8px; width: 100%; padding: 7px 6px; border: 0; border-radius: 8px; background: none; color: inherit; font: inherit; font-size: 12px; text-align: left; cursor: pointer; }
+.sm-fun-item:hover { background: var(--soft, #f3f6fb); }
+.sm-fun-item > span:last-child { display: grid; gap: 1px; min-width: 0; }
+.sm-fun-item b { color: var(--brand, #003087); font-size: 12.5px; }
+.sm-fun-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sm-fun-item small { color: var(--faint, #777); font-size: 11px; }
+.sm-fun-ico { flex: none; font-size: 18px; line-height: 1.2; }
+.sm-star { width: 28px; height: 28px; padding: 0; border: 2px solid #fff; border-radius: 50%; background: #fff3cf; box-shadow: 0 2px 8px rgba(0, 0, 0, .3); font-size: 14px; line-height: 1; cursor: pointer; }
+.sm-star:hover { transform: scale(1.12); }
+
 /* ───── 오른쪽: 1등 많은 50곳(PC) + 판매점 카드 ───── */
 .sm-right { display: contents; }
 .sm-top50 { display: none; }
@@ -142,6 +159,8 @@ body.sm-full #theme-btn { display: none !important; }
 
     .sm-bl { left: 12px; bottom: 52px; gap: 6px; }
     .sm-modes-label, .sm-fade { font-size: 12px; }
+    .sm-fun-btn { padding: 6px 12px; font-size: 12.5px; }
+    .sm-fun { width: 360px; }
     .sm-check { width: 11px; height: 11px; }
     .sm-fade { padding: 5px 10px; border-radius: 9px; }
     .sm-fade input { width: 140px; }
