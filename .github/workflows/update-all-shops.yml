@@ -1,7 +1,7 @@
 name: update-all-shops
 
 # 판매점 지도의 "일반 판매점" 층(shops-all.json). 판매점은 자주 안 바뀌어서 한 달에 한 번, 매달 2일 04:20 KST(1일 19:20 UTC).
-# 전국 1,000쪽 안팎을 0.7초 간격으로 받아 15분쯤 걸린다. 받은 뒤 지도 자료(store-map-*.json)를 다시 만든다.
+# 전국 1,458쪽(2026-10)을 1.2초 간격으로 받아 40분쯤 걸린다. 받은 뒤 지도 자료(store-map-*.json)를 다시 만든다.
 # 주의: schedule 은 저장소 기본 브랜치에 있는 워크플로만 실행된다.
 on:
   schedule:
@@ -22,7 +22,7 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
 

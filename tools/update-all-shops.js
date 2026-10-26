@@ -5,7 +5,9 @@
 //   동행복권 사이트의 "판매점 찾기" 화면이 부르는 것과 같은 공개 조회(GET, 로그인 없음). 한 쪽에 10곳으로 고정이고
 //   (recordCountPerPage 를 키워도 10), 응답은 { data: { total, list: [{ ltShpId, conmNm, tm1BplcLctnAddr(시도),
 //   tm2BplcLctnAddr(시군구), l645LtNtslYn(로또 판매), shpLat, shpLot, ... }] } }. robots.txt 는 /resources/ · /winImages/ 만 막는다.
-// 예의: 한 번에 한 요청, 요청 사이 0.7초. 전국 1,000쪽 안팎이라 15분쯤 걸린다 — 판매점은 자주 안 바뀌니 한 달에 한 번이면 된다.
+//   시도를 비우면 전국(2026-10-26 14,577곳 · 1,458쪽 — 연금복권 · 스피또만 파는 곳 포함, 그런 곳은 뺀다). 쪽 순서는 늘 같다.
+// 예의: 한 번에 한 요청, 요청 사이 1.2초(빨리 받으면 몇백 번째에서 연결이 끊겼다). 40분쯤 걸린다 — 판매점은 자주 안 바뀌니 한 달에 한 번이면 된다.
+// 끊기면 5 · 20 · 60 · 120초 쉬고 다시. 그래도 안 되는 쪽은 건너뛰고, 건너뛴 쪽이 2%를 넘으면 저장하지 않는다.
 //
 // 저장하는 것: 판매점 번호 · 상호 · 시도 · 시군구 · 지도 좌표(소수 5자리)만. 도로명 상세 주소 · 전화번호는 저장하지 않는다
 // (stores-data.json 과 같은 원칙. 카드의 카카오맵 · 네이버지도 링크로 찾아갈 수 있다).
@@ -23,14 +25,13 @@ const FILE = path.join(ROOT, 'shops-all.json');
 const API = 'https://www.dhlottery.co.kr/prchsplcsrch/selectLtShp.do?';
 const UA = 'Mozilla/5.0 (compatible; lottodraw.kr data updater)';
 const HEADERS = { 'User-Agent': UA, Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest', Referer: 'https://www.dhlottery.co.kr/prchsplcsrch/home' };
-// 동행복권이 쓰는 시도 이름. 2026 출범한 전남광주통합특별시는 "전남광주"로 적는다 — 옛 이름도 넣어 두고 겹치면 번호로 하나만 남긴다
-const SIDO = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종', '경기', '강원', '충북', '충남', '전북', '전남', '전남광주', '경북', '경남', '제주'];
-const DELAY = 700;
+const DELAY = 1200;
+const BACKOFF = [5, 20, 60, 120];
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-async function page(sido, n) {
-    const q = new URLSearchParams({ srchCtpvNm: sido, srchSggNm: '', pageNum: String(n), recordCountPerPage: '10', pageCount: '5' });
-    for (let tryNo = 1; ; tryNo++) {
+async function page(n) {
+    const q = new URLSearchParams({ srchCtpvNm: '', srchSggNm: '', pageNum: String(n), recordCountPerPage: '10', pageCount: '5' });
+    for (let tryNo = 0; ; tryNo++) {
         try {
             const res = await fetch(API + q, { headers: HEADERS, signal: AbortSignal.timeout(15000) });
             if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -38,8 +39,8 @@ async function page(sido, n) {
             if (!j || !j.data || !Array.isArray(j.data.list)) throw new Error('모양이 다름');
             return j.data;
         } catch (e) {
-            if (tryNo >= 3) throw new Error(`${sido} ${n}쪽: ${e.message}`);
-            await sleep(3000 * tryNo);
+            if (tryNo >= BACKOFF.length) throw new Error(`${n}쪽: ${e.message}`);
+            await sleep(BACKOFF[tryNo] * 1000);
         }
     }
 }
@@ -54,12 +55,17 @@ function sidoOf(x) {
 (async () => {
     const t0 = Date.now();
     const shops = new Map();
-    for (const sido of SIDO) {
-        const first = await page(sido, 1);
-        const pages = Math.ceil((first.total || 0) / 10);
-        console.log(`${sido}: ${first.total || 0}곳 · ${pages}쪽`);
-        for (let n = 1; n <= pages; n++) {
-            const d = n === 1 ? first : (await sleep(DELAY), await page(sido, n));
+    const first = await page(1);
+    const pages = Math.ceil((first.total || 0) / 10);
+    console.log(`전국 ${first.total || 0}곳 · ${pages}쪽`);
+    const skipped = [];
+    for (let n = 1; n <= pages; n++) {
+        let d = first;
+        if (n > 1) {
+            await sleep(DELAY);
+            try { d = await page(n); } catch (e) { console.log('  건너뜀', e.message); skipped.push(n); continue; }
+        }
+        {
             for (const x of d.list) {
                 if (x.l645LtNtslYn !== 'Y') continue;   // 로또 6/45 를 안 파는 곳(연금 · 스피또만)
                 const lat = coord(x.shpLat, 33, 39), lng = coord(x.shpLot, 124, 132);
@@ -68,8 +74,8 @@ function sidoOf(x) {
             }
             if (n % 100 === 0) console.log(`  ${n}/${pages}쪽 · 지금까지 ${shops.size}곳 · ${Math.round((Date.now() - t0) / 60000)}분`);
         }
-        await sleep(DELAY);
     }
+    if (skipped.length > pages * 0.02) { console.error(`건너뛴 쪽이 ${skipped.length}개 — 저장하지 않는다`); process.exit(1); }
     const old = fs.existsSync(FILE) ? JSON.parse(fs.readFileSync(FILE, 'utf8')) : null;
     const oldCount = old ? Object.keys(old.shops).length : 0;
     console.log(`받은 판매점 ${shops.size}곳 (전 ${oldCount}곳) · ${Math.round((Date.now() - t0) / 60000)}분`);
