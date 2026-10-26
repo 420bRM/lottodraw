@@ -1,0 +1,56 @@
+name: update-all-shops
+
+# 판매점 지도의 "일반 판매점" 층(shops-all.json). 판매점은 자주 안 바뀌어서 한 달에 한 번, 매달 2일 04:20 KST(1일 19:20 UTC).
+# 전국 1,458쪽(2026-10)을 1.2초 간격으로 받아 40분쯤 걸린다. 받은 뒤 지도 자료(store-map-*.json)를 다시 만든다.
+# 주의: schedule 은 저장소 기본 브랜치에 있는 워크플로만 실행된다.
+on:
+  schedule:
+    - cron: "20 19 1 * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: update-lotto-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: 전국 판매점 수집
+        id: shops
+        run: node tools/update-all-shops.js
+
+      - name: 지도 자료 다시 만들기
+        if: steps.shops.outputs.changed == 'true'
+        run: node tools/build-static-stats.js
+
+      - name: 변경분 커밋
+        id: commit
+        if: steps.shops.outputs.changed == 'true'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add shops-all.json store-map*.html store-map*.json
+          if git diff --cached --quiet; then echo "바뀐 파일 없음"; exit 0; fi
+          git commit -m "chore: 전국 판매점 갱신"
+          git pull --rebase origin "${{ github.ref_name }}"
+          git push origin HEAD:"${{ github.ref_name }}"
+          echo "pushed=true" >> "$GITHUB_OUTPUT"
+
+      # GITHUB_TOKEN 으로 푸시한 커밋은 Pages 빌드를 트리거하지 않는다 — 직접 요청한다(기본 브랜치일 때만)
+      - name: Pages 재배포 요청
+        if: steps.commit.outputs.pushed == 'true' && github.ref_name == 'html'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh api --method POST "repos/${{ github.repository }}/pages/builds"
