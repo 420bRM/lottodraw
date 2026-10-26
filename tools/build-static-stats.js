@@ -2289,6 +2289,7 @@ function storeMapPage(md) {
         <div class="sm-row">
             <a class="sm-back" href="index.html" data-i18n-en="← Generator">← 생성기로</a>
             <h1 class="sm-title" data-i18n-en="Lotto retailer map">로또 판매점 지도</h1>
+            <button type="button" class="sm-bars" id="sm-bars" aria-pressed="false" title="막대 지도 (로그인 회원)" data-i18n-attr="title:sm.barsTitle" data-i18n-en="Bars">막대</button>
             <button type="button" class="sm-3d" id="sm-3d" aria-pressed="false">3D</button>
         </div>
         <div class="sm-row">
