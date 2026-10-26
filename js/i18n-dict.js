@@ -525,6 +525,8 @@ window.I18N_DICT = {
     'mapLink.title': { ko: '로또 판매점 지도', en: 'Lotto retailer map' },
     'mapLink.sub':   { ko: '1등 · 2등이 나온 판매점 1만 곳을 지도 위 버블과 3D 막대로. 서울부터 백령도까지, 내가 다녀온 곳도 표시해 보세요.', en: '10,000 retailers that sold 1st and 2nd prizes, as bubbles and 3D bars — from Seoul to Baengnyeong Island. Mark the ones you have visited.' },
     'mapLink.go':    { ko: '지도 열기 →', en: 'Open the map →' },
+    'mapLink.l1':    { ko: '1등 나온 곳', en: '1st prize' },
+    'mapLink.l2':    { ko: '2등만 나온 곳', en: '2nd only' },
     'gen.acValN':    { ko: '{n}~10', en: '{n}\u201310' },
     'gen.acOff':     { ko: 'AC값 조건 없음', en: 'No AC value filter' },
     'gen.acN':       { ko: 'AC값 {n}~10인 조합만', en: 'Only sets with an AC value of {n} to 10' },

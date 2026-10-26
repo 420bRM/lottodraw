@@ -63,6 +63,7 @@ body.sm-full #theme-btn { display: none !important; }
 .sm-fun { position: absolute; left: 0; bottom: calc(100% + 6px); box-sizing: border-box; width: min(340px, calc(100vw - 12px)); max-height: 55vh; overflow: auto; padding: 10px 10px 6px;
     border-radius: 12px; background: var(--surface, #fff); color: var(--fg, #333); box-shadow: 0 8px 28px rgba(0, 0, 0, .25); }
 .sm-fun[hidden] { display: none; }
+.sm-fun-btn[aria-pressed="false"] { border-color: var(--line, #ddd); background: var(--surface, #fff); color: var(--muted, #555); }
 .sm-fun h2 { margin: 0 4px 6px; font-size: 14px; }
 .sm-fun ol { margin: 0; padding: 0; list-style: none; }
 .sm-fun-item { display: flex; gap: 8px; width: 100%; padding: 7px 6px; border: 0; border-radius: 8px; background: none; color: inherit; font: inherit; font-size: 12px; text-align: left; cursor: pointer; }
@@ -174,7 +175,7 @@ body.sm-full #theme-btn { display: none !important; }
     .sm-right > * { pointer-events: auto; }
     .sm-top50 { display: flex; flex-direction: column; flex: none; min-height: 0; padding: 8px 6px 6px; border-radius: 12px; background: var(--surface, #fff); box-shadow: 0 6px 20px rgba(0, 0, 0, .18); }
     .sm-top50 h2 { margin: 0 8px 6px; color: var(--fg, #222); font-size: 13px; }
-    .sm-top50-list { flex: none; height: 232px; margin: 0; padding: 0; overflow-y: auto; overscroll-behavior: contain; list-style: none; }   /* 5곳만 보이고 마우스 휠로 넘긴다(2026-10-26) */
+    .sm-top50-list { flex: none; height: 236px; margin: 0; padding: 0; overflow-y: auto; overscroll-behavior: contain; list-style: none; }   /* 5곳만 보이고 마우스 휠로 넘긴다(2026-10-26) */
     .sm-top50-list button { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: center; gap: 6px; width: 100%; padding: 5px 6px; border: 0; border-radius: 6px;
         background: none; color: var(--fg, #333); font: inherit; font-size: 12px; text-align: left; cursor: pointer; }
     .sm-top50-list button:hover, .sm-top50-list button.is-on { background: var(--soft, #f3f6fb); }

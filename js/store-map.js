@@ -535,30 +535,38 @@
     function openFun(k) {
         const f = (data.fun || [])[k];
         if (!f) return;
-        document.getElementById('sm-fun').hidden = true;
-        document.getElementById('sm-fun-btn').setAttribute('aria-expanded', 'false');
+        document.getElementById('sm-fun').hidden = true;   // 목록은 접고 아이콘은 그대로 둔다
         map.flyTo({ center: [f.lng, f.lat], zoom: f.zoom, pitch: 0, bearing: 0, padding: pad(), essential: true });
         const [t, i] = f.ref;
         if (t === 'w') open(i, false);
         else if (all) openAll(i, false);
         else { shown.all = true; root.querySelector('.sm-chip[data-layer="all"]').setAttribute('aria-pressed', 'true'); applyLayers(); const wait = () => (all ? openAll(i, false) : setTimeout(wait, 200)); wait(); }
     }
+    // 🏆 단추로 켜고 끈다(처음엔 꺼짐 — 2026-10-26 사장님). 켜면 지도 위 아이콘 + 목록, 끄면 둘 다 감춘다
+    let funMarkers = null;
+    function setFun(on) {
+        const btn = document.getElementById('sm-fun-btn'), box = document.getElementById('sm-fun');
+        btn.setAttribute('aria-pressed', String(on));
+        box.hidden = !on;
+        if (on && !funMarkers) {
+            funMarkers = data.fun.map((f, k) => {
+                const el = document.createElement('button');
+                el.type = 'button';
+                el.className = 'sm-star';
+                el.textContent = f.icon;
+                el.title = T(f.title, f.titleEn) + ' — ' + f.name;
+                el.setAttribute('aria-label', el.title);
+                el.addEventListener('click', e => { e.stopPropagation(); openFun(k); });
+                return new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -6] }).setLngLat([f.lng, f.lat]);
+            });
+        }
+        (funMarkers || []).forEach(m => (on ? m.addTo(map) : m.remove()));
+    }
     function initFun() {
         const btn = document.getElementById('sm-fun-btn'), box = document.getElementById('sm-fun');
         if (!btn || !data.fun) return;
-        btn.addEventListener('click', () => { box.hidden = !box.hidden; btn.setAttribute('aria-expanded', String(!box.hidden)); });
+        btn.addEventListener('click', () => setFun(btn.getAttribute('aria-pressed') !== 'true'));
         box.querySelectorAll('.sm-fun-item').forEach(b => b.addEventListener('click', () => openFun(Number(b.dataset.k))));
-        // 지도 위 별 표시 — 누르면 그 판매점으로
-        data.fun.forEach((f, k) => {
-            const el = document.createElement('button');
-            el.type = 'button';
-            el.className = 'sm-star';
-            el.textContent = f.icon;
-            el.title = T(f.title, f.titleEn) + ' — ' + f.name;
-            el.setAttribute('aria-label', el.title);
-            el.addEventListener('click', e => { e.stopPropagation(); openFun(k); });
-            new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -6] }).setLngLat([f.lng, f.lat]).addTo(map);
-        });
     }
 
     // PC 오른쪽 위: 1등 많은 50곳(고른 1등 방식 기준, 폐점 제외)
@@ -635,6 +643,8 @@
             computeProps();
         } catch (e) { fail(T('판매점 자료를 불러오지 못했습니다. 새로 고쳐 주세요.', 'Could not load the retailer data. Please reload.')); return; }
         mapBox.textContent = '';
+        // 링크로 받은 화면이면 그대로 — 지도를 만들면 주소 끝(#map=)을 바로 써 버리므로 그 전에 본다
+        const fromLink = /[#&]map=/.test(location.hash);
         map = new maplibregl.Map({
             container: mapBox, style: STYLE, center: [126.99, 37.55], zoom: 10.5,
             maxBounds: [[118, 30], [138, 42]], attributionControl: { compact: true }, dragRotate: true, pitchWithRotate: true,
@@ -646,7 +656,6 @@
         map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: false }, trackUserLocation: false }), 'bottom-right');
         map.addControl(new NorthControl(), 'bottom-right');
         // 처음 화면: 서울 전체(2026-10-26 사장님 — 전국은 시도별 표 · 줌아웃으로)
-        const fromLink = /[#&]map=/.test(location.hash);   // 링크로 받은 화면이면 그대로
         map.on('load', () => {
             koreanLabels(); whiteModel(); addStores(); renderTop(); initVisits(); initFun();
             // 이태원로 · 서빙고로 같은 길 이름이 보이는 크기(2026-10-26 사장님) — 용산 둘레
