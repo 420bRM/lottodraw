@@ -133,6 +133,76 @@
         map.setLight({ anchor: 'map', color: '#ffffff', intensity: 0.25, position: [1.3, 210, 35] });   // 옆면이 너무 어두우면 회색 덩어리로 보인다
     }
 
+    // ───── 랜드마크 시험 모형 3곳(2026-10-26 사장님 요청 — 지도 모양에 맞춘 간단 모형) ─────
+    // 실제 3D 모델 파일 없이, 원 · 둥근 네모 · 육각 단면을 층층이 쌓아 만든다(fill-extrusion). 흰 바탕에 맞춰 흰 몸통 + 곳마다 색 하나.
+    // 지도에는 지형(산 높이)이 없어 N서울타워도 평지에 선다. 줌 12.5 → 14 사이에서 솟아오른다.
+    const LM_RISE = [12.5, 14];
+    function lmPoly(lng, lat, pts) {   // 미터 좌표(동 · 북) → 경위도
+        const k = 111320, c = Math.cos(lat * Math.PI / 180);
+        const ring = pts.map(([x, y]) => [lng + x / (k * c), lat + y / k]);
+        ring.push(ring[0]);
+        return { type: 'Polygon', coordinates: [ring] };
+    }
+    // 초타원(p=2 원, p 클수록 네모에 가까움), rot 도(시계 반대)
+    function superEllipse(a, b, p, rot, n) {
+        const out = [], r = (rot || 0) * Math.PI / 180;
+        for (let i = 0; i < (n || 32); i++) {
+            const t = i / (n || 32) * 2 * Math.PI, ct = Math.cos(t), st = Math.sin(t);
+            const x = a * Math.sign(ct) * Math.pow(Math.abs(ct), 2 / p), y = b * Math.sign(st) * Math.pow(Math.abs(st), 2 / p);
+            out.push([x * Math.cos(r) - y * Math.sin(r), x * Math.sin(r) + y * Math.cos(r)]);
+        }
+        return out;
+    }
+    function landmarks() {
+        const f = [];
+        const part = (name, lng, lat, pts, base, top, color) => f.push({ type: 'Feature', geometry: lmPoly(lng, lat, pts), properties: { name, base, top, color } });
+        // 롯데월드타워(555m): 둥근 네모가 위로 갈수록 가늘고 둥글어진다 + 꼭대기 유리 왕관
+        const LT = [127.10249, 37.51254];
+        for (let i = 0; i < 14; i++) {
+            const t = i / 13, hw = 34 - 20 * Math.pow(t, 1.4);
+            part('롯데월드타워', LT[0], LT[1], superEllipse(hw, hw, 5 - 2 * t, 45), i * 36, (i + 1) * 36 + 0.5, '#ffffff');
+        }
+        part('롯데월드타워', LT[0], LT[1], superEllipse(12, 12, 3, 45), 504, 540, '#bcd4f0');
+        part('롯데월드타워', LT[0], LT[1], superEllipse(6, 6, 2.5, 45), 540, 555, '#bcd4f0');
+        // N서울타워(236m): 받침 · 기둥 · 전망대(주황 띠) · 안테나
+        const NT = [126.98823, 37.55117];
+        [[14, 0, 12, '#ffffff'], [6.5, 12, 168, '#ffffff'], [12, 168, 178, '#ffffff'], [16, 178, 196, '#f28b6b'], [11, 196, 210, '#ffffff'],
+            [4, 210, 222, '#ffffff'], [1.6, 222, 236, '#f28b6b']].forEach(([r, b, t, c]) => part('N서울타워', NT[0], NT[1], superEllipse(r, r, 2, 0, 28), b, t, c));
+        // 63빌딩(249m): 길쭉한 육각 단면이 위로 조금씩 좁아진다 · 금빛 유리
+        const SB = [126.94035, 37.51986];
+        for (let i = 0; i < 6; i++) {
+            const t = i / 5, L = 52 - 12 * t, W = 16 - 3 * t, rot = 28 * Math.PI / 180;
+            const pts = [[-L, 0], [-L + 12, -W], [L - 12, -W], [L, 0], [L - 12, W], [-L + 12, W]].map(([x, y]) => [x * Math.cos(rot) - y * Math.sin(rot), x * Math.sin(rot) + y * Math.cos(rot)]);
+            part('63빌딩', SB[0], SB[1], pts, i * 40, Math.min(249, (i + 1) * 40 + 0.5), '#e8cf8a');
+        }
+        part('63빌딩', SB[0], SB[1], superEllipse(10, 5, 3, 28), 240, 252, '#ffffff');
+        map.addSource('landmarks', { type: 'geojson', data: { type: 'FeatureCollection', features: f } });
+        const rise = k => ['interpolate', ['linear'], ['zoom'], LM_RISE[0], 0, LM_RISE[1], ['get', k]];
+        map.addLayer({ id: 'sm-landmarks', type: 'fill-extrusion', source: 'landmarks', minzoom: LM_RISE[0],
+            paint: { 'fill-extrusion-color': ['get', 'color'], 'fill-extrusion-height': rise('top'), 'fill-extrusion-base': rise('base'),
+                'fill-extrusion-opacity': 0.96, 'fill-extrusion-vertical-gradient': true } });
+    }
+
+    // 북쪽 보기 단추 — "내 위치" 단추 위, 같은 크기. 지도가 돌아간 만큼 바늘도 돈다
+    class NorthControl {
+        onAdd(m) {
+            this.box = document.createElement('div');
+            this.box.className = 'maplibregl-ctrl maplibregl-ctrl-group';
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'sm-north';
+            b.title = T('북쪽이 위로', 'Face north');
+            b.setAttribute('aria-label', b.title);
+            b.innerHTML = '<span class="sm-north-ico" aria-hidden="true"></span>';
+            const ico = b.firstChild;
+            b.addEventListener('click', () => m.easeTo({ bearing: 0, duration: 500 }));
+            m.on('rotate', () => { ico.style.transform = 'rotate(' + (-m.getBearing()) + 'deg)'; });
+            this.box.appendChild(b);
+            return this.box;
+        }
+        onRemove() { this.box.remove(); }
+    }
+
     // 고른 방식만 센 1등 횟수(방식을 모르는 1등은 늘 센다)
     const eff1 = r => r[2] - (modes.A ? 0 : r[8] || 0) - (modes.M ? 0 : r[9] || 0) - (modes.S ? 0 : r[10] || 0);
     const TOP = 50;
@@ -498,11 +568,19 @@
         map = new maplibregl.Map({
             container: mapBox, style: STYLE, center: [126.99, 37.55], zoom: 10.5,
             maxBounds: [[118, 30], [138, 42]], attributionControl: { compact: true }, dragRotate: true, pitchWithRotate: true,
+            hash: 'map',   // 주소 끝 #map=줌/위도/경도/방향/기울기 — 보던 화면을 링크로 나눌 수 있다
         });
-        map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right');
-        map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: false }, trackUserLocation: false }), 'bottom-right');   // 내 위치는 이 기기 안에서만 쓴다(서버로 보내지 않는다)
+        // 오른쪽 아래는 나중에 단 것이 위로 쌓인다: 확대/축소 → 내 위치 → 북쪽 보기
+        map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
+        // 내 위치: 브라우저 위치 기능(휴대폰 GPS, PC 는 와이파이 · IP 로 어림). 이 기기 안에서만 쓰고 서버로 보내지 않는다(위치정보법 — README 4-9)
+        map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: false }, trackUserLocation: false }), 'bottom-right');
+        map.addControl(new NorthControl(), 'bottom-right');
         // 처음 화면: 서울 전체(2026-10-26 사장님 — 전국은 시도별 표 · 줌아웃으로)
-        map.on('load', () => { koreanLabels(); whiteModel(); addStores(); renderTop(); map.fitBounds([[126.8, 37.43], [127.18, 37.7]], { padding: pad(), duration: 0 }); });
+        const fromLink = /[#&]map=/.test(location.hash);   // 링크로 받은 화면이면 그대로
+        map.on('load', () => {
+            koreanLabels(); whiteModel(); landmarks(); addStores(); renderTop();
+            if (!fromLink) map.fitBounds([[126.8, 37.43], [127.18, 37.7]], { padding: pad(), duration: 0 });
+        });
         map.on('zoomend', autoTilt);
         map.on('moveend', settleBars);
         // 막대 누르기(단계마다 층이 바뀌어 지도 전체에서 받는다)

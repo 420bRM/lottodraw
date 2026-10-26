@@ -102,6 +102,9 @@ body.sm-full #theme-btn { display: none !important; }
 .sm-info .data-table { width: 100%; font-size: 13px; }
 .sm-goto { padding: 0; border: 0; background: none; color: var(--brand, #003087); font: inherit; text-decoration: underline; cursor: pointer; }
 
+/* 북쪽 보기(내 위치 위, 같은 크기): 위는 빨강 · 아래는 회색 바늘 */
+.sm-north-ico { display: block; width: 18px; height: 18px; margin: auto; transition: transform .2s;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='M9 1.5 12.2 9H5.8z' fill='%23e3402f'/%3E%3Cpath d='M9 16.5 5.8 9h6.4z' fill='%23a3abb7'/%3E%3C/svg%3E") center / contain no-repeat; }
 /* 지도 단추(확대 · 내 위치)는 오른쪽 아래 채팅 말풍선 위로 */
 .sm-map .maplibregl-ctrl-bottom-right { margin-bottom: calc(52px + env(safe-area-inset-bottom)); }
 
