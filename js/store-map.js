@@ -196,11 +196,11 @@
                 for (let m = 0; m < n; m++) at.push([a[0] + (b[0] - a[0]) * m / n, a[1] + (b[1] - a[1]) * m / n]);
             });
             at.forEach(([x, y]) => poly([close([[x - ribW, y - ribW], [x + ribW, y - ribW], [x + ribW, y + ribW], [x - ribW, y + ribW]])], lm.frame, p.base, p.top, solid));
-            // 층 띠(가운데에서 바깥 · 안쪽으로 0.35m 씩 — 고리 모양) + 꼭대기 테두리
+            // 층 띠(벽에서 바깥 · 안쪽으로 0.6m 씩 — 고리 모양, 1.4m 두께) + 꼭대기 테두리. 흰 바탕에서도 선이 또렷하게 굵고 진하게
             const fl = p.floor !== undefined ? p.floor : lm.floor;
-            const band = z => poly([close(scaled((rMean + 0.35) / rMean)), close(scaled((rMean - 0.35) / rMean)).reverse()], lm.frame, z, z + 0.9, solid);
-            if (fl) for (let z = p.base + fl; z < p.top - 2; z += fl) band(z);
-            band(p.top - 0.9);
+            const band = z => poly([close(scaled((rMean + 0.6) / rMean)), close(scaled((rMean - 0.6) / rMean)).reverse()], lm.frame, z, z + 1.4, solid);
+            if (fl) for (let z = p.base + fl; z < p.top - 3; z += fl) band(z);
+            band(p.top - 1.4);
         }
         const fc = f => ({ type: 'FeatureCollection', features: f });
         map.addSource('lm-solid', { type: 'geojson', data: fc(solid) });
@@ -210,7 +210,7 @@
         // 판매점 점 · 막대보다 아래에 깐다(점을 가리지 않게)
         const before = map.getLayer('st-w2') ? 'st-w2' : undefined;
         map.addLayer({ id: 'sm-lm-solid', type: 'fill-extrusion', source: 'lm-solid', minzoom: LM_RISE[0], paint: paint(0.95) }, before);
-        map.addLayer({ id: 'sm-lm-glass', type: 'fill-extrusion', source: 'lm-glass', minzoom: LM_RISE[0], paint: paint(0.45) }, before);
+        map.addLayer({ id: 'sm-lm-glass', type: 'fill-extrusion', source: 'lm-glass', minzoom: LM_RISE[0], paint: paint(0.58) }, before);
     }
 
     // 북쪽 보기 단추 — "내 위치" 단추 위, 같은 크기. 지도가 돌아간 만큼 바늘도 돈다

@@ -18,7 +18,7 @@ const LV = 4.3;   // 층수만 있는 부분의 층 높이(m)
 // 랜드마크마다: 쓸 OSM 길(way) 번호와 모양. kind: glass(반투명 유리) · solid(돌 · 콘크리트) · accent(강조색)
 //  base/top 을 적으면 OSM 높이 대신 쓴다. dome: 반구로 쌓기, taper: 위로 갈수록 좁게(k = 꼭대기 크기 비율)
 const LANDMARKS = [
-    { name: '롯데월드타워', glass: '#eaf2fb', frame: '#7f9dc4', ribs: 8, ribW: 1.4, floor: 24, parts: [
+    { name: '롯데월드타워', glass: '#cfe0f5', frame: '#4f74a8', ribs: 12, ribW: 2.2, floor: 18, parts: [
         { id: 879571752, kind: 'glass' },
         { id: 888605472, kind: 'glass', base: 199.7 },
         { id: 888605473, kind: 'glass' }, { id: 879571750, kind: 'glass' },
@@ -27,37 +27,37 @@ const LANDMARKS = [
         { id: 635073469, kind: 'accent', color: '#a9c8ec', base: 520, top: 554.5 },
         { id: 635073470, kind: 'accent', color: '#a9c8ec', base: 520, top: 554.5 },
     ] },
-    { name: '63빌딩', glass: '#f3dc96', frame: '#b38b2a', ribs: 6, ribW: 1.2, floor: 16, parts: [
+    { name: '63빌딩', glass: '#f0c95c', frame: '#9c7417', ribs: 9, ribW: 1.8, floor: 12, parts: [
         { id: 463188395, kind: 'glass' }, { id: 463384207, kind: 'glass' }, { id: 463384208, kind: 'glass' },
         { id: 463188396, kind: 'glass', taper: 0.25 }, { id: 463188397, kind: 'glass', taper: 0.25 },
         { id: 463384209, kind: 'solid', color: '#ffffff' },
     ] },
-    { name: 'N서울타워', glass: '#fbe1d6', frame: '#e46b4f', ribs: 0, ribW: 0.5, floor: 0, parts: [
+    { name: 'N서울타워', glass: '#f7c6b5', frame: '#d9583c', ribs: 0, ribW: 0.9, floor: 0, parts: [
         { id: 1214950316, kind: 'solid', color: '#ffffff', base: 0, top: 10 },
-        { id: 370286010, kind: 'solid', color: '#ffffff', base: 0, top: 88, scale: 0.55 },
-        { id: 1214950323, kind: 'glass', ribs: 20, floor: 4 },
+        { id: 370286010, kind: 'solid', color: '#ffffff', base: 0, top: 88, scale: 0.75 },
+        { id: 1214950323, kind: 'glass', ribs: 20, floor: 3 },
         { id: 1214950322, kind: 'accent', color: '#ee7b5f' },
-        { id: 370286010, kind: 'solid', color: '#ffffff', base: 112, top: 150, scale: 0.45, taper: 0.6 },
-        { id: 370286010, kind: 'accent', color: '#ee7b5f', base: 150, top: 236.7, scale: 0.18, taper: 0.25 },
+        { id: 370286010, kind: 'solid', color: '#ffffff', base: 112, top: 150, scale: 0.6, taper: 0.55 },
+        { id: 370286010, kind: 'accent', color: '#ee7b5f', base: 150, top: 236.7, scale: 0.3, taper: 0.25 },
     ] },
-    { name: 'IFC 서울', glass: '#e4edf9', frame: '#8aa3c6', ribs: 0, ribEvery: 6, ribW: 0.6, floor: 20, parts: [
+    { name: 'IFC 서울', glass: '#cddcf1', frame: '#5c7fb0', ribs: 0, ribEvery: 5, ribW: 1.4, floor: 16, parts: [
         { id: 621752528, kind: 'glass' }, { id: 621752527, kind: 'glass' },
         { id: 639943642, kind: 'glass' }, { id: 639943641, kind: 'glass', top: 160 }, { id: 639943643, kind: 'glass', top: 90 },
         { id: 621752531, kind: 'glass' },
         { id: 621752532, kind: 'solid', color: '#e9ecf0' },
     ] },
-    { name: '파크원', glass: '#eef2f7', frame: '#ef5b4c', ribs: 4, ribW: 2.6, floor: 30, parts: [
+    { name: '파크원', glass: '#e3e8ef', frame: '#e8483a', ribs: 4, ribW: 4, floor: 24, parts: [
         { id: 874639189, kind: 'glass', top: 333 },
     ] },
-    { name: '국회의사당', glass: '#f4f4f1', frame: '#c9cdd3', ribs: 0, ribW: 0.8, floor: 0, parts: [
+    { name: '국회의사당', glass: '#dfe6ee', frame: '#9aa6b4', ribs: 8, ribW: 1, floor: 8, parts: [
         { id: 608162297, kind: 'solid', color: '#f1f0ec' },
-        { id: 270596342, kind: 'solid', color: '#f7f6f2', base: 0, top: 26 },
-        { id: 608162749, kind: 'solid', color: '#f7f6f2', base: 4, top: 40 },
+        { id: 270596342, kind: 'solid', color: '#ecebe6', base: 0, top: 10 },
+        { id: 608162749, kind: 'glass', base: 10, top: 40 },
         { id: 639632935, kind: 'solid', color: '#e9ebee' },
         { id: 270594679, kind: 'accent', color: '#95b5ae', dome: true },
         ...[608164568, 608164569, 608164570, 608164571, 608164572, 608164573, 608164574, 608164575, 608164576, 608164577, 608164578, 608164579,
             608164580, 608164581, 608164582, 608164583, 608164584, 608164585, 608164586, 608164587, 608164588, 608164589, 608164590, 608164591]
-            .map(id => ({ id, kind: 'solid', color: '#ffffff' })),
+            .map(id => ({ id, kind: 'solid', color: '#ffffff', base: 10 })),
     ] },
 ];
 
