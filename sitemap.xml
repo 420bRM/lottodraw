@@ -2,83 +2,95 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
         <loc>https://www.lottodraw.kr/</loc>
-        <lastmod>2026-10-17</lastmod>
+        <lastmod>2026-10-24</lastmod>
     </url>
     <url>
         <loc>https://www.lottodraw.kr/draws.html</loc>
-        <lastmod>2026-10-17</lastmod>
+        <lastmod>2026-10-24</lastmod>
     </url>
     <url>
         <loc>https://www.lottodraw.kr/statistics-frequency.html</loc>
-        <lastmod>2026-10-17</lastmod>
+        <lastmod>2026-10-24</lastmod>
     </url>
     <url>
         <loc>https://www.lottodraw.kr/statistics-bonus.html</loc>
-        <lastmod>2026-10-17</lastmod>
+        <lastmod>2026-10-24</lastmod>
     </url>
     <url>
         <loc>https://www.lottodraw.kr/statistics-consecutive.html</loc>
-        <lastmod>2026-10-17</lastmod>
+        <lastmod>2026-10-24</lastmod>
     </url>
     <url>
         <loc>https://www.lottodraw.kr/statistics-sum.html</loc>
-        <lastmod>2026-10-17</lastmod>
+        <lastmod>2026-10-24</lastmod>
     </url>
     <url>
         <loc>https://www.lottodraw.kr/statistics-prize.html</loc>
-        <lastmod>2026-10-17</lastmod>
+        <lastmod>2026-10-24</lastmod>
     </url>
     <url>
         <loc>https://www.lottodraw.kr/statistics-trend.html</loc>
-        <lastmod>2026-10-17</lastmod>
+        <lastmod>2026-10-24</lastmod>
     </url>
     <url>
         <loc>https://www.lottodraw.kr/statistics-pair.html</loc>
-        <lastmod>2026-10-17</lastmod>
+        <lastmod>2026-10-24</lastmod>
     </url>
     <url>
         <loc>https://www.lottodraw.kr/statistics-gap.html</loc>
-        <lastmod>2026-10-17</lastmod>
+        <lastmod>2026-10-24</lastmod>
     </url>
     <url>
         <loc>https://www.lottodraw.kr/statistics-even-odd.html</loc>
-        <lastmod>2026-10-17</lastmod>
+        <lastmod>2026-10-24</lastmod>
     </url>
     <url>
         <loc>https://www.lottodraw.kr/statistics-low-high.html</loc>
-        <lastmod>2026-10-17</lastmod>
+        <lastmod>2026-10-24</lastmod>
     </url>
     <url>
         <loc>https://www.lottodraw.kr/statistics-ac.html</loc>
-        <lastmod>2026-10-17</lastmod>
+        <lastmod>2026-10-24</lastmod>
     </url>
     <url>
         <loc>https://www.lottodraw.kr/statistics-tail.html</loc>
-        <lastmod>2026-10-17</lastmod>
+        <lastmod>2026-10-24</lastmod>
     </url>
     <url>
         <loc>https://www.lottodraw.kr/statistics-prize-2-3.html</loc>
-        <lastmod>2026-10-17</lastmod>
+        <lastmod>2026-10-24</lastmod>
     </url>
     <url>
         <loc>https://www.lottodraw.kr/statistics-stores.html</loc>
-        <lastmod>2026-10-17</lastmod>
+        <lastmod>2026-10-24</lastmod>
+    </url>
+    <url>
+        <loc>https://www.lottodraw.kr/store-map.html</loc>
+        <lastmod>2026-10-24</lastmod>
+    </url>
+    <url>
+        <loc>https://www.lottodraw.kr/statistics-repeat.html</loc>
+        <lastmod>2026-10-24</lastmod>
     </url>
     <url>
         <loc>https://www.lottodraw.kr/probability.html</loc>
-        <lastmod>2026-10-17</lastmod>
+        <lastmod>2026-10-18</lastmod>
     </url>
     <url>
         <loc>https://www.lottodraw.kr/statistics.html</loc>
-        <lastmod>2026-10-17</lastmod>
+        <lastmod>2026-10-24</lastmod>
     </url>
     <url>
         <loc>https://www.lottodraw.kr/top-prize.html</loc>
-        <lastmod>2026-10-17</lastmod>
+        <lastmod>2026-10-24</lastmod>
     </url>
     <url>
         <loc>https://www.lottodraw.kr/tax.html</loc>
-        <lastmod>2026-10-17</lastmod>
+        <lastmod>2026-10-24</lastmod>
+    </url>
+    <url>
+        <loc>https://www.lottodraw.kr/report.html</loc>
+        <lastmod>2026-10-24</lastmod>
     </url>
     <url>
         <loc>https://www.lottodraw.kr/about.html</loc>
@@ -98,7 +110,7 @@
     </url>
     <url>
         <loc>https://www.lottodraw.kr/blog/index.html</loc>
-        <lastmod>2026-10-17</lastmod>
+        <lastmod>2026-10-26</lastmod>
     </url>
     <url>
         <loc>https://www.lottodraw.kr/blog/cold-numbers-gamblers-fallacy.html</loc>
@@ -107,6 +119,10 @@
     <url>
         <loc>https://www.lottodraw.kr/blog/how-random-generators-work.html</loc>
         <lastmod>2026-10-01</lastmod>
+    </url>
+    <url>
+        <loc>https://www.lottodraw.kr/blog/lotto-store-extremes.html</loc>
+        <lastmod>2026-10-26</lastmod>
     </url>
     <url>
         <loc>https://www.lottodraw.kr/blog/is-number-34-special.html</loc>
@@ -122,7 +138,7 @@
     </url>
     <url>
         <loc>https://www.lottodraw.kr/blog/pair-numbers-multiple-comparisons.html</loc>
-        <lastmod>2026-10-01</lastmod>
+        <lastmod>2026-10-18</lastmod>
     </url>
     <url>
         <loc>https://www.lottodraw.kr/blog/consecutive-numbers-clustering-illusion.html</loc>
@@ -165,8 +181,12 @@
         <lastmod>2026-10-01</lastmod>
     </url>
     <url>
+        <loc>https://www.lottodraw.kr/round/1247.html</loc>
+        <lastmod>2026-10-24</lastmod>
+    </url>
+    <url>
         <loc>https://www.lottodraw.kr/round/1246.html</loc>
-        <lastmod>2026-10-18</lastmod>
+        <lastmod>2026-10-24</lastmod>
     </url>
     <url>
         <loc>https://www.lottodraw.kr/round/1245.html</loc>

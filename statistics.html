@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>최근 5개월 로또 통계 · 22회차 분석 11종 | lottodraw.kr</title>
-    <meta name="description" content="최근 5개월(22회차) 로또 당첨번호로 계산한 통계 11종을 한 화면에서 확인하세요. 이용권으로 열람하며(1주 2,900원부터 · 평생 12,900원), 지난 기록 요약이지 예측이 아닙니다.">
+    <meta name="description" content="최근 5개월(22회차) 로또 당첨번호로 계산한 통계 11종을 한 화면에서 확인하세요. 이용권으로 열람하며(1일 1,500원 · 이번 회차 2,900원 · 평생 12,900원, 1일 이용권은 포인트로도), 지난 기록 요약이지 예측이 아닙니다.">
     <link rel="canonical" href="https://www.lottodraw.kr/statistics.html">
     <meta property="og:title" content="최근 5개월 로또 통계 · 22회차 분석 11종 | lottodraw.kr">
     <meta property="og:description" content="최근 5개월(22회차) 당첨번호로 계산한 통계 11종. 지난 기록 요약이며 예측이 아닙니다.">
@@ -20,9 +20,9 @@
     <link rel="icon" href="/favicon.ico" sizes="32x32">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    <link rel="stylesheet" href="css/site.css?v=9a67e0e5">
-    <script src="js/i18n-dict.js?v=67ed3a3e"></script>
-    <script src="js/i18n.js?v=3cb171da"></script>
+    <link rel="stylesheet" href="css/site.css?v=5980f49f">
+    <script src="js/i18n-dict.js?v=8f0ac351"></script>
+    <script src="js/i18n.js?v=cacfa1c6"></script>
     <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "91c08d8a39d944e69c10024f2314b955"}'></script><!-- End Cloudflare Web Analytics -->
 </head>
 <body>
@@ -88,24 +88,30 @@
                         <li data-i18n="s5.f.eleven">최근 5개월 통계 11종</li>
                         <li data-i18n="s5.f.detail">홈의 상세 분석 4종</li>
                         <li data-i18n-html="s5.f.chart"><a href="top-prize.html#prize-chart">TOP 50 그래프</a> 물가 반영·세후·강남3구 비교·분기봉·연봉·보조지표·그림도구</li>
+                        <li data-i18n-html="s5.f.report"><a href="report.html">내 번호 성적표</a> 자세한 내역 (당첨 회차 · 아까웠던 회차 · 연도별)</li>
                     </ul>
                     <button type="button" class="btn" data-plan="day" data-i18n="s5.buy">구매하기</button>
+                    <button type="button" class="btn btn-secondary plan-points" id="point-pass">포인트로 열기 (300P)</button>
+                    <p class="plan-note" id="point-note" data-i18n="s5.pointsNote">로그인 회원은 출석 · 반응으로 모은 포인트로도 엽니다. 포인트를 써도 랭킹 점수는 그대로입니다.</p>
                 </div>
             </section>
-            <section class="plan" aria-labelledby="plan-week-t">
-                <h3 class="card-title" id="plan-week-t"><span data-i18n="s5.p.week">1주 이용권</span></h3>
-                <div class="card-body bg-sage">
-                    <p class="plan-price" data-price="week">2,900원</p>
+            <section class="plan featured" aria-labelledby="plan-round-t">
+                <h3 class="card-title" id="plan-round-t"><span data-i18n="s5.p.round">이번 회차 이용권</span></h3>
+                <div class="card-body">
+                    <p class="plan-price" data-price="round">2,900원</p>
+                    <p class="plan-until" id="round-until" data-i18n="s5.roundUntil0">토요일 추첨까지 (토요일 밤 12시에 끝)</p>
+                    <p class="plan-left" id="round-left" role="timer" hidden></p>
                     <ul>
-                        <li data-i18n="s5.f.week7">키를 받은 때부터 7일</li>
                         <li data-i18n="s5.f.eleven">최근 5개월 통계 11종</li>
                         <li data-i18n="s5.f.detail">홈의 상세 분석 4종</li>
                         <li data-i18n-html="s5.f.chart"><a href="top-prize.html#prize-chart">TOP 50 그래프</a> 물가 반영·세후·강남3구 비교·분기봉·연봉·보조지표·그림도구</li>
+                        <li data-i18n-html="s5.f.report"><a href="report.html">내 번호 성적표</a> 자세한 내역 (당첨 회차 · 아까웠던 회차 · 연도별)</li>
                     </ul>
-                    <button type="button" class="btn" data-plan="week" data-i18n="s5.buy">구매하기</button>
+                    <button type="button" class="btn" data-plan="round" data-i18n="s5.buy">구매하기</button>
+                    <p class="plan-note" data-i18n="s5.roundNote">토요일 오후 8시(판매 마감) 뒤에 사면 다음 회차 토요일까지 열립니다.</p>
                 </div>
             </section>
-            <section class="plan featured" aria-labelledby="plan-month-t">
+            <section class="plan" aria-labelledby="plan-month-t">
                 <h3 class="card-title" id="plan-month-t"><span data-i18n="s5.p.month">1개월 이용권</span></h3>
                 <div class="card-body">
                     <p class="plan-price" data-price="month">5,900원</p>
@@ -114,6 +120,7 @@
                         <li data-i18n="s5.f.eleven">최근 5개월 통계 11종</li>
                         <li data-i18n="s5.f.detail">홈의 상세 분석 4종</li>
                         <li data-i18n-html="s5.f.chart"><a href="top-prize.html#prize-chart">TOP 50 그래프</a> 물가 반영·세후·강남3구 비교·분기봉·연봉·보조지표·그림도구</li>
+                        <li data-i18n-html="s5.f.report"><a href="report.html">내 번호 성적표</a> 자세한 내역 (당첨 회차 · 아까웠던 회차 · 연도별)</li>
                     </ul>
                     <button type="button" class="btn" data-plan="month" data-i18n="s5.buy">구매하기</button>
                     <p class="plan-note" data-i18n="s5.noRenew">자동 결제되지 않습니다. 기간이 끝나면 저절로 멈춥니다.</p>
@@ -128,6 +135,7 @@
                         <li data-i18n="s5.f.eleven">최근 5개월 통계 11종</li>
                         <li data-i18n="s5.f.detail">홈의 상세 분석 4종</li>
                         <li data-i18n-html="s5.f.chart"><a href="top-prize.html#prize-chart">TOP 50 그래프</a> 물가 반영·세후·강남3구 비교·분기봉·연봉·보조지표·그림도구</li>
+                        <li data-i18n-html="s5.f.report"><a href="report.html">내 번호 성적표</a> 자세한 내역 (당첨 회차 · 아까웠던 회차 · 연도별)</li>
                     </ul>
                     <button type="button" class="btn" data-plan="lifetime" data-i18n="s5.buy">구매하기</button>
                 </div>
@@ -261,11 +269,12 @@
 <script src="js/lotto-stats.js?v=685f0045"></script>
 <script src="js/stats-render.js?v=e10d8341"></script>
 <script src="js/insights.js?v=113cffe5"></script>
-<script src="js/details.js?v=dce5df0f"></script>
-<script src="js/license.js?v=f13be0af"></script>
-<script src="js/premium-config.js?v=34bde874"></script>
+<script src="js/details.js?v=c6b140da"></script>
+<script src="js/report.js?v=592e2dc8" defer></script>
+<script src="js/license.js?v=e4775149"></script>
+<script src="js/premium-config.js?v=ca702ca6"></script>
 <script src="js/seller.js?v=6da20494"></script>
-<script src="js/premium.js?v=c59109fc"></script>
+<script src="js/premium.js?v=a7cb9032"></script>
 <script src="js/draw-countdown.js?v=08472ba7" defer></script>
 </body>
 </html>

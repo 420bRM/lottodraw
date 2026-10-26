@@ -8,11 +8,14 @@
 //   u:<구글 계정 번호>   { sub, ref, email, nick, createdAt, lastAt, trial, rx, sess, att, buy, spent, staff }
 //                        spent: 쓴 포인트(별명 바꾸기 등) — 랭킹은 모은 점수(total)로, 쓸 수 있는 포인트는 total - spent
 //                        staff: 운영자 계정 — 랭킹에서 빠지고, 채팅에 "운영자" 표시, 운영자다운 별명 허용, 별명 바꾸기 무료
+//                        nickDue: 이때까지 별명을 정하지 않으면 자동 별명을 붙인다(가입 3일 뒤). nickAuto: 자동으로 붙은 별명 — 한 번은 포인트 없이 바꾼다
 //                        att: { days, last } — 출석한 날 수와 마지막 출석일(한국 날짜)
 //                        chat: { n, day, today, h } — (공지하지 않는 규칙) 점수를 받은 채팅 수(전체), 오늘(한국 날짜)의 수, 마지막 메시지 해시(같은 말 반복 거르기)
 //                        buy: 로그인한 채 산 이용권 금액 합계(원) — 랭킹 점수용
 //                        trial: { orderId, keyId, key, expiresAt } — 가입 때 한 번 주는 무료 체험 키
+//                        ppass: { orderId, keyId, key, expiresAt, at } — 포인트로 연 1일 이용권(가장 최근 것), ppassN: 포인트로 연 횟수
 //                        gen:   { inc, exc, pat, recent, ac, acExact, at } — 저장한 번호 생성기 설정(고정수 · 제외수 · 켠 패턴 번호 · 직전 당첨 조합 제외 칸 · AC값 조건과 "이 값만"). 본인에게만 보인다
+//                        visits: { 판매점 번호: '#rrggbb' } — 판매점 지도에서 회원이 직접 표시한 "다녀온 곳"과 색(1,000곳까지). 본인에게만 보인다
 //                        rx:    { 항목: 'h' | 'd' | 'hd' } — 내가 누른 좋아요
 //                        sess:  로그인 세션 해시 (최근 5개)
 //                        cm:    내가 쓴 블로그 댓글 키, cmAt: 마지막으로 쓴 시각, cmDay: { day, n } 오늘 쓴 수
@@ -22,6 +25,9 @@
 //                        가입 체험을 끈 동안(SIGNUP_TRIAL_DAYS 없음 — 2026-10-11부터 기본)은 쓸모가 없어 로그인 때 지운다
 //   r:<항목>             { h, d }      — 좋아요 수 (누구나 본다. 관리자 페이지에는 카드별 합계 표)
 //   n:<별명 소문자>      계정 번호      — 별명이 겹치지 않게
+//   q:<구글 계정 번호>   { due }        — 별명이 없는 회원(자동 별명 대기열). due 가 지나면 한 시간 예약이 자동 별명을 붙인다(autoNicks).
+//                        별명을 정하거나 탈퇴하면 지운다. 예약은 이 줄만 읽어 회원 수와 상관없이 가볍다
+//   nickq                자동 별명 대기열 판(1) — 없으면 처음 한 번 u: 를 훑어, 이 기능 전에 가입해 별명이 없는 회원을 그때부터 3일로 넣는다
 //   m:<회원 참조값>      계정 번호      — 주문에 남기는 되돌릴 수 없는 참조값(sha256) → 계정. 탈퇴하면 지운다
 //   c:<글>:<시각 16자리>-<무작위>  { id, at, sub, nick, text, staff } — 블로그 댓글. 계정은 cm(이 키들의 목록)으로 찾아 탈퇴 때 지운다
 //   b:<구글 계정 번호>   { nick, total, days, created } — 랭킹 색인. 별명이 있고 운영자가 아닌 회원만. u: 를 저장할 때 같이 맞춘다(saveUser)
@@ -34,6 +40,9 @@
 //   mday                 { day, n } — 오늘(UTC 날짜, Resend 하루 한도 기준) 보낸 결과 메일 수
 //   mailkey              수신 거부 링크 서명용 비밀값(처음 쓸 때 만든다)
 //   e:<한국 날짜>        { gen-share, gen-print, post-share, post-sns } — 공유 · 출력 단추 하루 횟수(TAP_KINDS). 누가 눌렀는지는 없다
+//   v:<글>               조회수(숫자) — 블로그 글마다 한 줄(누구나 본다). 같은 브라우저의 같은 글은 하루 한 번만 온다(js/views.js). 누가 읽었는지는 없다
+//   vbase                { n: { 글: 수 }, until, at } — 조회수 시작값: 직접 세기 전(until 까지)의 Cloudflare Web Analytics 페이지뷰(tools/seed-views.js).
+//                        보이는 조회수 = v:<글> + 이 값. 관리자가 통째로 갈아 끼운다
 //   meta                 { users, trials, subs }
 //
 // 이름·사진은 받지 않는다. 이메일은 "로그인한 계정" 표시, 문의 응대, 회원이 켠 "추첨 결과 메일"에만 쓴다.
@@ -50,13 +59,23 @@ const gameKey = n => n.join(',');
 export const REACT_TYPES = ['h', 'd', 'w'];   // ♥ 좋아요, $ 대박 기원, ₩ 원화
 
 // 랭킹 점수. 바꾸려면 여기만 고친다(이용약관 7조 문구도 같이).
-export const POINTS = { attend: 10, react: 2, buyPer100: 10, nickChange: 500 };   // buyPer100: 이용권 100원마다 몇 점, nickChange: 별명 바꾸기에 쓰는 포인트
+export const POINTS = { attend: 10, react: 2, buyPer100: 10, nickChange: 500, dayPass: 300 };   // buyPer100: 이용권 100원마다 몇 점, nickChange: 별명 바꾸기에 쓰는 포인트, dayPass: 1일 이용권을 여는 포인트
 // 채팅 점수 — 공지하지 않는 규칙이라 POINTS(회원에게 내려 보내는 값)와 따로 둔다.
 // per: 메시지 하나에 몇 점, daily: 하루에 점수를 받는 메시지 수 상한(50개 = 5점)
 export const CHAT_POINTS = { per: 0.1, daily: 50 };
 // 블로그 댓글 점수 — 역시 공지하지 않는다. 댓글 하나에 1점, 하루 5개(5점)까지, 공백·기호 빼고 10자 이상, 바로 앞 댓글과 같은 말은 빼고.
 // 댓글이 지워지면(본인·관리자) 그 점수도 뺀다.
 export const COMMENT_POINTS = { per: 1, daily: 5, minLen: 10 };
+// 자동 별명 (2026-10-21): 가입하고 AUTO_NICK_DAYS 일 안에 별명을 정하지 않으면 "형용사 + 동물 + 숫자 4자리"(예: 행운의수달4821)를 붙인다.
+// 낱말은 4자 이하라 가장 길어도 12자(별명 규칙 2~12자 안). 숫자로 자동 별명인 것이 드러나고, 한 번은 포인트 없이 바꾼다.
+// 모두 좋은 뜻의 낱말만 — 고치면 index.js 의 NICK_RE · NICK_RESERVED 에 걸리지 않는지 시험(community.test.mjs)이 본다
+export const AUTO_NICK_DAYS = 3;
+export const NICK_WORDS = {
+    adj: ['행운의', '반짝이는', '설레는', '든든한', '씩씩한', '느긋한', '신나는', '용감한', '다정한', '똑똑한', '부지런한', '명랑한', '기분좋은', '두근두근', '복많은', '꿈꾸는'],
+    noun: ['곰', '토끼', '고양이', '강아지', '다람쥐', '펭귄', '수달', '여우', '부엉이', '거북이', '고래', '판다', '햄스터', '돌고래', '너구리', '코알라', '사슴', '참새', '오리', '호랑이'],
+};
+const rand = n => crypto.getRandomValues(new Uint32Array(1))[0] % n;
+export const autoNickName = () => NICK_WORDS.adj[rand(NICK_WORDS.adj.length)] + NICK_WORDS.noun[rand(NICK_WORDS.noun.length)] + (1000 + rand(9000));
 const tenth = x => Math.round(x * 10) / 10;   // 채팅 점수(0.1)가 섞여 소수 첫째 자리까지 쓴다
 const kstDay = ms => new Date(ms + 9 * 3600 * 1000).toISOString().slice(0, 10);
 
@@ -89,7 +108,9 @@ export const ITEM_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
 // 공유 · 출력 집계 종류. 복사는 세지 않는다
 //   gen-share: 홈 생성기 "공유"로 공유 창에서 보낼 곳을 고른 것(닫으면 세지 않는다), gen-print: 생성기 "출력"으로 인쇄 창을 연 것
 //   post-share: 블로그 글 "공유하기"로 보낼 곳을 고른 것, post-sns: 블로그 글의 X · 페이스북 · 네이버 · 밴드 공유 창을 연 것
-export const TAP_KINDS = ['gen-share', 'gen-print', 'post-share', 'post-sns'];
+//   pay-view: 결제 페이지를 연 것(같은 브라우저 하루 한 번), pay-pick: 이용권을 골라 주문서를 연 것(js/premium.js)
+//   — 주문 · 입금(발급) · 포인트로 열기(pay-order · pay-paid · pay-point)는 서버가 직접 센다(index.js payTap). 화면에서는 보낼 수 없다
+export const TAP_KINDS = ['gen-share', 'gen-print', 'post-share', 'post-sns', 'pay-view', 'pay-pick'];
 
 // 블로그 댓글
 export const COMMENT = { max: 500, gapMs: 15000, daily: 30, list: 200 };   // 글자 수, 다음 댓글까지, 하루 최대, 한 글에 보여 주는 수
@@ -125,6 +146,11 @@ async function renameComments(storage, user) {
 const BOARD_VERSION = 1;
 const PAGE = 1000;
 
+// 회원 자료 백업(관리자 페이지): 이 저장소의 줄을 PAGE 개씩 그대로 내보내고, 같은 모양으로 되살린다.
+// 로그인 세션(s:)은 뺀다 — 30일이면 사라지고, 되살린 뒤에는 다시 로그인하면 된다. 채팅은 다른 저장소(chat.js)라 처음부터 들어 있지 않다.
+export const BACKUP_SKIP = /^s:/;
+const BACKUP_KEY_MAX = 512;
+
 function boardEntry(user) {
     if (!user.nick || user.staff) return null;
     const s = score(user);
@@ -149,6 +175,22 @@ export class Community {
         this.storage = state.storage;
         this.board = null;          // { bySub, list } — 랭킹 줄(메모리). 처음 랭킹을 볼 때 만든다
         this.boardLoading = null;
+        this.viewBase = null;       // vbase(조회수 시작값) — 조회수를 읽을 때마다 꺼내지 않게 들고 있는다
+    }
+
+    async baseViews() {
+        if (!this.viewBase) this.viewBase = (await this.storage.get('vbase')) || { n: {} };
+        return this.viewBase.n;
+    }
+
+    // 자동 별명 대기열(q:). 회원 기록(user)은 부른 쪽이 저장한다
+    async queueNick(user, now) {
+        user.nickDue = now + AUTO_NICK_DAYS * DAY;
+        await this.storage.put('q:' + user.sub, { due: user.nickDue });
+    }
+    async unqueueNick(user) {
+        delete user.nickDue;
+        await this.storage.delete('q:' + user.sub);
     }
 
     // 회원 기록은 늘 이걸로 저장한다 — 랭킹 색인이 함께 맞춰진다
@@ -246,6 +288,7 @@ const OPS = {
         const isNew = !user;
         if (!user) {
             user = { sub, email, createdAt: now, lastAt: now, trial: null, rx: {}, sess: [] };
+            await this.queueNick(user, now);
             if (trial) {
                 const used = await this.storage.get('t:' + subHash);
                 if (!used || now - used.at > TRIAL_MEMORY_DAYS * DAY) {
@@ -283,6 +326,20 @@ const OPS = {
         return { ok: true, user: view(user) };
     },
 
+    // 판매점 지도 "다녀온 곳": { 판매점 번호: 색 }. color 가 null 이면 지운다. 새로 더할 때만 max 를 본다
+    async setVisit({ sub, id, color, max }) {
+        const user = await this.storage.get('u:' + sub);
+        if (!user) return { error: 'no_user' };
+        const v = user.visits || {};
+        if (color) {
+            if (!(id in v) && Object.keys(v).length >= max) return { error: 'too_many' };
+            v[id] = color;
+        } else delete v[id];
+        if (Object.keys(v).length) user.visits = v; else delete user.visits;
+        await this.saveUser(user);
+        return { ok: true, visits: user.visits || {} };
+    },
+
     async setTrial({ sub, trial }) {
         const user = await this.storage.get('u:' + sub);
         if (!user) return { ok: false };
@@ -301,7 +358,7 @@ const OPS = {
         if (user.nick === nick) return { ok: true, user: view(user), cost: 0 };
         const owner = await this.storage.get('n:' + key);
         if (owner && owner !== sub) return { error: 'taken' };
-        const cost = user.nick && !user.staff ? POINTS.nickChange : 0;
+        const cost = user.nick && !user.staff && !user.nickAuto ? POINTS.nickChange : 0;   // 자동 별명은 한 번 무료
         const avail = score(user).avail;
         if (cost && avail < cost) return { error: 'need_points', cost, avail };
         if (user.nick && user.nick.toLowerCase() !== key) await this.storage.delete('n:' + user.nick.toLowerCase());
@@ -309,6 +366,8 @@ const OPS = {
         user.nick = nick;
         user.nickAt = now;
         user.spent = (user.spent || 0) + cost;
+        delete user.nickAuto;
+        await this.unqueueNick(user);
         await this.saveUser(user);
         await renameComments(this.storage, user);
         return { ok: true, user: view(user), cost };
@@ -319,6 +378,7 @@ const OPS = {
         const user = await this.storage.get('u:' + sub);
         if (!user) return { error: 'no_user' };
         user.staff = !!on;
+        if (!on && !user.nick && !user.nickDue) await this.queueNick(user, Date.now());
         await this.saveUser(user);
         return { ok: true };
     },
@@ -367,6 +427,40 @@ const OPS = {
     },
 
     // 로그인한 채 산 이용권: 결제되면 +금액, 환불되면 -금액 (랭킹 점수용)
+    // 포인트로 1일 이용권(2026-10-21). 쓸 수 있는 포인트(total - spent)에서 POINTS.dayPass 를 쓴다 — 랭킹 점수는 그대로.
+    // 포인트로 연 이용권이 아직 살아 있으면 쓰지 않는다(두 번 눌러 포인트만 나가는 것을 막는다). 키는 index.js 가 발급해 setPointPass 로 붙이고,
+    // 발급이 실패하면 refundPointPass 로 돌려준다
+    async spendForPass({ sub, now }) {
+        const user = await this.storage.get('u:' + sub);
+        if (!user) return { error: 'no_user' };
+        const p = user.ppass;
+        if (p && p.expiresAt > now) return { error: 'active', expiresAt: p.expiresAt };
+        if (p && p.pending && now - p.at < 60 * 1000) return { error: 'busy' };
+        const cost = POINTS.dayPass;
+        const avail = score(user).avail;
+        if (avail < cost) return { error: 'need_points', cost, avail };
+        user.spent = tenth((user.spent || 0) + cost);
+        user.ppass = { pending: true, at: now };
+        await this.saveUser(user);
+        return { ok: true, cost };
+    },
+    async setPointPass({ sub, pass }) {
+        const user = await this.storage.get('u:' + sub);
+        if (!user) return { error: 'no_user' };
+        user.ppass = pass;
+        user.ppassN = (user.ppassN || 0) + 1;
+        await this.saveUser(user);
+        return { ok: true, user: view(user) };
+    },
+    async refundPointPass({ sub, cost }) {
+        const user = await this.storage.get('u:' + sub);
+        if (!user) return { error: 'no_user' };
+        user.spent = Math.max(0, tenth((user.spent || 0) - cost));
+        delete user.ppass;
+        await this.saveUser(user);
+        return { ok: true };
+    },
+
     async credit({ ref, amount }) {
         const sub = await this.storage.get('m:' + ref);
         const user = sub && await this.storage.get('u:' + sub);
@@ -416,6 +510,7 @@ const OPS = {
         for (const h of user.sess || []) await this.storage.delete('s:' + h);
         for (let i = 0; i < (user.cm || []).length; i += 128) await this.storage.delete(user.cm.slice(i, i + 128));   // 내가 쓴 블로그 댓글
         if (user.nick) await this.storage.delete('n:' + user.nick.toLowerCase());
+        await this.storage.delete('q:' + sub);   // 자동 별명 대기열
         if (user.ref) await this.storage.delete('m:' + user.ref);
         await this.storage.delete('k:' + sub);   // 내 번호
         if (await this.storage.delete('ms:' + sub)) await this.bump('subs', -1);   // 추첨 결과 메일 구독
@@ -466,11 +561,64 @@ const OPS = {
         return { ok: true };
     },
 
+    // 블로그 조회수(index.js 의 /api/view · /api/views). 글마다 한 줄, 횟수만
+    // 돌려주는 수에는 시작값(vbase)을 더한다
+    async view({ post }) {
+        const n = ((await this.storage.get('v:' + post)) || 0) + 1;
+        await this.storage.put('v:' + post, n);
+        return { views: { [post]: n + ((await this.baseViews())[post] || 0) } };
+    },
+    async views({ posts }) {
+        const got = await this.storage.get(posts.map(p => 'v:' + p));
+        const base = await this.baseViews();
+        const out = {};
+        posts.forEach(p => { out[p] = (got.get('v:' + p) || 0) + (base[p] || 0); });
+        return { views: out };
+    },
+
+    // 관리자: 시작값을 통째로 갈아 끼운다(같은 값으로 다시 넣어도 두 번 더해지지 않는다). n 은 index.js 가 다듬어 넘긴다
+    async setViewBase({ n, until, now }) {
+        const rec = { n, until, at: now };
+        await this.storage.put('vbase', rec);
+        this.viewBase = rec;
+        return { ok: true, posts: Object.keys(n).length };
+    },
+    // 관리자: 글별 직접 센 수와 시작값
+    async viewStats() {
+        const counted = {};
+        await this.each('v:', (n, k) => { counted[k.slice(2)] = n; });
+        const rec = (await this.storage.get('vbase')) || { n: {} };
+        return { counted, base: rec.n, until: rec.until || null, at: rec.at || null };
+    },
+
     // 관리자 페이지: 날짜별 집계, 최근 날짜가 먼저
     async taps() {
         const days = [];
         await this.each('e:', (v, k) => { days.push(Object.assign({ day: k.slice(2) }, v)); });
         return { days: days.reverse() };
+    },
+
+    // 관리자 백업: after 다음 줄부터 PAGE 줄. next 가 null 이면 끝
+    async backupPage({ after }) {
+        const page = await this.storage.list(Object.assign({ limit: PAGE }, after ? { startAfter: String(after) } : {}));
+        const rows = [];
+        let last = null;
+        for (const [k, v] of page) { last = k; if (!BACKUP_SKIP.test(k)) rows.push([k, v]); }
+        return { rows, next: page.size < PAGE ? null : last };
+    },
+
+    // 관리자 되살리기: [키, 값] 줄을 그대로 덮어쓴다(지우지는 않는다). 한 번에 PAGE 줄까지
+    async restoreRows({ rows }) {
+        if (!Array.isArray(rows) || rows.length > PAGE) return { error: 'bad_rows' };
+        const ok = rows.every(r => Array.isArray(r) && r.length === 2 && typeof r[0] === 'string' && r[0].length > 0
+            && r[0].length <= BACKUP_KEY_MAX && !BACKUP_SKIP.test(r[0]) && r[1] !== undefined && r[1] !== null);
+        if (!ok) return { error: 'bad_rows' };
+        for (const [k, v] of rows) await this.storage.put(k, v);
+        // 메모리에 들고 있던 것(랭킹 줄 · 조회수 시작값 · 메일 비밀값)은 다음에 다시 읽는다
+        this.board = null;
+        this.viewBase = null;
+        this.mailHmac = null;
+        return { put: rows.length };
     },
 
     // 관리자 페이지: 회원 명부와 카드별 좋아요 합계
@@ -483,7 +631,7 @@ const OPS = {
                 sub: u.sub, ref: u.ref || null, email: u.email, nick: u.nick || null, createdAt: u.createdAt, lastAt: u.lastAt,
                 trial: u.trial && u.trial.keyId ? { keyId: u.trial.keyId, expiresAt: u.trial.expiresAt } : null,
                 hearts: rx.filter(m => m.includes('h')).length, dollars: rx.filter(m => m.includes('d')).length,
-                wons: rx.filter(m => m.includes('w')).length, score: score(u), buy: u.buy || 0, staff: !!u.staff,
+                wons: rx.filter(m => m.includes('w')).length, score: score(u), buy: u.buy || 0, staff: !!u.staff, nickAuto: !!u.nickAuto, pointPasses: u.ppassN || 0,
             });
         }
         members.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -500,9 +648,49 @@ const OPS = {
         if (!user) return { error: 'no_user' };
         if (user.nick) await this.storage.delete('n:' + user.nick.toLowerCase());
         user.nick = null;
+        delete user.nickAuto;
+        if (!user.staff) await this.queueNick(user, Date.now());   // 새 별명을 정하지 않으면 3일 뒤 자동 별명
         await this.saveUser(user);
         await renameComments(this.storage, user);
         return { ok: true };
+    },
+
+    // 한 시간 예약(index.js scheduled): 별명 없이 AUTO_NICK_DAYS 일이 지난 회원에게 자동 별명을 붙인다.
+    // 처음 한 번은 u: 를 훑어 이 기능 전에 가입해 별명이 없는 회원을 대기열에 넣는다 — 바로 붙이지 않고 그때부터 3일
+    async autoNicks({ now }) {
+        if ((await this.storage.get('nickq')) !== 1) {
+            await this.each('u:', async u => {
+                if (u.nick || u.staff || u.nickDue) return;
+                await this.queueNick(u, now);
+                await this.storage.put('u:' + u.sub, u);
+            });
+            await this.storage.put('nickq', 1);
+        }
+        const due = [];
+        await this.each('q:', (q, k) => { if (q.due <= now) due.push(k.slice(2)); });
+        const named = [];
+        for (const sub of due) {
+            const user = await this.storage.get('u:' + sub);
+            if (!user || user.nick || user.staff) {   // 그새 정했거나 운영자가 됐으면 대기열에서만 뺀다
+                if (user && user.nickDue) { delete user.nickDue; await this.storage.put('u:' + sub, user); }
+                await this.storage.delete('q:' + sub);
+                continue;
+            }
+            let nick = null;
+            for (let i = 0; i < 30 && !nick; i++) {
+                const c = autoNickName();
+                if (!(await this.storage.get('n:' + c.toLowerCase()))) nick = c;
+            }
+            if (!nick) continue;   // 다 겹치면 다음 시간에 다시
+            await this.storage.put('n:' + nick.toLowerCase(), sub);
+            user.nick = nick;
+            user.nickAt = now;
+            user.nickAuto = true;
+            await this.unqueueNick(user);
+            await this.saveUser(user);
+            named.push(nick);
+        }
+        return { named };
     },
 
     /* ───── 블로그 댓글 ───── */
@@ -692,7 +880,11 @@ const b64url = bytes => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').
 
 function view(user) {
     const trial = user.trial && user.trial.key ? { key: user.trial.key, keyId: user.trial.keyId, expiresAt: user.trial.expiresAt } : null;
-    return { email: user.email, nick: user.nick || null, createdAt: user.createdAt, trial, score: pubScore(user), staff: !!user.staff, gen: user.gen || null };
+    return {
+        email: user.email, nick: user.nick || null, createdAt: user.createdAt, trial, score: pubScore(user), staff: !!user.staff, gen: user.gen || null, visits: user.visits || {},
+        nickAuto: !!(user.nick && user.nickAuto), nickDue: !user.nick && user.nickDue ? user.nickDue : null,
+        pointPass: user.ppass && user.ppass.key ? { key: user.ppass.key, keyId: user.ppass.keyId, expiresAt: user.ppass.expiresAt } : null,
+    };
 }
 
 function reply(data, status) {

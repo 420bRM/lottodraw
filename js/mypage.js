@@ -18,6 +18,7 @@
     };
     const $ = id => document.getElementById(id);
     const num = n => Number(n || 0).toLocaleString(window.I18N && window.I18N.lang === 'en' ? 'en-US' : 'ko-KR');
+    const monthDay = ms => new Date(ms).toLocaleDateString(window.I18N && window.I18N.lang === 'en' ? 'en-US' : 'ko-KR', { month: 'long', day: 'numeric' });
     const ymd = ms => {
         const d = new Date(ms);
         if (isNaN(d)) return '';
@@ -228,7 +229,7 @@
             const tag = !res ? tr('my.numWait', '추첨 전') : res.rank ? tr('my.tier' + res.rank, res.rank + '등') + ' · ' + tr('my.numMatch', '{m}개 일치', { m: res.match }) + (res.bonus ? ' + ' + tr('my.numBonus', '보너스') : '') : tr('my.numLose', '낙첨') + ' · ' + tr('my.numMatch', '{m}개 일치', { m: res.match });
             return el('li', { className: res && res.rank ? 'my-win' : '' }, [
                 el('span', { className: 'my-balls' }, g.n.map(n => ball(n, d ? d.numbers.indexOf(n) !== -1 || (res.bonus && n === d.bonus) : undefined))),
-                el('span', { className: 'my-res', text: tag }),
+                el('span', { className: 'my-res' }, [tag + ' · ', el('a', { href: 'report.html?n=' + g.n.slice().sort((a, b) => a - b).join(','), text: tr('rc.myLink', '성적표') })]),
                 el('button', { type: 'button', className: 'my-x', 'aria-label': tr('my.numDelOne', '이 게임 지우기'), text: '×', on: { click: () => remove({ id: g.id }, tr('my.numDelOneQ', '{nums} 을(를) 지울까요?', { nums: g.n.join(' ') })) } }),
             ]);
         });
@@ -298,8 +299,10 @@
     function showProfile(user) {
         const A = window.LottoAccount;
         fill('my-profile', [
-            row(tr('my.nick', '별명'), user.nick || tr('my.nickNone', '아직 없음'),
-                A && A.openNick ? btn(user.nick ? tr('my.nickChange', '바꾸기') : tr('my.nickSet', '정하기'), () => A.openNick(!user.nick)) : null),
+            row(tr('my.nick', '별명'),
+                user.nick ? (user.nickAuto ? tr('my.nickAuto', '{nick} (자동)', { nick: user.nick }) : user.nick)
+                    : user.nickDue ? tr('my.nickNoneDue', '아직 없음 · {date}에 자동으로 붙습니다', { date: monthDay(user.nickDue) }) : tr('my.nickNone', '아직 없음'),
+                A && A.openNick ? btn(user.nick ? (user.nickAuto ? tr('my.nickChangeFree', '무료로 바꾸기') : tr('my.nickChange', '바꾸기')) : tr('my.nickSet', '정하기'), () => A.openNick(!user.nick)) : null),
             row(tr('my.email', '이메일'), user.email || ''),
             row(tr('my.joined', '가입일'), ymd(user.createdAt)),
             user.staff ? row(tr('my.role', '구분'), tr('my.staff', '운영자 계정')) : null,

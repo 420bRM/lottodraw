@@ -116,6 +116,117 @@
         }
     }
 
+    /* ───── 이번 회차 이용권: 끝나는 때 · 남은 시간 (2026-10-21) ─────
+       worker/src/plans.js 의 roundEndsAt 과 같은 셈: 토요일 20:00(판매 마감) 전이면 그 토요일, 뒤면 다음 토요일 밤 12시(KST).
+       키의 실제 기간은 서버가 입금을 확인해 발급하는 때 정한다 — 화면은 지금 사면 언제까지인지 보여 주고 1초마다 줄인다 */
+    const KST = 9 * 3600e3;
+    const DAYMS = 864e5;
+    const SAT1 = Date.UTC(2002, 11, 7) - KST;   // 1회 추첨일(토) 0시
+    const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    function roundEndsAt(now) {
+        const k = new Date(now + KST);
+        const midnight = Date.UTC(k.getUTCFullYear(), k.getUTCMonth(), k.getUTCDate()) - KST;
+        let sat = midnight + ((6 - k.getUTCDay() + 7) % 7) * DAYMS;
+        if (now >= sat + 20 * 3600e3) sat += 7 * DAYMS;
+        return sat + DAYMS;
+    }
+    function paintRound() {
+        const until = $('round-until');
+        const left = $('round-left');
+        if (!until || !left) return;
+        const now = Date.now();
+        const end = roundEndsAt(now);
+        const sat = new Date(end - DAYMS + KST);
+        until.textContent = T('s5.roundUntil', { n: 1 + Math.round((end - DAYMS - SAT1) / (7 * DAYMS)), m: sat.getUTCMonth() + 1, d: sat.getUTCDate(), mon: MON[sat.getUTCMonth()] });
+        const s = Math.ceil((end - now) / 1000);
+        const p2 = n => String(n).padStart(2, '0');
+        const days = Math.floor(s / 86400);
+        const hms = p2(Math.floor(s / 3600) % 24) + ':' + p2(Math.floor(s / 60) % 60) + ':' + p2(s % 60);
+        left.textContent = T('s5.roundLeft', { t: (days ? T('cd.days', { d: days }) + ' ' : '') + hms });
+        left.hidden = false;
+    }
+    function startRoundClock() {
+        if (!$('round-left')) return;
+        const tick = () => { paintRound(); setTimeout(tick, 1000 - Date.now() % 1000 + 20); };
+        tick();
+    }
+
+    /* ───── 결제 흐름 집계 (관리자 페이지 "결제 흐름") ─────
+       결제 페이지를 연 것(이용권이 없어 결제 화면이 보일 때, 같은 브라우저 하루 한 번)과 주문서를 연 것(이 페이지에서 한 번)만 보낸다.
+       종류만 보내고 누가인지는 없다. 주문 · 입금 · 포인트로 열기는 서버가 센다 */
+    const VIEW_STORE = 'lottodraw.premium.viewDay';
+    let viewCounted = false;
+    let pickCounted = false;
+    function tap(k) {
+        if (!api || !navigator.sendBeacon) return;
+        try { navigator.sendBeacon(api + '/api/tap', JSON.stringify({ k: k })); } catch (e) { /* 막혀도 그만 */ }
+    }
+    function countView() {
+        if (viewCounted) return;
+        viewCounted = true;
+        const day = new Date(Date.now() + KST).toISOString().slice(0, 10);
+        if (store.get(VIEW_STORE) === day) return;
+        store.set(VIEW_STORE, day);
+        tap('pay-view');
+    }
+
+    /* ───── 포인트로 1일 이용권 (로그인 회원, 2026-10-21) ─────
+       1일 카드의 "포인트로 열기". 로그인이 꺼진 서버면 단추를 숨긴다. 서버가 포인트를 쓰고 24시간 키를 주면 산 키처럼 저장하고 연다 */
+    const account = () => window.LottoAccount;
+    const pointCost = () => { const m = account() && account().me && account().me(); return (m && m.points && m.points.dayPass) || 300; };
+    function paintPoints() {
+        const btn = $('point-pass');
+        const note = $('point-note');
+        if (!btn) return;
+        const A = account();
+        const on = !!(A && A.loginOn && A.loginOn());
+        btn.hidden = !on;
+        note.hidden = !on;
+        if (!on) return;
+        const cost = pointCost();
+        btn.textContent = T('s5.points', { cost: cost });
+        const me = A.me && A.me();
+        const sc = me && me.user && me.user.score;
+        note.textContent = sc ? T('s5.pointsHave', { avail: Number(sc.avail).toLocaleString(I18N.lang === 'en' ? 'en-US' : 'ko-KR'), cost: cost }) : T('s5.pointsNote');
+    }
+    async function openWithPoints() {
+        const A = account();
+        if (!A || !A.loginOn || !A.loginOn()) return;
+        if (!A.session()) { A.openLogin(T('s5.pointsLogin')); return; }
+        const cost = pointCost();
+        if (!window.confirm(T('s5.pointsConfirm', { cost: cost }))) return;
+        const btn = $('point-pass');
+        btn.disabled = true;
+        setStatus('plans-status', T('pay.checking'));
+        try {
+            const r = await A.call('/api/me/point-pass', { method: 'POST' });
+            store.set(L.KEY_STORE, r.key);
+            store.set(PURCHASED_STORE, r.key);
+            if (A.refresh) A.refresh().then(paintPoints).catch(() => {});
+            const st = await L.check(r.key);
+            setStatus('plans-status', '');
+            $('license-key').value = r.key;
+            if (st.unlocked) unlock(st.record, true, false);
+            else setStatus('license-status', st.reason || T('pay.offline'), true);
+        } catch (e) {
+            setStatus('plans-status', e.code === 'need_points' || e.code === 'active' || e.code === 'busy' ? e.message
+                : e.status === 401 ? T('s5.pointsLogin') : (e.message || T('pay.offline')), true);
+        } finally {
+            btn.disabled = false;
+        }
+    }
+    function setupPoints() {
+        const btn = $('point-pass');
+        if (!btn) return;
+        btn.hidden = true;
+        $('point-note').hidden = true;
+        btn.addEventListener('click', openWithPoints);
+        const go = () => paintPoints();
+        if (account() && account().ready) account().ready.then(go);
+        else document.addEventListener('lotto:account-ready', go, { once: true });
+        window.addEventListener('lottodraw:account', go);
+    }
+
     /* ───── 가격 · 판매 가능 여부 ───── */
 
     function renderPrices() {
@@ -173,7 +284,8 @@
         const ready = serverReady ? await serverReady : false;
         if (!ready || !buyable) { setBuyable(false); return; }
         currentPlan = plan;
-        $('co-plan').textContent = `${planName(plan)} · ${won(plans[plan].amount)}`;
+        if (!pickCounted) { pickCounted = true; tap('pay-pick'); }
+        $('co-plan').textContent = `${planName(plan)} · ${won(plans[plan].amount)}` + (plan === 'round' && $('round-until') ? ' · ' + $('round-until').textContent : '');
         const radios = document.querySelectorAll('input[name="co-method"]');
         radios.forEach(r => { r.disabled = !methods[r.value]; });
         if (!methods[chosenMethod()]) {
@@ -408,6 +520,7 @@
     function lock(message, isError) {
         $('premium').hidden = true;
         $('paywall').hidden = false;
+        countView();
         if (message) setStatus('license-status', message, isError);
     }
 
@@ -486,6 +599,8 @@
 
     function init() {
         renderPrices();
+        startRoundClock();
+        setupPoints();
         document.querySelectorAll('[data-plan]').forEach(b => b.addEventListener('click', () => openCheckout(b.dataset.plan)));
         document.querySelectorAll('input[name="co-method"]').forEach(r => r.addEventListener('change', syncMethodFields));
         $('order-form').addEventListener('submit', submitOrder);

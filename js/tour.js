@@ -22,7 +22,14 @@
         { sel: '#sec-generator .picker-actions', key: 'tour.s5' },
         { sel: 'section[aria-labelledby="patterns-title"]', key: 'tour.s6' },
         { sel: '[data-react="index-history"]', key: 'tour.s7' },
+        // 2026-10-26: 판매점 지도 가는 단추(휴대폰 MAP · PC 제목 아래) · 낮/밤 단추 · 채팅. 쉼표로 여럿 적으면 보이는 첫 것
+        { sel: '#map-fab, .map-go', key: 'tour.s8' },
+        { sel: '#theme-btn', key: 'tour.s9' },
+        { sel: '#chat-panel, #chat-fab', key: 'tour.s10' },
     ];
+    const shown = n => !!(n && n.getClientRects().length && getComputedStyle(n).visibility !== 'hidden');
+    const find = sel => [...document.querySelectorAll(sel)].find(shown) || null;
+    let steps = STEPS;   // 시작할 때 보이는 단계만 고른다(번호 "3 / 9" 가 건너뛴 단계를 세지 않게)
 
     function el(tag, cls, attrs) {
         const n = document.createElement(tag);
@@ -68,18 +75,18 @@
         tip.style.top = clamp(top, m, Math.max(m, vh - th - m)) + 'px';
     }
     function paint() {
-        const step = STEPS[idx];
+        const step = steps[idx];
         if (!step) return;
-        stepEl.textContent = (idx + 1) + ' / ' + STEPS.length;
+        stepEl.textContent = (idx + 1) + ' / ' + steps.length;
         textEl.textContent = t(step.key);
         skip.textContent = t('tour.skip');
-        next.textContent = idx === STEPS.length - 1 ? t('tour.done') : t('tour.next');
+        next.textContent = idx === steps.length - 1 ? t('tour.done') : t('tour.next');
     }
     function go(i) {
         idx = i;
-        if (idx >= STEPS.length) { end(); return; }
-        const node = document.querySelector(STEPS[idx].sel);
-        if (!node || !node.getClientRects().length) { go(idx + 1); return; }   // 없거나 숨겨진 부분은 건너뛴다
+        if (idx >= steps.length) { end(); return; }
+        const node = find(steps[idx].sel);
+        if (!node) { go(idx + 1); return; }   // 그 사이 사라졌으면 건너뛴다
         target = node;
         const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
         node.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' });
@@ -91,6 +98,7 @@
     }
     function start() {
         if (active()) return;
+        steps = STEPS.filter(s => find(s.sel));   // 없거나 숨겨진 부분은 뺀다(채팅이 꺼졌을 때 등)
         root.hidden = false;
         go(0);
     }

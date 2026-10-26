@@ -58,6 +58,7 @@ const RELATED = {
     consecutive:   ['statistics-consecutive.html', '연속번호 통계', 'Consecutive numbers', '연속번호가 나온 회차 비율', 'Share of draws with consecutive numbers'],
     'prize-stats': ['statistics-prize.html', '1등 당첨자 수 통계', '1st-prize winners per draw', '회차별 당첨자 수 분포와 이월 횟수', 'How many winners each draw had, and rollovers'],
     stores: ['statistics-stores.html', '1등 판매점 통계', '1st-prize retailer statistics', '1등 많이 나온 곳 순위 · 지역 · 2등과 견주기', 'Top retailers, areas and the 2nd-prize check'],
+    repeat:        ['statistics-repeat.html', '당첨번호 중복', 'Repeated winning numbers', '6개 · 5개가 같은 회차와 생일 문제', 'Draws sharing six or five numbers, and the birthday problem'],
     'prize-tiers': ['statistics-prize-2-3.html', '2등·3등 당첨금 통계', '2nd & 3rd prize statistics', '평균·최고·최저와 연도별 흐름', 'Averages, records and the year-by-year picture'],
     probability:   ['probability.html', '로또 확률', 'Lotto odds', '등수별 당첨 확률과 계산 방법', 'Odds for each prize tier and how they are worked out'],
     tax:           ['tax.html', '실수령액 계산기', 'After-tax calculator', '당첨금을 넣으면 세금과 실수령액', 'Enter a prize to see the tax and take-home amount'],
@@ -234,6 +235,9 @@ function preview(post) {
 const catOf = name => CATEGORIES.find(c => c.name === name) || { name, en: undefined, band: undefined };
 const catDot = c => `<span class="cat-dot"${c.band ? ` data-band="${c.band}"` : ''} aria-hidden="true"></span>`;
 const catBadge = c => `<span class="post-cat">${catDot(c)}<span${tr(c.en && esc(c.en))}>${esc(c.name)}</span></span>`;
+// 조회수 자리. 수는 js/views.js 가 worker 에서 받아 채운다(빌드는 매주라 미리 적지 않는다).
+// 숫자는 글에서만 보인다 — 목록 카드의 자리는 숨긴 채 "많이 읽은 순" 정렬에만 쓴다
+const viewsTag = slug => `<span class="post-views" data-post="${esc(slug)}" hidden></span>`;
 
 module.exports = function buildBlog(ctx) {
     const { shell, write, SITE, OG_IMAGE } = ctx;
@@ -361,7 +365,7 @@ module.exports = function buildBlog(ctx) {
             h1: p.title,
             h1En: p.en && p.en.title,
             desc: p.description,
-            scope: catBadge(p.category),
+            scope: catBadge(p.category) + viewsTag(p.slug),
             lead: `<span${tr(p.en && esc(p.en.description))}>${esc(p.description)}</span>`,
             ld: [{
                 '@type': 'BlogPosting',
@@ -378,7 +382,7 @@ module.exports = function buildBlog(ctx) {
                 publisher: { '@type': 'Organization', name: 'lottodraw.kr', url: SITE + '/' },
             }],
             body: [toc, p.body, share, related, postNav],
-            scripts: ['js/share.js'],
+            scripts: ['js/share.js', 'js/views.js'],
         }));
     });
 
@@ -391,10 +395,15 @@ module.exports = function buildBlog(ctx) {
         + `<li><button type="button" class="chip-btn" data-cat="" aria-pressed="true"><span data-i18n="blog.all">전체</span> <span class="count">${posts.length}</span></button></li>`
         + cats.map(({ c, n }) => `<li><button type="button" class="chip-btn" data-cat="${esc(c.name)}" aria-pressed="false">${catDot(c)}<span${tr(c.en && esc(c.en))}>${esc(c.name)}</span> <span class="count">${n}</span></button></li>`).join('')
         + '</ul>';
+    // 정렬: 기본 순서(흥미도 + 무작위) · 많이 읽은 순. js/views.js 가 조회수를 받아 오면 보인다(못 받으면 숨은 채)
+    const sorter = '<div class="post-sort" hidden><div class="sort-btns" role="group" aria-label="정렬" data-i18n-attr="aria-label:blog.sortAria">'
+        + '<button type="button" class="sort-btn" data-sort="" aria-pressed="true" data-i18n="blog.sortBase">기본 순서</button>'
+        + '<button type="button" class="sort-btn" data-sort="views" aria-pressed="false" data-i18n="blog.sortViews">많이 읽은 순</button>'
+        + '</div></div>';
     const cards = posts.map(p => {
         const pv = preview(p);
         return `<li class="post-card" data-cat="${esc(p.category.name)}" data-pick="${p.pick}">`
-            + `<div class="post-head">${catBadge(p.category)}</div>`
+            + `<div class="post-head">${catBadge(p.category)}${viewsTag(p.slug)}</div>`
             + `<h2 class="post-title"><a href="${p.slug}.html"${tr(p.en && esc(p.en.title))}>${esc(p.title)}</a></h2>`
             + `<p class="post-desc"${tr(p.en && esc(p.en.description))}>${esc(p.description)}</p>`
             + `<div class="post-preview" aria-hidden="true"${tr(pv.en)}>${pv.ko}</div>`
@@ -425,10 +434,13 @@ module.exports = function buildBlog(ctx) {
             publisher: { '@type': 'Organization', name: 'lottodraw.kr', url: SITE + '/' },
             blogPost: posts.map(p => ({ '@type': 'BlogPosting', headline: p.title, url: `${SITE}/${OUT}/${p.slug}.html`, datePublished: p.date })),
         }],
-        body: [chips, '<ol class="post-list">' + cards.join('\n') + '</ol>'],
+        body: [chips, sorter, '<ol class="post-list">' + cards.join('\n') + '</ol>'],
+        scripts: ['js/views.js'],
         // 목록 순서와 카테고리 단추.
         // 처음: 흥미도(data-pick) + 무작위로 줄 세운다 — 방문할 때마다 조금씩 다르다.
         // 단추: 그 카테고리 글을 맨 위로 가나다순으로 모으고, 나머지는 흐리게 그 아래에 둔다.
+        // 많이 읽은 순: 조회수 큰 순(같으면 처음 순서). 카테고리를 골랐으면 그 카테고리 안에서도 조회수 순.
+        //   조회수는 js/views.js 가 카드의 .post-views 에 data-n 으로 적고 'ld:views' 를 알린다.
         // 자리를 옮길 때는 홈의 막대그래프 정렬과 같은 FLIP 애니메이션으로 미끄러지게 한다.
         script: [
             '(function () {',
@@ -462,19 +474,38 @@ module.exports = function buildBlog(ctx) {
             "    list.addEventListener('transitionend', function (e) {",
             "        if (e.propertyName === 'transform' && e.target.parentNode === list) e.target.style.transition = '';",
             '    });',
+            "    var cat = '', sort = '';",
+            "    var sorter = document.querySelector('.post-sort');",
+            "    function views(c) { var v = c.querySelector('.post-views'); return Number(v && v.getAttribute('data-n')) || 0; }",
+            '    function byBase(a, b) { return base.indexOf(a) - base.indexOf(b); }',
+            '    function byViews(a, b) { return views(b) - views(a) || byBase(a, b); }',
+            "    function byTitle(a, b) { return title(a).localeCompare(title(b), document.documentElement.lang || 'ko'); }",
+            '    function arrange(animate) {',
+            "        var hit = function (c) { return !cat || c.getAttribute('data-cat') === cat; };",
+            "        cards.forEach(function (c) { c.classList.toggle('is-dim', !hit(c)); });",
+            "        var first = sort === 'views' ? byViews : cat ? byTitle : byBase;",
+            '        var rest = cards.filter(function (c) { return !hit(c); });',
+            "        place(cards.filter(hit).sort(first).concat(rest.sort(sort === 'views' ? byViews : byBase)), animate && !reduce);",
+            '    }',
             '    place(base, false);',
             '    Array.prototype.forEach.call(chips, function (chip) {',
             "        chip.addEventListener('click', function () {",
-            "            var cat = chip.getAttribute('data-cat');",
-            "            var lang = document.documentElement.lang || 'ko';",
-            "            var hit = function (c) { return !cat || c.getAttribute('data-cat') === cat; };",
+            "            cat = chip.getAttribute('data-cat');",
             "            Array.prototype.forEach.call(chips, function (c) { c.setAttribute('aria-pressed', c === chip ? 'true' : 'false'); });",
-            "            cards.forEach(function (c) { c.classList.toggle('is-dim', !hit(c)); });",
-            '            var order = !cat ? base : cards.filter(hit)',
-            '                .sort(function (a, b) { return title(a).localeCompare(title(b), lang); })',
-            '                .concat(base.filter(function (c) { return !hit(c); }));',
-            '            place(order, !reduce);',
+            '            arrange(true);',
             '        });',
+            '    });',
+            "    var sorts = sorter.querySelectorAll('.sort-btn');",
+            '    Array.prototype.forEach.call(sorts, function (btn) {',
+            "        btn.addEventListener('click', function () {",
+            "            sort = btn.getAttribute('data-sort');",
+            "            Array.prototype.forEach.call(sorts, function (b) { b.setAttribute('aria-pressed', b === btn ? 'true' : 'false'); });",
+            '            arrange(true);',
+            '        });',
+            '    });',
+            "    document.addEventListener('ld:views', function () {",
+            "        if (list.querySelector('.post-views[data-n]')) sorter.hidden = false;",
+            "        if (sort === 'views') arrange(false);",
             '    });',
             '}());',
         ].join('\n'),

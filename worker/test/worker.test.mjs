@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import worker, { _resetForTests } from '../src/index.js';
 import { parseKey, signKey, importPrivate, generateKeyPair } from '../src/keys.js';
-import { BASE_PLANS } from '../src/plans.js';
+import { BASE_PLANS, roundEndsAt } from '../src/plans.js';
 
 const require = createRequire(import.meta.url);
 
@@ -202,10 +202,47 @@ test('키 메일: 이메일을 적은 주문은 발급 즉시 키를 메일로, 
     }
 });
 
+test('이번 회차 이용권: 2,900원, 판매 중인 회차의 토요일 밤 12시까지 · 1주 이용권은 더 팔지 않는다', async () => {
+    _resetForTests();
+    const env = makeEnv({ DEPOSIT_HOOK_SECRET: 'hook-secret-0123456789' });
+    await setupKey(env);
+    const cfg = (await call(env, 'GET', '/api/config')).data;
+    assert.equal(cfg.plans.round.amount, 2900);
+    assert.equal(cfg.plans.round.days, null);
+    assert.equal(cfg.plans.week, undefined, '화면에는 팔지 않는 1주가 없다');
+    assert.equal((await call(env, 'POST', '/api/orders', { body: { plan: 'week', method: 'bank', name: '홍길동', agree: true } })).data.error, 'bad_plan');
+
+    const { order, token } = (await call(env, 'POST', '/api/orders', { body: { plan: 'round', method: 'bank', name: '홍길동', agree: true } })).data;
+    assert.ok(order.amount >= 2801 && order.amount <= 2899, '끝자리 할인');
+    await call(env, 'POST', '/api/hooks/deposit', { raw: `입금 ${order.amount.toLocaleString('ko-KR')}원 홍길동`, headers: { 'Content-Type': 'text/plain', Authorization: 'Bearer hook-secret-0123456789' } });
+    const paid = (await call(env, 'GET', `/api/orders/${order.id}?token=${token}`)).data.order;
+    const p = parseKey(paid.key);
+    assert.equal(p.plan, 'round');
+    const end = roundEndsAt(p.issuedAt * 1000);   // 서버 parseKey 는 초 단위
+    assert.equal(p.expiresAt * 1000, end, '발급한 때의 판매 회차 토요일 밤 12시');
+    const k = new Date(end + 9 * 3600 * 1000);
+    assert.deepEqual([k.getUTCDay(), k.getUTCHours(), k.getUTCMinutes()], [0, 0, 0], '일요일 0시(KST) = 토요일 밤 12시');
+    assert.ok(end - p.issuedAt * 1000 > 4 * 3600 * 1000 && end - p.issuedAt * 1000 <= 8 * 86400000);
+
+    // 관리자는 지금도 1주 이용권을 직접 발급할 수 있다(예전 구매자 응대용)
+    const manual = await call(env, 'POST', '/api/admin/issue', { body: { plan: 'week' }, headers: asAdmin });
+    assert.equal(parseKey(manual.data.order.key).plan, 'week');
+});
+
+test('이번 회차 이용권 기간: 토요일 20:00(판매 마감) 전이면 그 토요일, 뒤면 다음 토요일 밤 12시', () => {
+    const at = s => Date.parse(s + '+09:00');
+    const kst = ms => new Date(ms + 9 * 3600 * 1000).toISOString().slice(0, 16);
+    assert.equal(kst(roundEndsAt(at('2026-10-19T00:00:00'))), '2026-10-25T00:00', '월요일');
+    assert.equal(kst(roundEndsAt(at('2026-10-24T19:59:59'))), '2026-10-25T00:00', '토요일 마감 1초 전');
+    assert.equal(kst(roundEndsAt(at('2026-10-24T20:00:00'))), '2026-11-01T00:00', '토요일 마감');
+    assert.equal(kst(roundEndsAt(at('2026-10-25T03:00:00'))), '2026-11-01T00:00', '일요일 새벽');
+    assert.equal(kst(roundEndsAt(at('2026-12-31T12:00:00'))), '2027-01-03T00:00', '해를 넘긴다');
+});
+
 test('PRICES 환경변수로 가격만 바꿀 수 있다', async () => {
     _resetForTests();
-    const r = await call(makeEnv({ PRICES: '{"week":3000,"month":500}' }), 'GET', '/api/config');
-    assert.equal(r.data.plans.week.amount, 3000);
+    const r = await call(makeEnv({ PRICES: '{"round":3000,"month":500}' }), 'GET', '/api/config');
+    assert.equal(r.data.plans.round.amount, 3000);
     assert.equal(r.data.plans.month.amount, BASE_PLANS.month.amount, '1,000원 미만은 무시');
 });
 
@@ -391,7 +428,7 @@ test('기간이 지난 키는 거절', async () => {
 test('입금 대기 주문은 구매자가 취소할 수 있고, 관리자 목록에서 빠진다', async () => {
     _resetForTests();
     const env = makeEnv();
-    const r = await call(env, 'POST', '/api/orders', { body: { plan: 'week', method: 'bank', name: '이영희', agree: true } });
+    const r = await call(env, 'POST', '/api/orders', { body: { plan: 'round', method: 'bank', name: '이영희', agree: true } });
     const { order, token } = r.data;
     const c = await call(env, 'POST', `/api/orders/${order.id}/cancel`, { body: { token } });
     assert.equal(c.data.order.status, 'cancelled');
@@ -471,7 +508,7 @@ test('KV 목록이 늦어도: 방금 만든 주문에 바로 입금돼도 맞추
     // 목록에 아직 안 보이는 주문 10건도 금액이 전부 다르다
     const orders = [];
     for (let i = 0; i < 10; i++) {
-        orders.push((await call(env, 'POST', '/api/orders', { body: { plan: 'week', method: 'bank', name: '구매자' + i, agree: true }, headers: { 'CF-Connecting-IP': '10.1.0.' + i } })).data);
+        orders.push((await call(env, 'POST', '/api/orders', { body: { plan: 'round', method: 'bank', name: '구매자' + i, agree: true }, headers: { 'CF-Connecting-IP': '10.1.0.' + i } })).data);
     }
     assert.equal(new Set(orders.map(o => o.order.amount)).size, 10);
 
@@ -631,7 +668,7 @@ test('자동 점검 주문: 알림 없이 돌고, 끝나면 흔적 없이 지워
         assert.equal(env.DB._m.has('order:' + order.id), false);
         assert.deepEqual((await call(env, 'GET', '/api/revoked')).data.ids, []);
         // 진짜 주문은 지우지 않는다
-        const real = (await call(env, 'POST', '/api/orders', { body: { plan: 'week', method: 'bank', name: '홍길동', agree: true } })).data.order;
+        const real = (await call(env, 'POST', '/api/orders', { body: { plan: 'round', method: 'bank', name: '홍길동', agree: true } })).data.order;
         r = await call(env, 'POST', '/api/admin/selftest/cleanup', { headers: asAdmin, body: { id: real.id } });
         assert.equal(r.status, 409);
     } finally {
@@ -653,7 +690,7 @@ test('페이앱: 결제창 요청 → 통보 확인(키/금액 검증) → 키 �
     };
     try {
         await setupKey(env);
-        let r = await call(env, 'POST', '/api/orders', { body: { plan: 'week', method: 'payapp', phone: '010-1234-5678', agree: true } });
+        let r = await call(env, 'POST', '/api/orders', { body: { plan: 'round', method: 'payapp', phone: '010-1234-5678', agree: true } });
         assert.equal(r.status, 201, JSON.stringify(r.data));
         assert.equal(r.data.payurl, 'https://payapp.kr/pay/555');
         const order = r.data.order;
@@ -714,7 +751,7 @@ test('CORS: 허용한 출처만, 관리자 토큰이 짧으면 관리자 기능�
 test('도배 방지: 주문 제한에 걸리면 429', async () => {
     _resetForTests();
     const env = makeEnv({ ORDER_LIMIT: { limit: async () => ({ success: false }) } });
-    const r = await call(env, 'POST', '/api/orders', { body: { plan: 'week', method: 'bank', name: 'x', agree: true } });
+    const r = await call(env, 'POST', '/api/orders', { body: { plan: 'round', method: 'bank', name: 'x', agree: true } });
     assert.equal(r.status, 429);
 });
 
@@ -735,7 +772,7 @@ test('내장 속성 이름(toString, __proto__ 등)으로는 주문할 수 없�
     for (const bad of ['toString', 'constructor', '__proto__', 'hasOwnProperty']) {
         let r = await call(env, 'POST', '/api/orders', { body: { plan: bad, method: 'bank', name: '홍길동', agree: true } });
         assert.equal(r.data.error, 'bad_plan', bad);
-        r = await call(env, 'POST', '/api/orders', { body: { plan: 'week', method: bad, name: '홍길동', agree: true } });
+        r = await call(env, 'POST', '/api/orders', { body: { plan: 'round', method: bad, name: '홍길동', agree: true } });
         assert.equal(r.data.error, 'bad_method', bad);
         r = await call(env, 'POST', '/api/admin/issue', { headers: asAdmin, body: { plan: bad } });
         assert.equal(r.data.error, 'bad_plan', bad);
@@ -745,7 +782,7 @@ test('내장 속성 이름(toString, __proto__ 등)으로는 주문할 수 없�
 test('한 곳에서 걸어 둘 수 있는 입금 대기 주문은 3건, 기한 지난 주문은 세지 않는다', async () => {
     _resetForTests();
     const env = makeEnv();
-    const order = () => call(env, 'POST', '/api/orders', { body: { plan: 'week', method: 'bank', name: '홍길동', agree: true }, headers: { 'CF-Connecting-IP': '9.9.9.9' } });
+    const order = () => call(env, 'POST', '/api/orders', { body: { plan: 'round', method: 'bank', name: '홍길동', agree: true }, headers: { 'CF-Connecting-IP': '9.9.9.9' } });
     for (let i = 0; i < 3; i++) assert.equal((await order()).status, 201);
     const r = await order();
     assert.equal(r.status, 429);
@@ -759,7 +796,7 @@ test('같은 주문을 두 번 확인해도 키 번호는 하나 (환불하면 �
     _resetForTests();
     const env = makeEnv();
     await setupKey(env);
-    const { order } = (await call(env, 'POST', '/api/orders', { body: { plan: 'week', method: 'bank', name: '홍길동', agree: true } })).data;
+    const { order } = (await call(env, 'POST', '/api/orders', { body: { plan: 'round', method: 'bank', name: '홍길동', agree: true } })).data;
     const [x, y] = await Promise.all([
         call(env, 'POST', `/api/admin/orders/${order.id}/confirm`, { headers: asAdmin }),
         call(env, 'POST', `/api/admin/orders/${order.id}/confirm`, { headers: asAdmin }),

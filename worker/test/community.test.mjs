@@ -1,8 +1,8 @@
 // 회원(구글 로그인) · 무료 체험 · 좋아요 · 탈퇴. 구글 서버 대신 시험용 RSA 키로 ID 토큰을 만들어 넣는다.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import worker, { _resetForTests, Community } from '../src/index.js';
-import { score } from '../src/community.js';
+import worker, { _resetForTests, Community, NICK_RE, NICK_RESERVED } from '../src/index.js';
+import { score, NICK_WORDS, AUTO_NICK_DAYS } from '../src/community.js';
 import { _resetGoogleForTests } from '../src/google.js';
 import { parseKey, b64urlEncode } from '../src/keys.js';
 
@@ -245,6 +245,32 @@ test('번호 생성기 설정: 로그인한 회원만 저장 · 다듬어 저장
     assert.ok(![...env.COMMUNITY._m.values()].some(v => v && v.gen), '탈퇴하면 설정도 지워진다');
 });
 
+test('판매점 지도 다녀온 곳: 로그인 회원만 · 번호 · 색 검사 · 지우기 · 내 정보에만 · 탈퇴하면 사라진다', async () => {
+    const env = await fresh();
+    const a = await login(env);
+    const s = a.data.session;
+    assert.deepEqual(a.data.user.visits, {});
+    assert.equal((await call(env, 'POST', '/api/me/visits', { body: { id: '11100004', color: '#ff0000' } })).status, 401);
+    // 번호는 8자리 숫자, 색은 #rrggbb 만
+    assert.equal((await call(env, 'POST', '/api/me/visits', { headers: auth(s), body: { id: '1110', color: '#ff0000' } })).status, 400);
+    assert.equal((await call(env, 'POST', '/api/me/visits', { headers: auth(s), body: { id: '11100004', color: 'red' } })).status, 400);
+    assert.equal((await call(env, 'POST', '/api/me/visits', { headers: auth(s), body: { id: '11100004', color: '#ff00001' } })).status, 400);
+    const one = await call(env, 'POST', '/api/me/visits', { headers: auth(s), body: { id: '11100004', color: '#FF8800' } });
+    assert.equal(one.status, 200, JSON.stringify(one.data));
+    assert.deepEqual(one.data.visits, { 11100004: '#ff8800' }, '색은 소문자로');
+    await call(env, 'POST', '/api/me/visits', { headers: auth(s), body: { id: '11100016', color: '#3366cc' } });
+    // 색 바꾸기 · 내 정보에 나온다
+    await call(env, 'POST', '/api/me/visits', { headers: auth(s), body: { id: '11100004', color: '#00aa00' } });
+    const me = await call(env, 'GET', '/api/me', { headers: auth(s) });
+    assert.deepEqual(me.data.user.visits, { 11100004: '#00aa00', 11100016: '#3366cc' });
+    // 지우기
+    const del = await call(env, 'POST', '/api/me/visits', { headers: auth(s), body: { id: '11100016', color: null } });
+    assert.deepEqual(del.data.visits, { 11100004: '#00aa00' });
+    // 탈퇴하면 함께 사라진다
+    assert.equal((await call(env, 'POST', '/api/me/delete', { body: { confirm: true }, headers: auth(s) })).status, 200);
+    assert.ok(![...env.COMMUNITY._m.values()].some(v => v && v.visits), '탈퇴하면 다녀온 곳도 지워진다');
+});
+
 test('구글 토큰 위조·다른 사이트·만료·미확인 이메일은 거절한다', async () => {
     const env = await fresh();
     const now = Math.floor(Date.now() / 1000);
@@ -400,6 +426,102 @@ test('별명: 정하고 바꾸고, 겹치거나 규칙에 안 맞으면 거절, 
     assert.equal((await nick(b.session, 'LuckyBear')).status, 200);
 });
 
+// 저장소에 바로 묻는다(한 시간 예약이 부르는 것과 같은 길) — 시각을 옮겨 가며 본다
+const op = async (env, body) => (await env.COMMUNITY.get().fetch('https://community/', { method: 'POST', body: JSON.stringify(body) })).json();
+const DAYMS = 86400 * 1000;
+const AUTO_RE = new RegExp(`^(${NICK_WORDS.adj.join('|')})(${NICK_WORDS.noun.join('|')})[1-9][0-9]{3}$`);
+
+test('자동 별명 낱말: 모든 조합이 별명 규칙(2~12자)에 맞고 막힌 낱말이 없으며, 숫자 4자리가 붙는다', () => {
+    assert.equal(AUTO_NICK_DAYS, 3);
+    for (const a of NICK_WORDS.adj) for (const n of NICK_WORDS.noun) for (const d of ['1000', '9999']) {
+        const nick = a + n + d;
+        assert.ok(NICK_RE.test(nick), nick);
+        assert.ok(!NICK_RESERVED.test(nick), nick);
+    }
+    assert.equal(new Set(NICK_WORDS.adj).size, NICK_WORDS.adj.length);
+    assert.equal(new Set(NICK_WORDS.noun).size, NICK_WORDS.noun.length);
+});
+
+test('자동 별명: 가입하고 3일 안에 별명을 정하지 않으면 한 시간 예약이 붙이고, 랭킹에 나오며, 한 번은 포인트 없이 바꾼다', async () => {
+    const env = await fresh();
+    const me = async s => (await call(env, 'GET', '/api/me', { headers: auth(s) })).data.user;
+    const nick = (s, nickname) => call(env, 'POST', '/api/me/nickname', { body: { nickname }, headers: auth(s) });
+    const t0 = Date.now();
+    const a = (await login(env, { sub: 'A', email: 'a@gmail.com' })).data;   // 별명 없이 둔다
+    const b = (await login(env, { sub: 'B', email: 'b@gmail.com' })).data;   // 바로 정한다
+    assert.equal((await nick(b.session, '정한별명')).status, 200);
+
+    const due = (await me(a.session)).nickDue;
+    assert.ok(due >= t0 + 3 * DAYMS && due <= Date.now() + 3 * DAYMS, '가입 3일 뒤');
+    assert.equal((await me(b.session)).nickDue, null);
+    assert.equal(env.COMMUNITY._m.has('q:A'), true);
+    assert.equal(env.COMMUNITY._m.has('q:B'), false, '별명을 정하면 대기열에서 빠진다');
+
+    // 한 시간 예약이 실제로 부른다(처음이라 예전 회원 훑기 표시도 남는다). 아직 3일 전이라 붙이지 않는다
+    const waits = [];
+    await worker.scheduled({}, env, { waitUntil: p => waits.push(p) });
+    await Promise.all(waits);
+    assert.equal(env.COMMUNITY._m.get('nickq'), 1);
+    assert.equal((await me(a.session)).nick, null);
+    assert.deepEqual((await op(env, { op: 'autoNicks', now: due - 1 })).named, []);
+
+    // 3일이 지나면 붙는다: 형용사 + 동물 + 숫자 4자리
+    const got = (await op(env, { op: 'autoNicks', now: due })).named;
+    assert.equal(got.length, 1);
+    assert.match(got[0], AUTO_RE);
+    const u = await me(a.session);
+    assert.equal(u.nick, got[0]);
+    assert.equal(u.nickAuto, true);
+    assert.equal(u.nickDue, null);
+    assert.equal(env.COMMUNITY._m.has('q:A'), false);
+    assert.equal(env.COMMUNITY._m.get('n:' + got[0].toLowerCase()), 'A', '다른 사람이 같은 별명을 못 쓴다');
+    assert.equal((await nick(b.session, got[0])).data.error, 'taken_nick');
+    assert.deepEqual((await op(env, { op: 'autoNicks', now: due + 3600 * 1000 })).named, [], '한 번만 붙인다');
+    assert.ok((await call(env, 'GET', '/api/ranking')).data.top.some(x => x.nick === got[0]), '별명이 생겨 랭킹에 나온다');
+
+    // 한 번은 포인트 없이 바꾸고(출석 10점뿐이어도), 그 뒤로는 보통처럼 500포인트
+    const changed = await nick(a.session, '내가정한별명');
+    assert.equal(changed.status, 200);
+    assert.equal(changed.data.cost, 0);
+    assert.equal(changed.data.user.nickAuto, false);
+    assert.equal(env.COMMUNITY._m.has('n:' + got[0].toLowerCase()), false, '자동 별명은 풀린다');
+    assert.equal((await nick(a.session, '또바꿈')).data.error, 'need_points');
+});
+
+test('자동 별명: 예전 회원은 그때부터 3일, 관리자가 별명을 지우면 다시 3일, 운영자 · 탈퇴한 회원은 붙이지 않는다', async () => {
+    const env = await fresh();
+    const m = env.COMMUNITY._m;
+    // 이 기능 전에 가입해 별명이 없는 회원(한 달 전 가입) — 대기열 기록이 없다
+    await login(env, { sub: 'OLD', email: 'old@gmail.com' });
+    const old = m.get('u:OLD'); delete old.nickDue; old.createdAt -= 30 * DAYMS; m.set('u:OLD', old); m.delete('q:OLD');
+    // 운영자(별명 없음), 곧 탈퇴할 회원
+    await login(env, { sub: 'STAFF', email: 'staff@gmail.com' });
+    assert.equal((await call(env, 'POST', '/api/admin/members/STAFF/staff', { headers: asAdmin })).status, 200);
+    const gone = (await login(env, { sub: 'GONE', email: 'gone@gmail.com' })).data;
+    await call(env, 'POST', '/api/me/delete', { body: { confirm: true }, headers: auth(gone.session) });
+    assert.equal(m.has('q:GONE'), false, '탈퇴하면 대기열에서도 지운다');
+
+    const T = Date.now();
+    assert.deepEqual((await op(env, { op: 'autoNicks', now: T })).named, [], '예전 회원에게 바로 붙이지 않는다');
+    assert.equal(m.get('u:OLD').nickDue, T + 3 * DAYMS, '처음 도는 때부터 3일');
+    const r = (await op(env, { op: 'autoNicks', now: T + 3 * DAYMS })).named;
+    assert.equal(r.length, 1, '운영자에게는 붙이지 않는다');
+    assert.equal(m.get('u:OLD').nick, r[0]);
+    assert.equal(m.get('u:STAFF').nick, undefined);
+    assert.equal(m.has('q:STAFF'), false);
+
+    // 관리자가 (자동) 별명을 지우면 새로 3일
+    const list = (await call(env, 'GET', '/api/admin/members', { headers: asAdmin })).data.members;
+    assert.equal(list.find(x => x.sub === 'OLD').nickAuto, true, '관리자 명부에 자동 별명 표시');
+    assert.equal((await call(env, 'POST', '/api/admin/members/OLD/clear-nick', { headers: asAdmin })).status, 200);
+    const due2 = m.get('u:OLD').nickDue;
+    assert.ok(due2 > T + 3 * DAYMS, '지운 때부터 3일');
+    assert.equal(m.get('u:OLD').nickAuto, undefined);
+    assert.deepEqual((await op(env, { op: 'autoNicks', now: due2 - 1 })).named, []);
+    assert.equal((await op(env, { op: 'autoNicks', now: due2 })).named.length, 1);
+    assert.equal(m.get('u:OLD').nickAuto, true);
+});
+
 test('₩ 원화 반응도 따로 켜고 끈다', async () => {
     const env = await fresh();
     const a = (await login(env, { sub: 'A', email: 'a@gmail.com' })).data.session;
@@ -438,7 +560,7 @@ test('랭킹: 출석(하루 한 번)·반응·로그인한 채 산 이용권으�
     let r = (await call(env, 'GET', '/api/ranking')).data;
     assert.deepEqual(r.top, [{ rank: 1, nick: '첫째', points: 10 + 4 + buyPts, days: 1 }], '별명 없는 B 는 공개 목록에 없다');
     assert.equal(r.me, null);
-    assert.deepEqual(r.points, { attend: 10, react: 2, buyPer100: 10, nickChange: 500 });
+    assert.deepEqual(r.points, { attend: 10, react: 2, buyPer100: 10, nickChange: 500, dayPass: 300 });
 
     // 내 순위: 별명이 없어도 알려 준다
     r = (await call(env, 'GET', '/api/ranking', { headers: auth(b.session) })).data;
@@ -602,6 +724,91 @@ test('랭킹 색인: 무작위로 점수 · 별명 · 운영자 · 탈퇴를 바
     assert.ok(did.clearNick >= 3 && did.userDelete >= 3, '별명 지우기 · 탈퇴도 여러 번: ' + JSON.stringify(did));
 });
 
+test('포인트로 1일 이용권: 300포인트로 24시간 키, 랭킹 점수는 그대로, 살아 있는 동안 다시 못 쓰고, 발급이 실패하면 포인트를 돌려준다', async () => {
+    const env = await fresh({ SIGNUP_TRIAL_DAYS: '' });
+    const a = (await login(env, { sub: 'A', email: 'a@gmail.com' })).data;
+    const pass = () => call(env, 'POST', '/api/me/point-pass', { headers: auth(a.session) });
+    const me = async () => (await call(env, 'GET', '/api/me', { headers: auth(a.session) })).data;
+    assert.equal((await call(env, 'POST', '/api/me/point-pass')).status, 401, '로그인 필요');
+    assert.equal((await me()).points.dayPass, 300);
+
+    // 가입한 날 출석 10점뿐이면 모자란다
+    let r = await pass();
+    assert.equal(r.status, 402);
+    assert.equal(r.data.error, 'need_points');
+    const u = env.COMMUNITY._m.get('u:A'); u.buy = 3000; env.COMMUNITY._m.set('u:A', u);   // 300점 + 출석 10점
+
+    r = await pass();
+    assert.equal(r.status, 200);
+    assert.equal(r.data.cost, 300);
+    const p = parseKey(r.data.key);
+    assert.equal(p.plan, 'pday');
+    assert.equal(p.expiresAt - p.issuedAt, 86400, '24시간');
+    const sc = (await me()).user.score;
+    assert.deepEqual([sc.total, sc.spent, sc.avail], [310, 300, 10], '랭킹 점수는 그대로, 쓸 수 있는 포인트만 준다');
+    assert.equal((await me()).user.pointPass.key, r.data.key, '다른 기기에서도 내 정보로 받는다');
+
+    // 관리자 주문 목록에 0원 "포인트로 열기"로 남고, 정지 · 조회가 같은 길
+    const orders = (await call(env, 'GET', '/api/admin/orders?status=paid', { headers: asAdmin })).data.orders;
+    const o = orders.find(x => x.m === 'points');
+    assert.ok(o, '주문으로 남는다');
+    assert.equal(o.a, 0);
+
+    // 살아 있는 동안은 또 쓰지 않는다(포인트를 더 모아도)
+    const u2 = env.COMMUNITY._m.get('u:A'); u2.buy = 9000; env.COMMUNITY._m.set('u:A', u2);
+    r = await pass();
+    assert.equal(r.status, 409);
+    assert.equal(r.data.error, 'active');
+    // 끝나면 다시 쓸 수 있다
+    const u3 = env.COMMUNITY._m.get('u:A'); u3.ppass.expiresAt = Date.now() - 1000; env.COMMUNITY._m.set('u:A', u3);
+    r = await pass();
+    assert.equal(r.status, 200);
+    assert.equal((await me()).user.score.spent, 600);
+    assert.equal(env.COMMUNITY._m.get('u:A').ppassN, 2);
+
+    // 서명 키가 없어 발급하지 못하면 쓴 포인트를 돌려준다
+    const env2 = makeEnv({ SIGNUP_TRIAL_DAYS: '' });   // 서명 키를 만들지 않은 서버
+    _resetForTests();
+    const b = (await login(env2, { sub: 'B', email: 'b@gmail.com' })).data;
+    const ub = env2.COMMUNITY._m.get('u:B'); ub.buy = 5000; env2.COMMUNITY._m.set('u:B', ub);
+    r = await call(env2, 'POST', '/api/me/point-pass', { headers: auth(b.session) });
+    assert.equal(r.status, 503);
+    const back = env2.COMMUNITY._m.get('u:B');
+    assert.equal(back.spent || 0, 0, '포인트를 돌려받는다');
+    assert.equal(back.ppass, undefined);
+});
+
+test('결제 흐름 집계: 결제 페이지 · 고름은 화면이, 주문 · 입금 · 포인트로 열기는 서버가 센다(화면에서는 못 보냄), 로봇은 세지 않는다', async () => {
+    const env = await fresh({ SIGNUP_TRIAL_DAYS: '', BANK_NAME: '우리은행', BANK_ACCOUNT: '1002-123-456789', BANK_HOLDER: '홍길동' });
+    const tap = (k, ua) => worker.fetch(new Request('https://api.lottodraw.kr/api/tap', {
+        method: 'POST', headers: Object.assign({ 'Content-Type': 'text/plain;charset=UTF-8', Origin: ORIGIN }, ua ? { 'User-Agent': ua } : {}), body: JSON.stringify({ k }),
+    }), env, ctx);
+    assert.equal((await tap('pay-view')).status, 204);
+    assert.equal((await tap('pay-view')).status, 204);
+    assert.equal((await tap('pay-view', 'Mozilla/5.0 (compatible; Googlebot/2.1)')).status, 204, '로봇은 받기만 하고 세지 않는다');
+    assert.equal((await tap('pay-pick')).status, 204);
+    for (const k of ['pay-order', 'pay-paid', 'pay-point']) assert.equal((await tap(k)).status, 400, k + ' 는 화면에서 못 보낸다');
+
+    const waits = [];
+    const wctx = { waitUntil: p => waits.push(p) };
+    const res = await worker.fetch(new Request('https://api.lottodraw.kr/api/orders', { method: 'POST', headers: { Origin: ORIGIN, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: 'round', method: 'bank', name: '홍길동', agree: true }) }), env, wctx);
+    const order = (await res.json()).order;
+    await Promise.all(waits);
+    assert.equal((await call(env, 'POST', `/api/admin/orders/${order.id}/confirm`, { headers: asAdmin })).status, 200);
+    assert.equal((await call(env, 'POST', `/api/admin/orders/${order.id}/confirm`, { headers: asAdmin })).status, 200, '두 번 눌러도');
+
+    const a = (await login(env, { sub: 'A', email: 'a@gmail.com' })).data;
+    const u = env.COMMUNITY._m.get('u:A'); u.buy = 3000; env.COMMUNITY._m.set('u:A', u);
+    const pw = [];
+    await worker.fetch(new Request('https://api.lottodraw.kr/api/me/point-pass', { method: 'POST', headers: { Origin: ORIGIN, Authorization: 'Bearer ' + a.session } }), env, { waitUntil: p => pw.push(p) });
+    await Promise.all(pw);
+
+    const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+    const day = (await call(env, 'GET', '/api/admin/taps', { headers: asAdmin })).data.days.find(d => d.day === today);
+    assert.deepEqual(day, { day: today, 'pay-view': 2, 'pay-pick': 1, 'pay-order': 1, 'pay-paid': 1, 'pay-point': 1 });
+});
+
 test('공유 · 출력 집계: 우리 사이트에서 보낸 종류만 한국 날짜별로 세고, 관리자만 본다', async () => {
     const env = await fresh();
     // 브라우저 sendBeacon 처럼 text/plain 으로 보낸다(미리 묻기 없음)
@@ -629,4 +836,145 @@ test('공유 · 출력 집계: 우리 사이트에서 보낸 종류만 한국 �
     // 같은 IP 가 너무 자주 보내면 막는다
     env.TAP_LIMIT = { limit: async () => ({ success: false }) };
     assert.equal((await tap({ k: 'gen-share' })).status, 429);
+});
+
+test('블로그 조회수: 우리 사이트에서 연 글만 세고, 누구나 글별 수를 본다', async () => {
+    const env = await fresh();
+    // 브라우저 fetch(text/plain) 처럼 보낸다(미리 묻기 없음)
+    const view = async (body, { origin = ORIGIN, ua = 'Mozilla/5.0 (iPhone) Safari/604.1' } = {}) => {
+        const res = await worker.fetch(new Request('https://api.lottodraw.kr/api/view', {
+            method: 'POST', body: JSON.stringify(body),
+            headers: Object.assign({ 'Content-Type': 'text/plain;charset=UTF-8', 'User-Agent': ua }, origin ? { Origin: origin } : {}),
+        }), env, ctx);
+        return { status: res.status, data: await res.json(), cors: res.headers.get('Access-Control-Allow-Origin') };
+    };
+    let r = await view({ p: 'lotto-tax-guide' });
+    assert.equal(r.status, 200);
+    assert.deepEqual(r.data.views, { 'lotto-tax-guide': 1 }, '센 뒤의 수를 돌려준다');
+    assert.equal(r.cors, ORIGIN, '글 페이지가 돌려받은 수를 읽을 수 있다');
+    await view({ p: 'lotto-tax-guide' });
+    await view({ p: 'is-number-34-special' });
+
+    assert.equal((await view({ p: 'Bad Slug!' })).status, 400, '글 이름 모양이 아니면 거절');
+    assert.equal((await view({})).status, 400);
+    assert.equal((await view({ p: 'lotto-tax-guide' }, { origin: 'https://evil.example' })).status, 403, '다른 사이트');
+    assert.equal((await view({ p: 'lotto-tax-guide' }, { origin: null })).status, 403, 'Origin 없음');
+    for (const ua of ['Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)', 'Mozilla/5.0 (compatible; Yeti/1.1; +https://naver.me/spd)',
+        'Mozilla/5.0 (X11; Linux x86_64) HeadlessChrome/120.0', 'Mozilla/5.0 Chrome/120.0 Chrome-Lighthouse']) {
+        r = await view({ p: 'lotto-tax-guide' }, { ua });
+        assert.equal(r.status, 200);
+        assert.deepEqual(r.data.views, {}, '로봇은 세지 않는다: ' + ua);
+    }
+
+    // 읽기: 아무 사이트에서나(CORS *), 없는 글은 0
+    const g = await call(env, 'GET', '/api/views?ids=lotto-tax-guide,is-number-34-special,why-jackpots-split,lotto-tax-guide', { headers: { Origin: 'https://elsewhere.example' } });
+    assert.equal(g.status, 200);
+    assert.deepEqual(g.data.views, { 'lotto-tax-guide': 2, 'is-number-34-special': 1, 'why-jackpots-split': 0 });
+    assert.equal(g.headers.get('Access-Control-Allow-Origin'), '*');
+    assert.match(g.headers.get('Cache-Control'), /max-age=60/);
+    assert.equal((await call(env, 'GET', '/api/views')).status, 400);
+    assert.equal((await call(env, 'GET', '/api/views?ids=a,B')).status, 400);
+    assert.equal((await call(env, 'GET', '/api/views?ids=' + Array.from({ length: 101 }, (_, i) => 'p' + i).join(','))).status, 400, '한 번에 100개까지');
+    assert.equal(env.COMMUNITY._m.get('v:lotto-tax-guide'), 2, '글마다 숫자 한 줄');
+    assert.ok(![...env.COMMUNITY._m.values()].some(v => JSON.stringify(v).includes('iPhone')), '누가 읽었는지는 남기지 않는다');
+
+    // 같은 IP 가 너무 자주 보내면 막는다
+    env.VIEW_LIMIT = { limit: async () => ({ success: false }) };
+    assert.equal((await view({ p: 'lotto-tax-guide' })).status, 429);
+    assert.equal(env.COMMUNITY._m.get('v:lotto-tax-guide'), 2);
+});
+
+test('블로그 조회수 시작값: 관리자가 통째로 갈아 끼우고, 보이는 수 = 직접 센 수 + 시작값', async () => {
+    const env = await fresh();
+    const view = p => worker.fetch(new Request('https://api.lottodraw.kr/api/view', {
+        method: 'POST', body: JSON.stringify({ p }), headers: { Origin: ORIGIN, 'Content-Type': 'text/plain;charset=UTF-8' },
+    }), env, ctx).then(r => r.json());
+    const views = ids => call(env, 'GET', '/api/views?ids=' + ids).then(r => r.data.views);
+    await view('lotto-tax-guide');
+    await view('lotto-tax-guide');
+
+    const base = { 'lotto-tax-guide': 120, 'is-number-34-special': 45, 'why-jackpots-split': 0 };
+    assert.equal((await call(env, 'POST', '/api/admin/views/base', { body: { base } })).status, 401, '관리자만');
+    let r = await call(env, 'POST', '/api/admin/views/base', { headers: asAdmin, body: { base, until: '2026-10-18T09:41:00Z' } });
+    assert.equal(r.status, 200);
+    assert.equal(r.data.posts, 2, '0 은 담지 않는다');
+    assert.deepEqual(await views('lotto-tax-guide,is-number-34-special,why-jackpots-split'), { 'lotto-tax-guide': 122, 'is-number-34-special': 45, 'why-jackpots-split': 0 });
+    assert.deepEqual((await view('is-number-34-special')).views, { 'is-number-34-special': 46 }, '센 뒤의 수에도 시작값이 붙는다');
+
+    // 같은 값을 다시 넣어도 두 번 더해지지 않는다. 서버가 다시 떠도(메모리 비움) 그대로
+    await call(env, 'POST', '/api/admin/views/base', { headers: asAdmin, body: { base, until: '2026-10-18T09:41:00Z' } });
+    env.COMMUNITY.restart();
+    assert.deepEqual(await views('lotto-tax-guide,is-number-34-special'), { 'lotto-tax-guide': 122, 'is-number-34-special': 46 });
+
+    r = await call(env, 'GET', '/api/admin/views', { headers: asAdmin });
+    assert.equal(r.status, 200);
+    assert.deepEqual(r.data.counted, { 'lotto-tax-guide': 2, 'is-number-34-special': 1 });
+    assert.deepEqual(r.data.base, { 'lotto-tax-guide': 120, 'is-number-34-special': 45 });
+    assert.equal(r.data.until, '2026-10-18T09:41:00Z');
+    assert.equal((await call(env, 'GET', '/api/admin/views')).status, 401);
+
+    for (const bad of [null, [], { 'Bad Slug': 1 }, { a: -1 }, { a: 1.5 }, { a: '10' }]) {
+        assert.equal((await call(env, 'POST', '/api/admin/views/base', { headers: asAdmin, body: { base: bad } })).status, 400, JSON.stringify(bad).slice(0, 40));
+    }
+    // 빈 값으로 갈아 끼우면 시작값이 빠진다
+    await call(env, 'POST', '/api/admin/views/base', { headers: asAdmin, body: { base: {} } });
+    assert.deepEqual(await views('lotto-tax-guide,is-number-34-special'), { 'lotto-tax-guide': 2, 'is-number-34-special': 1 });
+});
+
+test('회원 자료 백업: 1,000줄씩 끊어 내려받고(세션 빼고), 빈 저장소에 되살리면 회원 · 별명 · 랭킹이 그대로', async () => {
+    const env = await fresh();
+    const a = (await login(env, { sub: 'A', email: 'a@gmail.com' })).data.session;
+    await login(env, { sub: 'B', email: 'b@gmail.com' });
+    assert.equal((await call(env, 'POST', '/api/me/nickname', { headers: auth(a), body: { nickname: '백업왕' } })).status, 200);
+    // 1,000줄을 넘겨 끊어 읽기를 본다
+    for (let i = 0; i < 1500; i++) env.COMMUNITY._m.set('v:' + 'post-' + String(i).padStart(4, '0'), i);
+
+    assert.equal((await call(env, 'GET', '/api/admin/backup')).status, 401, '관리자만');
+    const rows = [];
+    let after = null, pages = 0;
+    do {
+        const r = await call(env, 'GET', '/api/admin/backup' + (after ? '?after=' + encodeURIComponent(after) : ''), { headers: asAdmin });
+        assert.equal(r.status, 200);
+        assert.ok(r.data.rows.length <= 1000);
+        rows.push(...r.data.rows);
+        after = r.data.next;
+        pages++;
+    } while (after);
+    assert.ok(pages >= 2, '여러 쪽으로 나뉜다');
+    const keys = rows.map(r => r[0]);
+    assert.equal(new Set(keys).size, keys.length, '겹치는 줄 없음');
+    assert.ok(!keys.some(k => k.startsWith('s:')), '로그인 세션은 빠진다');
+    const all = [...env.COMMUNITY._m.keys()].filter(k => !k.startsWith('s:')).sort();
+    assert.deepEqual([...keys].sort(), all, '세션 말고는 모두 들어 있다');
+    assert.ok(keys.includes('u:A') && keys.includes('n:백업왕'));
+
+    // 새 저장소(잘못된 배포로 비었다고 치고)에 되살린다
+    const env2 = await fresh();
+    const bad = await call(env2, 'POST', '/api/admin/restore', { headers: asAdmin, body: { rows: [['s:x', { sub: 'A' }]] } });
+    assert.equal(bad.status, 400, '세션 줄은 받지 않는다');
+    assert.equal((await call(env2, 'POST', '/api/admin/restore', { headers: asAdmin, body: { rows: [['u:x']] } })).status, 400, '모양이 틀리면 거절');
+    assert.equal((await call(env2, 'POST', '/api/admin/restore', { body: { rows: [] } })).status, 401, '관리자만');
+    for (let i = 0; i < rows.length; i += 1000) {
+        const r = await call(env2, 'POST', '/api/admin/restore', { headers: asAdmin, body: { rows: rows.slice(i, i + 1000) } });
+        assert.equal(r.status, 200);
+        assert.equal(r.data.put, rows.slice(i, i + 1000).length);
+    }
+    const list = (await call(env2, 'GET', '/api/admin/members', { headers: asAdmin })).data;
+    assert.deepEqual(list.members.map(m => m.email).sort(), ['a@gmail.com', 'b@gmail.com']);
+    assert.equal(list.members.find(m => m.email === 'a@gmail.com').nick, '백업왕');
+    // 세션은 없으니 다시 로그인하면 같은 계정으로 들어온다
+    assert.equal((await call(env2, 'GET', '/api/me', { headers: auth(a) })).status, 401);
+    const again = await login(env2, { sub: 'A', email: 'a@gmail.com' });
+    assert.equal((await call(env2, 'GET', '/api/me', { headers: auth(again.data.session) })).data.user.nick, '백업왕');
+    // 별명은 여전히 내 것이라 다른 사람이 못 쓴다
+    const b2 = (await login(env2, { sub: 'B', email: 'b@gmail.com' })).data.session;
+    assert.notEqual((await call(env2, 'POST', '/api/me/nickname', { headers: auth(b2), body: { nickname: '백업왕' } })).status, 200);
+});
+
+test('회원 자료 되살리기: 한 번에 1,000줄 · 1MB 를 넘기면 거절', async () => {
+    const env = await fresh();
+    const many = Array.from({ length: 1001 }, (_, i) => ['v:p' + i, 1]);
+    assert.equal((await call(env, 'POST', '/api/admin/restore', { headers: asAdmin, body: { rows: many } })).status, 400);
+    const big = [['vbase', { n: { x: 'a'.repeat(1100 * 1024) } }]];
+    assert.equal((await call(env, 'POST', '/api/admin/restore', { headers: asAdmin, body: { rows: big } })).status, 413);
 });

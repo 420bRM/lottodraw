@@ -1,0 +1,41 @@
+name: seed-views
+
+# 블로그 조회수 시작값: Cloudflare Web Analytics 의 글별 페이지뷰(직접 세기 시작한 2026-10-18 18:41 KST 까지)를 Worker 에 넣는다.
+# 손으로만 돌린다(Actions → seed-views → Run workflow). apply 를 끄면 표만 보이고, 켜면 넣는다. 다시 돌려도 두 번 더해지지 않는다.
+# 자세한 설명은 tools/seed-views.js 맨 위.
+#
+# 비밀값: CLOUDFLARE_ACCOUNT_ID · ADMIN_TOKEN(배포용과 같은 것),
+#         CF_ANALYTICS_TOKEN(선택 — 권한 "Account Analytics: Read". 없으면 배포용 CLOUDFLARE_API_TOKEN 을 써 본다)
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Worker 에 넣는다 (끄면 표만 보인다)"
+        type: boolean
+        default: false
+      manual:
+        description: "(선택) Cloudflare 대신 넣을 값 JSON. 예: {\"lotto-tax-guide\": 120}"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: 시작값 읽기 (apply 면 넣기)
+        env:
+          CF_TOKEN: ${{ secrets.CF_ANALYTICS_TOKEN || secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+          APPLY: ${{ inputs.apply }}
+          MANUAL: ${{ inputs.manual }}
+        run: node tools/seed-views.js

@@ -7,8 +7,8 @@
     const TOKEN_STORE = 'lottodraw.admin.token';
     const $ = id => document.getElementById(id);
     const STATUS = { pending: '입금 대기', paid: '발급 완료', refund_requested: '환불 요청', refunded: '환불', cancelled: '취소' };
-    const METHOD = { bank: '계좌이체', payapp: '카드(페이앱)', manual: '직접 발급', trial: '가입 무료 체험' };
-    const PLAN = { day: '1일', week: '1주', month: '1개월', lifetime: '평생', trial: '3일 체험', custom: '기간 지정' };
+    const METHOD = { bank: '계좌이체', payapp: '카드(페이앱)', manual: '직접 발급', trial: '가입 무료 체험', points: '포인트로 열기' };
+    const PLAN = { day: '1일', round: '이번 회차', pday: '1일(포인트)', week: '1주', month: '1개월', lifetime: '평생', trial: '3일 체험', custom: '기간 지정' };
 
     let token = null;
     let tab = 'pending';
@@ -220,7 +220,7 @@
                 el('button', { type: 'button', className: 'btn btn-secondary btn-mini danger', text: '삭제', on: { click: () => memberAct(m, 'delete') } }),
             ]);
             body.appendChild(el('tr', {}, [
-                el('td', { text: (m.staff ? '🛡 ' : '') + (m.nick || '—') }), el('td', { text: m.email || '' }), el('td', { text: when(m.createdAt) }),
+                el('td', { text: (m.staff ? '🛡 ' : '') + (m.nick || '—') + (m.nick && m.nickAuto ? ' (자동)' : '') }), el('td', { text: m.email || '' }), el('td', { text: when(m.createdAt) }),
                 el('td', { text: m.lastAt ? when(m.lastAt) : '' }), el('td', { text: trial }),
                 el('td', { text: String(m.hearts || 0) }), el('td', { text: String(m.dollars || 0) }), el('td', { text: String(m.wons || 0) }),
                 el('td', { title: m.score ? `출석 ${m.score.days}일 · 반응 ${m.score.reacts}개 · 채팅 ${m.score.chats || 0}개 · 댓글 ${m.score.comments || 0}개 · 이용권 ${(m.buy || 0).toLocaleString()}원` : '', text: m.score ? String(m.score.total) : '0' }), tools,
@@ -258,6 +258,83 @@
         }
     }
 
+    /* ───── 회원 자료 백업 ───── */
+
+    const BACKUP_KIND = 'lottodraw-members';
+    const RESTORE_CHUNK = 700 * 1024;   // 한 번에 보내는 글자 수(서버는 1MB 까지 받는다)
+
+    async function backupDownload() {
+        const btn = $('backup-download');
+        btn.disabled = true;
+        try {
+            const rows = [];
+            let after = null;
+            do {
+                say('backup-status', `받는 중… ${rows.length.toLocaleString('ko-KR')}줄`);
+                const r = await call('/backup' + (after ? '?after=' + encodeURIComponent(after) : ''));
+                rows.push(...(r.rows || []));
+                after = r.next;
+            } while (after);
+            const now = new Date();
+            const file = { kind: BACKUP_KIND, version: 1, at: now.toISOString(), count: rows.length, rows };
+            const blob = new Blob([JSON.stringify(file)], { type: 'application/json' });
+            const a = document.createElement('a');
+            const day = new Date(now.getTime() + 9 * 3600 * 1000).toISOString().slice(0, 10).replace(/-/g, '');
+            a.href = URL.createObjectURL(blob);
+            a.download = `lottodraw-members-${day}.json`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+            const users = rows.filter(r => r[0].startsWith('u:')).length;
+            say('backup-status', `${rows.length.toLocaleString('ko-KR')}줄(회원 ${users.toLocaleString('ko-KR')}명)을 받았습니다. 이메일이 들어 있으니 안전한 곳에 보관하세요.`);
+        } catch (err) {
+            say('backup-status', '내려받지 못했습니다: ' + err.message, true);
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    async function backupRestore(e) {
+        const input = e.target;
+        const f = input.files && input.files[0];
+        input.value = '';
+        if (!f) return;
+        let file;
+        try { file = JSON.parse(await f.text()); } catch (err) { file = null; }
+        if (!file || file.kind !== BACKUP_KIND || !Array.isArray(file.rows)) {
+            say('backup-status', '이 관리자 페이지에서 내려받은 회원 자료 파일이 아닙니다.', true);
+            return;
+        }
+        const users = file.rows.filter(r => Array.isArray(r) && String(r[0]).startsWith('u:')).length;
+        const ask = `${f.name}\n${String(file.at || '').slice(0, 16).replace('T', ' ')} (UTC) 에 받은 ${file.rows.length.toLocaleString('ko-KR')}줄, 회원 ${users.toLocaleString('ko-KR')}명을 되살립니까?\n` +
+            '같은 키의 지금 값은 파일 값으로 덮어써집니다. 그 뒤에 바뀐 점수 · 별명 · 댓글은 되돌아갑니다.';
+        if (!window.confirm(ask)) return;
+        let sent = 0;
+        try {
+            let chunk = [], size = 0;
+            const flush = async () => {
+                if (!chunk.length) return;
+                await call('/restore', { method: 'POST', body: { rows: chunk } });
+                sent += chunk.length;
+                chunk = []; size = 0;
+                say('backup-status', `되살리는 중… ${sent.toLocaleString('ko-KR')} / ${file.rows.length.toLocaleString('ko-KR')}줄`);
+            };
+            for (const row of file.rows) {
+                const len = JSON.stringify(row).length + 1;
+                if (chunk.length && (chunk.length >= 1000 || size + len > RESTORE_CHUNK)) await flush();
+                chunk.push(row);
+                size += len;
+            }
+            await flush();
+            say('backup-status', `${sent.toLocaleString('ko-KR')}줄을 되살렸습니다.`);
+            status = await call('/status').catch(() => status);
+            await loadMembers();
+        } catch (err) {
+            say('backup-status', `${sent.toLocaleString('ko-KR')}줄까지 되살리고 멈췄습니다: ${err.message} — 같은 파일로 다시 하면 처음부터 덮어씁니다.`, true);
+        }
+    }
+
     /* ───── 공유 · 출력 집계 ───── */
 
     const TAPS = [['gen-share', '생성기 공유'], ['gen-print', '생성기 출력'], ['post-share', '글 공유'], ['post-sns', '글 SNS']];
@@ -267,7 +344,9 @@
         try {
             const r = await call('/taps');
             $('taps-card').hidden = false;
+            $('pay-card').hidden = false;
             renderTaps(r.days || []);
+            renderPay(r.days || []);
             say('taps-status', `${when(Date.now())} 기준`);
         } catch (err) {
             $('taps-card').hidden = err.status === 503;
@@ -305,6 +384,39 @@
         ]);
         fill('taps-days', recent.map(d => rowOf(d, byDay.get(d) || {})));
         $('taps-sum').textContent = `오늘 공유 ${((today['gen-share'] || 0) + (today['post-share'] || 0) + (today['post-sns'] || 0)).toLocaleString('ko-KR')} · 출력 ${(today['gen-print'] || 0).toLocaleString('ko-KR')}`;
+    }
+
+    // 결제 흐름: 같은 하루 집계(e:<날짜>)의 결제 종류. 단계별 수와 주문률 · 입금률
+    const PAY = [['pay-view', '결제 페이지'], ['pay-pick', '고름'], ['pay-order', '주문'], ['pay-paid', '입금'], ['pay-point', '포인트']];
+    function renderPay(days) {
+        const byDay = new Map(days.map(d => [d.day, d]));
+        const now = Date.now();
+        const recent = Array.from({ length: 30 }, (_, i) => kstDay(now - i * 86400000));
+        const sum = list => {
+            const out = {};
+            PAY.forEach(([k]) => { out[k] = list.reduce((n, d) => n + ((d && d[k]) || 0), 0); });
+            return out;
+        };
+        const pct = (a, b) => (b ? Math.round(a / b * 1000) / 10 + '%' : '—');
+        const rowOf = (label, c, strong) => el('tr', {}, [el(strong ? 'th' : 'td', { text: label })].concat(
+            PAY.map(([k]) => el('td', { text: (c[k] || 0).toLocaleString('ko-KR') })),
+            [el('td', { text: pct(c['pay-order'] || 0, c['pay-view'] || 0) }), el('td', { text: pct(c['pay-paid'] || 0, c['pay-order'] || 0) })]));
+        const fill = (id, rows) => {
+            const t = $(id);
+            t.textContent = '';
+            t.appendChild(el('thead', {}, [el('tr', {}, ['', ...PAY.map(x => x[1]), '주문률', '입금률'].map(h => el('th', { text: h })))]));
+            t.appendChild(el('tbody', {}, rows));
+        };
+        const today = byDay.get(recent[0]) || {};
+        const week = sum(recent.slice(0, 7).map(d => byDay.get(d)));
+        fill('pay-table', [
+            rowOf('오늘', today, true),
+            rowOf('최근 7일', week, true),
+            rowOf('최근 30일', sum(recent.map(d => byDay.get(d))), true),
+            rowOf('전체', sum(days), true),
+        ]);
+        fill('pay-days', recent.map(d => rowOf(d, byDay.get(d) || {})));
+        $('pay-sum').textContent = `최근 7일 결제 페이지 ${(week['pay-view'] || 0).toLocaleString('ko-KR')} · 주문 ${(week['pay-order'] || 0).toLocaleString('ko-KR')} · 입금 ${(week['pay-paid'] || 0).toLocaleString('ko-KR')}`;
     }
 
     /* ───── 실시간 채팅 관리 ───── */
@@ -480,10 +592,10 @@
             ]),
             el('div', { className: 'card-body' }, [
                 el('p', { className: 'admin-line' }, [
-                    el('b', { text: `${PLAN[o.p] || o.p} · ${o.m === 'manual' || o.m === 'trial' ? '무료' : won(o.a)}` }),
+                    el('b', { text: `${PLAN[o.p] || o.p} · ${o.m === 'manual' || o.m === 'trial' || o.m === 'points' ? '무료' : won(o.a)}` }),
                     ` · ${METHOD[o.m] || o.m} · ${when(o.c)}`,
                 ]),
-                o.n && o.m !== 'trial' ? el('p', { className: 'admin-line' }, ['입금자명/받는 사람: ', el('b', { text: o.n })]) : null,
+                o.n && o.m !== 'trial' && o.m !== 'points' ? el('p', { className: 'admin-line' }, ['입금자명/받는 사람: ', el('b', { text: o.n })]) : null,
                 orderMember(o) ? memberLine(orderMember(o)) : null,
                 o.k ? el('p', { className: 'admin-line', text: '키 번호 ' + o.k.toUpperCase() }) : null,
                 el('p', { className: 'co-actions' }, actions),
@@ -634,6 +746,9 @@
         $('chat-reload').addEventListener('click', loadChat);
         $('comments-reload').addEventListener('click', loadComments);
         $('members-q').addEventListener('input', renderMembers);
+        $('backup-download').addEventListener('click', backupDownload);
+        $('backup-pick').addEventListener('click', () => $('backup-file').click());
+        $('backup-file').addEventListener('change', backupRestore);
         document.querySelectorAll('.admin-tabs [data-status]').forEach(b => b.addEventListener('click', () => {
             tab = b.dataset.status;
             document.querySelectorAll('.admin-tabs [data-status]').forEach(x => x.setAttribute('aria-selected', String(x === b)));

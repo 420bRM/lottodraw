@@ -9,6 +9,7 @@
 //      구매자가 문의하면 판매자가 관리자 페이지에서 "환불 처리"를 누른다: 키 정지, 카드는 결제 취소까지.
 //   4) 지킴이 — 한 시간마다 입금 알림 연결이 살아 있는지 보고, 끊기면 판매자에게 알린다.
 //   5) 회원 — 구글 로그인, 좋아요(하트·달러). 가입 무료 체험 키(1회)는 SIGNUP_TRIAL_DAYS 를 넣을 때만 — 2026-10-11부터 끔. 저장은 community.js.
+//      가입하고 3일 안에 별명을 정하지 않으면 한 시간 예약이 자동 별명(예: 행운의수달4821)을 붙인다(autoNicks, 한 번은 무료로 바꾼다).
 //   6) 내 번호 — 회원이 산 번호를 회차별로 저장(마이페이지가 당첨번호와 맞춰 등수를 보여 준다). 저장은 community.js 의 k:
 //   7) 추첨 결과 메일 — 구독한 회원에게 일요일 오전부터 그 회차 당첨번호와 내 번호에 저장한 번호의 등수를 보낸다(resultMail).
 //      그 회차 번호를 저장하지 않은 회원에게는 보내지 않는다.
@@ -24,7 +25,7 @@
 // 비밀값과 설정은 README "4. 유료화" 와 worker/wrangler.toml 참고.
 
 import { generateKeyPair, importPrivate, importPublic, signKey, verifyKey, parseKey, hex32, publicOnly, keyId, b64urlEncode } from './keys.js';
-import { plansFor } from './plans.js';
+import { plansFor, roundEndsAt } from './plans.js';
 import { community, SESSION_DAYS, REACT_TYPES, ITEM_RE, POINTS, COMMENT, TAP_KINDS } from './community.js';
 import { verifyGoogleToken } from './google.js';
 import { saleRound, cleanGame, rankOf, kstParts, drawDay } from './lotto.js';
@@ -44,6 +45,7 @@ const MAX_DISCOUNT = 99;               // 계좌이체 주문 확인용 끝자�
 const AMT_PREFIX = 'amt:';             // 입금 대기 중인 계좌이체 주문의 금액 색인 (amt:5866 → 주문번호)
 const HOOK_SILENCE_HOURS = 13;         // 입금 알림 연결(휴대폰)이 이만큼 조용하면 끊긴 것으로 본다 (6시간마다 신호)
 const MAX_BODY = 4096;
+const RESTORE_MAX_BODY = 1024 * 1024;   // 회원 자료 되살리기 한 번(화면이 이보다 작게 나눠 보낸다)
 const CROCKFORD = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 
 class HttpError extends Error {
@@ -52,10 +54,11 @@ class HttpError extends Error {
 
 export default {
     // 한 시간마다: 입금 알림 연결이 살아 있는지 확인 (wrangler.toml [triggers])
-    // 추첨 결과 메일도 같은 한 시간 예약에서 돈다 — 따로 waitUntil 에 넣어 한쪽이 실패해도 다른 쪽은 그대로 간다
+    // 추첨 결과 메일 · 자동 별명(가입 3일 뒤)도 같은 한 시간 예약에서 돈다 — 따로 waitUntil 에 넣어 한쪽이 실패해도 다른 쪽은 그대로 간다
     async scheduled(event, env, ctx) {
         ctx.waitUntil(watchdog(env));
         ctx.waitUntil(resultMail(env, Date.now()).catch(err => console.error('result mail', err)));
+        if (loginReady(env)) ctx.waitUntil(community(env, 'autoNicks', { now: Date.now() }).catch(err => console.error('auto nick', err)));
     },
     async fetch(request, env, ctx) {
         try {
@@ -99,7 +102,9 @@ async function route(request, env, ctx) {
     if (path === '/api/me' && method === 'GET') return me(request, env);
     if (path === '/api/me/delete' && method === 'POST') return deleteMe(request, env, ctx);
     if (path === '/api/me/nickname' && method === 'POST') return setNickname(request, env);
+    if (path === '/api/me/point-pass' && method === 'POST') return pointPass(request, env, ctx);
     if (path === '/api/me/generator' && method === 'POST') return saveGenerator(request, env);
+    if (path === '/api/me/visits' && method === 'POST') return saveVisit(request, env);
     if (path === '/api/me/numbers' && method === 'GET') return getNumbers(request, env);
     if (path === '/api/me/numbers' && method === 'POST') return addNumbers(request, env);
     if (path === '/api/me/numbers/delete' && method === 'POST') return deleteNumbers(request, env);
@@ -114,6 +119,8 @@ async function route(request, env, ctx) {
     if (path === '/api/comments' && method === 'POST') return addComment(request, env, ctx);
     if (path === '/api/comments/delete' && method === 'POST') return deleteComment(request, env);
     if (path === '/api/tap' && method === 'POST') return tap(request, env);
+    if (path === '/api/view' && method === 'POST') return view(request, env);
+    if (path === '/api/views' && method === 'GET') return getViews(request, env, url);
 
     if (path.startsWith('/api/admin/')) {
         if (!adminOk(request, env)) throw new HttpError(401, 'unauthorized', '관리자 토큰이 맞지 않습니다.');
@@ -142,11 +149,18 @@ function bankInfo(env) {
     };
 }
 
+// 판매하는 이용권만(1주 이용권은 이번 회차 이용권으로 바뀌어 팔지 않는다 — plans.js)
 function publicPlans(env) {
     const plans = plansFor(env);
     const out = {};
-    Object.keys(plans).forEach(id => { out[id] = { amount: plans[id].amount, days: plans[id].days }; });
+    Object.keys(plans).forEach(id => { if (plans[id].sale !== false) out[id] = { amount: plans[id].amount, days: plans[id].days }; });
     return out;
+}
+
+// 결제 흐름 집계(관리자 페이지 "결제 흐름"): 주문 · 입금(발급) · 포인트로 열기는 서버가 센다. 실패해도 주문 · 발급은 그대로
+async function payTap(env, kind) {
+    if (!env.COMMUNITY) return;
+    try { await community(env, 'tap', { kind, now: Date.now() }); } catch (e) { console.error('pay tap', kind, e); }
 }
 
 async function getConfig(request, env) {
@@ -181,7 +195,7 @@ async function createOrder(request, env, ctx, url) {
     }
     const body = await readJson(request);
     const plans = plansFor(env);
-    if (!has(plans, body.plan)) throw new HttpError(400, 'bad_plan', '이용권 종류가 올바르지 않습니다.');
+    if (!has(plans, body.plan) || plans[body.plan].sale === false) throw new HttpError(400, 'bad_plan', '이용권 종류가 올바르지 않습니다.');
     const plan = plans[body.plan];
     const method = body.method;
     const methods = methodsOf(env);
@@ -242,6 +256,7 @@ async function createOrder(request, env, ctx, url) {
         payurl = r.payurl;
     }
     await save(env, order);
+    ctx.waitUntil(payTap(env, 'pay-order'));
     ctx.waitUntil(notify(env, [
         `새 주문 ${order.id} (입금되면 자동 발급)`,
         `${order.planName} ${won(order.amount)} · ${method === 'bank' ? '계좌이체' : '카드(페이앱)'}`,
@@ -646,6 +661,34 @@ async function googleLogin(request, env, ctx) {
     return json(request, env, { session: token, user, isNew: r.isNew, trialNew, attended: !!r.attended, points: POINTS }, 200);
 }
 
+// 포인트로 1일 이용권(2026-10-21): 로그인 회원이 모은 포인트(POINTS.dayPass)로 24시간 키를 받는다. 랭킹 점수는 그대로, 쓸 수 있는 포인트만 준다.
+// 키는 무료 체험처럼 주문으로 남긴다(관리자 주문 목록 · 정지 · 조회가 같은 길, 0원, 메일 없음, 이메일은 주문에 적지 않는다).
+// 포인트를 먼저 쓰고 발급하며, 발급이 실패하면 포인트를 돌려준다
+async function pointPass(request, env, ctx) {
+    const s = await sessionUser(request, env);
+    await limited(env.REACT_LIMIT, s.hash);
+    const now = Date.now();
+    const r = await community(env, 'spendForPass', { sub: s.sub, now });
+    if (r.error === 'need_points') throw new HttpError(402, 'need_points', `포인트가 모자랍니다. 1일 이용권은 ${r.cost}포인트입니다. (지금 ${r.avail}포인트)`);
+    if (r.error === 'active') throw new HttpError(409, 'active', '포인트로 연 이용권이 아직 남아 있습니다.');
+    if (r.error === 'busy') throw new HttpError(409, 'busy', '처리하고 있습니다. 잠시 뒤 다시 확인해 주세요.');
+    if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
+    const order = {
+        id: await freshId(env), tokenHash: '', plan: 'pday', planName: '1일 이용권(포인트)',
+        listPrice: 0, amount: 0, method: 'points', name: '포인트', contact: '', memberRef: await memberRef(s.sub),
+        status: 'pending', createdAt: now, deadline: now, log: [{ at: now, what: 'created', by: 'points' }],
+    };
+    try {
+        await confirm(env, order, 'points');
+    } catch (e) {
+        await community(env, 'refundPointPass', { sub: s.sub, cost: r.cost }).catch(() => null);
+        throw e;
+    }
+    const got = await community(env, 'setPointPass', { sub: s.sub, pass: { orderId: order.id, keyId: order.keyId, key: order.key, expiresAt: order.expiresAt, at: now } });
+    ctx.waitUntil(payTap(env, 'pay-point'));
+    return json(request, env, { key: order.key, expiresAt: order.expiresAt, cost: r.cost, user: got.user });
+}
+
 // 무료 체험 키는 주문처럼 남긴다(관리자 페이지에서 보이고, 정지·조회가 같은 길로 된다). 0원, 메일은 보내지 않는다.
 // 이메일은 주문에 적지 않는다 — 계정에만 있고 탈퇴하면 지워진다.
 async function issueTrial(env, sub, days) {
@@ -739,8 +782,8 @@ async function deleteMe(request, env, ctx) {
 }
 
 // 별명: 한글·영문·숫자·밑줄 2~12자. 운영자로 오해할 만한 이름은 막는다.
-const NICK_RE = /^[가-힣a-zA-Z0-9_]{2,12}$/;
-const NICK_RESERVED = /(admin|관리자|운영자|lottodraw|로또드로우|동행복권|official|공식)/i;
+export const NICK_RE = /^[가-힣a-zA-Z0-9_]{2,12}$/;
+export const NICK_RESERVED = /(admin|관리자|운영자|lottodraw|로또드로우|동행복권|official|공식)/i;
 
 async function setNickname(request, env) {
     const s = await sessionUser(request, env);
@@ -780,6 +823,22 @@ async function saveGenerator(request, env) {
     const r = await community(env, 'setGen', { sub: s.sub, gen });
     if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
     return json(request, env, { user: r.user });
+}
+
+// 판매점 지도 "다녀온 곳"(로그인 회원, 2026-10-26). { id: 동행복권 판매점 번호 8자리, color: '#rrggbb' | null(지움) }.
+// 회원이 지도에서 직접 누른 표시일 뿐 기기 위치(GPS)를 받지 않는다 — 위치정보가 아니다(README 4-9). 한 사람 1,000곳까지
+const VISIT_MAX = 1000;
+async function saveVisit(request, env) {
+    const s = await sessionUser(request, env);
+    await limited(env.REACT_LIMIT, s.hash);
+    const body = await readJson(request);
+    const id = String(body.id || '');
+    if (!/^\d{8}$/.test(id)) throw new HttpError(400, 'bad_visit', '판매점 번호가 이상합니다.');
+    if (body.color !== null && !/^#[0-9a-fA-F]{6}$/.test(String(body.color || ''))) throw new HttpError(400, 'bad_visit', '색이 이상합니다.');
+    const r = await community(env, 'setVisit', { sub: s.sub, id, color: body.color === null ? null : String(body.color).toLowerCase(), max: VISIT_MAX });
+    if (r.error === 'too_many') throw new HttpError(409, 'too_many_visits', `다녀온 곳은 ${VISIT_MAX}곳까지 저장합니다.`);
+    if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
+    return json(request, env, { visits: r.visits });
 }
 
 /* ───── 내 번호 (마이페이지 · 홈 생성기 "내 번호에 저장") ───── */
@@ -1022,10 +1081,33 @@ async function tap(request, env) {
     if (!allowedOrigin(request, env)) throw new HttpError(403, 'bad_origin', '허용되지 않은 사이트입니다.');
     const kind = String((await readJson(request)).k || '');
     if (TAP_KINDS.indexOf(kind) === -1) throw new HttpError(400, 'bad_kind', '집계 종류가 올바르지 않습니다.');
-    if (!env.COMMUNITY) return new Response(null, { status: 204, headers: corsHeaders(request, env) });
+    if (!env.COMMUNITY || BOT_UA.test(request.headers.get('User-Agent') || '')) return new Response(null, { status: 204, headers: corsHeaders(request, env) });
     await limited(env.TAP_LIMIT, 'tap:' + (request.headers.get('CF-Connecting-IP') || 'local'));
     await community(env, 'tap', { kind, now: Date.now() });
     return new Response(null, { status: 204, headers: corsHeaders(request, env) });
+}
+
+/* ───── 블로그 조회수 (js/views.js) ───── */
+
+// 글을 열면 브라우저가 {"p": 글 이름} 만 보내고(text/plain, 미리 묻기 없음) 센 뒤의 수를 받는다. 같은 브라우저의 같은 글은
+// 하루 한 번만 보낸다(브라우저가 거른다). 기기 · 회원 정보는 받지 않는다. 우리 사이트(Origin)에서 온 것만, 같은 IP 1분 60번까지(VIEW_LIMIT).
+// 스크립트를 돌리는 검색 로봇 · 측정 도구는 세지 않는다(스크립트를 안 돌리는 로봇은 애초에 보내지 않는다)
+const BOT_UA = /bot|crawl|spider|slurp|yeti|daum\/|headless|lighthouse/i;
+
+async function view(request, env) {
+    if (!allowedOrigin(request, env)) throw new HttpError(403, 'bad_origin', '허용되지 않은 사이트입니다.');
+    const post = postId((await readJson(request)).p);
+    if (!env.COMMUNITY || BOT_UA.test(request.headers.get('User-Agent') || '')) return json(request, env, { views: {} });
+    await limited(env.VIEW_LIMIT, 'view:' + (request.headers.get('CF-Connecting-IP') || 'local'));
+    return json(request, env, await community(env, 'view', { post }));
+}
+
+// 글별 조회수. 누구나 본다(목록은 카드의 글 이름을 한 번에 보낸다)
+async function getViews(request, env, url) {
+    const ids = String(url.searchParams.get('ids') || '').split(',').map(s => s.trim()).filter(Boolean);
+    if (!ids.length || ids.length > 100 || !ids.every(i => POST_RE.test(i))) throw new HttpError(400, 'bad_ids', '글 이름이 올바르지 않습니다.');
+    const got = env.COMMUNITY ? await community(env, 'views', { posts: [...new Set(ids)] }) : { views: {} };
+    return json(request, env, got, 200, { 'Cache-Control': 'public, max-age=60' }, true);
 }
 
 /* ───── 블로그 댓글 (js/comments.js) ───── */
@@ -1152,8 +1234,8 @@ async function admin(request, env, sub, method, url) {
         const token = b64urlEncode(crypto.getRandomValues(new Uint8Array(16)));
         const now = Date.now();
         const order = {
-            id: await freshId(env), tokenHash: await sha256(token), plan: 'week', planName: plans.week.name,
-            listPrice: plans.week.amount, amount: await pickAmount(env, plans.week.amount, allPending), method: 'bank',
+            id: await freshId(env), tokenHash: await sha256(token), plan: 'day', planName: plans.day.name,
+            listPrice: plans.day.amount, amount: await pickAmount(env, plans.day.amount, allPending), method: 'bank',
             name: '자동점검', contact: '', status: 'pending', createdAt: now, deadline: now + 3600 * 1000,
             agreedAt: now, test: true, log: [{ at: now, what: 'created', by: 'selftest' }],
         };
@@ -1183,10 +1265,40 @@ async function admin(request, env, sub, method, url) {
         if (!env.COMMUNITY) throw new HttpError(503, 'no_store', '집계 저장소가 없습니다.');
         return json(request, env, await community(env, 'taps'));
     }
+    // 블로그 조회수: 글별 직접 센 수와 시작값(GET), 시작값 갈아 끼우기(POST — tools/seed-views.js). 보이는 수 = 직접 센 수 + 시작값
+    if (sub === '/views' && method === 'GET') {
+        if (!env.COMMUNITY) throw new HttpError(503, 'no_store', '집계 저장소가 없습니다.');
+        return json(request, env, await community(env, 'viewStats'));
+    }
+    if (sub === '/views/base' && method === 'POST') {
+        if (!env.COMMUNITY) throw new HttpError(503, 'no_store', '집계 저장소가 없습니다.');
+        const body = await readJson(request);
+        const base = body.base && typeof body.base === 'object' && !Array.isArray(body.base) ? body.base : null;
+        const entries = base ? Object.entries(base) : [];
+        if (!base || !entries.every(([k, v]) => POST_RE.test(k) && Number.isInteger(v) && v >= 0 && v <= 1e8)) {
+            throw new HttpError(400, 'bad_base', '시작값은 {"글 이름": 0 이상의 정수} 모양이어야 합니다.');
+        }
+        const n = {};
+        entries.forEach(([k, v]) => { if (v) n[k] = v; });
+        return json(request, env, await community(env, 'setViewBase', { n, until: String(body.until || '').slice(0, 40), now: Date.now() }));
+    }
     // 회원 명부 · 카드별 좋아요 합계 (구글 로그인을 켰을 때)
     if (sub === '/members' && method === 'GET') {
         needLogin(env);
         return json(request, env, await community(env, 'adminList'));
+    }
+    // 회원 자료 백업: 저장소 줄을 1,000줄씩 내려받고(GET, after 다음부터), 같은 줄을 되살린다(POST).
+    // 화면(js/admin.js)이 끝까지 이어 받아 JSON 한 파일로 만든다. 로그인 세션은 빠진다
+    if (sub === '/backup' && method === 'GET') {
+        needLogin(env);
+        return json(request, env, await community(env, 'backupPage', { after: (url.searchParams.get('after') || '').slice(0, 512) || null }));
+    }
+    if (sub === '/restore' && method === 'POST') {
+        needLogin(env);
+        const body = await readJson(request, RESTORE_MAX_BODY);
+        const r = await community(env, 'restoreRows', { rows: body.rows });
+        if (r.error) throw new HttpError(400, 'bad_rows', '되살릴 줄의 모양이 맞지 않습니다. 이 관리자 페이지에서 내려받은 파일인지 확인하세요.');
+        return json(request, env, r);
     }
     const mm = sub.match(/^\/members\/([0-9A-Za-z_-]{1,64})\/(clear-nick|delete|staff|unstaff)$/);
     if (mm && method === 'POST') {
@@ -1324,8 +1436,13 @@ async function confirm(env, order, by) {
     if (!s) throw new HttpError(503, 'no_signing_key', '서명 키가 아직 없습니다. 관리자 페이지에서 "서명 키 만들기"를 먼저 눌러 주세요.');
     const plans = plansFor(env);
     const now = Math.floor(Date.now() / 1000);
-    const days = order.plan === 'custom' || order.plan === 'trial' ? (order.days || 0) : plans[order.plan].days;
-    const expiresAt = days ? now + days * 86400 : 0;
+    let expiresAt;
+    if (order.plan === 'round') {
+        expiresAt = Math.floor(roundEndsAt(now * 1000) / 1000);   // 판매 중인 회차의 토요일 밤 12시까지 — 발급(입금 확인) 때 정한다
+    } else {
+        const days = order.plan === 'custom' || order.plan === 'trial' ? (order.days || 0) : order.plan === 'pday' ? 1 : plans[order.plan].days;
+        expiresAt = days ? now + days * 86400 : 0;
+    }
     // 키 번호는 주문번호에서 정해진다. 확인 버튼과 자동 확인이 겹쳐 키가 두 번 만들어져도
     // 번호가 같아서, 환불하면 둘 다 정지된다.
     const id = new DataView(await crypto.subtle.digest('SHA-256', new TextEncoder().encode('key:' + order.id))).getUint32(0);
@@ -1338,6 +1455,7 @@ async function confirm(env, order, by) {
     await creditMember(env, order, 1);
     await save(env, order);
     await env.DB.put('keyidx:' + order.keyId, order.id);   // 환불 요청 때 키 → 주문 찾기
+    if ((order.method === 'bank' || order.method === 'payapp') && !order.test) await payTap(env, 'pay-paid');
     if (mailReady(env) && order.contact && !order.test) {
         const r = await mailKey(env, order);   // 실패해도 발급은 그대로다 (관리자 페이지에서 다시 보낼 수 있다)
         await save(env, order);
@@ -1552,16 +1670,16 @@ function cleanText(v, max) {
     return String(v).replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, max);
 }
 
-async function readBody(request) {
+async function readBody(request, max = MAX_BODY) {
     const len = Number(request.headers.get('Content-Length') || 0);
-    if (len > MAX_BODY) throw new HttpError(413, 'too_large', '요청이 너무 큽니다.');
+    if (len > max) throw new HttpError(413, 'too_large', '요청이 너무 큽니다.');
     const t = await request.text();
-    if (t.length > MAX_BODY) throw new HttpError(413, 'too_large', '요청이 너무 큽니다.');
+    if (t.length > max) throw new HttpError(413, 'too_large', '요청이 너무 큽니다.');
     return t;
 }
 
-async function readJson(request) {
-    const t = await readBody(request);
+async function readJson(request, max) {
+    const t = await readBody(request, max);
     if (!t) return {};
     try {
         const v = JSON.parse(t);
