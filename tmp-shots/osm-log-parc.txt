@@ -1,2 +1,0 @@
-ERR https://overpass-api.de/api/interpreter Unexpected token '#', "# 502 Gate"... is not valid JSON
-ERR https://overpass.kumi.systems/api/interpreter Unexpected token '<', "<?xml vers"... is not valid JSON

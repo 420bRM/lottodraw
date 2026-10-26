@@ -139,54 +139,78 @@
         map.setLight({ anchor: 'map', color: '#ffffff', intensity: 0.25, position: [1.3, 210, 35] });   // 옆면이 너무 어두우면 회색 덩어리로 보인다
     }
 
-    // ───── 랜드마크 시험 모형 3곳(2026-10-26 사장님 요청 — 지도 모양에 맞춘 간단 모형) ─────
-    // 실제 3D 모델 파일 없이, 원 · 둥근 네모 · 육각 단면을 층층이 쌓아 만든다(fill-extrusion). 흰 바탕에 맞춰 흰 몸통 + 곳마다 색 하나.
+    // ───── 랜드마크 모형(2026-10-26 사장님 — 레퍼런스 앱처럼 랜드마크만 정성 들여) ─────
+    // store-map-landmarks.json(tools/build-landmarks.js — OpenStreetMap 의 실제 외곽선 · 높이)으로
+    // 반투명 유리 몸통 + 꼭짓점의 세로 기둥 + 일정 간격 층 띠(와이어프레임 느낌)를 세운다. 돔은 반구로, taper 는 위로 좁게 쌓는다.
     // 지도에는 지형(산 높이)이 없어 N서울타워도 평지에 선다. 줌 12.5 → 14 사이에서 솟아오른다.
     const LM_RISE = [12.5, 14];
-    function lmPoly(lng, lat, pts) {   // 미터 좌표(동 · 북) → 경위도
-        const k = 111320, c = Math.cos(lat * Math.PI / 180);
-        const ring = pts.map(([x, y]) => [lng + x / (k * c), lat + y / k]);
-        ring.push(ring[0]);
-        return { type: 'Polygon', coordinates: [ring] };
-    }
-    // 초타원(p=2 원, p 클수록 네모에 가까움), rot 도(시계 반대)
-    function superEllipse(a, b, p, rot, n) {
-        const out = [], r = (rot || 0) * Math.PI / 180;
-        for (let i = 0; i < (n || 32); i++) {
-            const t = i / (n || 32) * 2 * Math.PI, ct = Math.cos(t), st = Math.sin(t);
-            const x = a * Math.sign(ct) * Math.pow(Math.abs(ct), 2 / p), y = b * Math.sign(st) * Math.pow(Math.abs(st), 2 / p);
-            out.push([x * Math.cos(r) - y * Math.sin(r), x * Math.sin(r) + y * Math.cos(r)]);
-        }
-        return out;
-    }
+    const LM_M = 111320;
     function landmarks() {
-        const f = [];
-        const part = (name, lng, lat, pts, base, top, color) => f.push({ type: 'Feature', geometry: lmPoly(lng, lat, pts), properties: { name, base, top, color } });
-        // 롯데월드타워(555m): 둥근 네모가 위로 갈수록 가늘고 둥글어진다 + 꼭대기 유리 왕관
-        const LT = [127.10249, 37.51254];
-        for (let i = 0; i < 24; i++) {
-            const t = i / 23, hw = 34 - 20 * Math.pow(t, 1.4);
-            part('롯데월드타워', LT[0], LT[1], superEllipse(hw, hw, 5 - 2 * t, 45), i * 21, (i + 1) * 21 + 0.5, '#ffffff');
+        if (!root.dataset.landmarks) return;
+        fetch(root.dataset.landmarks).then(r => r.json()).then(buildLandmarks).catch(() => {});
+    }
+    function buildLandmarks(d) {
+        const glass = [], solid = [];
+        const poly = (rings, color, base, top, list) => list.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: rings }, properties: { color, base, top } });
+        // 랜드마크 자리의 바탕 건물(OpenMapTiles)은 감춘다 — 모형과 겹쳐 그려지지 않게(랜드마크마다 외곽 네모 + 8m)
+        const boxes = d.landmarks.map(lm => {
+            const xs = lm.parts.flatMap(p => p.ring.map(q => q[0])), ys = lm.parts.flatMap(p => p.ring.map(q => q[1]));
+            const dx = 8 / (LM_M * Math.cos(ys[0] * Math.PI / 180)), dy = 8 / LM_M;
+            const [x0, x1, y0, y1] = [Math.min(...xs) - dx, Math.max(...xs) + dx, Math.min(...ys) - dy, Math.max(...ys) + dy];
+            return [[[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]];
+        });
+        const outside = ['!', ['within', { type: 'MultiPolygon', coordinates: boxes }]];
+        ['sm-bld', 'sm-bld-line'].forEach(id => { if (map.getLayer(id)) try { map.setFilter(id, outside); } catch (e) { /* within 을 못 쓰는 브라우저 */ } });
+        for (const lm of d.landmarks) for (const p of lm.parts) {
+            let ring = p.ring.slice();
+            if (ring.length > 1 && ring[0][0] === ring[ring.length - 1][0] && ring[0][1] === ring[ring.length - 1][1]) ring.pop();
+            const c0 = ring.reduce((a, q) => [a[0] + q[0] / ring.length, a[1] + q[1] / ring.length], [0, 0]);
+            const cos = Math.cos(c0[1] * Math.PI / 180);
+            let pts = ring.map(q => [(q[0] - c0[0]) * LM_M * cos, (q[1] - c0[1]) * LM_M]);   // 미터(동 · 북)
+            if (p.scale) pts = pts.map(([x, y]) => [x * p.scale, y * p.scale]);
+            const toLL = xy => [c0[0] + xy[0] / (LM_M * cos), c0[1] + xy[1] / LM_M];
+            const close = a => { const r = a.map(toLL); r.push(r[0]); return r; };
+            const scaled = k => pts.map(([x, y]) => [x * k, y * k]);
+            const rMean = pts.reduce((s0, [x, y]) => s0 + Math.hypot(x, y), 0) / pts.length || 1;
+            const color = p.color || (p.kind === 'glass' ? lm.glass : '#ffffff');
+            const list = p.kind === 'glass' ? glass : solid;
+            const h = p.top - p.base;
+            if (p.dome) {   // 반구: 높이 u 에서 반지름 √(1-u²)
+                const N = 9;
+                for (let k = 0; k < N; k++) poly([close(scaled(Math.sqrt(1 - Math.pow((k + 0.5) / N, 2))))], color, p.base + h * k / N, p.base + h * (k + 1) / N + 0.2, list);
+                continue;
+            }
+            if (p.taper) {   // 위로 갈수록 좁게(꼭대기 크기 = taper)
+                const N = 10;
+                for (let k = 0; k < N; k++) poly([close(scaled(1 - (1 - p.taper) * (k + 0.5) / N))], color, p.base + h * k / N, p.base + h * (k + 1) / N + 0.2, list);
+                continue;
+            }
+            poly([close(pts)], color, p.base, p.top, list);
+            if (p.kind !== 'glass') continue;
+            // 세로 기둥: 꼭짓점(많으면 고르게 골라서) + 긴 벽은 ribEvery 미터마다
+            const ribW = (lm.ribW || 0.9) / 2, nRib = p.ribs !== undefined ? p.ribs : lm.ribs;
+            const at = [];
+            if (nRib) { const step = Math.max(1, pts.length / nRib); for (let k = 0; k < pts.length - 0.01; k += step) at.push(pts[Math.floor(k)]); }
+            if (lm.ribEvery) pts.forEach((a, k) => {
+                const b = pts[(k + 1) % pts.length], len = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.floor(len / lm.ribEvery);
+                for (let m = 0; m < n; m++) at.push([a[0] + (b[0] - a[0]) * m / n, a[1] + (b[1] - a[1]) * m / n]);
+            });
+            at.forEach(([x, y]) => poly([close([[x - ribW, y - ribW], [x + ribW, y - ribW], [x + ribW, y + ribW], [x - ribW, y + ribW]])], lm.frame, p.base, p.top, solid));
+            // 층 띠(가운데에서 바깥 · 안쪽으로 0.35m 씩 — 고리 모양) + 꼭대기 테두리
+            const fl = p.floor !== undefined ? p.floor : lm.floor;
+            const band = z => poly([close(scaled((rMean + 0.35) / rMean)), close(scaled((rMean - 0.35) / rMean)).reverse()], lm.frame, z, z + 0.9, solid);
+            if (fl) for (let z = p.base + fl; z < p.top - 2; z += fl) band(z);
+            band(p.top - 0.9);
         }
-        part('롯데월드타워', LT[0], LT[1], superEllipse(12, 12, 3, 45), 504, 540, '#bcd4f0');
-        part('롯데월드타워', LT[0], LT[1], superEllipse(6, 6, 2.5, 45), 540, 555, '#bcd4f0');
-        // N서울타워(236m): 받침 · 기둥 · 전망대(주황 띠) · 안테나
-        const NT = [126.98823, 37.55117];
-        [[14, 0, 12, '#ffffff'], [6.5, 12, 168, '#ffffff'], [12, 168, 178, '#ffffff'], [16, 178, 196, '#f28b6b'], [11, 196, 210, '#ffffff'],
-            [4, 210, 222, '#ffffff'], [1.6, 222, 236, '#f28b6b']].forEach(([r, b, t, c]) => part('N서울타워', NT[0], NT[1], superEllipse(r, r, 2, 0, 28), b, t, c));
-        // 63빌딩(249m): 길쭉한 육각 단면이 위로 조금씩 좁아진다 · 금빛 유리
-        const SB = [126.94035, 37.51986];
-        for (let i = 0; i < 20; i++) {
-            const t = i / 19, L = 52 - 14 * t, W = 16 - 3 * t, rot = 28 * Math.PI / 180;
-            const pts = [[-L, 0], [-L + 12, -W], [L - 12, -W], [L, 0], [L - 12, W], [-L + 12, W]].map(([x, y]) => [x * Math.cos(rot) - y * Math.sin(rot), x * Math.sin(rot) + y * Math.cos(rot)]);
-            part('63빌딩', SB[0], SB[1], pts, i * 12, Math.min(249, (i + 1) * 12 + 0.5), '#e8cf8a');
-        }
-        part('63빌딩', SB[0], SB[1], superEllipse(10, 5, 3, 28), 240, 252, '#ffffff');
-        map.addSource('landmarks', { type: 'geojson', data: { type: 'FeatureCollection', features: f } });
+        const fc = f => ({ type: 'FeatureCollection', features: f });
+        map.addSource('lm-solid', { type: 'geojson', data: fc(solid) });
+        map.addSource('lm-glass', { type: 'geojson', data: fc(glass) });
         const rise = k => ['interpolate', ['linear'], ['zoom'], LM_RISE[0], 0, LM_RISE[1], ['get', k]];
-        map.addLayer({ id: 'sm-landmarks', type: 'fill-extrusion', source: 'landmarks', minzoom: LM_RISE[0],
-            paint: { 'fill-extrusion-color': ['get', 'color'], 'fill-extrusion-height': rise('top'), 'fill-extrusion-base': rise('base'),
-                'fill-extrusion-opacity': 0.96, 'fill-extrusion-vertical-gradient': true } });
+        const paint = op => ({ 'fill-extrusion-color': ['get', 'color'], 'fill-extrusion-height': rise('top'), 'fill-extrusion-base': rise('base'), 'fill-extrusion-opacity': op, 'fill-extrusion-vertical-gradient': false });
+        // 판매점 점 · 막대보다 아래에 깐다(점을 가리지 않게)
+        const before = map.getLayer('st-w2') ? 'st-w2' : undefined;
+        map.addLayer({ id: 'sm-lm-solid', type: 'fill-extrusion', source: 'lm-solid', minzoom: LM_RISE[0], paint: paint(0.95) }, before);
+        map.addLayer({ id: 'sm-lm-glass', type: 'fill-extrusion', source: 'lm-glass', minzoom: LM_RISE[0], paint: paint(0.45) }, before);
     }
 
     // 북쪽 보기 단추 — "내 위치" 단추 위, 같은 크기. 지도가 돌아간 만큼 바늘도 돈다
@@ -652,7 +676,7 @@
         // 처음 화면: 서울 전체(2026-10-26 사장님 — 전국은 시도별 표 · 줌아웃으로)
         const fromLink = /[#&]map=/.test(location.hash);   // 링크로 받은 화면이면 그대로
         map.on('load', () => {
-            koreanLabels(); whiteModel(); landmarks(); addStores(); renderTop(); initVisits();
+            koreanLabels(); whiteModel(); addStores(); landmarks(); renderTop(); initVisits();
             if (!fromLink) map.fitBounds([[126.8, 37.43], [127.18, 37.7]], { padding: pad(), duration: 0 });
             else if (map.getPitch() > 5) { const d3 = document.getElementById('sm-3d'); d3.setAttribute('aria-pressed', 'true'); d3.textContent = '2D'; }   // 기울어진 화면 링크
         });
