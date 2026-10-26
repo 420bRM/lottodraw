@@ -63,9 +63,11 @@
             const band = document.createElement('a');
             band.className = 'map-band';
             band.href = base + 'store-map.html';
-            band.innerHTML = '<span class="map-band-ico" aria-hidden="true">🗺️</span><span class="map-band-txt"><b></b><small></small></span><span class="map-band-go" aria-hidden="true">→</span>';
-            band.querySelector('b').textContent = tr('mapLink.title', '로또 판매점 지도 보러 가기');
-            band.querySelector('small').textContent = tr('mapLink.sub', '1등 · 2등이 나온 판매점 1만 곳을 2D · 3D 지도로');
+            // 배경은 실제 지도 화면(서울 + 버블, img/map-banner*.jpg) — css/site.css
+            band.innerHTML = '<span class="map-band-txt"><span class="map-band-kicker">LOTTODRAW MAP</span><b></b><small></small></span><span class="map-band-go"></span>';
+            band.querySelector('b').textContent = tr('mapLink.title', '로또 판매점 지도');
+            band.querySelector('small').textContent = tr('mapLink.sub', '1등 · 2등이 나온 판매점 1만 곳을 지도 위 버블과 3D 막대로. 서울부터 백령도까지, 내가 다녀온 곳도 표시해 보세요.');
+            band.querySelector('.map-band-go').textContent = tr('mapLink.go', '지도 열기 →');
             foot.insertAdjacentElement('afterend', band);
         }
     }

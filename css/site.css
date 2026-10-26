@@ -1686,25 +1686,30 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
     .theme-btn, .chat-fab, .chat-panel { display: none !important; }
 }
 
-/* 판매점 지도 가는 길(js/theme.js): 휴대폰 "MAP" 동그란 단추(낮/밤 단추 위) · 바닥글 아래 큰 띠 */
-.map-fab { position: fixed; right: 16px; bottom: 66px; z-index: 89; display: none; align-items: center; justify-content: center; width: 38px; height: 38px;
+/* 판매점 지도 가는 길(js/theme.js): "MAP" 동그란 단추(낮/밤 단추 위, PC · 휴대폰) · 바닥글 아래 띠(생성기 본문과 같은 폭, 배경은 실제 지도 화면) */
+.map-fab { position: fixed; right: 16px; bottom: 66px; z-index: 89; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px;
     border-radius: 50%; background: var(--brand-bg, var(--brand)); color: #fff; box-shadow: 0 4px 12px rgba(0, 48, 135, 0.3);
     font: bold 11px/1 var(--font); letter-spacing: .02em; text-decoration: none; }
-.map-band { display: flex; align-items: center; gap: 14px; box-sizing: border-box; max-width: 960px; margin: 0 auto 28px; padding: 18px 22px;
-    border: 1px solid var(--line); border-radius: 14px; background: linear-gradient(120deg, var(--surface, #fff) 0%, var(--soft, #f3f6fd) 100%);
-    box-shadow: var(--shadow); color: var(--text); text-decoration: none; }
-.map-band:hover { border-color: var(--brand); }
-.map-band-ico { flex: none; font-size: 30px; line-height: 1; }
-.map-band-txt { flex: 1 1 auto; min-width: 0; }
-.map-band-txt b { display: block; color: var(--brand); font-size: 18px; }
-.map-band-txt small { display: block; margin-top: 3px; color: var(--muted); font-size: 13px; }
-.map-band-go { flex: none; color: var(--brand); font-size: 24px; font-weight: bold; }
+.map-band { display: flex; align-items: center; gap: 24px; box-sizing: border-box; width: calc(min(1440px, 100%) - 40px); min-height: 146px; margin: 0 auto 28px; padding: 22px 28px;
+    border-left: 4px solid #f07a1a; border-radius: 4px; color: #fff; text-decoration: none; box-shadow: 0 6px 20px rgba(0, 20, 60, .25);
+    background: linear-gradient(90deg, #0b1f45 0%, rgba(11, 31, 69, .94) 34%, rgba(11, 31, 69, .55) 58%, rgba(11, 31, 69, .12) 85%, rgba(11, 31, 69, 0) 100%),
+        url(../img/map-banner.jpg) right center / cover no-repeat, #0b1f45; }
+.map-band:hover { box-shadow: 0 8px 26px rgba(0, 20, 60, .35); }
+.map-band:hover .map-band-go { text-decoration: underline; }
+.map-band-txt { flex: 0 1 560px; min-width: 0; }
+.map-band-kicker { display: block; margin-bottom: 6px; color: #f6b26b; font-size: 11px; font-weight: bold; letter-spacing: .14em; }
+.map-band-txt b { display: block; color: #fff; font-size: 22px; letter-spacing: -.01em; }
+.map-band-txt small { display: block; margin-top: 6px; color: rgba(255, 255, 255, .82); font-size: 13.5px; line-height: 1.6; }
+.map-band-go { flex: none; margin-left: auto; padding: 8px 14px; border-radius: 999px; background: rgba(11, 31, 69, .7); color: #fff; font-size: 14px; font-weight: bold; }
 @media (max-width: 599px) {
-    .map-fab { display: inline-flex; right: 12px; }
+    .map-fab { right: 12px; width: 38px; height: 38px; }
     .map-go { display: none; }   /* 휴대폰은 생성기 제목 아래 단추 대신 MAP 동그란 단추 */
-    .map-band { margin: 0 12px 110px; padding: 14px 16px; gap: 10px; }   /* 맨 아래까지 내려도 오른쪽 아래 떠 있는 단추(MAP · 낮/밤 · 채팅)에 가리지 않게 */
-    .map-band-txt b { font-size: 15px; }
-    .map-band-txt small { font-size: 12px; }
+    /* 맨 아래까지 내려도 오른쪽 아래 떠 있는 단추(MAP · 낮/밤 · 채팅)에 가리지 않게 아래 여백을 넉넉히 */
+    .map-band { flex-direction: column; align-items: flex-start; gap: 12px; width: calc(100% - 24px); min-height: 0; margin: 0 12px 110px; padding: 18px 18px 16px;
+        background: linear-gradient(180deg, #0b1f45 0%, rgba(11, 31, 69, .9) 45%, rgba(11, 31, 69, .35) 100%), url(../img/map-banner-m.jpg) center bottom / cover no-repeat, #0b1f45; }
+    .map-band-txt b { font-size: 18px; }
+    .map-band-txt small { font-size: 12.5px; }
+    .map-band-go { margin-left: 0; }
 }
 @media print { .map-fab, .map-band { display: none !important; } }
 
