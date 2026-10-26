@@ -1,0 +1,15 @@
+name: probe-shops
+# 일회용(머지 전에 지운다): 판매점 찾기 자료 모양 보기
+on:
+  push:
+    branches: [claude/store-map-2]
+    paths: [.github/workflows/probe-shops.yml, tools/probe-shops.js]
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - run: node tools/probe-shops.js
