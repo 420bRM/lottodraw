@@ -1,5 +1,5 @@
 name: shot-store-map
-# 일회용(머지 전에 지운다): 실제 바탕 지도(OpenFreeMap)로 판매점 지도 화면을 찍어 이 브랜치의 tmp-shots/ 에 올린다
+# 일회용(머지 전에 지운다) 2회: 실제 바탕 지도(OpenFreeMap)로 판매점 지도 화면을 찍어 이 브랜치의 tmp-shots/ 에 올린다
 on:
   push:
     branches: [claude/store-map-2]

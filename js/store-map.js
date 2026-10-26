@@ -94,6 +94,7 @@
         for (const l of st.layers) {
             const sl = l['source-layer'];
             if (l.type === 'background') paint(l.id, 'background-color', '#f6f6f3');
+            else if (l.type === 'symbol' && /country|continent/.test(l.id)) map.setLayoutProperty(l.id, 'visibility', 'none');   // 큰 나라 이름은 위쪽 도구와 겹친다
             else if (l.type === 'fill-extrusion') map.removeLayer(l.id);
             else if (l.type === 'fill' && sl === 'water') paint(l.id, 'fill-color', '#dce3e9');
             else if (l.type === 'fill' && (sl === 'park' || sl === 'landcover')) paint(l.id, 'fill-color', '#edf0ea');
@@ -107,10 +108,10 @@
         }, firstLabel);
         map.addLayer({
             id: 'sm-bld', type: 'fill-extrusion', source: src, 'source-layer': 'building', minzoom: RISE[0],
-            paint: { 'fill-extrusion-color': '#ffffff', 'fill-extrusion-height': h('render_height'), 'fill-extrusion-base': h('render_min_height'),
-                'fill-extrusion-opacity': 0.45, 'fill-extrusion-vertical-gradient': true },
+            paint: { 'fill-extrusion-color': '#f7f9fc', 'fill-extrusion-height': h('render_height'), 'fill-extrusion-base': h('render_min_height'),
+                'fill-extrusion-opacity': 0.4, 'fill-extrusion-vertical-gradient': true },
         }, firstLabel);
-        map.setLight({ anchor: 'map', color: '#ffffff', intensity: 0.45, position: [1.3, 210, 35] });
+        map.setLight({ anchor: 'map', color: '#ffffff', intensity: 0.25, position: [1.3, 210, 35] });   // 옆면이 너무 어두우면 회색 덩어리로 보인다
     }
 
     function geojson() {
@@ -129,7 +130,7 @@
         const radius = ['interpolate', ['linear'], ['zoom'],
             5, ['+', 1.6, ['*', 0.45, ['sqrt', ['get', 'wt']]]],
             10, ['+', 3, ['*', 0.9, ['sqrt', ['get', 'wt']]]],
-            15, ['+', 6, ['*', 1.6, ['sqrt', ['get', 'wt']]]]];
+            15, ['+', 5, ['*', 1.0, ['sqrt', ['get', 'wt']]]]];   // 거리 수준에서 큰 점이 건물을 가리지 않게(가장 큰 곳 약 29px)
         const layer = (id, color, kind) => ({
             id, type: 'circle', source: 'stores', filter: filterFor(kind),
             layout: { 'circle-sort-key': ['get', 'wt'] },
@@ -223,7 +224,7 @@
     function barShapes() {
         const c = map.getCenter();
         const mpp = 40075016.686 * Math.cos(c.lat * Math.PI / 180) / (512 * Math.pow(2, map.getZoom()));   // 화면 1px 의 미터
-        const r = mpp * 2.5;
+        const r = mpp * Math.min(7, Math.max(2.5, 2.5 + (map.getZoom() - 8) * 0.6));   // 기둥 반 폭(px): 전국 2.5 → 거리 7
         return {
             type: 'FeatureCollection',
             features: data.rows.map((x, i) => {
