@@ -91,6 +91,20 @@ body.sm-full #theme-btn { display: none !important; }
 .sm-pg { width: 26px; height: 22px; border: 1px solid var(--line, #ddd); border-radius: 6px; background: var(--surface, #fff); color: var(--brand, #003087); font: inherit; font-size: 14px; line-height: 1; cursor: pointer; }
 .sm-pg:disabled { opacity: .35; cursor: default; }
 
+/* 다녀온 곳(로그인 회원): 단추 + 색 고르기 */
+.sm-visit { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line, #e3e3e3); }
+.sm-visit-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.sm-visit-btn { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border: 1px solid var(--brand, #003087); border-radius: 999px; background: var(--surface, #fff);
+    color: var(--brand, #003087); font: inherit; font-size: 12px; font-weight: bold; cursor: pointer; }
+.sm-visit-btn.is-on { background: var(--soft, #f3f6fb); }
+.sm-swatch { width: 10px; height: 10px; border-radius: 50%; }
+.sm-colors { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.sm-color { position: relative; width: 18px; height: 18px; padding: 0; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 0 1px var(--line, #ccc); cursor: pointer; }
+.sm-color.is-on { box-shadow: 0 0 0 2px var(--fg, #333); }
+.sm-color-any { overflow: hidden; background: conic-gradient(#e63946, #e9c46a, #2a9d8f, #3a86ff, #8338ec, #e63946); }
+.sm-color-any input { position: absolute; inset: -4px; width: 30px; height: 30px; opacity: 0; cursor: pointer; }
+.sm-visit-note { margin: 4px 0 0; color: var(--faint, #777); font-size: 10.5px; }
+
 /* ───── 시도별 · 안내 (왼쪽 아래 접는 창) ───── */
 .sm-info { position: absolute; left: 6px; bottom: calc(6px + env(safe-area-inset-bottom)); z-index: 5; max-width: min(460px, calc(100% - 12px)); }
 .sm-info summary { display: inline-block; padding: 4px 9px; border-radius: 7px; font-size: 11px; font-weight: bold; list-style: none; cursor: pointer; }

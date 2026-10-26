@@ -103,6 +103,7 @@ async function route(request, env, ctx) {
     if (path === '/api/me/nickname' && method === 'POST') return setNickname(request, env);
     if (path === '/api/me/point-pass' && method === 'POST') return pointPass(request, env, ctx);
     if (path === '/api/me/generator' && method === 'POST') return saveGenerator(request, env);
+    if (path === '/api/me/visits' && method === 'POST') return saveVisit(request, env);
     if (path === '/api/me/numbers' && method === 'GET') return getNumbers(request, env);
     if (path === '/api/me/numbers' && method === 'POST') return addNumbers(request, env);
     if (path === '/api/me/numbers/delete' && method === 'POST') return deleteNumbers(request, env);
@@ -821,6 +822,22 @@ async function saveGenerator(request, env) {
     const r = await community(env, 'setGen', { sub: s.sub, gen });
     if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
     return json(request, env, { user: r.user });
+}
+
+// 판매점 지도 "다녀온 곳"(로그인 회원, 2026-10-26). { id: 동행복권 판매점 번호 8자리, color: '#rrggbb' | null(지움) }.
+// 회원이 지도에서 직접 누른 표시일 뿐 기기 위치(GPS)를 받지 않는다 — 위치정보가 아니다(README 4-9). 한 사람 1,000곳까지
+const VISIT_MAX = 1000;
+async function saveVisit(request, env) {
+    const s = await sessionUser(request, env);
+    await limited(env.REACT_LIMIT, s.hash);
+    const body = await readJson(request);
+    const id = String(body.id || '');
+    if (!/^\d{8}$/.test(id)) throw new HttpError(400, 'bad_visit', '판매점 번호가 이상합니다.');
+    if (body.color !== null && !/^#[0-9a-fA-F]{6}$/.test(String(body.color || ''))) throw new HttpError(400, 'bad_visit', '색이 이상합니다.');
+    const r = await community(env, 'setVisit', { sub: s.sub, id, color: body.color === null ? null : String(body.color).toLowerCase(), max: VISIT_MAX });
+    if (r.error === 'too_many') throw new HttpError(409, 'too_many_visits', `다녀온 곳은 ${VISIT_MAX}곳까지 저장합니다.`);
+    if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
+    return json(request, env, { visits: r.visits });
 }
 
 /* ───── 내 번호 (마이페이지 · 홈 생성기 "내 번호에 저장") ───── */

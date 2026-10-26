@@ -2199,6 +2199,8 @@ const STORE_MAP_DATA = 'store-map-data.json';
 // 일반 판매점 층(2단계): shops-all.json(tools/update-all-shops.js, 매달) 중 1등 · 2등 기록이 없는 곳. 칩을 켤 때 받는다
 const STORE_MAP_ALL = 'store-map-all.json';
 const STORE_MAP_ROUNDS = 'store-map-rounds.json';
+// 판매점 번호(동행복권 8자리) — 로그인 회원의 "다녀온 곳"을 지도 점과 잇는다. 로그인했을 때만 받는다. w: store-map-data 의 rows 차례, a: store-map-all 의 rows 차례
+const STORE_MAP_IDS = 'store-map-ids.json';
 const ALL_SHOPS = (() => { try { return JSON.parse(fs.readFileSync(path.join(ROOT, 'shops-all.json'), 'utf8')); } catch (e) { return null; } })();
 // 좌표가 있는 판매점이 1,000곳을 넘을 때만 지도 페이지 · 링크를 만든다(좌표를 받기 전 자료에서는 만들지 않는다)
 const STORE_MAP_READY = () => !!(STORES && Object.values(STORES.d.shops).filter(sh => typeof sh[4] === 'number').length > 1000);
@@ -2230,20 +2232,21 @@ function storeMapData() {
         for (const id of rec.w2) at(id)[1].push(r);
     }
     const rounds = rows.map(({ id }) => (won.get(id) || [[], []]).map(a => a.slice().reverse()));
-    return { rows: rows.map(x => x.row), rounds, noCoord, sidoNames, all: storeMapAll(sidoNames) };
+    return { rows: rows.map(x => x.row), ids: rows.map(x => x.id), rounds, noCoord, sidoNames, all: storeMapAll(sidoNames) };
 }
 // 일반 판매점: [위도, 경도, 상호, 시도 번호, 시군구] — 1등 · 2등 판매점(폐점 포함)은 위 자료에 있으니 뺀다
 function storeMapAll(sidoNames) {
     if (!ALL_SHOPS) return null;
     const sido = sidoNames.slice();
-    const rows = [];
+    const rows = [], ids = [];
     for (const [id, sh] of Object.entries(ALL_SHOPS.shops)) {
         if (STORES.d.shops[id]) continue;
         const [name, si, gu, lat, lng] = sh;
         if (!sido.includes(si)) sido.push(si);
         rows.push([Math.round(lat * 1e4) / 1e4, Math.round(lng * 1e4) / 1e4, name, sido.indexOf(si), gu || '']);
+        ids.push(id);
     }
-    return { updated: ALL_SHOPS.updated, total: Object.keys(ALL_SHOPS.shops).length, sido, rows };
+    return { updated: ALL_SHOPS.updated, total: Object.keys(ALL_SHOPS.shops).length, sido, rows, ids };
 }
 
 // 화면 전체가 지도인 페이지(2026-10-26 사장님 결정): 머리글 · 메뉴 · 바닥글 없이 지도와 "생성기로 돌아가기" 하나.
@@ -2293,7 +2296,7 @@ function storeMapPage(md) {
     ${CF_BEACON}
 </head>
 <body class="sm-full">
-<main class="sm-wrap" id="sm" data-src="${STORE_MAP_DATA}?v=${fingerprint(STORE_MAP_DATA)}"${md.all ? ` data-all="${STORE_MAP_ALL}?v=${fingerprint(STORE_MAP_ALL)}"` : ''} data-rounds="${STORE_MAP_ROUNDS}?v=${fingerprint(STORE_MAP_ROUNDS)}">
+<main class="sm-wrap" id="sm" data-src="${STORE_MAP_DATA}?v=${fingerprint(STORE_MAP_DATA)}"${md.all ? ` data-all="${STORE_MAP_ALL}?v=${fingerprint(STORE_MAP_ALL)}"` : ''} data-rounds="${STORE_MAP_ROUNDS}?v=${fingerprint(STORE_MAP_ROUNDS)}" data-ids="${STORE_MAP_IDS}?v=${fingerprint(STORE_MAP_IDS)}">
     <div class="sm-map" id="sm-map" role="region" aria-label="판매점 지도" data-i18n-attr="aria-label:sm.mapAria"><p class="sm-loading" data-i18n-en="Loading the map…">지도를 불러오는 중…</p></div>
     <div class="sm-top">
         <div class="sm-row">
@@ -2799,6 +2802,7 @@ if (STORE_MAP_READY()) {
     for (const d of draws) if (d.round >= STORES.first) drawInfo[d.round] = [d.date, d.numbers, d.bonus];
     if (write(STORE_MAP_ROUNDS, JSON.stringify({ last: STORES.last, note: '1등: 회차 × 4 + 방식(0 모름 · 1 자동 · 2 수동 · 3 반자동), 2등: 회차 — store-map-data.json 의 rows 와 같은 차례. draws: { 회차: [날짜, 번호, 보너스] }',
         rows: STORE_MAP.rounds, draws: drawInfo }) + '\n')) changed++;
+    if (write(STORE_MAP_IDS, JSON.stringify({ w: STORE_MAP.ids, a: STORE_MAP.all ? STORE_MAP.all.ids : [] }) + '\n')) changed++;
     if (STORE_MAP.all && write(STORE_MAP_ALL, JSON.stringify({ updated: STORE_MAP.all.updated, sido: STORE_MAP.all.sido,
         cols: ['lat', 'lng', 'name', 'sido', 'gu'], rows: STORE_MAP.all.rows }) + '\n')) changed++;
     if (write(STORE_MAP_FILE, storeMapPage(STORE_MAP))) changed++;

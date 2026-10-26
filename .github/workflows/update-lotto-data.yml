@@ -56,7 +56,7 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add lotto-data.json prize-data.json stores-data.json index.html about.html tax.html top-prize.html sitemap.xml statistics-*.html draws.html probability.html round/ blog/
+          git add lotto-data.json prize-data.json stores-data.json index.html about.html tax.html top-prize.html sitemap.xml statistics-*.html draws.html probability.html store-map*.html store-map*.json round/ blog/
           if git diff --cached --quiet; then echo "바뀐 파일 없음"; exit 0; fi
           if [ "${{ steps.fetch.outputs.changed }}" = "true" ]; then
             git commit -m "chore: 로또 ${{ steps.fetch.outputs.latest }}회차까지 반영"

@@ -13,6 +13,8 @@
  * 왼쪽 아래 끌기 막대: 오른쪽으로 끌수록 1등 횟수가 적은 곳부터 서서히 흐려져 많이 나온 곳만 남는다(2등만 나온 곳이 먼저).
  * PC(폭 900px 이상): 오른쪽 위에 1등 많은 50곳 목록(휠로 넘김), 판매점 카드는 그 아래. 휴대폰은 위쪽에 작은 안내 한 줄.
  * 첫 화면은 서울(2026-10-26 사장님).
+ * 다녀온 곳(로그인 회원): 카드에서 "다녀왔어요"를 누르고 색을 고르면 그 판매점 점을 그 색으로 칠한다(가장자리는 1등 주황 · 2등 파랑 그대로).
+ *   서버에는 판매점 번호와 색만(/api/me/visits). 기기 위치는 쓰지 않는다. 판매점 번호는 store-map-ids.json(로그인했을 때만 받는다).
  * 문구 규칙: "명당"으로 읽히지 않게, 카드마다 "어디서 사든 확률은 같다"를 붙인다.
  * 일반 판매점(2단계): store-map-all.json — 1등 · 2등 기록이 없는 전국 판매점 rows: [위도, 경도, 상호, 시도 번호, 시군구].
  *   칩을 처음 켤 때 받는다(첫 화면을 가볍게). 회색 작은 점으로 1등 · 2등 점 아래에 깔린다.
@@ -45,6 +47,9 @@
     let curBand = null, oldBand = null;            // 지금 보이는 단계 · 서서히 사라지는 단계
     let fadeT = 0;                                 // 끌기 막대: 1등 횟수 + 1 이 이 값보다 작으면 흐려진다(0 = 다 보임)
     const isWide = () => window.innerWidth >= 900;
+    let visits = {};                               // 다녀온 곳 { 판매점 번호: 색 } — 로그인 회원
+    let ids = null;                                // { w: [...], a: [...] } 판매점 번호
+    const vis = ['to-boolean', ['feature-state', 'visit']];
 
     // w1 = 고른 방식의 1등 횟수, o1 = 원래 1등 횟수(2등만 나온 곳을 가르는 값)
     const fadeF = () => ['max', 0, ['min', 1, ['-', ['+', ['get', 'w1'], 1], fadeT]]];   // 1 = 그대로, 0 = 사라짐
@@ -77,16 +82,17 @@
         if (loadingAll || !root.dataset.all) return;
         loadingAll = true;
         try { all = await (await fetch(root.dataset.all)).json(); } catch (e) { loadingAll = false; return; }
-        map.addSource('all', { type: 'geojson', data: { type: 'FeatureCollection', features: all.rows.map((r, i) => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [r[1], r[0]] }, properties: { i } })) } });
+        map.addSource('all', { type: 'geojson', data: { type: 'FeatureCollection', features: all.rows.map((r, i) => ({ type: 'Feature', id: i, geometry: { type: 'Point', coordinates: [r[1], r[0]] }, properties: { i } })) } });
         map.addLayer({
             id: 'st-all', type: 'circle', source: 'all',
             layout: { visibility: shown.all ? 'visible' : 'none' },
             paint: {
-                'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 1.2, 10, 2.6, 15, 6],
-                'circle-color': '#7d8799', 'circle-opacity': 0.7 * Math.max(0, 1 - fadeT),
-                'circle-stroke-color': '#fff', 'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 8, 0, 13, 1],
+                'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, ['case', vis, 3, 1.2], 10, ['case', vis, 5, 2.6], 15, ['case', vis, 8, 6]],
+                'circle-color': ['coalesce', ['feature-state', 'visit'], '#7d8799'], 'circle-opacity': 0.7 * Math.max(0, 1 - fadeT),
+                'circle-stroke-color': '#fff', 'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 8, ['case', vis, 1, 0], 13, ['case', vis, 2, 1]],
             },
         }, 'st-w2');
+        paintVisits();
         map.on('click', 'st-all', e => {
             // 1등 · 2등 점과 겹치면 그쪽 카드를 연다
             if (map.queryRenderedFeatures(e.point, { layers: ['st-w1', 'st-w2'] }).length) return;
@@ -232,10 +238,12 @@
             layout: { 'circle-sort-key': ['get', 'wt'] },
             paint: {
                 'circle-radius': radius,
-                'circle-color': color,
+                // 다녀온 곳은 고른 색으로 칠하고 가장자리를 1등 · 2등 색으로
+                'circle-color': ['coalesce', ['feature-state', 'visit'], color],
                 'circle-opacity': ['*', ['case', ['==', ['get', 'closed'], 1], 0.35, 0.85], fadeF()],
                 'circle-stroke-opacity': fadeF(),
-                'circle-stroke-color': '#fff', 'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 6, 0.3, 12, 1.2],
+                'circle-stroke-color': ['case', vis, color, '#fff'],
+                'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 6, ['case', vis, 2, 0.3], 12, ['case', vis, 3.5, 1.2]],
             },
         });
         map.addLayer(layer('st-w2', '#3b6fd8', 'w2'));
@@ -272,7 +280,72 @@
         const place = [all.sido[si] || '', gu].filter(Boolean).join(' ');
         showCard('<h3>' + esc(name) + '</h3><p class="sm-place">' + esc(place) + '</p>' +
             '<p class="sm-why">' + T(data.first + '회부터 1등 · 2등 기록이 없는 판매점입니다. 어느 판매점에서 사든 1등 확률은 1/8,145,060으로 같습니다.',
-                'No 1st or 2nd prize here since draw ' + data.first + '. Your chance of 1st prize is 1 in 8,145,060 wherever you buy.') + '</p>' + links(name, place, lat, lng), lat, lng, fly);
+                'No 1st or 2nd prize here since draw ' + data.first + '. Your chance of 1st prize is 1 in 8,145,060 wherever you buy.') + '</p>' + links(name, place, lat, lng) +
+            '<div class="sm-visit" id="sm-visit"></div>', lat, lng, fly);
+        visitUi('a', i);
+    }
+
+    // ───── 다녀온 곳(로그인 회원) ─────
+    const PALETTE = ['#e63946', '#f4a261', '#e9c46a', '#2a9d8f', '#3a86ff', '#8338ec', '#ff66b3', '#1f2937'];
+    const account = () => window.LottoAccount;
+    const loadIds = () => (ids ? Promise.resolve(ids) : fetch(root.dataset.ids).then(r => r.json()).then(j => (ids = j)).catch(() => null));
+    // 지도 점에 색 입히기(feature-state). 일반 판매점 층은 켤 때 다시 부른다
+    const painted = { stores: new Set(), all: new Set() };
+    function paintVisits() {
+        if (!ids || !map) return;
+        [['stores', 'w'], ['all', 'a']].forEach(([src, k]) => {
+            if (!map.getSource(src)) return;
+            painted[src].forEach(i => map.setFeatureState({ source: src, id: i }, { visit: null }));
+            painted[src].clear();
+            (ids[k] || []).forEach((id, i) => { if (visits[id]) { map.setFeatureState({ source: src, id: i }, { visit: visits[id] }); painted[src].add(i); } });
+        });
+    }
+    async function initVisits() {
+        const A = account();
+        if (!A || !A.ready) return;
+        await A.ready;
+        if (!A.loginOn() || !A.session()) return;
+        const me = A.me();
+        visits = (me && me.user && me.user.visits) || {};
+        if (Object.keys(visits).length && await loadIds()) paintVisits();
+    }
+    async function visitUi(k, i) {
+        const box = document.getElementById('sm-visit');
+        const A = account();
+        if (!box || !A || !A.ready) return;
+        await A.ready;
+        if (!A.loginOn()) { box.remove(); return; }   // 서버에 로그인이 꺼져 있으면 저장할 곳이 없다
+        const myCard = card.dataset.k = k + i;
+        const draw = () => {
+            if (card.dataset.k !== myCard) return;
+            const id = ids && ids[k] && ids[k][i];
+            const cur = id ? visits[id] : null;
+            box.innerHTML = '<div class="sm-visit-row"><button type="button" class="sm-visit-btn' + (cur ? ' is-on' : '') + '" aria-pressed="' + !!cur + '">' +
+                (cur ? '<span class="sm-swatch" style="background:' + cur + '"></span>' + T('다녀온 곳', 'Visited') : T('＋ 다녀왔어요', '＋ I\'ve been here')) + '</button>' +
+                (cur ? '<span class="sm-colors">' + PALETTE.map(c => '<button type="button" class="sm-color' + (c === cur ? ' is-on' : '') + '" data-c="' + c + '" style="background:' + c + '" aria-label="' + c + '"></button>').join('') +
+                    '<label class="sm-color sm-color-any" title="' + T('다른 색', 'Any colour') + '"><input type="color" value="' + cur + '" aria-label="' + T('다른 색', 'Any colour') + '"></label></span>' : '') + '</div>' +
+                '<p class="sm-visit-note">' + (cur ? T('다시 누르면 지웁니다. 나만 보입니다.', 'Tap again to remove. Only you can see this.') : T('로그인 회원 기능 · 나만 보입니다(위치는 쓰지 않습니다).', 'Members only · only you can see it (no location used).')) + '</p>';
+            box.querySelector('.sm-visit-btn').addEventListener('click', () => save(cur ? null : PALETTE[0]));
+            box.querySelectorAll('button.sm-color').forEach(b => b.addEventListener('click', () => save(b.dataset.c)));
+            const pick = box.querySelector('input[type="color"]');
+            if (pick) pick.addEventListener('change', () => save(pick.value));
+        };
+        const save = async color => {
+            if (!(await member(T('다녀온 곳 표시는 로그인 회원 기능입니다.', 'Marking visited retailers is for signed-in members.')))) return;
+            if (!(await loadIds())) return;
+            const id = ids[k] && ids[k][i];
+            if (!id) return;
+            try {
+                const r = await account().call('/api/me/visits', { method: 'POST', body: { id, color } });
+                visits = r.visits || {};
+                paintVisits();
+                draw();
+            } catch (e) {
+                box.querySelector('.sm-visit-note').textContent = (e && e.message) || T('저장하지 못했습니다.', 'Could not save.');
+            }
+        };
+        if (A.session()) await loadIds();
+        draw();
     }
 
     // 당첨 회차 — 카드를 처음 열 때 한 번 받는다
@@ -328,8 +401,9 @@
             '<div class="sm-rounds" id="sm-rounds"><p class="sm-small">' + T('당첨 회차 불러오는 중…', 'Loading draws…') + '</p></div>' +
             '<p class="sm-why">' + T('1등 · 2등이 많을수록 많이 팔린 곳일 가능성이 큽니다. 어느 판매점에서 사든 1등 확률은 1/8,145,060으로 같습니다.',
                 'More 1st and 2nd prizes most likely means more tickets sold. Your chance of 1st prize is 1 in 8,145,060 wherever you buy.') + '</p>' +
-            links(name, place, lat, lng), lat, lng, fly);
+            links(name, place, lat, lng) + '<div class="sm-visit" id="sm-visit"></div>', lat, lng, fly);
         card.dataset.i = String(i);
+        visitUi('w', i);
         markTop(i);
         loadRounds().then(rd => {
             const box = document.getElementById('sm-rounds');
@@ -578,7 +652,7 @@
         // 처음 화면: 서울 전체(2026-10-26 사장님 — 전국은 시도별 표 · 줌아웃으로)
         const fromLink = /[#&]map=/.test(location.hash);   // 링크로 받은 화면이면 그대로
         map.on('load', () => {
-            koreanLabels(); whiteModel(); landmarks(); addStores(); renderTop();
+            koreanLabels(); whiteModel(); landmarks(); addStores(); renderTop(); initVisits();
             if (!fromLink) map.fitBounds([[126.8, 37.43], [127.18, 37.7]], { padding: pad(), duration: 0 });
         });
         map.on('zoomend', autoTilt);
