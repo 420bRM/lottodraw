@@ -1,0 +1,10 @@
+phone 1-korea null
+phone 2-store-z15 null
+phone 3-zoomin null
+phone 4-bars-street null
+phone 5-bars-region null
+pc 1-korea null
+pc 2-store-z15 null
+pc 3-zoomin null
+pc 4-bars-street null
+pc 5-bars-region null
