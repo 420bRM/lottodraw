@@ -2312,6 +2312,8 @@ function storeMapPage(md) {
     const title = `로또 판매점 지도 · 1등 · 2등 나온 곳 전국 지도 (${first}~${last}회) | lottodraw.kr`;
     const desc = `로또 1등 · 2등이 나온 판매점 ${fmt(md.rows.length)}곳을 전국 지도(3D · 2D)에서 봅니다(${first}~${last}회, 매주 갱신). 점이 클수록 1등 · 2등이 많이 나온 곳 — 많이 팔린 곳일 가능성이 큽니다. 어디서 사든 당첨 확률은 같습니다.`;
     const v = f => `${f}?v=${fingerprint(f)}`;
+    // 지도 페이지 전용 공유 이미지(실제 지도 화면 + 제목, 2026-10-26) — 없으면 사이트 기본
+    const mapOg = fs.existsSync(path.join(ROOT, 'img/og-store-map.jpg')) ? `${SITE}/img/og-store-map.jpg?v=${fingerprint('img/og-store-map.jpg')}` : OG_IMAGE;
     const ld = { '@context': 'https://schema.org', '@graph': [
         { '@type': 'Dataset', name: title, description: desc, url: `${SITE}/${STORE_MAP_FILE}`, isAccessibleForFree: true, dateModified: UPDATED,
             creator: { '@type': 'Organization', name: 'lottodraw.kr', url: SITE + '/' }, keywords: ['로또 판매점 지도', '로또 1등 판매점 지도', '로또 명당 지도', '로또 2등 판매점'] },
@@ -2334,8 +2336,11 @@ function storeMapPage(md) {
     <meta property="og:type" content="website">
     <meta property="og:url" content="${SITE}/${STORE_MAP_FILE}">
     <meta property="og:site_name" content="lottodraw.kr">
-    <meta property="og:image" content="${OG_IMAGE}">
+    <meta property="og:image" content="${mapOg}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="${mapOg}">
     <meta name="google-adsense-account" content="ca-pub-9372871176021283">
     <link rel="icon" href="/favicon.ico" sizes="32x32">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -2380,14 +2385,13 @@ function storeMapPage(md) {
     </div>
     <!-- 왼쪽 아래: 1등 방식(로그인 회원) · 끌기 막대(낮은 횟수부터 흐리게) — "시도별 · 안내" 위 -->
     <div class="sm-bl">
-        ${md.fun && md.fun.length ? `<button type="button" class="sm-fun-btn" id="sm-fun-btn" aria-expanded="false" aria-controls="sm-fun" data-i18n-en="🏆 Unusual retailers">🏆 이색 판매점</button>
+        ${md.fun && md.fun.length ? `<button type="button" class="sm-fun-btn" id="sm-fun-btn" aria-pressed="false" aria-controls="sm-fun" data-i18n-en="🏆 Unusual retailers">🏆 이색 판매점</button>
         <div class="sm-fun" id="sm-fun" hidden>
             <h2 data-i18n-en="Unusual retailers">이색 판매점</h2>
             <ol>${md.fun.map((f, k) => `<li><button type="button" class="sm-fun-item" data-k="${k}"><span class="sm-fun-ico" aria-hidden="true">${f.icon}</span><span><b data-i18n-en="${esc(f.titleEn)}">${esc(f.title)}</b><span class="sm-fun-name">${esc(f.name)} <small>${esc(f.place)}</small></span><small data-i18n-en="${esc(f.textEn)}">${esc(f.text)}</small></span></button></li>`).join('')}</ol>
             <p class="sm-small" data-i18n-en="Open retailers only, from Dong-haeng Lottery data. More in the blog post.">문을 연 판매점 기준(동행복권 자료). <a href="blog/lotto-store-extremes.html">블로그 글로 보기</a></p>
         </div>` : ''}
         <div class="sm-chips sm-modes" role="group" aria-label="1등 방식 (로그인 회원)" data-i18n-attr="aria-label:sm.modes">
-                <span class="sm-modes-label" data-i18n-en="1st by">1등 방식</span>
                 <button type="button" class="sm-chip sm-mode" data-mode="A" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Auto">자동</span></button>
                 <button type="button" class="sm-chip sm-mode" data-mode="M" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Manual">수동</span></button>
                 <button type="button" class="sm-chip sm-mode" data-mode="S" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Semi">반자동</span></button>
@@ -2416,6 +2420,8 @@ function storeMapPage(md) {
         </div>
     </details>
 </main>
+<script src="${v('js/premium-config.js')}"></script>
+<script src="${v('js/license.js')}"></script>
 <script src="${v('js/vendor/maplibre-gl.js')}"></script>
 <script src="${v('js/store-map.js')}"></script>
 </body>
