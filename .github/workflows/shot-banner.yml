@@ -27,7 +27,7 @@ jobs:
           const ctx = await b.newContext({ viewport: { width: 1540, height: 630 }, deviceScaleFactor: 1, locale: 'ko-KR' });
           await ctx.route(/googlesyndication|cloudflareinsights|api\.lottodraw/, r => r.abort());
           const p = await ctx.newPage();
-          await p.goto('http://localhost:8765/store-map.html#map=11.9/37.545/127.075/0/0');
+          await p.goto('http://localhost:8765/store-map.html#map=11.9/37.535/126.9/0/0');
           await p.addStyleTag({ content: '.sm-side,.maplibregl-control-container,.sm-star,#chat-fab,#chat-panel,#map-fab{display:none!important}' +
             '#og{position:fixed;top:0;bottom:0;left:340px;right:0;z-index:99;font-family:"Noto Sans CJK KR","Noto Sans KR","NanumGothic",sans-serif;' +
             'background:linear-gradient(90deg,#fff 0%,#fff 50%,rgba(255,255,255,.88) 60%,rgba(255,255,255,.35) 72%,rgba(255,255,255,0) 84%)}' +
