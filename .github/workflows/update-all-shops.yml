@@ -7,9 +7,6 @@ on:
   schedule:
     - cron: "20 19 1 * *"
   workflow_dispatch: {}
-  push:
-    branches: [claude/store-map-2]
-    paths: [.github/workflows/update-all-shops.yml]
 
 permissions:
   contents: write
