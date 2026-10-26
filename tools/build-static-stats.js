@@ -2220,63 +2220,96 @@ function storeMapData() {
     return { rows, noCoord, sidoNames };
 }
 
+// 화면 전체가 지도인 페이지(2026-10-26 사장님 결정): 머리글 · 메뉴 · 바닥글 없이 지도와 "생성기로 돌아가기" 하나.
+// 설명 · 시도별 표는 왼쪽 아래 "시도별 · 안내" 창 안에 HTML 로 둔다(검색 로봇이 읽고, 지도가 안 뜨는 브라우저도 본다)
 function storeMapPage(md) {
     const S = STORES;
     const { first, last } = S;
     const sidoRows = [...S.sido.entries()].filter(([k]) => k !== '기타').sort((a, b) => b[1].w1 - a[1].w1);
     const net = S.net;
-    const title = `로또 판매점 지도 · 1등 · 2등 나온 곳 전국 지도 (${first}~${last}회)`;
+    const title = `로또 판매점 지도 · 1등 · 2등 나온 곳 전국 지도 (${first}~${last}회) | lottodraw.kr`;
     const desc = `로또 1등 · 2등이 나온 판매점 ${fmt(md.rows.length)}곳을 전국 지도(3D · 2D)에서 봅니다(${first}~${last}회, 매주 갱신). 점이 클수록 1등 · 2등이 많이 나온 곳 — 많이 팔린 곳일 가능성이 큽니다. 어디서 사든 당첨 확률은 같습니다.`;
     const v = f => `${f}?v=${fingerprint(f)}`;
-    return shell({
-        file: STORE_MAP_FILE,
-        navCurrent: STORE_MAP_FILE,
-        crumbs: [[STORES_FILE, '1등 판매점', null, '1st-prize retailers'], [null, '판매점 지도', null, 'Store map']],
-        title,
-        h1: '로또 판매점 지도', h1En: 'Lotto Retailer Map',
-        desc,
-        mainClass: 'store-map-page',
-        head: `    <link rel="stylesheet" href="${v('js/vendor/maplibre-gl.css')}">\n    <link rel="stylesheet" href="${v('css/store-map.css')}">`,
-        scripts: [v('js/vendor/maplibre-gl.js'), v('js/store-map.js')],
-        ld: [{ '@type': 'Dataset', name: title, description: desc, url: `${SITE}/${STORE_MAP_FILE}`, isAccessibleForFree: true, dateModified: UPDATED,
-            creator: { '@type': 'Organization', name: 'lottodraw.kr', url: SITE + '/' }, keywords: ['로또 판매점 지도', '로또 1등 판매점 지도', '로또 명당 지도', '로또 2등 판매점'] }],
-        body: [
-            `<div class="sm-wrap" id="sm" data-src="${STORE_MAP_DATA}?v=${fingerprint(STORE_MAP_DATA)}" data-first="${first}" data-last="${last}">
-            <p class="sm-note" data-i18n-en="Big dots are places that produced many 1st and 2nd prizes — most likely they simply sell a lot. Your odds are the same wherever you buy.">점이 클수록 1등 · 2등이 많이 나온 곳입니다 — <strong>많이 팔린 곳일 가능성이 큽니다.</strong> 어디서 사든 당첨 확률은 같습니다.</p>
-            <div class="sm-bar">
-                <div class="sm-chips" role="group" aria-label="보이는 판매점" data-i18n-attr="aria-label:sm.layers">
-                    <button type="button" class="sm-chip" data-layer="w1" aria-pressed="true"><span class="sm-dot sm-dot-1"></span><span data-i18n-en="1st prize">1등 나온 곳</span></button>
-                    <button type="button" class="sm-chip" data-layer="w2" aria-pressed="true"><span class="sm-dot sm-dot-2"></span><span data-i18n-en="2nd only">2등만 나온 곳</span></button>
-                    <button type="button" class="sm-chip" data-layer="closed" aria-pressed="false"><span class="sm-dot sm-dot-c"></span><span data-i18n-en="Closed">폐점 포함</span></button>
-                </div>
-                <div class="sm-tools">
-                    <input type="search" class="sm-search" id="sm-search" placeholder="판매점 이름 찾기" data-i18n-attr="placeholder:sm.search" aria-label="판매점 이름 찾기" autocomplete="off">
-                    <button type="button" class="sm-3d" id="sm-3d" aria-pressed="false">3D</button>
-                </div>
-            </div>
-            <ul class="sm-found" id="sm-found" hidden></ul>
-            <div class="sm-map" id="sm-map" role="region" aria-label="판매점 지도" data-i18n-attr="aria-label:sm.mapAria"><p class="sm-loading" data-i18n-en="Loading the map…">지도를 불러오는 중…</p></div>
-            <aside class="sm-card" id="sm-card" hidden aria-live="polite"></aside>
-        </div>`,
-            pEn(`${first}~${last}회 1등 · 2등 판매점 · 매주 추첨 후 자동 갱신 (마지막 갱신 ${UPDATED}) · 출처: 동행복권 당첨 판매점 조회`,
-                `1st- and 2nd-prize retailers, draws ${first}–${last} · updated after each draw (last update ${UPDATED}) · source: Dong-haeng Lottery winning-retailer search`, 'stat-scope'),
-            h2En('시도별 1등 · 2등', '1st and 2nd prizes by province'),
-            pEn('표의 지역 이름을 누르면 지도가 그 지역으로 갑니다. 1등 비율과 2등 비율이 비슷하면, 1등이 많은 지역은 그만큼 많이 팔린 지역이라는 뜻입니다.',
-                'Tap an area name to move the map there. Where the 1st- and 2nd-prize shares are close, an area with many 1st prizes is simply one that sells more.'),
-            table([['지역', 'Area'], ['1등', '1st'], ['1등 비율', '1st share'], ['2등', '2nd'], ['2등 비율', '2nd share']],
+    const ld = { '@context': 'https://schema.org', '@graph': [
+        { '@type': 'Dataset', name: title, description: desc, url: `${SITE}/${STORE_MAP_FILE}`, isAccessibleForFree: true, dateModified: UPDATED,
+            creator: { '@type': 'Organization', name: 'lottodraw.kr', url: SITE + '/' }, keywords: ['로또 판매점 지도', '로또 1등 판매점 지도', '로또 명당 지도', '로또 2등 판매점'] },
+        { '@type': 'BreadcrumbList', itemListElement: [
+            { '@type': 'ListItem', position: 1, name: '홈', item: `${SITE}/` },
+            { '@type': 'ListItem', position: 2, name: '1등 판매점', item: `${SITE}/${STORES_FILE}` },
+            { '@type': 'ListItem', position: 3, name: '판매점 지도', item: `${SITE}/${STORE_MAP_FILE}` }] },
+    ] };
+    return `<!DOCTYPE html>
+<!-- 이 파일은 tools/build-static-stats.js 가 매주 다시 만든다. 직접 고치면 덮어쓰인다. 지도는 js/store-map.js -->
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>${esc(title)}</title>
+    <meta name="description" content="${esc(desc)}">
+    <link rel="canonical" href="${SITE}/${STORE_MAP_FILE}">
+    <meta property="og:title" content="${esc(title)}">
+    <meta property="og:description" content="${esc(desc)}">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="${SITE}/${STORE_MAP_FILE}">
+    <meta property="og:site_name" content="lottodraw.kr">
+    <meta property="og:image" content="${OG_IMAGE}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="google-adsense-account" content="ca-pub-9372871176021283">
+    <link rel="icon" href="/favicon.ico" sizes="32x32">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="stylesheet" href="css/site.css">
+    <link rel="stylesheet" href="${v('js/vendor/maplibre-gl.css')}">
+    <link rel="stylesheet" href="${v('css/store-map.css')}">
+    <script src="js/i18n-dict.js"></script>
+    <script src="js/i18n.js"></script>
+    <script type="application/ld+json">${JSON.stringify(ld)}</script>
+    ${CF_BEACON}
+</head>
+<body class="sm-full">
+<main class="sm-wrap" id="sm" data-src="${STORE_MAP_DATA}?v=${fingerprint(STORE_MAP_DATA)}">
+    <div class="sm-map" id="sm-map" role="region" aria-label="판매점 지도" data-i18n-attr="aria-label:sm.mapAria"><p class="sm-loading" data-i18n-en="Loading the map…">지도를 불러오는 중…</p></div>
+    <div class="sm-top">
+        <div class="sm-row">
+            <a class="sm-back" href="index.html" data-i18n-en="← Generator">← 생성기로</a>
+            <h1 class="sm-title" data-i18n-en="Lotto retailer map">로또 판매점 지도</h1>
+            <button type="button" class="sm-3d" id="sm-3d" aria-pressed="false">3D</button>
+        </div>
+        <div class="sm-row">
+            <input type="search" class="sm-search" id="sm-search" placeholder="판매점 이름 찾기" data-i18n-attr="placeholder:sm.search" aria-label="판매점 이름 찾기" autocomplete="off">
+        </div>
+        <ul class="sm-found" id="sm-found" hidden></ul>
+        <div class="sm-chips" role="group" aria-label="보이는 판매점" data-i18n-attr="aria-label:sm.layers">
+            <button type="button" class="sm-chip" data-layer="w1" aria-pressed="true"><span class="sm-dot sm-dot-1"></span><span data-i18n-en="1st prize">1등 나온 곳</span></button>
+            <button type="button" class="sm-chip" data-layer="w2" aria-pressed="true"><span class="sm-dot sm-dot-2"></span><span data-i18n-en="2nd only">2등만 나온 곳</span></button>
+            <button type="button" class="sm-chip" data-layer="closed" aria-pressed="false"><span class="sm-dot sm-dot-c"></span><span data-i18n-en="Closed">폐점 포함</span></button>
+        </div>
+        <p class="sm-note" data-i18n-en="Big dots: many 1st and 2nd prizes — most likely they simply sell a lot. Same odds wherever you buy.">점이 클수록 1등 · 2등이 많이 나온 곳 — <strong>많이 팔린 곳일 가능성이 큽니다.</strong> 어디서 사든 확률은 같습니다.</p>
+    </div>
+    <aside class="sm-card" id="sm-card" hidden aria-live="polite"></aside>
+    <details class="sm-info" id="sm-info">
+        <summary data-i18n-en="By province · about">시도별 · 안내</summary>
+        <div class="sm-info-body">
+            <p class="sm-small" data-i18n-en="${esc(`1st- and 2nd-prize retailers, draws ${first}–${last}, updated after each draw (last update ${UPDATED}). Source: Dong-haeng Lottery winning-retailer search.`)}">${first}~${last}회 1등 · 2등 판매점 · 매주 추첨 후 자동 갱신 (마지막 갱신 ${UPDATED}) · 출처: 동행복권 당첨 판매점 조회</p>
+            <p data-i18n-en="Tap an area name to move the map there. Where the 1st- and 2nd-prize shares are close, an area with many 1st prizes is simply one that sells more.">지역 이름을 누르면 지도가 그 지역으로 갑니다. 1등 비율과 2등 비율이 비슷하면, 1등이 많은 지역은 그만큼 많이 팔린 지역이라는 뜻입니다.</p>
+            ${table([['지역', 'Area'], ['1등', '1st'], ['1등 비율', '1st share'], ['2등', '2nd'], ['2등 비율', '2nd share']],
                 sidoRows.map(([k, x]) => [k === '인터넷' ? en('인터넷(지도에 없음)', 'Online (not on the map)') : `<button type="button" class="sm-goto" data-sido="${esc(k)}">${esc(k)}</button>`,
-                    fmt(x.w1), pct(x.w1, S.g1), fmt(x.w2), pct(x.w2, S.g2)]), 'tier-stat sm-sido'),
-            pEn(`동행복권 인터넷 판매(1등 ${net ? net.n1 : 0}게임)는 한 곳에 있는 판매점이 아니라 지도에 찍지 않습니다.`
-                + (md.noCoord ? ` 위치가 공개되지 않은 ${fmt(md.noCoord)}곳도 빠졌습니다.` : '')
-                + ` 점을 누르면 1등 · 2등 횟수와 카카오맵 · 네이버 지도 링크가 나옵니다.`,
-                `Dong-haeng Lottery's online sales (${net ? net.n1 : 0} 1st-prize games) are not a single location, so they are not on the map.`
-                + (md.noCoord ? ` ${fmt(md.noCoord)} retailers without a published location are also left out.` : '')
-                + ' Tap a dot for its 1st- and 2nd-prize counts and links to Kakao Map and Naver Map.', 'note'),
-            pEn(`판매점별 순위와 "많이 팔린 곳"인지 견주는 방법(2등 횟수)은 <a href="${STORES_FILE}">1등 판매점 통계</a>에 있습니다. 함께 읽기: <a href="blog/lucky-store-myth.html">로또 명당은 정말 있을까</a>`,
-                `Rankings, and how we check whether a place simply sells a lot (2nd-prize counts), are in <a href="${STORES_FILE}">1st-prize retailer statistics</a>. Read next: <a href="blog/lucky-store-myth.html">are there really lucky lottery stores?</a>`),
-            '<p class="sm-credit">지도: <a href="https://maplibre.org/" rel="noopener">MapLibre</a> · <a href="https://openfreemap.org/" rel="noopener">OpenFreeMap</a> · © <a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap</a> 기여자</p>',
-        ],
-    });
+                    fmt(x.w1), pct(x.w1, S.g1), fmt(x.w2), pct(x.w2, S.g2)]), 'tier-stat sm-sido')}
+            ${pEn(`점 크기는 2등 횟수 + 1등 횟수 × 6입니다(1등은 2등보다 6배 드물다). 판매점별 판매량은 공개되지 않아 팔린 양을 짐작하는 값이며, 앞으로 1등이 나올 곳을 뜻하지 않습니다. 동행복권 인터넷 판매(1등 ${net ? net.n1 : 0}게임)는 한 곳에 있는 판매점이 아니라 지도에 찍지 않습니다.`
+                + (md.noCoord ? ` 위치가 공개되지 않은 ${fmt(md.noCoord)}곳도 빠졌습니다.` : ''),
+                `Dot size is 2nd prizes + 1st prizes × 6 (a 1st prize is six times rarer). Sales per retailer are not published, so this only gauges how much was sold; it says nothing about where the next 1st prize will come from. Dong-haeng Lottery's online sales (${net ? net.n1 : 0} 1st-prize games) are not one location and are not on the map.`
+                + (md.noCoord ? ` ${fmt(md.noCoord)} retailers without a published location are also left out.` : ''), 'sm-small')}
+            ${pEn(`순위와 "많이 팔린 곳"인지 견주는 방법은 <a href="${STORES_FILE}">1등 판매점 통계</a>에 있습니다. 함께 읽기: <a href="blog/lucky-store-myth.html">로또 명당은 정말 있을까</a>`,
+                `Rankings and how we check whether a place simply sells a lot are in <a href="${STORES_FILE}">1st-prize retailer statistics</a>. Read next: <a href="blog/lucky-store-myth.html">are there really lucky lottery stores?</a>`)}
+            <p class="sm-small">지도: <a href="https://maplibre.org/" rel="noopener">MapLibre</a> · <a href="https://openfreemap.org/" rel="noopener">OpenFreeMap</a> · © <a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap</a> 기여자 · <a href="privacy.html" data-i18n="footer.privacy">개인정보 처리방침</a></p>
+        </div>
+    </details>
+</main>
+<script src="${v('js/vendor/maplibre-gl.js')}"></script>
+<script src="${v('js/store-map.js')}"></script>
+</body>
+</html>
+`;
 }
 
 /* ───── 통계 페이지 렌더 ───── */

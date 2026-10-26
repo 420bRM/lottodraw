@@ -2,7 +2,7 @@
  *
  * 자료: store-map-data.json (tools/build-static-stats.js 가 stores-data.json 으로 매주 만든다)
  *   rows: [위도, 경도, 1등, 2등, 상호, 시도 번호, 시군구, 폐점, 자동, 수동, 반자동]
- * 지도: MapLibre(js/vendor/) + OpenFreeMap "liberty" 바탕(키 없음, © OpenStreetMap). 3D 단추는 기울여 건물을 세우고, 다시 누르면 2D(위에서 봄).
+ * 화면 전체가 지도다(머리글 · 메뉴 없음, 왼쪽 위 "생성기로" 단추 하나). 지도: MapLibre(js/vendor/) + OpenFreeMap "liberty" 바탕(키 없음, © OpenStreetMap). 3D 단추는 기울여 건물을 세우고, 다시 누르면 2D(위에서 봄).
  * 점 크기 = 2등 + 1등 × 6 (1등은 2등보다 6배 드물다 — 팔린 양을 짐작하는 값). 1등이 나온 곳은 주황, 2등만 나온 곳은 파랑.
  * 문구 규칙: "명당"으로 읽히지 않게, 카드마다 "어디서 사든 확률은 같다"를 붙인다.
  */
@@ -136,13 +136,15 @@
                 const b = document.createElement('button');
                 b.type = 'button';
                 b.innerHTML = '<b>' + esc(r[4]) + '</b> <span>' + esc([data.sido[r[5]], r[6]].filter(Boolean).join(' ')) + ' · ' + T('1등 ', '1st ') + r[2] + ' · ' + T('2등 ', '2nd ') + r[3] + '</span>';
-                b.addEventListener('click', () => { list.hidden = true; open(i, true); mapBox.scrollIntoView({ block: 'center', behavior: 'smooth' }); });
+                b.addEventListener('click', () => { list.hidden = true; box.blur(); open(i, true); });
                 li.appendChild(b);
                 list.appendChild(li);
             });
         });
     }
 
+    // 위쪽 도구 · 아래쪽 단추에 가리지 않게 지도를 맞출 때의 여백
+    const pad = () => ({ top: (document.querySelector('.sm-top').offsetHeight || 150) + 16, bottom: 60, left: 24, right: 56 });
     function initControls() {
         root.querySelectorAll('.sm-chip').forEach(b => b.addEventListener('click', () => {
             const k = b.dataset.layer;
@@ -164,10 +166,10 @@
             if (!pts.length) return;
             const lats = pts.map(r => r[0]).sort((x, y) => x - y), lngs = pts.map(r => r[1]).sort((x, y) => x - y);
             const q = (a, p) => a[Math.min(a.length - 1, Math.max(0, Math.floor(a.length * p)))];   // 끝의 1%는 빼고(주소가 잘못 찍힌 점에 끌려가지 않게)
-            map.fitBounds([[q(lngs, 0.01), q(lats, 0.01)], [q(lngs, 0.99), q(lats, 0.99)]], { padding: 30, pitch: 0, bearing: 0 });
+            document.getElementById('sm-info').open = false;
+            map.fitBounds([[q(lngs, 0.01), q(lats, 0.01)], [q(lngs, 0.99), q(lats, 0.99)]], { padding: pad(), pitch: 0, bearing: 0 });
             document.getElementById('sm-3d').setAttribute('aria-pressed', 'false');
             document.getElementById('sm-3d').textContent = '3D';
-            mapBox.scrollIntoView({ block: 'center', behavior: 'smooth' });
         }));
     }
 
@@ -179,11 +181,11 @@
         mapBox.textContent = '';
         const narrow = window.innerWidth < 700;
         map = new maplibregl.Map({
-            container: mapBox, style: STYLE, center: [127.8, 36.2], zoom: narrow ? 5.4 : 6.1,
+            container: mapBox, style: STYLE, center: [127.8, narrow ? 35.6 : 36.0], zoom: narrow ? 5.6 : 6.3,
             maxBounds: [[118, 30], [138, 42]], attributionControl: { compact: true }, dragRotate: true, pitchWithRotate: true,
         });
-        map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
-        map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: false }, trackUserLocation: false }), 'top-right');   // 내 위치는 이 기기 안에서만 쓴다(서버로 보내지 않는다)
+        map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right');
+        map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: false }, trackUserLocation: false }), 'bottom-right');   // 내 위치는 이 기기 안에서만 쓴다(서버로 보내지 않는다)
         map.on('load', () => { koreanLabels(); buildings(); addStores(); });
         map.on('error', e => { if (e && e.error && /style|tiles/i.test(String(e.error.message))) console.warn('map', e.error); });
         initControls();
