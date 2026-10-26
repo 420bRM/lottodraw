@@ -245,6 +245,32 @@ test('번호 생성기 설정: 로그인한 회원만 저장 · 다듬어 저장
     assert.ok(![...env.COMMUNITY._m.values()].some(v => v && v.gen), '탈퇴하면 설정도 지워진다');
 });
 
+test('판매점 지도 다녀온 곳: 로그인 회원만 · 번호 · 색 검사 · 지우기 · 내 정보에만 · 탈퇴하면 사라진다', async () => {
+    const env = await fresh();
+    const a = await login(env);
+    const s = a.data.session;
+    assert.deepEqual(a.data.user.visits, {});
+    assert.equal((await call(env, 'POST', '/api/me/visits', { body: { id: '11100004', color: '#ff0000' } })).status, 401);
+    // 번호는 8자리 숫자, 색은 #rrggbb 만
+    assert.equal((await call(env, 'POST', '/api/me/visits', { headers: auth(s), body: { id: '1110', color: '#ff0000' } })).status, 400);
+    assert.equal((await call(env, 'POST', '/api/me/visits', { headers: auth(s), body: { id: '11100004', color: 'red' } })).status, 400);
+    assert.equal((await call(env, 'POST', '/api/me/visits', { headers: auth(s), body: { id: '11100004', color: '#ff00001' } })).status, 400);
+    const one = await call(env, 'POST', '/api/me/visits', { headers: auth(s), body: { id: '11100004', color: '#FF8800' } });
+    assert.equal(one.status, 200, JSON.stringify(one.data));
+    assert.deepEqual(one.data.visits, { 11100004: '#ff8800' }, '색은 소문자로');
+    await call(env, 'POST', '/api/me/visits', { headers: auth(s), body: { id: '11100016', color: '#3366cc' } });
+    // 색 바꾸기 · 내 정보에 나온다
+    await call(env, 'POST', '/api/me/visits', { headers: auth(s), body: { id: '11100004', color: '#00aa00' } });
+    const me = await call(env, 'GET', '/api/me', { headers: auth(s) });
+    assert.deepEqual(me.data.user.visits, { 11100004: '#00aa00', 11100016: '#3366cc' });
+    // 지우기
+    const del = await call(env, 'POST', '/api/me/visits', { headers: auth(s), body: { id: '11100016', color: null } });
+    assert.deepEqual(del.data.visits, { 11100004: '#00aa00' });
+    // 탈퇴하면 함께 사라진다
+    assert.equal((await call(env, 'POST', '/api/me/delete', { body: { confirm: true }, headers: auth(s) })).status, 200);
+    assert.ok(![...env.COMMUNITY._m.values()].some(v => v && v.visits), '탈퇴하면 다녀온 곳도 지워진다');
+});
+
 test('구글 토큰 위조·다른 사이트·만료·미확인 이메일은 거절한다', async () => {
     const env = await fresh();
     const now = Math.floor(Date.now() / 1000);

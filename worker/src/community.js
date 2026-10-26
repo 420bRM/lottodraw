@@ -15,6 +15,7 @@
 //                        trial: { orderId, keyId, key, expiresAt } — 가입 때 한 번 주는 무료 체험 키
 //                        ppass: { orderId, keyId, key, expiresAt, at } — 포인트로 연 1일 이용권(가장 최근 것), ppassN: 포인트로 연 횟수
 //                        gen:   { inc, exc, pat, recent, ac, acExact, at } — 저장한 번호 생성기 설정(고정수 · 제외수 · 켠 패턴 번호 · 직전 당첨 조합 제외 칸 · AC값 조건과 "이 값만"). 본인에게만 보인다
+//                        visits: { 판매점 번호: '#rrggbb' } — 판매점 지도에서 회원이 직접 표시한 "다녀온 곳"과 색(1,000곳까지). 본인에게만 보인다
 //                        rx:    { 항목: 'h' | 'd' | 'hd' } — 내가 누른 좋아요
 //                        sess:  로그인 세션 해시 (최근 5개)
 //                        cm:    내가 쓴 블로그 댓글 키, cmAt: 마지막으로 쓴 시각, cmDay: { day, n } 오늘 쓴 수
@@ -323,6 +324,20 @@ const OPS = {
         if (gen) user.gen = gen; else delete user.gen;
         await this.saveUser(user);
         return { ok: true, user: view(user) };
+    },
+
+    // 판매점 지도 "다녀온 곳": { 판매점 번호: 색 }. color 가 null 이면 지운다. 새로 더할 때만 max 를 본다
+    async setVisit({ sub, id, color, max }) {
+        const user = await this.storage.get('u:' + sub);
+        if (!user) return { error: 'no_user' };
+        const v = user.visits || {};
+        if (color) {
+            if (!(id in v) && Object.keys(v).length >= max) return { error: 'too_many' };
+            v[id] = color;
+        } else delete v[id];
+        if (Object.keys(v).length) user.visits = v; else delete user.visits;
+        await this.saveUser(user);
+        return { ok: true, visits: user.visits || {} };
     },
 
     async setTrial({ sub, trial }) {
@@ -866,7 +881,7 @@ const b64url = bytes => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').
 function view(user) {
     const trial = user.trial && user.trial.key ? { key: user.trial.key, keyId: user.trial.keyId, expiresAt: user.trial.expiresAt } : null;
     return {
-        email: user.email, nick: user.nick || null, createdAt: user.createdAt, trial, score: pubScore(user), staff: !!user.staff, gen: user.gen || null,
+        email: user.email, nick: user.nick || null, createdAt: user.createdAt, trial, score: pubScore(user), staff: !!user.staff, gen: user.gen || null, visits: user.visits || {},
         nickAuto: !!(user.nick && user.nickAuto), nickDue: !user.nick && user.nickDue ? user.nickDue : null,
         pointPass: user.ppass && user.ppass.key ? { key: user.ppass.key, keyId: user.ppass.keyId, expiresAt: user.ppass.expiresAt } : null,
     };

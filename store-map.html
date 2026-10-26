@@ -20,14 +20,14 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <link rel="stylesheet" href="css/site.css">
     <link rel="stylesheet" href="js/vendor/maplibre-gl.css?v=7e27dfc9">
-    <link rel="stylesheet" href="css/store-map.css?v=5813c81f">
+    <link rel="stylesheet" href="css/store-map.css?v=d86cbf1f">
     <script src="js/i18n-dict.js"></script>
     <script src="js/i18n.js"></script>
     <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Dataset","name":"로또 판매점 지도 · 1등 · 2등 나온 곳 전국 지도 (262~1247회) | lottodraw.kr","description":"로또 1등 · 2등이 나온 판매점 10,608곳을 전국 지도(3D · 2D)에서 봅니다(262~1247회, 매주 갱신). 점이 클수록 1등 · 2등이 많이 나온 곳 — 많이 팔린 곳일 가능성이 큽니다. 어디서 사든 당첨 확률은 같습니다.","url":"https://www.lottodraw.kr/store-map.html","isAccessibleForFree":true,"dateModified":"2026-10-24","creator":{"@type":"Organization","name":"lottodraw.kr","url":"https://www.lottodraw.kr/"},"keywords":["로또 판매점 지도","로또 1등 판매점 지도","로또 명당 지도","로또 2등 판매점"]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://www.lottodraw.kr/"},{"@type":"ListItem","position":2,"name":"1등 판매점","item":"https://www.lottodraw.kr/statistics-stores.html"},{"@type":"ListItem","position":3,"name":"판매점 지도","item":"https://www.lottodraw.kr/store-map.html"}]}]}</script>
     <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "91c08d8a39d944e69c10024f2314b955"}'></script><!-- End Cloudflare Web Analytics -->
 </head>
 <body class="sm-full">
-<main class="sm-wrap" id="sm" data-src="store-map-data.json?v=2b6c8b46" data-all="store-map-all.json?v=c3956aae" data-rounds="store-map-rounds.json?v=7e8f630e">
+<main class="sm-wrap" id="sm" data-src="store-map-data.json?v=d6f0b1ba" data-all="store-map-all.json?v=c3956aae" data-rounds="store-map-rounds.json?v=75e1abac" data-ids="store-map-ids.json?v=cde7d185">
     <div class="sm-map" id="sm-map" role="region" aria-label="판매점 지도" data-i18n-attr="aria-label:sm.mapAria"><p class="sm-loading" data-i18n-en="Loading the map…">지도를 불러오는 중…</p></div>
     <div class="sm-top">
         <div class="sm-row">
@@ -36,24 +36,44 @@
             <button type="button" class="sm-bars" id="sm-bars" aria-pressed="false" title="막대 지도 (로그인 회원)" data-i18n-attr="title:sm.barsTitle" data-i18n-en="Bars">막대</button>
             <button type="button" class="sm-3d" id="sm-3d" aria-pressed="false">3D</button>
         </div>
-        <div class="sm-row">
+        <div class="sm-row sm-searchbox">
             <input type="search" class="sm-search" id="sm-search" placeholder="판매점 이름 찾기" data-i18n-attr="placeholder:sm.search" aria-label="판매점 이름 찾기" autocomplete="off">
+            <ul class="sm-found" id="sm-found" hidden></ul>
         </div>
-        <ul class="sm-found" id="sm-found" hidden></ul>
         <div class="sm-chips" role="group" aria-label="보이는 판매점" data-i18n-attr="aria-label:sm.layers">
             <button type="button" class="sm-chip" data-layer="w1" aria-pressed="true"><span class="sm-dot sm-dot-1"></span><span data-i18n-en="1st prize">1등 나온 곳</span></button>
             <button type="button" class="sm-chip" data-layer="w2" aria-pressed="true"><span class="sm-dot sm-dot-2"></span><span data-i18n-en="2nd only">2등만 나온 곳</span></button>
             <button type="button" class="sm-chip" data-layer="all" aria-pressed="false"><span class="sm-dot sm-dot-a"></span><span data-i18n-en="Other retailers">일반 판매점</span></button>
             <button type="button" class="sm-chip" data-layer="closed" aria-pressed="false"><span class="sm-dot sm-dot-c"></span><span data-i18n-en="Closed">폐점 포함</span></button>
         </div>
-        <div class="sm-chips sm-modes" role="group" aria-label="1등 방식 (로그인 회원)" data-i18n-attr="aria-label:sm.modes">
-            <span class="sm-modes-label" data-i18n-en="1st by">1등 방식</span>
-            <button type="button" class="sm-chip sm-mode" data-mode="A" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Auto">자동</span></button>
-            <button type="button" class="sm-chip sm-mode" data-mode="M" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Manual">수동</span></button>
-            <button type="button" class="sm-chip sm-mode" data-mode="S" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Semi">반자동</span></button>
-        </div>
+        <p class="sm-pcnote" data-i18n-en="On a PC you can see the top 50 retailers as a list.">PC에서 보면 1등 많은 50곳을 목록으로 볼 수 있습니다.</p>
     </div>
-    <aside class="sm-card" id="sm-card" hidden aria-live="polite"></aside>
+    <!-- 오른쪽(PC): 1등 많은 50곳 목록 + 그 아래 판매점 카드. 휴대폰은 목록을 감추고 카드만 아래쪽에 -->
+    <div class="sm-right">
+        <aside class="sm-top50" id="sm-top50" aria-labelledby="sm-top50-h">
+            <h2 id="sm-top50-h" data-i18n-en="Top 50 by 1st prizes">1등 많은 50곳</h2>
+            <ol class="sm-top50-list" id="sm-top50-list"></ol>
+        </aside>
+        <aside class="sm-card" id="sm-card" hidden aria-live="polite"></aside>
+    </div>
+    <!-- 왼쪽 아래: 1등 방식(로그인 회원) · 끌기 막대(낮은 횟수부터 흐리게) — "시도별 · 안내" 위 -->
+    <div class="sm-bl">
+        <button type="button" class="sm-fun-btn" id="sm-fun-btn" aria-expanded="false" aria-controls="sm-fun" data-i18n-en="🏆 Unusual retailers">🏆 이색 판매점</button>
+        <div class="sm-fun" id="sm-fun" hidden>
+            <h2 data-i18n-en="Unusual retailers">이색 판매점</h2>
+            <ol><li><button type="button" class="sm-fun-item" data-k="0"><span class="sm-fun-ico" aria-hidden="true">⬇️</span><span><b data-i18n-en="Southernmost">가장 남쪽 판매점</b><span class="sm-fun-name">까투리 모슬포점 <small>제주 서귀포시</small></span><small data-i18n-en="33.22°N · 1 × 2nd">북위 33.22° · 2등 1번</small></span></button></li><li><button type="button" class="sm-fun-item" data-k="1"><span class="sm-fun-ico" aria-hidden="true">⬆️</span><span><b data-i18n-en="Northernmost">가장 북쪽 판매점</b><span class="sm-fun-name">최북단복권판매점 <small>강원 고성군</small></span><small data-i18n-en="38.50°N · no 1st or 2nd prize yet">북위 38.50° · 1등 · 2등 기록 없음</small></span></button></li><li><button type="button" class="sm-fun-item" data-k="2"><span class="sm-fun-ico" aria-hidden="true">⬅️</span><span><b data-i18n-en="Westernmost">가장 서쪽 판매점</b><span class="sm-fun-name">백령로또 <small>인천 옹진군</small></span><small data-i18n-en="124.72°E · 1 × 1st · 3 × 2nd">동경 124.72° · 1등 1번 · 2등 3번</small></span></button></li><li><button type="button" class="sm-fun-item" data-k="3"><span class="sm-fun-ico" aria-hidden="true">➡️</span><span><b data-i18n-en="Easternmost">가장 동쪽 판매점</b><span class="sm-fun-name">다줄래상회 <small>경북 울릉군</small></span><small data-i18n-en="130.91°E · 4 × 2nd">동경 130.91° · 2등 4번</small></span></button></li><li><button type="button" class="sm-fun-item" data-k="4"><span class="sm-fun-ico" aria-hidden="true">🏝️</span><span><b data-i18n-en="Most remote">가장 외딴 판매점</b><span class="sm-fun-name">백령로또 <small>인천 옹진군</small></span><small data-i18n-en="151 km to the next retailer · 1 × 1st · 3 × 2nd">가장 가까운 판매점까지 151km · 1등 1번 · 2등 3번</small></span></button></li><li><button type="button" class="sm-fun-item" data-k="5"><span class="sm-fun-ico" aria-hidden="true">👯</span><span><b data-i18n-en="Closest 1st-prize pair">1등 판매점끼리 가장 가까운 곳</b><span class="sm-fun-name">우리식품 · 광나루복권방 <small>서울 광진구</small></span><small data-i18n-en="우리식품 ↔ 광나루복권방, 28 m apart · both sold a 1st prize">우리식품 ↔ 광나루복권방, 28m 거리 · 두 곳 다 1등이 나왔습니다</small></span></button></li><li><button type="button" class="sm-fun-item" data-k="6"><span class="sm-fun-ico" aria-hidden="true">🏙️</span><span><b data-i18n-en="Densest spot">판매점이 가장 몰린 곳</b><span class="sm-fun-name">프로토베팅샵 <small>부산 중구</small></span><small data-i18n-en="17 retailers within 500 m">이 판매점 둘레 500m 안에 판매점 17곳</small></span></button></li><li><button type="button" class="sm-fun-item" data-k="7"><span class="sm-fun-ico" aria-hidden="true">🛣️</span><span><b data-i18n-en="Top highway rest stop">1등이 가장 많이 나온 휴게소</b><span class="sm-fun-name">목화휴게소 <small>경남 사천시</small></span><small data-i18n-en="22 × 1st · 125 × 2nd · among 16 rest-stop retailers">1등 22번 · 2등 125번 · 휴게소 판매점 16곳 중</small></span></button></li><li><button type="button" class="sm-fun-item" data-k="8"><span class="sm-fun-ico" aria-hidden="true">⛴️</span><span><b data-i18n-en="1st prize on an island">섬에서 1등이 나온 판매점</b><span class="sm-fun-name">도깨비방망이 <small>전남 완도군</small></span><small data-i18n-en="6 × 1st · 15 × 2nd">전남 완도군 · 1등 6번 · 2등 15번</small></span></button></li></ol>
+            <p class="sm-small" data-i18n-en="Open retailers only, from Dong-haeng Lottery data. More in the blog post.">문을 연 판매점 기준(동행복권 자료). <a href="blog/lotto-store-extremes.html">블로그 글로 보기</a></p>
+        </div>
+        <div class="sm-chips sm-modes" role="group" aria-label="1등 방식 (로그인 회원)" data-i18n-attr="aria-label:sm.modes">
+                <span class="sm-modes-label" data-i18n-en="1st by">1등 방식</span>
+                <button type="button" class="sm-chip sm-mode" data-mode="A" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Auto">자동</span></button>
+                <button type="button" class="sm-chip sm-mode" data-mode="M" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Manual">수동</span></button>
+                <button type="button" class="sm-chip sm-mode" data-mode="S" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Semi">반자동</span></button>
+        </div>
+        <label class="sm-fade"><span data-i18n-en="Fade low counts">적게 나온 곳 흐리게</span>
+            <input type="range" id="sm-fade" min="0" max="100" value="0" aria-describedby="sm-fade-v">
+            <output id="sm-fade-v">모두</output></label>
+    </div>
     <details class="sm-info" id="sm-info">
         <summary data-i18n-en="By province · about">시도별 · 안내</summary>
         <div class="sm-info-body">
@@ -92,6 +112,6 @@
     </details>
 </main>
 <script src="js/vendor/maplibre-gl.js?v=74bdab14"></script>
-<script src="js/store-map.js?v=5241c175"></script>
+<script src="js/store-map.js?v=508f89fd"></script>
 </body>
 </html>

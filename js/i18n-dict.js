@@ -439,6 +439,7 @@ window.I18N_DICT = {
     /* ───── 홈: 번호 생성기 ───── */
     'gen.h1':        { en: 'Lotto Statistics & Number Generator' },
     'gen.sub':       { en: 'Filters out combinations that match 16 unusual patterns' },
+    'gen.mapGo':     { ko: '판매점 지도 →', en: 'Retailer map →' },   // 생성기 제목 아래 지도 단추(2026-10-26)
     'gen.thisPick':  { en: 'This pick' },
     'gen.resultIdle': { en: 'Press the button and the numbers appear above.' },
     'gen.go':        { en: 'Generate' },
@@ -514,6 +515,15 @@ window.I18N_DICT = {
                        en: 'Sets that hit a checked pattern (six in a row, all odd and so on) are drawn again. Filtering does not change the odds; it only avoids popular sets, so a first prize may be shared with fewer people. "Save my settings" here keeps your checked patterns on their own (sign-in).' },
     'tour.s7':       { ko: '생성 이력: 오늘 뽑은 번호가 쌓입니다. 초기화 · 복사 · 공유 · 출력(용지 A~E로 인쇄)을 여기서 합니다.',
                        en: 'History keeps today\'s numbers. Clear, copy, share or print them (as A–E slips) from here.' },
+    'tour.s8':       { ko: '판매점 지도: 1등 · 2등이 나온 판매점을 2D · 3D 지도로 봅니다(휴대폰은 오른쪽 아래 MAP 단추). 1등 많은 곳 숫자 · 막대 지도 · 지나간 당첨 회차까지 볼 수 있습니다.',
+        en: 'Retailer map: see the retailers that sold 1st and 2nd prizes on a 2D/3D map (the MAP button at the bottom right on phones), with counts, a bar view and past draws.' },
+    'tour.s9':       { ko: '낮/밤 모드: 눌러서 화면을 밝게(낮) · 어둡게(밤) 바꿉니다. 고른 모드는 이 브라우저에 기억합니다.',
+        en: 'Light/dark mode: switch the screen between light and dark. Your choice is remembered in this browser.' },
+    'tour.s10':      { ko: '실시간 채팅: 지금 사이트에 있는 사람들과 이야기합니다. 읽기는 누구나, 쓰기는 로그인 · 별명 회원만 할 수 있습니다.',
+        en: 'Live chat: talk with people on the site right now. Anyone can read; signed-in members with a nickname can write.' },
+    'mapLink.fab':   { ko: '로또 판매점 지도', en: 'Lotto retailer map' },
+    'mapLink.title': { ko: '로또 판매점 지도 보러 가기', en: 'Open the lotto retailer map' },
+    'mapLink.sub':   { ko: '1등 · 2등이 나온 판매점 1만 곳을 2D · 3D 지도로', en: '10,000 retailers that sold 1st and 2nd prizes, on a 2D/3D map' },
     'gen.acValN':    { ko: '{n}~10', en: '{n}\u201310' },
     'gen.acOff':     { ko: 'AC값 조건 없음', en: 'No AC value filter' },
     'gen.acN':       { ko: 'AC값 {n}~10인 조합만', en: 'Only sets with an AC value of {n} to 10' },
@@ -972,7 +982,7 @@ window.I18N_DICT = {
 
     /* ───── 개인정보 처리방침 · 이용약관 · 문의 ─────
        법적 효력은 한국어 원문에 있다. 영문은 참고용이라고 두 쪽에 적어 둔다. */
-    'legal.effective': { en: 'Effective from 2026-10-21' },
+    'legal.effective': { en: 'Effective from 2026-10-26' },
     'tm.effective': { en: 'Effective from 2026-10-21' },
     'legal.authority': { en: 'This English text is provided for convenience. If the two versions differ, the Korean original governs.' },
 
@@ -990,6 +1000,7 @@ window.I18N_DICT = {
     'pv.h2m':  { en: '4. Members (Google sign-in)' },
     'pv.m1':   { en: 'What is collected and why: when you sign in with Google we receive the account identifier and email address Google has verified, and use them to keep you signed in, record your likes (♥ and $), and answer enquiries. The nickname you choose is also kept. If you press "Save my settings" in the number generator, those settings (fixed and excluded numbers, checked patterns, past-set skipping, AC value filter) are kept and shown only to you; saving again replaces them and deleting your account removes them. For the ranking we record the days you check in and how many reactions you leave, and if you buy a pass while signed in, that order is linked to your account by an irreversible value (a hash) so its amount counts toward your points. For members with a nickname, the nickname, points and check-in days are shown on the ranking page. If you do not choose a nickname within 3 days of signing up, a random one (for example 행운의수달4821) is given automatically and shown the same way; you can change it once without spending points. Messages written in the live chat are shown to every visitor with your nickname and deleted after 24 hours; until then the operator can see which account wrote them to deal with abuse. For accounts blocked from the chat, that record is kept until the block is lifted. Comments on blog posts are shown to every visitor with your nickname and the time written, and are kept until you delete them or close your account (the operator can see which account wrote them). No other Google information such as your name or photo is received, and no marketing email is sent to your sign-up address. The value that keeps you signed in (a session) is stored in this browser and ends after 30 days.' },
     'pv.m5':   { en: 'My numbers and the draw results email: numbers you save on My page (or with "＋ My numbers" in the generator) are kept as the draw, the six numbers and the time saved, shown only to you; prize tiers are worked out on the page against the winning numbers (up to 20 games per draw, last 104 draws). If you turn on "Draw results by email", we email the winning numbers and the prize tier and matching numbers of the numbers you saved for that draw to your sign-up email address every week from the day after the draw (Sunday); weeks with no saved numbers for that draw get no email. We keep your subscription for that. The email carries no ads, and you can turn it off at any time with the unsubscribe link in each email or on My page. Turning it off deletes the subscription record; deleting your account deletes your saved numbers and subscription immediately.' },
+    'pv.m6':   { en: '"Visited" on the retailer map: if you are signed in and mark a retailer on its card, we keep that retailer number and the colour you chose and show them only on your map (up to 1,000). We do not receive your phone or PC location (GPS); the map\'s "my location" button shows your position only on your device and never sends it to us. Removing a mark deletes it at once, and leaving the site deletes them all.' },
     'pv.m2':   { en: 'Retention: kept until you delete your account. Deleting your account immediately removes the account, email address, nickname, sessions and your likes. Now that the sign-up free trial has ended (11 October 2026), the irreversible hash of the Google account identifier that was kept to stop repeated sign-ups for another trial is no longer created, and existing ones are deleted. Records of trial keys issued before then (key number and period, no email) are kept to manage passes. A 1-day pass opened with points is kept the same way as a pass record (key number and period, no email), and the latest key is kept on your account so you can use it on another device (deleted with your account).' },
     'pv.m3':   { en: 'Processors and storage abroad: sign-in is verified by Google LLC (USA). Member information is sent at sign-up to servers of Cloudflare, Inc. (USA) \u2014 Cloudflare Durable Objects \u2014 and kept for the period above. If you receive the draw results email, your email address and the numbers you saved for that draw, with their prize tiers, are sent to the email service Resend (USA) when it is sent.' },
     'pv.m4':   { en: 'Deletion and your rights: you can delete your account yourself at any time under "My account \u2192 Delete account" in the header, and ask to see, correct or delete member information at the address below. Children under 14 may not sign up.' },
