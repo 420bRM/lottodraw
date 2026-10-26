@@ -920,3 +920,61 @@ test('블로그 조회수 시작값: 관리자가 통째로 갈아 끼우고, �
     await call(env, 'POST', '/api/admin/views/base', { headers: asAdmin, body: { base: {} } });
     assert.deepEqual(await views('lotto-tax-guide,is-number-34-special'), { 'lotto-tax-guide': 2, 'is-number-34-special': 1 });
 });
+
+test('회원 자료 백업: 1,000줄씩 끊어 내려받고(세션 빼고), 빈 저장소에 되살리면 회원 · 별명 · 랭킹이 그대로', async () => {
+    const env = await fresh();
+    const a = (await login(env, { sub: 'A', email: 'a@gmail.com' })).data.session;
+    await login(env, { sub: 'B', email: 'b@gmail.com' });
+    assert.equal((await call(env, 'POST', '/api/me/nickname', { headers: auth(a), body: { nickname: '백업왕' } })).status, 200);
+    // 1,000줄을 넘겨 끊어 읽기를 본다
+    for (let i = 0; i < 1500; i++) env.COMMUNITY._m.set('v:' + 'post-' + String(i).padStart(4, '0'), i);
+
+    assert.equal((await call(env, 'GET', '/api/admin/backup')).status, 401, '관리자만');
+    const rows = [];
+    let after = null, pages = 0;
+    do {
+        const r = await call(env, 'GET', '/api/admin/backup' + (after ? '?after=' + encodeURIComponent(after) : ''), { headers: asAdmin });
+        assert.equal(r.status, 200);
+        assert.ok(r.data.rows.length <= 1000);
+        rows.push(...r.data.rows);
+        after = r.data.next;
+        pages++;
+    } while (after);
+    assert.ok(pages >= 2, '여러 쪽으로 나뉜다');
+    const keys = rows.map(r => r[0]);
+    assert.equal(new Set(keys).size, keys.length, '겹치는 줄 없음');
+    assert.ok(!keys.some(k => k.startsWith('s:')), '로그인 세션은 빠진다');
+    const all = [...env.COMMUNITY._m.keys()].filter(k => !k.startsWith('s:')).sort();
+    assert.deepEqual([...keys].sort(), all, '세션 말고는 모두 들어 있다');
+    assert.ok(keys.includes('u:A') && keys.includes('n:백업왕'));
+
+    // 새 저장소(잘못된 배포로 비었다고 치고)에 되살린다
+    const env2 = await fresh();
+    const bad = await call(env2, 'POST', '/api/admin/restore', { headers: asAdmin, body: { rows: [['s:x', { sub: 'A' }]] } });
+    assert.equal(bad.status, 400, '세션 줄은 받지 않는다');
+    assert.equal((await call(env2, 'POST', '/api/admin/restore', { headers: asAdmin, body: { rows: [['u:x']] } })).status, 400, '모양이 틀리면 거절');
+    assert.equal((await call(env2, 'POST', '/api/admin/restore', { body: { rows: [] } })).status, 401, '관리자만');
+    for (let i = 0; i < rows.length; i += 1000) {
+        const r = await call(env2, 'POST', '/api/admin/restore', { headers: asAdmin, body: { rows: rows.slice(i, i + 1000) } });
+        assert.equal(r.status, 200);
+        assert.equal(r.data.put, rows.slice(i, i + 1000).length);
+    }
+    const list = (await call(env2, 'GET', '/api/admin/members', { headers: asAdmin })).data;
+    assert.deepEqual(list.members.map(m => m.email).sort(), ['a@gmail.com', 'b@gmail.com']);
+    assert.equal(list.members.find(m => m.email === 'a@gmail.com').nick, '백업왕');
+    // 세션은 없으니 다시 로그인하면 같은 계정으로 들어온다
+    assert.equal((await call(env2, 'GET', '/api/me', { headers: auth(a) })).status, 401);
+    const again = await login(env2, { sub: 'A', email: 'a@gmail.com' });
+    assert.equal((await call(env2, 'GET', '/api/me', { headers: auth(again.data.session) })).data.user.nick, '백업왕');
+    // 별명은 여전히 내 것이라 다른 사람이 못 쓴다
+    const b2 = (await login(env2, { sub: 'B', email: 'b@gmail.com' })).data.session;
+    assert.notEqual((await call(env2, 'POST', '/api/me/nickname', { headers: auth(b2), body: { nickname: '백업왕' } })).status, 200);
+});
+
+test('회원 자료 되살리기: 한 번에 1,000줄 · 1MB 를 넘기면 거절', async () => {
+    const env = await fresh();
+    const many = Array.from({ length: 1001 }, (_, i) => ['v:p' + i, 1]);
+    assert.equal((await call(env, 'POST', '/api/admin/restore', { headers: asAdmin, body: { rows: many } })).status, 400);
+    const big = [['vbase', { n: { x: 'a'.repeat(1100 * 1024) } }]];
+    assert.equal((await call(env, 'POST', '/api/admin/restore', { headers: asAdmin, body: { rows: big } })).status, 413);
+});

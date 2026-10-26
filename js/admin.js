@@ -258,6 +258,83 @@
         }
     }
 
+    /* ───── 회원 자료 백업 ───── */
+
+    const BACKUP_KIND = 'lottodraw-members';
+    const RESTORE_CHUNK = 700 * 1024;   // 한 번에 보내는 글자 수(서버는 1MB 까지 받는다)
+
+    async function backupDownload() {
+        const btn = $('backup-download');
+        btn.disabled = true;
+        try {
+            const rows = [];
+            let after = null;
+            do {
+                say('backup-status', `받는 중… ${rows.length.toLocaleString('ko-KR')}줄`);
+                const r = await call('/backup' + (after ? '?after=' + encodeURIComponent(after) : ''));
+                rows.push(...(r.rows || []));
+                after = r.next;
+            } while (after);
+            const now = new Date();
+            const file = { kind: BACKUP_KIND, version: 1, at: now.toISOString(), count: rows.length, rows };
+            const blob = new Blob([JSON.stringify(file)], { type: 'application/json' });
+            const a = document.createElement('a');
+            const day = new Date(now.getTime() + 9 * 3600 * 1000).toISOString().slice(0, 10).replace(/-/g, '');
+            a.href = URL.createObjectURL(blob);
+            a.download = `lottodraw-members-${day}.json`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+            const users = rows.filter(r => r[0].startsWith('u:')).length;
+            say('backup-status', `${rows.length.toLocaleString('ko-KR')}줄(회원 ${users.toLocaleString('ko-KR')}명)을 받았습니다. 이메일이 들어 있으니 안전한 곳에 보관하세요.`);
+        } catch (err) {
+            say('backup-status', '내려받지 못했습니다: ' + err.message, true);
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    async function backupRestore(e) {
+        const input = e.target;
+        const f = input.files && input.files[0];
+        input.value = '';
+        if (!f) return;
+        let file;
+        try { file = JSON.parse(await f.text()); } catch (err) { file = null; }
+        if (!file || file.kind !== BACKUP_KIND || !Array.isArray(file.rows)) {
+            say('backup-status', '이 관리자 페이지에서 내려받은 회원 자료 파일이 아닙니다.', true);
+            return;
+        }
+        const users = file.rows.filter(r => Array.isArray(r) && String(r[0]).startsWith('u:')).length;
+        const ask = `${f.name}\n${String(file.at || '').slice(0, 16).replace('T', ' ')} (UTC) 에 받은 ${file.rows.length.toLocaleString('ko-KR')}줄, 회원 ${users.toLocaleString('ko-KR')}명을 되살립니까?\n` +
+            '같은 키의 지금 값은 파일 값으로 덮어써집니다. 그 뒤에 바뀐 점수 · 별명 · 댓글은 되돌아갑니다.';
+        if (!window.confirm(ask)) return;
+        let sent = 0;
+        try {
+            let chunk = [], size = 0;
+            const flush = async () => {
+                if (!chunk.length) return;
+                await call('/restore', { method: 'POST', body: { rows: chunk } });
+                sent += chunk.length;
+                chunk = []; size = 0;
+                say('backup-status', `되살리는 중… ${sent.toLocaleString('ko-KR')} / ${file.rows.length.toLocaleString('ko-KR')}줄`);
+            };
+            for (const row of file.rows) {
+                const len = JSON.stringify(row).length + 1;
+                if (chunk.length && (chunk.length >= 1000 || size + len > RESTORE_CHUNK)) await flush();
+                chunk.push(row);
+                size += len;
+            }
+            await flush();
+            say('backup-status', `${sent.toLocaleString('ko-KR')}줄을 되살렸습니다.`);
+            status = await call('/status').catch(() => status);
+            await loadMembers();
+        } catch (err) {
+            say('backup-status', `${sent.toLocaleString('ko-KR')}줄까지 되살리고 멈췄습니다: ${err.message} — 같은 파일로 다시 하면 처음부터 덮어씁니다.`, true);
+        }
+    }
+
     /* ───── 공유 · 출력 집계 ───── */
 
     const TAPS = [['gen-share', '생성기 공유'], ['gen-print', '생성기 출력'], ['post-share', '글 공유'], ['post-sns', '글 SNS']];
@@ -669,6 +746,9 @@
         $('chat-reload').addEventListener('click', loadChat);
         $('comments-reload').addEventListener('click', loadComments);
         $('members-q').addEventListener('input', renderMembers);
+        $('backup-download').addEventListener('click', backupDownload);
+        $('backup-pick').addEventListener('click', () => $('backup-file').click());
+        $('backup-file').addEventListener('change', backupRestore);
         document.querySelectorAll('.admin-tabs [data-status]').forEach(b => b.addEventListener('click', () => {
             tab = b.dataset.status;
             document.querySelectorAll('.admin-tabs [data-status]').forEach(x => x.setAttribute('aria-selected', String(x === b)));

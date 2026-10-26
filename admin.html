@@ -69,6 +69,21 @@
                         <summary>카드별 좋아요 합계</summary>
                         <div class="table-wrap"><table class="data-table admin-table" id="reactions-table"></table></div>
                     </details>
+                    <details class="members-rx" id="backup-box">
+                        <summary>회원 자료 백업</summary>
+                        <p class="card-note">회원 · 별명 · 점수 · 랭킹 · 좋아요 · 블로그 댓글 · 내 번호 · 메일 구독 · 조회수를 JSON 한 파일로 받습니다(1,000줄씩 이어 받음).
+                            로그인 세션과 채팅은 빠집니다. 주문 기록은 여기 없습니다.</p>
+                        <p class="card-note"><strong>파일에 회원 이메일이 들어 있습니다.</strong> 비밀번호 관리자나 암호를 건 폴더에만 두고, 메일 · 메신저 · 공유 폴더에 올리지 마세요.
+                            회원이 수십 명을 넘기 전에 한 번, 그 뒤로는 한 달에 한 번 받아 두세요.</p>
+                        <p class="members-tools">
+                            <button type="button" class="btn btn-secondary btn-mini" id="backup-download">회원 자료 내려받기</button>
+                            <button type="button" class="btn btn-secondary btn-mini" id="backup-pick">되살리기…</button>
+                            <input type="file" id="backup-file" accept="application/json,.json" hidden>
+                        </p>
+                        <p class="card-note">되살리기는 파일의 줄을 지금 저장소에 덮어씁니다(파일에 없는 줄은 지우지 않습니다). 저장소가 비었거나 망가졌을 때만 쓰세요.
+                            되살린 뒤 회원은 다시 로그인하면 됩니다.</p>
+                        <p class="license-status" id="backup-status" role="status" aria-live="polite"></p>
+                    </details>
                 </div>
             </section>
 
@@ -224,6 +239,6 @@
 </div>
 
 <script src="js/premium-config.js?v=ca702ca6"></script>
-<script src="js/admin.js?v=daccce1d"></script>
+<script src="js/admin.js?v=a7de32b4"></script>
 </body>
 </html>

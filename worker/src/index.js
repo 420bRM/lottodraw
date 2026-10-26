@@ -45,6 +45,7 @@ const MAX_DISCOUNT = 99;               // 계좌이체 주문 확인용 끝자�
 const AMT_PREFIX = 'amt:';             // 입금 대기 중인 계좌이체 주문의 금액 색인 (amt:5866 → 주문번호)
 const HOOK_SILENCE_HOURS = 13;         // 입금 알림 연결(휴대폰)이 이만큼 조용하면 끊긴 것으로 본다 (6시간마다 신호)
 const MAX_BODY = 4096;
+const RESTORE_MAX_BODY = 1024 * 1024;   // 회원 자료 되살리기 한 번(화면이 이보다 작게 나눠 보낸다)
 const CROCKFORD = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 
 class HttpError extends Error {
@@ -1286,6 +1287,19 @@ async function admin(request, env, sub, method, url) {
         needLogin(env);
         return json(request, env, await community(env, 'adminList'));
     }
+    // 회원 자료 백업: 저장소 줄을 1,000줄씩 내려받고(GET, after 다음부터), 같은 줄을 되살린다(POST).
+    // 화면(js/admin.js)이 끝까지 이어 받아 JSON 한 파일로 만든다. 로그인 세션은 빠진다
+    if (sub === '/backup' && method === 'GET') {
+        needLogin(env);
+        return json(request, env, await community(env, 'backupPage', { after: (url.searchParams.get('after') || '').slice(0, 512) || null }));
+    }
+    if (sub === '/restore' && method === 'POST') {
+        needLogin(env);
+        const body = await readJson(request, RESTORE_MAX_BODY);
+        const r = await community(env, 'restoreRows', { rows: body.rows });
+        if (r.error) throw new HttpError(400, 'bad_rows', '되살릴 줄의 모양이 맞지 않습니다. 이 관리자 페이지에서 내려받은 파일인지 확인하세요.');
+        return json(request, env, r);
+    }
     const mm = sub.match(/^\/members\/([0-9A-Za-z_-]{1,64})\/(clear-nick|delete|staff|unstaff)$/);
     if (mm && method === 'POST') {
         needLogin(env);
@@ -1656,16 +1670,16 @@ function cleanText(v, max) {
     return String(v).replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, max);
 }
 
-async function readBody(request) {
+async function readBody(request, max = MAX_BODY) {
     const len = Number(request.headers.get('Content-Length') || 0);
-    if (len > MAX_BODY) throw new HttpError(413, 'too_large', '요청이 너무 큽니다.');
+    if (len > max) throw new HttpError(413, 'too_large', '요청이 너무 큽니다.');
     const t = await request.text();
-    if (t.length > MAX_BODY) throw new HttpError(413, 'too_large', '요청이 너무 큽니다.');
+    if (t.length > max) throw new HttpError(413, 'too_large', '요청이 너무 큽니다.');
     return t;
 }
 
-async function readJson(request) {
-    const t = await readBody(request);
+async function readJson(request, max) {
+    const t = await readBody(request, max);
     if (!t) return {};
     try {
         const v = JSON.parse(t);
