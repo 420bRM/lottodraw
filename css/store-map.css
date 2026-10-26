@@ -2,8 +2,8 @@
    이 페이지에만 싣는다(지문 ?v= 은 생성기가 붙인다). 색은 site.css 의 낮/밤 변수를 쓴다 */
 html, body.sm-full { height: 100%; }
 body.sm-full { margin: 0; overflow: hidden; background: var(--bg, #fff); }
-/* 사이트 공통으로 저절로 붙는 채팅 말풍선 · 낮/밤 단추는 지도 위에서 감춘다 */
-body.sm-full #chat-fab, body.sm-full #chat-panel, body.sm-full #theme-btn { display: none !important; }
+/* 낮/밤 단추는 지도 위에서 감춘다. 실시간 채팅(js/chat.js — 오른쪽 아래 말풍선)은 생성기처럼 그대로 둔다(2026-10-26 사장님) */
+body.sm-full #theme-btn { display: none !important; }
 
 .sm-wrap { position: fixed; inset: 0; }
 .sm-map { position: absolute; inset: 0; background: var(--soft-2, #e9eef3); }
@@ -80,8 +80,9 @@ body.sm-full #chat-fab, body.sm-full #chat-panel, body.sm-full #theme-btn { disp
 .sm-goto { padding: 0; border: 0; background: none; color: var(--brand, #003087); font: inherit; text-decoration: underline; cursor: pointer; }
 
 /* 지도 단추(확대 · 내 위치)는 오른쪽 아래 — 위쪽 도구와 겹치지 않게 */
-.sm-map .maplibregl-ctrl-bottom-right { margin-bottom: env(safe-area-inset-bottom); }
+.sm-map .maplibregl-ctrl-bottom-right { margin-bottom: calc(52px + env(safe-area-inset-bottom)); }   /* 채팅 말풍선 위로 */
 @media (min-width: 700px) {
     .sm-top { left: 12px; top: 12px; }
-    .sm-card { left: auto; right: 12px; bottom: 12px; }
+    .sm-card { left: 12px; bottom: 60px; }   /* 오른쪽 아래는 채팅 창(PC 는 펼친 채 시작)이라 왼쪽 "시도별 · 안내" 위에 */
+    .sm-map .maplibregl-ctrl-bottom-right { margin-bottom: calc(60px + env(safe-area-inset-bottom)); }
 }
