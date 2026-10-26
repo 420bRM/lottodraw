@@ -35,6 +35,7 @@ body.sm-full #chat-fab, body.sm-full #chat-panel, body.sm-full #theme-btn { disp
 .sm-dot-1 { background: #f07a1a; }
 .sm-dot-2 { background: #3b6fd8; }
 .sm-dot-c { background: #b8bfca; }
+.sm-dot-a { background: #7d8799; }
 .sm-note { margin: 0; padding: 6px 10px; border-radius: 10px; font-size: 12px; line-height: 1.45; }
 
 /* 판매점 카드 (아래쪽) */

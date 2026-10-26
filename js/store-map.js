@@ -5,6 +5,8 @@
  * 화면 전체가 지도다(머리글 · 메뉴 없음, 왼쪽 위 "생성기로" 단추 하나). 지도: MapLibre(js/vendor/) + OpenFreeMap "liberty" 바탕(키 없음, © OpenStreetMap). 3D 단추는 기울여 건물을 세우고, 다시 누르면 2D(위에서 봄).
  * 점 크기 = 2등 + 1등 × 6 (1등은 2등보다 6배 드물다 — 팔린 양을 짐작하는 값). 1등이 나온 곳은 주황, 2등만 나온 곳은 파랑.
  * 문구 규칙: "명당"으로 읽히지 않게, 카드마다 "어디서 사든 확률은 같다"를 붙인다.
+ * 일반 판매점(2단계): store-map-all.json — 1등 · 2등 기록이 없는 전국 판매점 rows: [위도, 경도, 상호, 시도 번호, 시군구].
+ *   칩을 처음 켤 때 받는다(첫 화면을 가볍게). 회색 작은 점으로 1등 · 2등 점 아래에 깔린다.
  */
 (function () {
     'use strict';
@@ -25,8 +27,9 @@
     if (maplibregl.supported && !maplibregl.supported()) { fail(T('이 브라우저에서는 지도를 그릴 수 없습니다(WebGL). 아래 시도별 표를 봐 주세요.', 'This browser cannot draw the map (WebGL). See the table below.')); return; }
 
     let data = null;      // { sido, rows }
+    let all = null;       // 일반 판매점 { sido, rows } — 칩을 켤 때 받는다
     let map = null;
-    const shown = { w1: true, w2: true, closed: false };
+    const shown = { w1: true, w2: true, closed: false, all: false };
 
     function filterFor(kind) {
         const tier = kind === 'w1' ? ['>', ['get', 'w1'], 0] : ['==', ['get', 'w1'], 0];
@@ -38,6 +41,33 @@
             map.setLayoutProperty('st-' + k, 'visibility', shown[k] ? 'visible' : 'none');
             map.setFilter('st-' + k, filterFor(k));
         });
+        if (map.getLayer('st-all')) map.setLayoutProperty('st-all', 'visibility', shown.all ? 'visible' : 'none');
+        else if (shown.all) loadAll();
+    }
+
+    // 일반 판매점 층: 처음 켤 때 한 번 받아 1등 · 2등 점 아래에 깐다
+    let loadingAll = false;
+    async function loadAll() {
+        if (loadingAll || !root.dataset.all) return;
+        loadingAll = true;
+        try { all = await (await fetch(root.dataset.all)).json(); } catch (e) { loadingAll = false; return; }
+        map.addSource('all', { type: 'geojson', data: { type: 'FeatureCollection', features: all.rows.map((r, i) => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [r[1], r[0]] }, properties: { i } })) } });
+        map.addLayer({
+            id: 'st-all', type: 'circle', source: 'all',
+            layout: { visibility: shown.all ? 'visible' : 'none' },
+            paint: {
+                'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 1.2, 10, 2.6, 15, 6],
+                'circle-color': '#7d8799', 'circle-opacity': 0.7,
+                'circle-stroke-color': '#fff', 'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 8, 0, 13, 1],
+            },
+        }, 'st-w2');
+        map.on('click', 'st-all', e => {
+            // 1등 · 2등 점과 겹치면 그쪽 카드를 연다
+            if (map.queryRenderedFeatures(e.point, { layers: ['st-w1', 'st-w2'] }).length) return;
+            if (e.features && e.features[0]) openAll(e.features[0].properties.i, false);
+        });
+        map.on('mouseenter', 'st-all', () => { map.getCanvas().style.cursor = 'pointer'; });
+        map.on('mouseleave', 'st-all', () => { map.getCanvas().style.cursor = ''; });
     }
 
     // 바탕 지도의 글자를 한글 이름으로(없으면 원래 이름)
@@ -96,27 +126,36 @@
         applyLayers();
     }
 
+    const links = (name, place, lat, lng) => '<p class="sm-links"><a href="https://map.kakao.com/link/map/' + encodeURIComponent(name) + ',' + lat + ',' + lng + '" target="_blank" rel="noopener">' + T('카카오맵', 'Kakao Map') + '</a>' +
+        '<a href="https://map.naver.com/p/search/' + encodeURIComponent(name + ' ' + place) + '" target="_blank" rel="noopener">' + T('네이버 지도', 'Naver Map') + '</a></p>';
+    function showCard(html, lat, lng, fly) {
+        card.innerHTML = '<button type="button" class="sm-close" aria-label="' + T('닫기', 'Close') + '">×</button>' + html;
+        card.hidden = false;
+        card.querySelector('.sm-close').addEventListener('click', () => { card.hidden = true; });
+        if (fly) map.flyTo({ center: [lng, lat], zoom: Math.max(map.getZoom(), 15), essential: true });
+    }
+    // 일반 판매점 카드
+    function openAll(i, fly) {
+        const [lat, lng, name, si, gu] = all.rows[i];
+        const place = [all.sido[si] || '', gu].filter(Boolean).join(' ');
+        showCard('<h3>' + esc(name) + '</h3><p class="sm-place">' + esc(place) + '</p>' +
+            '<p class="sm-why">' + T(data.first + '회부터 1등 · 2등 기록이 없는 판매점입니다. 어느 판매점에서 사든 1등 확률은 1/8,145,060으로 같습니다.',
+                'No 1st or 2nd prize here since draw ' + data.first + '. Your chance of 1st prize is 1 in 8,145,060 wherever you buy.') + '</p>' + links(name, place, lat, lng), lat, lng, fly);
+    }
+
     // 판매점 카드
     function open(i, fly) {
         const r = data.rows[i];
         const [lat, lng, w1, w2, name, si, gu, closed, a, m, s] = r;
         const place = [data.sido[si] || '', gu].filter(Boolean).join(' ');
         const how = [a ? T('자동 ', 'auto ') + a : '', m ? T('수동 ', 'manual ') + m : '', s ? T('반자동 ', 'semi-auto ') + s : ''].filter(Boolean).join(' · ');
-        const kakao = 'https://map.kakao.com/link/map/' + encodeURIComponent(name) + ',' + lat + ',' + lng;
-        const naver = 'https://map.naver.com/p/search/' + encodeURIComponent(name + ' ' + place);
-        card.innerHTML =
-            '<button type="button" class="sm-close" aria-label="' + T('닫기', 'Close') + '">×</button>' +
-            '<h3>' + esc(name) + (closed ? ' <span class="sm-closed">' + T('폐점', 'closed') + '</span>' : '') + '</h3>' +
+        showCard('<h3>' + esc(name) + (closed ? ' <span class="sm-closed">' + T('폐점', 'closed') + '</span>' : '') + '</h3>' +
             '<p class="sm-place">' + esc(place) + '</p>' +
             '<p class="sm-counts"><span><b>' + fmt(w1) + '</b>' + T('번 1등', ' × 1st') + (how ? ' <small>(' + esc(how) + ')</small>' : '') + '</span>' +
             '<span><b>' + fmt(w2) + '</b>' + T('번 2등', ' × 2nd') + '</span></p>' +
             '<p class="sm-why">' + T('1등 · 2등이 많을수록 많이 팔린 곳일 가능성이 큽니다. 어느 판매점에서 사든 1등 확률은 1/8,145,060으로 같습니다.',
                 'More 1st and 2nd prizes most likely means more tickets sold. Your chance of 1st prize is 1 in 8,145,060 wherever you buy.') + '</p>' +
-            '<p class="sm-links"><a href="' + kakao + '" target="_blank" rel="noopener">' + T('카카오맵', 'Kakao Map') + '</a>' +
-            '<a href="' + naver + '" target="_blank" rel="noopener">' + T('네이버 지도', 'Naver Map') + '</a></p>';
-        card.hidden = false;
-        card.querySelector('.sm-close').addEventListener('click', () => { card.hidden = true; });
-        if (fly) map.flyTo({ center: [lng, lat], zoom: Math.max(map.getZoom(), 15), essential: true });
+            links(name, place, lat, lng), lat, lng, fly);
     }
 
     function initSearch() {
@@ -128,8 +167,10 @@
             if (q.length < 2) { list.hidden = true; return; }
             const hits = [];
             for (let i = data.rows.length - 1; i >= 0 && hits.length < 20; i--) if (data.rows[i][4].toLowerCase().includes(q)) hits.push(i);   // 1등 많은 곳부터
+            const more = [];   // 일반 판매점(층을 켰을 때만)
+            if (all && shown.all) for (let i = 0; i < all.rows.length && hits.length + more.length < 20; i++) if (all.rows[i][2].toLowerCase().includes(q)) more.push(i);
             list.hidden = false;
-            if (!hits.length) { list.innerHTML = '<li class="sm-none">' + T('찾는 판매점이 없습니다.', 'No match.') + '</li>'; return; }
+            if (!hits.length && !more.length) { list.innerHTML = '<li class="sm-none">' + T('찾는 판매점이 없습니다.', 'No match.') + '</li>'; return; }
             hits.forEach(i => {
                 const r = data.rows[i];
                 const li = document.createElement('li');
@@ -137,6 +178,16 @@
                 b.type = 'button';
                 b.innerHTML = '<b>' + esc(r[4]) + '</b> <span>' + esc([data.sido[r[5]], r[6]].filter(Boolean).join(' ')) + ' · ' + T('1등 ', '1st ') + r[2] + ' · ' + T('2등 ', '2nd ') + r[3] + '</span>';
                 b.addEventListener('click', () => { list.hidden = true; box.blur(); open(i, true); });
+                li.appendChild(b);
+                list.appendChild(li);
+            });
+            more.forEach(i => {
+                const r = all.rows[i];
+                const li = document.createElement('li');
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.innerHTML = '<b>' + esc(r[2]) + '</b> <span>' + esc([all.sido[r[3]], r[4]].filter(Boolean).join(' ')) + ' · ' + T('일반 판매점', 'retailer') + '</span>';
+                b.addEventListener('click', () => { list.hidden = true; box.blur(); openAll(i, true); });
                 li.appendChild(b);
                 list.appendChild(li);
             });

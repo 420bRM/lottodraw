@@ -2197,6 +2197,9 @@ function repeatPage() {
  */
 const STORE_MAP_FILE = 'store-map.html';
 const STORE_MAP_DATA = 'store-map-data.json';
+// 일반 판매점 층(2단계): shops-all.json(tools/update-all-shops.js, 매달) 중 1등 · 2등 기록이 없는 곳. 칩을 켤 때 받는다
+const STORE_MAP_ALL = 'store-map-all.json';
+const ALL_SHOPS = (() => { try { return JSON.parse(fs.readFileSync(path.join(ROOT, 'shops-all.json'), 'utf8')); } catch (e) { return null; } })();
 // 좌표가 있는 판매점이 1,000곳을 넘을 때만 지도 페이지 · 링크를 만든다(좌표를 받기 전 자료에서는 만들지 않는다)
 const STORE_MAP_READY = () => !!(STORES && Object.values(STORES.d.shops).filter(sh => typeof sh[4] === 'number').length > 1000);
 const fingerprint = f => require('crypto').createHash('sha1').update(fs.readFileSync(path.join(ROOT, f))).digest('hex').slice(0, 8);
@@ -2217,7 +2220,20 @@ function storeMapData() {
         rows.push(row);
     }
     rows.sort((a, b) => (a[2] - b[2]) || (a[3] - b[3]));
-    return { rows, noCoord, sidoNames };
+    return { rows, noCoord, sidoNames, all: storeMapAll(sidoNames) };
+}
+// 일반 판매점: [위도, 경도, 상호, 시도 번호, 시군구] — 1등 · 2등 판매점(폐점 포함)은 위 자료에 있으니 뺀다
+function storeMapAll(sidoNames) {
+    if (!ALL_SHOPS) return null;
+    const sido = sidoNames.slice();
+    const rows = [];
+    for (const [id, sh] of Object.entries(ALL_SHOPS.shops)) {
+        if (STORES.d.shops[id]) continue;
+        const [name, si, gu, lat, lng] = sh;
+        if (!sido.includes(si)) sido.push(si);
+        rows.push([Math.round(lat * 1e4) / 1e4, Math.round(lng * 1e4) / 1e4, name, sido.indexOf(si), gu || '']);
+    }
+    return { updated: ALL_SHOPS.updated, total: Object.keys(ALL_SHOPS.shops).length, sido, rows };
 }
 
 // 화면 전체가 지도인 페이지(2026-10-26 사장님 결정): 머리글 · 메뉴 · 바닥글 없이 지도와 "생성기로 돌아가기" 하나.
@@ -2267,7 +2283,7 @@ function storeMapPage(md) {
     ${CF_BEACON}
 </head>
 <body class="sm-full">
-<main class="sm-wrap" id="sm" data-src="${STORE_MAP_DATA}?v=${fingerprint(STORE_MAP_DATA)}">
+<main class="sm-wrap" id="sm" data-src="${STORE_MAP_DATA}?v=${fingerprint(STORE_MAP_DATA)}"${md.all ? ` data-all="${STORE_MAP_ALL}?v=${fingerprint(STORE_MAP_ALL)}"` : ''}>
     <div class="sm-map" id="sm-map" role="region" aria-label="판매점 지도" data-i18n-attr="aria-label:sm.mapAria"><p class="sm-loading" data-i18n-en="Loading the map…">지도를 불러오는 중…</p></div>
     <div class="sm-top">
         <div class="sm-row">
@@ -2282,6 +2298,7 @@ function storeMapPage(md) {
         <div class="sm-chips" role="group" aria-label="보이는 판매점" data-i18n-attr="aria-label:sm.layers">
             <button type="button" class="sm-chip" data-layer="w1" aria-pressed="true"><span class="sm-dot sm-dot-1"></span><span data-i18n-en="1st prize">1등 나온 곳</span></button>
             <button type="button" class="sm-chip" data-layer="w2" aria-pressed="true"><span class="sm-dot sm-dot-2"></span><span data-i18n-en="2nd only">2등만 나온 곳</span></button>
+            ${md.all ? `<button type="button" class="sm-chip" data-layer="all" aria-pressed="false"><span class="sm-dot sm-dot-a"></span><span data-i18n-en="Other retailers">일반 판매점</span></button>` : ''}
             <button type="button" class="sm-chip" data-layer="closed" aria-pressed="false"><span class="sm-dot sm-dot-c"></span><span data-i18n-en="Closed">폐점 포함</span></button>
         </div>
         <p class="sm-note" data-i18n-en="Big dots: many 1st and 2nd prizes — most likely they simply sell a lot. Same odds wherever you buy.">점이 클수록 1등 · 2등이 많이 나온 곳 — <strong>많이 팔린 곳일 가능성이 큽니다.</strong> 어디서 사든 확률은 같습니다.</p>
@@ -2299,6 +2316,8 @@ function storeMapPage(md) {
                 + (md.noCoord ? ` 위치가 공개되지 않은 ${fmt(md.noCoord)}곳도 빠졌습니다.` : ''),
                 `Dot size is 2nd prizes + 1st prizes × 6 (a 1st prize is six times rarer). Sales per retailer are not published, so this only gauges how much was sold; it says nothing about where the next 1st prize will come from. Dong-haeng Lottery's online sales (${net ? net.n1 : 0} 1st-prize games) are not one location and are not on the map.`
                 + (md.noCoord ? ` ${fmt(md.noCoord)} retailers without a published location are also left out.` : ''), 'sm-small')}
+            ${md.all ? pEn(`"일반 판매점"을 켜면 지금 로또를 파는 전국 판매점 ${fmt(md.all.total)}곳 중 1등 · 2등 기록이 없는 ${fmt(md.all.rows.length)}곳이 회색 점으로 보입니다(출처: 동행복권 판매점 찾기, ${md.all.updated} 기준 · 매달 갱신).`,
+                `"Other retailers" shows the ${fmt(md.all.rows.length)} of ${fmt(md.all.total)} current lotto retailers with no 1st or 2nd prize on record, as grey dots (source: Dong-haeng Lottery retailer search, as of ${md.all.updated}, updated monthly).`, 'sm-small') : ''}
             ${pEn(`순위와 "많이 팔린 곳"인지 견주는 방법은 <a href="${STORES_FILE}">1등 판매점 통계</a>에 있습니다. 함께 읽기: <a href="blog/lucky-store-myth.html">로또 명당은 정말 있을까</a>`,
                 `Rankings and how we check whether a place simply sells a lot are in <a href="${STORES_FILE}">1st-prize retailer statistics</a>. Read next: <a href="blog/lucky-store-myth.html">are there really lucky lottery stores?</a>`)}
             <p class="sm-small">지도: <a href="https://maplibre.org/" rel="noopener">MapLibre</a> · <a href="https://openfreemap.org/" rel="noopener">OpenFreeMap</a> · © <a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap</a> 기여자 · <a href="privacy.html" data-i18n="footer.privacy">개인정보 처리방침</a></p>
@@ -2745,6 +2764,8 @@ const STORE_MAP = STORES ? storeMapData() : null;
 if (STORE_MAP_READY()) {
     if (write(STORE_MAP_DATA, JSON.stringify({ first: STORES.first, last: STORES.last, updated: UPDATED, sido: STORE_MAP.sidoNames,
         cols: ['lat', 'lng', 'w1', 'w2', 'name', 'sido', 'gu', 'closed', 'auto', 'manual', 'semi'], rows: STORE_MAP.rows }) + '\n')) changed++;
+    if (STORE_MAP.all && write(STORE_MAP_ALL, JSON.stringify({ updated: STORE_MAP.all.updated, sido: STORE_MAP.all.sido,
+        cols: ['lat', 'lng', 'name', 'sido', 'gu'], rows: STORE_MAP.all.rows }) + '\n')) changed++;
     if (write(STORE_MAP_FILE, storeMapPage(STORE_MAP))) changed++;
 }
 if (write(REPEAT_FILE, repeatPage())) changed++;
