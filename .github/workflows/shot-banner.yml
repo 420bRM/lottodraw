@@ -25,24 +25,22 @@ jobs:
           import { chromium } from 'playwright';
           const b = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
           // 지도용 공유 이미지(OG 1200×630): 실제 지도 위에 띠와 같은 모양의 제목
-          const ctx = await b.newContext({ viewport: { width: 1200, height: 630 }, deviceScaleFactor: 1, locale: 'ko-KR' });
+          const ctx = await b.newContext({ viewport: { width: 1540, height: 630 }, deviceScaleFactor: 1, locale: 'ko-KR' });
           await ctx.route(/googlesyndication|cloudflareinsights|api\.lottodraw/, r => r.abort());
           const p = await ctx.newPage();
           await p.goto('http://localhost:8765/store-map.html#map=11.75/37.552/127.02/0/0');
           await p.addStyleTag({ content: '.sm-side,.maplibregl-control-container,.sm-star,#chat-fab,#chat-panel,#map-fab{display:none!important}' +
-            '.sm-map{left:0!important}#og{position:fixed;inset:0;z-index:99;display:flex;align-items:center;padding:0 64px;font-family:"NanumGothic","Noto Sans KR",sans-serif;' +
+            '#og{position:fixed;top:0;bottom:0;left:340px;right:0;z-index:99;display:flex;align-items:center;padding:0 64px;font-family:"NanumGothic","Noto Sans KR",sans-serif;' +
             'background:linear-gradient(90deg,#fff 0%,rgba(255,255,255,.96) 40%,rgba(255,255,255,.5) 62%,rgba(246,246,243,0) 85%)}' +
             '#og .lg{display:flex;align-items:center;gap:8px;color:#555;font-size:24px;font-weight:700}#og i{display:inline-block;width:18px;height:18px;border-radius:50%}' +
             '#og h1{margin:18px 0 0;color:#003087;font-size:68px;letter-spacing:-1px}#og p{margin:16px 0 0;color:#444;font-size:28px;line-height:1.5}' +
             '#og .u{display:inline-block;margin-top:28px;padding:10px 20px;border-radius:12px;background:#003087;color:#fff;font-size:24px;font-weight:700}' });
-          await p.waitForTimeout(1500);
-          await p.evaluate(() => window.dispatchEvent(new Event('resize')));   // 왼쪽 칸을 감춘 만큼 지도를 넓힌다
           await p.waitForTimeout(10000);
           await p.evaluate(() => { const d = document.createElement('div'); d.id = 'og';
             d.innerHTML = '<div><div class="lg"><i style="background:#f07a1a"></i>1등 나온 곳 <i style="background:#3b6fd8;margin-left:14px"></i>2등만 나온 곳</div><h1>로또 판매점 지도</h1>' +
               '<p>1등 · 2등이 나온 판매점 1만 곳을<br>서울부터 백령도까지 지도 위에</p><span class="u">lottodraw.kr</span></div>'; document.body.appendChild(d); });
           await p.waitForTimeout(600);
-          await p.screenshot({ path: 'img/og-store-map.jpg', type: 'jpeg', quality: 85 });
+          await p.screenshot({ path: 'img/og-store-map.jpg', type: 'jpeg', quality: 85, clip: { x: 340, y: 0, width: 1200, height: 630 } });   // PC 왼쪽 칸(340px)을 빼고 지도만
           await b.close();
           JS
           node shot.mjs
