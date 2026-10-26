@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<!-- 이 파일은 tools/build-static-stats.js 가 매주 다시 만든다. 직접 고치면 덮어쓰인다. 지도는 js/store-map.js -->
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>로또 판매점 지도 · 1등 · 2등 나온 곳 전국 지도 (262~1247회) | lottodraw.kr</title>
+    <meta name="description" content="로또 1등 · 2등이 나온 판매점 10,608곳을 전국 지도(3D · 2D)에서 봅니다(262~1247회, 매주 갱신). 점이 클수록 1등 · 2등이 많이 나온 곳 — 많이 팔린 곳일 가능성이 큽니다. 어디서 사든 당첨 확률은 같습니다.">
+    <link rel="canonical" href="https://www.lottodraw.kr/store-map.html">
+    <meta property="og:title" content="로또 판매점 지도 · 1등 · 2등 나온 곳 전국 지도 (262~1247회) | lottodraw.kr">
+    <meta property="og:description" content="로또 1등 · 2등이 나온 판매점 10,608곳을 전국 지도(3D · 2D)에서 봅니다(262~1247회, 매주 갱신). 점이 클수록 1등 · 2등이 많이 나온 곳 — 많이 팔린 곳일 가능성이 큽니다. 어디서 사든 당첨 확률은 같습니다.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.lottodraw.kr/store-map.html">
+    <meta property="og:site_name" content="lottodraw.kr">
+    <meta property="og:image" content="https://www.lottodraw.kr/img/og-default.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="google-adsense-account" content="ca-pub-9372871176021283">
+    <link rel="icon" href="/favicon.ico" sizes="32x32">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="stylesheet" href="css/site.css">
+    <link rel="stylesheet" href="js/vendor/maplibre-gl.css?v=7e27dfc9">
+    <link rel="stylesheet" href="css/store-map.css?v=708ea117">
+    <script src="js/i18n-dict.js"></script>
+    <script src="js/i18n.js"></script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Dataset","name":"로또 판매점 지도 · 1등 · 2등 나온 곳 전국 지도 (262~1247회) | lottodraw.kr","description":"로또 1등 · 2등이 나온 판매점 10,608곳을 전국 지도(3D · 2D)에서 봅니다(262~1247회, 매주 갱신). 점이 클수록 1등 · 2등이 많이 나온 곳 — 많이 팔린 곳일 가능성이 큽니다. 어디서 사든 당첨 확률은 같습니다.","url":"https://www.lottodraw.kr/store-map.html","isAccessibleForFree":true,"dateModified":"2026-10-24","creator":{"@type":"Organization","name":"lottodraw.kr","url":"https://www.lottodraw.kr/"},"keywords":["로또 판매점 지도","로또 1등 판매점 지도","로또 명당 지도","로또 2등 판매점"]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://www.lottodraw.kr/"},{"@type":"ListItem","position":2,"name":"1등 판매점","item":"https://www.lottodraw.kr/statistics-stores.html"},{"@type":"ListItem","position":3,"name":"판매점 지도","item":"https://www.lottodraw.kr/store-map.html"}]}]}</script>
+    <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "91c08d8a39d944e69c10024f2314b955"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+<body class="sm-full">
+<main class="sm-wrap" id="sm" data-src="store-map-data.json?v=2b6c8b46">
+    <div class="sm-map" id="sm-map" role="region" aria-label="판매점 지도" data-i18n-attr="aria-label:sm.mapAria"><p class="sm-loading" data-i18n-en="Loading the map…">지도를 불러오는 중…</p></div>
+    <div class="sm-top">
+        <div class="sm-row">
+            <a class="sm-back" href="index.html" data-i18n-en="← Generator">← 생성기로</a>
+            <h1 class="sm-title" data-i18n-en="Lotto retailer map">로또 판매점 지도</h1>
+            <button type="button" class="sm-3d" id="sm-3d" aria-pressed="false">3D</button>
+        </div>
+        <div class="sm-row">
+            <input type="search" class="sm-search" id="sm-search" placeholder="판매점 이름 찾기" data-i18n-attr="placeholder:sm.search" aria-label="판매점 이름 찾기" autocomplete="off">
+        </div>
+        <ul class="sm-found" id="sm-found" hidden></ul>
+        <div class="sm-chips" role="group" aria-label="보이는 판매점" data-i18n-attr="aria-label:sm.layers">
+            <button type="button" class="sm-chip" data-layer="w1" aria-pressed="true"><span class="sm-dot sm-dot-1"></span><span data-i18n-en="1st prize">1등 나온 곳</span></button>
+            <button type="button" class="sm-chip" data-layer="w2" aria-pressed="true"><span class="sm-dot sm-dot-2"></span><span data-i18n-en="2nd only">2등만 나온 곳</span></button>
+            <button type="button" class="sm-chip" data-layer="closed" aria-pressed="false"><span class="sm-dot sm-dot-c"></span><span data-i18n-en="Closed">폐점 포함</span></button>
+        </div>
+        <p class="sm-note" data-i18n-en="Big dots: many 1st and 2nd prizes — most likely they simply sell a lot. Same odds wherever you buy.">점이 클수록 1등 · 2등이 많이 나온 곳 — <strong>많이 팔린 곳일 가능성이 큽니다.</strong> 어디서 사든 확률은 같습니다.</p>
+    </div>
+    <aside class="sm-card" id="sm-card" hidden aria-live="polite"></aside>
+    <details class="sm-info" id="sm-info">
+        <summary data-i18n-en="By province · about">시도별 · 안내</summary>
+        <div class="sm-info-body">
+            <p class="sm-small" data-i18n-en="1st- and 2nd-prize retailers, draws 262–1247, updated after each draw (last update 2026-10-24). Source: Dong-haeng Lottery winning-retailer search.">262~1247회 1등 · 2등 판매점 · 매주 추첨 후 자동 갱신 (마지막 갱신 2026-10-24) · 출처: 동행복권 당첨 판매점 조회</p>
+            <p data-i18n-en="Tap an area name to move the map there. Where the 1st- and 2nd-prize shares are close, an area with many 1st prizes is simply one that sells more.">지역 이름을 누르면 지도가 그 지역으로 갑니다. 1등 비율과 2등 비율이 비슷하면, 1등이 많은 지역은 그만큼 많이 팔린 지역이라는 뜻입니다.</p>
+            <div class="table-scroll">
+<table class="data-table tier-stat sm-sido">
+<thead><tr><th scope="col" data-i18n-en="Area">지역</th><th scope="col" data-i18n-en="1st">1등</th><th scope="col" data-i18n-en="1st share">1등 비율</th><th scope="col" data-i18n-en="2nd">2등</th><th scope="col" data-i18n-en="2nd share">2등 비율</th></tr></thead>
+<tbody>
+<tr><td><button type="button" class="sm-goto" data-sido="경기">경기</button></td><td>2,340</td><td>25.1%</td><td>14,105</td><td>25.0%</td></tr>
+<tr><td><button type="button" class="sm-goto" data-sido="서울">서울</button></td><td>1,811</td><td>19.4%</td><td>10,782</td><td>19.1%</td></tr>
+<tr><td><button type="button" class="sm-goto" data-sido="부산">부산</button></td><td>661</td><td>7.1%</td><td>3,757</td><td>6.6%</td></tr>
+<tr><td><button type="button" class="sm-goto" data-sido="경남">경남</button></td><td>554</td><td>5.9%</td><td>3,511</td><td>6.2%</td></tr>
+<tr><td><button type="button" class="sm-goto" data-sido="인천">인천</button></td><td>543</td><td>5.8%</td><td>3,278</td><td>5.8%</td></tr>
+<tr><td><button type="button" class="sm-goto" data-sido="충남">충남</button></td><td>445</td><td>4.8%</td><td>2,761</td><td>4.9%</td></tr>
+<tr><td><button type="button" class="sm-goto" data-sido="경북">경북</button></td><td>399</td><td>4.3%</td><td>2,535</td><td>4.5%</td></tr>
+<tr><td><button type="button" class="sm-goto" data-sido="대구">대구</button></td><td>382</td><td>4.1%</td><td>2,539</td><td>4.5%</td></tr>
+<tr><td><button type="button" class="sm-goto" data-sido="전남">전남</button></td><td>305</td><td>3.3%</td><td>1,825</td><td>3.2%</td></tr>
+<tr><td><button type="button" class="sm-goto" data-sido="충북">충북</button></td><td>302</td><td>3.2%</td><td>1,833</td><td>3.2%</td></tr>
+<tr><td><button type="button" class="sm-goto" data-sido="전북">전북</button></td><td>294</td><td>3.1%</td><td>1,777</td><td>3.1%</td></tr>
+<tr><td><button type="button" class="sm-goto" data-sido="강원">강원</button></td><td>280</td><td>3.0%</td><td>1,704</td><td>3.0%</td></tr>
+<tr><td><button type="button" class="sm-goto" data-sido="대전">대전</button></td><td>268</td><td>2.9%</td><td>1,535</td><td>2.7%</td></tr>
+<tr><td><button type="button" class="sm-goto" data-sido="광주">광주</button></td><td>266</td><td>2.8%</td><td>1,579</td><td>2.8%</td></tr>
+<tr><td><button type="button" class="sm-goto" data-sido="울산">울산</button></td><td>218</td><td>2.3%</td><td>1,288</td><td>2.3%</td></tr>
+<tr><td><span data-i18n-en="Online (not on the map)">인터넷(지도에 없음)</span></td><td>132</td><td>1.4%</td><td>826</td><td>1.5%</td></tr>
+<tr><td><button type="button" class="sm-goto" data-sido="제주">제주</button></td><td>96</td><td>1.0%</td><td>708</td><td>1.3%</td></tr>
+<tr><td><button type="button" class="sm-goto" data-sido="세종">세종</button></td><td>40</td><td>0.4%</td><td>182</td><td>0.3%</td></tr>
+</tbody>
+</table>
+</div>
+            <p class="sm-small" data-i18n-en="Dot size is 2nd prizes + 1st prizes × 6 (a 1st prize is six times rarer). Sales per retailer are not published, so this only gauges how much was sold; it says nothing about where the next 1st prize will come from. Dong-haeng Lottery's online sales (132 1st-prize games) are not one location and are not on the map. 1 retailers without a published location are also left out.">점 크기는 2등 횟수 + 1등 횟수 × 6입니다(1등은 2등보다 6배 드물다). 판매점별 판매량은 공개되지 않아 팔린 양을 짐작하는 값이며, 앞으로 1등이 나올 곳을 뜻하지 않습니다. 동행복권 인터넷 판매(1등 132게임)는 한 곳에 있는 판매점이 아니라 지도에 찍지 않습니다. 위치가 공개되지 않은 1곳도 빠졌습니다.</p>
+            <p data-i18n-en="Rankings and how we check whether a place simply sells a lot are in &lt;a href=&quot;statistics-stores.html&quot;&gt;1st-prize retailer statistics&lt;/a&gt;. Read next: &lt;a href=&quot;blog/lucky-store-myth.html&quot;&gt;are there really lucky lottery stores?&lt;/a&gt;">순위와 "많이 팔린 곳"인지 견주는 방법은 <a href="statistics-stores.html">1등 판매점 통계</a>에 있습니다. 함께 읽기: <a href="blog/lucky-store-myth.html">로또 명당은 정말 있을까</a></p>
+            <p class="sm-small">지도: <a href="https://maplibre.org/" rel="noopener">MapLibre</a> · <a href="https://openfreemap.org/" rel="noopener">OpenFreeMap</a> · © <a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap</a> 기여자 · <a href="privacy.html" data-i18n="footer.privacy">개인정보 처리방침</a></p>
+        </div>
+    </details>
+</main>
+<script src="js/vendor/maplibre-gl.js?v=74bdab14"></script>
+<script src="js/store-map.js?v=f24640fa"></script>
+</body>
+</html>
