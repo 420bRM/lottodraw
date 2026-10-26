@@ -38,7 +38,7 @@
     const shown = { w1: true, w2: true, closed: false, all: false };
     const modes = { A: true, M: true, S: true };   // 1등 방식 체크(로그인 회원)
     let bars = false;
-    const bands = new Set();                       // 만들어 둔 막대 굵기 단계(줌)
+    const bands = new Set();                       // 만들어 둔 막대 굵기 단계(줌 × 4)
 
     // w1 = 고른 방식의 1등 횟수, o1 = 원래 1등 횟수(2등만 나온 곳을 가르는 값)
     function filterFor(kind) {
@@ -51,9 +51,9 @@
         ['w1', 'w2'].forEach(k => {
             map.setLayoutProperty('st-' + k, 'visibility', vis(shown[k] && !bars));
             map.setFilter('st-' + k, filterFor(k));
-            bands.forEach(z => {
-                map.setLayoutProperty('bar-' + k + '-' + z, 'visibility', vis(shown[k] && bars));
-                map.setFilter('bar-' + k + '-' + z, filterFor(k));
+            bands.forEach(b => {
+                map.setLayoutProperty('bar-' + k + '-' + b, 'visibility', vis(shown[k] && bars));
+                map.setFilter('bar-' + k + '-' + b, filterFor(k));
             });
         });
         map.setLayoutProperty('st-num', 'visibility', vis(shown.w1 && !bars));
@@ -287,13 +287,16 @@
 
     // 막대 지도: 점마다 작은 네모 기둥. 화면에서 늘 비슷한 굵기 · 높이로 보이게 —
     //  높이: 줌 0 에서의 미터(h0)를 지수(밑 0.5) 보간 → 줌마다 정확히 반씩, 화면 높이(px)는 그대로(끊김 없음)
-    //  굵기: 모양은 미터로 고정이라 줌 1단계마다 그 줌에 맞춘 모양(band)을 따로 두고, 경계 ±0.3 에서 겹쳐 서서히 바꾼다. 가 본 줌만 만든다
+    //  굵기: 모양은 미터로 고정이라 줌 0.25 단계마다 그 줌에 맞춘 모양(band)을 두고 바꿔 낀다 — 한 단계 차이가 16%라 끊겨 보이지 않는다.
+    //  (처음엔 1단계마다 두고 겹쳐 흐리게 바꿨는데, 바뀌는 동안 막대가 옅어져 깜빡였다.) 지금 줌 둘레만 만들고 먼 단계는 지운다
     const M0 = 40075016.686 / 512;   // 줌 0, 적도에서 화면 1px 의 미터
-    const BAND_MIN = 5, BAND_MAX = 18;
+    const STEP = 4;                  // 줌 1 당 단계 수
+    const BAND_MIN = 5 * STEP, BAND_MAX = 18 * STEP;
     const halfPx = z => Math.min(7, Math.max(2.5, 2.5 + (z - 8) * 0.6));   // 기둥 반 폭(px): 전국 2.5 → 거리 7
     const height = ['interpolate', ['exponential', 0.5], ['zoom'], 0, ['get', 'h0'], 24, ['*', ['get', 'h0'], Math.pow(0.5, 24)]];
-    function barBand(z) {
-        const r0 = halfPx(z) * M0 / Math.pow(2, z);   // 적도 기준 반 폭(m)
+    const barIds = k => ['bar-w2-' + k, 'bar-w1-' + k];
+    function barBand(k) {
+        const z = k / STEP, r0 = halfPx(z) * M0 / Math.pow(2, z);   // 적도 기준 반 폭(m)
         return {
             type: 'FeatureCollection',
             features: data.rows.map((x, i) => {
@@ -308,25 +311,26 @@
             }),
         };
     }
-    function addBand(z) {
-        if (bands.has(z) || z < BAND_MIN || z > BAND_MAX) return;
-        bands.add(z);
-        map.addSource('bars-' + z, { type: 'geojson', data: barBand(z) });
-        const lo = z === BAND_MIN ? 0 : z - 0.65, hi = z === BAND_MAX ? 24 : z + 0.65;
-        const fade = ['interpolate', ['linear'], ['zoom'], lo, z === BAND_MIN ? 0.9 : 0, z - 0.35, 0.9, z + 0.35, 0.9, hi, z === BAND_MAX ? 0.9 : 0];
-        ['w2', 'w1'].forEach(k => {
-            const id = 'bar-' + k + '-' + z;
-            map.addLayer({ id, type: 'fill-extrusion', source: 'bars-' + z, minzoom: lo, maxzoom: hi, filter: filterFor(k),
-                layout: { visibility: shown[k] && bars ? 'visible' : 'none' },
-                paint: { 'fill-extrusion-color': k === 'w1' ? '#f07a1a' : '#3b6fd8', 'fill-extrusion-height': height, 'fill-extrusion-opacity': fade } });
-            map.on('click', id, e => { if (e.features && e.features[0]) open(e.features[0].properties.i, false); });
-        });
+    function addBand(k) {
+        if (bands.has(k) || k < BAND_MIN || k > BAND_MAX) return;
+        bands.add(k);
+        map.addSource('bars-' + k, { type: 'geojson', data: barBand(k) });
+        const lo = k === BAND_MIN ? 0 : (k - 0.5) / STEP, hi = k === BAND_MAX ? 24 : (k + 0.5) / STEP;
+        ['w2', 'w1'].forEach((t, n) => map.addLayer({ id: barIds(k)[n], type: 'fill-extrusion', source: 'bars-' + k, minzoom: lo, maxzoom: hi, filter: filterFor(t),
+            layout: { visibility: shown[t] && bars ? 'visible' : 'none' },
+            paint: { 'fill-extrusion-color': t === 'w1' ? '#f07a1a' : '#3b6fd8', 'fill-extrusion-height': height, 'fill-extrusion-opacity': 0.9 } }));
     }
-    // 지금 줌과 이웃 단계를 미리 만들어 둔다(넘어갈 때 비지 않게)
+    function dropBand(k) {
+        barIds(k).forEach(id => map.removeLayer(id));
+        map.removeSource('bars-' + k);
+        bands.delete(k);
+    }
+    // 지금 줌과 앞뒤 두 단계를 미리 만들어 두고(넘어갈 때 비지 않게), 1.5 줌 넘게 떨어진 단계는 지운다(휴대폰 메모리)
     function ensureBands() {
         if (!bars) return;
-        const z = Math.round(map.getZoom());
-        [z - 1, z, z + 1].forEach(addBand);
+        const k = Math.round(map.getZoom() * STEP);
+        for (let d = -2; d <= 2; d++) addBand(k + d);
+        [...bands].forEach(b => { if (Math.abs(b - k) > 6) dropBand(b); });
     }
     function setBars(on) {
         bars = on;
@@ -354,7 +358,7 @@
         b.setAttribute('aria-pressed', String(modes[k]));
         computeProps();
         map.getSource('stores').setData(geojson());
-        bands.forEach(z => map.getSource('bars-' + z).setData(barBand(z)));
+        bands.forEach(b => map.getSource('bars-' + b).setData(barBand(b)));
     }
 
     // 3D(기울임). 줌인하면 저절로 기울고(auto), 손으로 2D 를 고르면 13 밑으로 나갈 때까지 저절로 기울이지 않는다
@@ -422,6 +426,12 @@
         map.on('load', () => { koreanLabels(); whiteModel(); addStores(); map.fitBounds([[125.8, 33.1], [129.7, 38.6]], { padding: pad(), duration: 0 }); });
         map.on('zoomend', autoTilt);
         map.on('zoom', ensureBands);
+        // 막대 누르기(단계마다 층이 바뀌어 지도 전체에서 받는다)
+        map.on('click', e => {
+            if (!bars) return;
+            const f = map.queryRenderedFeatures(e.point, { layers: [...bands].flatMap(barIds).filter(id => map.getLayer(id)) });
+            if (f[0]) open(f[0].properties.i, false);
+        });
         map.on('error', e => { if (e && e.error && /style|tiles/i.test(String(e.error.message))) console.warn('map', e.error); });
         initControls();
         initSearch();
