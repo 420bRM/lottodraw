@@ -105,6 +105,7 @@ async function route(request, env, ctx) {
     if (path === '/api/me/point-pass' && method === 'POST') return pointPass(request, env, ctx);
     if (path === '/api/me/generator' && method === 'POST') return saveGenerator(request, env);
     if (path === '/api/me/visits' && method === 'POST') return saveVisit(request, env);
+    if (path === '/api/me/visit-color' && method === 'POST') return openVisitColor(request, env);
     if (path === '/api/me/numbers' && method === 'GET') return getNumbers(request, env);
     if (path === '/api/me/numbers' && method === 'POST') return addNumbers(request, env);
     if (path === '/api/me/numbers/delete' && method === 'POST') return deleteNumbers(request, env);
@@ -839,6 +840,21 @@ async function saveVisit(request, env) {
     if (r.error === 'too_many') throw new HttpError(409, 'too_many_visits', `다녀온 곳은 ${VISIT_MAX}곳까지 저장합니다.`);
     if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
     return json(request, env, { visits: r.visits });
+}
+
+// 다녀온 곳 색 열기(2026-10-26): 첫 색(빨강)은 누구나, 나머지 7색은 이용권이 있으면 화면에서 바로, 없으면 하나에 POINTS.visitColor 포인트.
+// js/store-map.js 의 PALETTE 와 같은 목록이어야 한다
+export const VISIT_PALETTE = ['#e63946', '#f4a261', '#e9c46a', '#2a9d8f', '#3a86ff', '#8338ec', '#ff66b3', '#1f2937'];
+async function openVisitColor(request, env) {
+    const s = await sessionUser(request, env);
+    await limited(env.REACT_LIMIT, s.hash);
+    const body = await readJson(request);
+    const color = String(body.color || '').toLowerCase();
+    if (!VISIT_PALETTE.slice(1).includes(color)) throw new HttpError(400, 'bad_color', '열 수 없는 색입니다.');
+    const r = await community(env, 'openVisitColor', { sub: s.sub, color });
+    if (r.error === 'need_points') throw new HttpError(402, 'need_points', `색 하나를 열려면 ${r.cost}포인트가 필요합니다. (지금 ${r.avail}포인트)`);
+    if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
+    return json(request, env, { user: r.user, cost: r.cost });
 }
 
 /* ───── 내 번호 (마이페이지 · 홈 생성기 "내 번호에 저장") ───── */

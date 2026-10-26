@@ -2356,11 +2356,13 @@ function storeMapPage(md) {
 <body class="sm-full">
 <main class="sm-wrap" id="sm" data-src="${STORE_MAP_DATA}?v=${fingerprint(STORE_MAP_DATA)}"${md.all ? ` data-all="${STORE_MAP_ALL}?v=${fingerprint(STORE_MAP_ALL)}"` : ''} data-rounds="${STORE_MAP_ROUNDS}?v=${fingerprint(STORE_MAP_ROUNDS)}" data-ids="${STORE_MAP_IDS}?v=${fingerprint(STORE_MAP_IDS)}">
     <div class="sm-map" id="sm-map" role="region" aria-label="판매점 지도" data-i18n-attr="aria-label:sm.mapAria"><p class="sm-loading" data-i18n-en="Loading the map…">지도를 불러오는 중…</p></div>
+    <!-- PC: 왼쪽 고정 칸(당근 동네업체처럼 — 2026-10-26 사장님). 도구 · 탭(TOP 50 · 판매점 · 이색 판매점 · 시도별) · 탭 내용. 휴대폰은 칸 없이 지도 위에 떠 있다 -->
+    <div class="sm-side" id="sm-side" data-tab="top">
     <div class="sm-top">
         <div class="sm-row">
             <a class="sm-back" href="index.html" data-i18n-en="← Generator">← 생성기로</a>
             <h1 class="sm-title" data-i18n-en="Lotto retailer map">로또 판매점 지도</h1>
-            <button type="button" class="sm-bars" id="sm-bars" aria-pressed="false" title="막대 지도 (로그인 회원)" data-i18n-attr="title:sm.barsTitle" data-i18n-en="Bars">막대</button>
+            <button type="button" class="sm-night" id="sm-night" aria-pressed="false" title="밤 지도" aria-label="밤 지도" data-i18n-attr="title:sm.night aria-label:sm.night">🌙</button>
             <button type="button" class="sm-3d" id="sm-3d" aria-pressed="false">3D</button>
         </div>
         <div class="sm-row sm-searchbox">
@@ -2373,15 +2375,22 @@ function storeMapPage(md) {
             ${md.all ? `<button type="button" class="sm-chip" data-layer="all" aria-pressed="false"><span class="sm-dot sm-dot-a"></span><span data-i18n-en="Other retailers">일반 판매점</span></button>` : ''}
             <button type="button" class="sm-chip" data-layer="closed" aria-pressed="false"><span class="sm-dot sm-dot-c"></span><span data-i18n-en="Closed">폐점 포함</span></button>
         </div>
-        <p class="sm-pcnote" data-i18n-en="On a PC you can see the top 50 retailers as a list.">PC에서 보면 1등 많은 50곳을 목록으로 볼 수 있습니다.</p>
+        <p class="sm-pcnote" data-i18n-en="On a PC you can see the Top 50 as a list.">PC에서 보면 TOP 50을 목록으로 볼 수 있습니다.</p>
     </div>
-    <!-- 오른쪽(PC): 1등 많은 50곳 목록 + 그 아래 판매점 카드. 휴대폰은 목록을 감추고 카드만 아래쪽에 -->
+    <nav class="sm-tabs" role="tablist" aria-label="판매점 지도 탭">
+        <button type="button" class="sm-tab" data-tab="top" role="tab" aria-selected="true">TOP 50</button>
+        <button type="button" class="sm-tab" data-tab="card" role="tab" aria-selected="false" data-i18n-en="Retailer">판매점</button>
+        ${md.fun && md.fun.length ? `<button type="button" class="sm-tab" data-tab="fun" role="tab" aria-selected="false" data-i18n-en="Unusual">이색 판매점</button>` : ''}
+        <button type="button" class="sm-tab" data-tab="info" role="tab" aria-selected="false" data-i18n-en="By province">시도별</button>
+    </nav>
+    <!-- TOP 50 목록 · 판매점 카드(PC 는 탭 내용, 휴대폰은 목록을 감추고 카드만 아래쪽에) -->
     <div class="sm-right">
         <aside class="sm-top50" id="sm-top50" aria-labelledby="sm-top50-h">
-            <h2 id="sm-top50-h" data-i18n-en="Top 50 by 1st prizes">1등 많은 50곳</h2>
+            <h2 id="sm-top50-h">TOP 50 <small data-i18n-en="by 1st prizes">1등 횟수</small></h2>
             <ol class="sm-top50-list" id="sm-top50-list"></ol>
         </aside>
         <aside class="sm-card" id="sm-card" hidden aria-live="polite"></aside>
+        <p class="sm-card-empty" data-i18n-en="Tap a dot on the map to see the retailer here.">지도에서 점을 누르면 판매점 정보가 여기에 나옵니다.</p>
     </div>
     <!-- 왼쪽 아래: 1등 방식(로그인 회원) · 끌기 막대(낮은 횟수부터 흐리게) — "시도별 · 안내" 위 -->
     <div class="sm-bl">
@@ -2419,6 +2428,7 @@ function storeMapPage(md) {
             <p class="sm-small">지도: <a href="https://maplibre.org/" rel="noopener">MapLibre</a> · <a href="https://openfreemap.org/" rel="noopener">OpenFreeMap</a> · © <a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap</a> 기여자 · <a href="privacy.html" data-i18n="footer.privacy">개인정보 처리방침</a></p>
         </div>
     </details>
+    </div>
 </main>
 <script src="${v('js/premium-config.js')}"></script>
 <script src="${v('js/license.js')}"></script>

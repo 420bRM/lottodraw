@@ -68,7 +68,7 @@
             band.querySelector('.l1').textContent = tr('mapLink.l1', '1등 나온 곳');
             band.querySelector('.l2').textContent = tr('mapLink.l2', '2등만 나온 곳');
             band.querySelector('b').textContent = tr('mapLink.title', '로또 판매점 지도');
-            band.querySelector('small').textContent = tr('mapLink.sub', '1등 · 2등이 나온 판매점 1만 곳을 지도 위 버블과 3D 막대로. 서울부터 백령도까지, 내가 다녀온 곳도 표시해 보세요.');
+            band.querySelector('small').textContent = tr('mapLink.sub', '1등 · 2등이 나온 판매점 1만 곳을 지도 위 버블로. 서울부터 백령도까지, 내가 다녀온 곳도 표시해 보세요.');
             band.querySelector('.map-band-go').textContent = tr('mapLink.go', '지도 열기 →');
             foot.insertAdjacentElement('afterend', band);
         }

@@ -1,6 +1,7 @@
 /* 판매점 지도 (store-map.html) — 화면 전체가 지도(머리글 · 메뉴 · 바닥글 없음). js/store-map.js 가 그린다.
    이 페이지에만 싣는다(지문 ?v= 은 생성기가 붙인다). 색은 site.css 의 낮/밤 변수를 쓴다.
-   휴대폰이 기본: 지도를 덜 가리게 단추를 작게(2026-10-26 사장님 — 예전 크기의 절반쯤). PC(900px 이상)는 위쪽 도구를 한 줄로, 오른쪽에 1등 많은 50곳 목록 + 카드 */
+   휴대폰이 기본: 지도를 덜 가리게 단추를 작게(2026-10-26 사장님 — 예전 크기의 절반쯤).
+   PC(900px 이상)는 왼쪽 고정 칸(340px, 당근 동네업체의 절반쯤)에 도구 · 탭(TOP 50 · 판매점 · 이색 판매점 · 시도별)을 모으고 지도는 오른쪽. 지도 단추는 오른쪽 아래 */
 html, body.sm-full { height: 100%; }
 body.sm-full { margin: 0; overflow: hidden; background: var(--bg, #fff); }
 /* 낮/밤 단추는 지도 위에서 감춘다. 실시간 채팅(js/chat.js — 오른쪽 아래 말풍선)은 생성기처럼 그대로 둔다(2026-10-26 사장님) */
@@ -14,17 +15,20 @@ body.sm-full #theme-btn { display: none !important; }
 .sm-top { position: absolute; top: calc(6px + env(safe-area-inset-top)); left: 6px; right: 6px; z-index: 3; display: grid; gap: 4px; max-width: 360px; pointer-events: none; }
 .sm-top > *, .sm-row > * { pointer-events: auto; }
 .sm-row { display: flex; align-items: center; gap: 4px; pointer-events: none; }
-.sm-back, .sm-3d, .sm-bars, .sm-search, .sm-chip, .sm-info summary, .sm-fade {
+.sm-back, .sm-3d, .sm-night, .sm-search, .sm-chip, .sm-info summary, .sm-fade {
     border: 1px solid var(--line, #ddd); background: var(--surface, #fff); color: var(--fg, #333); box-shadow: 0 1px 5px rgba(0, 0, 0, .12);
 }
 .sm-back { flex: none; padding: 4px 8px; border-radius: 7px; color: var(--brand, #003087); font-size: 11px; font-weight: bold; text-decoration: none; }
 .sm-title { flex: 1 1 auto; min-width: 0; margin: 0; overflow: hidden; color: var(--fg, #222); font-size: 12px; text-overflow: ellipsis; white-space: nowrap;
     text-shadow: 0 0 3px var(--surface, #fff), 0 0 6px var(--surface, #fff); }
-.sm-3d, .sm-bars { flex: none; padding: 4px 7px; border-radius: 7px; font-family: inherit; font-size: 11px; font-weight: bold; cursor: pointer; }
+.sm-3d, .sm-night { flex: none; padding: 4px 7px; border-radius: 7px; font-family: inherit; font-size: 11px; font-weight: bold; cursor: pointer; }
 .sm-3d { border-color: var(--brand, #003087); background: var(--brand-bg, #003087); color: #fff; }
 .sm-3d[aria-pressed="true"] { background: var(--surface, #fff); color: var(--brand, #003087); }
-/* 막대 지도(로그인 회원) — 꺼져 있으면 흰 단추, 켜면 1등 주황 */
-.sm-bars[aria-pressed="true"] { border-color: #f07a1a; background: #f07a1a; color: #fff; }
+/* 밤 지도 — 켜면 남색 */
+.sm-night[aria-pressed="true"] { border-color: #2b3b5c; background: #1f2b44; color: #ffd76a; }
+/* 탭 · 빈 카드 안내는 PC 에서만 */
+.sm-side { display: contents; }
+.sm-tabs, .sm-card-empty { display: none; }
 .sm-searchbox { position: relative; display: block; }
 .sm-search { box-sizing: border-box; width: 100%; padding: 5px 8px; border-radius: 7px; font: inherit; font-size: 13px; }
 .sm-found { position: absolute; top: calc(100% + 3px); left: 0; right: 0; z-index: 6; margin: 0; padding: 3px; max-height: 45vh; overflow: auto; list-style: none;
@@ -123,8 +127,15 @@ body.sm-full #theme-btn { display: none !important; }
 .sm-color-any input { position: absolute; inset: -4px; width: 30px; height: 30px; opacity: 0; cursor: pointer; }
 .sm-visit-note { margin: 4px 0 0; color: var(--faint, #777); font-size: 10.5px; }
 .sm-visit-note.is-warn { color: #b4560a; font-weight: bold; }
-.sm-colors.is-locked .sm-color { opacity: .45; }
-.sm-lock { font-size: 12px; line-height: 18px; }
+.sm-color.is-locked { opacity: .5; }
+.sm-color.is-locked::after { content: "🔒"; position: absolute; right: -6px; bottom: -6px; font-size: 9px; line-height: 1; }
+.sm-unlock { display: inline-flex; align-items: center; gap: 4px; margin: 2px 0; padding: 3px 8px; border: 1px solid #b4560a; border-radius: 999px; background: var(--surface, #fff);
+    color: #b4560a; font: inherit; font-size: 11px; font-weight: bold; cursor: pointer; }
+.sm-unlock:disabled { opacity: .5; }
+/* 밤 모드: 이색 판매점 단추 · 회차 꼬리표 */
+:root[data-theme="dark"] .sm-fun-btn[aria-pressed="true"] { border-color: #8a6a1c; background: #3a2f12; color: #ffd76a; }
+:root[data-theme="dark"] .sm-rounds small { background: #3a2614; color: #ffb27a; }
+:root[data-theme="dark"] .sm-star { border-color: #141a23; }
 
 /* ───── 시도별 · 안내 (왼쪽 아래 접는 창) ───── */
 .sm-info { position: absolute; left: 6px; bottom: calc(6px + env(safe-area-inset-bottom)); z-index: 5; max-width: min(460px, calc(100% - 12px)); }
@@ -143,47 +154,64 @@ body.sm-full #theme-btn { display: none !important; }
 /* 지도 단추(확대 · 내 위치)는 오른쪽 아래 채팅 말풍선 위로 */
 .sm-map .maplibregl-ctrl-bottom-right { margin-bottom: calc(52px + env(safe-area-inset-bottom)); }
 
-/* ───── PC: 위쪽 도구 한 줄 · 오른쪽 50곳 목록과 카드 ───── */
+/* ───── PC: 왼쪽 고정 칸(도구 · 탭 · 탭 내용) + 오른쪽 지도 ───── */
 @media (min-width: 900px) {
-    .sm-top { top: 12px; left: 12px; right: 362px; max-width: none; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-    .sm-row { display: contents; }
-    /* 제목은 검색 로봇 · 화면 읽기용으로만 두고 지도에서는 감춘다(한 줄을 짧게) */
-    .sm-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-    .sm-back { order: 1; padding: 7px 12px; border-radius: 9px; font-size: 13px; }
-    .sm-row.sm-searchbox { order: 2; display: block; flex: 0 1 220px; min-width: 140px; }
-    .sm-search { padding: 7px 10px; border-radius: 9px; font-size: 14px; }
-    .sm-found { right: auto; width: 320px; }
-    .sm-chips:not(.sm-modes) { order: 3; flex-wrap: nowrap; gap: 5px; }
-    .sm-chip { gap: 5px; padding: 6px 10px; font-size: 12px; }
+    .sm-map { left: 340px; }
+    .sm-side { position: absolute; top: 0; bottom: 0; left: 0; z-index: 4; box-sizing: border-box; display: flex; flex-direction: column; width: 340px;
+        border-right: 1px solid var(--line, #e3e6eb); background: var(--surface, #fff); color: var(--fg, #333); }
+    .sm-side > * { flex: none; }
+    .sm-top, .sm-bl, .sm-right { display: contents; }
+    .sm-top > *, .sm-bl > *, .sm-right > *, .sm-row > * { pointer-events: auto; }
+    .sm-row { display: flex; align-items: center; gap: 6px; padding: 0 14px; }
+    .sm-row:first-child { order: 1; padding-top: 14px; }
+    .sm-title { flex: 1 1 auto; font-size: 17px; font-weight: 800; text-shadow: none; }
+    .sm-back, .sm-3d, .sm-night, .sm-search, .sm-chip, .sm-fade { box-shadow: none; }
+    .sm-back { padding: 6px 10px; border-radius: 9px; font-size: 12.5px; }
+    .sm-3d, .sm-night { padding: 6px 10px; border-radius: 9px; font-size: 12.5px; }
+    .sm-row.sm-searchbox { order: 2; display: block; margin-top: 10px; }
+    .sm-search { padding: 9px 12px; border-radius: 10px; background: var(--soft, #f3f5f8); font-size: 14px; }
+    .sm-chips:not(.sm-modes) { order: 3; padding: 10px 14px 0; gap: 5px; }
+    .sm-chip { gap: 5px; padding: 5px 10px; font-size: 12px; }
     .sm-dot { width: 9px; height: 9px; }
-    .sm-bars { order: 4; }
-    .sm-3d { order: 5; }
-    .sm-3d, .sm-bars { padding: 7px 11px; border-radius: 9px; font-size: 13px; }
     .sm-pcnote { display: none; }
-
-    .sm-bl { left: 12px; bottom: 52px; gap: 6px; }
-    .sm-modes-label, .sm-fade { font-size: 12px; }
-    .sm-fun-btn { padding: 6px 12px; font-size: 12.5px; }
-    .sm-fun { width: 360px; }
+    /* 이색 판매점 켜기 · 1등 방식 · 흐리게 — 한 줄씩 */
+    .sm-fun-btn { order: 4; margin: 8px 14px 0; justify-self: start; align-self: flex-start; padding: 5px 11px; font-size: 12px; box-shadow: none; }
+    .sm-modes { order: 5; padding: 8px 14px 0; }
+    .sm-fade { order: 6; margin: 8px 14px 0; padding: 5px 10px; border-radius: 9px; font-size: 12px; }
+    .sm-fade span { white-space: nowrap; }
+    .sm-fade input { flex: 1 1 auto; width: auto; min-width: 0; }
     .sm-check { width: 11px; height: 11px; }
-    .sm-fade { padding: 5px 10px; border-radius: 9px; }
-    .sm-fade input { width: 140px; }
-    .sm-info { left: 12px; bottom: 12px; }
-    .sm-info summary { padding: 7px 12px; border-radius: 9px; font-size: 13px; }
-
-    .sm-right { position: absolute; top: 12px; right: 12px; bottom: 200px; z-index: 4; display: flex; flex-direction: column; gap: 8px; width: 330px; pointer-events: none; }
-    .sm-right > * { pointer-events: auto; }
-    .sm-top50 { display: flex; flex-direction: column; flex: none; min-height: 0; padding: 8px 6px 6px; border-radius: 12px; background: var(--surface, #fff); box-shadow: 0 6px 20px rgba(0, 0, 0, .18); }
-    .sm-top50 h2 { margin: 0 8px 6px; color: var(--fg, #222); font-size: 13px; }
-    .sm-top50-list { flex: none; height: 236px; margin: 0; padding: 0; overflow-y: auto; overscroll-behavior: contain; list-style: none; }   /* 5곳만 보이고 마우스 휠로 넘긴다(2026-10-26) */
-    .sm-top50-list button { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: center; gap: 6px; width: 100%; padding: 5px 6px; border: 0; border-radius: 6px;
-        background: none; color: var(--fg, #333); font: inherit; font-size: 12px; text-align: left; cursor: pointer; }
+    /* 탭 */
+    .sm-tabs { order: 7; display: flex; gap: 2px; margin: 12px 0 0; padding: 0 10px; border-bottom: 1px solid var(--line, #e3e6eb); }
+    .sm-tab { flex: 1 1 auto; padding: 9px 4px 8px; border: 0; border-bottom: 2.5px solid transparent; background: none; color: var(--muted, #667); font: inherit; font-size: 13px; font-weight: bold; white-space: nowrap; cursor: pointer; }
+    .sm-tab[aria-selected="true"] { border-bottom-color: var(--brand, #003087); color: var(--brand, #003087); }
+    :root[data-theme="dark"] .sm-tab[aria-selected="true"] { border-bottom-color: #ffb066; color: #ffb066; }
+    /* 탭 내용: 고른 것 하나만, 남은 높이를 채우고 안에서 넘긴다 */
+    .sm-top50, .sm-card, .sm-card-empty, .sm-fun, .sm-info { order: 8; display: none; flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+    .sm-side[data-tab="top"] .sm-top50 { display: block; }
+    .sm-side[data-tab="card"] .sm-card:not([hidden]) { display: block; }
+    .sm-side[data-tab="card"] .sm-card[hidden] + .sm-card-empty { display: block; }
+    .sm-side[data-tab="fun"] .sm-fun { display: block; }
+    .sm-side[data-tab="info"] .sm-info { display: block; }
+    .sm-top50 { padding: 8px 8px 12px; }
+    .sm-top50 h2 { margin: 2px 8px 6px; color: var(--fg, #222); font-size: 15px; }
+    .sm-top50 h2 small { margin-left: 4px; color: var(--faint, #888); font-size: 11.5px; font-weight: normal; }
+    .sm-top50-list { margin: 0; padding: 0; list-style: none; }
+    .sm-top50-list button { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; align-items: center; gap: 8px; width: 100%; padding: 8px 8px; border: 0; border-bottom: 1px solid var(--line-soft, #f0f1f4);
+        border-radius: 0; background: none; color: var(--fg, #333); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
     .sm-top50-list button:hover, .sm-top50-list button.is-on { background: var(--soft, #f3f6fb); }
     .sm-rank { color: #f07a1a; font-weight: bold; text-align: right; }
-    .sm-tname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .sm-tname small { display: block; overflow: hidden; color: var(--faint, #777); font-size: 10.5px; text-overflow: ellipsis; }
+    .sm-tname { overflow: hidden; font-weight: bold; text-overflow: ellipsis; white-space: nowrap; }
+    .sm-tname small { display: block; overflow: hidden; color: var(--faint, #777); font-size: 11px; font-weight: normal; text-overflow: ellipsis; }
     .sm-tcnt { text-align: right; white-space: nowrap; }
-    .sm-tcnt b { color: var(--brand, #003087); font-size: 13px; }
-    .sm-tcnt small { display: block; color: var(--faint, #777); font-size: 10px; }
-    .sm-card { position: relative; left: auto; bottom: auto; flex: 0 1 auto; width: auto; min-height: 0; max-height: none; font-size: 13px; }
+    .sm-tcnt b { color: var(--brand, #003087); font-size: 14px; }
+    .sm-tcnt small { display: block; color: var(--faint, #777); font-size: 10.5px; }
+    .sm-card { position: relative; left: auto; bottom: auto; width: auto; max-height: none; padding: 14px 16px; border-radius: 0; box-shadow: none; font-size: 13px; }
+    .sm-card h3 { font-size: 17px; }
+    .sm-card-empty { margin: 0; padding: 40px 20px; color: var(--faint, #888); font-size: 13px; text-align: center; }
+    .sm-fun { position: static; width: auto; max-height: none; padding: 10px 8px; border-radius: 0; box-shadow: none; }
+    .sm-fun h2 { display: none; }
+    .sm-info { position: static; max-width: none; }
+    .sm-info summary { display: none; }
+    .sm-info-body { max-height: none; overflow: visible; border: 0; border-radius: 0; box-shadow: none; }
 }

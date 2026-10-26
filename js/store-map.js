@@ -5,16 +5,18 @@
  * 화면 전체가 지도다(머리글 · 메뉴 없음, 왼쪽 위 "생성기로" 단추 하나). 지도: MapLibre(js/vendor/) + OpenFreeMap "positron" 바탕(키 없음, © OpenStreetMap).
  * 모양(2026-10-26 사장님 결정 — 제안 ② "화이트 모형"): 하얀 땅에 반투명 흰 건물, 색은 판매점 점에만. 줌 15쯤부터 건물이 솟아오르고(높이를 줌에 따라 0 → 실제 높이)
  * 지도도 저절로 기울어진다(13 아래로 나가면 다시 평평하게). 3D 단추는 손으로 기울이기/펴기.
- * 막대 지도(제안 ④): 1등 · 2등 판매점을 막대로 세운다(1등 많을수록 높게) — 로그인 회원 기능(서버에 로그인이 꺼져 있으면 누구나).
- *   줌하는 동안은 실제 물체처럼 그대로 커지고 작아지며(모양을 다시 만들지 않아 끊김 · 렉이 없다), 멈추면 그 줌에 맞는 크기 모양으로 0.3초 동안 서서히 바꾼다(settleBars).
+ * 막대 지도는 2026-10-26 뺐다(임팩트가 약하고 보기 불편 — 사장님).
+ * 밤 모드: 사이트 낮/밤(data-theme)을 따라 바탕 지도 색을 어둡게 바꾼다(nightModel). 왼쪽 도구의 🌙 단추로도 바꾼다.
  * 점 크기 = 2등 + 1등 × 6 (1등은 2등보다 6배 드물다 — 팔린 양을 짐작하는 값). 1등이 나온 곳은 주황, 2등만 나온 곳은 파랑. 1등 많은 50곳은 점 안에 1등 횟수.
- * 1등 방식(자동 · 수동 · 반자동) 체크 — 로그인 회원 기능. 끈 방식의 1등은 세지 않는다(점 크기 · 막대 · 숫자 · 상위 50).
+ * 1등 방식(자동 · 수동 · 반자동) 체크 — 로그인 회원 기능. 끈 방식의 1등은 세지 않는다(점 크기 · 숫자 · TOP 50).
  * 카드: 1등 · 2등이 나온 회차 · 날짜 · 당첨번호, 5개씩 쪽 넘김(store-map-rounds.json — 카드를 처음 열 때 받는다).
  * 왼쪽 아래 끌기 막대: 오른쪽으로 끌수록 1등 횟수가 적은 곳부터 서서히 흐려져 많이 나온 곳만 남는다(2등만 나온 곳이 먼저).
- * PC(폭 900px 이상): 오른쪽 위에 1등 많은 50곳 목록(휠로 넘김), 판매점 카드는 그 아래. 휴대폰은 위쪽에 작은 안내 한 줄.
+ * PC(폭 900px 이상): 지도 단추(오른쪽 아래)를 빼고 모두 왼쪽 한 줄 기둥에 — 도구 · TOP 50(휠로 넘김) · 판매점 카드 · 이색 판매점 · 체크 · 끌기 막대 · 시도별.
+ *   휴대폰은 위쪽에 작은 안내 한 줄.
  * 첫 화면은 서울(2026-10-26 사장님).
  * 다녀온 곳(로그인 회원): 카드에서 "다녀왔어요"를 누르고 색을 고르면 그 판매점 점을 그 색으로 칠한다(가장자리는 1등 주황 · 2등 파랑 그대로).
  *   서버에는 판매점 번호와 색만(/api/me/visits). 기기 위치는 쓰지 않는다. 판매점 번호는 store-map-ids.json(로그인했을 때만 받는다).
+ *   색: 첫 색은 누구나, 나머지는 이용권이 있으면 다, 없으면 색 하나에 30포인트(/api/me/visit-color — 한 번 열면 계속).
  * 문구 규칙: "명당"으로 읽히지 않게, 카드마다 "어디서 사든 확률은 같다"를 붙인다.
  * 일반 판매점(2단계): store-map-all.json — 1등 · 2등 기록이 없는 전국 판매점 rows: [위도, 경도, 상호, 시도 번호, 시군구].
  *   칩을 처음 켤 때 받는다(첫 화면을 가볍게). 회색 작은 점으로 1등 · 2등 점 아래에 깔린다.
@@ -42,9 +44,6 @@
     let map = null;
     const shown = { w1: true, w2: true, closed: false, all: false };
     const modes = { A: true, M: true, S: true };   // 1등 방식 체크(로그인 회원)
-    let bars = false;
-    const bands = new Set();                       // 만들어 둔 막대 크기 단계(줌 × 2)
-    let curBand = null, oldBand = null;            // 지금 보이는 단계 · 서서히 사라지는 단계
     let fadeT = 0;                                 // 끌기 막대: 1등 횟수 + 1 이 이 값보다 작으면 흐려진다(0 = 다 보임)
     const isWide = () => window.innerWidth >= 900;
     let visits = {};                               // 다녀온 곳 { 판매점 번호: 색 } — 로그인 회원
@@ -63,14 +62,10 @@
         if (!map || !map.getLayer('st-w1')) return;
         const vis = on => (on ? 'visible' : 'none');
         ['w1', 'w2'].forEach(k => {
-            map.setLayoutProperty('st-' + k, 'visibility', vis(shown[k] && !bars));
+            map.setLayoutProperty('st-' + k, 'visibility', vis(shown[k]));
             map.setFilter('st-' + k, filterFor(k));
-            bands.forEach(b => {
-                map.setLayoutProperty('bar-' + k + '-' + b, 'visibility', vis(shown[k] && bars && (b === curBand || b === oldBand)));
-                map.setFilter('bar-' + k + '-' + b, filterFor(k));
-            });
         });
-        map.setLayoutProperty('st-num', 'visibility', vis(shown.w1 && !bars));
+        map.setLayoutProperty('st-num', 'visibility', vis(shown.w1));
         map.setFilter('st-num', ['all', ['>', ['get', 'top'], 0], filterFor('w1')]);
         if (map.getLayer('st-all')) map.setLayoutProperty('st-all', 'visibility', shown.all ? 'visible' : 'none');
         else if (shown.all) loadAll();
@@ -89,7 +84,7 @@
             paint: {
                 'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, ['case', vis, 3, 1.2], 10, ['case', vis, 5, 2.6], 15, ['case', vis, 8, 6]],
                 'circle-color': ['coalesce', ['feature-state', 'visit'], '#7d8799'], 'circle-opacity': 0.7 * Math.max(0, 1 - fadeT),
-                'circle-stroke-color': '#fff', 'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 8, ['case', vis, 1, 0], 13, ['case', vis, 2, 1]],
+                'circle-stroke-color': rim('#7d8799'), 'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 8, ['case', vis, 1, 0], 13, ['case', vis, 2, 1]],
             },
         }, 'st-w2');
         paintVisits();
@@ -138,6 +133,45 @@
         }, firstLabel);
         map.setLight({ anchor: 'map', color: '#ffffff', intensity: 0.25, position: [1.3, 210, 35] });   // 옆면이 너무 어두우면 회색 덩어리로 보인다
     }
+
+    // ───── 밤 지도(2026-10-26 사장님) — 사이트 낮/밤(data-theme="dark")을 따른다. 🌙 단추는 사이트 낮/밤 단추(js/theme.js)를 대신 누른다 ─────
+    // 바탕 지도 층의 색을 층 종류별로 바꾸고, 낮으로 돌아갈 때는 처음 값(화이트 모형)을 되돌린다
+    const NIGHT = { bg: '#141a23', water: '#0c1520', park: '#18211d', land: '#19202a', bld: '#212935', road: '#2c3646', casing: '#1b222d',
+        rail: '#394252', border: '#4a5466', text: '#a9b3c1', halo: '#141a23', extr: '#2a3443', edge: '#323c4c' };
+    const isNight = () => document.documentElement.getAttribute('data-theme') === 'dark';
+    const rim = color => ['case', vis, color, isNight() ? NIGHT.bg : '#fff'];   // 점 가장자리(다녀온 곳은 1등 · 2등 색)
+    const orig = new Map();
+    function setP(id, k, v) {
+        const key = id + '|' + k;
+        if (!orig.has(key)) orig.set(key, map.getPaintProperty(id, k));
+        try { map.setPaintProperty(id, k, v === null ? orig.get(key) : v); } catch (e) { /* 없는 속성 */ }
+    }
+    function nightModel(on) {
+        if (!map || !map.getLayer('st-w1')) return;
+        document.getElementById('sm-night').setAttribute('aria-pressed', String(on));
+        const N = k => (on ? NIGHT[k] : null);
+        for (const l of map.getStyle().layers) {
+            const sl = l['source-layer'], id = l.id;
+            if (/^st-/.test(id)) continue;
+            if (id === 'sm-bld') setP(id, 'fill-extrusion-color', N('extr'));
+            else if (id === 'sm-bld-line') setP(id, 'line-color', N('edge'));
+            else if (l.type === 'background') setP(id, 'background-color', N('bg'));
+            else if (l.type === 'fill') setP(id, 'fill-color', N(sl === 'water' ? 'water' : sl === 'park' || sl === 'landcover' ? 'park' : sl === 'building' ? 'bld' : 'land'));
+            else if (l.type === 'line') setP(id, 'line-color', N(sl === 'water' || sl === 'waterway' ? 'water' : sl === 'boundary' ? 'border' : /casing/.test(id) ? 'casing' : /rail|transit/.test(id) ? 'rail' : 'road'));
+            else if (l.type === 'symbol' && l.layout && l.layout['text-field']) { setP(id, 'text-color', N('text')); setP(id, 'text-halo-color', N('halo')); }
+        }
+        map.setPaintProperty('st-w1', 'circle-stroke-color', rim('#f07a1a'));
+        map.setPaintProperty('st-w2', 'circle-stroke-color', rim('#3b6fd8'));
+        if (map.getLayer('st-all')) map.setPaintProperty('st-all', 'circle-stroke-color', rim('#7d8799'));
+    }
+    function toggleNight() {
+        const tb = document.getElementById('theme-btn');
+        if (tb) { tb.click(); return; }   // 저장 · 다른 탭 따라가기는 theme.js 가 한다
+        const dark = !isNight();
+        if (dark) document.documentElement.setAttribute('data-theme', 'dark'); else document.documentElement.removeAttribute('data-theme');
+        try { localStorage.setItem('lottodraw.theme', dark ? 'dark' : 'light'); } catch (e) { /* 이 페이지에서만 */ }
+    }
+    new MutationObserver(() => nightModel(isNight())).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
     // 북쪽 보기 단추 — "내 위치" 단추 위, 같은 크기. 지도가 돌아간 만큼 바늘도 돈다
     class NorthControl {
@@ -192,7 +226,7 @@
                 'circle-color': ['coalesce', ['feature-state', 'visit'], color],
                 'circle-opacity': ['*', ['case', ['==', ['get', 'closed'], 1], 0.3, 0.62], fadeF()],
                 'circle-stroke-opacity': fadeF(),
-                'circle-stroke-color': ['case', vis, color, '#fff'],
+                'circle-stroke-color': rim(color),
                 'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 6, ['case', vis, 2, 0.3], 12, ['case', vis, 3.5, 1.2]],
             },
         });
@@ -213,6 +247,16 @@
         applyLayers();
     }
 
+    // PC 왼쪽 칸의 탭(당근 동네업체처럼 — 2026-10-26). 휴대폰은 탭이 안 보이고 data-tab 도 화면에 영향이 없다
+    const side = document.getElementById('sm-side');
+    function setTab(t) {
+        if (!side.querySelector('.sm-tab[data-tab="' + t + '"]')) return;
+        side.dataset.tab = t;
+        side.querySelectorAll('.sm-tab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === t)));
+        if (t === 'info') document.getElementById('sm-info').open = true;
+        if (t === 'fun') document.getElementById('sm-fun').hidden = false;   // site.css 의 [hidden] 이 !important 라 CSS 만으로는 못 연다
+    }
+
     const links = (name, place, lat, lng) => '<p class="sm-links"><a href="https://map.kakao.com/link/map/' + encodeURIComponent(name) + ',' + lat + ',' + lng + '" target="_blank" rel="noopener">' + T('카카오맵', 'Kakao Map') + '</a>' +
         '<a href="https://map.naver.com/p/search/' + encodeURIComponent(name + ' ' + place) + '" target="_blank" rel="noopener">' + T('네이버 지도', 'Naver Map') + '</a></p>';
     function showCard(html, lat, lng, fly) {
@@ -220,7 +264,8 @@
         markTop(null);
         card.innerHTML = '<button type="button" class="sm-close" aria-label="' + T('닫기', 'Close') + '">×</button>' + html;
         card.hidden = false;
-        card.querySelector('.sm-close').addEventListener('click', () => { card.hidden = true; });
+        card.querySelector('.sm-close').addEventListener('click', () => { card.hidden = true; markTop(null); });
+        if (isWide()) setTab('card');
         if (fly) map.flyTo({ center: [lng, lat], zoom: Math.max(map.getZoom(), 15), padding: pad(), essential: true });
         card.scrollTop = 0;
     }
@@ -236,12 +281,14 @@
     }
 
     // ───── 다녀온 곳(로그인 회원) ─────
-    // 색 고르기는 이용권 기능(2026-10-26 사장님) — 이용권이 없으면 첫 색(빨강)으로만 표시. 이용권 확인은 js/license.js(LottoLicense)
+    // 색 고르기(2026-10-26 사장님): 첫 색(빨강)은 누구나. 이용권이 있으면 모든 색 + 아무 색, 없으면 색 하나를 COLOR_COST 포인트로 연다
+    //   (서버 /api/me/visit-color — 한 번 연 색은 계속 쓴다, 내 정보 user.visitColors). 이용권 확인은 js/license.js(LottoLicense)
     let paidP = null;
     const paid = () => (paidP = paidP || (() => {
         const L = window.LottoLicense;
         return L && L.savedKey && L.savedKey() ? L.unlockState().then(st => !!(st && st.unlocked)).catch(() => false) : Promise.resolve(false);
     })());
+    const COLOR_COST = 30;   // worker POINTS.visitColor 와 같게
     const PALETTE = ['#e63946', '#f4a261', '#e9c46a', '#2a9d8f', '#3a86ff', '#8338ec', '#ff66b3', '#1f2937'];
     const account = () => window.LottoAccount;
     const loadIds = () => (ids ? Promise.resolve(ids) : fetch(root.dataset.ids).then(r => r.json()).then(j => (ids = j)).catch(() => null));
@@ -273,23 +320,41 @@
         if (!A.loginOn()) { box.remove(); return; }   // 서버에 로그인이 꺼져 있으면 저장할 곳이 없다
         const myCard = card.dataset.k = k + i;
         const canPick = await paid();
+        const meNow = () => (A.me() && A.me().user) || {};
+        const opened = c => canPick || c === PALETTE[0] || (meNow().visitColors || []).includes(c);
         const draw = () => {
             if (card.dataset.k !== myCard) return;
             const id = ids && ids[k] && ids[k][i];
             const cur = id ? visits[id] : null;
             box.innerHTML = '<div class="sm-visit-row"><button type="button" class="sm-visit-btn' + (cur ? ' is-on' : '') + '" aria-pressed="' + !!cur + '">' +
                 (cur ? '<span class="sm-swatch" style="background:' + cur + '"></span>' + T('다녀온 곳', 'Visited') : T('＋ 다녀왔어요', '＋ I\'ve been here')) + '</button>' +
-                (cur ? '<span class="sm-colors' + (canPick ? '' : ' is-locked') + '">' + PALETTE.map(c => '<button type="button" class="sm-color' + (c === cur ? ' is-on' : '') + '" data-c="' + c + '" style="background:' + c + '" aria-label="' + c + '"></button>').join('') +
-                    (canPick ? '<label class="sm-color sm-color-any" title="' + T('다른 색', 'Any colour') + '"><input type="color" value="' + cur + '" aria-label="' + T('다른 색', 'Any colour') + '"></label>' : '<span class="sm-lock" aria-hidden="true">🔒</span>') + '</span>' : '') + '</div>' +
+                (cur ? '<span class="sm-colors">' + PALETTE.map(c => '<button type="button" class="sm-color' + (c === cur ? ' is-on' : '') + (opened(c) ? '' : ' is-locked') + '" data-c="' + c + '" style="background:' + c + '" aria-label="' + c + (opened(c) ? '' : T(' (잠김)', ' (locked)')) + '"></button>').join('') +
+                    (canPick ? '<label class="sm-color sm-color-any" title="' + T('다른 색', 'Any colour') + '"><input type="color" value="' + cur + '" aria-label="' + T('다른 색', 'Any colour') + '"></label>' : '') + '</span>' : '') + '</div>' +
                 '<p class="sm-visit-note">' + (cur ? (canPick ? T('다시 누르면 지웁니다. 나만 보입니다.', 'Tap again to remove. Only you can see this.')
-                    : T('다시 누르면 지웁니다. 색 고르기는 <a href="statistics.html">이용권</a> 기능입니다.', 'Tap again to remove. Picking colours needs a <a href="statistics.html">pass</a>.'))
+                    : T('다시 누르면 지웁니다. 🔒 색은 하나에 ' + COLOR_COST + '포인트로 열거나 <a href="statistics.html">이용권</a>으로 모두 엽니다.', 'Tap again to remove. Unlock a 🔒 colour for ' + COLOR_COST + ' points, or all of them with a <a href="statistics.html">pass</a>.'))
                     : T('로그인 회원 기능 · 나만 보입니다(위치는 쓰지 않습니다).', 'Members only · only you can see it (no location used).')) + '</p>';
             box.querySelector('.sm-visit-btn').addEventListener('click', () => save(cur ? null : PALETTE[0]));
             box.querySelectorAll('button.sm-color').forEach(b => b.addEventListener('click', () => {
-                if (canPick) { save(b.dataset.c); return; }
+                const c = b.dataset.c;
+                if (opened(c)) { save(c); return; }
+                const avail = (meNow().score || {}).avail;
                 const note = box.querySelector('.sm-visit-note');
-                note.innerHTML = T('색 고르기는 이용권 기능입니다. <a href="statistics.html">이용권 보기 →</a>', 'Picking colours needs a pass. <a href="statistics.html">See passes →</a>');
                 note.classList.add('is-warn');
+                note.innerHTML = T('이 색은 ' + COLOR_COST + '포인트로 열 수 있습니다' + (avail != null ? '(지금 ' + fmt(Math.floor(avail)) + '포인트)' : '') + '. 한 번 열면 계속 씁니다.',
+                    'Unlock this colour for ' + COLOR_COST + ' points' + (avail != null ? ' (you have ' + fmt(Math.floor(avail)) + ')' : '') + '. It stays unlocked.') +
+                    ' <button type="button" class="sm-unlock"><span class="sm-swatch" style="background:' + c + '"></span>' + T(COLOR_COST + '포인트로 열기', 'Unlock for ' + COLOR_COST) + '</button>' +
+                    ' <a href="statistics.html">' + T('이용권 보기', 'See passes') + '</a>';
+                note.querySelector('.sm-unlock').addEventListener('click', async e => {
+                    e.target.disabled = true;
+                    try {
+                        await account().call('/api/me/visit-color', { method: 'POST', body: { color: c } });
+                        await A.refresh().catch(() => null);
+                        if (!opened(c)) (meNow().visitColors = meNow().visitColors || []).push(c);   // 내 정보를 못 받았어도 이 화면에서는 열린 것으로
+                        save(c);
+                    } catch (err) {
+                        note.textContent = (err && err.message) || T('열지 못했습니다.', 'Could not unlock.');
+                    }
+                });
             }));
             const pick = box.querySelector('input[type="color"]');
             if (pick) pick.addEventListener('change', () => save(pick.value));
@@ -413,83 +478,6 @@
         });
     }
 
-    // 막대 지도: 점마다 작은 네모 기둥(1등 많을수록 높게).
-    //  높이: 줌 0 에서의 미터(h0)를 지수(밑 0.5)로 보간해 줌하는 동안에도 화면 높이가 그대로 이어진다(GPU 가 계산 — 끊김 · 렉 없음).
-    //  굵기: 모양은 미터라 줌하는 동안은 실제 물체처럼 굵어지고 가늘어지며, 줌을 멈추면(moveend) 그 줌에 알맞은 굵기의 모양을 만들어
-    //  0.45초 동안 서서히 바꾼다(줌 중에는 아무것도 다시 만들지 않는다 — 0.25 단계마다 새로 만들던 때는 PC 에서 렉이 걸렸다).
-    //  많이 줌아웃하면 막대가 겹쳐 보여 줌에 따라 점점 투명하게(barAlpha). (켤 때 바닥에서 솟아오르게 높이 전환을 시험했는데,
-    //  판매점마다 다른 높이(데이터 값)에는 전환이 먹지 않았다 — 2026-10-26)
-    const M0 = 40075016.686 / 512;   // 줌 0, 적도에서 화면 1px 의 미터
-    const FADE = 450;
-    const barHeight = ['interpolate', ['exponential', 0.5], ['zoom'], 0, ['get', 'h0'], 24, ['*', ['get', 'h0'], Math.pow(0.5, 24)]];
-    const barAlpha = v => ['interpolate', ['linear'], ['zoom'], 6, 0.35 * v, 9, 0.6 * v, 12, 0.9 * v];
-    const halfPx = z => Math.min(7, Math.max(2.5, 2.5 + (z - 8) * 0.6));   // 기둥 반 폭(px): 전국 2.5 → 거리 7
-    const bandOf = z => Math.max(10, Math.min(36, Math.round(z * 2)));     // 줌 0.5 단계(5 ~ 18)
-    const barIds = k => ['bar-w2-' + k, 'bar-w1-' + k];
-    function barBand(k) {
-        const mpp0 = M0 / Math.pow(2, k / 2), r0 = halfPx(k / 2) * mpp0;   // 그 줌 · 적도에서 1px · 반 폭(m)
-        return {
-            type: 'FeatureCollection',
-            features: data.rows.map((x, i) => {
-                const [lat, lng] = x, p = props[i], cos = Math.cos(lat * Math.PI / 180);
-                const dy = r0 * cos / 111320, dx = r0 / 111320;   // 미터 → 도(위도 따라 화면 크기가 같게)
-                const hpx = p.w1 ? 8 + 6 * p.w1 : 2 + 1.5 * p.w2;
-                return {
-                    type: 'Feature',
-                    geometry: { type: 'Polygon', coordinates: [[[lng - dx, lat - dy], [lng + dx, lat - dy], [lng + dx, lat + dy], [lng - dx, lat + dy], [lng - dx, lat - dy]]] },
-                    properties: { i, w1: p.w1, o1: p.o1, closed: p.closed, h0: hpx * M0 * cos },
-                };
-            }),
-        };
-    }
-    function addBand(k) {
-        if (bands.has(k)) return;
-        bands.add(k);
-        map.addSource('bars-' + k, { type: 'geojson', data: barBand(k) });
-        ['w2', 'w1'].forEach((t, n) => map.addLayer({ id: barIds(k)[n], type: 'fill-extrusion', source: 'bars-' + k, filter: filterFor(t),
-            paint: { 'fill-extrusion-color': t === 'w1' ? '#f07a1a' : '#3b6fd8', 'fill-extrusion-height': barHeight,
-                'fill-extrusion-opacity': barAlpha(0), 'fill-extrusion-opacity-transition': { duration: FADE, delay: 0 } } }));
-    }
-    function dropBand(k) {
-        barIds(k).forEach(id => { if (map.getLayer(id)) map.removeLayer(id); });
-        if (map.getSource('bars-' + k)) map.removeSource('bars-' + k);
-        bands.delete(k);
-    }
-    const bandOpacity = (k, v) => barIds(k).forEach(id => map.setPaintProperty(id, 'fill-extrusion-opacity', barAlpha(v)));
-    // 그 소스의 타일이 다 그려졌을 때(늦어도 1.5초) 부른다
-    function whenLoaded(id, cb) {
-        let done = false;
-        const go = () => { if (done) return; done = true; map.off('sourcedata', on); clearTimeout(t); cb(); };
-        const on = e => { if (e.sourceId === id && map.isSourceLoaded(id)) go(); };
-        const t = setTimeout(go, 1500);
-        map.on('sourcedata', on);
-    }
-    function settleBars() {
-        if (!bars) return;
-        const k = bandOf(map.getZoom());
-        if (k === curBand) return;
-        if (oldBand !== null) dropBand(oldBand);
-        oldBand = curBand;
-        curBand = k;
-        addBand(k);
-        applyLayers();
-        whenLoaded('bars-' + k, () => {
-            if (curBand !== k || !bars) return;
-            bandOpacity(k, 1);
-            const old = oldBand;
-            if (old === null) return;
-            bandOpacity(old, 0);
-            setTimeout(() => { if (oldBand === old) { dropBand(old); oldBand = null; } }, FADE + 80);
-        });
-    }
-    function setBars(on) {
-        bars = on;
-        document.getElementById('sm-bars').setAttribute('aria-pressed', String(on));
-        if (on) settleBars();
-        else { [...bands].forEach(dropBand); curBand = oldBand = null; }
-        applyLayers();
-        if (on && map.getPitch() < 30) set3d(true, true);
-    }
     // 로그인 회원 기능. 서버에 로그인이 꺼져 있으면 잠그지 않는다(사이트 다른 회원 기능과 같게)
     async function member(reason) {
         const A = window.LottoAccount;
@@ -497,9 +485,7 @@
         if (A && A.loginOn && A.loginOn() && !A.session()) { A.openLogin(reason); return false; }
         return true;
     }
-    // 막대 지도는 누구나(2026-10-26 사장님 — 잠금 풂)
-    function toggleBars() { setBars(!bars); }
-    // 1등 방식을 바꾸면 점 · 숫자 · 막대를 다시 센다
+    // 1등 방식을 바꾸면 점 · 숫자를 다시 센다
     async function toggleMode(b) {
         const k = b.dataset.mode;
         if (!(await member(T('자동 · 수동 나눠 보기는 로그인 회원 기능입니다.', 'Filtering by auto/manual is for signed-in members.')))) return;
@@ -507,7 +493,6 @@
         b.setAttribute('aria-pressed', String(modes[k]));
         computeProps();
         map.getSource('stores').setData(geojson());
-        bands.forEach(b => map.getSource('bars-' + b).setData(barBand(b)));
         renderTop();
     }
 
@@ -565,11 +550,11 @@
     function initFun() {
         const btn = document.getElementById('sm-fun-btn'), box = document.getElementById('sm-fun');
         if (!btn || !data.fun) return;
-        btn.addEventListener('click', () => setFun(btn.getAttribute('aria-pressed') !== 'true'));
+        btn.addEventListener('click', () => { const on = btn.getAttribute('aria-pressed') !== 'true'; setFun(on); if (on && isWide()) setTab('fun'); });
         box.querySelectorAll('.sm-fun-item').forEach(b => b.addEventListener('click', () => openFun(Number(b.dataset.k))));
     }
 
-    // PC 오른쪽 위: 1등 많은 50곳(고른 1등 방식 기준, 폐점 제외)
+    // TOP 50(PC 왼쪽 칸 첫 탭 — 고른 1등 방식 기준, 폐점 제외)
     function renderTop() {
         const ol = document.getElementById('sm-top50-list');
         if (!ol) return;
@@ -597,12 +582,12 @@
     }
     function autoTilt() {
         const z = map.getZoom(), tilted = map.getPitch() > 5;
-        if (z < 13) { keep2d = false; if (auto3d && tilted && !bars) { auto3d = false; set3d(false); } return; }
+        if (z < 13) { keep2d = false; if (auto3d && tilted) { auto3d = false; set3d(false); } return; }
         if (z >= 15 && !tilted && !keep2d) { auto3d = true; set3d(true, true); }
     }
 
     // 위쪽 도구 · 아래쪽 단추에 가리지 않게 지도를 맞출 때의 여백
-    const pad = () => ({ top: (document.querySelector('.sm-top').offsetHeight || 150) + 16, bottom: 60, left: 24, right: isWide() ? 360 : 56 });
+    const pad = () => (isWide() ? { top: 40, bottom: 60, left: 30, right: 70 } : { top: (document.querySelector('.sm-top').offsetHeight || 150) + 16, bottom: 60, left: 24, right: 56 });
     function initControls() {
         root.querySelectorAll('.sm-chip[data-layer]').forEach(b => b.addEventListener('click', () => {
             const k = b.dataset.layer;
@@ -617,7 +602,8 @@
             keep2d = !on;
             set3d(on);
         });
-        document.getElementById('sm-bars').addEventListener('click', toggleBars);
+        document.getElementById('sm-night').addEventListener('click', toggleNight);
+        side.querySelectorAll('.sm-tab').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
         root.querySelectorAll('.sm-mode').forEach(b => b.addEventListener('click', () => toggleMode(b)));
         const fade = document.getElementById('sm-fade');
         fade.addEventListener('input', () => setFade(Number(fade.value)));
@@ -628,11 +614,10 @@
             if (!pts.length) return;
             const lats = pts.map(r => r[0]).sort((x, y) => x - y), lngs = pts.map(r => r[1]).sort((x, y) => x - y);
             const q = (a, p) => a[Math.min(a.length - 1, Math.max(0, Math.floor(a.length * p)))];   // 끝의 1%는 빼고(주소가 잘못 찍힌 점에 끌려가지 않게)
-            document.getElementById('sm-info').open = false;
-            const tilt = bars ? 45 : 0;
-            map.fitBounds([[q(lngs, 0.01), q(lats, 0.01)], [q(lngs, 0.99), q(lats, 0.99)]], { padding: pad(), pitch: tilt, bearing: 0 });
-            document.getElementById('sm-3d').setAttribute('aria-pressed', String(!!tilt));
-            document.getElementById('sm-3d').textContent = tilt ? '2D' : '3D';
+            if (!isWide()) document.getElementById('sm-info').open = false;
+            map.fitBounds([[q(lngs, 0.01), q(lats, 0.01)], [q(lngs, 0.99), q(lats, 0.99)]], { padding: pad(), pitch: 0, bearing: 0 });
+            document.getElementById('sm-3d').setAttribute('aria-pressed', 'false');
+            document.getElementById('sm-3d').textContent = '3D';
         }));
     }
 
@@ -657,19 +642,12 @@
         map.addControl(new NorthControl(), 'bottom-right');
         // 처음 화면: 서울 전체(2026-10-26 사장님 — 전국은 시도별 표 · 줌아웃으로)
         map.on('load', () => {
-            koreanLabels(); whiteModel(); addStores(); renderTop(); initVisits(); initFun();
+            koreanLabels(); whiteModel(); addStores(); nightModel(isNight()); renderTop(); initVisits(); initFun();
             // 이태원로 · 서빙고로 같은 길 이름이 보이는 크기(2026-10-26 사장님) — 용산 둘레
             if (!fromLink) map.jumpTo({ center: [126.985, 37.538], zoom: 12.9, padding: pad() });
             else if (map.getPitch() > 5) { const d3 = document.getElementById('sm-3d'); d3.setAttribute('aria-pressed', 'true'); d3.textContent = '2D'; }   // 기울어진 화면 링크
         });
         map.on('zoomend', autoTilt);
-        map.on('moveend', settleBars);
-        // 막대 누르기(단계마다 층이 바뀌어 지도 전체에서 받는다)
-        map.on('click', e => {
-            if (!bars) return;
-            const f = map.queryRenderedFeatures(e.point, { layers: [...bands].flatMap(barIds).filter(id => map.getLayer(id)) });
-            if (f[0]) open(f[0].properties.i, false);
-        });
         map.on('error', e => { if (e && e.error && /style|tiles/i.test(String(e.error.message))) console.warn('map', e.error); });
         initControls();
         initSearch();
