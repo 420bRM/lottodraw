@@ -145,6 +145,11 @@ async function renameComments(storage, user) {
 const BOARD_VERSION = 1;
 const PAGE = 1000;
 
+// 회원 자료 백업(관리자 페이지): 이 저장소의 줄을 PAGE 개씩 그대로 내보내고, 같은 모양으로 되살린다.
+// 로그인 세션(s:)은 뺀다 — 30일이면 사라지고, 되살린 뒤에는 다시 로그인하면 된다. 채팅은 다른 저장소(chat.js)라 처음부터 들어 있지 않다.
+export const BACKUP_SKIP = /^s:/;
+const BACKUP_KEY_MAX = 512;
+
 function boardEntry(user) {
     if (!user.nick || user.staff) return null;
     const s = score(user);
@@ -576,6 +581,29 @@ const OPS = {
         const days = [];
         await this.each('e:', (v, k) => { days.push(Object.assign({ day: k.slice(2) }, v)); });
         return { days: days.reverse() };
+    },
+
+    // 관리자 백업: after 다음 줄부터 PAGE 줄. next 가 null 이면 끝
+    async backupPage({ after }) {
+        const page = await this.storage.list(Object.assign({ limit: PAGE }, after ? { startAfter: String(after) } : {}));
+        const rows = [];
+        let last = null;
+        for (const [k, v] of page) { last = k; if (!BACKUP_SKIP.test(k)) rows.push([k, v]); }
+        return { rows, next: page.size < PAGE ? null : last };
+    },
+
+    // 관리자 되살리기: [키, 값] 줄을 그대로 덮어쓴다(지우지는 않는다). 한 번에 PAGE 줄까지
+    async restoreRows({ rows }) {
+        if (!Array.isArray(rows) || rows.length > PAGE) return { error: 'bad_rows' };
+        const ok = rows.every(r => Array.isArray(r) && r.length === 2 && typeof r[0] === 'string' && r[0].length > 0
+            && r[0].length <= BACKUP_KEY_MAX && !BACKUP_SKIP.test(r[0]) && r[1] !== undefined && r[1] !== null);
+        if (!ok) return { error: 'bad_rows' };
+        for (const [k, v] of rows) await this.storage.put(k, v);
+        // 메모리에 들고 있던 것(랭킹 줄 · 조회수 시작값 · 메일 비밀값)은 다음에 다시 읽는다
+        this.board = null;
+        this.viewBase = null;
+        this.mailHmac = null;
+        return { put: rows.length };
     },
 
     // 관리자 페이지: 회원 명부와 카드별 좋아요 합계
