@@ -271,6 +271,27 @@ test('판매점 지도 다녀온 곳: 로그인 회원만 · 번호 · 색 검�
     assert.ok(![...env.COMMUNITY._m.values()].some(v => v && v.visits), '탈퇴하면 다녀온 곳도 지워진다');
 });
 
+test('다녀온 곳 색 열기: 30포인트로 한 색, 이미 연 색은 무료, 목록 밖 · 첫 색은 거절', async () => {
+    const env = await fresh({ SIGNUP_TRIAL_DAYS: '' });
+    const a = (await login(env, { sub: 'A', email: 'a@gmail.com' })).data;
+    const open = color => call(env, 'POST', '/api/me/visit-color', { headers: auth(a.session), body: { color } });
+    assert.equal((await call(env, 'POST', '/api/me/visit-color', { body: { color: '#3a86ff' } })).status, 401);
+    assert.deepEqual(a.user.visitColors, []);
+    assert.equal((await open('#e63946')).status, 400, '첫 색은 원래 열려 있다');
+    assert.equal((await open('#123456')).status, 400, '목록 밖');
+    assert.equal((await open('#3a86ff')).status, 402, '출석 10점뿐이면 모자란다');
+    const u = env.COMMUNITY._m.get('u:A'); u.buy = 500; env.COMMUNITY._m.set('u:A', u);   // 50점 + 출석 10점
+    let r = await open('#3A86FF');
+    assert.equal(r.status, 200, JSON.stringify(r.data));
+    assert.equal(r.data.cost, 30);
+    assert.deepEqual(r.data.user.visitColors, ['#3a86ff']);
+    assert.deepEqual([r.data.user.score.total, r.data.user.score.avail], [60, 30], '랭킹 점수는 그대로');
+    r = await open('#3a86ff');
+    assert.equal(r.data.cost, 0, '이미 연 색');
+    assert.equal((await open('#8338ec')).status, 200);
+    assert.equal((await open('#ff66b3')).status, 402, '남은 0점');
+});
+
 test('구글 토큰 위조·다른 사이트·만료·미확인 이메일은 거절한다', async () => {
     const env = await fresh();
     const now = Math.floor(Date.now() / 1000);
@@ -560,7 +581,7 @@ test('랭킹: 출석(하루 한 번)·반응·로그인한 채 산 이용권으�
     let r = (await call(env, 'GET', '/api/ranking')).data;
     assert.deepEqual(r.top, [{ rank: 1, nick: '첫째', points: 10 + 4 + buyPts, days: 1 }], '별명 없는 B 는 공개 목록에 없다');
     assert.equal(r.me, null);
-    assert.deepEqual(r.points, { attend: 10, react: 2, buyPer100: 10, nickChange: 500, dayPass: 300 });
+    assert.deepEqual(r.points, { attend: 10, react: 2, buyPer100: 10, nickChange: 500, dayPass: 300, visitColor: 30 });
 
     // 내 순위: 별명이 없어도 알려 준다
     r = (await call(env, 'GET', '/api/ranking', { headers: auth(b.session) })).data;
