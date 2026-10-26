@@ -48,4 +48,4 @@ jobs:
       - run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add tmp-shots && git commit -m "tmp: 판매점 지도 화면 찍기 10 (머지 전에 지운다)" && git pull --rebase origin claude/store-map-4 && git push origin HEAD:claude/store-map-4
+          git add tmp-shots && git commit -m "tmp: 판매점 지도 화면 찍기 11 (머지 전에 지운다)" && git pull --rebase origin claude/store-map-4 && git push origin HEAD:claude/store-map-4

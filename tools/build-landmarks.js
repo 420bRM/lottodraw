@@ -27,7 +27,7 @@ const LANDMARKS = [
         { id: 635073469, kind: 'accent', color: '#a9c8ec', base: 520, top: 554.5 },
         { id: 635073470, kind: 'accent', color: '#a9c8ec', base: 520, top: 554.5 },
     ] },
-    { name: '63빌딩', glass: '#f0c95c', frame: '#9c7417', ribs: 9, ribW: 1.8, floor: 12, parts: [
+    { name: '63빌딩', glass: '#e8b53a', frame: '#8a6410', ribs: 9, ribW: 1.8, floor: 12, parts: [
         { id: 463188395, kind: 'glass' }, { id: 463384207, kind: 'glass' }, { id: 463384208, kind: 'glass' },
         { id: 463188396, kind: 'glass', taper: 0.25 }, { id: 463188397, kind: 'glass', taper: 0.25 },
         { id: 463384209, kind: 'solid', color: '#ffffff' },
@@ -88,4 +88,17 @@ for (const lm of LANDMARKS) {
     out.push({ name: lm.name, glass: lm.glass, frame: lm.frame, ribs: lm.ribs, ribW: lm.ribW, ribEvery: lm.ribEvery || 0, floor: lm.floor, parts });
     console.log(lm.name, parts.length + '부분', Math.max(...parts.map(p => p.top)) + 'm');
 }
-fs.writeFileSync(OUT, JSON.stringify({ source: '© OpenStreetMap contributors (ODbL) — tools/build-landmarks.js', landmarks: out }) + '\n');
+// 바탕 지도(OpenMapTiles)에도 같은 건물이 있어 모형과 겹친다 — 랜드마크 자리(외곽 네모)에 있는 높이 150m 넘는 OSM 건물의 높이를 모아 두면
+// 지도가 그 높이(render_height)의 바탕 건물을 감춘다. 이렇게 높고 딱 떨어지는 높이는 다른 건물과 거의 겹치지 않는다
+const hide = new Set();
+for (const lm of out) {
+    const xs = lm.parts.flatMap(p => p.ring.map(q => q[0])), ys = lm.parts.flatMap(p => p.ring.map(q => q[1]));
+    const [x0, x1, y0, y1] = [Math.min(...xs) - 3e-4, Math.max(...xs) + 3e-4, Math.min(...ys) - 3e-4, Math.max(...ys) + 3e-4];
+    for (const w of ways.values()) {
+        const n = w.geometry.length, cx = w.geometry.reduce((a, g) => a + g.lon, 0) / n, cy = w.geometry.reduce((a, g) => a + g.lat, 0) / n;
+        const h = heights(w.tags).top;
+        if (cx > x0 && cx < x1 && cy > y0 && cy < y1 && h >= 150) hide.add(Math.round(h * 10) / 10);
+    }
+}
+console.log('감출 바탕 건물 높이', [...hide].sort((a, b) => a - b).join(' '));
+fs.writeFileSync(OUT, JSON.stringify({ source: '© OpenStreetMap contributors (ODbL) — tools/build-landmarks.js', hide: [...hide].sort((a, b) => a - b), landmarks: out }) + '\n');

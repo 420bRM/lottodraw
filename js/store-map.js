@@ -152,15 +152,10 @@
     function buildLandmarks(d) {
         const glass = [], solid = [];
         const poly = (rings, color, base, top, list) => list.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: rings }, properties: { color, base, top } });
-        // 랜드마크 자리의 바탕 건물(OpenMapTiles)은 감춘다 — 모형과 겹쳐 그려지지 않게(랜드마크마다 외곽 네모 + 8m)
-        const boxes = d.landmarks.map(lm => {
-            const xs = lm.parts.flatMap(p => p.ring.map(q => q[0])), ys = lm.parts.flatMap(p => p.ring.map(q => q[1]));
-            const dx = 8 / (LM_M * Math.cos(ys[0] * Math.PI / 180)), dy = 8 / LM_M;
-            const [x0, x1, y0, y1] = [Math.min(...xs) - dx, Math.max(...xs) + dx, Math.min(...ys) - dy, Math.max(...ys) + dy];
-            return [[[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]];
-        });
-        const outside = ['!', ['within', { type: 'MultiPolygon', coordinates: boxes }]];
-        ['sm-bld', 'sm-bld-line'].forEach(id => { if (map.getLayer(id)) try { map.setFilter(id, outside); } catch (e) { /* within 을 못 쓰는 브라우저 */ } });
+        // 랜드마크 자리의 바탕 건물(OpenMapTiles)은 감춘다 — 모형과 겹쳐 그려지지 않게
+        // within 은 선 · 점만 거르고 건물(면)은 못 걸러서, 랜드마크 자리 OSM 건물의 높이(hide)로 거른다(tools/build-landmarks.js)
+        const outside = ['!', ['in', ['round', ['*', ['coalesce', ['get', 'render_height'], 0], 10]], ['literal', (d.hide || []).map(h => Math.round(h * 10))]]];
+        ['sm-bld', 'sm-bld-line'].forEach(id => { if (map.getLayer(id)) try { map.setFilter(id, outside); } catch (e) { /* 오래된 브라우저 */ } });
         for (const lm of d.landmarks) for (const p of lm.parts) {
             let ring = p.ring.slice();
             if (ring.length > 1 && ring[0][0] === ring[ring.length - 1][0] && ring[0][1] === ring[ring.length - 1][1]) ring.pop();
