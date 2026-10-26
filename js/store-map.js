@@ -164,9 +164,9 @@
         const part = (name, lng, lat, pts, base, top, color) => f.push({ type: 'Feature', geometry: lmPoly(lng, lat, pts), properties: { name, base, top, color } });
         // 롯데월드타워(555m): 둥근 네모가 위로 갈수록 가늘고 둥글어진다 + 꼭대기 유리 왕관
         const LT = [127.10249, 37.51254];
-        for (let i = 0; i < 14; i++) {
-            const t = i / 13, hw = 34 - 20 * Math.pow(t, 1.4);
-            part('롯데월드타워', LT[0], LT[1], superEllipse(hw, hw, 5 - 2 * t, 45), i * 36, (i + 1) * 36 + 0.5, '#ffffff');
+        for (let i = 0; i < 24; i++) {
+            const t = i / 23, hw = 34 - 20 * Math.pow(t, 1.4);
+            part('롯데월드타워', LT[0], LT[1], superEllipse(hw, hw, 5 - 2 * t, 45), i * 21, (i + 1) * 21 + 0.5, '#ffffff');
         }
         part('롯데월드타워', LT[0], LT[1], superEllipse(12, 12, 3, 45), 504, 540, '#bcd4f0');
         part('롯데월드타워', LT[0], LT[1], superEllipse(6, 6, 2.5, 45), 540, 555, '#bcd4f0');
@@ -176,10 +176,10 @@
             [4, 210, 222, '#ffffff'], [1.6, 222, 236, '#f28b6b']].forEach(([r, b, t, c]) => part('N서울타워', NT[0], NT[1], superEllipse(r, r, 2, 0, 28), b, t, c));
         // 63빌딩(249m): 길쭉한 육각 단면이 위로 조금씩 좁아진다 · 금빛 유리
         const SB = [126.94035, 37.51986];
-        for (let i = 0; i < 6; i++) {
-            const t = i / 5, L = 52 - 12 * t, W = 16 - 3 * t, rot = 28 * Math.PI / 180;
+        for (let i = 0; i < 20; i++) {
+            const t = i / 19, L = 52 - 14 * t, W = 16 - 3 * t, rot = 28 * Math.PI / 180;
             const pts = [[-L, 0], [-L + 12, -W], [L - 12, -W], [L, 0], [L - 12, W], [-L + 12, W]].map(([x, y]) => [x * Math.cos(rot) - y * Math.sin(rot), x * Math.sin(rot) + y * Math.cos(rot)]);
-            part('63빌딩', SB[0], SB[1], pts, i * 40, Math.min(249, (i + 1) * 40 + 0.5), '#e8cf8a');
+            part('63빌딩', SB[0], SB[1], pts, i * 12, Math.min(249, (i + 1) * 12 + 0.5), '#e8cf8a');
         }
         part('63빌딩', SB[0], SB[1], superEllipse(10, 5, 3, 28), 240, 252, '#ffffff');
         map.addSource('landmarks', { type: 'geojson', data: { type: 'FeatureCollection', features: f } });
@@ -654,6 +654,7 @@
         map.on('load', () => {
             koreanLabels(); whiteModel(); landmarks(); addStores(); renderTop(); initVisits();
             if (!fromLink) map.fitBounds([[126.8, 37.43], [127.18, 37.7]], { padding: pad(), duration: 0 });
+            else if (map.getPitch() > 5) { const d3 = document.getElementById('sm-3d'); d3.setAttribute('aria-pressed', 'true'); d3.textContent = '2D'; }   // 기울어진 화면 링크
         });
         map.on('zoomend', autoTilt);
         map.on('moveend', settleBars);

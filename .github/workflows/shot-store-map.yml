@@ -33,7 +33,7 @@ jobs:
             p.on('pageerror', e => log.push(n + ' pageerror ' + e.message));
             p.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED/.test(m.text())) log.push(n + ' console ' + m.text().slice(0, 200)); });
             const shot = k => p.screenshot({ path: `tmp-shots/${n}-${k}.png` });
-            for (const [k, hash] of [['lm-lotte', '15.3/37.5126/127.1025/-25/60'], ['lm-ntower', '16.2/37.5512/126.9882/15/60'], ['lm-63', '15.9/37.5199/126.9404/-35/60'], ['lm-all', '13.4/37.5300/127.0050/0/58']]) {
+            for (const [k, hash] of [['lm-lotte', '14.9/37.5162/127.1003/-25/60'], ['lm-ntower', '16.2/37.5512/126.9882/15/60'], ['lm-63', '15.9/37.5199/126.9404/-35/60'], ['lm-all', '13.4/37.5300/127.0050/0/58']]) {
               await p.goto('about:blank');
               await p.goto('http://localhost:8765/store-map.html#map=' + hash);
               await p.waitForTimeout(9000);
@@ -48,4 +48,4 @@ jobs:
       - run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add tmp-shots && git commit -m "tmp: 판매점 지도 화면 찍기 7 (머지 전에 지운다)" && git pull --rebase origin claude/store-map-4 && git push origin HEAD:claude/store-map-4
+          git add tmp-shots && git commit -m "tmp: 판매점 지도 화면 찍기 8 (머지 전에 지운다)" && git pull --rebase origin claude/store-map-4 && git push origin HEAD:claude/store-map-4
