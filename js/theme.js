@@ -4,11 +4,15 @@
  *   채팅이 없는 페이지 · 채팅이 꺼진 때는 그 자리(오른쪽 아래)에 혼자 있다.
  * - 고른 모드는 이 브라우저에 저장한다(lottodraw.theme). 처음은 낮 모드. 다른 탭에서 바꾸면 따라 바뀐다.
  * - 색은 css/site.css 의 변수로만 바뀐다(:root[data-theme="dark"]).
+ * - 판매점 지도 가는 길도 여기서 붙인다(2026-10-26 사장님): 휴대폰은 낮/밤 단추 바로 위 동그란 "MAP" 단추,
+ *   모든 화면은 바닥글 아래 큰 띠(다른 사이트 광고 띠처럼). 지도 페이지(store-map.html) 자신에는 붙이지 않는다.
  */
 (function () {
     'use strict';
 
     if (document.getElementById('theme-btn')) return;
+    const me = document.currentScript;
+    const base = me && me.src ? me.src.replace(/js\/theme\.js(\?.*)?$/, '') : '';   // 사이트 맨 위 주소(blog/ · round/ 에서도 맞게)
     const STORE = 'lottodraw.theme';
     const root = document.documentElement;
     const tr = (key, ko) => (window.I18N ? window.I18N.t(key, ko) : ko);
@@ -42,14 +46,46 @@
     if (getComputedStyle(btn).position !== 'fixed') { btn.remove(); return; }
     paint();
 
+    // 판매점 지도 가는 길: 휴대폰 "MAP" 단추(낮/밤 단추 위) + 바닥글 아래 큰 띠
+    const onMap = document.body.classList.contains('sm-full');
+    let mapFab = null;
+    if (!onMap && base) {
+        mapFab = document.createElement('a');
+        mapFab.id = 'map-fab';
+        mapFab.className = 'map-fab';
+        mapFab.href = base + 'store-map.html';
+        mapFab.textContent = 'MAP';
+        mapFab.setAttribute('aria-label', tr('mapLink.fab', '로또 판매점 지도'));
+        mapFab.title = mapFab.getAttribute('aria-label');
+        document.body.appendChild(mapFab);
+        const foot = document.querySelector('footer.footer');
+        if (foot) {
+            const band = document.createElement('a');
+            band.className = 'map-band';
+            band.href = base + 'store-map.html';
+            band.innerHTML = '<span class="map-band-ico" aria-hidden="true">🗺️</span><span class="map-band-txt"><b></b><small></small></span><span class="map-band-go" aria-hidden="true">→</span>';
+            band.querySelector('b').textContent = tr('mapLink.title', '로또 판매점 지도 보러 가기');
+            band.querySelector('small').textContent = tr('mapLink.sub', '1등 · 2등이 나온 판매점 1만 곳을 2D · 3D 지도로');
+            foot.insertAdjacentElement('afterend', band);
+        }
+    }
+
     // 채팅 말풍선 · 창 바로 위에 앉는다. 채팅은 나중에 붙고(js/account.js → js/chat.js) 열고 닫으면 높이가 바뀌어 지켜본다
     const GAP = 10;
     function place() {
         const box = ['chat-panel', 'chat-fab'].map(id => document.getElementById(id)).find(n => n && !n.hidden && n.offsetHeight);
-        if (!box) { btn.style.bottom = ''; btn.style.right = ''; return; }
-        const cs = getComputedStyle(box);
-        btn.style.bottom = (parseFloat(cs.bottom) || 0) + box.offsetHeight + GAP + 'px';
-        btn.style.right = cs.right;
+        if (!box) { btn.style.bottom = ''; btn.style.right = ''; }
+        else {
+            const cs = getComputedStyle(box);
+            btn.style.bottom = (parseFloat(cs.bottom) || 0) + box.offsetHeight + GAP + 'px';
+            btn.style.right = cs.right;
+        }
+        // MAP 단추는 낮/밤 단추 바로 위(같은 줄)
+        if (mapFab) {
+            const cs = getComputedStyle(btn);
+            mapFab.style.bottom = (parseFloat(cs.bottom) || 0) + btn.offsetHeight + GAP + 'px';
+            mapFab.style.right = cs.right;
+        }
     }
     const seen = new Set();
     const resized = window.ResizeObserver ? new ResizeObserver(place) : null;
