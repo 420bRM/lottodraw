@@ -971,15 +971,17 @@ test('회원 자료 백업: 1,000줄씩 끊어 내려받고(세션 빼고), 빈 
 
     // 새 저장소(잘못된 배포로 비었다고 치고)에 되살린다
     const env2 = await fresh();
-    const bad = await call(env2, 'POST', '/api/admin/restore', { headers: asAdmin, body: { rows: [['s:x', { sub: 'A' }]] } });
-    assert.equal(bad.status, 400, '세션 줄은 받지 않는다');
+    const skip = await call(env2, 'POST', '/api/admin/restore', { headers: asAdmin, body: { rows: [['s:x', { sub: 'A' }], ['mr:1247', { done: false }], ['mday', { n: 3 }]] } });
+    assert.deepEqual(skip.data, { put: 0, skipped: 3 }, '세션 · 메일 발송 기록 줄은 건너뛴다');
+    assert.ok(![...env2.COMMUNITY._m.keys()].some(k => /^(s:|mr:|mday)/.test(k)));
     assert.equal((await call(env2, 'POST', '/api/admin/restore', { headers: asAdmin, body: { rows: [['u:x']] } })).status, 400, '모양이 틀리면 거절');
     assert.equal((await call(env2, 'POST', '/api/admin/restore', { body: { rows: [] } })).status, 401, '관리자만');
     for (let i = 0; i < rows.length; i += 1000) {
-        const r = await call(env2, 'POST', '/api/admin/restore', { headers: asAdmin, body: { rows: rows.slice(i, i + 1000) } });
+        const r = await call(env2, 'POST', '/api/admin/restore', { headers: asAdmin, body: { rows: rows.slice(i, i + 1000), force: i > 0 } });
         assert.equal(r.status, 200);
         assert.equal(r.data.put, rows.slice(i, i + 1000).length);
     }
+    assert.equal((await call(env2, 'POST', '/api/admin/restore/finish', { headers: asAdmin })).data.users, 2);
     const list = (await call(env2, 'GET', '/api/admin/members', { headers: asAdmin })).data;
     assert.deepEqual(list.members.map(m => m.email).sort(), ['a@gmail.com', 'b@gmail.com']);
     assert.equal(list.members.find(m => m.email === 'a@gmail.com').nick, '백업왕');
@@ -998,4 +1000,36 @@ test('회원 자료 되살리기: 한 번에 1,000줄 · 1MB 를 넘기면 거�
     assert.equal((await call(env, 'POST', '/api/admin/restore', { headers: asAdmin, body: { rows: many } })).status, 400);
     const big = [['vbase', { n: { x: 'a'.repeat(1100 * 1024) } }]];
     assert.equal((await call(env, 'POST', '/api/admin/restore', { headers: asAdmin, body: { rows: big } })).status, 413);
+});
+
+test('회원 자료 되살리기: 회원이 있는 저장소는 force 없이 거절, 끝에 별명 · 랭킹 색인을 회원 기록에 맞춘다', async () => {
+    const env = await fresh();
+    const a = (await login(env, { sub: 'A', email: 'a@gmail.com' })).data.session;
+    await call(env, 'POST', '/api/me/nickname', { headers: auth(a), body: { nickname: '옛별명' } });
+    const rows = (await call(env, 'GET', '/api/admin/backup', { headers: asAdmin })).data.rows;
+    // 받는 사이에 별명이 바뀐 것처럼: u: 는 새 별명인데 n: 은 옛 별명만 있다
+    const u = rows.find(r => r[0] === 'u:A');
+    u[1].nick = '새별명';
+    const r1 = await call(env, 'POST', '/api/admin/restore', { headers: asAdmin, body: { rows } });
+    assert.equal(r1.status, 409, '회원이 있으면 확인 없이는 덮어쓰지 않는다');
+    assert.equal((await call(env, 'POST', '/api/admin/restore', { headers: asAdmin, body: { rows, force: true } })).status, 200);
+    const fin = await call(env, 'POST', '/api/admin/restore/finish', { headers: asAdmin });
+    assert.equal(fin.data.users, 1);
+    const m = env.COMMUNITY._m;
+    assert.equal(m.get('n:새별명'), 'A');
+    assert.ok(!m.has('n:옛별명'), '옛 별명은 풀린다');
+    assert.equal(m.get('b:A').nick, '새별명');
+    assert.equal((await call(env, 'POST', '/api/admin/restore/finish')).status, 401, '관리자만');
+});
+
+test('회원 자료 되살리기: 본문 1MB 는 바이트로 잰다(한글 댓글)', async () => {
+    const env = await fresh();
+    const text = '가'.repeat(400);   // 글자로는 400, UTF-8 로는 1,200바이트
+    const rows = Array.from({ length: 1000 }, (_, i) => ['c:p:' + String(i).padStart(16, '0'), { id: 'x' + i, text }]);
+    const body = JSON.stringify({ rows });
+    assert.ok(body.length < 1024 * 1024 && new TextEncoder().encode(body).length > 1024 * 1024);
+    const res = await worker.fetch(new Request('https://api.lottodraw.kr/api/admin/restore', {
+        method: 'POST', headers: { Origin: ORIGIN, Authorization: 'Bearer ' + ADMIN, 'Content-Type': 'application/json' }, body,
+    }), env, ctx);
+    assert.equal(res.status, 413);
 });

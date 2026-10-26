@@ -261,11 +261,12 @@
     /* ───── 회원 자료 백업 ───── */
 
     const BACKUP_KIND = 'lottodraw-members';
-    const RESTORE_CHUNK = 700 * 1024;   // 한 번에 보내는 글자 수(서버는 1MB 까지 받는다)
+    const RESTORE_CHUNK = 900 * 1024;   // 한 번에 보내는 바이트(UTF-8 — 한글은 한 글자 3바이트. 서버는 1MB 까지 받는다)
+    const utf8 = new TextEncoder();
+    const backupBusy = on => { $('backup-download').disabled = on; $('backup-pick').disabled = on; };
 
     async function backupDownload() {
-        const btn = $('backup-download');
-        btn.disabled = true;
+        backupBusy(true);
         try {
             const rows = [];
             let after = null;
@@ -291,7 +292,7 @@
         } catch (err) {
             say('backup-status', '내려받지 못했습니다: ' + err.message, true);
         } finally {
-            btn.disabled = false;
+            backupBusy(false);
         }
     }
 
@@ -307,31 +308,49 @@
             return;
         }
         const users = file.rows.filter(r => Array.isArray(r) && String(r[0]).startsWith('u:')).length;
-        const ask = `${f.name}\n${String(file.at || '').slice(0, 16).replace('T', ' ')} (UTC) 에 받은 ${file.rows.length.toLocaleString('ko-KR')}줄, 회원 ${users.toLocaleString('ko-KR')}명을 되살립니까?\n` +
+        const at = new Date(file.at);
+        const atText = isNaN(at) ? '(시각 모름)' : at.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
+        const ask = `${f.name}\n${atText}(한국 시간)에 받은 ${file.rows.length.toLocaleString('ko-KR')}줄, 회원 ${users.toLocaleString('ko-KR')}명을 되살립니까?\n` +
             '같은 키의 지금 값은 파일 값으로 덮어써집니다. 그 뒤에 바뀐 점수 · 별명 · 댓글은 되돌아갑니다.';
         if (!window.confirm(ask)) return;
-        let sent = 0;
+        backupBusy(true);
+        let sent = 0, force = false;
         try {
             let chunk = [], size = 0;
             const flush = async () => {
                 if (!chunk.length) return;
-                await call('/restore', { method: 'POST', body: { rows: chunk } });
+                try {
+                    await call('/restore', { method: 'POST', body: { rows: chunk, force } });
+                } catch (err) {
+                    if (err.status !== 409 || force) throw err;
+                    // 저장소에 회원이 이미 있다 — 백업 뒤 탈퇴한 회원 · 메일 구독도 되살아난다
+                    const n = members.length ? `지금 회원 ${members.length.toLocaleString('ko-KR')}명이 있습니다.` : '지금 저장소에 회원이 있습니다.';
+                    const typed = window.prompt(`${n}\n덮어쓰면 백업 뒤에 탈퇴한 회원과 그 메일 구독도 되살아납니다. 저장소가 망가졌을 때만 하세요.\n계속하려면 "덮어쓰기"라고 적으세요.`, '');
+                    if ((typed || '').trim() !== '덮어쓰기') { const stop = new Error('취소했습니다'); stop.cancel = true; throw stop; }
+                    force = true;
+                    await call('/restore', { method: 'POST', body: { rows: chunk, force } });
+                }
+                force = true;   // 첫 묶음을 쓴 뒤로는 회원이 있는 게 당연하다
                 sent += chunk.length;
                 chunk = []; size = 0;
                 say('backup-status', `되살리는 중… ${sent.toLocaleString('ko-KR')} / ${file.rows.length.toLocaleString('ko-KR')}줄`);
             };
             for (const row of file.rows) {
-                const len = JSON.stringify(row).length + 1;
+                const len = utf8.encode(JSON.stringify(row)).length + 1;
                 if (chunk.length && (chunk.length >= 1000 || size + len > RESTORE_CHUNK)) await flush();
                 chunk.push(row);
                 size += len;
             }
             await flush();
-            say('backup-status', `${sent.toLocaleString('ko-KR')}줄을 되살렸습니다.`);
+            const fin = await call('/restore/finish', { method: 'POST' });
+            say('backup-status', `${sent.toLocaleString('ko-KR')}줄을 되살렸습니다(회원 ${(fin.users || 0).toLocaleString('ko-KR')}명, 별명 · 랭킹 색인 맞춤).`);
             status = await call('/status').catch(() => status);
             await loadMembers();
         } catch (err) {
-            say('backup-status', `${sent.toLocaleString('ko-KR')}줄까지 되살리고 멈췄습니다: ${err.message} — 같은 파일로 다시 하면 처음부터 덮어씁니다.`, true);
+            if (err.cancel && !sent) say('backup-status', '되살리기를 취소했습니다. 바뀐 것은 없습니다.');
+            else say('backup-status', `${sent.toLocaleString('ko-KR')}줄까지 되살리고 멈췄습니다: ${err.message} — 같은 파일로 다시 하면 처음부터 덮어씁니다.`, true);
+        } finally {
+            backupBusy(false);
         }
     }
 
