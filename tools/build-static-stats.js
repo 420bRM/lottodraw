@@ -2416,6 +2416,8 @@ function storeMapPage(md) {
         </div>
     </details>
 </main>
+<script src="${v('js/premium-config.js')}"></script>
+<script src="${v('js/license.js')}"></script>
 <script src="${v('js/vendor/maplibre-gl.js')}"></script>
 <script src="${v('js/store-map.js')}"></script>
 </body>
