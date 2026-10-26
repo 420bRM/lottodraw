@@ -1,0 +1,31 @@
+name: backfill-stores
+# 일회용(머지 전에 지운다): 판매점 좌표까지 전 회차 다시 받기 + "판매점 찾기" 자료 살펴보기. 받은 것을 이 브랜치에 커밋한다.
+on:
+  push:
+    branches: [claude/store-map]
+    paths: [.github/workflows/backfill-stores.yml]
+permissions:
+  contents: write
+concurrency:
+  group: backfill-stores
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - run: node tools/probe-shops.js
+        continue-on-error: true
+      - run: node tools/update-stores.js --full
+        env:
+          STORES_MAX_MINUTES: "55"
+      - if: always()
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add stores-data.json
+          git diff --cached --quiet && exit 0
+          git commit -m "chore: 판매점 좌표까지 전 회차 다시 받기"
+          git pull --rebase origin claude/store-map && git push origin HEAD:claude/store-map

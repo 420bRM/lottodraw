@@ -7,8 +7,8 @@
 //   1등은 자동 · 수동 · 반자동이 나오고, 2등은 최근 회차만 나온다(그래서 2등은 판매점 번호만 둔다).
 // 예의: 한 번에 한 요청, 요청 사이 1초(전체 다시 받기) · 0.3초(평소). 평소에는 새 회차 + 최근 3회차만 받는다.
 //
-// 저장하는 것(통계에 필요한 만큼만): 판매점 번호 · 상호 · 시도 · 시군구 · 폐점 여부.
-// 도로명 상세 주소 · 전화번호 · 좌표는 저장하지 않는다.
+// 저장하는 것(통계 · 판매점 지도에 필요한 만큼만): 판매점 번호 · 상호 · 시도 · 시군구 · 폐점 여부 · 지도 좌표(소수 5자리, 약 1m).
+// 좌표는 2026-10-26 판매점 지도(store-map.html)를 만들며 더했다(사업장 위치라 개인위치정보가 아니다). 도로명 상세 주소 · 전화번호는 저장하지 않는다.
 //
 //   node tools/update-stores.js           새 회차 + 최근 3회차 다시 확인
 //   node tools/update-stores.js --full    262회부터 전부 다시
@@ -71,6 +71,11 @@ function place(x) {
     }
     return ['', ''];
 }
+// 위도 · 경도: 숫자이고 범위 안이면 소수 5자리로, 아니면 null
+function coord(v, lo, hi) {
+    const n = Number(v);
+    return v !== null && v !== '' && Number.isFinite(n) && n >= lo && n <= hi ? Math.round(n * 1e5) / 1e5 : null;
+}
 const METHOD = { 자동: 'A', 수동: 'M', 반자동: 'S' };
 
 function serialize(d) {
@@ -89,7 +94,7 @@ async function main() {
     let d = { shops: {}, rounds: {} };
     if (!FULL && fs.existsSync(FILE)) d = JSON.parse(fs.readFileSync(FILE, 'utf8'));
     d.source = '동행복권 당첨 판매점 조회';   // 조회 주소 이름은 적지 않는다 — 이 파일은 사이트에서 누구나 열어 본다
-    d.note = 'shops: 판매점 번호 → [상호, 시도, 시군구, 폐점이면 1]. rounds: 회차 → { w1: [[판매점, A 자동 | M 수동 | S 반자동], …] 1등 게임마다 하나, w2: [판매점, …] 2등 게임마다 하나 }. 인터넷 판매는 시도 "인터넷"';
+    d.note = 'shops: 판매점 번호 → [상호, 시도, 시군구, 폐점이면 1, 위도, 경도]. rounds: 회차 → { w1: [[판매점, A 자동 | M 수동 | S 반자동], …] 1등 게임마다 하나, w2: [판매점, …] 2등 게임마다 하나 }. 인터넷 판매는 시도 "인터넷"';
     d.from = FIRST;
     const have = Object.keys(d.rounds).map(Number);
     const last = have.length ? Math.max(...have) : FIRST - 1;
@@ -100,7 +105,7 @@ async function main() {
     todo.sort((a, b) => a - b);
     console.log(`판매점 자료 ${have.length}회차 보유. ${todo.length}회차를 받는다 (${todo[0] || '-'}~${todo[todo.length - 1] || '-'}).`);
 
-    let changed = 0, skipped = [], failed = [];
+    let changed = 0, shopsChanged = 0, skipped = [], failed = [];
     const t0 = Date.now();
     const save = () => {
         const rs = Object.keys(d.rounds).map(Number);
@@ -112,7 +117,7 @@ async function main() {
         const r = todo[i];
         if (MAX_MIN && Date.now() - t0 > MAX_MIN * 60e3) { console.log(`${MAX_MIN}분이 지나 ${r}회 앞에서 멈춘다 — 다음 실행이 잇는다`); break; }
         if (i && i % 25 === 0) console.log(`  … ${r}회 (${i}/${todo.length}, ${Math.round((Date.now() - t0) / 1000)}초, 실패 ${failed.length})`);
-        if (changed && i % 50 === 0) save();   // 중간 저장(멈춰도 받은 데까지 남게)
+        if ((changed || shopsChanged) && i % 50 === 0) save();   // 중간 저장(멈춰도 받은 데까지 남게)
         let list;
         try { list = await fetchRound(r); } catch (e) { failed.push(e.message); await sleep(DELAY); continue; }
         const w1 = [], w2 = [];
@@ -121,7 +126,10 @@ async function main() {
             if (!/^\d{4,12}$/.test(id)) continue;
             const [sido, gu] = place(x);
             const prev = d.shops[id];
-            d.shops[id] = [String(x.shpNm || x.tradNm || (prev && prev[0]) || '').trim(), sido || (prev ? prev[1] : ''), gu || (prev ? prev[2] : ''), x.status === '폐점' || x.slrOperSttsCd === '3' ? 1 : 0];
+            const lat = coord(x.shpLat, 33, 39), lng = coord(x.shpLot, 124, 132);   // 우리나라 안의 값만
+            const rec = [String(x.shpNm || x.tradNm || (prev && prev[0]) || '').trim(), sido || (prev ? prev[1] : ''), gu || (prev ? prev[2] : ''), x.status === '폐점' || x.slrOperSttsCd === '3' ? 1 : 0,
+                id === INTERNET ? null : lat !== null ? lat : (prev ? prev[4] : null), id === INTERNET ? null : lng !== null ? lng : (prev ? prev[5] : null)];
+            if (JSON.stringify(prev) !== JSON.stringify(rec)) { d.shops[id] = rec; shopsChanged++; }
             if (x.wnShpRnk === 1) w1.push([id, METHOD[x.atmtPsvYnTxt] || '']);
             else if (x.wnShpRnk === 2) w2.push(id);
         }
@@ -138,9 +146,9 @@ async function main() {
     const rounds = Object.keys(d.rounds).map(Number);
     skipped.forEach(s => console.log('  ! ' + s));
     failed.forEach(s => console.log('  ✘ ' + s));
-    if (!changed && fs.existsSync(FILE)) { console.log('바뀐 회차 없음'); setOutput('changed', 'false'); return; }
+    if (!changed && !shopsChanged && fs.existsSync(FILE)) { console.log('바뀐 회차 없음'); setOutput('changed', 'false'); return; }
     save();
-    console.log(`저장: ${changed}회차 바뀜, 모두 ${rounds.length}회차 · 판매점 ${Object.keys(d.shops).length}곳 (마지막 ${d.lastRound}회)`);
+    console.log(`저장: ${changed}회차 · 판매점 ${shopsChanged}곳 바뀜, 모두 ${rounds.length}회차 · 판매점 ${Object.keys(d.shops).length}곳 (마지막 ${d.lastRound}회)`);
     setOutput('changed', 'true');
     if (failed.length > 20) process.exitCode = 1;
 }
