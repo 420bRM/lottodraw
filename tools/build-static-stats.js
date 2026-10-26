@@ -2199,6 +2199,7 @@ const STORE_MAP_FILE = 'store-map.html';
 const STORE_MAP_DATA = 'store-map-data.json';
 // 일반 판매점 층(2단계): shops-all.json(tools/update-all-shops.js, 매달) 중 1등 · 2등 기록이 없는 곳. 칩을 켤 때 받는다
 const STORE_MAP_ALL = 'store-map-all.json';
+const STORE_MAP_ROUNDS = 'store-map-rounds.json';
 const ALL_SHOPS = (() => { try { return JSON.parse(fs.readFileSync(path.join(ROOT, 'shops-all.json'), 'utf8')); } catch (e) { return null; } })();
 // 좌표가 있는 판매점이 1,000곳을 넘을 때만 지도 페이지 · 링크를 만든다(좌표를 받기 전 자료에서는 만들지 않는다)
 const STORE_MAP_READY = () => !!(STORES && Object.values(STORES.d.shops).filter(sh => typeof sh[4] === 'number').length > 1000);
@@ -2217,10 +2218,20 @@ function storeMapData() {
         // 좌표는 소수 4자리(약 10m)로, 끝의 0(폐점 아님 · 방식 0)은 빼서 파일을 줄인다 — 화면은 빈 칸을 0으로 읽는다
         const row = [Math.round(sh[4] * 1e4) / 1e4, Math.round(sh[5] * 1e4) / 1e4, x.n1, x.n2, x.name, sidoNames.indexOf(x.sido), x.gu || '', x.closed ? 1 : 0, x.A, x.M, x.S];
         while (row.length > 7 && !row[row.length - 1]) row.pop();
-        rows.push(row);
+        rows.push({ id: x.id, row });
     }
-    rows.sort((a, b) => (a[2] - b[2]) || (a[3] - b[3]));
-    return { rows, noCoord, sidoNames, all: storeMapAll(sidoNames) };
+    rows.sort((a, b) => (a.row[2] - b.row[2]) || (a.row[3] - b.row[3]));
+    // 판매점별 당첨 회차(카드를 처음 열 때 받는 store-map-rounds.json) — 지도 자료와 같은 차례.
+    // 1등은 회차 × 4 + 방식(0 모름 · 1 자동 · 2 수동 · 3 반자동), 2등은 회차. 둘 다 최근 회차부터
+    const won = new Map();
+    const at = id => { if (!won.has(id)) won.set(id, [[], []]); return won.get(id); };
+    for (const r of S.rounds) {
+        const rec = S.d.rounds[r];
+        for (const [id, how] of rec.w1) at(id)[0].push(r * 4 + ({ A: 1, M: 2, S: 3 }[how] || 0));
+        for (const id of rec.w2) at(id)[1].push(r);
+    }
+    const rounds = rows.map(({ id }) => (won.get(id) || [[], []]).map(a => a.slice().reverse()));
+    return { rows: rows.map(x => x.row), rounds, noCoord, sidoNames, all: storeMapAll(sidoNames) };
 }
 // 일반 판매점: [위도, 경도, 상호, 시도 번호, 시군구] — 1등 · 2등 판매점(폐점 포함)은 위 자료에 있으니 뺀다
 function storeMapAll(sidoNames) {
@@ -2283,7 +2294,7 @@ function storeMapPage(md) {
     ${CF_BEACON}
 </head>
 <body class="sm-full">
-<main class="sm-wrap" id="sm" data-src="${STORE_MAP_DATA}?v=${fingerprint(STORE_MAP_DATA)}"${md.all ? ` data-all="${STORE_MAP_ALL}?v=${fingerprint(STORE_MAP_ALL)}"` : ''}>
+<main class="sm-wrap" id="sm" data-src="${STORE_MAP_DATA}?v=${fingerprint(STORE_MAP_DATA)}"${md.all ? ` data-all="${STORE_MAP_ALL}?v=${fingerprint(STORE_MAP_ALL)}"` : ''} data-rounds="${STORE_MAP_ROUNDS}?v=${fingerprint(STORE_MAP_ROUNDS)}">
     <div class="sm-map" id="sm-map" role="region" aria-label="판매점 지도" data-i18n-attr="aria-label:sm.mapAria"><p class="sm-loading" data-i18n-en="Loading the map…">지도를 불러오는 중…</p></div>
     <div class="sm-top">
         <div class="sm-row">
@@ -2302,7 +2313,12 @@ function storeMapPage(md) {
             ${md.all ? `<button type="button" class="sm-chip" data-layer="all" aria-pressed="false"><span class="sm-dot sm-dot-a"></span><span data-i18n-en="Other retailers">일반 판매점</span></button>` : ''}
             <button type="button" class="sm-chip" data-layer="closed" aria-pressed="false"><span class="sm-dot sm-dot-c"></span><span data-i18n-en="Closed">폐점 포함</span></button>
         </div>
-        <p class="sm-note" data-i18n-en="Big dots: many 1st and 2nd prizes — most likely they simply sell a lot. Same odds wherever you buy.">점이 클수록 1등 · 2등이 많이 나온 곳 — <strong>많이 팔린 곳일 가능성이 큽니다.</strong> 어디서 사든 확률은 같습니다.</p>
+        <div class="sm-chips sm-modes" role="group" aria-label="1등 방식 (로그인 회원)" data-i18n-attr="aria-label:sm.modes">
+            <span class="sm-modes-label" data-i18n-en="1st by">1등 방식</span>
+            <button type="button" class="sm-chip sm-mode" data-mode="A" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Auto">자동</span></button>
+            <button type="button" class="sm-chip sm-mode" data-mode="M" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Manual">수동</span></button>
+            <button type="button" class="sm-chip sm-mode" data-mode="S" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Semi">반자동</span></button>
+        </div>
     </div>
     <aside class="sm-card" id="sm-card" hidden aria-live="polite"></aside>
     <details class="sm-info" id="sm-info">
@@ -2765,6 +2781,7 @@ const STORE_MAP = STORES ? storeMapData() : null;
 if (STORE_MAP_READY()) {
     if (write(STORE_MAP_DATA, JSON.stringify({ first: STORES.first, last: STORES.last, updated: UPDATED, sido: STORE_MAP.sidoNames,
         cols: ['lat', 'lng', 'w1', 'w2', 'name', 'sido', 'gu', 'closed', 'auto', 'manual', 'semi'], rows: STORE_MAP.rows }) + '\n')) changed++;
+    if (write(STORE_MAP_ROUNDS, JSON.stringify({ last: STORES.last, note: '1등: 회차 × 4 + 방식(0 모름 · 1 자동 · 2 수동 · 3 반자동), 2등: 회차 — store-map-data.json 의 rows 와 같은 차례', rows: STORE_MAP.rounds }) + '\n')) changed++;
     if (STORE_MAP.all && write(STORE_MAP_ALL, JSON.stringify({ updated: STORE_MAP.all.updated, sido: STORE_MAP.all.sido,
         cols: ['lat', 'lng', 'name', 'sido', 'gu'], rows: STORE_MAP.all.rows }) + '\n')) changed++;
     if (write(STORE_MAP_FILE, storeMapPage(STORE_MAP))) changed++;

@@ -13,7 +13,7 @@ body.sm-full #chat-fab, body.sm-full #chat-panel, body.sm-full #theme-btn { disp
 .sm-top { position: absolute; top: calc(8px + env(safe-area-inset-top)); left: 8px; right: 8px; z-index: 3; display: grid; gap: 6px; max-width: 460px; pointer-events: none; }
 .sm-top > * { pointer-events: auto; }
 .sm-row { display: flex; align-items: center; gap: 6px; }
-.sm-back, .sm-3d, .sm-search, .sm-chip, .sm-note, .sm-info summary {
+.sm-back, .sm-3d, .sm-search, .sm-chip, .sm-info summary {
     border: 1px solid var(--line, #ddd); background: var(--surface, #fff); color: var(--fg, #333); box-shadow: 0 2px 8px rgba(0, 0, 0, .12);
 }
 .sm-back { flex: none; padding: 8px 12px; border-radius: 10px; font-size: 14px; font-weight: bold; text-decoration: none; color: var(--brand, #003087); }
@@ -39,7 +39,11 @@ body.sm-full #chat-fab, body.sm-full #chat-panel, body.sm-full #theme-btn { disp
 .sm-dot-2 { background: #3b6fd8; }
 .sm-dot-c { background: #b8bfca; }
 .sm-dot-a { background: #7d8799; }
-.sm-note { margin: 0; padding: 6px 10px; border-radius: 10px; font-size: 12px; line-height: 1.45; }
+/* 1등 방식(자동 · 수동 · 반자동) 체크 — 로그인 회원 기능 */
+.sm-modes { align-items: center; }
+.sm-modes-label { padding: 0 2px 0 4px; color: var(--muted, #555); font-size: 12px; font-weight: bold; text-shadow: 0 0 3px var(--surface, #fff), 0 0 6px var(--surface, #fff); }
+.sm-check { display: inline-block; width: 12px; height: 12px; border: 1.5px solid currentColor; border-radius: 3px; box-sizing: border-box; }
+.sm-mode[aria-pressed="true"] .sm-check { border-color: #f07a1a; background: #f07a1a url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.2 5 8.6 9.5 3.6' fill='none' stroke='%23fff' stroke-width='1.8'/%3E%3C/svg%3E") center / 100% no-repeat; }
 
 /* 판매점 카드 (아래쪽) */
 .sm-card { position: absolute; left: 8px; bottom: calc(52px + env(safe-area-inset-bottom)); z-index: 4; width: min(340px, calc(100% - 16px)); padding: 12px 14px; border-radius: 12px; background: var(--surface, #fff); color: var(--fg, #333); box-shadow: 0 8px 28px rgba(0, 0, 0, .28); font-size: 14px; }
@@ -53,6 +57,15 @@ body.sm-full #chat-fab, body.sm-full #chat-panel, body.sm-full #theme-btn { disp
 .sm-why { margin: 0 0 8px; color: var(--muted, #666); font-size: 12px; line-height: 1.5; }
 .sm-links { display: flex; gap: 8px; margin: 0; }
 .sm-links a { padding: 6px 10px; border: 1px solid var(--line, #ddd); border-radius: 6px; font-size: 13px; text-decoration: none; }
+/* 당첨 회차 목록(카드 안) */
+.sm-card { max-height: min(62vh, 520px); overflow: auto; }
+.sm-rounds { margin: 0 0 8px; font-size: 12px; }
+.sm-rounds h4 { margin: 6px 0 4px; color: var(--muted, #555); font-size: 12px; }
+.sm-rounds ul { display: flex; flex-wrap: wrap; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.sm-rounds li a, .sm-rounds li span { display: inline-block; padding: 2px 6px; border: 1px solid var(--line, #ddd); border-radius: 999px; color: var(--fg, #333); text-decoration: none; white-space: nowrap; }
+.sm-rounds .r1 a { border-color: #f5b27a; background: #fff4ea; }
+.sm-rounds small { color: var(--faint, #777); }
+.sm-rounds .sm-more { padding: 2px 6px; border: 0; background: none; color: var(--brand, #003087); font: inherit; text-decoration: underline; cursor: pointer; }
 
 /* 시도별 · 안내 (왼쪽 아래 접는 창) */
 .sm-info { position: absolute; left: 8px; bottom: calc(8px + env(safe-area-inset-bottom)); z-index: 5; max-width: min(460px, calc(100% - 16px)); }
