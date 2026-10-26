@@ -318,6 +318,7 @@ const NAV = [
     ['tax.html', '실수령액 계산', 'nav.tax'],
     ['blog/index.html', '블로그', 'nav.blog'],
     ['about.html', 'ABOUT', 'nav.about'],
+    ['store-map.html', '판매점 지도', 'nav.storeMap'],   // 2026-10-26 — 생성기 · 통계와 따로 둔 지도 페이지
 ];
 
 // 언어 전환 단추. 사전과 엔진은 js/i18n-dict.js · js/i18n.js 에 있다.
@@ -380,7 +381,7 @@ function shell(o) {
     <script src="${base}js/i18n-dict.js"></script>
     <script src="${base}js/i18n.js"></script>
     <script type="application/ld+json">${JSON.stringify(ld)}</script>
-    ${CF_BEACON}
+${o.head ? o.head + '\n' : ''}    ${CF_BEACON}
 </head>
 <body>
 <div class="page">
@@ -2051,7 +2052,7 @@ function storesPage() {
             creator: { '@type': 'Organization', name: 'lottodraw.kr', url: SITE + '/' },
             keywords: ['로또 1등 판매점', '로또 1등 배출점', '로또 판매점 순위', '로또 명당'],
         }],
-        body: [].concat(glance, message, topTable, region, methods, latestBlock, [
+        body: [].concat(STORE_MAP_READY() ? [`<p><a class="btn" href="${STORE_MAP_FILE}" data-i18n-en="See them on the map">판매점 지도에서 보기</a></p>`] : [], glance, message, topTable, region, methods, latestBlock, [
             pEn('함께 읽기: <a href="blog/lucky-store-myth.html">로또 명당은 정말 있을까</a> · <a href="statistics-prize.html">1등 당첨자 수</a> · <a href="probability.html">로또 확률</a> · <a href="draws.html">회차별 당첨번호</a>',
                 'Read next: <a href="blog/lucky-store-myth.html">are there really lucky lottery stores?</a> · <a href="statistics-prize.html">first-prize winners</a> · <a href="probability.html">lotto odds</a> · <a href="draws.html">all winning numbers</a>'),
             h2En('다른 로또 통계', 'Other statistics'),
@@ -2185,6 +2186,96 @@ function repeatPage() {
             h2En('다른 로또 통계', 'Other statistics'),
             relatedLinks(REPEAT_FILE),
         ]),
+    });
+}
+
+/* ───── 판매점 지도 (store-map.html + store-map-data.json, 2026-10-26) ─────
+ * 생성기 · 통계와 따로 둔 페이지. 지도는 브라우저에서 MapLibre(js/vendor/, BSD) + OpenFreeMap(키 없음, OpenStreetMap 자료)로 그린다.
+ * 점: 1등 · 2등이 나온 판매점(stores-data.json 의 좌표). 크기는 2등 횟수 + 1등 횟수 × 6 — 1등은 2등보다 6배 드물어
+ * 같은 무게로 셈한 "팔린 양의 대리 지표"다. 문구는 판매점 통계 페이지와 같다: 많이 팔린 곳일 가능성이 크다, 어디서 사든 확률은 같다.
+ * HTML 에는 시도별 표를 박아 둔다(검색 로봇 · 지도가 안 뜨는 브라우저용). 지도 스크립트 · 모양은 내용 지문(?v=)을 붙여 싣는다.
+ */
+const STORE_MAP_FILE = 'store-map.html';
+const STORE_MAP_DATA = 'store-map-data.json';
+// 좌표가 있는 판매점이 1,000곳을 넘을 때만 지도 페이지 · 링크를 만든다(좌표를 받기 전 자료에서는 만들지 않는다)
+const STORE_MAP_READY = () => !!(STORES && Object.values(STORES.d.shops).filter(sh => typeof sh[4] === 'number').length > 1000);
+const fingerprint = f => require('crypto').createHash('sha1').update(fs.readFileSync(path.join(ROOT, f))).digest('hex').slice(0, 8);
+
+// 지도 자료: [위도, 경도, 1등, 2등, 상호, 시도 번호, 시군구, 폐점, 자동, 수동, 반자동] — 1등 많은 곳이 뒤(위에 그려지게)
+function storeMapData() {
+    const S = STORES;
+    const sidoNames = [...new Set(S.all.map(x => x.sido).filter(s => s && s !== '인터넷'))].sort();
+    const rows = [];
+    let noCoord = 0;
+    for (const x of S.all) {
+        if (x.sido === '인터넷') continue;
+        const sh = S.shop(x.id);
+        if (typeof sh[4] !== 'number' || typeof sh[5] !== 'number') { noCoord++; continue; }
+        // 좌표는 소수 4자리(약 10m)로, 끝의 0(폐점 아님 · 방식 0)은 빼서 파일을 줄인다 — 화면은 빈 칸을 0으로 읽는다
+        const row = [Math.round(sh[4] * 1e4) / 1e4, Math.round(sh[5] * 1e4) / 1e4, x.n1, x.n2, x.name, sidoNames.indexOf(x.sido), x.gu || '', x.closed ? 1 : 0, x.A, x.M, x.S];
+        while (row.length > 7 && !row[row.length - 1]) row.pop();
+        rows.push(row);
+    }
+    rows.sort((a, b) => (a[2] - b[2]) || (a[3] - b[3]));
+    return { rows, noCoord, sidoNames };
+}
+
+function storeMapPage(md) {
+    const S = STORES;
+    const { first, last } = S;
+    const sidoRows = [...S.sido.entries()].filter(([k]) => k !== '기타').sort((a, b) => b[1].w1 - a[1].w1);
+    const net = S.net;
+    const title = `로또 판매점 지도 · 1등 · 2등 나온 곳 전국 지도 (${first}~${last}회)`;
+    const desc = `로또 1등 · 2등이 나온 판매점 ${fmt(md.rows.length)}곳을 전국 지도(3D · 2D)에서 봅니다(${first}~${last}회, 매주 갱신). 점이 클수록 1등 · 2등이 많이 나온 곳 — 많이 팔린 곳일 가능성이 큽니다. 어디서 사든 당첨 확률은 같습니다.`;
+    const v = f => `${f}?v=${fingerprint(f)}`;
+    return shell({
+        file: STORE_MAP_FILE,
+        navCurrent: STORE_MAP_FILE,
+        crumbs: [[STORES_FILE, '1등 판매점', null, '1st-prize retailers'], [null, '판매점 지도', null, 'Store map']],
+        title,
+        h1: '로또 판매점 지도', h1En: 'Lotto Retailer Map',
+        desc,
+        mainClass: 'store-map-page',
+        head: `    <link rel="stylesheet" href="${v('js/vendor/maplibre-gl.css')}">\n    <link rel="stylesheet" href="${v('css/store-map.css')}">`,
+        scripts: [v('js/vendor/maplibre-gl.js'), v('js/store-map.js')],
+        ld: [{ '@type': 'Dataset', name: title, description: desc, url: `${SITE}/${STORE_MAP_FILE}`, isAccessibleForFree: true, dateModified: UPDATED,
+            creator: { '@type': 'Organization', name: 'lottodraw.kr', url: SITE + '/' }, keywords: ['로또 판매점 지도', '로또 1등 판매점 지도', '로또 명당 지도', '로또 2등 판매점'] }],
+        body: [
+            `<div class="sm-wrap" id="sm" data-src="${STORE_MAP_DATA}?v=${fingerprint(STORE_MAP_DATA)}" data-first="${first}" data-last="${last}">
+            <p class="sm-note" data-i18n-en="Big dots are places that produced many 1st and 2nd prizes — most likely they simply sell a lot. Your odds are the same wherever you buy.">점이 클수록 1등 · 2등이 많이 나온 곳입니다 — <strong>많이 팔린 곳일 가능성이 큽니다.</strong> 어디서 사든 당첨 확률은 같습니다.</p>
+            <div class="sm-bar">
+                <div class="sm-chips" role="group" aria-label="보이는 판매점" data-i18n-attr="aria-label:sm.layers">
+                    <button type="button" class="sm-chip" data-layer="w1" aria-pressed="true"><span class="sm-dot sm-dot-1"></span><span data-i18n-en="1st prize">1등 나온 곳</span></button>
+                    <button type="button" class="sm-chip" data-layer="w2" aria-pressed="true"><span class="sm-dot sm-dot-2"></span><span data-i18n-en="2nd only">2등만 나온 곳</span></button>
+                    <button type="button" class="sm-chip" data-layer="closed" aria-pressed="false"><span class="sm-dot sm-dot-c"></span><span data-i18n-en="Closed">폐점 포함</span></button>
+                </div>
+                <div class="sm-tools">
+                    <input type="search" class="sm-search" id="sm-search" placeholder="판매점 이름 찾기" data-i18n-attr="placeholder:sm.search" aria-label="판매점 이름 찾기" autocomplete="off">
+                    <button type="button" class="sm-3d" id="sm-3d" aria-pressed="false">3D</button>
+                </div>
+            </div>
+            <ul class="sm-found" id="sm-found" hidden></ul>
+            <div class="sm-map" id="sm-map" role="region" aria-label="판매점 지도" data-i18n-attr="aria-label:sm.mapAria"><p class="sm-loading" data-i18n-en="Loading the map…">지도를 불러오는 중…</p></div>
+            <aside class="sm-card" id="sm-card" hidden aria-live="polite"></aside>
+        </div>`,
+            pEn(`${first}~${last}회 1등 · 2등 판매점 · 매주 추첨 후 자동 갱신 (마지막 갱신 ${UPDATED}) · 출처: 동행복권 당첨 판매점 조회`,
+                `1st- and 2nd-prize retailers, draws ${first}–${last} · updated after each draw (last update ${UPDATED}) · source: Dong-haeng Lottery winning-retailer search`, 'stat-scope'),
+            h2En('시도별 1등 · 2등', '1st and 2nd prizes by province'),
+            pEn('표의 지역 이름을 누르면 지도가 그 지역으로 갑니다. 1등 비율과 2등 비율이 비슷하면, 1등이 많은 지역은 그만큼 많이 팔린 지역이라는 뜻입니다.',
+                'Tap an area name to move the map there. Where the 1st- and 2nd-prize shares are close, an area with many 1st prizes is simply one that sells more.'),
+            table([['지역', 'Area'], ['1등', '1st'], ['1등 비율', '1st share'], ['2등', '2nd'], ['2등 비율', '2nd share']],
+                sidoRows.map(([k, x]) => [k === '인터넷' ? en('인터넷(지도에 없음)', 'Online (not on the map)') : `<button type="button" class="sm-goto" data-sido="${esc(k)}">${esc(k)}</button>`,
+                    fmt(x.w1), pct(x.w1, S.g1), fmt(x.w2), pct(x.w2, S.g2)]), 'tier-stat sm-sido'),
+            pEn(`동행복권 인터넷 판매(1등 ${net ? net.n1 : 0}게임)는 한 곳에 있는 판매점이 아니라 지도에 찍지 않습니다.`
+                + (md.noCoord ? ` 위치가 공개되지 않은 ${fmt(md.noCoord)}곳도 빠졌습니다.` : '')
+                + ` 점을 누르면 1등 · 2등 횟수와 카카오맵 · 네이버 지도 링크가 나옵니다.`,
+                `Dong-haeng Lottery's online sales (${net ? net.n1 : 0} 1st-prize games) are not a single location, so they are not on the map.`
+                + (md.noCoord ? ` ${fmt(md.noCoord)} retailers without a published location are also left out.` : '')
+                + ' Tap a dot for its 1st- and 2nd-prize counts and links to Kakao Map and Naver Map.', 'note'),
+            pEn(`판매점별 순위와 "많이 팔린 곳"인지 견주는 방법(2등 횟수)은 <a href="${STORES_FILE}">1등 판매점 통계</a>에 있습니다. 함께 읽기: <a href="blog/lucky-store-myth.html">로또 명당은 정말 있을까</a>`,
+                `Rankings, and how we check whether a place simply sells a lot (2nd-prize counts), are in <a href="${STORES_FILE}">1st-prize retailer statistics</a>. Read next: <a href="blog/lucky-store-myth.html">are there really lucky lottery stores?</a>`),
+            '<p class="sm-credit">지도: <a href="https://maplibre.org/" rel="noopener">MapLibre</a> · <a href="https://openfreemap.org/" rel="noopener">OpenFreeMap</a> · © <a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap</a> 기여자</p>',
+        ],
     });
 }
 
@@ -2572,6 +2663,7 @@ function updateSitemap(blog) {
         STATS.map(p => entry('/' + p.file, UPDATED, 'weekly', '0.8')),
         TIER ? [entry('/' + TIER_FILE, UPDATED, 'weekly', '0.8')] : [],
         STORES ? [entry('/' + STORES_FILE, UPDATED, 'weekly', '0.8')] : [],
+        STORE_MAP_READY() ? [entry('/' + STORE_MAP_FILE, UPDATED, 'weekly', '0.8')] : [],
         [entry('/' + REPEAT_FILE, [UPDATED, REPEAT_SINCE].sort().pop(), 'weekly', '0.8')],
         [
             // 마지막으로 크게 바뀐 날: 중복 문단 · 링크(REPEAT_SINCE). 그 앞은 판매점(STORES_SINCE) · 2·3등(TIER_SINCE) 링크
@@ -2615,6 +2707,13 @@ if (write('draws.html', drawsPage())) changed++;
 if (write('probability.html', probabilityPage())) changed++;
 if (TIER && write(TIER_FILE, prizeTierPage())) changed++;
 if (STORES && write(STORES_FILE, storesPage())) changed++;
+// 판매점 지도: 좌표가 있는 판매점이 충분할 때만(좌표를 받기 전의 자료면 만들지 않는다). 자료 파일을 먼저 써야 페이지의 지문(?v=)이 맞다
+const STORE_MAP = STORES ? storeMapData() : null;
+if (STORE_MAP_READY()) {
+    if (write(STORE_MAP_DATA, JSON.stringify({ first: STORES.first, last: STORES.last, updated: UPDATED, sido: STORE_MAP.sidoNames,
+        cols: ['lat', 'lng', 'w1', 'w2', 'name', 'sido', 'gu', 'closed', 'auto', 'manual', 'semi'], rows: STORE_MAP.rows }) + '\n')) changed++;
+    if (write(STORE_MAP_FILE, storeMapPage(STORE_MAP))) changed++;
+}
 if (write(REPEAT_FILE, repeatPage())) changed++;
 // 블로그는 원고(content/blog/)로 만든다. 같은 틀을 쓰고 사이트맵에 같이 넣으려고 여기서 부른다
 const blog = require(path.join(__dirname, 'build-blog.js'))({ shell, write, SITE, OG_IMAGE });

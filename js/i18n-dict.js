@@ -31,6 +31,7 @@ window.I18N_DICT = {
     'nav.topPrize':     { ko: 'TOP 50 당첨금', en: 'Top 50 Jackpots' },
     'nav.tax':          { ko: '실수령액 계산', en: 'After-Tax Calculator' },
     'nav.about':        { ko: 'ABOUT', en: 'About' },
+    'nav.storeMap':     { ko: '판매점 지도', en: 'Store map' },
     'nav.blog':         { ko: '블로그', en: 'Blog' },
 
     /* ───── 위치 표시 ───── */

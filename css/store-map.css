@@ -1,0 +1,46 @@
+/* 판매점 지도 (store-map.html) — js/store-map.js 가 그린다. 이 페이지에만 싣는다(지문 ?v= 은 생성기가 붙인다) */
+.store-map-page { max-width: 1100px; }
+.sm-wrap { position: relative; margin: 8px 0 18px; }
+.sm-note { margin: 0 0 8px; padding: 7px 11px; border-left: 4px solid var(--brand, #003087); border-radius: 6px; background: var(--soft, #f3f6fb); font-size: 14px; }
+.sm-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.sm-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.sm-chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border: 1px solid var(--line, #ddd); border-radius: 999px; background: var(--surface, #fff); color: var(--muted, #555); font: inherit; font-size: 12px; white-space: nowrap; cursor: pointer; }
+.sm-chip[aria-pressed="true"] { border-color: var(--brand, #003087); color: var(--brand, #003087); font-weight: bold; }
+.sm-chip[aria-pressed="false"] .sm-dot { opacity: .3; }
+.sm-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+.sm-dot-1 { background: #f07a1a; }
+.sm-dot-2 { background: #3b6fd8; }
+.sm-dot-c { background: #b8bfca; }
+.sm-tools { display: flex; gap: 6px; flex: 1 1 220px; justify-content: flex-end; }
+.sm-search { flex: 1 1 auto; min-width: 0; max-width: 260px; padding: 6px 10px; border: 1px solid var(--line, #ddd); border-radius: 8px; background: var(--surface, #fff); color: var(--fg, #333); font: inherit; font-size: 14px; }
+.sm-3d { flex: none; min-width: 48px; padding: 6px 10px; border: 1px solid var(--brand, #003087); border-radius: 8px; background: var(--brand-bg, #003087); color: #fff; font-family: inherit; font-size: 13px; font-weight: bold; line-height: 1.2; cursor: pointer; }
+.sm-3d[aria-pressed="true"] { background: var(--surface, #fff); color: var(--brand, #003087); }
+.sm-found { position: absolute; right: 0; z-index: 5; width: min(360px, 100%); max-height: 300px; margin: 0; padding: 4px; overflow: auto; list-style: none; border: 1px solid var(--line, #ddd); border-radius: 8px; background: var(--surface, #fff); box-shadow: 0 8px 24px rgba(0, 0, 0, .15); }
+.sm-found button { display: block; width: 100%; padding: 7px 8px; border: 0; border-radius: 6px; background: none; color: var(--fg, #333); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+.sm-found button:hover, .sm-found button:focus { background: var(--soft, #f3f6fb); }
+.sm-found span { color: var(--faint, #777); font-size: 12px; }
+.sm-found .sm-none { padding: 8px; color: var(--faint, #777); font-size: 13px; }
+.sm-map { position: relative; height: min(68vh, 620px); min-height: 360px; border: 1px solid var(--line, #ddd); border-radius: 12px; overflow: hidden; background: var(--soft-2, #e9eef3); }
+.sm-loading { margin: 0; padding: 40px 16px; color: var(--muted, #666); text-align: center; }
+.sm-card { position: absolute; left: 10px; bottom: 10px; z-index: 4; width: min(320px, calc(100% - 20px)); padding: 12px 14px; border-radius: 10px; background: var(--surface, #fff); color: var(--fg, #333); box-shadow: 0 8px 28px rgba(0, 0, 0, .25); font-size: 14px; }
+.sm-card h3 { margin: 0 26px 2px 0; font-size: 16px; }
+.sm-closed { padding: 1px 6px; border-radius: 4px; background: var(--soft-2, #eee); color: var(--faint, #777); font-size: 11px; font-weight: normal; vertical-align: 2px; }
+.sm-close { position: absolute; top: 6px; right: 8px; border: 0; background: none; color: #888; font-size: 22px; line-height: 1; cursor: pointer; }
+.sm-place { margin: 0 0 8px; color: var(--muted, #666); font-size: 13px; }
+.sm-counts { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0 0 8px; }
+.sm-counts b { color: var(--brand, #003087); font-size: 18px; }
+.sm-counts small { color: var(--faint, #777); }
+.sm-why { margin: 0 0 8px; color: var(--muted, #666); font-size: 12px; line-height: 1.5; }
+.sm-links { display: flex; gap: 8px; margin: 0; }
+.sm-links a { padding: 5px 10px; border: 1px solid var(--line, #ddd); border-radius: 6px; font-size: 13px; text-decoration: none; }
+.sm-goto { padding: 0; border: 0; background: none; color: var(--brand, #003087); font: inherit; text-decoration: underline; cursor: pointer; }
+.sm-credit { color: var(--faint, #888); font-size: 12px; }
+@media (max-width: 599px) {
+    .store-map-page h1 { margin-bottom: 6px; font-size: 24px; }
+    .sm-note { font-size: 13px; }
+    .sm-chips { flex-wrap: nowrap; gap: 4px; }
+    .sm-map { height: 62vh; min-height: 320px; }
+    .sm-tools { flex-basis: 100%; }
+    .sm-search { max-width: none; }
+    .sm-card { left: 6px; right: 6px; bottom: 6px; width: auto; }
+}
