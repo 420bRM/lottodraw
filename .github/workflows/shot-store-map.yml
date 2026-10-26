@@ -33,22 +33,11 @@ jobs:
             p.on('pageerror', e => log.push(n + ' pageerror ' + e.message));
             p.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED/.test(m.text())) log.push(n + ' console ' + m.text().slice(0, 200)); });
             const shot = k => p.screenshot({ path: `tmp-shots/${n}-${k}.png` });
-            await p.goto('http://localhost:8765/store-map.html');
-            await p.waitForTimeout(9000);
-            await shot('1-seoul');
-            await p.fill('#sm-fade', '45'); await p.dispatchEvent('#sm-fade', 'input'); await p.waitForTimeout(1500);
-            await shot('2-fade');
-            await p.fill('#sm-fade', '0'); await p.dispatchEvent('#sm-fade', 'input'); await p.waitForTimeout(500);
-            await p.click('#sm-bars'); await p.waitForTimeout(6000);
-            await shot('3-bars');
-            await p.mouse.move(w / 2, h / 2);
-            await p.mouse.wheel(0, -100); await p.waitForTimeout(120); await shot('4-bars-zoom-a');
-            await p.mouse.wheel(0, -100); await p.waitForTimeout(120); await shot('4-bars-zoom-b');
-            await p.waitForTimeout(3000); await shot('4-bars-zoom-c');
-            await p.click('#sm-bars'); await p.waitForTimeout(500);
-            await p.fill('#sm-search', '스파'); await p.waitForTimeout(400);
-            await p.locator('#sm-found li button').first().click(); await p.waitForTimeout(7000);
-            await shot('5-card');
+            for (const [k, hash] of [['lm-lotte', '15.4/37.5108/127.0985/-25/62'], ['lm-ntower', '15.7/37.5480/126.9850/15/62'], ['lm-63', '15.5/37.5162/126.9375/-35/60'], ['lm-all', '13.4/37.5300/127.0050/0/58']]) {
+              await p.goto('http://localhost:8765/store-map.html#map=' + hash);
+              await p.waitForTimeout(9000);
+              await shot(k);
+            }
             await ctx.close();
           }
           console.log(log.join('\n'));
@@ -58,4 +47,4 @@ jobs:
       - run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add tmp-shots && git commit -m "tmp: 판매점 지도 화면 찍기 5 (머지 전에 지운다)" && git pull --rebase origin claude/store-map-4 && git push origin HEAD:claude/store-map-4
+          git add tmp-shots && git commit -m "tmp: 판매점 지도 화면 찍기 6 (머지 전에 지운다)" && git pull --rebase origin claude/store-map-4 && git push origin HEAD:claude/store-map-4
