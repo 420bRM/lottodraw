@@ -2370,6 +2370,7 @@ function storeMapPage(md) {
             <ul class="sm-found" id="sm-found" hidden></ul>
         </div>
         <div class="sm-chips" role="group" aria-label="보이는 판매점" data-i18n-attr="aria-label:sm.layers">
+            <button type="button" class="sm-chip sm-chip-top" data-layer="top" aria-pressed="false" title="TOP 50 판매점만 별로 보기(밤 지도)" data-i18n-attr="title:sm.topTitle"><span class="sm-star-ico" aria-hidden="true">✦</span>TOP 50</button>
             <button type="button" class="sm-chip" data-layer="w1" aria-pressed="true"><span class="sm-dot sm-dot-1"></span><span data-i18n-en="1st prize">1등 나온 곳</span></button>
             <button type="button" class="sm-chip" data-layer="w2" aria-pressed="true"><span class="sm-dot sm-dot-2"></span><span data-i18n-en="2nd only">2등만 나온 곳</span></button>
             ${md.all ? `<button type="button" class="sm-chip" data-layer="all" aria-pressed="false"><span class="sm-dot sm-dot-a"></span><span data-i18n-en="Other retailers">일반 판매점</span></button>` : ''}

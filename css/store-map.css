@@ -43,6 +43,10 @@ body.sm-full #theme-btn { display: none !important; }
 .sm-chip { display: inline-flex; align-items: center; gap: 3px; padding: 2px 7px; border-radius: 999px; color: var(--muted, #555); font: inherit; font-size: 10.5px; white-space: nowrap; cursor: pointer; }
 .sm-chip[aria-pressed="true"] { border-color: var(--brand, #003087); color: var(--brand, #003087); font-weight: bold; }
 .sm-chip[aria-pressed="false"] .sm-dot { opacity: .3; }
+/* TOP 50 칩(1등 칩 왼쪽): 켜면 노랑 */
+.sm-star-ico { color: #e0a800; font-size: 1.05em; line-height: 1; }
+.sm-chip-top[aria-pressed="true"] { border-color: #e0a800; background: #fff4cc; color: #7a5200; }
+:root[data-theme="dark"] .sm-chip-top[aria-pressed="true"] { border-color: #e0a800; background: #3a2f10; color: #ffd76a; }
 .sm-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; }
 .sm-dot-1 { background: #f07a1a; }
 .sm-dot-2 { background: #3b6fd8; }

@@ -7,7 +7,7 @@
  * 지도도 저절로 기울어진다(13 아래로 나가면 다시 평평하게). 3D 단추는 손으로 기울이기/펴기.
  * 막대 지도는 2026-10-26 뺐다(임팩트가 약하고 보기 불편 — 사장님).
  * 밤 모드: 사이트 낮/밤(data-theme)을 따라 바탕 지도 색을 어둡게 바꾼다(nightModel). 왼쪽 도구의 🌙 단추로도 바꾼다.
- * 점 크기 = 2등 + 1등 × 6 (1등은 2등보다 6배 드물다 — 팔린 양을 짐작하는 값). 1등이 나온 곳은 주황, 2등만 나온 곳은 파랑. TOP 50 은 노란 반짝이 별(가운데에 1등 횟수) + 숨 쉬듯 빛나는 별 테두리. 바탕 지도의 도로 번호판은 감춘다.
+ * 점 크기 = 2등 + 1등 × 6 (1등은 2등보다 6배 드물다 — 팔린 양을 짐작하는 값). 1등이 나온 곳은 주황, 2등만 나온 곳은 파랑. TOP 50 은 점 안에 1등 횟수. "TOP 50" 칩을 켜면 TOP 50 만 노란 반짝이 별 + 숨 쉬듯 빛나는 별 테두리로 남고 밤 지도로 바뀐다(끄면 원래 낮/밤으로). 바탕 지도의 도로 번호판은 감춘다.
  * 1등 방식(자동 · 수동 · 반자동) 체크 — 로그인 회원 기능. 끈 방식의 1등은 세지 않는다(점 크기 · 숫자 · TOP 50).
  * 카드: 1등 · 2등이 나온 회차 · 날짜 · 당첨번호, 5개씩 쪽 넘김(store-map-rounds.json — 카드를 처음 열 때 받는다).
  * 왼쪽 아래 끌기 막대: 오른쪽으로 끌수록 1등 횟수가 적은 곳부터 서서히 흐려져 많이 나온 곳만 남는다(2등만 나온 곳이 먼저).
@@ -42,7 +42,7 @@
     let data = null;      // { sido, rows }
     let all = null;       // 일반 판매점 { sido, rows } — 칩을 켤 때 받는다
     let map = null;
-    const shown = { w1: true, w2: true, closed: false, all: false };
+    const shown = { top: false, w1: true, w2: true, closed: false, all: false };   // top: TOP 50 만 별로 보기(2026-10-27)
     const modes = { A: true, M: true, S: true };   // 1등 방식 체크(로그인 회원)
     let fadeT = 0;                                 // 끌기 막대: 1등 횟수 + 1 이 이 값보다 작으면 흐려진다(0 = 다 보임)
     const isWide = () => window.innerWidth >= 900;
@@ -61,17 +61,19 @@
     function applyLayers() {
         if (!map || !map.getLayer('st-w1')) return;
         const vis = on => (on ? 'visible' : 'none');
+        // TOP 50 칩을 켜면 원은 다 감추고 TOP 50 별만 남긴다
         ['w1', 'w2'].forEach(k => {
-            map.setLayoutProperty('st-' + k, 'visibility', vis(shown[k]));
+            map.setLayoutProperty('st-' + k, 'visibility', vis(shown[k] && !shown.top));
             map.setFilter('st-' + k, filterFor(k));
         });
-        map.setLayoutProperty('st-num', 'visibility', vis(shown.w1));
-        map.setFilter('st-num', ['all', ['>', ['get', 'top'], 0], filterFor('w1')]);
+        map.setLayoutProperty('st-num', 'visibility', vis(shown.top || shown.w1));
+        map.setFilter('st-num', ['all', isTop, filterFor('w1')]);
+        numPaint(shown.top);
         ['st-top', 'st-top-glow'].forEach(id => {
-            map.setLayoutProperty(id, 'visibility', vis(shown.w1));
+            map.setLayoutProperty(id, 'visibility', vis(shown.top));
             map.setFilter(id, ['all', isTop, filterFor('w1')]);
         });
-        if (map.getLayer('st-all')) map.setLayoutProperty('st-all', 'visibility', shown.all ? 'visible' : 'none');
+        if (map.getLayer('st-all')) map.setLayoutProperty('st-all', 'visibility', shown.all && !shown.top ? 'visible' : 'none');
         else if (shown.all) loadAll();
     }
 
@@ -179,6 +181,12 @@
         if (dark) document.documentElement.setAttribute('data-theme', 'dark'); else document.documentElement.removeAttribute('data-theme');
         try { localStorage.setItem('lottodraw.theme', dark ? 'dark' : 'light'); } catch (e) { /* 이 페이지에서만 */ }
     }
+    // TOP 50 칩을 켜면 곧바로 밤 지도로(2026-10-27 사장님). 그 때문에 밤이 됐으면 끌 때 낮으로 돌려 놓는다(그 사이 🌙 을 손으로 누르면 그대로 둔다)
+    let nightByTop = false;
+    function topNight(on) {
+        if (on && !isNight()) { nightByTop = true; toggleNight(); }
+        else if (!on && nightByTop) { nightByTop = false; if (isNight()) toggleNight(); }
+    }
     new MutationObserver(() => nightModel(isNight())).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
     // 북쪽 보기 단추 — "내 위치" 단추 위, 같은 크기. 지도가 돌아간 만큼 바늘도 돈다
@@ -219,10 +227,18 @@
         };
     }
 
-    // 점 투명도. TOP 50 은 별(st-top)로 그리므로 동그라미는 감춘다 — 다녀온 곳으로 칠했으면 별 뒤에 그 색 동그라미를 남긴다
+    // 점 투명도: 0.62(폐점 0.3). TOP 50 별도 같은 0.62(2026-10-27 사장님)
+    const ALPHA = 0.62;
     const isTop = ['>', ['get', 'top'], 0];
-    const dotAlpha = () => ['*', ['case', isTop, ['case', vis, 0.62, 0], ['==', ['get', 'closed'], 1], 0.3, 0.62], fadeF()];
-    const rimAlpha = () => ['*', ['case', isTop, ['case', vis, 1, 0], 1], fadeF()];
+    const dotAlpha = () => ['*', ['case', ['==', ['get', 'closed'], 1], 0.3, ALPHA], fadeF()];
+    const rimAlpha = () => fadeF();
+    // 1등 횟수 글자: 원 위에서는 흰 글자, 별 위에서는 진한 갈색 글자
+    function numPaint(star) {
+        if (!map.getLayer('st-num')) return;
+        map.setPaintProperty('st-num', 'text-color', star ? '#5a3c00' : '#fff');
+        map.setPaintProperty('st-num', 'text-halo-color', star ? 'rgba(255, 250, 220, .85)' : 'rgba(150, 60, 0, .55)');
+        map.setPaintProperty('st-num', 'text-halo-width', star ? 1 : 0.7);
+    }
 
     // TOP 50 별: 네 갈래로 뾰족한 반짝이 모양(2026-10-27 사장님이 준 그림), 노랑. 그림 두 장을 한 번 그려 지도에 올린다 —
     //   'sm-star'(별) 과 'sm-star-glow'(별 테두리만 빛나는 그림, 숨 쉬듯 밝기를 바꾼다). 빛이 번질 자리만큼 그림을 별보다 크게(STAR) 잡는다
@@ -291,11 +307,11 @@
         });
         map.addLayer(layer('st-w2', '#3b6fd8', 'w2'));
         map.addLayer(layer('st-w1', '#f07a1a', 'w1'));
-        // 별 크기: 같은 판매점의 동그라미 반지름 × 2.5 가 별 끝까지(가운데 몸통은 동그라미보다 작다)
+        // 별 크기: 같은 판매점의 동그라미 반지름 × 1.8 이 별 끝까지(별만 보이니 작게 — 2026-10-27 사장님)
         const starSize = ['interpolate', ['linear'], ['zoom'],
-            5, ['/', ['*', 2.5, ['+', 1.6, ['*', 0.45, ['sqrt', ['get', 'wt']]]]], SR],
-            10, ['/', ['*', 2.5, ['+', 3, ['*', 0.9, ['sqrt', ['get', 'wt']]]]], SR],
-            15, ['/', ['*', 2.5, ['+', 5, ['*', 1.0, ['sqrt', ['get', 'wt']]]]], SR]];
+            5, ['/', ['*', 1.8, ['+', 1.6, ['*', 0.45, ['sqrt', ['get', 'wt']]]]], SR],
+            10, ['/', ['*', 1.8, ['+', 3, ['*', 0.9, ['sqrt', ['get', 'wt']]]]], SR],
+            15, ['/', ['*', 1.8, ['+', 5, ['*', 1.0, ['sqrt', ['get', 'wt']]]]], SR]];
         if (!map.hasImage('sm-star')) map.addImage('sm-star', starImage(false), { pixelRatio: 1 });
         if (!map.hasImage('sm-star-glow')) map.addImage('sm-star-glow', starImage('day'), { pixelRatio: 1 });
         if (!map.hasImage('sm-star-glow-n')) map.addImage('sm-star-glow-n', starImage('night'), { pixelRatio: 1 });
@@ -303,7 +319,7 @@
             id: 'st-top', type: 'symbol', source: 'stores', filter: ['all', isTop, filterFor('w1')],
             layout: { 'icon-image': 'sm-star', 'icon-size': starSize, 'icon-allow-overlap': true, 'icon-ignore-placement': true,
                 'symbol-sort-key': ['-', 0, ['get', 'top']] },   // 순위 높은 별이 위로
-            paint: { 'icon-opacity': ['*', 0.82, fadeF()] },   // 별도 조금 비친다(뒤 지도 · 점이 보이게)
+            paint: { 'icon-opacity': ['*', ALPHA, fadeF()] },
         });
         // 별 테두리가 숨 쉬듯 빛난다(2026-10-27 사장님 — 둥근 빛 대신 테두리). 밝기만 천천히 바꾼다(glowLoop)
         map.addLayer({
@@ -312,12 +328,12 @@
                 'symbol-sort-key': ['-', 0, ['get', 'top']] },
             paint: { 'icon-opacity': glowOpacity(0.7) },
         });
-        // TOP 50: 별 가운데에 1등 횟수(겹치면 순위 높은 곳만)
+        // TOP 50: 원 · 별 가운데에 1등 횟수(겹치면 순위 높은 곳만)
         map.addLayer({
             id: 'st-num', type: 'symbol', source: 'stores', filter: ['all', isTop, filterFor('w1')],
             layout: { 'text-field': ['to-string', ['get', 'w1']], 'text-font': ['Noto Sans Bold'], 'symbol-sort-key': ['get', 'top'],
                 'text-size': ['interpolate', ['linear'], ['zoom'], 5, 8, 9, 11, 14, 13], 'text-padding': 0, 'text-allow-overlap': false },
-            paint: { 'text-color': '#5a3c00', 'text-halo-color': 'rgba(255, 250, 220, .85)', 'text-halo-width': 1, 'text-opacity': fadeF() },
+            paint: { 'text-color': '#fff', 'text-halo-color': 'rgba(150, 60, 0, .55)', 'text-halo-width': 0.7, 'text-opacity': fadeF() },
         });
         ['st-w1', 'st-w2', 'st-top'].forEach(id => {
             map.on('click', id, e => { if (e.features && e.features[0]) open(e.features[0].properties.i, false); });
@@ -604,7 +620,7 @@
                 map.setPaintProperty(id, 'circle-stroke-opacity', rimAlpha());
             });
             map.setPaintProperty('st-num', 'text-opacity', fadeF());
-            map.setPaintProperty('st-top', 'icon-opacity', ['*', 0.82, fadeF()]);
+            map.setPaintProperty('st-top', 'icon-opacity', ['*', ALPHA, fadeF()]);
             if (map.getLayer('st-all')) map.setPaintProperty('st-all', 'circle-opacity', 0.7 * Math.max(0, 1 - fadeT));
             applyLayers();
         });
@@ -688,6 +704,7 @@
             shown[k] = !shown[k];
             b.setAttribute('aria-pressed', String(shown[k]));
             applyLayers();
+            if (k === 'top') topNight(shown.top);
         }));
         const d3 = document.getElementById('sm-3d');
         d3.addEventListener('click', () => {
@@ -696,7 +713,7 @@
             keep2d = !on;
             set3d(on);
         });
-        document.getElementById('sm-night').addEventListener('click', toggleNight);
+        document.getElementById('sm-night').addEventListener('click', () => { nightByTop = false; toggleNight(); });
         side.querySelectorAll('.sm-tab').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
         root.querySelectorAll('.sm-mode').forEach(b => b.addEventListener('click', () => toggleMode(b)));
         const fade = document.getElementById('sm-fade');
