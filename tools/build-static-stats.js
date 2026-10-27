@@ -2195,6 +2195,7 @@ function repeatPage() {
  * HTML 에는 시도별 표를 박아 둔다(검색 로봇 · 지도가 안 뜨는 브라우저용). 지도 스크립트 · 모양은 내용 지문(?v=)을 붙여 싣는다.
  */
 const STORE_MAP_FILE = 'store-map.html';
+const STORE_MAP_TOP_FILE = 'store-map-top50.html';   // 같은 지도를 TOP 50 별 · 밤 지도로 여는 공유용 주소(2026-10-27) — 공유 이미지만 다르고 canonical 은 store-map.html
 const STORE_MAP_DATA = 'store-map-data.json';
 // 일반 판매점 층(2단계): shops-all.json(tools/update-all-shops.js, 매달) 중 1등 · 2등 기록이 없는 곳. 칩을 켤 때 받는다
 const STORE_MAP_ALL = 'store-map-all.json';
@@ -2304,16 +2305,20 @@ function storeMapAll(sidoNames) {
 
 // 화면 전체가 지도인 페이지(2026-10-26 사장님 결정): 머리글 · 메뉴 · 바닥글 없이 지도와 "생성기로 돌아가기" 하나.
 // 설명 · 시도별 표는 왼쪽 아래 "시도별 · 안내" 창 안에 HTML 로 둔다(검색 로봇이 읽고, 지도가 안 뜨는 브라우저도 본다)
-function storeMapPage(md) {
+function storeMapPage(md, top) {
     const S = STORES;
     const { first, last } = S;
     const sidoRows = [...S.sido.entries()].filter(([k]) => k !== '기타').sort((a, b) => b[1].w1 - a[1].w1);
     const net = S.net;
-    const title = `로또 판매점 지도 · 1등 · 2등 나온 곳 전국 지도 (${first}~${last}회) | lottodraw.kr`;
-    const desc = `로또 1등 · 2등이 나온 판매점 ${fmt(md.rows.length)}곳을 전국 지도(3D · 2D)에서 봅니다(${first}~${last}회, 매주 갱신). 점이 클수록 1등 · 2등이 많이 나온 곳 — 많이 팔린 곳일 가능성이 큽니다. 어디서 사든 당첨 확률은 같습니다.`;
+    const title = top ? `로또 판매점 TOP 50 지도 · 1등이 가장 많이 나온 50곳 (${first}~${last}회) | lottodraw.kr`
+        : `로또 판매점 지도 · 1등 · 2등 나온 곳 전국 지도 (${first}~${last}회) | lottodraw.kr`;
+    const desc = top ? `로또 1등이 가장 많이 나온 판매점 50곳을 밤 지도 위 별로 봅니다(${first}~${last}회, 매주 갱신). 많이 팔린 곳일 가능성이 클 뿐, 어디서 사든 당첨 확률은 같습니다.`
+        : `로또 1등 · 2등이 나온 판매점 ${fmt(md.rows.length)}곳을 전국 지도(3D · 2D)에서 봅니다(${first}~${last}회, 매주 갱신). 점이 클수록 1등 · 2등이 많이 나온 곳 — 많이 팔린 곳일 가능성이 큽니다. 어디서 사든 당첨 확률은 같습니다.`;
     const v = f => `${f}?v=${fingerprint(f)}`;
     // 지도 페이지 전용 공유 이미지(실제 지도 화면 + 제목, 2026-10-26) — 없으면 사이트 기본
-    const mapOg = fs.existsSync(path.join(ROOT, 'img/og-store-map.jpg')) ? `${SITE}/img/og-store-map.jpg?v=${fingerprint('img/og-store-map.jpg')}` : OG_IMAGE;
+    // TOP 50 주소는 별 · 밤 지도 공유 이미지(img/og-store-map-top50.jpg)
+    const ogFile = top ? 'img/og-store-map-top50.jpg' : 'img/og-store-map.jpg';
+    const mapOg = fs.existsSync(path.join(ROOT, ogFile)) ? `${SITE}/${ogFile}?v=${fingerprint(ogFile)}` : OG_IMAGE;
     const ld = { '@context': 'https://schema.org', '@graph': [
         { '@type': 'Dataset', name: title, description: desc, url: `${SITE}/${STORE_MAP_FILE}`, isAccessibleForFree: true, dateModified: UPDATED,
             creator: { '@type': 'Organization', name: 'lottodraw.kr', url: SITE + '/' }, keywords: ['로또 판매점 지도', '로또 1등 판매점 지도', '로또 명당 지도', '로또 2등 판매점'] },
@@ -2334,7 +2339,7 @@ function storeMapPage(md) {
     <meta property="og:title" content="${esc(title)}">
     <meta property="og:description" content="${esc(desc)}">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="${SITE}/${STORE_MAP_FILE}">
+    <meta property="og:url" content="${SITE}/${top ? STORE_MAP_TOP_FILE : STORE_MAP_FILE}">
     <meta property="og:site_name" content="lottodraw.kr">
     <meta property="og:image" content="${mapOg}">
     <meta property="og:image:width" content="1200">
@@ -2354,7 +2359,7 @@ function storeMapPage(md) {
     ${CF_BEACON}
 </head>
 <body class="sm-full">
-<main class="sm-wrap" id="sm" data-src="${STORE_MAP_DATA}?v=${fingerprint(STORE_MAP_DATA)}"${md.all ? ` data-all="${STORE_MAP_ALL}?v=${fingerprint(STORE_MAP_ALL)}"` : ''} data-rounds="${STORE_MAP_ROUNDS}?v=${fingerprint(STORE_MAP_ROUNDS)}" data-ids="${STORE_MAP_IDS}?v=${fingerprint(STORE_MAP_IDS)}">
+<main class="sm-wrap" id="sm"${top ? ' data-top="1"' : ''} data-src="${STORE_MAP_DATA}?v=${fingerprint(STORE_MAP_DATA)}"${md.all ? ` data-all="${STORE_MAP_ALL}?v=${fingerprint(STORE_MAP_ALL)}"` : ''} data-rounds="${STORE_MAP_ROUNDS}?v=${fingerprint(STORE_MAP_ROUNDS)}" data-ids="${STORE_MAP_IDS}?v=${fingerprint(STORE_MAP_IDS)}">
     <div class="sm-map" id="sm-map" role="region" aria-label="판매점 지도" data-i18n-attr="aria-label:sm.mapAria"><p class="sm-loading" data-i18n-en="Loading the map…">지도를 불러오는 중…</p></div>
     <!-- 지도 위 가운데: 지금 화면(○○구) 근처 판매점 목록 열기 -->
     <button type="button" class="sm-near-btn" id="sm-near-btn">⟳ <span data-i18n-en="Retailers around here">이 근처 판매점</span></button>
@@ -2886,6 +2891,7 @@ if (STORE_MAP_READY()) {
     if (STORE_MAP.all && write(STORE_MAP_ALL, JSON.stringify({ updated: STORE_MAP.all.updated, sido: STORE_MAP.all.sido,
         cols: ['lat', 'lng', 'name', 'sido', 'gu'], rows: STORE_MAP.all.rows }) + '\n')) changed++;
     if (write(STORE_MAP_FILE, storeMapPage(STORE_MAP))) changed++;
+    if (write(STORE_MAP_TOP_FILE, storeMapPage(STORE_MAP, true))) changed++;
 }
 if (write(REPEAT_FILE, repeatPage())) changed++;
 // 블로그는 원고(content/blog/)로 만든다. 같은 틀을 쓰고 사이트맵에 같이 넣으려고 여기서 부른다
