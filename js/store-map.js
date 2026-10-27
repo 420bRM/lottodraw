@@ -7,7 +7,7 @@
  * 지도도 저절로 기울어진다(13 아래로 나가면 다시 평평하게). 3D 단추는 손으로 기울이기/펴기.
  * 막대 지도는 2026-10-26 뺐다(임팩트가 약하고 보기 불편 — 사장님).
  * 밤 모드: 사이트 낮/밤(data-theme)을 따라 바탕 지도 색을 어둡게 바꾼다(nightModel). 왼쪽 도구의 🌙 단추로도 바꾼다.
- * 점 크기 = 2등 + 1등 × 6 (1등은 2등보다 6배 드물다 — 팔린 양을 짐작하는 값). 1등이 나온 곳은 주황, 2등만 나온 곳은 파랑. TOP 50 은 노란 반짝이 별(가운데에 1등 횟수) + 숨 쉬듯 빛나는 노란 빛. 바탕 지도의 도로 번호판은 감춘다.
+ * 점 크기 = 2등 + 1등 × 6 (1등은 2등보다 6배 드물다 — 팔린 양을 짐작하는 값). 1등이 나온 곳은 주황, 2등만 나온 곳은 파랑. TOP 50 은 노란 반짝이 별(가운데에 1등 횟수) + 숨 쉬듯 빛나는 별 테두리. 바탕 지도의 도로 번호판은 감춘다.
  * 1등 방식(자동 · 수동 · 반자동) 체크 — 로그인 회원 기능. 끈 방식의 1등은 세지 않는다(점 크기 · 숫자 · TOP 50).
  * 카드: 1등 · 2등이 나온 회차 · 날짜 · 당첨번호, 5개씩 쪽 넘김(store-map-rounds.json — 카드를 처음 열 때 받는다).
  * 왼쪽 아래 끌기 막대: 오른쪽으로 끌수록 1등 횟수가 적은 곳부터 서서히 흐려져 많이 나온 곳만 남는다(2등만 나온 곳이 먼저).
@@ -67,7 +67,7 @@
         });
         map.setLayoutProperty('st-num', 'visibility', vis(shown.w1));
         map.setFilter('st-num', ['all', ['>', ['get', 'top'], 0], filterFor('w1')]);
-        ['st-glow', 'st-top'].forEach(id => {
+        ['st-top', 'st-top-glow'].forEach(id => {
             map.setLayoutProperty(id, 'visibility', vis(shown.w1));
             map.setFilter(id, ['all', isTop, filterFor('w1')]);
         });
@@ -167,6 +167,7 @@
             else if (l.type === 'line') setP(id, 'line-color', N(sl === 'water' || sl === 'waterway' ? 'water' : sl === 'boundary' ? 'border' : /casing/.test(id) ? 'casing' : /rail|transit/.test(id) ? 'rail' : 'road'));
             else if (l.type === 'symbol' && l.layout && l.layout['text-field'] && !isShield(l)) { setP(id, 'text-color', N('text')); setP(id, 'text-halo-color', N('halo')); }
         }
+        if (map.getLayer('st-top-glow')) map.setLayoutProperty('st-top-glow', 'icon-image', on ? 'sm-star-glow-n' : 'sm-star-glow');
         map.setPaintProperty('st-w1', 'circle-stroke-color', rim('#f07a1a'));
         map.setPaintProperty('st-w2', 'circle-stroke-color', rim('#3b6fd8'));
         if (map.getLayer('st-all')) map.setPaintProperty('st-all', 'circle-stroke-color', rim('#7d8799'));
@@ -223,14 +224,13 @@
     const dotAlpha = () => ['*', ['case', isTop, ['case', vis, 0.62, 0], ['==', ['get', 'closed'], 1], 0.3, 0.62], fadeF()];
     const rimAlpha = () => ['*', ['case', isTop, ['case', vis, 1, 0], 1], fadeF()];
 
-    // TOP 50 별: 네 갈래로 뾰족한 반짝이 모양(2026-10-27 사장님이 준 그림), 노랑. 128px 그림을 한 번 그려 지도에 올린다
-    const STAR = 128;
-    function starImage() {
-        const c = document.createElement('canvas');
-        c.width = c.height = STAR;
+    // TOP 50 별: 네 갈래로 뾰족한 반짝이 모양(2026-10-27 사장님이 준 그림), 노랑. 그림 두 장을 한 번 그려 지도에 올린다 —
+    //   'sm-star'(별) 과 'sm-star-glow'(별 테두리만 빛나는 그림, 숨 쉬듯 밝기를 바꾼다). 빛이 번질 자리만큼 그림을 별보다 크게(STAR) 잡는다
+    const STAR = 160, SR = 61;   // 그림 한 변 · 별 끝까지의 반지름(px)
+    function starPath(g, m) {
         // 끝은 가늘고 길게, 가운데 몸통은 작게 — 끝과 끝 사이를 가운데 쪽으로 깊게 휘는 3차 곡선으로(2026-10-27 사장님 — 곡률을 더 강하게)
-        const g = c.getContext('2d'), m = STAR / 2, R = STAR / 2 - 3, a = R * 0.03;   // a: 조절점이 축에서 떨어진 정도(작을수록 끝이 가늘다)
-        const tips = [[0, -R], [R * 0.92, 0], [0, R], [-R * 0.92, 0]];
+        const a = SR * 0.03;   // 조절점이 축에서 떨어진 정도(작을수록 끝이 가늘다)
+        const tips = [[0, -SR], [SR * 0.92, 0], [0, SR], [-SR * 0.92, 0]];
         g.beginPath();
         g.moveTo(m + tips[0][0], m + tips[0][1]);
         for (let n = 0; n < 4; n++) {
@@ -242,7 +242,22 @@
                 m + x2, m + y2);
         }
         g.closePath();
-        const fill = g.createRadialGradient(m, m, 0, m, m, R);
+    }
+    function starImage(glow) {
+        const c = document.createElement('canvas');
+        c.width = c.height = STAR;
+        const g = c.getContext('2d'), m = STAR / 2;
+        starPath(g, m);
+        if (glow) {
+            // 테두리 빛: 밝은 선을 흐린 그림자와 함께 여러 번 겹쳐 그린다(겹칠수록 진하다)
+            g.lineJoin = 'round';
+            // 낮은 금빛(흰 빛은 밝은 바탕에서 별을 흐리게 만들었다), 밤은 흰빛이 도는 노랑
+            g.shadowColor = glow === 'night' ? '#ffe680' : '#ffae00';
+            g.strokeStyle = glow === 'night' ? '#fffbe6' : '#ffe14d';
+            [[14, 3], [8, 2.4], [3, 1.6]].forEach(([blur, w]) => { g.shadowBlur = blur; g.lineWidth = w; g.stroke(); });
+            return g.getImageData(0, 0, STAR, STAR);
+        }
+        const fill = g.createRadialGradient(m, m, 0, m, m, SR);
         fill.addColorStop(0, '#fffbe0');
         fill.addColorStop(0.18, '#ffe45c');
         fill.addColorStop(0.6, '#ffc21a');
@@ -274,25 +289,28 @@
                 'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 6, ['case', vis, 2, 0.3], 12, ['case', vis, 3.5, 1.2]],
             },
         });
-        // TOP 50: 별 뒤에 숨 쉬듯 빛나는 노란 빛(2026-10-27 사장님 — 더 밝게). 밝기만 천천히 바꾼다(glowLoop)
-        map.addLayer({
-            id: 'st-glow', type: 'circle', source: 'stores', filter: ['all', isTop, filterFor('w1')],
-            paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, ['+', 7, ['*', 0.7, ['sqrt', ['get', 'wt']]]], 10, ['+', 14, ['*', 1.3, ['sqrt', ['get', 'wt']]]], 15, ['+', 18, ['*', 1.4, ['sqrt', ['get', 'wt']]]]],
-                'circle-color': '#ffe066', 'circle-blur': 0.75, 'circle-opacity': glowOpacity(0.7), 'circle-pitch-alignment': 'map' },
-        });
         map.addLayer(layer('st-w2', '#3b6fd8', 'w2'));
         map.addLayer(layer('st-w1', '#f07a1a', 'w1'));
         // 별 크기: 같은 판매점의 동그라미 반지름 × 2.5 가 별 끝까지(가운데 몸통은 동그라미보다 작다)
         const starSize = ['interpolate', ['linear'], ['zoom'],
-            5, ['/', ['*', 2.5, ['+', 1.6, ['*', 0.45, ['sqrt', ['get', 'wt']]]]], STAR / 2],
-            10, ['/', ['*', 2.5, ['+', 3, ['*', 0.9, ['sqrt', ['get', 'wt']]]]], STAR / 2],
-            15, ['/', ['*', 2.5, ['+', 5, ['*', 1.0, ['sqrt', ['get', 'wt']]]]], STAR / 2]];
-        if (!map.hasImage('sm-star')) map.addImage('sm-star', starImage(), { pixelRatio: 1 });
+            5, ['/', ['*', 2.5, ['+', 1.6, ['*', 0.45, ['sqrt', ['get', 'wt']]]]], SR],
+            10, ['/', ['*', 2.5, ['+', 3, ['*', 0.9, ['sqrt', ['get', 'wt']]]]], SR],
+            15, ['/', ['*', 2.5, ['+', 5, ['*', 1.0, ['sqrt', ['get', 'wt']]]]], SR]];
+        if (!map.hasImage('sm-star')) map.addImage('sm-star', starImage(false), { pixelRatio: 1 });
+        if (!map.hasImage('sm-star-glow')) map.addImage('sm-star-glow', starImage('day'), { pixelRatio: 1 });
+        if (!map.hasImage('sm-star-glow-n')) map.addImage('sm-star-glow-n', starImage('night'), { pixelRatio: 1 });
         map.addLayer({
             id: 'st-top', type: 'symbol', source: 'stores', filter: ['all', isTop, filterFor('w1')],
             layout: { 'icon-image': 'sm-star', 'icon-size': starSize, 'icon-allow-overlap': true, 'icon-ignore-placement': true,
                 'symbol-sort-key': ['-', 0, ['get', 'top']] },   // 순위 높은 별이 위로
             paint: { 'icon-opacity': ['*', 0.82, fadeF()] },   // 별도 조금 비친다(뒤 지도 · 점이 보이게)
+        });
+        // 별 테두리가 숨 쉬듯 빛난다(2026-10-27 사장님 — 둥근 빛 대신 테두리). 밝기만 천천히 바꾼다(glowLoop)
+        map.addLayer({
+            id: 'st-top-glow', type: 'symbol', source: 'stores', filter: ['all', isTop, filterFor('w1')],
+            layout: { 'icon-image': isNight() ? 'sm-star-glow-n' : 'sm-star-glow', 'icon-size': starSize, 'icon-allow-overlap': true, 'icon-ignore-placement': true,
+                'symbol-sort-key': ['-', 0, ['get', 'top']] },
+            paint: { 'icon-opacity': glowOpacity(0.7) },
         });
         // TOP 50: 별 가운데에 1등 횟수(겹치면 순위 높은 곳만)
         map.addLayer({
@@ -309,15 +327,15 @@
         applyLayers();
         glowLoop();
     }
-    // 빛 밝기: 0.5 ~ 0.9 를 2.8초에 한 번 오간다. 1초에 15번만 바꾸고, 탭이 뒤에 있으면 쉰다(배터리)
+    // 테두리 빛 밝기: 0.35 ~ 1 을 2.8초에 한 번 오간다. 1초에 15번만 바꾸고, 탭이 뒤에 있으면 쉰다(배터리)
     function glowOpacity(a) { return ['*', Math.min(1, a * (isNight() ? 1.15 : 1)), fadeF()]; }
     function glowLoop() {
         let last = 0;
         const tick = now => {
             requestAnimationFrame(tick);
-            if (document.hidden || now - last < 66 || !map.getLayer('st-glow')) return;
+            if (document.hidden || now - last < 66 || !map.getLayer('st-top-glow')) return;
             last = now;
-            map.setPaintProperty('st-glow', 'circle-opacity', glowOpacity(0.7 + 0.2 * Math.sin(now / 2800 * 2 * Math.PI)));
+            map.setPaintProperty('st-top-glow', 'icon-opacity', glowOpacity(0.675 + 0.325 * Math.sin(now / 2800 * 2 * Math.PI)));
         };
         requestAnimationFrame(tick);
     }
