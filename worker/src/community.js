@@ -148,7 +148,9 @@ const PAGE = 1000;
 
 // 회원 자료 백업(관리자 페이지): 이 저장소의 줄을 PAGE 개씩 그대로 내보내고, 같은 모양으로 되살린다.
 // 로그인 세션(s:)은 뺀다 — 30일이면 사라지고, 되살린 뒤에는 다시 로그인하면 된다. 채팅은 다른 저장소(chat.js)라 처음부터 들어 있지 않다.
-export const BACKUP_SKIP = /^s:/;
+// 메일 발송 기록(mr: · mw: · mday)도 뺀다 — 회원 자료가 아니고, 옛 기록을 되살리면 이미 보낸 결과 메일을 또 보낸다.
+// 되살릴 때 파일에 이런 줄이 있으면 건너뛴다.
+export const BACKUP_SKIP = /^(s:|mr:|mw:|mday$)/;
 const BACKUP_KEY_MAX = 512;
 
 function boardEntry(user) {
@@ -621,18 +623,46 @@ const OPS = {
         return { rows, next: page.size < PAGE ? null : last };
     },
 
-    // 관리자 되살리기: [키, 값] 줄을 그대로 덮어쓴다(지우지는 않는다). 한 번에 PAGE 줄까지
-    async restoreRows({ rows }) {
+    // 관리자 되살리기: [키, 값] 줄을 그대로 덮어쓴다(지우지는 않는다). 한 번에 PAGE 줄까지.
+    // 회원(u:)이 이미 있으면 force 없이는 받지 않는다 — 백업 뒤 탈퇴한 회원 · 바뀐 별명이 되살아나기 때문
+    async restoreRows({ rows, force }) {
         if (!Array.isArray(rows) || rows.length > PAGE) return { error: 'bad_rows' };
         const ok = rows.every(r => Array.isArray(r) && r.length === 2 && typeof r[0] === 'string' && r[0].length > 0
-            && r[0].length <= BACKUP_KEY_MAX && !BACKUP_SKIP.test(r[0]) && r[1] !== undefined && r[1] !== null);
+            && r[0].length <= BACKUP_KEY_MAX && r[1] !== undefined && r[1] !== null);
         if (!ok) return { error: 'bad_rows' };
-        for (const [k, v] of rows) await this.storage.put(k, v);
+        if (!force && (await this.storage.list({ prefix: 'u:', limit: 1 })).size) return { error: 'not_empty' };
+        if (this.boardLoading) await this.boardLoading.catch(() => {});   // 랭킹 줄을 만드는 중이면 끝난 뒤에 비운다
+        let put = 0;
+        for (const [k, v] of rows) { if (BACKUP_SKIP.test(k)) continue; await this.storage.put(k, v); put++; }
         // 메모리에 들고 있던 것(랭킹 줄 · 조회수 시작값 · 메일 비밀값)은 다음에 다시 읽는다
         this.board = null;
         this.viewBase = null;
         this.mailHmac = null;
-        return { put: rows.length };
+        return { put, skipped: rows.length - put };
+    },
+
+    // 되살리기 마지막: 백업은 여러 번 나눠 받아 그사이 바뀐 별명 색인(n:) · 랭킹 색인(b:)이 회원 기록(u:)과 어긋날 수 있다.
+    // u: 를 기준으로 다시 맞춘다
+    async restoreFinish() {
+        if (this.boardLoading) await this.boardLoading.catch(() => {});
+        const owner = new Map();   // 별명 소문자 → 계정
+        let users = 0;
+        await this.each('u:', async u => {
+            users++;
+            if (u.nick) owner.set(u.nick.toLowerCase(), u.sub);
+            const e = boardEntry(u);
+            if (e) await this.storage.put('b:' + u.sub, e); else await this.storage.delete('b:' + u.sub);
+        });
+        const stale = [];
+        await this.each('n:', (sub, k) => { if (owner.get(k.slice(2)) !== sub) stale.push(k); });
+        await this.each('b:', async (e, k) => { if (!(await this.storage.get('u:' + k.slice(2)))) stale.push(k); });
+        for (let i = 0; i < stale.length; i += 128) await this.storage.delete(stale.slice(i, i + 128));
+        for (const [key, sub] of owner) await this.storage.put('n:' + key, sub);
+        const m = await this.meta();
+        m.users = users;
+        await this.storage.put('meta', m);
+        this.board = null;
+        return { users, removed: stale.length };
     },
 
     // 관리자 페이지: 회원 명부와 카드별 좋아요 합계

@@ -1312,9 +1312,15 @@ async function admin(request, env, sub, method, url) {
     if (sub === '/restore' && method === 'POST') {
         needLogin(env);
         const body = await readJson(request, RESTORE_MAX_BODY);
-        const r = await community(env, 'restoreRows', { rows: body.rows });
+        const r = await community(env, 'restoreRows', { rows: body.rows, force: body.force === true });
+        if (r.error === 'not_empty') throw new HttpError(409, 'not_empty', '지금 저장소에 회원이 있습니다. 덮어쓰려면 한 번 더 확인하세요.');
         if (r.error) throw new HttpError(400, 'bad_rows', '되살릴 줄의 모양이 맞지 않습니다. 이 관리자 페이지에서 내려받은 파일인지 확인하세요.');
         return json(request, env, r);
+    }
+    // 되살리기를 다 보낸 뒤 한 번: 별명 · 랭킹 색인과 회원 수를 회원 기록에 맞춘다
+    if (sub === '/restore/finish' && method === 'POST') {
+        needLogin(env);
+        return json(request, env, await community(env, 'restoreFinish'));
     }
     const mm = sub.match(/^\/members\/([0-9A-Za-z_-]{1,64})\/(clear-nick|delete|staff|unstaff)$/);
     if (mm && method === 'POST') {
@@ -1690,7 +1696,7 @@ async function readBody(request, max = MAX_BODY) {
     const len = Number(request.headers.get('Content-Length') || 0);
     if (len > max) throw new HttpError(413, 'too_large', '요청이 너무 큽니다.');
     const t = await request.text();
-    if (t.length > max) throw new HttpError(413, 'too_large', '요청이 너무 큽니다.');
+    if (t.length > max || new TextEncoder().encode(t).length > max) throw new HttpError(413, 'too_large', '요청이 너무 큽니다.');
     return t;
 }
 
