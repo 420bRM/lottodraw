@@ -24,6 +24,9 @@ body.sm-full #theme-btn { display: none !important; }
 .sm-3d, .sm-night { flex: none; padding: 4px 7px; border-radius: 7px; font-family: inherit; font-size: 11px; font-weight: bold; cursor: pointer; }
 .sm-3d { border-color: var(--brand, #003087); background: var(--brand-bg, #003087); color: #fff; }
 .sm-3d[aria-pressed="true"] { background: var(--surface, #fff); color: var(--brand, #003087); }
+/* 한/영 전환(사이트 머리글과 같은 단추, js/i18n.js 가 처리) — 지도 도구 줄에 맞게 작게 */
+.sm-lang { flex: none; box-shadow: 0 1px 5px rgba(0, 0, 0, .12); }
+.sm-lang button { padding: 4px 6px; font-size: 10.5px; }
 /* 밤 지도 — 켜면 남색 */
 .sm-night[aria-pressed="true"] { border-color: #2b3b5c; background: #1f2b44; color: #ffd76a; }
 /* 탭 · 빈 카드 안내는 PC 에서만 */

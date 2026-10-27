@@ -109,7 +109,9 @@
         try {
             const url = new URL(location.href);
             url.searchParams.delete('lang');
-            location.replace(url.toString());
+            // 주소가 # 뒤만 다르면(판매점 지도의 #map=…) replace 는 다시 읽지 않는다 — 그때는 reload
+            if (url.href.split('#')[0] === location.href.split('#')[0]) location.reload();
+            else location.replace(url.toString());
         } catch (e) {
             location.reload();
         }

@@ -2195,7 +2195,7 @@ function repeatPage() {
  * HTML 에는 시도별 표를 박아 둔다(검색 로봇 · 지도가 안 뜨는 브라우저용). 지도 스크립트 · 모양은 내용 지문(?v=)을 붙여 싣는다.
  */
 const STORE_MAP_FILE = 'store-map.html';
-const STORE_MAP_TOP_FILE = 'store-map-top50.html';   // 같은 지도를 TOP 50 별 · 밤 지도로 여는 공유용 주소(2026-10-27) — 공유 이미지만 다르고 canonical 은 store-map.html
+const STORE_MAP_TOP_FILE = 'store-map-top50.html';   // 같은 지도를 TOP 50 별로 여는 공유용 주소(2026-10-27) — 공유 이미지만 다르고 canonical 은 store-map.html
 const STORE_MAP_DATA = 'store-map-data.json';
 // 일반 판매점 층(2단계): shops-all.json(tools/update-all-shops.js, 매달) 중 1등 · 2등 기록이 없는 곳. 칩을 켤 때 받는다
 const STORE_MAP_ALL = 'store-map-all.json';
@@ -2312,7 +2312,7 @@ function storeMapPage(md, top) {
     const net = S.net;
     const title = top ? `로또 판매점 TOP 50 지도 · 1등이 가장 많이 나온 50곳 (${first}~${last}회) | lottodraw.kr`
         : `로또 판매점 지도 · 1등 · 2등 나온 곳 전국 지도 (${first}~${last}회) | lottodraw.kr`;
-    const desc = top ? `로또 1등이 가장 많이 나온 판매점 50곳을 밤 지도 위 별로 봅니다(${first}~${last}회, 매주 갱신). 많이 팔린 곳일 가능성이 클 뿐, 어디서 사든 당첨 확률은 같습니다.`
+    const desc = top ? `로또 1등이 가장 많이 나온 판매점 50곳을 지도 위 별로 봅니다(${first}~${last}회, 매주 갱신). 많이 팔린 곳일 가능성이 클 뿐, 어디서 사든 당첨 확률은 같습니다.`
         : `로또 1등 · 2등이 나온 판매점 ${fmt(md.rows.length)}곳을 전국 지도(3D · 2D)에서 봅니다(${first}~${last}회, 매주 갱신). 점이 클수록 1등 · 2등이 많이 나온 곳 — 많이 팔린 곳일 가능성이 큽니다. 어디서 사든 당첨 확률은 같습니다.`;
     const v = f => `${f}?v=${fingerprint(f)}`;
     // 지도 페이지 전용 공유 이미지(실제 지도 화면 + 제목, 2026-10-26) — 없으면 사이트 기본
@@ -2354,9 +2354,7 @@ function storeMapPage(md, top) {
     <link rel="stylesheet" href="${v('js/vendor/maplibre-gl.css')}">
     <link rel="stylesheet" href="${v('css/store-map.css')}">
     <script src="js/i18n-dict.js"></script>
-    <script src="js/i18n.js"></script>${top ? '' : `
-    <!-- 지도는 늘 낮으로 연다(2026-10-27 사장님 — TOP 50 을 누르면 밤으로 뒤집힌다). 사이트에 저장된 낮/밤은 그대로 둔다(i18n.js 가 붙인 밤을 그리기 전에 뗀다) -->
-    <script>document.documentElement.removeAttribute('data-theme');</script>`}
+    <script src="js/i18n.js"></script>
     <script type="application/ld+json">${JSON.stringify(ld)}</script>
     ${CF_BEACON}
 </head>
@@ -2371,6 +2369,7 @@ function storeMapPage(md, top) {
         <div class="sm-row">
             <a class="sm-back" href="index.html" data-i18n-en="← Generator">← 생성기로</a>
             <h1 class="sm-title" data-i18n-en="Lotto retailer map">로또 판매점 지도</h1>
+            <div class="lang-switch sm-lang" role="group" aria-label="Language"><button type="button" data-lang-btn="ko">KO</button><button type="button" data-lang-btn="en">EN</button></div>
             <button type="button" class="sm-night" id="sm-night" aria-pressed="false" title="밤 지도" aria-label="밤 지도" data-i18n-attr="title:sm.night aria-label:sm.night">🌙</button>
             <button type="button" class="sm-3d" id="sm-3d" aria-pressed="false">3D</button>
         </div>
@@ -2379,7 +2378,7 @@ function storeMapPage(md, top) {
             <ul class="sm-found" id="sm-found" hidden></ul>
         </div>
         <div class="sm-chips" role="group" aria-label="보이는 판매점" data-i18n-attr="aria-label:sm.layers">
-            <button type="button" class="sm-chip sm-chip-top" data-layer="top" aria-pressed="false" title="TOP 50 판매점만 별로 보기(밤 지도)" data-i18n-attr="title:sm.topTitle"><span class="sm-star-ico" aria-hidden="true">✦</span>TOP 50</button>
+            <button type="button" class="sm-chip sm-chip-top" data-layer="top" aria-pressed="false" title="TOP 50 판매점만 별로 보기" data-i18n-attr="title:sm.topTitle"><span class="sm-star-ico" aria-hidden="true">✦</span>TOP 50</button>
             <button type="button" class="sm-chip" data-layer="w1" aria-pressed="true"><span class="sm-dot sm-dot-1"></span><span data-i18n-en="1st prize">1등 나온 곳</span></button>
             <button type="button" class="sm-chip" data-layer="w2" aria-pressed="true"><span class="sm-dot sm-dot-2"></span><span data-i18n-en="2nd only">2등만 나온 곳</span></button>
             ${md.all ? `<button type="button" class="sm-chip" data-layer="all" aria-pressed="false"><span class="sm-dot sm-dot-a"></span><span data-i18n-en="Other retailers">일반 판매점</span></button>` : ''}
@@ -2419,7 +2418,7 @@ function storeMapPage(md, top) {
         </div>
         <label class="sm-fade"><span data-i18n-en="Fade low counts">적게 나온 곳 흐리게</span>
             <input type="range" id="sm-fade" min="0" max="100" value="0" aria-describedby="sm-fade-v">
-            <output id="sm-fade-v">모두</output></label>
+            <output id="sm-fade-v" data-i18n-en="All">모두</output></label>
     </div>
     <details class="sm-info" id="sm-info">
         <summary data-i18n-en="By province · about">시도별 · 안내</summary>
