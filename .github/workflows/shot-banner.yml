@@ -27,7 +27,7 @@ jobs:
           const ctx = await b.newContext({ viewport: { width: 1540, height: 630 }, deviceScaleFactor: 1, locale: 'ko-KR' });
           await ctx.route(/googlesyndication|cloudflareinsights|api\.lottodraw/, r => r.abort());
           const p = await ctx.newPage();
-          await p.goto('http://localhost:8765/store-map-top50.html#map=11.25/37.55/126.9/0/0');   // TOP 50 별 · 밤 지도로 열린다
+          await p.goto('http://localhost:8765/store-map-top50.html#map=10.3/37.45/126.72/0/0');   // TOP 50 별 · 밤 지도로 열린다
           await p.addStyleTag({ url: 'https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@500;700;900&display=block' });   // 기본 공유 이미지와 같은 글꼴
           await p.addStyleTag({ content: '.sm-side,.sm-near-btn,#theme-btn,.maplibregl-control-container,.sm-star,#chat-fab,#chat-panel,#map-fab{display:none!important}' +
             '#og{position:fixed;top:0;bottom:0;left:340px;right:0;z-index:99;font-family:"Noto Sans KR","NanumGothic",sans-serif;' +
