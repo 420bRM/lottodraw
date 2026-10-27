@@ -46,6 +46,9 @@ const LottoStats = require(path.join(ROOT, 'js', 'lotto-stats.js'));
 // Cloudflare Web Analytics 비콘. DNS only(프록시 꺼짐)라 자동 주입이 안 되어 직접 심는다.
 // 손으로 관리하는 페이지(index, about 등)의 </head> 앞에도 같은 줄이 들어 있다.
 const CF_BEACON = `<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "91c08d8a39d944e69c10024f2314b955"}'></script><!-- End Cloudflare Web Analytics -->`;
+// 판매점 지도용: 지도를 움직일 때마다 주소 끝(#map=…)이 바뀌어 Cloudflare 가 그때마다 조회로 셌다(2026-10-27 — 하루 1,487회 중 대부분).
+// "spa": false 로 페이지 안 주소 바뀜은 세지 않는다(처음 연 한 번만)
+const CF_BEACON_MAP = CF_BEACON.replace('"token": "91c08d8a39d944e69c10024f2314b955"', '"token": "91c08d8a39d944e69c10024f2314b955", "spa": false');
 
 const read = f => fs.readFileSync(path.join(ROOT, f), 'utf8');
 // 내용이 같으면 쓰지 않는다 — 수정 시각만 바뀌는 일을 막는다
@@ -2356,7 +2359,7 @@ function storeMapPage(md, top) {
     <script src="js/i18n-dict.js"></script>
     <script src="js/i18n.js"></script>
     <script type="application/ld+json">${JSON.stringify(ld)}</script>
-    ${CF_BEACON}
+    ${CF_BEACON_MAP}
 </head>
 <body class="sm-full">
 <main class="sm-wrap" id="sm"${top ? ' data-top="1"' : ''} data-src="${STORE_MAP_DATA}?v=${fingerprint(STORE_MAP_DATA)}"${md.all ? ` data-all="${STORE_MAP_ALL}?v=${fingerprint(STORE_MAP_ALL)}"` : ''} data-rounds="${STORE_MAP_ROUNDS}?v=${fingerprint(STORE_MAP_ROUNDS)}" data-ids="${STORE_MAP_IDS}?v=${fingerprint(STORE_MAP_IDS)}">
