@@ -23,7 +23,7 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <link rel="stylesheet" href="css/site.css">
     <link rel="stylesheet" href="js/vendor/maplibre-gl.css?v=7e27dfc9">
-    <link rel="stylesheet" href="css/store-map.css?v=22dd7d50">
+    <link rel="stylesheet" href="css/store-map.css?v=e7e271ef">
     <script src="js/i18n-dict.js"></script>
     <script src="js/i18n.js"></script>
     <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Dataset","name":"로또 판매점 지도 · 1등 · 2등 나온 곳 전국 지도 (262~1247회) | lottodraw.kr","description":"로또 1등 · 2등이 나온 판매점 10,608곳을 전국 지도(3D · 2D)에서 봅니다(262~1247회, 매주 갱신). 점이 클수록 1등 · 2등이 많이 나온 곳 — 많이 팔린 곳일 가능성이 큽니다. 어디서 사든 당첨 확률은 같습니다.","url":"https://www.lottodraw.kr/store-map.html","isAccessibleForFree":true,"dateModified":"2026-10-24","creator":{"@type":"Organization","name":"lottodraw.kr","url":"https://www.lottodraw.kr/"},"keywords":["로또 판매점 지도","로또 1등 판매점 지도","로또 명당 지도","로또 2등 판매점"]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://www.lottodraw.kr/"},{"@type":"ListItem","position":2,"name":"1등 판매점","item":"https://www.lottodraw.kr/statistics-stores.html"},{"@type":"ListItem","position":3,"name":"판매점 지도","item":"https://www.lottodraw.kr/store-map.html"}]}]}</script>
@@ -54,6 +54,7 @@
             <button type="button" class="sm-chip" data-layer="w2" aria-pressed="true"><span class="sm-dot sm-dot-2"></span><span data-i18n-en="2nd only">2등만 나온 곳</span></button>
             <button type="button" class="sm-chip" data-layer="all" aria-pressed="false"><span class="sm-dot sm-dot-a"></span><span data-i18n-en="Other retailers">일반 판매점</span></button>
             <button type="button" class="sm-chip" data-layer="closed" aria-pressed="false"><span class="sm-dot sm-dot-c"></span><span data-i18n-en="Closed">폐점 포함</span></button>
+            <button type="button" class="sm-chip sm-chip-mine" id="sm-mine-chip" aria-pressed="false" hidden title="내가 다녀온 곳 · 내 댓글 (로그인 회원)" data-i18n-attr="title:sm.mineTitle">📍 <span data-i18n-en="My places">내 기록</span></button>
         </div>
         <p class="sm-pcnote" data-i18n-en="On a PC you can see the Top 50 as a list.">PC에서 보면 TOP 50을 목록으로 볼 수 있습니다.</p>
     </div>
@@ -63,6 +64,7 @@
         <button type="button" class="sm-tab" data-tab="near" role="tab" aria-selected="false" data-i18n-en="Nearby">내 근처</button>
         <button type="button" class="sm-tab" data-tab="fun" role="tab" aria-selected="false" data-i18n-en="Unusual">이색 판매점</button>
         <button type="button" class="sm-tab" data-tab="info" role="tab" aria-selected="false" data-i18n-en="By province">시도별</button>
+        <button type="button" class="sm-tab" data-tab="mine" role="tab" aria-selected="false" hidden data-i18n-en="Mine">내 기록</button>
     </nav>
     <!-- TOP 50 목록 · 판매점 카드(PC 는 탭 내용, 휴대폰은 목록을 감추고 카드만 아래쪽에) -->
     <div class="sm-right">
@@ -72,6 +74,7 @@
         </aside>
         <aside class="sm-card" id="sm-card" hidden aria-live="polite"></aside>
         <aside class="sm-near" id="sm-near" hidden aria-live="polite"></aside>
+        <aside class="sm-near sm-mine" id="sm-mine" hidden aria-live="polite"></aside>
         <p class="sm-card-empty" data-i18n-en="Tap a dot on the map to see the retailer here.">지도에서 점을 누르면 판매점 정보가 여기에 나옵니다.</p>
     </div>
     <!-- 왼쪽 아래: 1등 방식(로그인 회원) · 끌기 막대(낮은 횟수부터 흐리게) — "시도별 · 안내" 위 -->
@@ -132,6 +135,6 @@
 <script src="js/premium-config.js?v=ca702ca6"></script>
 <script src="js/license.js?v=e4775149"></script>
 <script src="js/vendor/maplibre-gl.js?v=74bdab14"></script>
-<script src="js/store-map.js?v=c6c00f03"></script>
+<script src="js/store-map.js?v=b20d9875"></script>
 </body>
 </html>

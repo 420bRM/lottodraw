@@ -294,6 +294,57 @@
         ]);
     }
 
+    /* ───── 답글 알림 · 내 댓글 (2026-10-27) ─────
+     * 내 댓글에 답글이 달리면 서버가 알림을 쌓는다(/api/me/notes, 최근 50개). 이 칸을 열면 모두 읽음으로 바꾼다 — 새 것은 이번에만 강조.
+     * 판매점 댓글은 지도의 그 판매점 카드로(store-map.html?shop=번호), 블로그 댓글은 그 글의 댓글 칸으로 간다 */
+    const postLink = post => { const m = /^shop-(\d{8})$/.exec(post); return m ? 'store-map.html?shop=' + m[1] : 'blog/' + post + '.html#comments'; };
+    const postName = post => (/^shop-\d{8}$/.test(post) ? tr('my.cmtShop', '판매점 댓글') : tr('my.cmtBlog', '블로그 · {post}', { post }));
+    async function showNotes() {
+        const A = window.LottoAccount;
+        $('my-notes').hidden = false;
+        let notes = null, mine = null;
+        try {
+            [notes, mine] = await Promise.all([A.call('/api/me/notes'), A.call('/api/me/comments')]);
+        } catch (e) {
+            fill('my-notes', [el('p', { className: 'my-muted', text: tr('my.notesFail', '불러오지 못했습니다. 잠시 뒤 다시 시도해 주세요.') })]);
+            return;
+        }
+        const unread = notes.unread || 0;
+        const noteList = (notes.notes || []).length ? el('ol', { className: 'my-notes' }, notes.notes.map((n, k) => el('li', { className: k < unread ? 'is-new' : '' }, [
+            el('a', { href: postLink(n.post) }, [
+                el('b', { text: tr('my.noteHead', '{nick}님이 답글을 달았습니다', { nick: n.nick || '' }) }),
+                el('span', { className: 'my-note-text', text: n.text }),
+                el('small', { text: postName(n.post) + ' · ' + ymd(n.at) }),
+            ]),
+        ]))) : el('p', { className: 'my-muted', text: tr('my.notesNone', '아직 받은 답글이 없습니다.') });
+        const cmts = mine.comments || [];
+        const SHOW = 10;
+        const cmtList = el('ol', { className: 'my-notes my-cmts' });
+        const drawCmts = n => {
+            cmtList.textContent = '';
+            cmts.slice(0, n).forEach(c => cmtList.appendChild(el('li', null, [el('a', { href: postLink(c.post) }, [
+                el('span', { className: 'my-note-text', text: c.text }),
+                el('small', { text: postName(c.post) + (c.to ? ' · ' + tr('my.cmtReply', '답글') : '') + ' · ' + ymd(c.at) }),
+            ])])));
+        };
+        drawCmts(SHOW);
+        const more = cmts.length > SHOW ? btn(tr('my.cmtMore', '모두 보기 ({n}개)', { n: num(cmts.length) }), e => { drawCmts(cmts.length); e.target.remove(); }) : null;
+        fill('my-notes', [
+            el('h3', { className: 'my-sub', text: unread ? tr('my.notesNew', '답글 알림 · 새 답글 {n}개', { n: num(unread) }) : tr('my.notesH', '답글 알림') }),
+            noteList,
+            el('h3', { className: 'my-sub', text: tr('my.cmtsH', '내가 쓴 댓글 {n}개', { n: num(cmts.length) }) }),
+            cmts.length ? cmtList : el('p', { className: 'my-muted', text: tr('my.cmtsNone', '아직 쓴 댓글이 없습니다. 판매점 지도나 블로그 글에 남길 수 있습니다.') }),
+            more ? el('div', { className: 'my-actions' }, [more]) : null,
+            el('div', { className: 'my-actions' }, [el('a', { className: 'btn btn-secondary btn-mini', href: 'store-map.html', text: tr('my.goMap', '판매점 지도 · 내 기록 보기') })]),
+        ]);
+        if (unread) A.call('/api/me/notes/read', { method: 'POST' }).then(() => {
+            const dot = document.querySelector('.acct-btn.has-new');   // 머리글의 새 답글 점도 끈다
+            if (dot) dot.classList.remove('has-new');
+            return A.refresh();
+        }).catch(() => null);
+        if (location.hash === '#my-notes') $('my-notes').scrollIntoView();
+    }
+
     /* ───── 로그인한 회원 ───── */
 
     function showProfile(user) {
@@ -375,6 +426,7 @@
         showScore(me.user, me.reactions);
         showAccount();
         showNumbers();
+        showNotes();
     }
 
     // 별명을 바꾸면 account.js 가 알려 준다 — 내 정보·점수(포인트를 썼을 수 있다)를 다시 그린다

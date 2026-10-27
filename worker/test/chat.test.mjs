@@ -459,3 +459,39 @@ test('관리자 주문 목록: 로그인한 채 산 주문에 회원 참조값(�
     assert.equal(trial.k.toLowerCase(), m2.trial.keyId.toLowerCase());
     assert.ok(!list.some(x => x.m === 'trial'), '체험을 끈 서버(기본)에는 체험 주문이 없다');
 });
+
+test('답글: 한 단계로 붙고, 답한 댓글 · 맨 위 댓글 쓴 사람에게 알림(나는 빼고), 읽으면 0, 내 댓글 목록', async () => {
+    const { env, cStore } = setup();
+    const post = 'shop-11100004';
+    const sA = await member(env, 'A', '행운의곰');
+    const sB = await member(env, 'B', '구경꾼');
+    const sC = await member(env, 'C', '지나가던');
+    const root = (await call(env, 'POST', '/api/comments', { body: { post, text: '사장님 친절해요' }, headers: auth(sA) })).data.comment;
+    const r1 = await call(env, 'POST', '/api/comments', { body: { post, text: '맞아요', to: root.id }, headers: auth(sB) });
+    assert.equal(r1.status, 200, JSON.stringify(r1.data));
+    assert.equal(r1.data.comment.to, root.id);
+    // 답글에 답하면 맨 위 댓글 아래로, 알림은 B(답한 댓글)와 A(맨 위)에게
+    const r2 = await call(env, 'POST', '/api/comments', { body: { post, text: '저도요', to: r1.data.comment.id }, headers: auth(sC) });
+    assert.equal(r2.data.comment.to, root.id);
+    const nA = (await call(env, 'GET', '/api/me/notes', { headers: auth(sA) })).data;
+    assert.deepEqual([nA.unread, nA.notes.length, nA.notes[0].nick, nA.notes[0].post, nA.notes[1].text], [2, 2, '지나가던', post, '맞아요']);
+    assert.equal((await call(env, 'GET', '/api/me', { headers: auth(sA) })).data.user.notes, 2);
+    assert.equal((await call(env, 'GET', '/api/me/notes', { headers: auth(sB) })).data.unread, 1);
+    assert.equal((await call(env, 'GET', '/api/me/notes', { headers: auth(sC) })).data.unread, 0, '내 답글은 나에게 알리지 않는다');
+    assert.equal((await call(env, 'POST', '/api/me/notes/read', { headers: auth(sA) })).data.unread, 0);
+    assert.equal((await call(env, 'GET', '/api/me', { headers: auth(sA) })).data.user.notes, 0);
+    assert.equal((await call(env, 'GET', '/api/me/notes', { headers: auth(sA) })).data.notes.length, 2, '읽어도 목록은 남는다');
+    // 없는 댓글 · 이상한 번호에는 못 단다
+    await unwait(cStore, 'B');
+    assert.equal((await call(env, 'POST', '/api/comments', { body: { post, text: '어디?', to: '0000000000000001-abc' }, headers: auth(sB) })).data.error, 'not_found');
+    assert.equal((await call(env, 'POST', '/api/comments', { body: { post, text: '어디?', to: '../x' }, headers: auth(sB) })).data.error, 'bad_reply');
+    // 내 댓글: 최근 것부터, 글 이름과 함께
+    await unwait(cStore, 'B');
+    await call(env, 'POST', '/api/comments', { body: { post: 'lotto-odds-explained', text: '블로그 댓글' }, headers: auth(sB) });
+    const mine = (await call(env, 'GET', '/api/me/comments', { headers: auth(sB) })).data.comments;
+    assert.deepEqual(mine.map(c => [c.post, c.text, c.to || null]), [['lotto-odds-explained', '블로그 댓글', null], [post, '맞아요', root.id]]);
+    assert.equal((await call(env, 'GET', '/api/me/comments')).status, 401);
+    // 탈퇴하면 알림도 지운다
+    await call(env, 'POST', '/api/me/delete', { body: { confirm: true }, headers: auth(sA) });
+    assert.equal(await cStore.get('nt:A'), undefined);
+});

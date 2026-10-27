@@ -42,7 +42,7 @@
     let data = null;      // { sido, rows }
     let all = null;       // 일반 판매점 { sido, rows } — 칩을 켤 때 받는다
     let map = null;
-    const shown = { top: false, w1: true, w2: true, closed: false, all: false };   // top: TOP 50 만 별로 보기(2026-10-27)
+    const shown = { top: false, w1: true, w2: true, closed: false, all: false, mine: false };   // mine: 내 기록(다녀온 곳만, 2026-10-27)   // top: TOP 50 만 별로 보기(2026-10-27)
     const modes = { A: true, M: true, S: true };   // 1등 방식 체크(로그인 회원)
     let fadeT = 0;                                 // 끌기 막대: 1등 횟수 + 1 이 이 값보다 작으면 흐려진다(0 = 다 보임)
     const isWide = () => window.innerWidth >= 900;
@@ -81,6 +81,14 @@
         names();
         if (map.getLayer('st-all')) map.setLayoutProperty('st-all', 'visibility', shown.all && !shown.top ? 'visible' : 'none');
         else if (shown.all) loadAll();
+        mineOnly();
+    }
+    // 내 기록을 켜면 다른 점 · 별 · 이름은 다 감추고 다녀온 곳만(끄면 applyLayers 가 원래대로 되돌린다)
+    const OTHER_LAYERS = ['st-w1', 'st-w2', 'st-num', 'st-top', 'st-top-glow', 'st-name', 'st-all', 'st-all-name', 'st-net', 'st-net-top', 'st-net-glow', 'st-net-num', 'st-net-name'];
+    function mineOnly() {
+        if (!map) return;
+        if (shown.mine) OTHER_LAYERS.forEach(id => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none'); });
+        ['st-mine', 'st-mine-name'].forEach(id => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', shown.mine ? 'visible' : 'none'); });
     }
 
     // 일반 판매점 층: 처음 켤 때 한 번 받아 1등 · 2등 점 아래에 깐다
@@ -416,6 +424,7 @@
             map.setLayoutProperty('st-net-name', 'text-radial-offset', offsetBy(shown.top ? 1.3 : 1));
             Object.keys(pt).forEach(k => map.setPaintProperty('st-net-name', k, k === 'text-opacity' ? 1 : pt[k]));
         }
+        mineOnly();
     }
 
     // 테두리 빛 밝기: 0.35 ~ 1 을 2.8초에 한 번 오간다. 1초에 15번만 바꾸고, 탭이 뒤에 있으면 쉰다(배터리)
@@ -490,7 +499,7 @@
                 : '<p class="sm-small">' + T('이 화면에는 판매점이 없습니다. 지도를 옮기거나 줌아웃해 보세요.', 'No retailers on screen. Move or zoom out.') + '</p>') +
             '<p class="sm-small sm-near-note">' + T('위치는 이 기기 안에서만 쓰고 저장하거나 보내지 않습니다.', 'Your location stays on this device.') + '</p>';
         nearPanel.hidden = false;
-        if (isWide()) setTab('near'); else card.hidden = true;
+        if (isWide()) setTab('near'); else { card.hidden = true; minePanel.hidden = true; }
         nearPanel.scrollTop = 0;
         nearPanel.querySelector('.sm-close').addEventListener('click', () => { nearPanel.hidden = true; if (isWide()) setTab('top'); });
         nearPanel.querySelector('.sm-near-me').addEventListener('click', () => { if (geo) { nearAfterMove = true; geo.trigger(); } });
@@ -510,7 +519,7 @@
         markTop(null);
         card.innerHTML = '<button type="button" class="sm-close" aria-label="' + T('닫기', 'Close') + '">×</button>' + html;
         card.hidden = false;
-        if (!isWide()) nearPanel.hidden = true;   // 휴대폰은 카드 하나만
+        if (!isWide()) { nearPanel.hidden = true; minePanel.hidden = true; }   // 휴대폰은 카드 하나만
         card.querySelector('.sm-close').addEventListener('click', () => { card.hidden = true; markTop(null); });
         if (isWide()) setTab('card');
         if (fly) map.flyTo({ center: [lng, lat], zoom: Math.max(map.getZoom(), 15), padding: pad(), essential: true });
@@ -560,6 +569,112 @@
         visits = (me && me.user && me.user.visits) || {};
         if (Object.keys(visits).length && await loadIds()) paintVisits();
     }
+    // ───── 내 기록(로그인 회원, 2026-10-27 사장님): 다녀온 곳만 지도에 + 목록, 내가 쓴 댓글, 새 답글 수 ─────
+    // 칩 "📍 내 기록"을 켜면 다른 점은 감추고 다녀온 곳만 내 색으로 보인다. 목록은 PC 는 "내 기록" 탭, 휴대폰은 왼쪽 아래 칸
+    const minePanel = document.getElementById('sm-mine'), mineChip = document.getElementById('sm-mine-chip');
+    let mineTab = 'v', myCmts = null;
+    // 판매점 번호 → 지도 자료의 자리 · 이름 · 지역
+    function shopOf(id) {
+        if (!ids) return null;
+        let i = ids.w.indexOf(id);
+        if (i >= 0) { const r = data.rows[i]; return { t: 'w', i, name: r[4], place: [data.sido[r[5]], r[6]].filter(Boolean).join(' '), lat: r[0], lng: r[1] }; }
+        i = (ids.a || []).indexOf(id);
+        if (i >= 0 && all) { const r = all.rows[i]; return { t: 'a', i, name: r[2], place: [all.sido[r[3]], r[4]].filter(Boolean).join(' '), lat: r[0], lng: r[1] }; }
+        return null;
+    }
+    // 다녀온 곳이 일반 판매점이면 그 자료(store-map-all.json)도 있어야 이름 · 자리를 안다
+    async function ensureAll() {
+        if (all || !ids || !Object.keys(visits).some(id => (ids.a || []).includes(id))) return;
+        loadAll();
+        for (let k = 0; k < 50 && !all; k++) await new Promise(r => setTimeout(r, 100));
+    }
+    const mineList = () => Object.keys(visits).reverse().map(id => Object.assign({ id, c: visits[id] }, shopOf(id) || {})).filter(x => x.t);
+    function mineSource() {
+        const fc = { type: 'FeatureCollection', features: mineList().map(x => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [x.lng, x.lat] }, properties: { t: x.t, i: x.i, c: x.c, nm: x.name } })) };
+        if (map.getSource('mine')) { map.getSource('mine').setData(fc); return; }
+        map.addSource('mine', { type: 'geojson', data: fc });
+        map.addLayer({ id: 'st-mine', type: 'circle', source: 'mine', layout: { visibility: 'none' }, paint: {
+            'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 5, 10, 8, 15, 12], 'circle-color': ['get', 'c'],
+            'circle-stroke-color': '#fff', 'circle-stroke-width': 2 } });
+        map.addLayer({ id: 'st-mine-name', type: 'symbol', source: 'mine', layout: Object.assign(nameLayout(1), { 'text-radial-offset': 1.1 }), paint: Object.assign(namePaint(), { 'text-opacity': 1 }) });
+        map.on('click', 'st-mine', e => { const f = e.features && e.features[0]; if (f) (f.properties.t === 'w' ? open : openAll)(f.properties.i, false); });
+        map.on('mouseenter', 'st-mine', () => { map.getCanvas().style.cursor = 'pointer'; });
+        map.on('mouseleave', 'st-mine', () => { map.getCanvas().style.cursor = ''; });
+    }
+    async function setMine(on) {
+        if (on && !(await member(T('내 기록은 로그인 회원 기능입니다.', 'My places is for signed-in members.')))) return;
+        shown.mine = on;
+        mineChip.setAttribute('aria-pressed', String(on));
+        if (!on) { minePanel.hidden = true; if (isWide() && side.dataset.tab === 'mine') setTab('top'); applyLayers(); return; }
+        await loadIds();
+        await ensureAll();
+        mineSource();
+        applyLayers();
+        const pts = mineList();
+        if (pts.length) {
+            const b = new maplibregl.LngLatBounds();
+            pts.forEach(x => b.extend([x.lng, x.lat]));
+            map.fitBounds(b, { padding: pad(), maxZoom: 15, duration: 800 });
+        }
+        drawMine();
+        loadMyComments();
+    }
+    async function loadMyComments() {
+        try { myCmts = (await account().call('/api/me/comments')).comments || []; } catch (e) { myCmts = null; }
+        if (shown.mine) drawMine();
+    }
+    function drawMine() {
+        const vs = mineList(), cs = myCmts;
+        const me = account() && account().me();
+        const unread = (me && me.user && me.user.notes) || 0;
+        const tabBtn = (k, label, n) => '<button type="button" data-k="' + k + '" aria-pressed="' + (mineTab === k) + '">' + label + (n != null ? ' <b>' + fmt(n) + '</b>' : '') + '</button>';
+        let body;
+        if (mineTab === 'v') {
+            body = vs.length ? '<ol class="sm-near-list">' + vs.map(x => '<li><button type="button" data-t="' + x.t + '" data-i="' + x.i + '"><span class="sm-tname"><span class="sm-swatch" style="background:' + esc(x.c) + '"></span>' + esc(x.name) +
+                '<small>' + esc(x.place) + '</small></span><span class="sm-tcnt">' + (x.t === 'w' ? '<b>' + data.rows[x.i][2] + '</b>' + T('번 1등', ' × 1st') : '<small>' + T('일반 판매점', 'retailer') + '</small>') + '</span></button></li>').join('') + '</ol>'
+                : '<p class="sm-small">' + T('아직 다녀온 곳이 없습니다. 판매점 카드에서 "＋ 다녀왔어요"를 누르면 여기에 모입니다.', 'No places yet. Tap "＋ I\'ve been here" on a retailer card.') + '</p>';
+        } else if (!cs) {
+            body = '<p class="sm-small">' + T('불러오는 중…', 'Loading…') + '</p>';
+        } else {
+            body = cs.length ? '<ol class="sm-my-cmts">' + cs.map((c, k) => {
+                const shop = /^shop-(\d{8})$/.exec(c.post);
+                const where = shop ? (shopOf(shop[1]) || { name: T('판매점', 'Retailer') }).name : T('블로그 · ', 'Blog · ') + c.post;
+                return '<li><button type="button" data-k="' + k + '"><span class="sm-tname">' + esc(where) + (c.to ? ' <small class="sm-reply-tag">' + T('답글', 'reply') + '</small>' : '') +
+                    '<small>' + cmtTime(c.at) + '</small></span><span class="sm-my-text">' + esc(c.text) + '</span></button></li>';
+            }).join('') + '</ol>' : '<p class="sm-small">' + T('아직 쓴 댓글이 없습니다.', 'No comments yet.') + '</p>';
+        }
+        minePanel.innerHTML = '<button type="button" class="sm-close" aria-label="' + T('닫기', 'Close') + '">×</button>' +
+            '<h3>' + T('내 기록', 'My places') + '</h3>' +
+            '<div class="sm-rk sm-mine-tabs" role="group">' + tabBtn('v', T('다녀온 곳', 'Visited'), vs.length) + tabBtn('c', T('내 댓글', 'My comments'), cs ? cs.length : null) + '</div>' +
+            (unread ? '<p class="sm-mine-new"><a href="mypage.html#my-notes">' + T('새 답글 ' + fmt(unread) + '개 · 마이페이지에서 보기 →', fmt(unread) + ' new repl' + (unread > 1 ? 'ies' : 'y') + ' · see My page →') + '</a></p>' : '') +
+            body + '<p class="sm-small sm-near-note">' + T('나만 보입니다. 위치는 쓰지 않습니다.', 'Only you can see this. No location used.') + '</p>';
+        minePanel.hidden = false;
+        if (isWide()) setTab('mine'); else { card.hidden = true; nearPanel.hidden = true; }
+        minePanel.querySelector('.sm-close').addEventListener('click', () => setMine(false));
+        minePanel.querySelectorAll('.sm-mine-tabs button').forEach(b => b.addEventListener('click', () => { mineTab = b.dataset.k; drawMine(); }));
+        minePanel.querySelectorAll('.sm-near-list button').forEach(b => b.addEventListener('click', () => (b.dataset.t === 'w' ? open : openAll)(Number(b.dataset.i), true)));
+        minePanel.querySelectorAll('.sm-my-cmts button').forEach(b => b.addEventListener('click', () => {
+            const c = cs[Number(b.dataset.k)];
+            const shop = /^shop-(\d{8})$/.exec(c.post);
+            if (!shop) { location.href = 'blog/' + c.post + '.html#comments'; return; }
+            const x = shopOf(shop[1]);
+            if (x) (x.t === 'w' ? open : openAll)(x.i, true);
+        }));
+    }
+    function initMine() {
+        const A = account();
+        if (!mineChip || !A || !A.ready) return;
+        A.ready.then(() => {
+            if (!A.loginOn()) return;
+            mineChip.hidden = false;
+            const tab = side.querySelector('.sm-tab[data-tab="mine"]');
+            if (tab) tab.hidden = false;
+            const me = A.me();
+            if (me && me.user && me.user.notes) mineChip.classList.add('has-new');
+        });
+        mineChip.addEventListener('click', () => setMine(!shown.mine));
+    }
+
     // ───── 판매점 댓글(로그인 회원, 2026-10-27 사장님 — "다녀왔어요" 아래) ─────
     // 블로그 댓글과 같은 서버 길(/api/comments, 글 이름 'shop-' + 판매점 번호)과 규칙(별명 필요 · 링크 · 연락처 · 홍보 금지 · 15초에 한 번 · 하루 30개 · 500자).
     // 읽기는 누구나. 글은 textContent 로만 그린다. 위치 인증은 붙이지 않는다(위치정보를 받지 않는다 — README 4-9)
@@ -579,11 +694,10 @@
         box.innerHTML = '<h4>' + T('댓글', 'Comments') + ' <span class="sm-cmt-n"></span></h4><ol class="sm-cmt-list"></ol><div class="sm-cmt-foot"></div>' +
             '<p class="sm-cmt-msg" role="status"></p><p class="sm-cmt-rule">' + T('링크 · 연락처 · 홍보 글과 비방은 지웁니다.', 'Links, contacts, ads and abuse are removed.') + '</p>';
         const list = box.querySelector('.sm-cmt-list'), foot = box.querySelector('.sm-cmt-foot'), msg = box.querySelector('.sm-cmt-msg');
-        const draw = rows => {
-            list.textContent = '';
-            box.querySelector('.sm-cmt-n').textContent = rows.length ? String(rows.length) : '';
-            if (!rows.length) { const li = document.createElement('li'); li.className = 'sm-cmt-empty'; li.textContent = T('아직 댓글이 없습니다.', 'No comments yet.'); list.appendChild(li); return; }
-            rows.forEach(c => {
+        // 답글(2026-10-27 사장님): 한 단계만 — 맨 위 댓글 아래에 모은다. 맨 위 댓글이 지워졌으면 "지운 댓글" 아래에.
+        // 답글이 달리면 답한 댓글 · 맨 위 댓글 쓴 사람의 마이페이지에 알림(서버)
+        let replyTo = null;
+        const one = (c, holder) => {
                 const li = document.createElement('li');
                 const head = document.createElement('div');
                 const nick = document.createElement('b');
@@ -607,8 +721,38 @@
                 }
                 const text = document.createElement('p');
                 text.textContent = c.text;
-                li.append(head, text);
+                const re = document.createElement('button');
+                re.type = 'button';
+                re.className = 'sm-cmt-re';
+                re.textContent = T('답글', 'Reply');
+                re.addEventListener('click', () => { replyTo = replyTo && replyTo.id === c.id ? null : c; gate(); });
+                li.append(head, text, re);
+                holder.appendChild(li);
+                return li;
+        };
+        const draw = rows => {
+            list.textContent = '';
+            box.querySelector('.sm-cmt-n').textContent = rows.length ? String(rows.length) : '';
+            if (!rows.length) { const li = document.createElement('li'); li.className = 'sm-cmt-empty'; li.textContent = T('아직 댓글이 없습니다.', 'No comments yet.'); list.appendChild(li); return; }
+            const kids = new Map();
+            rows.filter(c => c.to).forEach(c => { if (!kids.has(c.to)) kids.set(c.to, []); kids.get(c.to).push(c); });
+            const tops = rows.filter(c => !c.to);
+            const nest = (li, id) => {
+                const k = kids.get(id);
+                if (!k) return;
+                const ol = document.createElement('ol');
+                ol.className = 'sm-cmt-replies';
+                k.forEach(c => one(c, ol));
+                li.appendChild(ol);
+            };
+            tops.forEach(c => nest(one(c, list), c.id));
+            kids.forEach((k, id) => {
+                if (tops.some(c => c.id === id)) return;
+                const li = document.createElement('li');
+                li.className = 'sm-cmt-gone';
+                li.textContent = T('(지운 댓글입니다)', '(deleted comment)');
                 list.appendChild(li);
+                nest(li, id);
             });
         };
         const load = async () => {
@@ -622,11 +766,22 @@
             const btn = (label, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'sm-cmt-gate'; b.textContent = label; b.addEventListener('click', fn); foot.appendChild(b); };
             if (!A.session() || !me) { btn(T('로그인하고 댓글 쓰기', 'Sign in to comment'), () => A.openLogin(T('판매점 댓글은 로그인한 회원이 쓸 수 있습니다.', 'Sign in to comment on retailers.'))); return; }
             if (!me.user || !me.user.nick) { btn(T('별명을 정하면 댓글을 쓸 수 있습니다', 'Choose a nickname to comment'), () => A.openNick && A.openNick(false)); return; }
+            if (replyTo) {
+                const to = document.createElement('p');
+                to.className = 'sm-cmt-to';
+                to.textContent = T('↳ ' + (replyTo.nick || '') + '님에게 답글', '↳ Replying to ' + (replyTo.nick || ''));
+                const x = document.createElement('button');
+                x.type = 'button';
+                x.textContent = T('취소', 'Cancel');
+                x.addEventListener('click', () => { replyTo = null; gate(); });
+                to.append(' ', x);
+                foot.appendChild(to);
+            }
             const form = document.createElement('form');
             form.className = 'sm-cmt-form';
             form.innerHTML = '<textarea rows="2" maxlength="500"></textarea><button type="submit">' + T('남기기', 'Post') + '</button>';
             const ta = form.querySelector('textarea');
-            ta.placeholder = T('이 판매점 이야기를 남겨 주세요 (500자)', 'Say something about this retailer (500 chars)');
+            ta.placeholder = replyTo ? T('답글 (500자)', 'Reply (500 chars)') : T('이 판매점 이야기를 남겨 주세요 (500자)', 'Say something about this retailer (500 chars)');
             ta.setAttribute('aria-label', ta.placeholder);
             form.addEventListener('submit', async e => {
                 e.preventDefault();
@@ -635,11 +790,12 @@
                 const b = form.querySelector('button');
                 b.disabled = true;
                 msg.textContent = '';
-                try { await A.call('/api/comments', { method: 'POST', body: { post, text } }); ta.value = ''; await load(); }
+                try { await A.call('/api/comments', { method: 'POST', body: replyTo ? { post, text, to: replyTo.id } : { post, text } }); ta.value = ''; replyTo = null; gate(); await load(); }
                 catch (err) { msg.textContent = err.message || T('남기지 못했습니다.', 'Could not post.'); }
                 finally { b.disabled = false; }
             });
             foot.appendChild(form);
+            if (replyTo) ta.focus();
         };
         cmtRefresh = () => { if (card.dataset.c === token && document.getElementById('sm-cmt') === box) { gate(); load(); } };
         gate();
@@ -704,6 +860,7 @@
                 visits = r.visits || {};
                 paintVisits();
                 draw();
+                if (shown.mine) { await ensureAll(); mineSource(); drawMine(); }
                 if (cmtRefresh) cmtRefresh();   // 내 댓글의 "다녀옴" 표시를 바로 바꾼다
             } catch (e) {
                 box.querySelector('.sm-visit-note').textContent = (e && e.message) || T('저장하지 못했습니다.', 'Could not save.');
@@ -1011,7 +1168,7 @@
             set3d(on);
         });
         document.getElementById('sm-night').addEventListener('click', () => { nightByTop = false; toggleNight(); });
-        side.querySelectorAll('.sm-tab').forEach(b => b.addEventListener('click', () => (b.dataset.tab === 'near' ? openNear() : setTab(b.dataset.tab))));
+        side.querySelectorAll('.sm-tab').forEach(b => b.addEventListener('click', () => (b.dataset.tab === 'near' ? openNear() : b.dataset.tab === 'mine' && !shown.mine ? setMine(true) : setTab(b.dataset.tab))));
         nearBtn.addEventListener('click', openNear);
         placeNearBtn();
         window.addEventListener('resize', placeNearBtn);
@@ -1073,7 +1230,7 @@
                 wait();
             });
             // store-map-top50.html(공유용 주소): TOP 50 별로 연다
-            if (root.dataset.top) { const c = root.querySelector('.sm-chip-top'); if (c && !shown.top) c.click(); } renderTop(); initVisits(); initFun();
+            if (root.dataset.top) { const c = root.querySelector('.sm-chip-top'); if (c && !shown.top) c.click(); } renderTop(); initVisits(); initMine(); initFun();
             // PC: 이태원로 · 서빙고로 같은 길 이름이 보이는 크기(2026-10-26 사장님) — 용산 둘레.
             // 휴대폰: 남한 전체가 한 화면에 + "적게 나온 곳 흐리게"를 "1등 10회 이상"으로(2026-10-27 사장님 — 많이 나온 곳만 한눈에)
             if (!fromLink && isWide()) map.jumpTo({ center: [126.985, 37.538], zoom: 12.9, padding: pad() });

@@ -314,3 +314,34 @@ body.sm-full #theme-btn { display: none !important; }
     .sm-info summary { display: none; }
     .sm-info-body { max-height: none; overflow: visible; border: 0; border-radius: 0; box-shadow: none; }
 }
+
+/* 내 기록(2026-10-27): 칩 · 목록 · 내 댓글 · 답글 */
+.sm-chip-mine[hidden] { display: none; }
+.sm-chip-mine.has-new { position: relative; }
+.sm-chip-mine.has-new::after { content: ''; position: absolute; top: -3px; right: -3px; width: 7px; height: 7px; border-radius: 50%; background: #e0283a; }
+.sm-mine .sm-mine-tabs { margin: 4px 0 6px; }
+.sm-mine .sm-swatch { display: inline-block; width: 9px; height: 9px; margin-right: 5px; border-radius: 50%; vertical-align: 0; }
+.sm-mine-new { margin: 0 0 6px; font-size: 11px; font-weight: bold; }
+.sm-mine-new a { color: #c41f30; }
+.sm-my-cmts { margin: 0; padding: 0; list-style: none; }
+.sm-my-cmts button { display: block; width: 100%; padding: 5px 2px; border: 0; border-bottom: 1px solid var(--line-soft, #f0f1f4); background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.sm-my-cmts button:hover { background: var(--soft, #f3f6fb); }
+.sm-my-cmts .sm-tname { display: flex; gap: 6px; align-items: baseline; font-weight: bold; }
+.sm-my-cmts .sm-tname small { color: var(--faint, #888); font-weight: normal; font-size: .9em; }
+.sm-my-text { display: -webkit-box; overflow: hidden; color: var(--muted, #555); -webkit-line-clamp: 2; -webkit-box-orient: vertical; white-space: pre-wrap; word-break: break-word; }
+.sm-reply-tag { padding: 0 5px; border-radius: 999px; background: var(--soft, #eef2f8); }
+.sm-cmt-re { padding: 0; border: 0; background: none; color: var(--brand, #003087); font: inherit; font-size: 10.5px; cursor: pointer; }
+.sm-cmt-replies { margin: 4px 0 0 12px; padding: 0 0 0 8px; border-left: 2px solid var(--line, #e3e3e3); list-style: none; }
+.sm-cmt-replies li { padding: 4px 0; border-bottom: 0; }
+.sm-cmt-gone { color: var(--faint, #888); font-size: 11px; }
+.sm-cmt-to { margin: 0 0 4px; color: var(--muted, #555); font-size: 11px; }
+.sm-cmt-to button { padding: 0; border: 0; background: none; color: var(--faint, #888); font: inherit; text-decoration: underline; cursor: pointer; }
+@media (max-width: 899px) {
+    .sm-cmt-form textarea::placeholder { font-size: 11px; }   /* 글자는 16px(iOS 확대 방지) · 안내 문구만 작게 */
+    .sm-cmt-re, .sm-cmt-to { font-size: 9.5px; }
+    .sm-mine-new { font-size: 10px; }
+}
+@media (min-width: 900px) {
+    .sm-side[data-tab="mine"] .sm-mine:not([hidden]) { display: block; }
+    .sm-tab[hidden] { display: none; }
+}
