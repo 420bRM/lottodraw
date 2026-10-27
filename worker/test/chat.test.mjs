@@ -359,6 +359,15 @@ test('댓글: 읽기는 누구나, 쓰기는 로그인+별명, 15초·하루 30�
     assert.equal((await call(env, 'POST', '/api/comments', { body: { post, text: '31번째' }, headers: auth(sB) })).data.error, 'daily');
 });
 
+test('판매점 댓글: 글 이름 shop-판매점번호 로 같은 댓글 길을 쓴다(판매점마다 따로)', async () => {
+    const { env } = setup();
+    const sA = await member(env, 'A', '행운의곰');
+    const r = await call(env, 'POST', '/api/comments', { body: { post: 'shop-11100004', text: '사장님 친절해요' }, headers: auth(sA) });
+    assert.equal(r.status, 200, JSON.stringify(r.data));
+    assert.equal((await call(env, 'GET', '/api/comments?post=shop-11100004')).data.comments[0].text, '사장님 친절해요');
+    assert.equal((await call(env, 'GET', '/api/comments?post=shop-11100016')).data.comments.length, 0);
+});
+
 test('댓글 관리: 관리자는 누가 썼는지 보고 지우며, 채팅 금지한 계정은 댓글도 막히고, 탈퇴하면 댓글이 지워진다', async () => {
     const { env } = setup();
     const post = 'why-jackpots-split';

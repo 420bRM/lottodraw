@@ -1126,9 +1126,10 @@ async function getViews(request, env, url) {
     return json(request, env, got, 200, { 'Cache-Control': 'public, max-age=60' }, true);
 }
 
-/* ───── 블로그 댓글 (js/comments.js) ───── */
+/* ───── 블로그 댓글 (js/comments.js) · 판매점 댓글 (js/store-map.js, 2026-10-27) ───── */
 
-const POST_RE = /^[a-z0-9][a-z0-9-]{0,79}$/;   // 블로그 글 파일 이름(.html 뺀 것)
+// 블로그 글 파일 이름(.html 뺀 것). 판매점 댓글은 'shop-' + 동행복권 판매점 번호 8자리(같은 저장 · 규칙 · 하루 한도를 함께 쓴다)
+const POST_RE = /^[a-z0-9][a-z0-9-]{0,79}$/;
 const COMMENT_ERR = {
     empty: [400, '내용을 적어 주세요.'], too_long: [400, `${COMMENT.max}자까지 쓸 수 있습니다.`],
     link: [400, '링크·사이트 주소는 올릴 수 없습니다.'], contact: [400, '연락처·메신저 아이디는 올릴 수 없습니다.'],
@@ -1174,7 +1175,7 @@ async function addComment(request, env, ctx) {
     const r = await community(env, 'commentAdd', { sub: s.sub, post, text: c.text, now: Date.now() });
     if (r.error === 'no_user') throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
     if (r.error) throw commentError(r.error);
-    ctx.waitUntil(notify(env, `블로그 댓글 · ${post}\n${r.comment.nick}: ${c.text.slice(0, 80)}`));
+    ctx.waitUntil(notify(env, `${post.startsWith('shop-') ? '판매점 댓글' : '블로그 댓글'} · ${post}\n${r.comment.nick}: ${c.text.slice(0, 80)}`));
     return json(request, env, r);
 }
 
