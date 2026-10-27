@@ -69,10 +69,11 @@
         map.setLayoutProperty('st-num', 'visibility', vis(shown.top || shown.w1));
         map.setFilter('st-num', ['all', isTop, filterFor('w1')]);
         numPaint(shown.top);
-        ['st-top', 'st-top-glow'].forEach(id => {
+        ['st-top', 'st-top-glow', 'st-top-name'].forEach(id => {
             map.setLayoutProperty(id, 'visibility', vis(shown.top));
             map.setFilter(id, ['all', isTop, filterFor('w1')]);
         });
+        topNames();
         if (map.getLayer('st-all')) map.setLayoutProperty('st-all', 'visibility', shown.all && !shown.top ? 'visible' : 'none');
         else if (shown.all) loadAll();
     }
@@ -218,7 +219,7 @@
         const rank = new Map();
         data.rows.map((r, i) => i).filter(i => e[i] > 0 && !data.rows[i][7])
             .sort((a, b) => (e[b] - e[a]) || (data.rows[b][3] - data.rows[a][3])).slice(0, TOP).forEach((i, k) => rank.set(i, k + 1));
-        props = data.rows.map((r, i) => ({ i, w1: e[i], o1: r[2], w2: r[3], closed: r[7] ? 1 : 0, wt: r[3] + e[i] * 6, top: rank.get(i) || 0 }));
+        props = data.rows.map((r, i) => ({ i, w1: e[i], o1: r[2], w2: r[3], closed: r[7] ? 1 : 0, wt: r[3] + e[i] * 6, top: rank.get(i) || 0, nm: rank.has(i) ? r[4] : '' }));   // nm: TOP 50 상호(별 아래 이름표)
     }
     function geojson() {
         return {
@@ -328,6 +329,13 @@
                 'symbol-sort-key': ['-', 0, ['get', 'top']] },
             paint: { 'icon-opacity': glowOpacity(0.7) },
         });
+        // TOP 50 별 아래 상호 — 화면 안 별이 몇 개 안 될 만큼 줌인했을 때만(topNames)
+        map.addLayer({
+            id: 'st-top-name', type: 'symbol', source: 'stores', filter: ['all', isTop, filterFor('w1')],
+            layout: { visibility: 'none', 'text-field': ['get', 'nm'], 'text-font': ['Noto Sans Bold'], 'text-size': 12, 'text-anchor': 'top',
+                'text-offset': [0, 1.5], 'text-max-width': 9, 'symbol-sort-key': ['get', 'top'], 'text-padding': 2 },
+            paint: { 'text-color': '#ffe9a8', 'text-halo-color': 'rgba(10, 14, 22, .9)', 'text-halo-width': 1.4, 'text-opacity': fadeF() },
+        });
         // TOP 50: 원 · 별 가운데에 1등 횟수(겹치면 순위 높은 곳만)
         map.addLayer({
             id: 'st-num', type: 'symbol', source: 'stores', filter: ['all', isTop, filterFor('w1')],
@@ -343,6 +351,25 @@
         applyLayers();
         glowLoop();
     }
+    // TOP 50 별 아래 상호: 화면 안에 보이는 별이 NAMES_AT 개 이하일 때만(휴대폰 화면 기준 7개 — 2026-10-27 사장님).
+    // 화면이 넓으면 그만큼 늘린다(PC 는 15개까지). 자료로 센다(그려지기를 기다리지 않는다)
+    function topNames() {
+        if (!map || !map.getLayer('st-top-name')) return;
+        let on = false;
+        if (shown.top) {
+            const c = map.getContainer(), limit = Math.min(15, Math.round(7 * Math.max(1, c.clientWidth * c.clientHeight / (390 * 750))));
+            const b = map.getBounds();
+            let n = 0;
+            for (const p of props) {
+                if (!p.top || p.w1 + 1 - fadeT <= 0) continue;
+                const r = data.rows[p.i];
+                if (b.contains([r[1], r[0]]) && ++n > limit) break;
+            }
+            on = n > 0 && n <= limit;
+        }
+        map.setLayoutProperty('st-top-name', 'visibility', on ? 'visible' : 'none');
+    }
+
     // 테두리 빛 밝기: 0.35 ~ 1 을 2.8초에 한 번 오간다. 1초에 15번만 바꾸고, 탭이 뒤에 있으면 쉰다(배터리)
     function glowOpacity(a) { return ['*', Math.min(1, a * (isNight() ? 1.15 : 1)), fadeF()]; }
     function glowLoop() {
@@ -636,6 +663,7 @@
                 map.setPaintProperty(id, 'circle-stroke-opacity', rimAlpha());
             });
             map.setPaintProperty('st-num', 'text-opacity', fadeF());
+            map.setPaintProperty('st-top-name', 'text-opacity', fadeF());
             map.setPaintProperty('st-top', 'icon-opacity', ['*', STAR_ALPHA, fadeF()]);
             if (map.getLayer('st-all')) map.setPaintProperty('st-all', 'circle-opacity', 0.7 * Math.max(0, 1 - fadeT));
             applyLayers();
@@ -775,6 +803,7 @@
             else if (map.getPitch() > 5) { const d3 = document.getElementById('sm-3d'); d3.setAttribute('aria-pressed', 'true'); d3.textContent = '2D'; }   // 기울어진 화면 링크
         });
         map.on('zoomend', autoTilt);
+        map.on('moveend', topNames);
         map.on('error', e => { if (e && e.error && /style|tiles/i.test(String(e.error.message))) console.warn('map', e.error); });
         initControls();
         initSearch();
