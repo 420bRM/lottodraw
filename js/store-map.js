@@ -228,13 +228,19 @@
     function starImage() {
         const c = document.createElement('canvas');
         c.width = c.height = STAR;
-        const g = c.getContext('2d'), m = STAR / 2, R = STAR / 2 - 3, k = R * 0.13;   // k: 가운데가 얼마나 볼록한가
+        // 끝은 가늘고 길게, 가운데 몸통은 작게 — 끝과 끝 사이를 가운데 쪽으로 깊게 휘는 3차 곡선으로(2026-10-27 사장님 — 곡률을 더 강하게)
+        const g = c.getContext('2d'), m = STAR / 2, R = STAR / 2 - 3, a = R * 0.03;   // a: 조절점이 축에서 떨어진 정도(작을수록 끝이 가늘다)
+        const tips = [[0, -R], [R * 0.92, 0], [0, R], [-R * 0.92, 0]];
         g.beginPath();
-        g.moveTo(m, m - R);
-        g.quadraticCurveTo(m + k, m - k, m + R * 0.9, m);
-        g.quadraticCurveTo(m + k, m + k, m, m + R);
-        g.quadraticCurveTo(m - k, m + k, m - R * 0.9, m);
-        g.quadraticCurveTo(m - k, m - k, m, m - R);
+        g.moveTo(m + tips[0][0], m + tips[0][1]);
+        for (let n = 0; n < 4; n++) {
+            const [x1, y1] = tips[n], [x2, y2] = tips[(n + 1) % 4];
+            // 조절점 둘을 가운데 가까이(축에서 a 만큼, 가운데에서 0.2R) 두면 끝은 가늘고 몸통 모서리는 가운데 쪽으로 깊게 들어간다
+            const sx = Math.sign(x1 + x2), sy = Math.sign(y1 + y2);
+            g.bezierCurveTo(m + (x1 ? x1 * 0.2 : sx * a), m + (y1 ? y1 * 0.2 : sy * a),
+                m + (x2 ? x2 * 0.2 : sx * a), m + (y2 ? y2 * 0.2 : sy * a),
+                m + x2, m + y2);
+        }
         g.closePath();
         const fill = g.createRadialGradient(m, m, 0, m, m, R);
         fill.addColorStop(0, '#fffbe0');
@@ -276,17 +282,17 @@
         });
         map.addLayer(layer('st-w2', '#3b6fd8', 'w2'));
         map.addLayer(layer('st-w1', '#f07a1a', 'w1'));
-        // 별 크기: 같은 판매점의 동그라미 반지름 × 2.3 이 별 끝까지(가운데 몸통은 동그라미보다 작다)
+        // 별 크기: 같은 판매점의 동그라미 반지름 × 2.5 가 별 끝까지(가운데 몸통은 동그라미보다 작다)
         const starSize = ['interpolate', ['linear'], ['zoom'],
-            5, ['/', ['*', 2.3, ['+', 1.6, ['*', 0.45, ['sqrt', ['get', 'wt']]]]], STAR / 2],
-            10, ['/', ['*', 2.3, ['+', 3, ['*', 0.9, ['sqrt', ['get', 'wt']]]]], STAR / 2],
-            15, ['/', ['*', 2.3, ['+', 5, ['*', 1.0, ['sqrt', ['get', 'wt']]]]], STAR / 2]];
+            5, ['/', ['*', 2.5, ['+', 1.6, ['*', 0.45, ['sqrt', ['get', 'wt']]]]], STAR / 2],
+            10, ['/', ['*', 2.5, ['+', 3, ['*', 0.9, ['sqrt', ['get', 'wt']]]]], STAR / 2],
+            15, ['/', ['*', 2.5, ['+', 5, ['*', 1.0, ['sqrt', ['get', 'wt']]]]], STAR / 2]];
         if (!map.hasImage('sm-star')) map.addImage('sm-star', starImage(), { pixelRatio: 1 });
         map.addLayer({
             id: 'st-top', type: 'symbol', source: 'stores', filter: ['all', isTop, filterFor('w1')],
             layout: { 'icon-image': 'sm-star', 'icon-size': starSize, 'icon-allow-overlap': true, 'icon-ignore-placement': true,
                 'symbol-sort-key': ['-', 0, ['get', 'top']] },   // 순위 높은 별이 위로
-            paint: { 'icon-opacity': fadeF() },
+            paint: { 'icon-opacity': ['*', 0.82, fadeF()] },   // 별도 조금 비친다(뒤 지도 · 점이 보이게)
         });
         // TOP 50: 별 가운데에 1등 횟수(겹치면 순위 높은 곳만)
         map.addLayer({
@@ -580,7 +586,7 @@
                 map.setPaintProperty(id, 'circle-stroke-opacity', rimAlpha());
             });
             map.setPaintProperty('st-num', 'text-opacity', fadeF());
-            map.setPaintProperty('st-top', 'icon-opacity', fadeF());
+            map.setPaintProperty('st-top', 'icon-opacity', ['*', 0.82, fadeF()]);
             if (map.getLayer('st-all')) map.setPaintProperty('st-all', 'circle-opacity', 0.7 * Math.max(0, 1 - fadeT));
             applyLayers();
         });
