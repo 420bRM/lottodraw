@@ -892,7 +892,9 @@
         map.addControl(new NorthControl(), 'bottom-right');
         // 처음 화면: 서울 전체(2026-10-26 사장님 — 전국은 시도별 표 · 줌아웃으로)
         map.on('load', () => {
-            koreanLabels(); whiteModel(); addStores(); nightModel(isNight()); nearLabel(); renderTop(); initVisits(); initFun();
+            koreanLabels(); whiteModel(); addStores(); nightModel(isNight()); nearLabel();
+            // store-map-top50.html(공유용 주소): TOP 50 별 · 밤 지도로 연다
+            if (root.dataset.top) { const c = root.querySelector('.sm-chip-top'); if (c && !shown.top) c.click(); } renderTop(); initVisits(); initFun();
             // 이태원로 · 서빙고로 같은 길 이름이 보이는 크기(2026-10-26 사장님) — 용산 둘레
             if (!fromLink) map.jumpTo({ center: [126.985, 37.538], zoom: 12.9, padding: pad() });
             else if (map.getPitch() > 5) { const d3 = document.getElementById('sm-3d'); d3.setAttribute('aria-pressed', 'true'); d3.textContent = '2D'; }   // 기울어진 화면 링크
