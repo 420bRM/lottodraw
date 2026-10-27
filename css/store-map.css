@@ -124,6 +124,27 @@ body.sm-full #theme-btn { display: none !important; }
 .sm-near-list .sm-tcnt small { display: block; color: var(--faint, #777); font-size: .9em; }
 .sm-near-list .sm-dist { color: #c76a00 !important; font-weight: bold; }
 .sm-near-note { margin: 6px 0 0; font-size: 10px !important; }
+/* 판매점 댓글("다녀왔어요" 아래) */
+.sm-cmt { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line, #e3e3e3); }
+.sm-cmt h4 { margin: 0 0 4px; color: var(--muted, #555); font-size: 12px; }
+.sm-cmt-n { color: var(--brand, #003087); }
+.sm-cmt-list { margin: 0; padding: 0; list-style: none; }
+.sm-cmt-list li { padding: 5px 0; border-bottom: 1px dashed var(--line, #e3e3e3); }
+.sm-cmt-list b { font-size: 12px; }
+.sm-cmt-list small { color: var(--faint, #888); font-size: 10.5px; }
+.sm-cmt-list p { margin: 2px 0 0; font-size: 12.5px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+.sm-cmt-empty { color: var(--faint, #888); font-size: 11.5px; }
+.sm-cmt-del { padding: 0; border: 0; background: none; color: var(--faint, #888); font: inherit; font-size: 10.5px; text-decoration: underline; cursor: pointer; }
+.sm-cmt-foot { margin-top: 6px; }
+.sm-cmt-gate { padding: 5px 10px; border: 1px solid var(--brand, #003087); border-radius: 999px; background: var(--surface, #fff); color: var(--brand, #003087); font: inherit; font-size: 12px; font-weight: bold; cursor: pointer; }
+.sm-cmt-form { display: flex; gap: 6px; align-items: flex-end; }
+.sm-cmt-form textarea { flex: 1 1 auto; min-width: 0; box-sizing: border-box; padding: 6px 8px; border: 1px solid var(--line, #ddd); border-radius: 8px; background: var(--surface, #fff); color: var(--fg, #333);
+    font: inherit; font-size: 12.5px; resize: vertical; }
+.sm-cmt-form button { flex: none; padding: 6px 10px; border: 0; border-radius: 8px; background: var(--brand-bg, #003087); color: #fff; font: inherit; font-size: 12px; font-weight: bold; cursor: pointer; }
+.sm-cmt-form button:disabled { opacity: .5; }
+.sm-cmt-msg { margin: 4px 0 0; color: #b4560a; font-size: 11px; }
+.sm-cmt-msg:empty { display: none; }
+.sm-cmt-rule { margin: 4px 0 0; color: var(--faint, #888); font-size: 10px; }
 /* 1등 · 2등 나온 회차 토글(하나씩만 보인다) */
 .sm-rk { display: flex; gap: 4px; margin: 6px 0 2px; }
 .sm-rk button { flex: 1 1 0; padding: 5px 6px; border: 1px solid var(--line, #ddd); border-radius: 999px; background: var(--surface, #fff); color: var(--muted, #555);
@@ -208,6 +229,13 @@ body.sm-full #theme-btn { display: none !important; }
     .sm-visit { margin-top: 5px; padding-top: 5px; }
     .sm-visit-btn { padding: 3px 8px; font-size: 10.5px; }
     .sm-color { width: 15px; height: 15px; }
+    .sm-cmt { margin-top: 5px; padding-top: 5px; }
+    .sm-cmt h4 { font-size: 10.5px; }
+    .sm-cmt-list b { font-size: 10.5px; }
+    .sm-cmt-list small, .sm-cmt-del { font-size: 9.5px; }
+    .sm-cmt-list p { font-size: 10.5px; }
+    .sm-cmt-gate, .sm-cmt-form button { padding: 3px 8px; font-size: 10.5px; }
+    .sm-cmt-form textarea { padding: 4px 6px; font-size: 16px; }   /* 16px 밑이면 iOS 가 입력할 때 화면을 확대한다 */
 }
 
 /* ───── PC: 왼쪽 고정 칸(도구 · 탭 · 탭 내용) + 오른쪽 지도 ───── */

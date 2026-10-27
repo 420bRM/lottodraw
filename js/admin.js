@@ -510,7 +510,8 @@
         if (!list.length) body.appendChild(el('tr', {}, [el('td', { colspan: '5', text: '아직 댓글이 없습니다.' })]));
         list.forEach(c => body.appendChild(el('tr', {}, [
             el('td', { text: when(c.at) }),
-            el('td', {}, [el('a', { href: 'blog/' + c.post + '.html#comments', target: '_blank', rel: 'noopener', text: c.post })]),
+            // 판매점 댓글(shop-번호)은 지도에서 그 판매점 카드를 연다
+            el('td', {}, [el('a', { href: /^shop-\d{8}$/.test(c.post) ? 'store-map.html?shop=' + c.post.slice(5) : 'blog/' + c.post + '.html#comments', target: '_blank', rel: 'noopener', text: c.post })]),
             el('td', { text: (c.nick || '(별명 없음)') + (c.staff ? ' · 운영자' : '') }),
             el('td', { className: 'chat-adm-text', text: c.text }),
             el('td', { className: 'admin-row-tools' }, [

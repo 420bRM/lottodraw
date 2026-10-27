@@ -502,8 +502,9 @@
         showCard('<h3>' + esc(name) + '</h3><p class="sm-place">' + esc(place) + '</p>' +
             '<p class="sm-why">' + T(data.first + '회부터 1등 · 2등 기록이 없는 판매점입니다. 어느 판매점에서 사든 1등 확률은 1/8,145,060으로 같습니다.',
                 'No 1st or 2nd prize here since draw ' + data.first + '. Your chance of 1st prize is 1 in 8,145,060 wherever you buy.') + '</p>' + links(name, place, lat, lng) +
-            '<div class="sm-visit" id="sm-visit"></div>', lat, lng, fly);
+            '<div class="sm-visit" id="sm-visit"></div><div class="sm-cmt" id="sm-cmt"></div>', lat, lng, fly);
         visitUi('a', i);
+        commentsUi('a', i);
     }
 
     // ───── 다녀온 곳(로그인 회원) ─────
@@ -538,6 +539,90 @@
         visits = (me && me.user && me.user.visits) || {};
         if (Object.keys(visits).length && await loadIds()) paintVisits();
     }
+    // ───── 판매점 댓글(로그인 회원, 2026-10-27 사장님 — "다녀왔어요" 아래) ─────
+    // 블로그 댓글과 같은 서버 길(/api/comments, 글 이름 'shop-' + 판매점 번호)과 규칙(별명 필요 · 링크 · 연락처 · 홍보 금지 · 15초에 한 번 · 하루 30개 · 500자).
+    // 읽기는 누구나. 글은 textContent 로만 그린다. 위치 인증은 붙이지 않는다(위치정보를 받지 않는다 — README 4-9)
+    let cmtRefresh = null;
+    const cmtTime = ms => { const d = new Date(ms), p = n => String(n).padStart(2, '0'); return d.getFullYear() + '.' + p(d.getMonth() + 1) + '.' + p(d.getDate()); };
+    async function commentsUi(k, i) {
+        const box = document.getElementById('sm-cmt');
+        const A = account();
+        cmtRefresh = null;
+        if (!box || !A || !A.ready) return;
+        const token = card.dataset.c = k + i;
+        await A.ready;
+        if (!A.loginOn() || !(await loadIds()) || card.dataset.c !== token) { if (card.dataset.c === token) box.remove(); return; }
+        const id = ids[k] && ids[k][i];
+        if (!id) { box.remove(); return; }
+        const post = 'shop-' + id;
+        box.innerHTML = '<h4>' + T('댓글', 'Comments') + ' <span class="sm-cmt-n"></span></h4><ol class="sm-cmt-list"></ol><div class="sm-cmt-foot"></div>' +
+            '<p class="sm-cmt-msg" role="status"></p><p class="sm-cmt-rule">' + T('링크 · 연락처 · 홍보 글과 비방은 지웁니다.', 'Links, contacts, ads and abuse are removed.') + '</p>';
+        const list = box.querySelector('.sm-cmt-list'), foot = box.querySelector('.sm-cmt-foot'), msg = box.querySelector('.sm-cmt-msg');
+        const draw = rows => {
+            list.textContent = '';
+            box.querySelector('.sm-cmt-n').textContent = rows.length ? String(rows.length) : '';
+            if (!rows.length) { const li = document.createElement('li'); li.className = 'sm-cmt-empty'; li.textContent = T('아직 댓글이 없습니다.', 'No comments yet.'); list.appendChild(li); return; }
+            rows.forEach(c => {
+                const li = document.createElement('li');
+                const head = document.createElement('div');
+                const nick = document.createElement('b');
+                nick.textContent = c.nick || T('(별명 없음)', '(no nickname)');
+                const at = document.createElement('small');
+                at.textContent = cmtTime(c.at);
+                head.append(nick, ' ', at);
+                if (c.mine) {
+                    const del = document.createElement('button');
+                    del.type = 'button';
+                    del.className = 'sm-cmt-del';
+                    del.textContent = T('지우기', 'Delete');
+                    del.addEventListener('click', async () => {
+                        if (!window.confirm(T('이 댓글을 지웁니까?', 'Delete this comment?'))) return;
+                        try { await A.call('/api/comments/delete', { method: 'POST', body: { post, id: c.id } }); load(); } catch (e) { msg.textContent = e.message; }
+                    });
+                    head.append(' ', del);
+                }
+                const text = document.createElement('p');
+                text.textContent = c.text;
+                li.append(head, text);
+                list.appendChild(li);
+            });
+        };
+        const load = async () => {
+            try { const r = await A.call('/api/comments?post=' + post); if (card.dataset.c === token) draw(r.comments || []); }
+            catch (e) { msg.textContent = T('댓글을 불러오지 못했습니다.', 'Could not load comments.'); }
+        };
+        // 쓰기 자격: 로그인 → 별명 → 입력칸
+        const gate = () => {
+            foot.textContent = '';
+            const me = A.me && A.me();
+            const btn = (label, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'sm-cmt-gate'; b.textContent = label; b.addEventListener('click', fn); foot.appendChild(b); };
+            if (!A.session() || !me) { btn(T('로그인하고 댓글 쓰기', 'Sign in to comment'), () => A.openLogin(T('판매점 댓글은 로그인한 회원이 쓸 수 있습니다.', 'Sign in to comment on retailers.'))); return; }
+            if (!me.user || !me.user.nick) { btn(T('별명을 정하면 댓글을 쓸 수 있습니다', 'Choose a nickname to comment'), () => A.openNick && A.openNick(false)); return; }
+            const form = document.createElement('form');
+            form.className = 'sm-cmt-form';
+            form.innerHTML = '<textarea rows="2" maxlength="500"></textarea><button type="submit">' + T('남기기', 'Post') + '</button>';
+            const ta = form.querySelector('textarea');
+            ta.placeholder = T('이 판매점 이야기를 남겨 주세요 (500자)', 'Say something about this retailer (500 chars)');
+            ta.setAttribute('aria-label', ta.placeholder);
+            form.addEventListener('submit', async e => {
+                e.preventDefault();
+                const text = ta.value.trim();
+                if (!text) return;
+                const b = form.querySelector('button');
+                b.disabled = true;
+                msg.textContent = '';
+                try { await A.call('/api/comments', { method: 'POST', body: { post, text } }); ta.value = ''; await load(); }
+                catch (err) { msg.textContent = err.message || T('남기지 못했습니다.', 'Could not post.'); }
+                finally { b.disabled = false; }
+            });
+            foot.appendChild(form);
+        };
+        cmtRefresh = () => { if (card.dataset.c === token && document.getElementById('sm-cmt') === box) { gate(); load(); } };
+        gate();
+        load();
+    }
+    window.addEventListener('lottodraw:account', () => { if (cmtRefresh) cmtRefresh(); });
+
     async function visitUi(k, i) {
         const box = document.getElementById('sm-visit');
         const A = account();
@@ -672,9 +757,10 @@
             '<div class="sm-rounds" id="sm-rounds"><p class="sm-small">' + T('당첨 회차 불러오는 중…', 'Loading draws…') + '</p></div>' +
             '<p class="sm-why">' + T('1등 · 2등이 많을수록 많이 팔린 곳일 가능성이 큽니다. 어느 판매점에서 사든 1등 확률은 1/8,145,060으로 같습니다.',
                 'More 1st and 2nd prizes most likely means more tickets sold. Your chance of 1st prize is 1 in 8,145,060 wherever you buy.') + '</p>' +
-            links(name, place, lat, lng) + '<div class="sm-visit" id="sm-visit"></div>', lat, lng, fly);
+            links(name, place, lat, lng) + '<div class="sm-visit" id="sm-visit"></div><div class="sm-cmt" id="sm-cmt"></div>', lat, lng, fly);
         card.dataset.i = String(i);
         visitUi('w', i);
+        commentsUi('w', i);
         markTop(i);
         loadRounds().then(rd => {
             const box = document.getElementById('sm-rounds');
@@ -893,6 +979,21 @@
         // 처음 화면: 서울 전체(2026-10-26 사장님 — 전국은 시도별 표 · 줌아웃으로)
         map.on('load', () => {
             koreanLabels(); whiteModel(); addStores(); nightModel(isNight()); nearLabel();
+            // ?shop=판매점번호(관리자 페이지의 판매점 댓글 링크 등): 그 판매점 카드를 연다
+            const shopQ = new URLSearchParams(location.search).get('shop');
+            if (/^\d{8}$/.test(shopQ || '')) loadIds().then(j => {
+                if (!j) return;
+                let n = j.w.indexOf(shopQ);
+                if (n >= 0) { open(n, true); return; }
+                n = (j.a || []).indexOf(shopQ);
+                if (n < 0) return;
+                shown.all = true;
+                const chip = root.querySelector('.sm-chip[data-layer="all"]');
+                if (chip) chip.setAttribute('aria-pressed', 'true');
+                applyLayers();
+                const wait = () => (all && map.getSource('all') ? openAll(n, true) : setTimeout(wait, 200));
+                wait();
+            });
             // store-map-top50.html(공유용 주소): TOP 50 별 · 밤 지도로 연다
             if (root.dataset.top) { const c = root.querySelector('.sm-chip-top'); if (c && !shown.top) c.click(); } renderTop(); initVisits(); initFun();
             // 이태원로 · 서빙고로 같은 길 이름이 보이는 크기(2026-10-26 사장님) — 용산 둘레
