@@ -69,11 +69,11 @@
         map.setLayoutProperty('st-num', 'visibility', vis(shown.top || shown.w1));
         map.setFilter('st-num', ['all', isTop, filterFor('w1')]);
         numPaint(shown.top);
-        ['st-top', 'st-top-glow', 'st-top-name'].forEach(id => {
+        ['st-top', 'st-top-glow'].forEach(id => {
             map.setLayoutProperty(id, 'visibility', vis(shown.top));
             map.setFilter(id, ['all', isTop, filterFor('w1')]);
         });
-        topNames();
+        names();
         if (map.getLayer('st-all')) map.setLayoutProperty('st-all', 'visibility', shown.all && !shown.top ? 'visible' : 'none');
         else if (shown.all) loadAll();
     }
@@ -84,7 +84,7 @@
         if (loadingAll || !root.dataset.all) return;
         loadingAll = true;
         try { all = await (await fetch(root.dataset.all)).json(); } catch (e) { loadingAll = false; return; }
-        map.addSource('all', { type: 'geojson', data: { type: 'FeatureCollection', features: all.rows.map((r, i) => ({ type: 'Feature', id: i, geometry: { type: 'Point', coordinates: [r[1], r[0]] }, properties: { i } })) } });
+        map.addSource('all', { type: 'geojson', data: { type: 'FeatureCollection', features: all.rows.map((r, i) => ({ type: 'Feature', id: i, geometry: { type: 'Point', coordinates: [r[1], r[0]] }, properties: { i, nm: r[2] } })) } });
         map.addLayer({
             id: 'st-all', type: 'circle', source: 'all',
             layout: { visibility: shown.all ? 'visible' : 'none' },
@@ -94,6 +94,8 @@
                 'circle-stroke-color': rim('#7d8799'), 'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 8, ['case', vis, 1, 0], 13, ['case', vis, 2, 1]],
             },
         }, 'st-w2');
+        map.addLayer({ id: 'st-all-name', type: 'symbol', source: 'all', layout: nameLayout(0.6), paint: namePaint() });
+        names();
         paintVisits();
         map.on('click', 'st-all', e => {
             // 1등 · 2등 점과 겹치면 그쪽 카드를 연다
@@ -170,6 +172,7 @@
             else if (l.type === 'line') setP(id, 'line-color', N(sl === 'water' || sl === 'waterway' ? 'water' : sl === 'boundary' ? 'border' : /casing/.test(id) ? 'casing' : /rail|transit/.test(id) ? 'rail' : 'road'));
             else if (l.type === 'symbol' && l.layout && l.layout['text-field'] && !isShield(l)) { setP(id, 'text-color', N('text')); setP(id, 'text-halo-color', N('halo')); }
         }
+        names();
         if (map.getLayer('st-top-glow')) map.setLayoutProperty('st-top-glow', 'icon-image', on ? 'sm-star-glow-n' : 'sm-star-glow');
         map.setPaintProperty('st-w1', 'circle-stroke-color', rim('#f07a1a'));
         map.setPaintProperty('st-w2', 'circle-stroke-color', rim('#3b6fd8'));
@@ -219,7 +222,7 @@
         const rank = new Map();
         data.rows.map((r, i) => i).filter(i => e[i] > 0 && !data.rows[i][7])
             .sort((a, b) => (e[b] - e[a]) || (data.rows[b][3] - data.rows[a][3])).slice(0, TOP).forEach((i, k) => rank.set(i, k + 1));
-        props = data.rows.map((r, i) => ({ i, w1: e[i], o1: r[2], w2: r[3], closed: r[7] ? 1 : 0, wt: r[3] + e[i] * 6, top: rank.get(i) || 0, nm: rank.has(i) ? r[4] : '' }));   // nm: TOP 50 상호(별 아래 이름표)
+        props = data.rows.map((r, i) => ({ i, w1: e[i], o1: r[2], w2: r[3], closed: r[7] ? 1 : 0, wt: r[3] + e[i] * 6, top: rank.get(i) || 0, nm: r[4] }));   // nm: 상호(점 · 별 아래 이름표)
     }
     function geojson() {
         return {
@@ -329,13 +332,8 @@
                 'symbol-sort-key': ['-', 0, ['get', 'top']] },
             paint: { 'icon-opacity': glowOpacity(0.7) },
         });
-        // TOP 50 별 아래 상호 — 화면 안 별이 몇 개 안 될 만큼 줌인했을 때만(topNames)
-        map.addLayer({
-            id: 'st-top-name', type: 'symbol', source: 'stores', filter: ['all', isTop, filterFor('w1')],
-            layout: { visibility: 'none', 'text-field': ['get', 'nm'], 'text-font': ['Noto Sans Bold'], 'text-size': 12, 'text-anchor': 'top',
-                'text-offset': [0, 1.5], 'text-max-width': 9, 'symbol-sort-key': ['get', 'top'], 'text-padding': 2 },
-            paint: { 'text-color': '#ffe9a8', 'text-halo-color': 'rgba(10, 14, 22, .9)', 'text-halo-width': 1.4, 'text-opacity': fadeF() },
-        });
+        // 점 · 별 아래 상호 — 화면 안 판매점이 몇 곳 안 될 만큼 줌인했을 때만(names)
+        map.addLayer({ id: 'st-name', type: 'symbol', source: 'stores', filter: nameFilter(), layout: nameLayout(1), paint: namePaint() });
         // TOP 50: 원 · 별 가운데에 1등 횟수(겹치면 순위 높은 곳만)
         map.addLayer({
             id: 'st-num', type: 'symbol', source: 'stores', filter: ['all', isTop, filterFor('w1')],
@@ -351,23 +349,56 @@
         applyLayers();
         glowLoop();
     }
-    // TOP 50 별 아래 상호: 화면 안에 보이는 별이 NAMES_AT 개 이하일 때만(휴대폰 화면 기준 7개 — 2026-10-27 사장님).
-    // 화면이 넓으면 그만큼 늘린다(PC 는 15개까지). 자료로 센다(그려지기를 기다리지 않는다)
-    function topNames() {
-        if (!map || !map.getLayer('st-top-name')) return;
-        let on = false;
-        if (shown.top) {
-            const c = map.getContainer(), limit = Math.min(15, Math.round(7 * Math.max(1, c.clientWidth * c.clientHeight / (390 * 750))));
-            const b = map.getBounds();
-            let n = 0;
-            for (const p of props) {
-                if (!p.top || p.w1 + 1 - fadeT <= 0) continue;
-                const r = data.rows[p.i];
-                if (b.contains([r[1], r[0]]) && ++n > limit) break;
-            }
-            on = n > 0 && n <= limit;
+    // ───── 상호 이름표: 화면 안에 보이는 판매점이 몇 곳 이하일 때만(휴대폰 화면 기준 7곳 — 2026-10-27 사장님) ─────
+    // TOP 50 별 · 1등 · 2등 원 · 일반 판매점 모두 같은 규칙. 화면이 넓으면 그만큼 늘린다(PC 는 15곳까지). 자료로 센다(그려지기를 기다리지 않는다)
+    const nameLimit = () => { const c = map.getContainer(); return Math.min(15, Math.round(7 * Math.max(1, c.clientWidth * c.clientHeight / (390 * 750)))); };
+    function nameFilter() {
+        if (shown.top) return ['all', isTop, filterFor('w1')];
+        const f = [];
+        if (shown.w1) f.push(filterFor('w1'));
+        if (shown.w2) f.push(filterFor('w2'));
+        return f.length ? ['any'].concat(f) : ['==', 1, 0];
+    }
+    // 이름표는 점(별) 바로 아래 — 점 반지름만큼 내린다(k: 별은 끝이 길어 조금 더)
+    const offsetBy = k => ['interpolate', ['linear'], ['zoom'],
+        5, ['+', 0.3, ['/', ['*', k, ['+', 1.6, ['*', 0.45, ['sqrt', ['coalesce', ['get', 'wt'], 0]]]]], 12]],
+        10, ['+', 0.3, ['/', ['*', k, ['+', 3, ['*', 0.9, ['sqrt', ['coalesce', ['get', 'wt'], 0]]]]], 12]],
+        15, ['+', 0.3, ['/', ['*', k, ['+', 5, ['*', 1.0, ['sqrt', ['coalesce', ['get', 'wt'], 0]]]]], 12]]];
+    const nameLayout = k => ({ visibility: 'none', 'text-field': ['get', 'nm'], 'text-font': ['Noto Sans Bold'], 'text-size': 12, 'text-variable-anchor': ['top'],
+        'text-radial-offset': offsetBy(k), 'text-max-width': 9, 'text-padding': 2 });
+    const namePaint = () => ({ 'text-color': shown.top ? '#ffe9a8' : isNight() ? '#dfe5ee' : '#2a2f38',
+        'text-halo-color': isNight() || shown.top ? 'rgba(10, 14, 22, .9)' : 'rgba(255, 255, 255, .95)', 'text-halo-width': 1.4, 'text-opacity': fadeF() });
+    // 지금 화면에 보이는 판매점(근처 찾기도 쓴다). limit 를 넘으면 거기서 멈춘다
+    function visibleStores(limit) {
+        const b = map.getBounds(), out = [];
+        for (const p of props) {
+            if (shown.top ? !p.top : !((shown.w1 && p.w1 > 0) || (shown.w2 && p.o1 === 0))) continue;
+            if ((p.closed && !shown.closed) || p.w1 + 1 - fadeT <= 0) continue;
+            const r = data.rows[p.i];
+            if (!b.contains([r[1], r[0]])) continue;
+            out.push({ t: 'w', i: p.i, lat: r[0], lng: r[1] });
+            if (out.length > limit) return out;
         }
-        map.setLayoutProperty('st-top-name', 'visibility', on ? 'visible' : 'none');
+        if (all && shown.all && !shown.top && fadeT < 1) {
+            for (let i = 0; i < all.rows.length; i++) {
+                const r = all.rows[i];
+                if (!b.contains([r[1], r[0]])) continue;
+                out.push({ t: 'a', i, lat: r[0], lng: r[1] });
+                if (out.length > limit) return out;
+            }
+        }
+        return out;
+    }
+    function names() {
+        if (!map || !map.getLayer('st-name')) return;
+        const n = visibleStores(nameLimit()).length, on = n > 0 && n <= nameLimit();
+        const vis = v => (v ? 'visible' : 'none');
+        map.setFilter('st-name', nameFilter());
+        map.setLayoutProperty('st-name', 'text-radial-offset', offsetBy(shown.top ? 1.3 : 1));
+        map.setLayoutProperty('st-name', 'visibility', vis(on));
+        const pt = namePaint();
+        ['st-name', 'st-all-name'].forEach(id => { if (map.getLayer(id)) Object.keys(pt).forEach(k => map.setPaintProperty(id, k, pt[k])); });
+        if (map.getLayer('st-all-name')) map.setLayoutProperty('st-all-name', 'visibility', vis(on && shown.all && !shown.top));
     }
 
     // 테두리 빛 밝기: 0.35 ~ 1 을 2.8초에 한 번 오간다. 1초에 15번만 바꾸고, 탭이 뒤에 있으면 쉰다(배터리)
@@ -393,6 +424,64 @@
         if (t === 'fun') document.getElementById('sm-fun').hidden = false;   // site.css 의 [hidden] 이 !important 라 CSS 만으로는 못 연다
     }
 
+    // ───── 이 근처 판매점(2026-10-27 사장님 — 당근 "○○동 업체 검색"처럼) ─────
+    // 지도 위 가운데 "⟳ ○○구 근처 판매점" 단추 → 지금 화면 안 판매점 목록(보이는 칩 · 1등 방식 · 흐리게 막대를 따른다).
+    // "내 위치 기준"을 누르면 브라우저 위치로 옮겨 가까운 순 + 거리. 위치는 이 기기 안에서만 쓰고 서버로 보내지 않는다(위치정보법 — README 4-9)
+    let myLoc = null, geo = null, nearAfterMove = false;
+    const nearPanel = document.getElementById('sm-near'), nearBtn = document.getElementById('sm-near-btn');
+    const NEAR_MAX = 30;
+    function distM([lng1, lat1], [lng2, lat2]) {
+        const R = 6371000, d = Math.PI / 180, x = Math.sin((lat2 - lat1) * d / 2), y = Math.sin((lng2 - lng1) * d / 2);
+        return 2 * R * Math.asin(Math.sqrt(x * x + Math.cos(lat1 * d) * Math.cos(lat2 * d) * y * y));
+    }
+    const fmtDist = m => (m < 1000 ? Math.round(m / 10) * 10 + 'm' : (m / 1000).toFixed(m < 10000 ? 1 : 0) + 'km');
+    // 화면 안 판매점이 가장 많이 있는 시군구(예: "용산구") — 단추 이름
+    function areaOf(list) {
+        const cnt = new Map();
+        list.forEach(x => { const gu = x.t === 'w' ? data.rows[x.i][6] : all.rows[x.i][4]; if (gu) cnt.set(gu, (cnt.get(gu) || 0) + 1); });
+        let best = '', n = 0;
+        cnt.forEach((v, k) => { if (v > n) { best = k; n = v; } });
+        return best;
+    }
+    function nearLabel() {
+        if (!nearBtn) return;
+        const gu = map.getZoom() >= 10 ? areaOf(visibleStores(3000)) : '';
+        nearBtn.querySelector('span').textContent = gu ? T(gu + ' 근처 판매점', 'Retailers around ' + gu) : T('이 근처 판매점', 'Retailers around here');
+    }
+    function openNear() {
+        const list = visibleStores(Infinity);
+        const gu = areaOf(list);
+        const info = x => {
+            if (x.t === 'w') { const r = data.rows[x.i]; return { name: r[4], place: [data.sido[r[5]], r[6]].filter(Boolean).join(' '), w1: props[x.i].w1, w2: r[3] }; }
+            const r = all.rows[x.i];
+            return { name: r[2], place: [all.sido[r[3]], r[4]].filter(Boolean).join(' '), w1: 0, w2: 0 };
+        };
+        list.forEach(x => { Object.assign(x, info(x)); x.d = myLoc ? distM(myLoc, [x.lng, x.lat]) : 0; });
+        list.sort(myLoc ? (a, b) => a.d - b.d : (a, b) => (b.w1 - a.w1) || (b.w2 - a.w2));
+        nearPanel.innerHTML = '<button type="button" class="sm-close" aria-label="' + T('닫기', 'Close') + '">×</button>' +
+            '<h3>' + esc(gu ? T(gu + ' 근처 판매점', 'Retailers around ' + gu) : T('이 근처 판매점', 'Retailers around here')) + ' <small>' + fmt(list.length) + T('곳', '') + '</small></h3>' +
+            '<p class="sm-near-sort">' + (myLoc ? T('내 위치에서 가까운 순', 'Nearest to you first') : T('1등 많은 순', 'Most 1st prizes first')) +
+            ' <button type="button" class="sm-near-me">📍 ' + T('내 위치 기준', 'Use my location') + '</button></p>' +
+            (list.length ? '<ol class="sm-near-list">' + list.slice(0, NEAR_MAX).map(x => '<li><button type="button" data-t="' + x.t + '" data-i="' + x.i + '"><span class="sm-tname">' + esc(x.name) +
+                '<small>' + esc(x.place) + '</small></span><span class="sm-tcnt">' + (x.t === 'w' ? '<b>' + x.w1 + '</b>' + T('번 1등', ' × 1st') + '<small>2' + T('등 ', 'nd ') + x.w2 + '</small>' : '<small>' + T('일반 판매점', 'retailer') + '</small>') +
+                (myLoc ? '<small class="sm-dist">' + fmtDist(x.d) + '</small>' : '') + '</span></button></li>').join('') + '</ol>' +
+                (list.length > NEAR_MAX ? '<p class="sm-small">' + T('외 ' + fmt(list.length - NEAR_MAX) + '곳 — 지도를 더 확대하면 좁혀집니다.', fmt(list.length - NEAR_MAX) + ' more — zoom in to narrow down.') + '</p>' : '')
+                : '<p class="sm-small">' + T('이 화면에는 판매점이 없습니다. 지도를 옮기거나 줌아웃해 보세요.', 'No retailers on screen. Move or zoom out.') + '</p>') +
+            '<p class="sm-small sm-near-note">' + T('위치는 이 기기 안에서만 쓰고 저장하거나 보내지 않습니다.', 'Your location stays on this device.') + '</p>';
+        nearPanel.hidden = false;
+        if (isWide()) setTab('near'); else card.hidden = true;
+        nearPanel.scrollTop = 0;
+        nearPanel.querySelector('.sm-close').addEventListener('click', () => { nearPanel.hidden = true; if (isWide()) setTab('top'); });
+        nearPanel.querySelector('.sm-near-me').addEventListener('click', () => { if (geo) { nearAfterMove = true; geo.trigger(); } });
+        nearPanel.querySelectorAll('.sm-near-list button').forEach(b => b.addEventListener('click', () => {
+            const i = Number(b.dataset.i);
+            if (b.dataset.t === 'w') open(i, true); else openAll(i, true);
+        }));
+    }
+    function placeNearBtn() {
+        if (nearBtn) nearBtn.style.top = isWide() ? '' : (document.querySelector('.sm-top').offsetHeight + 14) + 'px';
+    }
+
     const links = (name, place, lat, lng) => '<p class="sm-links"><a href="https://map.kakao.com/link/map/' + encodeURIComponent(name) + ',' + lat + ',' + lng + '" target="_blank" rel="noopener">' + T('카카오맵', 'Kakao Map') + '</a>' +
         '<a href="https://map.naver.com/p/search/' + encodeURIComponent(name + ' ' + place) + '" target="_blank" rel="noopener">' + T('네이버 지도', 'Naver Map') + '</a></p>';
     function showCard(html, lat, lng, fly) {
@@ -400,6 +489,7 @@
         markTop(null);
         card.innerHTML = '<button type="button" class="sm-close" aria-label="' + T('닫기', 'Close') + '">×</button>' + html;
         card.hidden = false;
+        if (!isWide()) nearPanel.hidden = true;   // 휴대폰은 카드 하나만
         card.querySelector('.sm-close').addEventListener('click', () => { card.hidden = true; markTop(null); });
         if (isWide()) setTab('card');
         if (fly) map.flyTo({ center: [lng, lat], zoom: Math.max(map.getZoom(), 15), padding: pad(), essential: true });
@@ -663,7 +753,6 @@
                 map.setPaintProperty(id, 'circle-stroke-opacity', rimAlpha());
             });
             map.setPaintProperty('st-num', 'text-opacity', fadeF());
-            map.setPaintProperty('st-top-name', 'text-opacity', fadeF());
             map.setPaintProperty('st-top', 'icon-opacity', ['*', STAR_ALPHA, fadeF()]);
             if (map.getLayer('st-all')) map.setPaintProperty('st-all', 'circle-opacity', 0.7 * Math.max(0, 1 - fadeT));
             applyLayers();
@@ -758,7 +847,10 @@
             set3d(on);
         });
         document.getElementById('sm-night').addEventListener('click', () => { nightByTop = false; toggleNight(); });
-        side.querySelectorAll('.sm-tab').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
+        side.querySelectorAll('.sm-tab').forEach(b => b.addEventListener('click', () => (b.dataset.tab === 'near' ? openNear() : setTab(b.dataset.tab))));
+        nearBtn.addEventListener('click', openNear);
+        placeNearBtn();
+        window.addEventListener('resize', placeNearBtn);
         root.querySelectorAll('.sm-mode').forEach(b => b.addEventListener('click', () => toggleMode(b)));
         const fade = document.getElementById('sm-fade');
         fade.addEventListener('input', () => setFade(Number(fade.value)));
@@ -793,17 +885,20 @@
         // 오른쪽 아래는 나중에 단 것이 위로 쌓인다: 확대/축소 → 내 위치 → 북쪽 보기
         map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
         // 내 위치: 브라우저 위치 기능(휴대폰 GPS, PC 는 와이파이 · IP 로 어림). 이 기기 안에서만 쓰고 서버로 보내지 않는다(위치정보법 — README 4-9)
-        map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: false }, trackUserLocation: false }), 'bottom-right');
+        geo = new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: false }, trackUserLocation: false });
+        map.addControl(geo, 'bottom-right');
+        geo.on('geolocate', e => { myLoc = [e.coords.longitude, e.coords.latitude]; if (!nearPanel.hidden) nearAfterMove = true; });
+        geo.on('error', () => { if (!nearPanel.hidden) { const n = nearPanel.querySelector('.sm-near-note'); if (n) n.textContent = T('위치를 받지 못했습니다(브라우저 위치 권한을 확인해 주세요).', 'Could not get your location (check the browser permission).'); } });
         map.addControl(new NorthControl(), 'bottom-right');
         // 처음 화면: 서울 전체(2026-10-26 사장님 — 전국은 시도별 표 · 줌아웃으로)
         map.on('load', () => {
-            koreanLabels(); whiteModel(); addStores(); nightModel(isNight()); renderTop(); initVisits(); initFun();
+            koreanLabels(); whiteModel(); addStores(); nightModel(isNight()); nearLabel(); renderTop(); initVisits(); initFun();
             // 이태원로 · 서빙고로 같은 길 이름이 보이는 크기(2026-10-26 사장님) — 용산 둘레
             if (!fromLink) map.jumpTo({ center: [126.985, 37.538], zoom: 12.9, padding: pad() });
             else if (map.getPitch() > 5) { const d3 = document.getElementById('sm-3d'); d3.setAttribute('aria-pressed', 'true'); d3.textContent = '2D'; }   // 기울어진 화면 링크
         });
         map.on('zoomend', autoTilt);
-        map.on('moveend', topNames);
+        map.on('moveend', () => { names(); nearLabel(); if (nearAfterMove) { nearAfterMove = false; openNear(); } });
         map.on('error', e => { if (e && e.error && /style|tiles/i.test(String(e.error.message))) console.warn('map', e.error); });
         initControls();
         initSearch();

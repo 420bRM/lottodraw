@@ -23,7 +23,7 @@
         { sel: 'section[aria-labelledby="patterns-title"]', key: 'tour.s6' },
         { sel: '[data-react="index-history"]', key: 'tour.s7' },
         // 2026-10-26: 판매점 지도 가는 단추(휴대폰 MAP · PC 제목 아래) · 낮/밤 단추 · 채팅. 쉼표로 여럿 적으면 보이는 첫 것
-        { sel: '#map-fab, .map-go', key: 'tour.s8' },
+        { sel: '.nav-map a, #map-fab', key: 'tour.s8' },
         { sel: '#theme-btn', key: 'tour.s9' },
         { sel: '#chat-panel, #chat-fab', key: 'tour.s10' },
     ];

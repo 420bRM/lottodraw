@@ -439,7 +439,8 @@ window.I18N_DICT = {
     /* ───── 홈: 번호 생성기 ───── */
     'gen.h1':        { en: 'Lotto Statistics & Number Generator' },
     'gen.sub':       { en: 'Filters out combinations that match 16 unusual patterns' },
-    'gen.mapGo':     { ko: '판매점 지도 →', en: 'Retailer map →' },   // 생성기 제목 아래 지도 단추(2026-10-26)
+    'mapLink.ln':    { ko: 'TOP 50 판매점 · 1등이 가장 많이 나온 50곳', en: 'Top 50 · the 50 retailers with the most 1st prizes' },
+    'nav.map':       { ko: '판매점 지도', en: 'Retailer map' },   // 메뉴 맨 오른쪽(js/theme.js 가 붙인다, 2026-10-27)
     'gen.thisPick':  { en: 'This pick' },
     'gen.resultIdle': { en: 'Press the button and the numbers appear above.' },
     'gen.go':        { en: 'Generate' },
@@ -515,8 +516,8 @@ window.I18N_DICT = {
                        en: 'Sets that hit a checked pattern (six in a row, all odd and so on) are drawn again. Filtering does not change the odds; it only avoids popular sets, so a first prize may be shared with fewer people. "Save my settings" here keeps your checked patterns on their own (sign-in).' },
     'tour.s7':       { ko: '생성 이력: 오늘 뽑은 번호가 쌓입니다. 초기화 · 복사 · 공유 · 출력(용지 A~E로 인쇄)을 여기서 합니다.',
                        en: 'History keeps today\'s numbers. Clear, copy, share or print them (as A–E slips) from here.' },
-    'tour.s8':       { ko: '판매점 지도: 1등 · 2등이 나온 판매점을 2D · 3D 지도로 봅니다(오른쪽 아래 MAP 단추). TOP 50 · 이색 판매점 · 지나간 당첨 회차 · 밤 지도까지 볼 수 있습니다.',
-        en: 'Retailer map: see the retailers that sold 1st and 2nd prizes on a 2D/3D map (the MAP button at the bottom right), with the Top 50, unusual retailers, past draws and a night map.' },
+    'tour.s8':       { ko: '판매점 지도: 1등 · 2등이 나온 판매점을 2D · 3D 지도로 봅니다(메뉴 맨 오른쪽 · 오른쪽 아래 MAP 단추). TOP 50 · 이색 판매점 · 지나간 당첨 회차 · 밤 지도까지 볼 수 있습니다.',
+        en: 'Retailer map: see the retailers that sold 1st and 2nd prizes on a 2D/3D map (right end of the menu, or the MAP button at the bottom right), with the Top 50, unusual retailers, past draws and a night map.' },
     'tour.s9':       { ko: '낮/밤 모드: 눌러서 화면을 밝게(낮) · 어둡게(밤) 바꿉니다. 고른 모드는 이 브라우저에 기억합니다.',
         en: 'Light/dark mode: switch the screen between light and dark. Your choice is remembered in this browser.' },
     'tour.s10':      { ko: '실시간 채팅: 지금 사이트에 있는 사람들과 이야기합니다. 읽기는 누구나, 쓰기는 로그인 · 별명 회원만 할 수 있습니다.',

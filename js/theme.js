@@ -64,13 +64,25 @@
             band.className = 'map-band';
             band.href = base + 'store-map.html';
             // 배경은 실제 지도 화면(서울 + 버블, img/map-banner*.jpg), 색은 지도 페이지와 같게(흰 패널 · 남색 글씨 · 1등 주황 · 2등 파랑) — css/site.css
-            band.innerHTML = '<span class="map-band-txt"><span class="map-band-legend"><i class="d1"></i><span class="l1"></span><i class="d2"></i><span class="l2"></span></span><b></b><small></small></span><span class="map-band-go"></span>';
+            band.innerHTML = '<span class="map-band-txt"><span class="map-band-legend"><i class="d1"></i><span class="l1"></span><i class="d2"></i><span class="l2"></span></span><span class="map-band-legend map-band-legend-n"><i class="dn">✦</i><span class="ln"></span></span><b></b><small></small></span><span class="map-band-go"></span>';
             band.querySelector('.l1').textContent = tr('mapLink.l1', '1등 나온 곳');
             band.querySelector('.l2').textContent = tr('mapLink.l2', '2등만 나온 곳');
+            band.querySelector('.ln').textContent = tr('mapLink.ln', 'TOP 50 판매점 · 1등이 가장 많이 나온 50곳');   // 밤 모드 띠는 TOP 50 별 화면
             band.querySelector('b').textContent = tr('mapLink.title', '로또 판매점 지도');
             band.querySelector('small').textContent = tr('mapLink.sub', '1등 · 2등이 나온 판매점 1만 곳을 지도 위 버블로. 서울부터 백령도까지, 내가 다녀온 곳도 표시해 보세요.');
             band.querySelector('.map-band-go').textContent = tr('mapLink.go', '지도 열기 →');
             foot.insertAdjacentElement('afterend', band);
+        }
+        // 메뉴 맨 오른쪽 "판매점 지도"(2026-10-27 사장님 — 생성기 제목 아래 단추를 옮김). 메뉴는 1,300쪽에 박혀 있어 여기서 붙인다
+        const navUl = document.querySelector('nav.nav ul');
+        if (navUl && !navUl.querySelector('.nav-map')) {
+            const li = document.createElement('li');
+            li.className = 'nav-map';
+            li.innerHTML = '<a></a>';
+            li.firstChild.href = base + 'store-map.html';
+            li.firstChild.textContent = tr('nav.map', '판매점 지도');
+            li.firstChild.dataset.i18n = 'nav.map';   // 언어를 바꾸면 i18n.js 가 다시 쓴다
+            navUl.appendChild(li);
         }
     }
 
