@@ -12,7 +12,7 @@ body.sm-full #theme-btn { display: none !important; }
 .sm-loading { margin: 0; padding: 140px 16px; color: var(--muted, #666); text-align: center; }
 
 /* ───── 위쪽 떠 있는 도구 (휴대폰: 작은 단추 몇 줄) ───── */
-.sm-top { position: absolute; top: calc(6px + env(safe-area-inset-top)); left: 6px; right: 6px; z-index: 3; display: grid; gap: 4px; max-width: 360px; pointer-events: none; }
+.sm-top { position: absolute; top: calc(6px + env(safe-area-inset-top)); left: 6px; right: 6px; z-index: 3; display: grid; gap: 4px; pointer-events: none; }   /* 화면 폭 끝까지(2026-10-27 — 오른쪽이 비어 보였다) */
 .sm-top > *, .sm-row > * { pointer-events: auto; }
 .sm-row { display: flex; align-items: center; gap: 4px; pointer-events: none; }
 .sm-back, .sm-3d, .sm-night, .sm-search, .sm-chip, .sm-info summary, .sm-fade {
