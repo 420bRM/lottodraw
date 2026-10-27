@@ -2885,7 +2885,10 @@ if (STORES && write(STORES_FILE, storesPage())) changed++;
 const STORE_MAP = STORES ? storeMapData() : null;
 if (STORE_MAP_READY()) {
     if (write(STORE_MAP_DATA, JSON.stringify({ first: STORES.first, last: STORES.last, updated: UPDATED, sido: STORE_MAP.sidoNames,
-        cols: ['lat', 'lng', 'w1', 'w2', 'name', 'sido', 'gu', 'closed', 'auto', 'manual', 'semi'], rows: STORE_MAP.rows, fun: STORE_MAP.fun }) + '\n')) changed++;
+        cols: ['lat', 'lng', 'w1', 'w2', 'name', 'sido', 'gu', 'closed', 'auto', 'manual', 'semi'], rows: STORE_MAP.rows, fun: STORE_MAP.fun,
+        // 동행복권 인터넷 판매(판매점 번호 51100000) — 1등이 가장 많은 "판매점". 지도에는 "0등"으로 동행복권 본사 자리에 붉은 별(2026-10-27 사장님).
+        // 본사 주소: 서울 서초구 남부순환로 2423(한원빌딩) — 좌표는 어림값(남부순환로 북쪽, 예술의전당과 남부터미널 사이)
+        net: STORES.net ? { n1: STORES.net.n1, n2: STORES.net.n2, auto: STORES.net.A || 0, manual: STORES.net.M || 0, semi: STORES.net.S || 0, first: STORES.netFirst, lat: 37.4818, lng: 127.0148 } : null }) + '\n')) changed++;
     // 카드에 회차 날짜 · 당첨번호도 보여 준다(2026-10-26) — 판매점 자료가 있는 회차만: { 회차: [날짜, 번호 6개, 보너스] }
     const drawInfo = {};
     for (const d of draws) if (d.round >= STORES.first) drawInfo[d.round] = [d.date, d.numbers, d.bonus];

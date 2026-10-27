@@ -74,6 +74,7 @@
             map.setFilter(id, ['all', isTop, filterFor('w1')]);
         });
         names();
+        showZero();
         if (map.getLayer('st-all')) map.setLayoutProperty('st-all', 'visibility', shown.all && !shown.top ? 'visible' : 'none');
         else if (shown.all) loadAll();
     }
@@ -896,12 +897,66 @@
         const ol = document.getElementById('sm-top50-list');
         if (!ol) return;
         const top = props.filter(p => p.top).sort((a, b) => a.top - b.top);
-        ol.innerHTML = top.map(p => {
+        const n = data.net;
+        ol.innerHTML = (n ? '<li class="is-zero"><button type="button" data-net="1"><span class="sm-rank">0</span><span class="sm-tname">' + T('동행복권 인터넷 판매', 'Dong-haeng Lottery online') +
+            '<small>' + T('인터넷 · 동행복권 본사(서초구)', 'Online · company office (Seocho)') + '</small></span><span class="sm-tcnt"><b>' + n.n1 + '</b>' + T('번', '') + '<small>2' + T('등 ', 'nd ') + fmt(n.n2) + '</small></span></button></li>' : '') +
+            top.map(p => {
             const r = data.rows[p.i];
             return '<li><button type="button" data-i="' + p.i + '"><span class="sm-rank">' + p.top + '</span><span class="sm-tname">' + esc(r[4]) +
                 '<small>' + esc([data.sido[r[5]], r[6]].filter(Boolean).join(' ')) + '</small></span><span class="sm-tcnt"><b>' + p.w1 + '</b>' + T('번', '') + '<small>2' + T('등 ', 'nd ') + r[3] + '</small></span></button></li>';
         }).join('');
-        ol.querySelectorAll('button').forEach(b => b.addEventListener('click', () => open(Number(b.dataset.i), true)));
+        ol.querySelectorAll('button').forEach(b => b.addEventListener('click', () => (b.dataset.net ? openNet(true) : open(Number(b.dataset.i), true))));
+    }
+
+    // ───── "0등" 동행복권 인터넷 판매(2026-10-27 사장님) — 1등이 가장 많이 나온 "판매점". 본사 자리에 붉은 별, TOP 50 목록 맨 위 0위 ─────
+    // 실제 판매 창구가 아니라 인터넷 판매라 점 층(자료 rows)에는 넣지 않고 표시 하나(maplibregl.Marker)로 둔다. 1등 칩을 끄면 · TOP 50 일 때는 따라 숨기고 켠다
+    let zeroMarker = null;
+    function redStarUrl() {
+        const c = document.createElement('canvas');
+        c.width = c.height = STAR;
+        const g = c.getContext('2d'), m = STAR / 2;
+        starPath(g, m);
+        g.shadowColor = 'rgba(255, 60, 70, .9)';
+        g.shadowBlur = 14;
+        const fill = g.createRadialGradient(m, m, 0, m, m, SR);
+        fill.addColorStop(0, '#ffe3e5');
+        fill.addColorStop(0.18, '#ff5a68');
+        fill.addColorStop(0.6, '#e0283a');
+        fill.addColorStop(1, '#a8101f');
+        g.fillStyle = fill;
+        g.fill();
+        g.shadowBlur = 0;
+        g.lineWidth = 2.2;
+        g.strokeStyle = '#7a0a14';
+        g.stroke();
+        return c.toDataURL();
+    }
+    function initZero() {
+        const n = data.net;
+        if (!n || zeroMarker) return;
+        const el = document.createElement('button');
+        el.type = 'button';
+        el.className = 'sm-zero';
+        el.innerHTML = '<img alt="" src="' + redStarUrl() + '"><b>' + n.n1 + '</b><span>' + T('0등 · 동행복권 인터넷', '#0 · Online sales') + '</span>';
+        el.title = T('동행복권 인터넷 판매 — 1등 ', 'Dong-haeng Lottery online sales — ') + n.n1 + T('게임', ' 1st prizes');
+        el.setAttribute('aria-label', el.title);
+        el.addEventListener('click', e => { e.stopPropagation(); openNet(false); });
+        zeroMarker = new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat([n.lng, n.lat]).addTo(map);
+        showZero();
+    }
+    function showZero() { if (zeroMarker) zeroMarker.getElement().hidden = !(shown.w1 || shown.top); }
+    function openNet(fly) {
+        const n = data.net;
+        if (!n) return;
+        const how = [n.auto ? T('자동 ', 'auto ') + n.auto : '', n.manual ? T('수동 ', 'manual ') + n.manual : '', n.semi ? T('반자동 ', 'semi-auto ') + n.semi : ''].filter(Boolean).join(' · ');
+        showCard('<h3>' + T('동행복권 인터넷 판매', 'Dong-haeng Lottery online sales') + ' <span class="sm-zero-tag">' + T('0등', '#0') + '</span></h3>' +
+            '<p class="sm-place">' + T('동행복권 본사 · 서울 서초구 남부순환로 2423', 'Company office · 2423 Nambusunhwan-ro, Seocho-gu, Seoul') + '</p>' +
+            '<p class="sm-counts"><span><b>' + fmt(n.n1) + '</b>' + T('번 1등', ' × 1st') + (how ? ' <small>(' + how + ')</small>' : '') + '</span><span><b>' + fmt(n.n2) + '</b>' + T('번 2등', ' × 2nd') + '</span></p>' +
+            '<p class="sm-why">' + T('동행복권 누리집에서 인터넷으로 산 로또입니다(' + n.first + '회부터). 전국 어느 판매점보다 1등이 많이 나왔습니다 — 한 창구에서 가장 많이 팔리기 때문입니다. ' +
+                '지도 위치는 회사 자리이며 이곳에서 복권을 팔지는 않습니다. 어디서 사든 1등 확률은 1/8,145,060으로 같습니다.',
+                'Lotto bought online on the Dong-haeng Lottery website (from draw ' + n.first + '). More 1st prizes than any shop — simply because it sells the most. ' +
+                'The pin marks the company office; tickets are not sold there. Your chance of 1st prize is 1 in 8,145,060 wherever you buy.') + '</p>' +
+            '<p class="sm-links"><a href="https://www.dhlottery.co.kr/" target="_blank" rel="noopener">' + T('동행복권 누리집', 'Dong-haeng Lottery') + '</a></p>', n.lat, n.lng, fly);
     }
     function markTop(i) {
         document.querySelectorAll('#sm-top50-list button').forEach(b => b.classList.toggle('is-on', String(i) === b.dataset.i));
@@ -1003,7 +1058,7 @@
                 wait();
             });
             // store-map-top50.html(공유용 주소): TOP 50 별로 연다
-            if (root.dataset.top) { const c = root.querySelector('.sm-chip-top'); if (c && !shown.top) c.click(); } renderTop(); initVisits(); initFun();
+            if (root.dataset.top) { const c = root.querySelector('.sm-chip-top'); if (c && !shown.top) c.click(); } renderTop(); initVisits(); initFun(); initZero();
             // PC: 이태원로 · 서빙고로 같은 길 이름이 보이는 크기(2026-10-26 사장님) — 용산 둘레.
             // 휴대폰: 남한 전체가 한 화면에 + "적게 나온 곳 흐리게"를 "1등 10회 이상"으로(2026-10-27 사장님 — 많이 나온 곳만 한눈에)
             if (!fromLink && isWide()) map.jumpTo({ center: [126.985, 37.538], zoom: 12.9, padding: pad() });

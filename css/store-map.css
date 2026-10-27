@@ -127,6 +127,15 @@ body.sm-full #theme-btn { display: none !important; }
 .sm-near-list .sm-tcnt small { display: block; color: var(--faint, #777); font-size: .9em; }
 .sm-near-list .sm-dist { color: #c76a00 !important; font-weight: bold; }
 .sm-near-note { margin: 6px 0 0; font-size: 10px !important; }
+/* "0등" 동행복권 인터넷 판매 — 붉은 별 표시(지도 위) · 카드 꼬리표 · TOP 50 목록 맨 위 */
+.sm-zero { position: relative; width: 70px; height: 70px; padding: 0; border: 0; background: none; cursor: pointer; }
+.sm-zero[hidden] { display: none; }
+.sm-zero img { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .9; }
+.sm-zero b { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font: bold 13px/1 sans-serif; text-shadow: 0 0 2px #7a0a14, 0 0 4px #7a0a14, 0 0 6px #7a0a14; }
+.sm-zero span { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); padding: 1px 6px; border-radius: 999px; background: rgba(168, 16, 31, .9); color: #fff;
+    font-size: 10px; font-weight: bold; white-space: nowrap; }
+.sm-zero-tag { padding: 1px 7px; border-radius: 999px; background: #e0283a; color: #fff; font-size: 11px; vertical-align: 2px; }
+.sm-top50-list li.is-zero .sm-rank, .sm-top50-list li.is-zero .sm-tcnt b { color: #e0283a; }
 /* 판매점 댓글("다녀왔어요" 아래) */
 .sm-cmt { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line, #e3e3e3); }
 .sm-cmt h4 { margin: 0 0 4px; color: var(--muted, #555); font-size: 12px; }
