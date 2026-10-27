@@ -2236,7 +2236,8 @@ function storeMapData() {
         for (const id of rec.w2) at(id)[1].push(r);
     }
     const rounds = rows.map(({ id }) => (won.get(id) || [[], []]).map(a => a.slice().reverse()));
-    const md = { rows: rows.map(x => x.row), ids: rows.map(x => x.id), rounds, noCoord, sidoNames, all: storeMapAll(sidoNames) };
+    const netWon = won.get('51100000');   // 0등(동행복권 인터넷)도 카드에 회차를 보인다
+    const md = { rows: rows.map(x => x.row), ids: rows.map(x => x.id), rounds, netRounds: netWon ? netWon.map(a => a.slice().reverse()) : null, noCoord, sidoNames, all: storeMapAll(sidoNames) };
     md.fun = storeMapFun(md);
     return md;
 }
@@ -2429,11 +2430,11 @@ function storeMapPage(md, top) {
             <p class="sm-small" data-i18n-en="${esc(`1st- and 2nd-prize retailers, draws ${first}–${last}, updated after each draw (last update ${UPDATED}). Source: Dong-haeng Lottery winning-retailer search.`)}">${first}~${last}회 1등 · 2등 판매점 · 매주 추첨 후 자동 갱신 (마지막 갱신 ${UPDATED}) · 출처: 동행복권 당첨 판매점 조회</p>
             <p data-i18n-en="Tap an area name to move the map there. Where the 1st- and 2nd-prize shares are close, an area with many 1st prizes is simply one that sells more.">지역 이름을 누르면 지도가 그 지역으로 갑니다. 1등 비율과 2등 비율이 비슷하면, 1등이 많은 지역은 그만큼 많이 팔린 지역이라는 뜻입니다.</p>
             ${table([['지역', 'Area'], ['1등', '1st'], ['1등 비율', '1st share'], ['2등', '2nd'], ['2등 비율', '2nd share']],
-                sidoRows.map(([k, x]) => [k === '인터넷' ? en('인터넷(지도에 없음)', 'Online (not on the map)') : `<button type="button" class="sm-goto" data-sido="${esc(k)}">${esc(k)}</button>`,
+                sidoRows.map(([k, x]) => [k === '인터넷' ? en('인터넷(지도에 0등)', 'Online (#0 on the map)') : `<button type="button" class="sm-goto" data-sido="${esc(k)}">${esc(k)}</button>`,
                     fmt(x.w1), pct(x.w1, S.g1), fmt(x.w2), pct(x.w2, S.g2)]), 'tier-stat sm-sido')}
-            ${pEn(`점 크기는 2등 횟수 + 1등 횟수 × 6입니다(1등은 2등보다 6배 드물다). 판매점별 판매량은 공개되지 않아 팔린 양을 짐작하는 값이며, 앞으로 1등이 나올 곳을 뜻하지 않습니다. 동행복권 인터넷 판매(1등 ${net ? net.n1 : 0}게임)는 한 곳에 있는 판매점이 아니라 지도에 찍지 않습니다.`
+            ${pEn(`점 크기는 2등 횟수 + 1등 횟수 × 6입니다(1등은 2등보다 6배 드물다). 판매점별 판매량은 공개되지 않아 팔린 양을 짐작하는 값이며, 앞으로 1등이 나올 곳을 뜻하지 않습니다. 동행복권 인터넷 판매(1등 ${net ? net.n1 : 0}게임)는 한 곳에 있는 판매점이 아니어서 동행복권 본사 자리에 붉은 "0등"으로 따로 찍었습니다(그곳에서 복권을 팔지는 않습니다).`
                 + (md.noCoord ? ` 위치가 공개되지 않은 ${fmt(md.noCoord)}곳도 빠졌습니다.` : ''),
-                `Dot size is 2nd prizes + 1st prizes × 6 (a 1st prize is six times rarer). Sales per retailer are not published, so this only gauges how much was sold; it says nothing about where the next 1st prize will come from. Dong-haeng Lottery's online sales (${net ? net.n1 : 0} 1st-prize games) are not one location and are not on the map.`
+                `Dot size is 2nd prizes + 1st prizes × 6 (a 1st prize is six times rarer). Sales per retailer are not published, so this only gauges how much was sold; it says nothing about where the next 1st prize will come from. Dong-haeng Lottery's online sales (${net ? net.n1 : 0} 1st-prize games) are not one location, so they are pinned in red as "#0" at the company office (tickets are not sold there).`
                 + (md.noCoord ? ` ${fmt(md.noCoord)} retailers without a published location are also left out.` : ''), 'sm-small')}
             ${md.all ? pEn(`"일반 판매점"을 켜면 지금 로또를 파는 전국 판매점 ${fmt(md.all.total)}곳 중 1등 · 2등 기록이 없는 ${fmt(md.all.rows.length)}곳이 회색 점으로 보입니다(출처: 동행복권 판매점 찾기, ${md.all.updated} 기준 · 매달 갱신).`,
                 `"Other retailers" shows the ${fmt(md.all.rows.length)} of ${fmt(md.all.total)} current lotto retailers with no 1st or 2nd prize on record, as grey dots (source: Dong-haeng Lottery retailer search, as of ${md.all.updated}, updated monthly).`, 'sm-small') : ''}
@@ -2893,7 +2894,7 @@ if (STORE_MAP_READY()) {
     const drawInfo = {};
     for (const d of draws) if (d.round >= STORES.first) drawInfo[d.round] = [d.date, d.numbers, d.bonus];
     if (write(STORE_MAP_ROUNDS, JSON.stringify({ last: STORES.last, note: '1등: 회차 × 4 + 방식(0 모름 · 1 자동 · 2 수동 · 3 반자동), 2등: 회차 — store-map-data.json 의 rows 와 같은 차례. draws: { 회차: [날짜, 번호, 보너스] }',
-        rows: STORE_MAP.rounds, draws: drawInfo }) + '\n')) changed++;
+        rows: STORE_MAP.rounds, net: STORE_MAP.netRounds, draws: drawInfo }) + '\n')) changed++;
     if (write(STORE_MAP_IDS, JSON.stringify({ w: STORE_MAP.ids, a: STORE_MAP.all ? STORE_MAP.all.ids : [] }) + '\n')) changed++;
     if (STORE_MAP.all && write(STORE_MAP_ALL, JSON.stringify({ updated: STORE_MAP.all.updated, sido: STORE_MAP.all.sido,
         cols: ['lat', 'lng', 'name', 'sido', 'gu'], rows: STORE_MAP.all.rows }) + '\n')) changed++;
