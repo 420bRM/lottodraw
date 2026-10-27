@@ -1804,6 +1804,14 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 .cm-del:hover { border-color: var(--error); color: var(--error); }
 .cm-text { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; }
 .cm-empty { padding: 10px 0; color: var(--muted); font-size: 14px; }
+/* 답글(2026-10-27) */
+.cm-re { margin-top: 4px; padding: 0; border: 0; background: none; color: var(--brand); font: 12px var(--font); cursor: pointer; }
+.cm-re:hover { text-decoration: underline; }
+.cm-replies { margin: 8px 0 0 14px; padding: 0 0 0 10px; border-left: 2px solid var(--line); list-style: none; }
+.cm-replies .cm-item { padding: 6px 0; border-bottom: 0; }
+.cm-gone { color: var(--muted); font-size: 13px; }
+.cm-replyto { margin: 0 0 6px; color: var(--muted); font-size: 13px; }
+.cm-replyto-x { margin-left: 4px; padding: 0; border: 0; background: none; color: var(--muted); font: inherit; text-decoration: underline; cursor: pointer; }
 .cm-input { box-sizing: border-box; width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 6px; font: 16px/1.5 var(--font); resize: vertical; }
 .cm-input:focus { border-color: var(--brand); outline: none; }
 .cm-form-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; }

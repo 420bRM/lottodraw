@@ -3,6 +3,8 @@
  * - 읽기는 누구나, 쓰기는 로그인하고 별명을 정한 회원만(채팅과 같다). 링크·연락처·홍보 문구는 서버가 막는다.
  * - 15초에 한 번, 하루 30개까지. 내 댓글은 지울 수 있고, 관리자는 관리자 페이지에서 지운다.
  * - 글은 전부 textContent 로만 그린다(HTML 로 해석하지 않는다). 줄바꿈은 CSS(pre-wrap)로 보인다.
+ * - 답글(2026-10-27, 판매점 지도 댓글과 같다): 한 단계만 — 답글에 답하면 맨 위 댓글 아래로 붙는다(서버가 to 를 맞춘다).
+ *   답글이 달리면 답한 댓글 · 맨 위 댓글 쓴 사람의 마이페이지에 알림(서버).
  */
 (function () {
     'use strict';
@@ -77,6 +79,23 @@
         input, el('div', { className: 'cm-form-foot' }, [left, sendBtn]),
     ]);
     const gate = el('div', { className: 'cm-gate' });
+    // 답글 대상 줄(입력칸 위). replyTo 가 있으면 보낼 때 to 로 붙인다
+    let replyTo = null;
+    const replyBar = el('p', { className: 'cm-replyto', hidden: '' });
+    form.insertBefore(replyBar, input);
+    function setReply(c) {
+        replyTo = c;
+        replyBar.textContent = '';
+        replyBar.hidden = !c;
+        input.placeholder = c ? tr('cm.phReply', '답글을 남겨 주세요 (500자)') : tr('cm.ph', '이 글에 대한 생각을 남겨 주세요 (500자)');
+        input.setAttribute('aria-label', input.placeholder);
+        sendBtn.textContent = c ? tr('cm.sendReply', '답글 남기기') : tr('cm.send', '댓글 남기기');
+        if (!c) return;
+        replyBar.append(tr('cm.replyTo', '↳ {nick}님에게 답글', { nick: c.nick || '' }), ' ',
+            el('button', { type: 'button', className: 'cm-replyto-x', text: tr('cm.replyCancel', '취소'), on: { click: () => setReply(null) } }));
+        (form.hidden ? gate : form).scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        if (!form.hidden) input.focus({ preventScroll: true });
+    }
     const box = el('section', { id: 'comments', className: 'cm', 'aria-labelledby': 'cm-title' }, [
         el('h2', { id: 'cm-title' }, [tr('cm.title', '댓글'), ' ', count]),
         el('p', { className: 'cm-rule', text: tr('cm.rule', '링크·연락처·홍보 글과 비방은 지웁니다. 댓글은 쓴 사람의 의견입니다.') }),
@@ -100,12 +119,24 @@
             el('time', { className: 'cm-time', datetime: new Date(c.at).toISOString(), text: fmt(c.at) }),
             c.mine ? el('button', { type: 'button', className: 'cm-del', text: tr('cm.del', '지우기'), on: { click: () => remove(c) } }) : null,
         ]);
-        return el('li', { className: 'cm-item' + (c.mine ? ' is-mine' : ''), 'data-id': c.id }, [head, el('p', { className: 'cm-text', text: c.text })]);
+        return el('li', { className: 'cm-item' + (c.mine ? ' is-mine' : '') + (c.to ? ' is-reply' : ''), 'data-id': c.id }, [head, el('p', { className: 'cm-text', text: c.text }),
+            el('button', { type: 'button', className: 'cm-re', text: tr('cm.reply', '답글'), on: { click: () => setReply(c) } })]);
     }
 
+    // 맨 위 댓글(오래된 순) 아래에 그 답글들. 맨 위 댓글이 지워졌으면 "(지운 댓글입니다)" 아래에 남긴다
     function render(comments) {
         list.textContent = '';
-        comments.forEach(c => list.appendChild(item(c)));
+        const kids = new Map();
+        comments.filter(c => c.to).forEach(c => { if (!kids.has(c.to)) kids.set(c.to, []); kids.get(c.to).push(c); });
+        const tops = comments.filter(c => !c.to);
+        const nest = (li, id) => { if (kids.has(id)) li.appendChild(el('ol', { className: 'cm-replies' }, kids.get(id).map(item))); };
+        tops.forEach(c => { const li = item(c); nest(li, c.id); list.appendChild(li); });
+        kids.forEach((k, id) => {
+            if (tops.some(c => c.id === id)) return;
+            const li = el('li', { className: 'cm-item cm-gone', text: tr('cm.gone', '(지운 댓글입니다)') });
+            nest(li, id);
+            list.appendChild(li);
+        });
         if (!comments.length) list.appendChild(el('li', { className: 'cm-empty', text: tr('cm.empty', '아직 댓글이 없습니다. 첫 댓글을 남겨 보세요.') }));
         count.textContent = comments.length ? String(comments.length) : '';
     }
@@ -143,11 +174,15 @@
         sendBtn.disabled = true;
         status.textContent = '';
         try {
-            await request('/api/comments', { method: 'POST', body: { post, text } });
+            const to = replyTo;
+            const r = await request('/api/comments', { method: 'POST', body: to ? { post, text, to: to.id } : { post, text } });
             input.value = '';
             left.textContent = '0/' + MAX;
+            setReply(null);
             await load();
-            list.lastChild && list.lastChild.scrollIntoView && list.lastChild.scrollIntoView({ block: 'nearest' });
+            const mine = r && r.comment && list.querySelector('[data-id="' + r.comment.id + '"]');
+            const at = mine || list.lastChild;
+            at && at.scrollIntoView && at.scrollIntoView({ block: 'nearest' });
         } catch (e) {
             status.textContent = errText(e);
         } finally {
