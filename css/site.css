@@ -1722,7 +1722,7 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 .map-band-legend-n { display: none; }
 :root[data-theme="dark"] .map-band { border-color: #2b3442; color: #dfe5ee;
     background: linear-gradient(90deg, #141a23 0%, rgba(20, 26, 35, .95) 30%, rgba(20, 26, 35, .5) 52%, rgba(20, 26, 35, 0) 78%),
-        url(../img/map-banner-night.jpg) right center / cover no-repeat, #141a23; }
+        url(../img/map-banner-night.jpg) right center / auto 100% no-repeat, #141a23; }   /* 별이 위아래로 잘리지 않게 높이에 맞춘다 */
 :root[data-theme="dark"] .map-band:hover { border-color: #e0a800; box-shadow: 0 4px 16px rgba(255, 194, 26, .18); }
 :root[data-theme="dark"] .map-band-legend:not(.map-band-legend-n) { display: none; }
 :root[data-theme="dark"] .map-band-legend-n { display: flex; color: #b9c2cf; }
