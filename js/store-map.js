@@ -1004,9 +1004,12 @@
             });
             // store-map-top50.html(공유용 주소): TOP 50 별로 연다
             if (root.dataset.top) { const c = root.querySelector('.sm-chip-top'); if (c && !shown.top) c.click(); } renderTop(); initVisits(); initFun();
-            // 이태원로 · 서빙고로 같은 길 이름이 보이는 크기(2026-10-26 사장님) — 용산 둘레
-            if (!fromLink) map.jumpTo({ center: [126.985, 37.538], zoom: 12.9, padding: pad() });
-            else if (map.getPitch() > 5) { const d3 = document.getElementById('sm-3d'); d3.setAttribute('aria-pressed', 'true'); d3.textContent = '2D'; }   // 기울어진 화면 링크
+            // PC: 이태원로 · 서빙고로 같은 길 이름이 보이는 크기(2026-10-26 사장님) — 용산 둘레.
+            // 휴대폰: 남한 전체가 한 화면에 + "적게 나온 곳 흐리게"를 "1등 10회 이상"으로(2026-10-27 사장님 — 많이 나온 곳만 한눈에)
+            if (!fromLink && isWide()) map.jumpTo({ center: [126.985, 37.538], zoom: 12.9, padding: pad() });
+            else if (!fromLink) map.fitBounds([[125.9, 33.9], [129.6, 38.4]], { padding: Object.assign(pad(), { bottom: 150, left: 10 }), animate: false });   // 아래는 왼쪽 아래 도구 몫
+            if (!isWide()) { const f = document.getElementById('sm-fade'); f.value = 57; setFade(57); }   // 57 → 1등 10회 이상(setFade 의 셈)
+            if (fromLink && map.getPitch() > 5) { const d3 = document.getElementById('sm-3d'); d3.setAttribute('aria-pressed', 'true'); d3.textContent = '2D'; }   // 기울어진 화면 링크
         });
         map.on('zoomend', autoTilt);
         map.on('moveend', () => { names(); nearLabel(); if (nearAfterMove) { nearAfterMove = false; openNear(); } });
