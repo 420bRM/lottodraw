@@ -178,12 +178,9 @@
         map.setPaintProperty('st-w2', 'circle-stroke-color', rim('#3b6fd8'));
         if (map.getLayer('st-all')) map.setPaintProperty('st-all', 'circle-stroke-color', rim('#7d8799'));
     }
+    // 지도에서 바꾼 낮/밤은 이 페이지에서만 — 사이트에 저장된 낮/밤(lottodraw.theme)은 건드리지 않는다(2026-10-27: 지도는 늘 낮으로 열고, TOP 50 을 끄면 다른 페이지가 낮으로 바뀌던 것)
     function toggleNight() {
-        const tb = document.getElementById('theme-btn');
-        if (tb) { tb.click(); return; }   // 저장 · 다른 탭 따라가기는 theme.js 가 한다
-        const dark = !isNight();
-        if (dark) document.documentElement.setAttribute('data-theme', 'dark'); else document.documentElement.removeAttribute('data-theme');
-        try { localStorage.setItem('lottodraw.theme', dark ? 'dark' : 'light'); } catch (e) { /* 이 페이지에서만 */ }
+        if (isNight()) document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', 'dark');
     }
     // TOP 50 칩을 켜면 곧바로 밤 지도로(2026-10-27 사장님). 그 때문에 밤이 됐으면 끌 때 낮으로 돌려 놓는다(그 사이 🌙 을 손으로 누르면 그대로 둔다)
     let nightByTop = false;
@@ -569,7 +566,10 @@
                 nick.textContent = c.nick || T('(별명 없음)', '(no nickname)');
                 const at = document.createElement('small');
                 at.textContent = cmtTime(c.at);
-                head.append(nick, ' ', at);
+                head.append(nick, ' ');
+                // 쓴 사람이 이 판매점을 "다녀온 곳"으로 표시해 두었으면(서버가 알려 준다) 구분 표시(2026-10-27 사장님)
+                if (c.visited) { const v = document.createElement('span'); v.className = 'sm-cmt-been'; v.textContent = T('✓ 다녀옴', '✓ Visited'); v.title = T('이 판매점을 "다녀온 곳"으로 표시한 회원', 'Marked this retailer as visited'); head.append(v, ' '); }
+                head.append(at);
                 if (c.mine) {
                     const del = document.createElement('button');
                     del.type = 'button';
@@ -680,6 +680,7 @@
                 visits = r.visits || {};
                 paintVisits();
                 draw();
+                if (cmtRefresh) cmtRefresh();   // 내 댓글의 "다녀옴" 표시를 바로 바꾼다
             } catch (e) {
                 box.querySelector('.sm-visit-note').textContent = (e && e.message) || T('저장하지 못했습니다.', 'Could not save.');
             }

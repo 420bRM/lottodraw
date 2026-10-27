@@ -366,6 +366,12 @@ test('판매점 댓글: 글 이름 shop-판매점번호 로 같은 댓글 길을
     assert.equal(r.status, 200, JSON.stringify(r.data));
     assert.equal((await call(env, 'GET', '/api/comments?post=shop-11100004')).data.comments[0].text, '사장님 친절해요');
     assert.equal((await call(env, 'GET', '/api/comments?post=shop-11100016')).data.comments.length, 0);
+    // 그 판매점을 "다녀온 곳"으로 표시한 사람의 댓글에는 visited(다른 판매점 표시는 상관없다)
+    assert.equal((await call(env, 'GET', '/api/comments?post=shop-11100004')).data.comments[0].visited, undefined);
+    await call(env, 'POST', '/api/me/visits', { body: { id: '11100016', color: '#e63946' }, headers: auth(sA) });
+    assert.equal((await call(env, 'GET', '/api/comments?post=shop-11100004')).data.comments[0].visited, undefined);
+    await call(env, 'POST', '/api/me/visits', { body: { id: '11100004', color: '#e63946' }, headers: auth(sA) });
+    assert.equal((await call(env, 'GET', '/api/comments?post=shop-11100004')).data.comments[0].visited, true);
 });
 
 test('댓글 관리: 관리자는 누가 썼는지 보고 지우며, 채팅 금지한 계정은 댓글도 막히고, 탈퇴하면 댓글이 지워진다', async () => {

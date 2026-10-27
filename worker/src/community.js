@@ -758,13 +758,24 @@ const OPS = {
         user.cmAt = now;
         user.cmDay = { day, n: d.n + 1 };
         await this.saveUser(user);
-        return { comment: pubComment(c, sub) };
+        const shop = /^shop-(\d{8})$/.exec(post);
+        return { comment: Object.assign(pubComment(c, sub), shop && user.visits && user.visits[shop[1]] ? { visited: true } : {}) };
     },
 
-    // 한 글의 댓글(오래된 것부터, 최근 200개). sub 가 있으면 내 댓글에 mine 표시
+    // 한 글의 댓글(오래된 것부터, 최근 200개). sub 가 있으면 내 댓글에 mine 표시.
+    // 판매점 댓글(shop-번호)은 쓴 사람이 지금 그 판매점을 "다녀온 곳"으로 표시해 두었으면 visited(2026-10-27 사장님 — 다녀온 사람과 구분)
     async commentList({ post, sub }) {
         const rows = await this.storage.list({ prefix: 'c:' + post + ':', reverse: true, limit: COMMENT.list });
-        return { comments: [...rows.values()].reverse().map(c => pubComment(c, sub)) };
+        const list = [...rows.values()].reverse();
+        const shop = /^shop-(\d{8})$/.exec(post);
+        const been = new Set();
+        if (shop) {
+            for (const who of new Set(list.map(c => c.sub))) {
+                const u = await this.storage.get('u:' + who);
+                if (u && u.visits && u.visits[shop[1]]) been.add(who);
+            }
+        }
+        return { comments: list.map(c => Object.assign(pubComment(c, sub), been.has(c.sub) ? { visited: true } : {})) };
     },
 
     // 지우기: 쓴 사람 또는 관리자(admin)

@@ -2354,7 +2354,9 @@ function storeMapPage(md, top) {
     <link rel="stylesheet" href="${v('js/vendor/maplibre-gl.css')}">
     <link rel="stylesheet" href="${v('css/store-map.css')}">
     <script src="js/i18n-dict.js"></script>
-    <script src="js/i18n.js"></script>
+    <script src="js/i18n.js"></script>${top ? '' : `
+    <!-- 지도는 늘 낮으로 연다(2026-10-27 사장님 — TOP 50 을 누르면 밤으로 뒤집힌다). 사이트에 저장된 낮/밤은 그대로 둔다(i18n.js 가 붙인 밤을 그리기 전에 뗀다) -->
+    <script>document.documentElement.removeAttribute('data-theme');</script>`}
     <script type="application/ld+json">${JSON.stringify(ld)}</script>
     ${CF_BEACON}
 </head>
