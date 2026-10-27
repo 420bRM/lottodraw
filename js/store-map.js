@@ -959,11 +959,19 @@
         showCard('<h3>' + T('동행복권 인터넷 판매', 'Dong-haeng Lottery online sales') + ' <span class="sm-zero-tag">' + T('0등', '#0') + '</span></h3>' +
             '<p class="sm-place">' + T('동행복권 본사 · 서울 서초구 남부순환로 2423', 'Company office · 2423 Nambusunhwan-ro, Seocho-gu, Seoul') + '</p>' +
             '<p class="sm-counts"><span><b>' + fmt(n.n1) + '</b>' + T('번 1등', ' × 1st') + (how ? ' <small>(' + how + ')</small>' : '') + '</span><span><b>' + fmt(n.n2) + '</b>' + T('번 2등', ' × 2nd') + '</span></p>' +
+            '<div class="sm-rounds" id="sm-rounds"><p class="sm-small">' + T('당첨 회차 불러오는 중…', 'Loading draws…') + '</p></div>' +
             '<p class="sm-why">' + T('동행복권 누리집에서 인터넷으로 산 로또입니다(' + n.first + '회부터). 전국 어느 판매점보다 1등이 많이 나왔습니다 — 한 창구에서 가장 많이 팔리기 때문입니다. ' +
                 '지도 위치는 회사 자리이며 이곳에서 복권을 팔지는 않습니다. 어디서 사든 1등 확률은 1/8,145,060으로 같습니다.',
                 'Lotto bought online on the Dong-haeng Lottery website (from draw ' + n.first + '). More 1st prizes than any shop — simply because it sells the most. ' +
                 'The pin marks the company office; tickets are not sold there. Your chance of 1st prize is 1 in 8,145,060 wherever you buy.') + '</p>' +
             '<p class="sm-links"><a href="https://www.dhlottery.co.kr/" target="_blank" rel="noopener">' + T('동행복권 누리집', 'Dong-haeng Lottery') + '</a></p>', n.lat, n.lng, fly);
+        card.dataset.i = 'n';
+        loadRounds().then(rd => {
+            const box = document.getElementById('sm-rounds');
+            if (!box || card.dataset.i !== 'n') return;   // 그 사이 다른 카드를 열었다
+            if (!rd || !rd.net) { box.remove(); return; }
+            fillRounds(box, rd.net, rd.draws || {});
+        });
     }
     function markTop(i) {
         document.querySelectorAll('#sm-top50-list button').forEach(b => b.classList.toggle('is-on', String(i) === b.dataset.i));
