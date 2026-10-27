@@ -568,7 +568,7 @@
                 at.textContent = cmtTime(c.at);
                 head.append(nick, ' ');
                 // 쓴 사람이 이 판매점을 "다녀온 곳"으로 표시해 두었으면(서버가 알려 준다) 구분 표시(2026-10-27 사장님)
-                if (c.visited) { const v = document.createElement('span'); v.className = 'sm-cmt-been'; v.textContent = T('✓ 다녀옴', '✓ Visited'); v.title = T('이 판매점을 "다녀온 곳"으로 표시한 회원', 'Marked this retailer as visited'); head.append(v, ' '); }
+                if (c.visited) { const v = document.createElement('span'); v.className = 'sm-cmt-been'; v.textContent = T('✓ 실방문자', '✓ Visitor'); v.title = T('이 판매점을 "다녀온 곳"으로 표시한 회원', 'Marked this retailer as visited'); head.append(v, ' '); }
                 head.append(at);
                 if (c.mine) {
                     const del = document.createElement('button');
