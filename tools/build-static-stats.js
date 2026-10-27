@@ -2356,6 +2356,8 @@ function storeMapPage(md) {
 <body class="sm-full">
 <main class="sm-wrap" id="sm" data-src="${STORE_MAP_DATA}?v=${fingerprint(STORE_MAP_DATA)}"${md.all ? ` data-all="${STORE_MAP_ALL}?v=${fingerprint(STORE_MAP_ALL)}"` : ''} data-rounds="${STORE_MAP_ROUNDS}?v=${fingerprint(STORE_MAP_ROUNDS)}" data-ids="${STORE_MAP_IDS}?v=${fingerprint(STORE_MAP_IDS)}">
     <div class="sm-map" id="sm-map" role="region" aria-label="판매점 지도" data-i18n-attr="aria-label:sm.mapAria"><p class="sm-loading" data-i18n-en="Loading the map…">지도를 불러오는 중…</p></div>
+    <!-- 지도 위 가운데: 지금 화면(○○구) 근처 판매점 목록 열기 -->
+    <button type="button" class="sm-near-btn" id="sm-near-btn">⟳ <span data-i18n-en="Retailers around here">이 근처 판매점</span></button>
     <!-- PC: 왼쪽 고정 칸(당근 동네업체처럼 — 2026-10-26 사장님). 도구 · 탭(TOP 50 · 판매점 · 이색 판매점 · 시도별) · 탭 내용. 휴대폰은 칸 없이 지도 위에 떠 있다 -->
     <div class="sm-side" id="sm-side" data-tab="top">
     <div class="sm-top">
@@ -2381,6 +2383,7 @@ function storeMapPage(md) {
     <nav class="sm-tabs" role="tablist" aria-label="판매점 지도 탭">
         <button type="button" class="sm-tab" data-tab="top" role="tab" aria-selected="true">TOP 50</button>
         <button type="button" class="sm-tab" data-tab="card" role="tab" aria-selected="false" data-i18n-en="Retailer">판매점</button>
+        <button type="button" class="sm-tab" data-tab="near" role="tab" aria-selected="false" data-i18n-en="Nearby">내 근처</button>
         ${md.fun && md.fun.length ? `<button type="button" class="sm-tab" data-tab="fun" role="tab" aria-selected="false" data-i18n-en="Unusual">이색 판매점</button>` : ''}
         <button type="button" class="sm-tab" data-tab="info" role="tab" aria-selected="false" data-i18n-en="By province">시도별</button>
     </nav>
@@ -2391,6 +2394,7 @@ function storeMapPage(md) {
             <ol class="sm-top50-list" id="sm-top50-list"></ol>
         </aside>
         <aside class="sm-card" id="sm-card" hidden aria-live="polite"></aside>
+        <aside class="sm-near" id="sm-near" hidden aria-live="polite"></aside>
         <p class="sm-card-empty" data-i18n-en="Tap a dot on the map to see the retailer here.">지도에서 점을 누르면 판매점 정보가 여기에 나옵니다.</p>
     </div>
     <!-- 왼쪽 아래: 1등 방식(로그인 회원) · 끌기 막대(낮은 횟수부터 흐리게) — "시도별 · 안내" 위 -->

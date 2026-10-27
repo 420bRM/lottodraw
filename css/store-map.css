@@ -100,6 +100,30 @@ body.sm-full #theme-btn { display: none !important; }
 .sm-why { margin: 6px 0; color: var(--muted, #666); font-size: 11.5px; line-height: 1.5; }
 .sm-links { display: flex; gap: 8px; margin: 0; }
 .sm-links a { padding: 5px 10px; border: 1px solid var(--line, #ddd); border-radius: 6px; font-size: 12px; text-decoration: none; }
+/* 이 근처 판매점: 지도 위 가운데 단추 + 목록(휴대폰은 카드 자리, PC 는 "내 근처" 탭) */
+.sm-near-btn { position: absolute; top: 120px; left: 50%; z-index: 3; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 5px; max-width: calc(100% - 120px);
+    padding: 6px 13px; border: 1px solid var(--line, #ddd); border-radius: 999px; background: var(--surface, #fff); color: var(--fg, #222); box-shadow: 0 2px 10px rgba(0, 0, 0, .18);
+    font: inherit; font-size: 12px; font-weight: bold; white-space: nowrap; cursor: pointer; }
+.sm-near-btn span { overflow: hidden; text-overflow: ellipsis; }
+.sm-near { position: absolute; left: 6px; bottom: calc(36px + env(safe-area-inset-bottom)); z-index: 4; box-sizing: border-box; width: min(250px, calc(100% - 64px)); max-height: 38vh; overflow: auto;
+    padding: 7px 9px; border-radius: 10px; background: var(--surface, #fff); color: var(--fg, #333); box-shadow: 0 8px 28px rgba(0, 0, 0, .28); font-size: 11px; }
+.sm-near[hidden] { display: none; }
+.sm-near h3 { margin: 0 20px 2px 0; font-size: 13px; }
+.sm-near h3 small { color: var(--faint, #888); font-size: .8em; font-weight: normal; }
+.sm-near .sm-close { top: 1px; right: 4px; font-size: 18px; }
+.sm-near-sort { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px; margin: 2px 0 4px; color: var(--muted, #666); font-size: 10.5px; }
+.sm-near-me { padding: 2px 8px; border: 1px solid var(--brand, #003087); border-radius: 999px; background: var(--surface, #fff); color: var(--brand, #003087); font: inherit; font-size: 10.5px; font-weight: bold; cursor: pointer; }
+.sm-near-list { margin: 0; padding: 0; list-style: none; }
+.sm-near-list button { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 6px; width: 100%; padding: 5px 2px; border: 0; border-bottom: 1px solid var(--line-soft, #f0f1f4);
+    background: none; color: var(--fg, #333); font: inherit; text-align: left; cursor: pointer; }
+.sm-near-list button:hover { background: var(--soft, #f3f6fb); }
+.sm-near-list .sm-tname { overflow: hidden; font-weight: bold; text-overflow: ellipsis; white-space: nowrap; }
+.sm-near-list .sm-tname small { display: block; overflow: hidden; color: var(--faint, #777); font-weight: normal; font-size: .9em; text-overflow: ellipsis; }
+.sm-near-list .sm-tcnt { text-align: right; white-space: nowrap; }
+.sm-near-list .sm-tcnt b { color: var(--brand, #003087); }
+.sm-near-list .sm-tcnt small { display: block; color: var(--faint, #777); font-size: .9em; }
+.sm-near-list .sm-dist { color: #c76a00 !important; font-weight: bold; }
+.sm-near-note { margin: 6px 0 0; font-size: 10px !important; }
 /* 1등 · 2등 나온 회차 토글(하나씩만 보인다) */
 .sm-rk { display: flex; gap: 4px; margin: 6px 0 2px; }
 .sm-rk button { flex: 1 1 0; padding: 5px 6px; border: 1px solid var(--line, #ddd); border-radius: 999px; background: var(--surface, #fff); color: var(--muted, #555);
@@ -219,11 +243,18 @@ body.sm-full #theme-btn { display: none !important; }
     .sm-tab[aria-selected="true"] { border-bottom-color: var(--brand, #003087); color: var(--brand, #003087); }
     :root[data-theme="dark"] .sm-tab[aria-selected="true"] { border-bottom-color: #ffb066; color: #ffb066; }
     /* 탭 내용: 고른 것 하나만, 남은 높이를 채우고 안에서 넘긴다 */
-    .sm-top50, .sm-card, .sm-card-empty, .sm-fun, .sm-info { order: 8; display: none; flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+    .sm-top50, .sm-card, .sm-card-empty, .sm-near, .sm-fun, .sm-info { order: 8; display: none; flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
     .sm-side[data-tab="top"] .sm-top50 { display: block; }
     .sm-side[data-tab="card"] .sm-card:not([hidden]) { display: block; }
     .sm-side[data-tab="card"] .sm-card[hidden] + .sm-card-empty { display: block; }
     .sm-side[data-tab="fun"] .sm-fun { display: block; }
+    .sm-side[data-tab="near"] .sm-near:not([hidden]) { display: block; }
+    .sm-near { position: relative; left: auto; bottom: auto; width: auto; max-height: none; padding: 14px 16px; border-radius: 0; box-shadow: none; font-size: 13px; }
+    .sm-near h3 { font-size: 16px; }
+    .sm-near-sort, .sm-near-me { font-size: 12px; }
+    .sm-near-list button { padding: 8px 4px; }
+    .sm-near-btn { top: 14px; left: calc(340px + (100% - 340px) / 2); padding: 8px 16px; font-size: 13px; }
+    .sm-tab { padding-left: 2px; padding-right: 2px; font-size: 12.5px; }
     .sm-side[data-tab="info"] .sm-info { display: block; }
     .sm-top50 { padding: 8px 8px 12px; }
     .sm-top50 h2 { margin: 2px 8px 6px; color: var(--fg, #222); font-size: 15px; }
