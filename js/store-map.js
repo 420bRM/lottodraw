@@ -150,7 +150,11 @@
     // 바탕 지도 층의 색을 층 종류별로 바꾸고, 낮으로 돌아갈 때는 처음 값(화이트 모형)을 되돌린다
     const NIGHT = { bg: '#141a23', water: '#0c1520', park: '#18211d', land: '#19202a', bld: '#212935', road: '#2c3646', casing: '#1b222d',
         rail: '#394252', border: '#4a5466', text: '#a9b3c1', halo: '#141a23', extr: '#2a3443', edge: '#323c4c' };
+    // 더 깊은 밤(2026-10-27 — 사장님이 보고 정할 시안): 밤에 TOP 50 을 켜면 바탕을 거의 검게, 지명 글자는 감추고 별 빛은 더 밝게 — 별만 남는 화면
+    const DEEP = { bg: '#06080c', water: '#04060a', park: '#070a09', land: '#080b10', bld: '#0a0d12', road: '#161b24', casing: '#0a0d12',
+        rail: '#141922', border: '#1c222c', extr: '#0e121a', edge: '#141922' };
     const isNight = () => document.documentElement.getAttribute('data-theme') === 'dark';
+    const isDeep = () => isNight() && shown.top;
     const rim = color => ['case', vis, color, isNight() ? NIGHT.bg : '#fff'];   // 점 가장자리(다녀온 곳은 1등 · 2등 색)
     const orig = new Map();
     function setP(id, k, v) {
@@ -158,10 +162,11 @@
         if (!orig.has(key)) orig.set(key, map.getPaintProperty(id, k));
         try { map.setPaintProperty(id, k, v === null ? orig.get(key) : v); } catch (e) { /* 없는 속성 */ }
     }
-    function nightModel(on) {
+    function nightModel() {
         if (!map || !map.getLayer('st-w1')) return;
+        const on = isNight(), deep = isDeep();
         document.getElementById('sm-night').setAttribute('aria-pressed', String(on));
-        const N = k => (on ? NIGHT[k] : null);
+        const N = k => (deep ? DEEP[k] : on ? NIGHT[k] : null);
         for (const l of map.getStyle().layers) {
             const sl = l['source-layer'], id = l.id;
             if (/^st-/.test(id)) continue;
@@ -170,7 +175,10 @@
             else if (l.type === 'background') setP(id, 'background-color', N('bg'));
             else if (l.type === 'fill') setP(id, 'fill-color', N(sl === 'water' ? 'water' : sl === 'park' || sl === 'landcover' ? 'park' : sl === 'building' ? 'bld' : 'land'));
             else if (l.type === 'line') setP(id, 'line-color', N(sl === 'water' || sl === 'waterway' ? 'water' : sl === 'boundary' ? 'border' : /casing/.test(id) ? 'casing' : /rail|transit/.test(id) ? 'rail' : 'road'));
-            else if (l.type === 'symbol' && l.layout && l.layout['text-field'] && !isShield(l)) { setP(id, 'text-color', N('text')); setP(id, 'text-halo-color', N('halo')); }
+            else if (l.type === 'symbol' && l.layout && l.layout['text-field'] && !isShield(l)) {
+                setP(id, 'text-color', on ? NIGHT.text : null); setP(id, 'text-halo-color', on ? NIGHT.halo : null);
+                setP(id, 'text-opacity', deep ? 0 : null);   // 더 깊은 밤에는 지명 글자를 감춘다
+            }
         }
         names();
         if (map.getLayer('st-top-glow')) map.setLayoutProperty('st-top-glow', 'icon-image', on ? 'sm-star-glow-n' : 'sm-star-glow');
@@ -187,8 +195,9 @@
     function topNight(on) {
         if (on && !isNight()) { nightByTop = true; toggleNight(); }
         else if (!on && nightByTop) { nightByTop = false; if (isNight()) toggleNight(); }
+        nightModel();   // 이미 밤이었으면 낮/밤은 그대로라 여기서 더 깊은 밤으로 바꾼다
     }
-    new MutationObserver(() => nightModel(isNight())).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    new MutationObserver(() => nightModel()).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
     // 북쪽 보기 단추 — "내 위치" 단추 위, 같은 크기. 지도가 돌아간 만큼 바늘도 돈다
     class NorthControl {
@@ -399,7 +408,7 @@
     }
 
     // 테두리 빛 밝기: 0.35 ~ 1 을 2.8초에 한 번 오간다. 1초에 15번만 바꾸고, 탭이 뒤에 있으면 쉰다(배터리)
-    function glowOpacity(a) { return ['*', Math.min(1, a * (isNight() ? 1.15 : 1)), fadeF()]; }
+    function glowOpacity(a) { return ['*', Math.min(1, a * (isDeep() ? 1.4 : isNight() ? 1.15 : 1)), fadeF()]; }
     function glowLoop() {
         let last = 0;
         const tick = now => {
@@ -979,7 +988,7 @@
         map.addControl(new NorthControl(), 'bottom-right');
         // 처음 화면: 서울 전체(2026-10-26 사장님 — 전국은 시도별 표 · 줌아웃으로)
         map.on('load', () => {
-            koreanLabels(); whiteModel(); addStores(); nightModel(isNight()); nearLabel();
+            koreanLabels(); whiteModel(); addStores(); nightModel(); nearLabel();
             // ?shop=판매점번호(관리자 페이지의 판매점 댓글 링크 등): 그 판매점 카드를 연다
             const shopQ = new URLSearchParams(location.search).get('shop');
             if (/^\d{8}$/.test(shopQ || '')) loadIds().then(j => {
