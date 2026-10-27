@@ -151,7 +151,7 @@
     // 페이지마다 <script> 를 따로 넣지 않는다. 같은 폴더의 파일을 쓴다(blog/·round/ 에서도 맞는 주소).
     // 주소 끝에 내용 지문(?v=)을 붙인다 — 없으면 배포 직후 10분 동안 브라우저가 쥔 옛 theme.js 가 돌아 새 메뉴 단추가 안 보였다(2026-10-27).
     // 아래 값은 tools/asset-version.js 가 빌드 때 고쳐 쓴다(손으로 고치지 않는다)
-    const LOAD_V = { 'account.js': '03c6edbb', 'theme.js': '1f1c4fbe' };
+    const LOAD_V = { 'account.js': 'ad462a77', 'theme.js': '1f1c4fbe' };
     (function loadAccount() {
         const me = document.currentScript;
         if (!me || !me.src || !document.createElement) return;

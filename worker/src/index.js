@@ -106,6 +106,9 @@ async function route(request, env, ctx) {
     if (path === '/api/me/generator' && method === 'POST') return saveGenerator(request, env);
     if (path === '/api/me/visits' && method === 'POST') return saveVisit(request, env);
     if (path === '/api/me/visit-color' && method === 'POST') return openVisitColor(request, env);
+    if (path === '/api/me/comments' && method === 'GET') return myComments(request, env);
+    if (path === '/api/me/notes' && method === 'GET') return myNotes(request, env, false);
+    if (path === '/api/me/notes/read' && method === 'POST') return myNotes(request, env, true);
     if (path === '/api/me/numbers' && method === 'GET') return getNumbers(request, env);
     if (path === '/api/me/numbers' && method === 'POST') return addNumbers(request, env);
     if (path === '/api/me/numbers/delete' && method === 'POST') return deleteNumbers(request, env);
@@ -1172,10 +1175,26 @@ async function addComment(request, env, ctx) {
         const b = await (await chatStub(env).fetch('https://chat/banned', { method: 'POST', body: JSON.stringify({ sub: s.sub }) })).json().catch(() => ({}));
         if (b.banned) throw commentError('banned');
     }
-    const r = await community(env, 'commentAdd', { sub: s.sub, post, text: c.text, now: Date.now() });
+    const to = body.to === undefined || body.to === null ? null : String(body.to);
+    if (to !== null && !/^\d{16}-[a-z0-9]{1,8}$/.test(to)) throw new HttpError(400, 'bad_reply', '답글을 달 댓글이 이상합니다.');
+    const r = await community(env, 'commentAdd', { sub: s.sub, post, text: c.text, now: Date.now(), to });
     if (r.error === 'no_user') throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
     if (r.error) throw commentError(r.error);
     ctx.waitUntil(notify(env, `${post.startsWith('shop-') ? '판매점 댓글' : '블로그 댓글'} · ${post}\n${r.comment.nick}: ${c.text.slice(0, 80)}`));
+    return json(request, env, r);
+}
+
+// 내가 쓴 댓글(마이페이지 · 지도 "내 댓글")과 답글 알림(2026-10-27)
+async function myComments(request, env) {
+    const s = await sessionUser(request, env);
+    const r = await community(env, 'myComments', { sub: s.sub });
+    if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
+    return json(request, env, r);
+}
+async function myNotes(request, env, read) {
+    const s = await sessionUser(request, env);
+    const r = await community(env, 'notes', { sub: s.sub, read });
+    if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
     return json(request, env, r);
 }
 

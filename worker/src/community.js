@@ -114,7 +114,10 @@ export const TAP_KINDS = ['gen-share', 'gen-print', 'post-share', 'post-sns', 'p
 
 // 블로그 댓글
 export const COMMENT = { max: 500, gapMs: 15000, daily: 30, list: 200 };   // 글자 수, 다음 댓글까지, 하루 최대, 한 글에 보여 주는 수
-const pubComment = (c, sub) => Object.assign({ id: c.id, at: c.at, nick: c.nick, text: c.text }, c.staff ? { staff: true } : {}, sub && c.sub === sub ? { mine: true } : {});
+const pubComment = (c, sub) => Object.assign({ id: c.id, at: c.at, nick: c.nick, text: c.text }, c.to ? { to: c.to } : {}, c.staff ? { staff: true } : {}, sub && c.sub === sub ? { mine: true } : {});
+// 대댓글 알림(2026-10-27 사장님): 내 댓글에 답글이 달리면 nt:<계정> 에 최근 NOTE_MAX 개, 안 읽은 수는 user.ntN(내 정보로 바로 보인다)
+export const NOTE_MAX = 50;
+export const MY_COMMENTS = 100;   // 마이페이지 · 지도 "내 댓글"에 보여 주는 수(최근 것부터)
 
 // 댓글 점수(공지하지 않는 규칙, COMMENT_POINTS). 받았으면 true
 async function commentPoint(user, text, day) {
@@ -193,6 +196,17 @@ export class Community {
     async unqueueNick(user) {
         delete user.nickDue;
         await this.storage.delete('q:' + user.sub);
+    }
+
+    // 답글 알림 한 줄 더하기(안 읽은 수 user.ntN 도 함께)
+    async note(sub, n) {
+        const u = await this.storage.get('u:' + sub);
+        if (!u) return;
+        const list = (await this.storage.get('nt:' + sub)) || [];
+        list.unshift(n);
+        await this.storage.put('nt:' + sub, list.slice(0, NOTE_MAX));
+        u.ntN = Math.min(NOTE_MAX, (u.ntN || 0) + 1);
+        await this.saveUser(u);
     }
 
     // 회원 기록은 늘 이걸로 저장한다 — 랭킹 색인이 함께 맞춰진다
@@ -529,6 +543,7 @@ const OPS = {
         await this.storage.delete('q:' + sub);   // 자동 별명 대기열
         if (user.ref) await this.storage.delete('m:' + user.ref);
         await this.storage.delete('k:' + sub);   // 내 번호
+        await this.storage.delete('nt:' + sub);  // 답글 알림
         if (await this.storage.delete('ms:' + sub)) await this.bump('subs', -1);   // 추첨 결과 메일 구독
         await this.storage.delete('u:' + sub);
         await this.syncBoard(sub, null);
@@ -740,16 +755,20 @@ const OPS = {
     /* ───── 블로그 댓글 ───── */
 
     // 쓰기: 별명이 있어야 하고, 15초에 한 번·하루 30개까지. 글 검사(링크·연락처·홍보)는 Worker 가 먼저 한다.
-    async commentAdd({ sub, post, text, now }) {
+    // to: 답글을 다는 댓글 번호(같은 글). 답글은 한 단계만 — 답글에 답하면 맨 위 댓글 아래로 붙는다
+    async commentAdd({ sub, post, text, now, to }) {
         const user = await this.storage.get('u:' + sub);
         if (!user) return { error: 'no_user' };
         if (!user.nick) return { error: 'need_nick' };
+        const parent = to ? await this.storage.get('c:' + post + ':' + to) : null;
+        if (to && !parent) return { error: 'not_found' };
         if (now - (user.cmAt || 0) < COMMENT.gapMs) return { error: 'slow' };
         const day = kstDay(now);
         const d = user.cmDay && user.cmDay.day === day ? user.cmDay : { day, n: 0 };
         if (d.n >= COMMENT.daily) return { error: 'daily' };
         const id = String(now).padStart(16, '0') + '-' + Math.random().toString(36).slice(2, 8);
         const c = { id, at: now, sub, nick: user.nick, text };
+        if (parent) c.to = parent.to || parent.id;
         if (user.staff) c.staff = true;
         else if (await commentPoint(user, text, day)) c.pt = 1;   // 지울 때 점수를 되돌리려고 표시해 둔다
         const key = 'c:' + post + ':' + id;
@@ -758,6 +777,12 @@ const OPS = {
         user.cmAt = now;
         user.cmDay = { day, n: d.n + 1 };
         await this.saveUser(user);
+        if (parent) {
+            // 답한 댓글을 쓴 사람, 그리고 맨 위 댓글을 쓴 사람에게(나 자신은 빼고)
+            const root = parent.to ? await this.storage.get('c:' + post + ':' + parent.to) : parent;
+            const who = new Set([parent.sub, root && root.sub].filter(x => x && x !== sub));
+            for (const w of who) await this.note(w, { at: now, post, id, to: c.to, nick: user.nick, text: text.slice(0, 80) });
+        }
         const shop = /^shop-(\d{8})$/.exec(post);
         return { comment: Object.assign(pubComment(c, sub), shop && user.visits && user.visits[shop[1]] ? { visited: true } : {}) };
     },
@@ -776,6 +801,25 @@ const OPS = {
             }
         }
         return { comments: list.map(c => Object.assign(pubComment(c, sub), been.has(c.sub) ? { visited: true } : {})) };
+    },
+
+    // 알림 목록(최근 것부터) + 안 읽은 수. read 면 모두 읽음으로
+    async notes({ sub, read }) {
+        const u = await this.storage.get('u:' + sub);
+        if (!u) return { error: 'no_user' };
+        const unread = u.ntN || 0;
+        if (read && unread) { delete u.ntN; await this.saveUser(u); }
+        return { notes: (await this.storage.get('nt:' + sub)) || [], unread: read ? 0 : unread };
+    },
+
+    // 내가 쓴 댓글(최근 것부터 MY_COMMENTS 개): 글 이름 · 번호 · 시간 · 내용 · 답글 대상
+    async myComments({ sub }) {
+        const u = await this.storage.get('u:' + sub);
+        if (!u) return { error: 'no_user' };
+        const keys = (u.cm || []).slice(-MY_COMMENTS).reverse();
+        const got = new Map();
+        for (let i = 0; i < keys.length; i += 128) for (const [k, v] of await this.storage.get(keys.slice(i, i + 128))) got.set(k, v);
+        return { comments: keys.filter(k => got.has(k)).map(k => { const c = got.get(k); return Object.assign({ post: k.slice(2, k.lastIndexOf(':')), id: c.id, at: c.at, text: c.text }, c.to ? { to: c.to } : {}); }) };
     },
 
     // 지우기: 쓴 사람 또는 관리자(admin)
@@ -936,7 +980,7 @@ const b64url = bytes => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').
 function view(user) {
     const trial = user.trial && user.trial.key ? { key: user.trial.key, keyId: user.trial.keyId, expiresAt: user.trial.expiresAt } : null;
     return {
-        email: user.email, nick: user.nick || null, createdAt: user.createdAt, trial, score: pubScore(user), staff: !!user.staff, gen: user.gen || null, visits: user.visits || {}, visitColors: user.vcolors || [],
+        email: user.email, nick: user.nick || null, createdAt: user.createdAt, trial, score: pubScore(user), staff: !!user.staff, gen: user.gen || null, visits: user.visits || {}, visitColors: user.vcolors || [], notes: user.ntN || 0,
         nickAuto: !!(user.nick && user.nickAuto), nickDue: !user.nick && user.nickDue ? user.nickDue : null,
         pointPass: user.ppass && user.ppass.key ? { key: user.ppass.key, keyId: user.ppass.keyId, expiresAt: user.ppass.expiresAt } : null,
     };

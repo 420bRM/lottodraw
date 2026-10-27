@@ -531,6 +531,7 @@ window.I18N_DICT = {
     'sm.layers':     { ko: '보이는 판매점', en: 'Shown retailers' },
     'sm.modes':      { ko: '1등 방식 (로그인 회원)', en: '1st-prize type (members)' },
     'sm.topTitle':   { ko: 'TOP 50 판매점만 별로 보기', en: 'Show only the Top 50 as stars' },
+    'sm.mineTitle':  { ko: '내가 다녀온 곳 · 내 댓글 (로그인 회원)', en: 'Places I\'ve been · my comments (members)' },
     'mapLink.go':    { ko: '지도 열기 →', en: 'Open the map →' },
     'mapLink.l1':    { ko: '1등 나온 곳', en: '1st prize' },
     'mapLink.l2':    { ko: '2등만 나온 곳', en: '2nd only' },

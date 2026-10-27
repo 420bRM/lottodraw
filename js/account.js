@@ -358,7 +358,9 @@
             const trial = me.user && me.user.trial;
             if (me.user && me.user.nick) menu.appendChild(el('p', { className: 'acct-nick', text: me.user.nick }));
             menu.appendChild(el('p', { className: 'acct-email', text: me.user ? me.user.email : '' }));
-            const myLink = el('a', { className: 'acct-my', href: root + 'mypage.html', text: tr('acct.mypage', '마이페이지 →') });
+            const notes = (me.user && me.user.notes) || 0;   // 내 댓글에 달린 새 답글(마이페이지에서 읽으면 0)
+            const myLink = el('a', { className: 'acct-my', href: root + 'mypage.html' + (notes ? '#my-notes' : ''), text: notes
+                ? tr('acct.mypageNew', '마이페이지 → (새 답글 {n})', { n: notes }) : tr('acct.mypage', '마이페이지 →') });
             if (/(^|\/)mypage\.html$/.test(location.pathname)) myLink.setAttribute('aria-current', 'page');
             menu.appendChild(myLink);
             // 체험 줄: 받은 체험이 있거나 가입 체험이 켜져 있을 때만(꺼진 뒤 가입한 회원에게는 없다)
@@ -375,6 +377,7 @@
                 on: { click: () => { menu.hidden = true; openNick(false); } } }));
             menu.appendChild(el('button', { type: 'button', text: tr('acct.logout', '로그아웃'), on: { click: logout } }));
             menu.appendChild(el('button', { type: 'button', className: 'acct-danger', text: tr('acct.delete', '회원 탈퇴'), on: { click: withdraw } }));
+            if (notes) btn.classList.add('has-new');
             wrap.appendChild(btn);
             wrap.appendChild(menu);
             document.addEventListener('click', e => {
