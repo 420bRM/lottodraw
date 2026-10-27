@@ -133,6 +133,8 @@ body.sm-full #theme-btn { display: none !important; }
 .sm-cmt-list b { font-size: 12px; }
 .sm-cmt-list small { color: var(--faint, #888); font-size: 10.5px; }
 .sm-cmt-list p { margin: 2px 0 0; font-size: 12.5px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+.sm-cmt-been { display: inline-block; padding: 0 6px; border-radius: 999px; background: #e3f4ea; color: #1b7a43; font-size: 10px; font-weight: bold; vertical-align: 1px; }
+:root[data-theme="dark"] .sm-cmt-been { background: #183a27; color: #7fe0a6; }
 .sm-cmt-empty { color: var(--faint, #888); font-size: 11.5px; }
 .sm-cmt-del { padding: 0; border: 0; background: none; color: var(--faint, #888); font: inherit; font-size: 10.5px; text-decoration: underline; cursor: pointer; }
 .sm-cmt-foot { margin-top: 6px; }
