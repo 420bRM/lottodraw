@@ -73,8 +73,12 @@
             map.setLayoutProperty(id, 'visibility', vis(shown.top));
             map.setFilter(id, ['all', isTop, filterFor('w1')]);
         });
+        if (map.getLayer('st-net')) {
+            map.setLayoutProperty('st-net', 'visibility', vis(shown.w1 && !shown.top));
+            ['st-net-top', 'st-net-glow'].forEach(id => map.setLayoutProperty(id, 'visibility', vis(shown.top)));
+            map.setLayoutProperty('st-net-num', 'visibility', vis(shown.w1 || shown.top));
+        }
         names();
-        showZero();
         if (map.getLayer('st-all')) map.setLayoutProperty('st-all', 'visibility', shown.all && !shown.top ? 'visible' : 'none');
         else if (shown.all) loadAll();
     }
@@ -176,6 +180,8 @@
         }
         names();
         if (map.getLayer('st-top-glow')) map.setLayoutProperty('st-top-glow', 'icon-image', on ? 'sm-star-glow-n' : 'sm-star-glow');
+        if (map.getLayer('st-net-glow')) map.setLayoutProperty('st-net-glow', 'icon-image', on ? 'sm-star-glow-red-n' : 'sm-star-glow-red');
+        if (map.getLayer('st-net')) map.setPaintProperty('st-net', 'circle-stroke-color', on ? NIGHT.bg : '#fff');
         map.setPaintProperty('st-w1', 'circle-stroke-color', rim('#f07a1a'));
         map.setPaintProperty('st-w2', 'circle-stroke-color', rim('#3b6fd8'));
         if (map.getLayer('st-all')) map.setPaintProperty('st-all', 'circle-stroke-color', rim('#7d8799'));
@@ -268,7 +274,7 @@
         }
         g.closePath();
     }
-    function starImage(glow) {
+    function starImage(glow, red) {   // red: "0등" 동행복권 인터넷 판매용 붉은 별
         const c = document.createElement('canvas');
         c.width = c.height = STAR;
         const g = c.getContext('2d'), m = STAR / 2;
@@ -277,20 +283,18 @@
             // 테두리 빛: 밝은 선을 흐린 그림자와 함께 여러 번 겹쳐 그린다(겹칠수록 진하다)
             g.lineJoin = 'round';
             // 낮은 금빛(흰 빛은 밝은 바탕에서 별을 흐리게 만들었다), 밤은 흰빛이 도는 노랑
-            g.shadowColor = glow === 'night' ? '#ffe680' : '#ffae00';
-            g.strokeStyle = glow === 'night' ? '#fffbe6' : '#ffe14d';
+            g.shadowColor = red ? (glow === 'night' ? '#ff7a85' : '#ff2d3f') : glow === 'night' ? '#ffe680' : '#ffae00';
+            g.strokeStyle = red ? (glow === 'night' ? '#ffe3e6' : '#ff8a94') : glow === 'night' ? '#fffbe6' : '#ffe14d';
             [[14, 3], [8, 2.4], [3, 1.6]].forEach(([blur, w]) => { g.shadowBlur = blur; g.lineWidth = w; g.stroke(); });
             return g.getImageData(0, 0, STAR, STAR);
         }
         const fill = g.createRadialGradient(m, m, 0, m, m, SR);
-        fill.addColorStop(0, '#fffbe0');
-        fill.addColorStop(0.18, '#ffe45c');
-        fill.addColorStop(0.6, '#ffc21a');
-        fill.addColorStop(1, '#f0a400');
+        (red ? [[0, '#ffe3e5'], [0.18, '#ff5a68'], [0.6, '#e0283a'], [1, '#a8101f']] : [[0, '#fffbe0'], [0.18, '#ffe45c'], [0.6, '#ffc21a'], [1, '#f0a400']])
+            .forEach(([at, c]) => fill.addColorStop(at, c));
         g.fillStyle = fill;
         g.fill();
         g.lineWidth = 2.2;
-        g.strokeStyle = '#b97c00';
+        g.strokeStyle = red ? '#7a0a14' : '#b97c00';
         g.stroke();
         return g.getImageData(0, 0, STAR, STAR);
     }
@@ -346,6 +350,7 @@
                 'text-size': ['interpolate', ['linear'], ['zoom'], 5, 8, 9, 11, 14, 13], 'text-padding': 0, 'text-allow-overlap': false },
             paint: { 'text-color': '#fff', 'text-halo-color': 'rgba(150, 60, 0, .55)', 'text-halo-width': 0.7, 'text-opacity': fadeF() },
         });
+        addNet(radius, starSize);
         ['st-w1', 'st-w2', 'st-top'].forEach(id => {
             map.on('click', id, e => { if (e.features && e.features[0]) open(e.features[0].properties.i, false); });
             map.on('mouseenter', id, () => { map.getCanvas().style.cursor = 'pointer'; });
@@ -376,6 +381,8 @@
     // 지금 화면에 보이는 판매점(근처 찾기도 쓴다). limit 를 넘으면 거기서 멈춘다
     function visibleStores(limit) {
         const b = map.getBounds(), out = [];
+        const n = data.net;   // "0등"도 같은 규칙으로 센다(이름표). 근처 판매점 목록 · 지역 이름에서는 뺀다
+        if (n && (shown.w1 || shown.top) && b.contains([n.lng, n.lat])) out.push({ t: 'n', lat: n.lat, lng: n.lng });
         for (const p of props) {
             if (shown.top ? !p.top : !((shown.w1 && p.w1 > 0) || (shown.w2 && p.o1 === 0))) continue;
             if ((p.closed && !shown.closed) || p.w1 + 1 - fadeT <= 0) continue;
@@ -404,17 +411,26 @@
         const pt = namePaint();
         ['st-name', 'st-all-name'].forEach(id => { if (map.getLayer(id)) Object.keys(pt).forEach(k => map.setPaintProperty(id, k, pt[k])); });
         if (map.getLayer('st-all-name')) map.setLayoutProperty('st-all-name', 'visibility', vis(on && shown.all && !shown.top));
+        if (map.getLayer('st-net-name')) {
+            map.setLayoutProperty('st-net-name', 'visibility', vis(on && (shown.w1 || shown.top)));
+            map.setLayoutProperty('st-net-name', 'text-radial-offset', offsetBy(shown.top ? 1.3 : 1));
+            Object.keys(pt).forEach(k => map.setPaintProperty('st-net-name', k, k === 'text-opacity' ? 1 : pt[k]));
+        }
     }
 
     // 테두리 빛 밝기: 0.35 ~ 1 을 2.8초에 한 번 오간다. 1초에 15번만 바꾸고, 탭이 뒤에 있으면 쉰다(배터리)
-    function glowOpacity(a) { return ['*', Math.min(1, a * (isNight() ? 1.15 : 1)), fadeF()]; }
+    function glowOpacity(a) { return ['*', netGlow(a), fadeF()]; }
+    // 0등은 1등이 늘 끌기 막대 끝보다 많아 흐려질 일이 없다 — 상수로 둬야 매 프레임 바꿔도 소스를 다시 읽지 않는다
+    function netGlow(a) { return Math.min(1, a * (isNight() ? 1.15 : 1)); }
     function glowLoop() {
         let last = 0;
         const tick = now => {
             requestAnimationFrame(tick);
             if (document.hidden || now - last < 66 || !map.getLayer('st-top-glow')) return;
             last = now;
-            map.setPaintProperty('st-top-glow', 'icon-opacity', glowOpacity(0.675 + 0.325 * Math.sin(now / 2800 * 2 * Math.PI)));
+            const v = 0.675 + 0.325 * Math.sin(now / 2800 * 2 * Math.PI);
+            map.setPaintProperty('st-top-glow', 'icon-opacity', glowOpacity(v));
+            if (shown.top && map.getLayer('st-net-glow')) map.setPaintProperty('st-net-glow', 'icon-opacity', netGlow(v));
         };
         requestAnimationFrame(tick);
     }
@@ -450,11 +466,11 @@
     }
     function nearLabel() {
         if (!nearBtn) return;
-        const gu = map.getZoom() >= 10 ? areaOf(visibleStores(3000)) : '';
+        const gu = map.getZoom() >= 10 ? areaOf(visibleStores(3000).filter(x => x.t !== 'n')) : '';
         nearBtn.querySelector('span').textContent = gu ? T(gu + ' 근처 판매점', 'Retailers around ' + gu) : T('이 근처 판매점', 'Retailers around here');
     }
     function openNear() {
-        const list = visibleStores(Infinity);
+        const list = visibleStores(Infinity).filter(x => x.t !== 'n');
         const gu = areaOf(list);
         const info = x => {
             if (x.t === 'w') { const r = data.rows[x.i]; return { name: r[4], place: [data.sido[r[5]], r[6]].filter(Boolean).join(' '), w1: props[x.i].w1, w2: r[3] }; }
@@ -908,43 +924,34 @@
         ol.querySelectorAll('button').forEach(b => b.addEventListener('click', () => (b.dataset.net ? openNet(true) : open(Number(b.dataset.i), true))));
     }
 
-    // ───── "0등" 동행복권 인터넷 판매(2026-10-27 사장님) — 1등이 가장 많이 나온 "판매점". 본사 자리에 붉은 별, TOP 50 목록 맨 위 0위 ─────
-    // 실제 판매 창구가 아니라 인터넷 판매라 점 층(자료 rows)에는 넣지 않고 표시 하나(maplibregl.Marker)로 둔다. 1등 칩을 끄면 · TOP 50 일 때는 따라 숨기고 켠다
-    let zeroMarker = null;
-    function redStarUrl() {
-        const c = document.createElement('canvas');
-        c.width = c.height = STAR;
-        const g = c.getContext('2d'), m = STAR / 2;
-        starPath(g, m);
-        g.shadowColor = 'rgba(255, 60, 70, .9)';
-        g.shadowBlur = 14;
-        const fill = g.createRadialGradient(m, m, 0, m, m, SR);
-        fill.addColorStop(0, '#ffe3e5');
-        fill.addColorStop(0.18, '#ff5a68');
-        fill.addColorStop(0.6, '#e0283a');
-        fill.addColorStop(1, '#a8101f');
-        g.fillStyle = fill;
-        g.fill();
-        g.shadowBlur = 0;
-        g.lineWidth = 2.2;
-        g.strokeStyle = '#7a0a14';
-        g.stroke();
-        return c.toDataURL();
-    }
-    function initZero() {
+    // ───── "0등" 동행복권 인터넷 판매(2026-10-27 사장님) — 1등이 가장 많이 나온 "판매점". 본사 자리, TOP 50 목록 맨 위 0위 ─────
+    // 실제 판매 창구가 아니라 자료 rows 에는 넣지 않고 따로 한 점(source 'net')으로 둔다. 다른 점 · 별과 같은 규칙이고 색만 붉다(사장님):
+    // 크기(2등 + 1등 × 6) · 평소엔 버블(0.62), TOP 50 을 켜면 별(0.75) + 숨 쉬듯 빛나는 테두리 · 가운데 1등 횟수 · 이름표(화면 안 7곳 이하)
+    function addNet(radius, starSize) {
         const n = data.net;
-        if (!n || zeroMarker) return;
-        const el = document.createElement('button');
-        el.type = 'button';
-        el.className = 'sm-zero';
-        el.innerHTML = '<img alt="" src="' + redStarUrl() + '"><b>' + n.n1 + '</b><span>' + T('0등 · 동행복권 인터넷', '#0 · Online sales') + '</span>';
-        el.title = T('동행복권 인터넷 판매 — 1등 ', 'Dong-haeng Lottery online sales — ') + n.n1 + T('게임', ' 1st prizes');
-        el.setAttribute('aria-label', el.title);
-        el.addEventListener('click', e => { e.stopPropagation(); openNet(false); });
-        zeroMarker = new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat([n.lng, n.lat]).addTo(map);
-        showZero();
+        if (!n) return;
+        map.addSource('net', { type: 'geojson', data: { type: 'FeatureCollection', features: [{ type: 'Feature', geometry: { type: 'Point', coordinates: [n.lng, n.lat] },
+            properties: { w1: n.n1, wt: n.n2 + n.n1 * 6, nm: T('0등 · 동행복권 인터넷', '#0 · Online sales') } }] } });
+        if (!map.hasImage('sm-star-red')) map.addImage('sm-star-red', starImage(false, true), { pixelRatio: 1 });
+        if (!map.hasImage('sm-star-glow-red')) map.addImage('sm-star-glow-red', starImage('day', true), { pixelRatio: 1 });
+        if (!map.hasImage('sm-star-glow-red-n')) map.addImage('sm-star-glow-red-n', starImage('night', true), { pixelRatio: 1 });
+        const RED = '#e0283a';
+        map.addLayer({ id: 'st-net', type: 'circle', source: 'net', paint: { 'circle-radius': radius, 'circle-color': RED, 'circle-opacity': ALPHA,
+            'circle-stroke-color': isNight() ? NIGHT.bg : '#fff', 'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 6, 0.3, 12, 1.2] } });
+        map.addLayer({ id: 'st-net-top', type: 'symbol', source: 'net', layout: { 'icon-image': 'sm-star-red', 'icon-size': starSize, 'icon-allow-overlap': true, 'icon-ignore-placement': true },
+            paint: { 'icon-opacity': STAR_ALPHA } });
+        map.addLayer({ id: 'st-net-glow', type: 'symbol', source: 'net', layout: { 'icon-image': isNight() ? 'sm-star-glow-red-n' : 'sm-star-glow-red', 'icon-size': starSize,
+            'icon-allow-overlap': true, 'icon-ignore-placement': true }, paint: { 'icon-opacity': netGlow(0.7) } });
+        map.addLayer({ id: 'st-net-name', type: 'symbol', source: 'net', layout: nameLayout(1), paint: Object.assign(namePaint(), { 'text-opacity': 1 }) });
+        map.addLayer({ id: 'st-net-num', type: 'symbol', source: 'net',
+            layout: { 'text-field': ['to-string', ['get', 'w1']], 'text-font': ['Noto Sans Bold'], 'text-size': ['interpolate', ['linear'], ['zoom'], 5, 8, 9, 11, 14, 13], 'text-allow-overlap': true },
+            paint: { 'text-color': '#fff', 'text-halo-color': 'rgba(120, 10, 20, .7)', 'text-halo-width': 0.8 } });
+        ['st-net', 'st-net-top'].forEach(id => {
+            map.on('click', id, e => { e.originalEvent && e.originalEvent.stopPropagation && e.originalEvent.stopPropagation(); openNet(false); });
+            map.on('mouseenter', id, () => { map.getCanvas().style.cursor = 'pointer'; });
+            map.on('mouseleave', id, () => { map.getCanvas().style.cursor = ''; });
+        });
     }
-    function showZero() { if (zeroMarker) zeroMarker.getElement().hidden = !(shown.w1 || shown.top); }
     function openNet(fly) {
         const n = data.net;
         if (!n) return;
@@ -1058,7 +1065,7 @@
                 wait();
             });
             // store-map-top50.html(공유용 주소): TOP 50 별로 연다
-            if (root.dataset.top) { const c = root.querySelector('.sm-chip-top'); if (c && !shown.top) c.click(); } renderTop(); initVisits(); initFun(); initZero();
+            if (root.dataset.top) { const c = root.querySelector('.sm-chip-top'); if (c && !shown.top) c.click(); } renderTop(); initVisits(); initFun();
             // PC: 이태원로 · 서빙고로 같은 길 이름이 보이는 크기(2026-10-26 사장님) — 용산 둘레.
             // 휴대폰: 남한 전체가 한 화면에 + "적게 나온 곳 흐리게"를 "1등 10회 이상"으로(2026-10-27 사장님 — 많이 나온 곳만 한눈에)
             if (!fromLink && isWide()) map.jumpTo({ center: [126.985, 37.538], zoom: 12.9, padding: pad() });
