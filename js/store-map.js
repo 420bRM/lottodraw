@@ -7,7 +7,7 @@
  * 지도도 저절로 기울어진다(13 아래로 나가면 다시 평평하게). 3D 단추는 손으로 기울이기/펴기.
  * 막대 지도는 2026-10-26 뺐다(임팩트가 약하고 보기 불편 — 사장님).
  * 밤 모드: 사이트 낮/밤(data-theme)을 따라 바탕 지도 색을 어둡게 바꾼다(nightModel). 왼쪽 도구의 🌙 단추로도 바꾼다.
- * 점 크기 = 2등 + 1등 × 6 (1등은 2등보다 6배 드물다 — 팔린 양을 짐작하는 값). 1등이 나온 곳은 주황, 2등만 나온 곳은 파랑. TOP 50 은 점 안에 1등 횟수. "TOP 50" 칩을 켜면 TOP 50 만 노란 반짝이 별 + 숨 쉬듯 빛나는 별 테두리로 남는다. 낮/밤은 사이트 값을 따른다. 바탕 지도의 도로 번호판은 감춘다.
+ * 점 크기 = 2등 + 1등 × 6 (1등은 2등보다 6배 드물다 — 팔린 양을 짐작하는 값). 1등이 나온 곳은 주황, 2등만 나온 곳은 파랑. TOP 50 은 점 안에 1등 횟수. "TOP 50" 칩을 켜면 TOP 50 만 노란 반짝이 별 + 숨 쉬듯 빛나는 별 테두리로 남는다. 낮/밤은 사이트 값을 따르고, TOP 50 을 켜면 이 화면만 밤으로(끄면 원래대로). 바탕 지도의 도로 번호판은 감춘다.
  * 1등 방식(자동 · 수동 · 반자동) 체크 — 로그인 회원 기능. 끈 방식의 1등은 세지 않는다(점 크기 · 숫자 · TOP 50).
  * 카드: 1등 · 2등이 나온 회차 · 날짜 · 당첨번호, 5개씩 쪽 넘김(store-map-rounds.json — 카드를 처음 열 때 받는다).
  * 왼쪽 아래 끌기 막대: 오른쪽으로 끌수록 1등 횟수가 적은 곳부터 서서히 흐려져 많이 나온 곳만 남는다(2등만 나온 곳이 먼저).
@@ -186,6 +186,14 @@
         const dark = !isNight();
         if (dark) document.documentElement.setAttribute('data-theme', 'dark'); else document.documentElement.removeAttribute('data-theme');
         try { localStorage.setItem('lottodraw.theme', dark ? 'dark' : 'light'); } catch (e) { /* 이 페이지에서만 */ }
+    }
+    // TOP 50 을 켜면 이 화면만 밤으로(2026-10-27 사장님 — 별이 돋보이게). 사이트에 저장된 낮/밤은 건드리지 않고, 끄면 원래대로.
+    // 이미 밤이었으면 그대로 두고, 그 사이 🌙 을 손으로 누르면 그 선택을 따른다
+    let nightByTop = false;
+    function topNight(on) {
+        const html = document.documentElement;
+        if (on && !isNight()) { nightByTop = true; html.setAttribute('data-theme', 'dark'); }
+        else if (!on && nightByTop) { nightByTop = false; html.removeAttribute('data-theme'); }
     }
     new MutationObserver(() => nightModel()).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
@@ -923,6 +931,7 @@
             shown[k] = !shown[k];
             b.setAttribute('aria-pressed', String(shown[k]));
             applyLayers();
+            if (k === 'top') topNight(shown.top);
         }));
         const d3 = document.getElementById('sm-3d');
         d3.addEventListener('click', () => {
@@ -931,7 +940,7 @@
             keep2d = !on;
             set3d(on);
         });
-        document.getElementById('sm-night').addEventListener('click', toggleNight);
+        document.getElementById('sm-night').addEventListener('click', () => { nightByTop = false; toggleNight(); });
         side.querySelectorAll('.sm-tab').forEach(b => b.addEventListener('click', () => (b.dataset.tab === 'near' ? openNear() : setTab(b.dataset.tab))));
         nearBtn.addEventListener('click', openNear);
         placeNearBtn();
