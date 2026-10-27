@@ -7,7 +7,7 @@
  * 지도도 저절로 기울어진다(13 아래로 나가면 다시 평평하게). 3D 단추는 손으로 기울이기/펴기.
  * 막대 지도는 2026-10-26 뺐다(임팩트가 약하고 보기 불편 — 사장님).
  * 밤 모드: 사이트 낮/밤(data-theme)을 따라 바탕 지도 색을 어둡게 바꾼다(nightModel). 왼쪽 도구의 🌙 단추로도 바꾼다.
- * 점 크기 = 2등 + 1등 × 6 (1등은 2등보다 6배 드물다 — 팔린 양을 짐작하는 값). 1등이 나온 곳은 주황, 2등만 나온 곳은 파랑. 1등 많은 50곳은 점 안에 1등 횟수.
+ * 점 크기 = 2등 + 1등 × 6 (1등은 2등보다 6배 드물다 — 팔린 양을 짐작하는 값). 1등이 나온 곳은 주황, 2등만 나온 곳은 파랑. TOP 50 은 점 안에 1등 횟수 + 은은하게 빛나는 테두리.
  * 1등 방식(자동 · 수동 · 반자동) 체크 — 로그인 회원 기능. 끈 방식의 1등은 세지 않는다(점 크기 · 숫자 · TOP 50).
  * 카드: 1등 · 2등이 나온 회차 · 날짜 · 당첨번호, 5개씩 쪽 넘김(store-map-rounds.json — 카드를 처음 열 때 받는다).
  * 왼쪽 아래 끌기 막대: 오른쪽으로 끌수록 1등 횟수가 적은 곳부터 서서히 흐려져 많이 나온 곳만 남는다(2등만 나온 곳이 먼저).
@@ -67,6 +67,8 @@
         });
         map.setLayoutProperty('st-num', 'visibility', vis(shown.w1));
         map.setFilter('st-num', ['all', ['>', ['get', 'top'], 0], filterFor('w1')]);
+        map.setLayoutProperty('st-glow', 'visibility', vis(shown.w1));
+        map.setFilter('st-glow', ['all', ['>', ['get', 'top'], 0], filterFor('w1')]);
         if (map.getLayer('st-all')) map.setLayoutProperty('st-all', 'visibility', shown.all ? 'visible' : 'none');
         else if (shown.all) loadAll();
     }
@@ -97,10 +99,12 @@
         map.on('mouseleave', 'st-all', () => { map.getCanvas().style.cursor = ''; });
     }
 
-    // 바탕 지도의 글자를 한글 이름으로(없으면 원래 이름)
+    // 바탕 지도의 글자를 한글 이름으로(없으면 원래 이름).
+    // 도로 번호판(흰 네모 아이콘이 붙은 층)은 그대로 둔다 — 번호(ref) 자리에 긴 도로 이름을 넣으면 네모와 글자가 겹쳐 보였다(2026-10-27 사장님 지적)
+    const isShield = l => !!(l.layout && l.layout['icon-image']);
     function koreanLabels() {
         for (const l of map.getStyle().layers) {
-            if (l.type !== 'symbol' || !l.layout || !l.layout['text-field']) continue;
+            if (l.type !== 'symbol' || !l.layout || !l.layout['text-field'] || isShield(l)) continue;
             try { map.setLayoutProperty(l.id, 'text-field', ['coalesce', ['get', en() ? 'name:en' : 'name:ko'], ['get', 'name']]); } catch (e) { /* 이름이 아닌 글자 */ }
         }
     }
@@ -158,7 +162,7 @@
             else if (l.type === 'background') setP(id, 'background-color', N('bg'));
             else if (l.type === 'fill') setP(id, 'fill-color', N(sl === 'water' ? 'water' : sl === 'park' || sl === 'landcover' ? 'park' : sl === 'building' ? 'bld' : 'land'));
             else if (l.type === 'line') setP(id, 'line-color', N(sl === 'water' || sl === 'waterway' ? 'water' : sl === 'boundary' ? 'border' : /casing/.test(id) ? 'casing' : /rail|transit/.test(id) ? 'rail' : 'road'));
-            else if (l.type === 'symbol' && l.layout && l.layout['text-field']) { setP(id, 'text-color', N('text')); setP(id, 'text-halo-color', N('halo')); }
+            else if (l.type === 'symbol' && l.layout && l.layout['text-field'] && !isShield(l)) { setP(id, 'text-color', N('text')); setP(id, 'text-halo-color', N('halo')); }
         }
         map.setPaintProperty('st-w1', 'circle-stroke-color', rim('#f07a1a'));
         map.setPaintProperty('st-w2', 'circle-stroke-color', rim('#3b6fd8'));
@@ -230,9 +234,15 @@
                 'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 6, ['case', vis, 2, 0.3], 12, ['case', vis, 3.5, 1.2]],
             },
         });
+        // TOP 50: 점 뒤에 은은하게 숨 쉬듯 빛나는 테두리(2026-10-27 사장님). 밝기만 천천히 바꾼다(glowLoop)
+        map.addLayer({
+            id: 'st-glow', type: 'circle', source: 'stores', filter: ['all', ['>', ['get', 'top'], 0], filterFor('w1')],
+            paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, ['+', 5, ['*', 0.45, ['sqrt', ['get', 'wt']]]], 10, ['+', 11, ['*', 0.9, ['sqrt', ['get', 'wt']]]], 15, ['+', 15, ['*', 1.0, ['sqrt', ['get', 'wt']]]]],
+                'circle-color': '#ffb347', 'circle-blur': 0.85, 'circle-opacity': glowOpacity(0.4), 'circle-pitch-alignment': 'map' },
+        });
         map.addLayer(layer('st-w2', '#3b6fd8', 'w2'));
         map.addLayer(layer('st-w1', '#f07a1a', 'w1'));
-        // 1등 많은 50곳: 점 안에 1등 횟수(겹치면 순위 높은 곳만)
+        // TOP 50: 점 안에 1등 횟수(겹치면 순위 높은 곳만)
         map.addLayer({
             id: 'st-num', type: 'symbol', source: 'stores', filter: ['all', ['>', ['get', 'top'], 0], filterFor('w1')],
             layout: { 'text-field': ['to-string', ['get', 'w1']], 'text-font': ['Noto Sans Bold'], 'symbol-sort-key': ['get', 'top'],
@@ -245,6 +255,19 @@
             map.on('mouseleave', id, () => { map.getCanvas().style.cursor = ''; });
         });
         applyLayers();
+        glowLoop();
+    }
+    // 빛 밝기: 0.25 ~ 0.55 를 2.8초에 한 번 오간다. 1초에 15번만 바꾸고, 탭이 뒤에 있으면 쉰다(배터리)
+    function glowOpacity(a) { return ['*', a * (isNight() ? 1.25 : 1), fadeF()]; }
+    function glowLoop() {
+        let last = 0;
+        const tick = now => {
+            requestAnimationFrame(tick);
+            if (document.hidden || now - last < 66 || !map.getLayer('st-glow')) return;
+            last = now;
+            map.setPaintProperty('st-glow', 'circle-opacity', glowOpacity(0.4 + 0.15 * Math.sin(now / 2800 * 2 * Math.PI)));
+        };
+        requestAnimationFrame(tick);
     }
 
     // PC 왼쪽 칸의 탭(당근 동네업체처럼 — 2026-10-26). 휴대폰은 탭이 안 보이고 data-tab 도 화면에 영향이 없다
