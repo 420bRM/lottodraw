@@ -7,7 +7,8 @@
  * - tools/build-static-stats.js 가 끝에 부른다(따로 `node tools/asset-version.js` 로도 된다).
  * - 생성 페이지(통계 · 회차 · 블로그)는 건드리지 않는다 — 1,300쪽이 css 한 줄 고칠 때마다 바뀌면 여러 작업이 서로 부딪힌다.
  * - js/i18n.js 가 불러오는 account.js · theme.js 의 지문은 i18n.js 안 LOAD_V 줄에 적는다(2026-10-27 — 옛 theme.js 가 쥐어져 새 메뉴 단추가 안 보였다).
- *   그 뒤에 i18n.js 의 지문을 재므로 두 파일이 바뀌면 i18n.js 주소도 바뀐다. chat.js 등 그 아래는 다루지 않는다.
+ *   그 뒤에 i18n.js 의 지문을 재므로 두 파일이 바뀌면 i18n.js 주소도 바뀐다.
+ * - account.js 가 붙이는 chat.js · comments.js 의 지문은 account.js 안 LOAD_V 줄에(2026-10-27 — 블로그 답글). account.js 를 먼저 고치고 지문을 잰다.
  */
 'use strict';
 
@@ -29,6 +30,12 @@ function run() {
         }
         return memo.get(rel);
     };
+    const acct = path.join(ROOT, 'js/account.js');
+    if (fs.existsSync(acct)) {
+        const src = fs.readFileSync(acct, 'utf8');
+        const out = src.replace(/const LOAD_V = \{[^}]*\};/, `const LOAD_V = { 'chat.js': '${stamp('js/chat.js') || ''}', 'comments.js': '${stamp('js/comments.js') || ''}' };`);
+        if (out !== src) fs.writeFileSync(acct, out);
+    }
     const i18n = path.join(ROOT, 'js/i18n.js');
     if (fs.existsSync(i18n)) {
         const src = fs.readFileSync(i18n, 'utf8');
