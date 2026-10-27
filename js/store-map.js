@@ -227,8 +227,8 @@
         };
     }
 
-    // 점 투명도: 0.62(폐점 0.3). TOP 50 별도 같은 0.62(2026-10-27 사장님)
-    const ALPHA = 0.62;
+    // 점 투명도: 0.62(폐점 0.3). TOP 50 별은 0.75(2026-10-27 사장님)
+    const ALPHA = 0.62, STAR_ALPHA = 0.75;   // 별만 조금 진하게(밤 바탕에서 칙칙해 보였다)
     const isTop = ['>', ['get', 'top'], 0];
     const dotAlpha = () => ['*', ['case', ['==', ['get', 'closed'], 1], 0.3, ALPHA], fadeF()];
     const rimAlpha = () => fadeF();
@@ -319,7 +319,7 @@
             id: 'st-top', type: 'symbol', source: 'stores', filter: ['all', isTop, filterFor('w1')],
             layout: { 'icon-image': 'sm-star', 'icon-size': starSize, 'icon-allow-overlap': true, 'icon-ignore-placement': true,
                 'symbol-sort-key': ['-', 0, ['get', 'top']] },   // 순위 높은 별이 위로
-            paint: { 'icon-opacity': ['*', ALPHA, fadeF()] },
+            paint: { 'icon-opacity': ['*', STAR_ALPHA, fadeF()] },
         });
         // 별 테두리가 숨 쉬듯 빛난다(2026-10-27 사장님 — 둥근 빛 대신 테두리). 밝기만 천천히 바꾼다(glowLoop)
         map.addLayer({
@@ -501,29 +501,45 @@
             (d ? '<span class="sm-balls">' + d[1].map(ball).join('') + '<span class="sm-plus">+</span>' + ball(d[2]) + '</span>' : '') + '</li>';
     }
     // 목록 하나(제목 + 5개씩 쪽 넘김)
-    function roundList(box, title, rows) {
-        if (!rows.length) return;
+    function roundList(box, rows) {
         const sec = document.createElement('section');
         box.appendChild(sec);
+        if (!rows.length) { sec.innerHTML = '<p class="sm-small">' + T('기록이 없습니다.', 'None.') + '</p>'; return sec; }
         const pages = Math.ceil(rows.length / PER);
         let pg = 0;
         const draw = () => {
-            sec.innerHTML = '<h4>' + title + '</h4><ul>' + rows.slice(pg * PER, pg * PER + PER).join('') + '</ul>' +
+            sec.innerHTML = '<ul>' + rows.slice(pg * PER, pg * PER + PER).join('') + '</ul>' +
                 (pages > 1 ? '<div class="sm-pager"><button type="button" class="sm-pg" data-d="-1" aria-label="' + T('이전', 'Previous') + '"' + (pg ? '' : ' disabled') + '>‹</button>' +
                     '<span>' + (pg + 1) + ' / ' + pages + '</span><button type="button" class="sm-pg" data-d="1" aria-label="' + T('다음', 'Next') + '"' + (pg < pages - 1 ? '' : ' disabled') + '>›</button></div>' : '');
             sec.querySelectorAll('.sm-pg').forEach(b => b.addEventListener('click', () => { pg = Math.max(0, Math.min(pages - 1, pg + Number(b.dataset.d))); draw(); }));
         };
         draw();
+        return sec;
     }
+    // 1등 · 2등 나온 회차는 토글로 하나씩만(2026-10-27 사장님 — 카드를 작게, 지도가 보이게). 고른 쪽은 다음 카드에도 이어 간다
+    let rankPick = 1;
     function fillRounds(box, rw, draws) {
         const [r1, r2] = rw;
         box.textContent = '';
-        roundList(box, T('1등 나온 회차', '1st-prize draws') + ' (' + r1.length + ')',
-            r1.map(c => { const how = HOW[c % 4]; return roundRow(Math.floor(c / 4), how ? T(how[0], how[1]) : '', draws); }));
         const cnt = new Map();
         r2.forEach(r => cnt.set(r, (cnt.get(r) || 0) + 1));
-        roundList(box, T('2등 나온 회차', '2nd-prize draws') + ' (' + r2.length + ')',
-            [...cnt].map(([r, n]) => roundRow(r, n > 1 ? '×' + n : '', draws)));
+        const bar = document.createElement('div');
+        bar.className = 'sm-rk';
+        bar.setAttribute('role', 'group');
+        bar.innerHTML = [[1, T('1등 나온 회차', '1st-prize draws'), r1.length], [2, T('2등 나온 회차', '2nd-prize draws'), r2.length]]
+            .map(([k, t, n]) => '<button type="button" data-k="' + k + '"' + (n ? '' : ' disabled') + '>' + t + ' <b>' + n + '</b></button>').join('');
+        box.appendChild(bar);
+        const secs = {
+            1: roundList(box, r1.map(c => { const how = HOW[c % 4]; return roundRow(Math.floor(c / 4), how ? T(how[0], how[1]) : '', draws); })),
+            2: roundList(box, [...cnt].map(([r, n]) => roundRow(r, n > 1 ? '×' + n : '', draws))),
+        };
+        const show = k => {
+            bar.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.k) === k)));
+            secs[1].hidden = k !== 1;
+            secs[2].hidden = k !== 2;
+        };
+        bar.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { rankPick = Number(b.dataset.k); show(rankPick); }));
+        show(rankPick === 1 ? (r1.length ? 1 : 2) : (r2.length ? 2 : 1));
     }
 
     // 판매점 카드
@@ -620,7 +636,7 @@
                 map.setPaintProperty(id, 'circle-stroke-opacity', rimAlpha());
             });
             map.setPaintProperty('st-num', 'text-opacity', fadeF());
-            map.setPaintProperty('st-top', 'icon-opacity', ['*', ALPHA, fadeF()]);
+            map.setPaintProperty('st-top', 'icon-opacity', ['*', STAR_ALPHA, fadeF()]);
             if (map.getLayer('st-all')) map.setPaintProperty('st-all', 'circle-opacity', 0.7 * Math.max(0, 1 - fadeT));
             applyLayers();
         });
