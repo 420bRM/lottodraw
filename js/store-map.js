@@ -1011,6 +1011,17 @@
             if (!isWide()) { const f = document.getElementById('sm-fade'); f.value = 57; setFade(57); }   // 57 → 1등 10회 이상(setFade 의 셈)
             if (fromLink && map.getPitch() > 5) { const d3 = document.getElementById('sm-3d'); d3.setAttribute('aria-pressed', 'true'); d3.textContent = '2D'; }   // 기울어진 화면 링크
         });
+        // 지도 출처(ⓘ)는 접힌 채로 시작(2026-10-27 사장님 — 휴대폰에서 펼쳐진 채 도착했다). MapLibre 는 좁은 화면에서 처음에 펼쳐 두고
+        // 지도를 끌어야 접는다 — 출처 글이 들어와 접는 모양(maplibregl-compact)이 되는 순간(sourcedata 바로 뒤) 한 번 접는다.
+        // (idle 은 안 된다 — TOP 50 별 빛이 계속 다시 그려 idle 이 다시 오지 않는다) ⓘ 를 누르면 언제든 펼쳐 볼 수 있다
+        const foldAttrib = () => setTimeout(() => {
+            const el = document.querySelector('.maplibregl-ctrl-attrib.maplibregl-compact');
+            if (!el) return;   // 아직 출처 글이 없다(또는 넓은 화면)
+            el.classList.remove('maplibregl-compact-show');
+            el.removeAttribute('open');
+            map.off('sourcedata', foldAttrib);
+        }, 0);
+        map.on('sourcedata', foldAttrib);
         map.on('zoomend', autoTilt);
         map.on('moveend', () => { names(); nearLabel(); if (nearAfterMove) { nearAfterMove = false; openNear(); } });
         map.on('error', e => { if (e && e.error && /style|tiles/i.test(String(e.error.message))) console.warn('map', e.error); });
