@@ -31,6 +31,7 @@ import { verifyGoogleToken } from './google.js';
 import { saleRound, cleanGame, rankOf, kstParts, drawDay } from './lotto.js';
 
 import { chatStub, checkText } from './chat.js';
+import { shopInfo, sharePage } from './share.js';
 
 export { Community } from './community.js';
 export { ChatRoom } from './chat.js';
@@ -81,14 +82,17 @@ async function route(request, env, ctx) {
     const method = request.method;
 
     if (method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(request, env, true) });
+    let m;
 
     if (path === '/' || path === '/api') return json(request, env, { ok: true, service: 'lottodraw-api' });
+    m = path.match(/^\/s\/(\d{8})$/);
+    if (m && (method === 'GET' || method === 'HEAD')) return shopShare(request, env, ctx, m[1]);
     if (path === '/api/config' && method === 'GET') return getConfig(request, env);
     if (path === '/api/pubkey' && method === 'GET') return getPubkey(request, env);
     if (path === '/api/revoked' && method === 'GET') return getRevoked(request, env);
     if (path === '/api/orders' && method === 'POST') return createOrder(request, env, ctx, url);
 
-    let m = path.match(/^\/api\/orders\/([0-9A-Z]{8})$/);
+    m = path.match(/^\/api\/orders\/([0-9A-Z]{8})$/);
     if (m && method === 'GET') return getOrder(request, env, m[1], url.searchParams.get('token'));
     m = path.match(/^\/api\/orders\/([0-9A-Z]{8})\/cancel$/);
     if (m && method === 'POST') return buyerCancel(request, env, m[1]);
@@ -1104,6 +1108,20 @@ async function tap(request, env) {
     await limited(env.TAP_LIMIT, 'tap:' + (request.headers.get('CF-Connecting-IP') || 'local'));
     await community(env, 'tap', { kind, now: Date.now() });
     return new Response(null, { status: 204, headers: corsHeaders(request, env) });
+}
+
+/* ───── 판매점 공유 주소 /s/판매점번호 (worker/src/share.js) ───── */
+// 미리보기를 만드는 로봇(카카오톡 · 페이스북 · 슬랙 등)은 세지 않고, 사람이 열어 지도로 넘어간 것만 shop-open 으로 센다
+const PREVIEW_UA = /bot|crawl|spider|scrap|preview|facebookexternalhit|slack|discord|telegram|whatsapp|kakaotalk-scrap|headless/i;
+async function shopShare(request, env, ctx, id) {
+    const site = siteUrl(env);
+    let s = null;
+    try { s = await shopInfo(site, id); } catch (e) { console.error('share', e); }
+    if (!s) return Response.redirect(site + '/store-map.html', 302);
+    if (!PREVIEW_UA.test(request.headers.get('User-Agent') || '')) ctx.waitUntil(payTap(env, 'shop-open'));
+    return new Response(request.method === 'HEAD' ? null : sharePage(site, id, s), {
+        headers: { 'Content-Type': 'text/html; charset=utf-8', 'X-Robots-Tag': 'noindex', 'Cache-Control': 'public, max-age=3600' },
+    });
 }
 
 /* ───── 블로그 조회수 (js/views.js) ───── */

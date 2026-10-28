@@ -356,7 +356,7 @@
 
     /* ───── 공유 · 출력 집계 ───── */
 
-    const TAPS = [['gen-share', '생성기 공유'], ['gen-print', '생성기 출력'], ['post-share', '글 공유'], ['post-sns', '글 SNS']];
+    const TAPS = [['gen-share', '생성기 공유'], ['gen-print', '생성기 출력'], ['post-share', '글 공유'], ['post-sns', '글 SNS'], ['shop-share', '판매점 공유'], ['shop-open', '판매점 공유 열람']];
     const kstDay = ms => new Date(ms + 9 * 3600 * 1000).toISOString().slice(0, 10);
 
     async function loadTaps() {

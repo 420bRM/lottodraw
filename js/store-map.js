@@ -571,11 +571,102 @@
         const place = [all.sido[si] || '', gu].filter(Boolean).join(' ');
         showCard('<h3>' + esc(name) + '</h3><p class="sm-place">' + esc(place) + '</p>' +
             '<p class="sm-why">' + T(data.first + '회부터 1등 · 2등 기록이 없는 판매점입니다. 어느 판매점에서 사든 1등 확률은 1/8,145,060으로 같습니다.',
-                'No 1st or 2nd prize here since draw ' + data.first + '. Your chance of 1st prize is 1 in 8,145,060 wherever you buy.') + '</p>' + links(name, place, lat, lng) +
+                'No 1st or 2nd prize here since draw ' + data.first + '. Your chance of 1st prize is 1 in 8,145,060 wherever you buy.') + '</p>' + links(name, place, lat, lng) + '<div class="sm-share-shop" id="sm-share-shop"><button type="button" class="sm-share-btn">🔗 ' + T('해당 판매점 공유하기', 'Share this retailer') + '</button></div>' +
             '<div class="sm-visit" id="sm-visit"></div><div class="sm-cmt" id="sm-cmt"></div>', lat, lng, fly);
+        shareUi('a', i, { name, place, w1: 0, w2: 0 });
         visitUi('a', i);
         commentsUi('a', i);
     }
+
+    // ───── 해당 판매점 공유하기(2026-10-28 사장님) ─────
+    // 누르면 이 자리에서 공유 그림(1200×630)을 그려 보여 주고 공유 · 링크 복사 · 그림 저장. 그림은 서버에 올리지 않는다.
+    // 링크는 서버의 공유 주소(api…/s/판매점번호) — 카카오톡 · 커뮤니티 미리보기에 판매점 이름 · 횟수가 나오고, 열면 이 카드로 온다(worker/src/share.js).
+    // 위치정보가 아니다(판매점은 사업장, 내 위치는 쓰지 않는다)
+    const apiBase = () => String((window.PREMIUM_CONFIG && window.PREMIUM_CONFIG.apiBase) || 'https://api.lottodraw.kr').replace(/\/+$/, '');
+    const shareTap = () => { try { navigator.sendBeacon(apiBase() + '/api/tap', JSON.stringify({ k: 'shop-share' })); } catch (e) { /* 못 세도 그만 */ } };
+    let shareBg = null;
+    const loadShareBg = () => (shareBg = shareBg || new Promise((ok, no) => { const im = new Image(); im.onload = () => ok(im); im.onerror = no; im.src = 'img/share-shop-bg.jpg'; }));
+    // 그림 규칙: 오른쪽 절반에 TOP 50 밤 지도(남한 전체), 왼쪽은 어둡게 덮고 LOTTODRAW.KR · 상호 · 지역 · 1등 · 2등 횟수 · 확률 문구
+    async function shareImage(x) {
+        const W = 1200, H = 630, c = document.createElement('canvas');
+        c.width = W; c.height = H;
+        const g = c.getContext('2d');
+        const FONT = '"Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
+        g.fillStyle = '#141a23'; g.fillRect(0, 0, W, H);
+        try { g.drawImage(await loadShareBg(), 0, 0, W, H); } catch (e) { /* 배경 없이도 그린다 */ }
+        const fade = g.createLinearGradient(0, 0, W, 0);
+        fade.addColorStop(0, '#141a23'); fade.addColorStop(0.45, '#141a23'); fade.addColorStop(0.56, 'rgba(20,26,35,.85)'); fade.addColorStop(0.68, 'rgba(20,26,35,0)');
+        g.fillStyle = fade; g.fillRect(0, 0, W, H);
+        g.textBaseline = 'alphabetic';
+        const L = 84;
+        if ('letterSpacing' in g) g.letterSpacing = '6px';
+        g.fillStyle = '#8fa8d6'; g.font = '700 30px ' + FONT; g.fillText('LOTTODRAW.KR', L, 126);
+        if ('letterSpacing' in g) g.letterSpacing = '0px';
+        // 상호: 600px 안에 들게 줄이고(최소 52px), 그래도 길면 말줄임
+        let size = 96, name = x.name;
+        g.font = '900 ' + size + 'px ' + FONT;
+        while (size > 52 && g.measureText(name).width > 600) { size -= 4; g.font = '900 ' + size + 'px ' + FONT; }
+        while (name.length > 1 && g.measureText(name).width > 600) name = name.slice(0, -2) + '…';
+        g.fillStyle = '#ffe9a8'; g.fillText(name, L, 258);
+        g.fillStyle = '#c3ccd8'; g.font = '700 34px ' + FONT; g.fillText(x.place + T(' · 로또 판매점', ' · lotto retailer'), L, 322);
+        const chip = (txt, xx, bg, fg) => {
+            g.font = '900 38px ' + FONT;
+            const w = g.measureText(txt).width + 44;
+            g.fillStyle = bg; g.beginPath();
+            if (g.roundRect) g.roundRect(xx, 360, w, 66, 16); else g.rect(xx, 360, w, 66);
+            g.fill(); g.fillStyle = fg; g.fillText(txt, xx + 22, 407);
+            return xx + w + 16;
+        };
+        if (x.w1 || x.w2) {
+            const nx = chip(T('1등 ' + fmt(x.w1) + '번', '1st × ' + fmt(x.w1)), L, 'rgba(240,122,26,.22)', '#ffb066');
+            chip(T('2등 ' + fmt(x.w2) + '번', '2nd × ' + fmt(x.w2)), nx, 'rgba(58,134,255,.22)', '#a9c6ff');
+        } else chip(T('1등 · 2등 기록 없음', 'No 1st/2nd prize yet'), L, 'rgba(255,255,255,.1)', '#c3ccd8');
+        g.fillStyle = '#8a94a6'; g.font = '500 22px ' + FONT;
+        g.fillText(T(data.first + '~' + data.last + '회 기록', 'Draws ' + data.first + '–' + data.last), L, 484);
+        g.fillText(T('어디서 사든 1등 확률은 1/8,145,060으로 같습니다', 'Your chance of 1st prize is 1 in 8,145,060 wherever you buy'), L, 518);
+        return new Promise(ok => c.toBlob(ok, 'image/jpeg', 0.9));
+    }
+    function shareUi(k, i, x) {
+        const box = document.getElementById('sm-share-shop');
+        if (!box) return;
+        const myCard = card.dataset.s = k + i;
+        box.querySelector('.sm-share-btn').addEventListener('click', async () => {
+            const old = box.querySelector('.sm-share-panel');
+            if (old) { old.remove(); return; }
+            const j = await loadIds();
+            const id = j && j[k] && j[k][i];
+            if (!id || card.dataset.s !== myCard) return;
+            const url = apiBase() + '/s/' + id;
+            const text = x.name + ' · ' + x.place + '\n' + (x.w1 || x.w2 ? T('1등 ' + fmt(x.w1) + '번 · 2등 ' + fmt(x.w2) + '번', '1st × ' + fmt(x.w1) + ' · 2nd × ' + fmt(x.w2)) + '\n' : '') +
+                T('어디서 사든 1등 확률은 1/8,145,060으로 같습니다.', 'Same 1-in-8,145,060 chance wherever you buy.');
+            const blob = await shareImage(x);
+            if (card.dataset.s !== myCard) return;
+            const file = blob && new File([blob], 'lottodraw-' + id + '.jpg', { type: 'image/jpeg' });
+            const imgUrl = blob ? URL.createObjectURL(blob) : '';
+            const panel = document.createElement('div');
+            panel.className = 'sm-share-panel';
+            panel.innerHTML = (imgUrl ? '<img alt="" src="' + imgUrl + '">' : '') + '<div class="sm-share-acts">' +
+                (navigator.share ? '<button type="button" data-a="share">' + T('공유하기', 'Share') + '</button>' : '') +
+                '<button type="button" data-a="copy">' + T('링크 복사', 'Copy link') + '</button>' +
+                (imgUrl ? '<a data-a="save" href="' + imgUrl + '" download="lottodraw-' + id + '.jpg">' + T('그림 저장', 'Save image') + '</a>' : '') + '</div>' +
+                '<p class="sm-share-msg" role="status"></p>';
+            box.appendChild(panel);
+            const msg = panel.querySelector('.sm-share-msg');
+            panel.querySelectorAll('[data-a]').forEach(b => b.addEventListener('click', async () => {
+                const a = b.dataset.a;
+                if (a === 'save') { shareTap(); return; }
+                if (a === 'copy') {
+                    try { await navigator.clipboard.writeText(url); msg.textContent = T('링크를 복사했습니다. 붙여 넣으면 이 판매점 미리보기가 나옵니다.', 'Link copied.'); shareTap(); }
+                    catch (e) { window.prompt(T('이 주소를 복사해 주세요', 'Copy this link'), url); }
+                    return;
+                }
+                const withFile = file && navigator.canShare && navigator.canShare({ files: [file] });
+                try { await navigator.share(withFile ? { files: [file], title: x.name, text: text + '\n' + url } : { title: x.name, text, url }); shareTap(); }
+                catch (e) { if (!e || e.name !== 'AbortError') msg.textContent = T('공유하지 못했습니다. 링크 복사를 써 주세요.', 'Could not share. Use Copy link.'); }
+            }));
+        });
+    }
+
 
     // ───── 다녀온 곳(로그인 회원) ─────
     // 색 고르기(2026-10-26 사장님): 첫 색(빨강)은 누구나. 이용권이 있으면 모든 색 + 아무 색, 없으면 색 하나를 COLOR_COST 포인트로 연다
@@ -979,8 +1070,9 @@
             '<div class="sm-rounds" id="sm-rounds"><p class="sm-small">' + T('당첨 회차 불러오는 중…', 'Loading draws…') + '</p></div>' +
             '<p class="sm-why">' + T('1등 · 2등이 많을수록 많이 팔린 곳일 가능성이 큽니다. 어느 판매점에서 사든 1등 확률은 1/8,145,060으로 같습니다.',
                 'More 1st and 2nd prizes most likely means more tickets sold. Your chance of 1st prize is 1 in 8,145,060 wherever you buy.') + '</p>' +
-            links(name, place, lat, lng) + '<div class="sm-visit" id="sm-visit"></div><div class="sm-cmt" id="sm-cmt"></div>', lat, lng, fly);
+            links(name, place, lat, lng) + '<div class="sm-share-shop" id="sm-share-shop"><button type="button" class="sm-share-btn">🔗 ' + T('해당 판매점 공유하기', 'Share this retailer') + '</button></div>' + '<div class="sm-visit" id="sm-visit"></div><div class="sm-cmt" id="sm-cmt"></div>', lat, lng, fly);
         card.dataset.i = String(i);
+        shareUi('w', i, { name, place, w1, w2 });
         visitUi('w', i);
         commentsUi('w', i);
         markTop(i);
