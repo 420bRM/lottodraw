@@ -573,7 +573,7 @@
             '<p class="sm-why">' + T(data.first + '회부터 1등 · 2등 기록이 없는 판매점입니다. 어느 판매점에서 사든 1등 확률은 1/8,145,060으로 같습니다.',
                 'No 1st or 2nd prize here since draw ' + data.first + '. Your chance of 1st prize is 1 in 8,145,060 wherever you buy.') + '</p>' + links(name, place, lat, lng) + '<div class="sm-share-shop" id="sm-share-shop"><button type="button" class="sm-share-btn">🔗 ' + T('해당 판매점 공유하기', 'Share this retailer') + '</button></div>' +
             '<div class="sm-visit" id="sm-visit"></div><div class="sm-cmt" id="sm-cmt"></div>', lat, lng, fly);
-        shareUi('a', i, { name, place, w1: 0, w2: 0 });
+        shareUi('a', i, { name, place, w1: 0, w2: 0, sido: all.sido[si] || '' });
         visitUi('a', i);
         commentsUi('a', i);
     }
@@ -584,16 +584,23 @@
     // 위치정보가 아니다(판매점은 사업장, 내 위치는 쓰지 않는다)
     const apiBase = () => String((window.PREMIUM_CONFIG && window.PREMIUM_CONFIG.apiBase) || 'https://api.lottodraw.kr').replace(/\/+$/, '');
     const shareTap = () => { try { navigator.sendBeacon(apiBase() + '/api/tap', JSON.stringify({ k: 'shop-share' })); } catch (e) { /* 못 세도 그만 */ } };
-    let shareBg = null;
-    const loadShareBg = () => (shareBg = shareBg || new Promise((ok, no) => { const im = new Image(); im.onload = () => ok(im); im.onerror = no; im.src = 'img/share-shop-bg.jpg'; }));
-    // 그림 규칙: 오른쪽 절반에 낮 지도(남한 전체 · 1 · 2등 점 — 지도 공유 이미지 og-store-map.jpg 느낌), 왼쪽은 하얗게 덮고 LOTTODRAW.KR · 상호 · 지역 · 1등 · 2등 횟수 · 확률 문구
+    // 배경은 그 판매점 시도의 그림(img/share/sido-*.jpg — 링크 미리보기와 같은 그림, 10-28 사장님: 스파면 서울).
+    // 그 그림 왼쪽의 "○○ 로또 판매점" 글자는 아래 하얀 덮개(왼쪽 절반)에 가려진다. 시도를 모르면 남한 전체(img/share-shop-bg.jpg)
+    const SIDO_SLUG = { 강원: 'gangwon', 경기: 'gyeonggi', 경남: 'gyeongnam', 경북: 'gyeongbuk', 광주: 'gwangju', 대구: 'daegu', 대전: 'daejeon', 부산: 'busan', 서울: 'seoul',
+        세종: 'sejong', 울산: 'ulsan', 인천: 'incheon', 전남: 'jeonnam', 전북: 'jeonbuk', 제주: 'jeju', 충남: 'chungnam', 충북: 'chungbuk' };   // worker/src/share.js 와 같게
+    const shareBgs = {};
+    const loadShareBg = sido => {
+        const src = SIDO_SLUG[sido] ? 'img/share/sido-' + SIDO_SLUG[sido] + '.jpg' : 'img/share-shop-bg.jpg';
+        return (shareBgs[src] = shareBgs[src] || new Promise((ok, no) => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => { delete shareBgs[src]; no(); }; im.src = src; }));
+    };
+    // 그림 규칙: 오른쪽 절반에 그 시도 낮 지도(1등 5회 이상 + 2등만 나온 곳 — 지도 공유 이미지 느낌), 왼쪽은 하얗게 덮고 LOTTODRAW.KR · 상호 · 지역 · 1등 · 2등 횟수 · 확률 문구
     async function shareImage(x) {
         const W = 1200, H = 630, c = document.createElement('canvas');
         c.width = W; c.height = H;
         const g = c.getContext('2d');
         const FONT = '"Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
         g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
-        try { g.drawImage(await loadShareBg(), 0, 0, W, H); } catch (e) { /* 배경 없이도 그린다 */ }
+        try { g.drawImage(await loadShareBg(x.sido), 0, 0, W, H); } catch (e) { /* 배경 없이도 그린다 */ }
         const fade = g.createLinearGradient(0, 0, W, 0);
         fade.addColorStop(0, '#fff'); fade.addColorStop(0.5, '#fff'); fade.addColorStop(0.6, 'rgba(255,255,255,.88)'); fade.addColorStop(0.72, 'rgba(255,255,255,.35)'); fade.addColorStop(0.84, 'rgba(255,255,255,0)');
         g.fillStyle = fade; g.fillRect(0, 0, W, H);
@@ -1072,7 +1079,7 @@
                 'More 1st and 2nd prizes most likely means more tickets sold. Your chance of 1st prize is 1 in 8,145,060 wherever you buy.') + '</p>' +
             links(name, place, lat, lng) + '<div class="sm-share-shop" id="sm-share-shop"><button type="button" class="sm-share-btn">🔗 ' + T('해당 판매점 공유하기', 'Share this retailer') + '</button></div>' + '<div class="sm-visit" id="sm-visit"></div><div class="sm-cmt" id="sm-cmt"></div>', lat, lng, fly);
         card.dataset.i = String(i);
-        shareUi('w', i, { name, place, w1, w2 });
+        shareUi('w', i, { name, place, w1, w2, sido: data.sido[si] || '' });
         visitUi('w', i);
         commentsUi('w', i);
         markTop(i);
