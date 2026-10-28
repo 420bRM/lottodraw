@@ -22,8 +22,8 @@ jobs:
           const ctx = await b.newContext({ viewport: { width: 1540, height: 630 }, deviceScaleFactor: 1, locale: 'ko-KR' });
           await ctx.route(/googlesyndication|cloudflareinsights|api\.lottodraw/, r => r.abort());
           const p = await ctx.newPage();
-          // 남한 전체(제주 포함)가 1200px 그림의 오른쪽 절반에 오게: 줌 6.3, 가운데를 서쪽으로 300px
-          await p.goto('http://localhost:8765/store-map-top50.html#map=6.3/36.1/125.08/0/0');
+          // 남한 전체(제주 포함)가 1200px 그림의 오른쪽 절반에 오게: 줌 6.05, 가운데를 서쪽으로 280px
+          await p.goto('http://localhost:8765/store-map-top50.html#map=6.05/35.85/124.85/0/0');
           await p.addStyleTag({ content: '.sm-side,.sm-near-btn,#theme-btn,.maplibregl-control-container,.sm-star,#chat-fab,#chat-panel,#map-fab,.sm-bl,.sm-info{display:none!important}' });
           await p.waitForTimeout(12000);
           await p.screenshot({ path: 'img/share-shop-bg.jpg', type: 'jpeg', quality: 86, clip: { x: 340, y: 0, width: 1200, height: 630 } });
