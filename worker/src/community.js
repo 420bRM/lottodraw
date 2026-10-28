@@ -110,7 +110,9 @@ export const ITEM_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
 //   post-share: 블로그 글 "공유하기"로 보낼 곳을 고른 것, post-sns: 블로그 글의 X · 페이스북 · 네이버 · 밴드 공유 창을 연 것
 //   pay-view: 결제 페이지를 연 것(같은 브라우저 하루 한 번), pay-pick: 이용권을 골라 주문서를 연 것(js/premium.js)
 //   — 주문 · 입금(발급) · 포인트로 열기(pay-order · pay-paid · pay-point)는 서버가 직접 센다(index.js payTap). 화면에서는 보낼 수 없다
-export const TAP_KINDS = ['gen-share', 'gen-print', 'post-share', 'post-sns', 'pay-view', 'pay-pick'];
+//   shop-share: 판매점 카드 "해당 판매점 공유하기"로 보낼 곳을 고르거나 주소 · 그림을 복사한 것(2026-10-28)
+//   — 공유 주소(/s/번호)를 사람이 열어 지도로 넘어간 것(shop-open)은 서버가 직접 센다(index.js shopShare)
+export const TAP_KINDS = ['gen-share', 'gen-print', 'post-share', 'post-sns', 'pay-view', 'pay-pick', 'shop-share'];
 
 // 블로그 댓글
 export const COMMENT = { max: 500, gapMs: 15000, daily: 30, list: 200 };   // 글자 수, 다음 댓글까지, 하루 최대, 한 글에 보여 주는 수

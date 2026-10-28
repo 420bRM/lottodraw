@@ -347,3 +347,15 @@ body.sm-full #theme-btn { display: none !important; }
     .sm-side[data-tab="mine"] .sm-mine:not([hidden]) { display: block; }
     .sm-tab[hidden] { display: none; }
 }
+
+/* 해당 판매점 공유하기(2026-10-28) */
+.sm-share-shop { margin: 6px 0 0; }
+.sm-share-btn { padding: 5px 12px; border: 1px solid var(--brand, #003087); border-radius: 999px; background: var(--surface, #fff); color: var(--brand, #003087); font: inherit; font-size: 12px; font-weight: bold; cursor: pointer; }
+.sm-share-panel { margin-top: 6px; }
+.sm-share-panel img { display: block; width: 100%; border-radius: 8px; }
+.sm-share-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.sm-share-acts button, .sm-share-acts a { padding: 4px 10px; border: 1px solid var(--line, #ddd); border-radius: 8px; background: var(--surface, #fff); color: var(--fg, #333); font: inherit; font-size: 11.5px; font-weight: bold; text-decoration: none; cursor: pointer; }
+.sm-share-acts button[data-a="share"] { border-color: var(--brand-bg, #003087); background: var(--brand-bg, #003087); color: #fff; }
+.sm-share-msg { margin: 4px 0 0; color: var(--muted, #555); font-size: 11px; }
+.sm-share-msg:empty { display: none; }
+@media (max-width: 899px) { .sm-share-btn { padding: 3px 9px; font-size: 10.5px; } .sm-share-acts button, .sm-share-acts a { font-size: 10.5px; } }
