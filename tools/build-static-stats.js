@@ -2300,6 +2300,8 @@ function storeMapAll(sidoNames) {
     for (const [id, sh] of Object.entries(ALL_SHOPS.shops)) {
         if (STORES.d.shops[id]) continue;
         const [name, si, gu, lat, lng] = sh;
+        // 시도 없는 인터넷 창구(예: '인쇄복권-인터넷' — 동행복권 본사 자리)는 찾아갈 수 있는 가게가 아니고 지도의 '0등'과 겹친다(2026-10-28 사장님)
+        if (!si && /인터넷/.test(name)) continue;
         if (!sido.includes(si)) sido.push(si);
         rows.push([Math.round(lat * 1e4) / 1e4, Math.round(lng * 1e4) / 1e4, name, sido.indexOf(si), gu || '']);
         ids.push(id);
