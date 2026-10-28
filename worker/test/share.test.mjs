@@ -31,8 +31,11 @@ test('판매점 공유 주소: 이름 · 지역 · 횟수를 미리보기에, �
     assert.match(html, /1등 52번 · 2등 246번\(262~1247회\)\. 어디서 사든 1등 확률은 1\/8,145,060으로 같습니다\./);
     assert.match(html, /location\.replace\("https:\/\/www\.lottodraw\.kr\/store-map\.html\?shop=11100004"\)/);
     assert.match(html, /<meta name="robots" content="noindex">/);
+    assert.match(html, /<meta property="og:image" content="https:\/\/www\.lottodraw\.kr\/img\/share\/sido-seoul\.jpg">/, '그 판매점 시도의 그림');
     // 이름은 글자 그대로(HTML 로 해석하지 않는다)
-    assert.match(await (await get('/s/11100016')).text(), /복&lt;권&gt;방 · 부산 동구/);
+    const busan = await (await get('/s/11100016')).text();
+    assert.match(busan, /복&lt;권&gt;방 · 부산 동구/);
+    assert.match(busan, /sido-busan\.jpg/);
     // 일반 판매점
     assert.match(await (await get('/s/22200001')).text(), /동네마트 · 서울 종로구[\s\S]*262회부터 1등 · 2등 기록이 없는 판매점/);
     // 없는 번호 · 이상한 주소는 지도 첫 화면으로

@@ -586,29 +586,29 @@
     const shareTap = () => { try { navigator.sendBeacon(apiBase() + '/api/tap', JSON.stringify({ k: 'shop-share' })); } catch (e) { /* 못 세도 그만 */ } };
     let shareBg = null;
     const loadShareBg = () => (shareBg = shareBg || new Promise((ok, no) => { const im = new Image(); im.onload = () => ok(im); im.onerror = no; im.src = 'img/share-shop-bg.jpg'; }));
-    // 그림 규칙: 오른쪽 절반에 TOP 50 밤 지도(남한 전체), 왼쪽은 어둡게 덮고 LOTTODRAW.KR · 상호 · 지역 · 1등 · 2등 횟수 · 확률 문구
+    // 그림 규칙: 오른쪽 절반에 낮 지도(남한 전체 · 1 · 2등 점 — 지도 공유 이미지 og-store-map.jpg 느낌), 왼쪽은 하얗게 덮고 LOTTODRAW.KR · 상호 · 지역 · 1등 · 2등 횟수 · 확률 문구
     async function shareImage(x) {
         const W = 1200, H = 630, c = document.createElement('canvas');
         c.width = W; c.height = H;
         const g = c.getContext('2d');
         const FONT = '"Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
-        g.fillStyle = '#141a23'; g.fillRect(0, 0, W, H);
+        g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
         try { g.drawImage(await loadShareBg(), 0, 0, W, H); } catch (e) { /* 배경 없이도 그린다 */ }
         const fade = g.createLinearGradient(0, 0, W, 0);
-        fade.addColorStop(0, '#141a23'); fade.addColorStop(0.45, '#141a23'); fade.addColorStop(0.56, 'rgba(20,26,35,.85)'); fade.addColorStop(0.68, 'rgba(20,26,35,0)');
+        fade.addColorStop(0, '#fff'); fade.addColorStop(0.5, '#fff'); fade.addColorStop(0.6, 'rgba(255,255,255,.88)'); fade.addColorStop(0.72, 'rgba(255,255,255,.35)'); fade.addColorStop(0.84, 'rgba(255,255,255,0)');
         g.fillStyle = fade; g.fillRect(0, 0, W, H);
         g.textBaseline = 'alphabetic';
         const L = 84;
         if ('letterSpacing' in g) g.letterSpacing = '6px';
-        g.fillStyle = '#8fa8d6'; g.font = '700 30px ' + FONT; g.fillText('LOTTODRAW.KR', L, 126);
+        g.fillStyle = '#3a64a8'; g.font = '700 30px ' + FONT; g.fillText('LOTTODRAW.KR', L, 126);
         if ('letterSpacing' in g) g.letterSpacing = '0px';
         // 상호: 600px 안에 들게 줄이고(최소 52px), 그래도 길면 말줄임
         let size = 96, name = x.name;
         g.font = '900 ' + size + 'px ' + FONT;
         while (size > 52 && g.measureText(name).width > 600) { size -= 4; g.font = '900 ' + size + 'px ' + FONT; }
         while (name.length > 1 && g.measureText(name).width > 600) name = name.slice(0, -2) + '…';
-        g.fillStyle = '#ffe9a8'; g.fillText(name, L, 258);
-        g.fillStyle = '#c3ccd8'; g.font = '700 34px ' + FONT; g.fillText(x.place + T(' · 로또 판매점', ' · lotto retailer'), L, 322);
+        g.fillStyle = '#003087'; g.fillText(name, L, 258);
+        g.fillStyle = '#1d3b70'; g.font = '700 34px ' + FONT; g.fillText(x.place + T(' · 로또 판매점', ' · lotto retailer'), L, 322);
         const chip = (txt, xx, bg, fg) => {
             g.font = '900 38px ' + FONT;
             const w = g.measureText(txt).width + 44;
@@ -618,10 +618,10 @@
             return xx + w + 16;
         };
         if (x.w1 || x.w2) {
-            const nx = chip(T('1등 ' + fmt(x.w1) + '번', '1st × ' + fmt(x.w1)), L, 'rgba(240,122,26,.22)', '#ffb066');
-            chip(T('2등 ' + fmt(x.w2) + '번', '2nd × ' + fmt(x.w2)), nx, 'rgba(58,134,255,.22)', '#a9c6ff');
-        } else chip(T('1등 · 2등 기록 없음', 'No 1st/2nd prize yet'), L, 'rgba(255,255,255,.1)', '#c3ccd8');
-        g.fillStyle = '#8a94a6'; g.font = '500 22px ' + FONT;
+            const nx = chip(T('1등 ' + fmt(x.w1) + '번', '1st × ' + fmt(x.w1)), L, '#fff1e4', '#c45a00');
+            chip(T('2등 ' + fmt(x.w2) + '번', '2nd × ' + fmt(x.w2)), nx, '#e8f0ff', '#2a5bd7');
+        } else chip(T('1등 · 2등 기록 없음', 'No 1st/2nd prize yet'), L, '#eef0f3', '#5d6573');
+        g.fillStyle = '#5d6573'; g.font = '500 22px ' + FONT;
         g.fillText(T(data.first + '~' + data.last + '회 기록', 'Draws ' + data.first + '–' + data.last), L, 484);
         g.fillText(T('어디서 사든 1등 확률은 1/8,145,060으로 같습니다', 'Your chance of 1st prize is 1 in 8,145,060 wherever you buy'), L, 518);
         return new Promise(ok => c.toBlob(ok, 'image/jpeg', 0.9));
