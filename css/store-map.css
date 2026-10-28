@@ -127,6 +127,8 @@ body.sm-full #theme-btn { display: none !important; }
 .sm-near-list .sm-tcnt small { display: block; color: var(--faint, #777); font-size: .9em; }
 .sm-near-list .sm-dist { color: #c76a00 !important; font-weight: bold; }
 .sm-near-note { margin: 6px 0 0; font-size: 10px !important; }
+.sm-near-share { margin: 4px 0 6px; }
+.sm-share-area { width: 100%; padding: 6px 10px; border: 1px solid var(--brand, #003087); border-radius: 999px; background: var(--brand-bg, #003087); color: #fff; font: inherit; font-size: 11.5px; font-weight: bold; cursor: pointer; }   /* 우리 동네 판매점 지도 공유(2026-10-28) */
 /* "0등" 동행복권 인터넷 판매 — 지도 위 붉은 점 · 별은 js(st-net 층). 여기는 카드 꼬리표 · TOP 50 목록 맨 위 */
 .sm-zero-tag { padding: 1px 7px; border-radius: 999px; background: #e0283a; color: #fff; font-size: 11px; vertical-align: 2px; }
 .sm-top50-list li.is-zero .sm-rank, .sm-top50-list li.is-zero .sm-tcnt b { color: #e0283a; }

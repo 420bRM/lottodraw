@@ -466,12 +466,47 @@
     }
     const fmtDist = m => (m < 1000 ? Math.round(m / 10) * 10 + 'm' : (m / 1000).toFixed(m < 10000 ? 1 : 0) + 'km');
     // 화면 안 판매점이 가장 많이 있는 시군구(예: "용산구") — 단추 이름
-    function areaOf(list) {
+    // 목록에서 가장 많은 지역 "시도 시군구"(예: '서울 노원구'). 화면 글자는 시군구만(guOf)
+    function areaKeyOf(list) {
         const cnt = new Map();
-        list.forEach(x => { const gu = x.t === 'w' ? data.rows[x.i][6] : all.rows[x.i][4]; if (gu) cnt.set(gu, (cnt.get(gu) || 0) + 1); });
+        list.forEach(x => {
+            const r = x.t === 'w' ? data.rows[x.i] : all.rows[x.i];
+            const si = x.t === 'w' ? data.sido[r[5]] : all.sido[r[3]], gu = x.t === 'w' ? r[6] : r[4];
+            if (si && gu) { const k = si + ' ' + gu; cnt.set(k, (cnt.get(k) || 0) + 1); }
+        });
         let best = '', n = 0;
         cnt.forEach((v, k) => { if (v > n) { best = k; n = v; } });
         return best;
+    }
+    const guOf = key => key.slice(key.indexOf(' ') + 1);
+    const areaOf = list => guOf(areaKeyOf(list));
+
+    // ───── 우리 동네 판매점 지도 공유(2026-10-28 사장님) ─────
+    // 주소는 지역 이름만(store-map.html?area=서울+노원구) — 지도 위치(#map=)나 내 위치는 넣지 않는다(위치정보를 보내지 않는다).
+    // 받은 사람이 열면 그 시군구의 1 · 2등 판매점이 한 화면에 들어오게 맞추고 근처 판매점 목록을 연다
+    const areaUrl = key => location.origin + location.pathname.replace(/store-map-top50\.html$/, 'store-map.html') + '?area=' + encodeURIComponent(key).replace(/%20/g, '+');
+    async function shareArea(key, btn) {
+        const gu = guOf(key), url = areaUrl(key);
+        const title = T(gu + ' 로또 판매점 지도', 'Lotto retailers in ' + gu);
+        const text = T(gu + ' 1등 · 2등 나온 판매점을 지도로 봅니다. 어디서 사든 1등 확률은 1/8,145,060으로 같습니다.', '1st- and 2nd-prize retailers in ' + gu + ' on a map. Your chance of 1st prize is 1 in 8,145,060 wherever you buy.');
+        if (navigator.share) { try { await navigator.share({ title, text, url }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+        try { await navigator.clipboard.writeText(url); btn.textContent = T('✓ 주소를 복사했습니다', '✓ Link copied'); }
+        catch (e) { window.prompt(T('이 주소를 복사해 보내 주세요', 'Copy this link'), url); }
+    }
+    let areaWant = '';
+    function openArea(key) {
+        const [si, ...rest] = key.split(' '), gu = rest.join(' ');
+        const sIdx = data.sido.indexOf(si);
+        const pts = data.rows.filter(r => r[5] === sIdx && r[6] === gu && !r[7]);
+        if (!pts.length) return false;
+        const b = new maplibregl.LngLatBounds();
+        pts.forEach(r => b.extend([r[1], r[0]]));
+        nearAfterMove = true;
+        areaWant = key;
+        // 휴대폰은 아래쪽 목록 칸(화면 38%)에 가리지 않게
+        map.fitBounds(b, { padding: isWide() ? pad() : Object.assign(pad(), { bottom: Math.round(window.innerHeight * 0.4) + 16 }), maxZoom: 15, animate: false });
+        if (nearAfterMove && !map.isMoving()) { nearAfterMove = false; openNear(); }
+        return true;
     }
     function nearLabel() {
         if (!nearBtn) return;
@@ -479,8 +514,10 @@
         nearBtn.querySelector('span').textContent = gu ? T(gu + ' 근처 판매점', 'Retailers around ' + gu) : T('이 근처 판매점', 'Retailers around here');
     }
     function openNear() {
-        const list = visibleStores(Infinity).filter(x => x.t !== 'n');
-        const gu = areaOf(list);
+        let list = visibleStores(Infinity).filter(x => x.t !== 'n');
+        // 지역 공유 링크로 왔으면 그 지역 판매점만(줌아웃하면 옆 구가 더 많이 잡힌다)
+        const key = areaWant || areaKeyOf(list), gu = guOf(key);
+        if (areaWant) { list = list.filter(x => areaKeyOf([x]) === areaWant); areaWant = ''; }
         const info = x => {
             if (x.t === 'w') { const r = data.rows[x.i]; return { name: r[4], place: [data.sido[r[5]], r[6]].filter(Boolean).join(' '), w1: props[x.i].w1, w2: r[3] }; }
             const r = all.rows[x.i];
@@ -490,6 +527,7 @@
         list.sort(myLoc ? (a, b) => a.d - b.d : (a, b) => (b.w1 - a.w1) || (b.w2 - a.w2));
         nearPanel.innerHTML = '<button type="button" class="sm-close" aria-label="' + T('닫기', 'Close') + '">×</button>' +
             '<h3>' + esc(gu ? T(gu + ' 근처 판매점', 'Retailers around ' + gu) : T('이 근처 판매점', 'Retailers around here')) + ' <small>' + fmt(list.length) + T('곳', '') + '</small></h3>' +
+            (key ? '<p class="sm-near-share"><button type="button" class="sm-share-area">🔗 ' + esc(T(gu + ' 판매점 지도 공유', 'Share the ' + gu + ' map')) + '</button></p>' : '') +
             '<p class="sm-near-sort">' + (myLoc ? T('내 위치에서 가까운 순', 'Nearest to you first') : T('1등 많은 순', 'Most 1st prizes first')) +
             ' <button type="button" class="sm-near-me">📍 ' + T('내 위치 기준', 'Use my location') + '</button></p>' +
             (list.length ? '<ol class="sm-near-list">' + list.slice(0, NEAR_MAX).map(x => '<li><button type="button" data-t="' + x.t + '" data-i="' + x.i + '"><span class="sm-tname">' + esc(x.name) +
@@ -499,6 +537,8 @@
                 : '<p class="sm-small">' + T('이 화면에는 판매점이 없습니다. 지도를 옮기거나 줌아웃해 보세요.', 'No retailers on screen. Move or zoom out.') + '</p>') +
             '<p class="sm-small sm-near-note">' + T('위치는 이 기기 안에서만 쓰고 저장하거나 보내지 않습니다.', 'Your location stays on this device.') + '</p>';
         nearPanel.hidden = false;
+        const sb = nearPanel.querySelector('.sm-share-area');
+        if (sb) sb.addEventListener('click', () => shareArea(key, sb));
         if (isWide()) setTab('near'); else { card.hidden = true; minePanel.hidden = true; }
         nearPanel.scrollTop = 0;
         nearPanel.querySelector('.sm-close').addEventListener('click', () => { nearPanel.hidden = true; if (isWide()) setTab('top'); });
@@ -1229,13 +1269,17 @@
                 const wait = () => (all && map.getSource('all') ? openAll(n, true) : setTimeout(wait, 200));
                 wait();
             });
+            // ?area=서울+노원구(우리 동네 판매점 지도 공유): 그 시군구로 맞추고 목록을 연다
+            const areaQ = (new URLSearchParams(location.search).get('area') || '').trim().slice(0, 40);
+            const byArea = !!areaQ && !shopQ && openArea(areaQ);
             // store-map-top50.html(공유용 주소): TOP 50 별로 연다
             if (root.dataset.top) { const c = root.querySelector('.sm-chip-top'); if (c && !shown.top) c.click(); } renderTop(); initVisits(); initMine(); initFun();
             // PC: 이태원로 · 서빙고로 같은 길 이름이 보이는 크기(2026-10-26 사장님) — 용산 둘레.
             // 휴대폰: 남한 전체가 한 화면에 + "적게 나온 곳 흐리게"를 "1등 10회 이상"으로(2026-10-27 사장님 — 많이 나온 곳만 한눈에)
-            if (!fromLink && isWide()) map.jumpTo({ center: [126.985, 37.538], zoom: 12.9, padding: pad() });
+            if (byArea) { /* 지역 공유 링크는 그 지역 화면 그대로, 흐리게 막대도 0 */ }
+            else if (!fromLink && isWide()) map.jumpTo({ center: [126.985, 37.538], zoom: 12.9, padding: pad() });
             else if (!fromLink) map.fitBounds([[125.9, 33.9], [129.6, 38.4]], { padding: Object.assign(pad(), { bottom: 150, left: 10 }), animate: false });   // 아래는 왼쪽 아래 도구 몫
-            if (!isWide()) { const f = document.getElementById('sm-fade'); f.value = 57; setFade(57); }   // 57 → 1등 10회 이상(setFade 의 셈)
+            if (!isWide() && !byArea && !shopQ) { const f = document.getElementById('sm-fade'); f.value = 57; setFade(57); }   // 57 → 1등 10회 이상(setFade 의 셈)
             if (fromLink && map.getPitch() > 5) { const d3 = document.getElementById('sm-3d'); d3.setAttribute('aria-pressed', 'true'); d3.textContent = '2D'; }   // 기울어진 화면 링크
         });
         // 지도 출처(ⓘ)는 접힌 채로 시작(2026-10-27 사장님 — 휴대폰에서 펼쳐진 채 도착했다). MapLibre 는 좁은 화면에서 처음에 펼쳐 두고
