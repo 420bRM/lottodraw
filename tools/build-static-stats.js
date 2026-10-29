@@ -2311,6 +2311,30 @@ function storeMapAll(sidoNames) {
 
 // 화면 전체가 지도인 페이지(2026-10-26 사장님 결정): 머리글 · 메뉴 · 바닥글 없이 지도와 "생성기로 돌아가기" 하나.
 // 설명 · 시도별 표는 왼쪽 아래 "시도별 · 안내" 창 안에 HTML 로 둔다(검색 로봇이 읽고, 지도가 안 뜨는 브라우저도 본다)
+// 지도 TOP 50(2026-10-29 사장님 — 검색 로봇이 지도 그림 속 이름을 못 읽으니 글로도): js/store-map.js 의 computeProps · renderTop 과 같은 규칙.
+// 1등 횟수(자동 · 수동 · 반자동 모두) 많은 순, 같으면 2등 많은 순, 폐점 제외. 맨 위 "0등" 동행복권 인터넷 판매(화면과 같다).
+// 화면이 자료를 받아 같은 모양으로 다시 그리므로 두 번 나오거나 깜빡이지 않는다
+const NET_ID = '51100000';
+function storeMapTop(md) {
+    const rows = md.rows;
+    const top = rows.map((r, i) => i).filter(i => rows[i][2] > 0 && !rows[i][7])
+        .sort((a, b) => (rows[b][2] - rows[a][2]) || (rows[b][3] - rows[a][3])).slice(0, 50)
+        .map((i, k) => { const r = rows[i]; return { rank: k + 1, i, id: md.ids[i], name: r[4], place: [md.sidoNames[r[5]], r[6]].filter(Boolean).join(' '), w1: r[2], w2: r[3] }; });
+    return { net: STORES.net ? { n1: STORES.net.n1, n2: STORES.net.n2 } : null, top };
+}
+function storeMapTopHtml(t) {
+    return (t.net ? `<li class="is-zero"><button type="button" data-net="1"><span class="sm-rank">0</span><span class="sm-tname">동행복권 인터넷 판매<small>인터넷 · 동행복권 본사(서초구)</small></span><span class="sm-tcnt"><b>${t.net.n1}</b>번<small>2등 ${fmt(t.net.n2)}</small></span></button></li>` : '') +
+        t.top.map(x => `<li><button type="button" data-i="${x.i}"><span class="sm-rank">${x.rank}</span><span class="sm-tname">${esc(x.name)}<small>${esc(x.place)}</small></span><span class="sm-tcnt"><b>${x.w1}</b>번<small>2등 ${x.w2}</small></span></button></li>`).join('');
+}
+// 같은 목록을 구조화 데이터로(ItemList). 0등이 1번, TOP 1위가 2번 … (화면 차례 그대로). 주소는 그 판매점 카드가 열리는 지도 주소
+function storeMapTopLd(t) {
+    const items = (t.net ? [{ name: '동행복권 인터넷 판매 (0등 · 인터넷 · 1등 ' + t.net.n1 + '번)', id: NET_ID }] : [])
+        .concat(t.top.map(x => ({ name: `${x.name} (${x.place} · 1등 ${x.w1}번)`, id: x.id })));
+    return { '@type': 'ItemList', name: '로또 1등 판매점 TOP 50', description: '1등이 가장 많이 나온 로또 판매점 50곳(맨 위는 동행복권 인터넷 판매). 많이 팔린 곳일 가능성이 클 뿐, 어디서 사든 1등 확률은 1/8,145,060으로 같습니다.',
+        itemListOrder: 'https://schema.org/ItemListOrderDescending', numberOfItems: items.length,
+        itemListElement: items.map((x, k) => ({ '@type': 'ListItem', position: k + 1, name: x.name, url: `${SITE}/${STORE_MAP_FILE}?shop=${x.id}` })) };
+}
+
 function storeMapPage(md, top) {
     const S = STORES;
     const { first, last } = S;
@@ -2325,6 +2349,7 @@ function storeMapPage(md, top) {
     // TOP 50 주소는 별 · 밤 지도 공유 이미지(img/og-store-map-top50.jpg)
     const ogFile = top ? 'img/og-store-map-top50.jpg' : 'img/og-store-map.jpg';
     const mapOg = fs.existsSync(path.join(ROOT, ogFile)) ? `${SITE}/${ogFile}?v=${fingerprint(ogFile)}` : OG_IMAGE;
+    const top50 = storeMapTop(md);
     const ld = { '@context': 'https://schema.org', '@graph': [
         { '@type': 'Dataset', name: title, description: desc, url: `${SITE}/${STORE_MAP_FILE}`, isAccessibleForFree: true, dateModified: UPDATED,
             creator: { '@type': 'Organization', name: 'lottodraw.kr', url: SITE + '/' }, keywords: ['로또 판매점 지도', '로또 1등 판매점 지도', '로또 명당 지도', '로또 2등 판매점'] },
@@ -2332,6 +2357,7 @@ function storeMapPage(md, top) {
             { '@type': 'ListItem', position: 1, name: '홈', item: `${SITE}/` },
             { '@type': 'ListItem', position: 2, name: '1등 판매점', item: `${SITE}/${STORES_FILE}` },
             { '@type': 'ListItem', position: 3, name: '판매점 지도', item: `${SITE}/${STORE_MAP_FILE}` }] },
+        storeMapTopLd(top50),
     ] };
     return `<!DOCTYPE html>
 <!-- 이 파일은 tools/build-static-stats.js 가 매주 다시 만든다. 직접 고치면 덮어쓰인다. 지도는 js/store-map.js -->
@@ -2405,7 +2431,7 @@ function storeMapPage(md, top) {
     <div class="sm-right">
         <aside class="sm-top50" id="sm-top50" aria-labelledby="sm-top50-h">
             <h2 id="sm-top50-h">TOP 50 <small data-i18n-en="by 1st prizes">1등 횟수</small></h2>
-            <ol class="sm-top50-list" id="sm-top50-list"></ol>
+            <ol class="sm-top50-list" id="sm-top50-list">${storeMapTopHtml(top50)}</ol>
         </aside>
         <aside class="sm-card" id="sm-card" hidden aria-live="polite"></aside>
         <aside class="sm-near" id="sm-near" hidden aria-live="polite"></aside>

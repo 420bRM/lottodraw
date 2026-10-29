@@ -1355,7 +1355,8 @@
             koreanLabels(); whiteModel(); addStores(); nightModel(); nearLabel();
             // ?shop=판매점번호(관리자 페이지의 판매점 댓글 링크 등): 그 판매점 카드를 연다
             const shopQ = new URLSearchParams(location.search).get('shop');
-            if (/^\d{8}$/.test(shopQ || '')) loadIds().then(j => {
+            if (shopQ === '51100000' && data.net) openNet(true);   // 0등(동행복권 인터넷) — TOP 50 구조화 데이터의 주소
+            else if (/^\d{8}$/.test(shopQ || '')) loadIds().then(j => {
                 if (!j) return;
                 let n = j.w.indexOf(shopQ);
                 if (n >= 0) { open(n, true); return; }
