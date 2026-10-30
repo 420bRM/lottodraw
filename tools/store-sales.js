@@ -209,9 +209,9 @@ function estimate(d, all, prize, opt) {
     const top = ids.filter(id => cur.get(id)).sort((a, b) => (cur.get(b) - cur.get(a)) || (a < b ? -1 : 1)).slice(0, TOPN)
         .map(id => { const s = shopOf(id); return Object.assign({ id, name: s[0], sido: s[1], gu: s[2], closed: !!s[3] }, est(cur.get(id))); });
 
-    // 검증: 홀수 회차 → 짝수 회차
-    const odd = sumHits(d, win.filter((_, i) => i % 2 === 1));
-    const even = sumHits(d, win.filter((_, i) => i % 2 === 0));
+    // 검증: 홀수 회차 → 짝수 회차 (회차 번호로 나눈다 — 156회면 78회씩)
+    const odd = sumHits(d, win.filter(r => r % 2 === 1));
+    const even = sumHits(d, win.filter(r => r % 2 === 0));
     const check = coverage(ids, odd, even, [0.95, 0.8]);
     // 앞 기간 → 이 기간 (판매량이 바뀌는 만큼 덜 맞는다)
     const drift = prev ? coverage(ids, sumHits(d, prev), cur, [0.95]) : null;
@@ -225,6 +225,7 @@ function estimate(d, all, prize, opt) {
             lo: totalSales ? Math.max(0, netRaw - 1.96 * Math.sqrt(netRaw)) * PER_HIT / totalSales : null,
             hi: totalSales ? (netRaw + 1.96 * Math.sqrt(netRaw)) * PER_HIT / totalSales : null },
         shops: ids.length, avg, prior, rows, buckets, top, check, drift,
+        p10: toYear(Math.exp(prior.mu - 1.2816 * prior.sd)),
         median: toYear(Math.exp(prior.mu)),
         p90: toYear(Math.exp(prior.mu + 1.2816 * prior.sd)),
         p99: toYear(Math.exp(prior.mu + 2.3263 * prior.sd)),
