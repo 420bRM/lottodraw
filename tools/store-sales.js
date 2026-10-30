@@ -97,8 +97,17 @@ function fitPrior(xs) {
     return { mu: best.mu, sd: best.sd, ll: best.ll, w: normalWeights(best.mu, best.sd), n: xs.length };
 }
 
-// 고정값(mu, sd)에서 분포를 다시 만든다 — 블로그 그림이 종 모양 곡선을 그릴 때
-const priorFrom = (mu, sd) => ({ mu, sd, w: normalWeights(mu, sd) });
+// 그림용 고운 곡선: 고정값(mu, sd)과 1 · 2등 수 x 로 ln μ 위의 분포를 10배 촘촘한 격자에 다시 셈한다(블로그 종 모양 그림).
+// 셈용 격자(400칸)로 그리면 좁은 곡선의 꼭대기가 각진다. x 가 없으면(null) 전국 판매점 분포(사전 분포) 그대로.
+// 돌려주는 lg 는 ln μ, w 는 칸마다 무게(합 1)
+const FINE = Array.from({ length: 4001 }, (_, k) => LOG_LO + k * (LOG_HI - LOG_LO) / 4000);
+function fineCurve(mu, sd, x) {
+    const lw = FINE.map(l => -((l - mu) ** 2) / (2 * sd * sd) + (x == null ? 0 : x * l - Math.exp(l)));
+    const top = Math.max(...lw);
+    const w = lw.map(v => Math.exp(v - top));
+    const z = w.reduce((a, b) => a + b, 0);
+    return { lg: FINE, w: w.map(v => v / z) };
+}
 
 // 1 · 2등 x번인 판매점의 μ 분포(사후)
 function posterior(prior, x) {
@@ -241,7 +250,7 @@ function estimate(d, all, prize, opt) {
     };
 }
 
-module.exports = { PER_HIT, CAP2, roundHits, sumHits, fitPrior, priorFrom, posterior, quantile, predictInterval, coverage, estimate, G };
+module.exports = { PER_HIT, CAP2, roundHits, sumHits, fitPrior, fineCurve, posterior, quantile, predictInterval, coverage, estimate, G };
 
 // 블로그 고정값 만들기 (맨 위 설명)
 if (require.main === module && process.argv[2] === '--snapshot') {
