@@ -97,6 +97,9 @@ function fitPrior(xs) {
     return { mu: best.mu, sd: best.sd, ll: best.ll, w: normalWeights(best.mu, best.sd), n: xs.length };
 }
 
+// 고정값(mu, sd)에서 분포를 다시 만든다 — 블로그 그림이 종 모양 곡선을 그릴 때
+const priorFrom = (mu, sd) => ({ mu, sd, w: normalWeights(mu, sd) });
+
 // 1 · 2등 x번인 판매점의 μ 분포(사후)
 function posterior(prior, x) {
     const L = likRow(x);
@@ -238,7 +241,7 @@ function estimate(d, all, prize, opt) {
     };
 }
 
-module.exports = { PER_HIT, CAP2, roundHits, sumHits, fitPrior, posterior, quantile, predictInterval, coverage, estimate, G };
+module.exports = { PER_HIT, CAP2, roundHits, sumHits, fitPrior, priorFrom, posterior, quantile, predictInterval, coverage, estimate, G };
 
 // 블로그 고정값 만들기 (맨 위 설명)
 if (require.main === module && process.argv[2] === '--snapshot') {

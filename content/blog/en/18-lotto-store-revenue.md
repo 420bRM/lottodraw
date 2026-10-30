@@ -31,6 +31,8 @@ How the estimated annual sales change with the number of 1st and 2nd prizes in t
 
 {{figure store-sales-range}}
 
+Try **Bell curves** above the chart. It shows what the bars really were: each row is a curve (a probability distribution) for where annual sales lie at a retailer with that many prizes, and the bar is this bell seen from above. The **area under the curve is probability**. Every curve has the same area, 100%, and the area between two amounts is the chance that actual sales lie between them. The dark middle 95% is the 95% range (the bar), and the vertical line (the middle value) splits the area in half. The more prizes, the narrower and taller the curve: with the same area, a narrower curve has to rise. The grey curve at the top is the distribution of all retailers; the curve for zero prizes nearly overlaps it, which means zero prizes on their own tell you little.
+
 | 1st + 2nd prizes, 3 yrs | Est. annual sales (95% range) | Middle | Annual commission (5% of middle) |
 |---|---|---|---|
 | 0 | ₩0.04–0.79B | ₩0.19B | about ₩10M |

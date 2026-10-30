@@ -1470,6 +1470,37 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 .ss-fill-lab { position: absolute; top: 50%; left: 8px; transform: translateY(-50%); color: #fff; font-size: 11px; font-weight: bold; white-space: nowrap; }
 .ss-reg { --lab: 96px; }
 .ss-dot-lab { position: absolute; top: 50%; margin-left: 8px; padding: 0 3px; transform: translateY(-50%); background: var(--bg, #fff); color: var(--fg, #222); white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* 범위 그림의 "막대로 보기 | 종 모양으로 보기" (2026-10-30) — 라디오 두 개(.ss-v)가 그림 앞 형제라 스크립트 없이 바뀐다.
+   종 모양: 줄마다 사후 분포 곡선(.ss-bell, SVG)이 막대 자리(줄 가운데)에서 솟는다. 높이 눈금이 모든 줄에 같아 넓이가 같다 */
+.ss-v { position: absolute; width: 1px; height: 1px; margin: 0; opacity: 0; pointer-events: none; }
+.ss-view { display: inline-flex; margin: 0 0 8px; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.ss-view label { padding: 5px 12px; color: var(--muted); font-size: 12px; cursor: pointer; user-select: none; }
+.ss-view label + label { border-left: 1px solid var(--line); }
+.ss-v-bar:checked ~ .ss-view label[for="ss-v-bar"], .ss-v-bell:checked ~ .ss-view label[for="ss-v-bell"] { background: var(--brand-bg, var(--brand)); color: #fff; }
+.ss-v-bar:focus-visible ~ .ss-view label[for="ss-v-bar"], .ss-v-bell:focus-visible ~ .ss-view label[for="ss-v-bell"] { outline: 2px solid var(--brand); outline-offset: -2px; }
+.ss-bell { position: absolute; left: 0; bottom: 50%; display: none; width: 100%; height: 92px; overflow: visible; pointer-events: none; transform-origin: 50% 100%; }
+.ss-bell-all { fill: var(--brand-bg, var(--brand)); opacity: .16; }
+.ss-bell-95 { fill: var(--brand-bg, var(--brand)); opacity: .42; }
+.ss-bell-mid { stroke: var(--brand); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.ss-row-prior { display: none; }
+.ss-row-prior .ss-bell-all { fill: var(--muted); opacity: .22; }
+:root[data-theme="dark"] .ss-bell-all { opacity: .3; }
+:root[data-theme="dark"] .ss-row-prior .ss-bell-all { opacity: .3; }
+.ss-legend-bell, .ss-note-bell { display: none; }
+.ss-v-bell:checked ~ .ss-plot .ss-bell { display: block; animation: ss-rise .5s ease-out both; }
+.ss-v-bell:checked ~ .ss-plot .ss-rows > .ss-row { height: 40px; }
+.ss-v-bell:checked ~ .ss-plot .ss-row-prior { display: grid; }
+.ss-v-bell:checked ~ .ss-plot .ss-band, .ss-v-bell:checked ~ .ss-plot .ss-head-band, .ss-v-bell:checked ~ .ss-plot .ss-naive { display: none; }
+.ss-v-bell:checked ~ figcaption .ss-legend-bar, .ss-v-bell:checked ~ figcaption .ss-note-bar { display: none; }
+.ss-v-bell:checked ~ figcaption .ss-legend-bell { display: flex; }
+.ss-v-bell:checked ~ figcaption .ss-note-bell { display: block; }
+@keyframes ss-rise { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@media (prefers-reduced-motion: reduce) { .ss-v-bell:checked ~ .ss-plot .ss-bell { animation: none; } }
+.dist-legend .key-ss-all, .dist-legend .key-ss-95, .dist-legend .key-ss-prior { width: 14px; height: 10px; border-radius: 7px 7px 0 0; background: var(--brand-bg, var(--brand)); }
+.dist-legend .key-ss-all { opacity: .16; }
+.dist-legend .key-ss-95 { opacity: .42; }
+.dist-legend .key-ss-prior { background: var(--muted); opacity: .22; }
+.dist-legend .key-ss-line { width: 0; height: 12px; border-left: 1.5px solid var(--brand); }
 @media (max-width: 599px) {
     .ss-flow { grid-template-columns: minmax(0, 1fr); gap: 20px; }
     .ss-flow li:not(:last-child)::after { content: "↓"; right: auto; left: 50%; top: auto; bottom: -20px; transform: translateX(-50%); }

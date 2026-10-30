@@ -1980,8 +1980,12 @@ function salesFlow(E) {
     ].join('\n');
 }
 
-// ② 범위 그림 — 1 · 2등 수별 95% 범위(막대) · 가운데 값(점) · 그대로 나눈 값(빈 점), 바탕은 전국 판매점 분포. 가로는 로그 눈금
+// ② 범위 그림 — 1 · 2등 수별 95% 범위(막대) · 가운데 값(점) · 그대로 나눈 값(빈 점), 바탕은 전국 판매점 분포. 가로는 로그 눈금.
+// 위 단추 "종 모양으로 보기"를 누르면 줄마다 그 분포(사후 분포) 곡선이 막대에서 솟는다 — 막대는 이 종을 위에서 본 모습이다.
+// 곡선 아래 넓이가 확률: 줄마다 넓이 100%로 같고(같은 높이 눈금), 진한 면이 가운데 95%(= 막대), 세로선이 넓이를 반으로 나누는 가운데 값.
+// 단추는 라디오 두 개 + CSS 형제 선택자라 스크립트가 없다(css/site.css "판매량 추정 그림")
 function salesRangeChart(E) {
+    const SS = require('./store-sales.js');
     const t = E.top[0];
     const rows = E.rows.map(r => Object.assign({ label: en(`${r.x}번`, String(r.x)) }, r));
     if (t && t.x > E.rows[E.rows.length - 1].x) rows.push(Object.assign({}, t, { label: en(`${t.x}번 · 1위`, `${t.x} (#1)`) }));
@@ -1992,43 +1996,83 @@ function salesRangeChart(E) {
     const P = v => (Math.log(v) - Math.log(lo)) / (Math.log(hi) - Math.log(lo));
     const ticks = nice.filter(v => v >= lo && v <= hi);
     const tickText = v => en(`${+(v / 1e8).toPrecision(3)}억`, `₩${+(v / 1e9).toPrecision(3)}B`);
-    const row = r => {
+
+    // 종 모양 곡선: 격자(로그 간격)의 무게가 곧 로그 눈금 위의 밀도라, 모든 줄을 같은 높이 눈금으로 그리면 넓이가 같다
+    const prior = E.prior && E.prior.sd ? SS.priorFrom(E.prior.mu, E.prior.sd) : null;
+    const xy = w => SS.G.map((m, k) => [P(m * E.perHitYear), w[k]]).filter(([x]) => x >= 0 && x <= 1);
+    const curves = prior ? rows.map(r => xy(SS.posterior(prior, r.x))) : [];
+    const priorCurve = prior ? xy(prior.w) : null;
+    const top = Math.max(...curves.map(c => Math.max(...c.map(p => p[1]))));
+    const X = x => (x * 1000).toFixed(1), Y = y => (100 - y / top * 100).toFixed(1);
+    const area = pts => {
+        const keep = pts.filter(p => p[1] > top * 2e-3);
+        return keep.length < 2 ? '' : `M${X(keep[0][0])},100L` + keep.map(p => `${X(p[0])},${Y(p[1])}`).join('L') + `L${X(keep[keep.length - 1][0])},100Z`;
+    };
+    const bell = (pts, r) => {
+        const all = area(pts);
+        if (!all) return '';
+        let body = `<path class="ss-bell-all" d="${all}"/>`;
+        if (r) {
+            const a0 = P(r.lo), a1 = P(r.hi), m = P(r.mid);
+            body += `<path class="ss-bell-95" d="${area(pts.filter(p => p[0] >= a0 && p[0] <= a1))}"/>`;
+            const near = pts.reduce((b, p) => (Math.abs(p[0] - m) < Math.abs(b[0] - m) ? p : b));
+            body += `<line class="ss-bell-mid" x1="${X(m)}" x2="${X(m)}" y1="100" y2="${Y(near[1])}"/>`;
+        }
+        return `<svg class="ss-bell" viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">${body}</svg>`;
+    };
+
+    const row = (r, i) => {
         const tipKo = `${salesEok(r.lo)}~${salesEok(r.hi)}억 · 가운데 ${salesEok(r.mid)}억`;
         const tipEn = `₩${salesBil(r.lo)}–${salesBil(r.hi)}B · middle ₩${salesBil(r.mid)}B`;
         // 값 상자는 막대 반대쪽 끝에 붙인다 — 휴대폰에서도 그림 칸 밖으로 나가지 않는다
         const tipAt = (P(r.lo) + P(r.hi)) / 2 < 0.5 ? 'right:0' : 'left:0';
         return `<div class="ss-row" tabindex="0"><span class="ss-lab">${r.label}</span><span class="ss-track">`
+            + (prior ? bell(curves[i], r) : '')
             + `<i class="ss-bar" style="left:${ssPct(P(r.lo))};width:${ssPct(P(r.hi) - P(r.lo))}"></i>`
             + (r.x ? `<i class="ss-naive" style="left:${ssPct(P(r.x * E.perHitYear))}"></i>` : '')
             + `<i class="ss-mid" style="left:${ssPct(P(r.mid))}"></i>`
             + `<span class="ss-tip" style="${tipAt}">${en(tipKo, tipEn)}</span></span></div>`;
     };
     const head = (cls, pos, text, lab) => `<div class="ss-row ss-head"><span class="ss-lab">${lab || ''}</span><span class="ss-track"><span class="${cls}" style="left:${ssPct(pos)}">${text}</span></span></div>`;
+    const view = (id, on) => `<input type="radio" name="ss-view" id="ss-v-${id}" class="ss-v ss-v-${id}"${on ? ' checked' : ''}>`;
     return [
-        '<figure class="ss-figure">',
+        '<figure class="ss-figure ss-range">',
+        prior ? view('bar', true) + view('bell') : '',
+        prior ? `<div class="ss-view"><label for="ss-v-bar">${en('막대로 보기', 'Bars')}</label><label for="ss-v-bell">${en('종 모양으로 보기', 'Bell curves')}</label></div>` : '',
         '<div class="ss-plot">',
-        head('ss-head-lab', (P(E.p10) + P(E.p90)) / 2, en(`전국 판매점 80% (${salesEok(E.p10)}~${salesEok(E.p90)}억)`, `80% of retailers (₩${salesBil(E.p10)}–${salesBil(E.p90)}B)`)),
+        head('ss-head-lab ss-head-band', (P(E.p10) + P(E.p90)) / 2, en(`전국 판매점 80% (${salesEok(E.p10)}~${salesEok(E.p90)}억)`, `80% of retailers (₩${salesBil(E.p10)}–${salesBil(E.p90)}B)`)),
         head('ss-head-lab ss-head-avg', P(E.avg), en(`전국 평균 ${salesEok(E.avg)}억`, `national average ₩${salesBil(E.avg)}B`), en(`3년 1 · 2등`, `3-yr prizes`)),
         '<div class="ss-rows">',
         '<div class="ss-bg" aria-hidden="true">'
             + ticks.map(v => `<i class="ss-grid${String(v)[0] !== '1' ? ' ss-minor' : ''}" style="left:${ssPct(P(v))}"></i>`).join('')
             + `<i class="ss-band" style="left:${ssPct(P(E.p10))};width:${ssPct(P(E.p90) - P(E.p10))}"></i>`
             + `<i class="ss-avg" style="left:${ssPct(P(E.avg))}"></i></div>`,
+        priorCurve ? `<div class="ss-row ss-row-prior"><span class="ss-lab">${en('전국 판매점', 'All retailers')}</span><span class="ss-track">${bell(priorCurve)}</span></div>` : '',
         rows.map(row).join('\n'),
         '</div>',
         `<div class="ss-row ss-axis"><span></span><span class="ss-track">`
             + ticks.map((v, i) => `<span class="ss-tick${String(v)[0] !== '1' ? ' ss-minor' : ''}${ssEnd(i, ticks.length)}" style="left:${ssPct(P(v))}">${tickText(v)}</span>`).join('') + '</span></div>',
         `<div class="ss-row ss-axis-title"><span></span><span>${en('추정 연 판매액 (로그 눈금 — 한 칸마다 몇 배씩)', 'Estimated annual sales (log scale — each step multiplies)')}</span></div>`,
         '</div>',
-        '<figcaption class="dist-legend">',
+        '<figcaption>',
+        '<div class="dist-legend ss-legend-bar">',
         `<span><i class="key-ss-bar"></i>${en('95% 범위', '95% range')}</span>`,
         `<span><i class="key-ss-mid"></i>${en('가운데 값', 'middle value')}</span>`,
         `<span><i class="key-ss-naive"></i>${en('그대로 나눈 값', 'straight division')}</span>`,
         `<span><i class="key-ss-band"></i>${en('전국 판매점 80% (하위 · 상위 10% 뺌)', '80% of retailers (bottom and top 10% left out)')}</span>`,
         `<span><i class="key-ss-avg"></i>${en('전국 평균', 'national average')}</span>`,
-        '</figcaption>',
-        `<p class="ss-note">${en(`1 · 2등이 적을수록 막대가 바탕 띠(판매점 대부분)를 거의 다 덮어 정보가 적고, 많을수록 짧아지며 오른쪽으로 갑니다. 줄을 짚으면 값이 나옵니다.`,
+        '</div>',
+        prior ? ['<div class="dist-legend ss-legend-bell">',
+            `<span><i class="key-ss-all"></i>${en('곡선 아래 넓이 = 100% (줄마다 같다)', 'area under each curve = 100% (the same for every row)')}</span>`,
+            `<span><i class="key-ss-95"></i>${en('진한 면 = 가운데 95% = 95% 범위(막대)', 'dark part = middle 95% = the 95% range (bar)')}</span>`,
+            `<span><i class="key-ss-line"></i>${en('가운데 값 — 넓이를 반으로 나누는 곳', 'middle value — splits the area in half')}</span>`,
+            `<span><i class="key-ss-prior"></i>${en('전국 판매점 분포', 'all retailers')}</span>`,
+            '</div>'].join('') : '',
+        `<p class="ss-note ss-note-bar">${en(`1 · 2등이 적을수록 막대가 바탕 띠(판매점 대부분)를 거의 다 덮어 정보가 적고, 많을수록 짧아지며 오른쪽으로 갑니다. 줄을 짚으면 값이 나옵니다.`,
             `With few prizes the bar covers almost the whole shaded band (most retailers) and says little; with more it shortens and moves right. Hover or tap a row for its values.`)}</p>`,
+        prior ? `<p class="ss-note ss-note-bell">${en(`줄마다 넓이가 100%로 같아서, 1 · 2등이 많아 폭이 좁아질수록 곡선이 위로 솟습니다. 두 판매액 사이의 넓이가 실제 판매액이 그 사이에 있을 가능성입니다.`,
+            `Every curve has the same area, 100%, so the more prizes and the narrower the curve, the taller it rises. The area between two amounts is the chance that actual sales lie between them.`)}</p>` : '',
+        '</figcaption>',
         '</figure>',
     ].join('\n');
 }
