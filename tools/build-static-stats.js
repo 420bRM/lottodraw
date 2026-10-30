@@ -1934,6 +1934,70 @@ function prizeTierPage() {
     });
 }
 
+// 판매점별 판매량 추정(최근 3년, 오차범위와 함께) — 계산과 설명은 tools/store-sales.js. 일반 판매점(shops-all.json)과
+// 판매액(prize-data.json)이 있어야 한다(1 · 2등이 0번인 곳도 분포에 넣어야 해서)
+let storeSalesMemo;
+function storeSales() {
+    if (storeSalesMemo !== undefined) return storeSalesMemo;
+    storeSalesMemo = null;
+    if (STORES && ALL_SHOPS && prizeData) {
+        try { storeSalesMemo = require('./store-sales.js').estimate(STORES.d, ALL_SHOPS, prizeData.draws); }
+        catch (e) { console.warn('판매량 추정을 건너뜀:', e.message); }
+    }
+    return storeSalesMemo;
+}
+
+// 판매액(원) → 한국어 "264억" · "4.7억"(10억 아래는 소수 한 자리), 영어 "₩26 billion" · "₩0.47 billion"
+const salesEok = v => { const x = v / 1e8; return x >= 10 ? fmt(Math.round(x)) : x.toFixed(1); };
+const salesBil = v => { const x = v / 1e9; return x >= 10 ? fmt(Math.round(x)) : x >= 1 ? x.toFixed(1) : x.toFixed(2); };
+const salesRange = (lo, hi) => en(`${salesEok(lo)}~${salesEok(hi)}억`, `₩${salesBil(lo)}–${salesBil(hi)} billion`);
+const salesOne = v => en(`${salesEok(v)}억`, `₩${salesBil(v)} billion`);
+const salesPct = v => (v * 100).toFixed(1) + '%';
+const salesChance = p => (p < 0.01 ? en('1% 미만', 'under 1%') : p > 0.99 ? en('99% 넘음', 'over 99%') : `${Math.round(p * 100)}%`);
+
+function salesBlock(E, where, shopName) {
+    const w = E.window, b = E.buckets, c = E.check, dr = E.drift;
+    const perGame = fmt(Math.round(TOTAL / 7));
+    const close = E.observedPerHit && Math.abs(E.observedPerHit / E.perHit - 1) < 0.05;
+    const trillion = v => (v / 1e12).toFixed(1);
+    const t0 = E.top[0];
+    const naive0 = t0 ? t0.x * E.perHitYear : 0;
+    const over = c.all[0.95] >= 0.95 && c.all[0.8] >= 0.8;
+    const reg = c.reg && Math.abs(c.reg.model - c.reg.actual) < Math.abs(c.reg.naive - c.reg.actual) ? c.reg : null;
+    return [
+        h2En('판매점별 판매량 추정 · 오차범위와 함께', 'Estimated sales per retailer, with margins of error'),
+        pEn(`판매점별 판매액은 공개되지 않지만 거꾸로 셈할 수는 있습니다. 한 게임이 1등 또는 2등이 될 확률은 8,145,060분의 7이라, 1 · 2등이 한 번 나오려면 평균 <strong>${perGame}게임(약 ${(E.perHit / 1e8).toFixed(1)}억 원어치)</strong>이 팔려야 합니다.`
+            + (E.observedPerHit ? ` 실제로 최근 3년(${w.first}~${w.last}회) 판매액 ${trillion(E.totalSales)}조 원을 그 기간 1 · 2등 ${fmt(E.rawHits)}게임으로 나누면 한 번에 ${(E.observedPerHit / 1e8).toFixed(1)}억 원${close ? '으로, 이 값과 거의 같습니다' : '입니다'}.` : ''),
+            `Sales per retailer are not published, but they can be worked out backwards. A game wins 1st or 2nd prize with probability 7 in 8,145,060, so each 1st or 2nd prize means that on average <strong>${perGame} games (about ₩${(E.perHit / 1e9).toFixed(2)} billion)</strong> were sold.`
+            + (E.observedPerHit ? ` Indeed, the last three years (draws ${w.first}–${w.last}) sold ₩${trillion(E.totalSales)} trillion and produced ${fmt(E.rawHits)} 1st- and 2nd-prize games — ₩${(E.observedPerHit / 1e9).toFixed(2)} billion each${close ? ', almost exactly that figure' : ''}.` : '')),
+        pEn(`다만 1 · 2등은 운이 섞인 숫자입니다. 3년 동안 한 번도 없었다고 판매량이 0은 아니고, 운 좋게 몇 번 더 나온 곳을 그대로 나누면 부풀려집니다. 그래서 판매점 ${fmt(E.shops)}곳(지금 로또를 파는 곳과 그 기간 1 · 2등이 나온 곳)의 판매량 분포를 먼저 자료로 맞추고, 그 분포에서 출발해 판매점마다 자기 1 · 2등 수로 고쳐 <strong>95% 범위</strong>를 냈습니다(경험적 베이즈). 실제 판매량이 이 범위 안에 있을 가능성이 95%라는 뜻이고, 그 말이 맞는지는 아래에서 검증했습니다.`,
+            `But 1st and 2nd prizes are partly luck. No prize in three years does not mean zero sales, and dividing straight through inflates places that got a few extra lucky wins. So we first fit the distribution of sales across ${fmt(E.shops)} retailers (those selling lotto now plus any with a 1st or 2nd prize in the period), then start from that distribution and adjust each retailer by its own count to get a <strong>95% range</strong> (empirical Bayes). It means a 95% chance that actual sales lie inside the range — checked below.`),
+        table([['최근 3년 1 · 2등', '1st + 2nd prizes, 3 yrs'], ['추정 연 판매액 (95% 범위)', 'Est. annual sales (95% range)'], ['가운데 값', 'Middle'], ['전국 평균보다 많이 팔았을 가능성', 'Chance of beating the national average']],
+            E.rows.map(r => [en(`${r.x}번`, String(r.x)), salesRange(r.lo, r.hi), salesOne(r.mid), salesChance(r.pAvg)]), 'tier-stat'),
+        pEn(`최근 3년 1 · 2등이 0번인 판매점이 ${fmt(b.n0)}곳, 1번 ${fmt(b.n1)}곳, 2~4번 ${fmt(b.n2)}곳, 5~9번 ${fmt(b.n5)}곳, 10번 이상 ${fmt(b.n10)}곳입니다. 판매점 1곳의 연 판매액은 평균 ${salesEok(E.avg)}억, 가운데 값 ${salesEok(E.median)}억이고, 상위 10%는 ${salesEok(E.p90)}억, 상위 1%는 ${salesEok(E.p99)}억을 넘는 것으로 나옵니다. 1 · 2등이 0~2번인 곳은 범위가 판매점 대부분을 덮을 만큼 넓어, 판매점 하나를 두고 판매량을 말하기 어렵습니다. 판매점이 받는 수수료는 판매액의 5.5%(부가세 포함, 빼면 5%)라 평균으로는 연 ${fmt(Math.round(E.avg * 0.05 / 1e4))}만 원쯤입니다.`,
+            `Over the last three years, ${fmt(b.n0)} retailers had no 1st or 2nd prize, ${fmt(b.n1)} had one, ${fmt(b.n2)} had 2–4, ${fmt(b.n5)} had 5–9 and ${fmt(b.n10)} had 10 or more. A retailer sells ₩${salesBil(E.avg)} billion a year on average (middle ₩${salesBil(E.median)} billion); the top 10% sell over ₩${salesBil(E.p90)} billion and the top 1% over ₩${salesBil(E.p99)} billion. For retailers with 0–2 prizes the range covers most retailers, so little can be said about any one of them. Retailers keep 5.5% of sales as commission (5% before VAT), about ₩${fmt(Math.round(E.avg * 0.05 / 1e6))} million a year on average.`),
+        `<h3 data-i18n-en="Top ${E.top.length} retailers by estimated sales">판매량 추정 상위 ${E.top.length}곳</h3>`,
+        table([['순위', 'Rank'], ['판매점', 'Retailer'], ['지역', 'Area'], ['최근 3년 1 · 2등', '1st + 2nd, 3 yrs'], ['추정 연 판매액 (95% 범위)', 'Est. annual sales (95% range)'], ['가운데 값', 'Middle']],
+            E.top.map((x, i) => [rank(i + 1), shopName(x), where(x), fmt(x.x), salesRange(x.lo, x.hi), salesOne(x.mid)]), 'tier-stat store-top'),
+        pEn(`1 · 2등 수가 같으면 범위도 같습니다(지역 · 판매점 이름은 셈에 쓰지 않습니다).`
+            + (t0 && t0.mid < naive0 ? ` 가운데 값이 1 · 2등 수를 그대로 나눈 값(1위 ${t0.x}번 × ${salesEok(E.perHitYear)}억 = ${salesEok(naive0)}억)보다 작은 것은 운 좋게 더 나온 몫을 덜어 낸 것입니다.` : '')
+            + ` 지난 3년의 평균이며, 앞으로의 판매량이나 당첨 가능성을 뜻하지 않습니다.`,
+            `Retailers with the same count get the same range (name and area play no part).`
+            + (t0 && t0.mid < naive0 ? ` The middle value sits below a straight division (#1: ${t0.x} × ₩${salesBil(E.perHitYear)} billion = ₩${salesBil(naive0)} billion) because the share of extra luck has been taken out.` : '')
+            + ` These are three-year averages, not forecasts of sales or of winning.`, 'note'),
+        pEn(`<strong>검증.</strong> 같은 3년을 홀수 회차와 짝수 회차로 나눠, 홀수 회차만으로 낸 범위에 짝수 회차의 실제 1 · 2등 수가 들어가는지 보았습니다. 95% 범위는 판매점 ${fmt(c.n)}곳 중 ${salesPct(c.all[0.95])}, 80% 범위는 ${salesPct(c.all[0.8])}를 맞혔습니다(홀수 회차 1 · 2등이 ${c.bigMin}번 이상인 ${fmt(c.nBig)}곳만 보면 ${salesPct(c.big[0.95])} · ${salesPct(c.big[0.8])}).`
+            + (over ? ` 말한 것보다 조금 더 맞는 것은 1 · 2등 수가 정수라 범위를 넉넉하게 잡기 때문입니다.` : ` 말한 비율에 못 미친 만큼 범위를 조심해서 읽어야 합니다.`)
+            + (reg ? ` 홀수 회차에 10번 이상 나온 ${reg.n}곳은 홀수 회차 수를 그대로 옮기면 짝수 회차에도 평균 ${f1(reg.naive)}번이 나와야 하지만 실제로는 ${f1(reg.actual)}번이었고, 이 방식은 ${f1(reg.model)}번으로 보았습니다.` : '')
+            + (dr ? ` 앞 3년(${E.prev.first}~${E.prev.last}회)으로 이 3년을 맞혀 보면 ${salesPct(dr.all[0.95])}(${dr.bigMin}번 이상 ${salesPct(dr.big[0.95])})입니다. 판매량은 해마다 바뀌므로 이 범위는 지난 3년의 평균이지 앞날이 아닙니다.` : ''),
+            `<strong>Check.</strong> We split the same three years into odd and even draws and asked whether ranges built from the odd draws alone contain each retailer's actual 1st- and 2nd-prize count in the even draws. The 95% ranges were right for ${salesPct(c.all[0.95])} of ${fmt(c.n)} retailers and the 80% ranges for ${salesPct(c.all[0.8])} (${salesPct(c.big[0.95])} and ${salesPct(c.big[0.8])} for the ${fmt(c.nBig)} with ${c.bigMin}+ prizes in the odd draws).`
+            + (over ? ` They run slightly above target because counts are whole numbers, so the ranges are drawn generously.` : ` They fall short of target, so read the ranges with care.`)
+            + (reg ? ` The ${reg.n} retailers with 10+ in the odd draws would get ${f1(reg.naive)} each in the even draws if their odd-draw counts carried over unchanged; they actually got ${f1(reg.actual)}, and this method expected ${f1(reg.model)}.` : '')
+            + (dr ? ` Using the previous three years (draws ${E.prev.first}–${E.prev.last}) to cover these three gives ${salesPct(dr.all[0.95])} (${salesPct(dr.big[0.95])} for ${dr.bigMin}+). Sales change from year to year, so the ranges describe the past three years, not the future.` : '')),
+        pEn(`한계: 3~5등 판매점은 공개되지 않아 1 · 2등만 씁니다. 같은 사람이 같은 번호를 여러 장 산 몫은 한 판매점 · 한 회차에서 수동 1등 1게임, 2등 ${E.cap2}게임까지만 셉니다. 3년 중간에 문을 열거나 닫은 곳은 판 기간이 짧아 작게 나옵니다. 인터넷 판매는 판매점 분포에서 빼고 따로 셈했습니다 — 3년간 1 · 2등 ${fmt(E.net.hits)}게임, 전체 판매액의 약 ${salesPct(E.net.share)}(${salesPct(E.net.lo)}~${salesPct(E.net.hi)})입니다. 어느 판매점에서 사도 당첨 확률은 같습니다.`,
+            `Limits: retailers for 3rd–5th prizes are not published, so only 1st and 2nd prizes are used. Repeat tickets of the same numbers by one buyer are trimmed to one manual 1st-prize game and ${E.cap2} 2nd-prize games per retailer per draw. Retailers that opened or closed mid-period sold for less time and come out smaller. Online sales are left out of the retailer distribution and counted separately: ${fmt(E.net.hits)} 1st- and 2nd-prize games in three years, about ${salesPct(E.net.share)} of all sales (${salesPct(E.net.lo)}–${salesPct(E.net.hi)}). Your odds are the same wherever you buy.`, 'note'),
+    ];
+}
+
 /* ───── 1등 판매점 통계 (stores-data.json — tools/update-stores.js 가 받는다) ─────
  * 핵심 메시지: 1등이 자주 나온 곳은 많이 팔린 곳일 가능성이 크다. 판매점별 판매량은 공개되지 않으므로,
  * 같은 판매점의 2등 횟수를 판매량의 대리 지표로 쓴다 — 2등(5개 + 보너스)은 한 게임에 6/8,145,060 으로 1등보다
@@ -2002,6 +2066,9 @@ function storesPage() {
             `Ties are broken by 2nd prizes. The area is the province and city of the current (or, if closed, last) address. The ranking is a record of the past and says nothing about where the next 1st prize will come from.`, 'note'),
     ];
 
+    const E = storeSales();
+    const sales = E ? salesBlock(E, where, shopName) : [];
+
     const sidoRows = [...S.sido.entries()].sort((a, b) => b[1].w1 - a[1].w1);
     const region = [
         h2En('지역별 1등 · 2등', '1st and 2nd prizes by area'),
@@ -2041,8 +2108,10 @@ function storesPage() {
         h1: '로또 1등 판매점 통계', h1En: 'Lotto 1st-Prize Retailer Statistics',
         desc,
         scope: en(`${first}~${last}회 기준 · 매주 추첨 후 자동 갱신 (마지막 갱신 ${UPDATED}) · 출처: 동행복권 당첨 판매점 조회`, `Draws ${first}–${last} · updated automatically after each draw (last update ${UPDATED}) · source: Dong-haeng Lottery winning-retailer search`),
-        lead: en(`동행복권이 공개하는 회차별 1등 · 2등 판매점 기록을 모았습니다. 결론부터 말하면, <strong>1등이 자주 나온 곳은 많이 팔린 곳일 가능성이 큽니다.</strong> 판매점별 판매량은 공개되지 않아, 같은 판매점의 2등 횟수로 그 판매량을 가늠했습니다.`,
-            `This page collects the 1st- and 2nd-prize retailers Dong-haeng Lottery publishes for each draw. In short: <strong>retailers with many 1st prizes most likely just sell a lot.</strong> Sales per retailer are not published, so we gauge them with each retailer's 2nd-prize count.`),
+        lead: en(`동행복권이 공개하는 회차별 1등 · 2등 판매점 기록을 모았습니다. 결론부터 말하면, <strong>1등이 자주 나온 곳은 많이 팔린 곳일 가능성이 큽니다.</strong> 판매점별 판매량은 공개되지 않아, 같은 판매점의 2등 횟수로 그 판매량을 가늠했습니다.`
+            + (E ? ` 최근 3년 1 · 2등 수로 판매점별 판매량을 오차범위와 함께 거꾸로 셈해 보기도 했습니다.` : ''),
+            `This page collects the 1st- and 2nd-prize retailers Dong-haeng Lottery publishes for each draw. In short: <strong>retailers with many 1st prizes most likely just sell a lot.</strong> Sales per retailer are not published, so we gauge them with each retailer's 2nd-prize count.`
+            + (E ? ` We also work backwards from three years of 1st and 2nd prizes to estimate each retailer's sales, with margins of error.` : '')),
         ld: [{
             '@type': 'Dataset',
             name: title,
@@ -2052,9 +2121,9 @@ function storesPage() {
             dateModified: UPDATED,
             temporalCoverage: `${draws.find(x => x.round === first).date}/${(draws.find(x => x.round === last) || LATEST).date}`,
             creator: { '@type': 'Organization', name: 'lottodraw.kr', url: SITE + '/' },
-            keywords: ['로또 1등 판매점', '로또 1등 배출점', '로또 판매점 순위', '로또 명당'],
+            keywords: ['로또 1등 판매점', '로또 1등 배출점', '로또 판매점 순위', '로또 명당'].concat(E ? ['로또 판매점 매출'] : []),
         }],
-        body: [].concat(STORE_MAP_READY() ? [`<p><a class="btn" href="${STORE_MAP_FILE}" data-i18n-en="See them on the map">판매점 지도에서 보기</a></p>`] : [], glance, message, topTable, region, methods, latestBlock, [
+        body: [].concat(STORE_MAP_READY() ? [`<p><a class="btn" href="${STORE_MAP_FILE}" data-i18n-en="See them on the map">판매점 지도에서 보기</a></p>`] : [], glance, message, topTable, sales, region, methods, latestBlock, [
             pEn('함께 읽기: <a href="blog/lucky-store-myth.html">로또 명당은 정말 있을까</a> · <a href="statistics-prize.html">1등 당첨자 수</a> · <a href="probability.html">로또 확률</a> · <a href="draws.html">회차별 당첨번호</a>',
                 'Read next: <a href="blog/lucky-store-myth.html">are there really lucky lottery stores?</a> · <a href="statistics-prize.html">first-prize winners</a> · <a href="probability.html">lotto odds</a> · <a href="draws.html">all winning numbers</a>'),
             h2En('다른 로또 통계', 'Other statistics'),
