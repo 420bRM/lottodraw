@@ -1427,7 +1427,8 @@
             // 휴대폰: 남한 전체가 한 화면에 + "적게 나온 곳 흐리게"를 "1등 10회 이상"으로(2026-10-27 사장님 — 많이 나온 곳만 한눈에)
             if (byArea) { /* 지역 공유 링크는 그 지역 화면 그대로, 흐리게 막대도 0 */ }
             else if (!fromLink && isWide()) map.jumpTo({ center: [126.985, 37.538], zoom: 12.9, padding: pad() });
-            else if (!fromLink) map.fitBounds([[125.9, 33.9], [129.6, 38.4]], { padding: Object.assign(pad(), { bottom: 150, left: 10 }), animate: false });   // 아래는 왼쪽 아래 도구 몫
+            // 휴대폰: 사장님 캡처(10-30, 화면 폭 462px)대로 — 가운데 127.82 · 36.87, 줌 5.96(남한이 화면 가운데쯤, 위는 도구 줄 · 북녘 일부). 폭이 다르면 줌만 폭에 맞춘다
+            else if (!fromLink) map.jumpTo({ center: [127.82, 36.87], zoom: 5.96 + Math.log2(Math.max(300, mapBox.clientWidth) / 462) });
             if (!isWide() && !byArea && !shopQ && !fromLink) { const f = document.getElementById('sm-fade'); f.value = 57; setFade(57); }   // 링크로 온 화면(#map= · ?shop= · ?area=)은 흐리게 없이   // 57 → 1등 10회 이상(setFade 의 셈)
             if (fromLink && map.getPitch() > 5) { const d3 = document.getElementById('sm-3d'); d3.setAttribute('aria-pressed', 'true'); d3.textContent = '2D'; }   // 기울어진 화면 링크
         });
