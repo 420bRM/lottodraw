@@ -1934,6 +1934,192 @@ function prizeTierPage() {
     });
 }
 
+// 판매량 추정 그림 — 블로그 글 "로또 1등 판매점은 얼마 벌까"(content/blog/18-lotto-store-revenue.md)의 {{figure …}} 자리에 들어간다.
+// 날짜를 박은 글이라 매주 다시 셈하지 않고 고정값(content/blog/data/store-sales.json)으로 그린다 — 만드는 법은 tools/store-sales.js 첫머리
+const REVENUE_POST = fs.existsSync(path.join(ROOT, 'content', 'blog', '18-lotto-store-revenue.md')) ? 'lotto-store-revenue' : null;
+function blogFigures() {
+    let E;
+    try { E = JSON.parse(read('content/blog/data/store-sales.json')); } catch (e) { return {}; }
+    return { 'store-sales-flow': salesFlow(E), 'store-sales-range': salesRangeChart(E), 'store-sales-check': salesCheckChart(E) };
+}
+
+// 판매액(원) → 한국어 "264억" · "4.7억"(10억 아래는 소수 한 자리), 영어 "₩26 billion" · "₩0.47 billion"
+const salesEok = v => { const x = v / 1e8; return x >= 10 ? fmt(Math.round(x)) : x.toFixed(1); };
+const salesBil = v => { const x = v / 1e9; return x >= 10 ? fmt(Math.round(x)) : x >= 1 ? x.toFixed(1) : x.toFixed(2); };
+const salesRange = (lo, hi) => en(`${salesEok(lo)}~${salesEok(hi)}억`, `₩${salesBil(lo)}–${salesBil(hi)} billion`);
+const salesOne = v => en(`${salesEok(v)}억`, `₩${salesBil(v)} billion`);
+const salesPct = v => (v * 100).toFixed(1) + '%';
+
+// 판매량 추정 그림 세 개 — 휴대폰에서 글자가 줄지 않게 SVG 대신 HTML · CSS(css/site.css "판매량 추정 그림")로 그린다.
+// 위치(left · width)는 여기서 % 로 계산해 style 에 넣는다. 값은 모두 바로 옆 표 · 문장에도 있다(그림은 돕기만 한다)
+const ssPct = v => (Math.max(0, Math.min(1, v)) * 100).toFixed(2) + '%';
+const ssEnd = (i, n) => (i === 0 ? ' is-first' : i === n - 1 ? ' is-last' : '');
+const ssYears = E => (E.window.years % 1 ? f1(E.window.years) : String(E.window.years));
+
+// ① 원리 흐름도 — 판매량 추정 1위 판매점을 예로 네 단계
+function salesFlow(E) {
+    const t = E.top[0];
+    if (!t) return '';
+    const naive = t.x * E.perHitYear;
+    const per = (E.perHit / 1e8).toFixed(1);
+    const step = (n, title, val, note, key) => `<li${key ? ' class="is-key"' : ''}><span class="ss-n">${n}</span><b>${title}</b><span class="ss-v">${val}</span><span class="ss-d">${note}</span></li>`;
+    return [
+        '<figure class="ss-figure">',
+        '<ol class="ss-flow">',
+        step(1, en('1 · 2등 세기', 'Count 1st + 2nd prizes'), en(`${t.x}번`, String(t.x)),
+            en(`최근 ${ssYears(E)}년(${E.window.n}회), 같은 번호 여러 장은 줄여서`, `last ${ssYears(E)} years (${E.window.n} draws), repeat tickets trimmed`)),
+        step(2, en('그대로 나누기', 'Divide straight through'), salesOne(naive),
+            en(`${t.x}번 × ${per}억 ÷ ${ssYears(E)}년`, `${t.x} × ₩${(E.perHit / 1e9).toFixed(2)}B ÷ ${ssYears(E)} yrs`)),
+        step(3, en('운의 몫 덜기', 'Take out the luck'), salesOne(t.mid),
+            en('전국 판매점 분포에서 출발해 고친 가운데 값', 'middle value, starting from the national distribution')),
+        step(4, en('95% 범위', '95% range'), salesRange(t.lo, t.hi),
+            en('실제 판매량이 여기 있을 가능성 95%', 'a 95% chance actual sales lie here'), true),
+        '</ol>',
+        `<figcaption class="dist-legend">${en(`예: 판매량 추정 1위 판매점 (최근 ${ssYears(E)}년 1 · 2등 ${t.x}번)`, `Example: the #1 retailer by estimated sales (${t.x} 1st and 2nd prizes in ${ssYears(E)} years)`)}</figcaption>`,
+        '</figure>',
+    ].join('\n');
+}
+
+// ② 범위 그림 — 1 · 2등 수별 95% 범위(막대) · 가운데 값(점) · 그대로 나눈 값(빈 점), 바탕은 전국 판매점 분포. 가로는 로그 눈금.
+// 위 단추 "종 모양으로 보기"를 누르면 줄마다 그 분포(사후 분포) 곡선이 막대에서 솟는다 — 막대는 이 종을 위에서 본 모습이다.
+// 곡선 아래 넓이가 확률: 줄마다 넓이 100%로 같고(같은 높이 눈금), 진한 면이 가운데 95%(= 막대), 세로선이 넓이를 반으로 나누는 가운데 값.
+// 단추는 라디오 두 개 + CSS 형제 선택자라 스크립트가 없다(css/site.css "판매량 추정 그림")
+function salesRangeChart(E) {
+    const SS = require('./store-sales.js');
+    const t = E.top[0];
+    const rows = E.rows.map(r => Object.assign({ label: en(`${r.x}번`, String(r.x)) }, r));
+    if (t && t.x > E.rows[E.rows.length - 1].x) rows.push(Object.assign({}, t, { label: en(`${t.x}번 · 1위`, `${t.x} (#1)`) }));
+    const nice = [];
+    for (let e = 6; e <= 13; e++) for (const m of [1, 2, 5]) nice.push(m * 10 ** e);
+    const minV = Math.min(E.p10, ...rows.map(r => r.lo)), maxV = Math.max(E.p90, ...rows.map(r => r.hi));
+    const lo = nice.filter(v => v <= minV / 1.1).pop(), hi = nice.find(v => v >= maxV * 1.1);
+    const P = v => (Math.log(v) - Math.log(lo)) / (Math.log(hi) - Math.log(lo));
+    const ticks = nice.filter(v => v >= lo && v <= hi);
+    const tickText = v => en(`${+(v / 1e8).toPrecision(3)}억`, `₩${+(v / 1e9).toPrecision(3)}B`);
+
+    // 종 모양 곡선: 격자(로그 간격)의 무게가 곧 로그 눈금 위의 밀도라, 모든 줄을 같은 높이 눈금으로 그리면 넓이가 같다
+    const prior = E.prior && E.prior.sd ? SS.priorFrom(E.prior.mu, E.prior.sd) : null;
+    const xy = w => SS.G.map((m, k) => [P(m * E.perHitYear), w[k]]).filter(([x]) => x >= 0 && x <= 1);
+    const curves = prior ? rows.map(r => xy(SS.posterior(prior, r.x))) : [];
+    const priorCurve = prior ? xy(prior.w) : null;
+    const top = Math.max(...curves.map(c => Math.max(...c.map(p => p[1]))));
+    const X = x => (x * 1000).toFixed(1), Y = y => (100 - y / top * 100).toFixed(1);
+    const area = pts => {
+        const keep = pts.filter(p => p[1] > top * 2e-3);
+        return keep.length < 2 ? '' : `M${X(keep[0][0])},100L` + keep.map(p => `${X(p[0])},${Y(p[1])}`).join('L') + `L${X(keep[keep.length - 1][0])},100Z`;
+    };
+    const bell = (pts, r) => {
+        const all = area(pts);
+        if (!all) return '';
+        let body = `<path class="ss-bell-all" d="${all}"/>`;
+        if (r) {
+            const a0 = P(r.lo), a1 = P(r.hi), m = P(r.mid);
+            body += `<path class="ss-bell-95" d="${area(pts.filter(p => p[0] >= a0 && p[0] <= a1))}"/>`;
+            const near = pts.reduce((b, p) => (Math.abs(p[0] - m) < Math.abs(b[0] - m) ? p : b));
+            body += `<line class="ss-bell-mid" x1="${X(m)}" x2="${X(m)}" y1="100" y2="${Y(near[1])}"/>`;
+        }
+        return `<svg class="ss-bell" viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">${body}</svg>`;
+    };
+
+    const row = (r, i) => {
+        const tipKo = `${salesEok(r.lo)}~${salesEok(r.hi)}억 · 가운데 ${salesEok(r.mid)}억`;
+        const tipEn = `₩${salesBil(r.lo)}–${salesBil(r.hi)}B · middle ₩${salesBil(r.mid)}B`;
+        // 값 상자는 막대 반대쪽 끝에 붙인다 — 휴대폰에서도 그림 칸 밖으로 나가지 않는다
+        const tipAt = (P(r.lo) + P(r.hi)) / 2 < 0.5 ? 'right:0' : 'left:0';
+        return `<div class="ss-row" tabindex="0"><span class="ss-lab">${r.label}</span><span class="ss-track">`
+            + (prior ? bell(curves[i], r) : '')
+            + `<i class="ss-bar" style="left:${ssPct(P(r.lo))};width:${ssPct(P(r.hi) - P(r.lo))}"></i>`
+            + (r.x ? `<i class="ss-naive" style="left:${ssPct(P(r.x * E.perHitYear))}"></i>` : '')
+            + `<i class="ss-mid" style="left:${ssPct(P(r.mid))}"></i>`
+            + `<span class="ss-tip" style="${tipAt}">${en(tipKo, tipEn)}</span></span></div>`;
+    };
+    const head = (cls, pos, text, lab) => `<div class="ss-row ss-head"><span class="ss-lab">${lab || ''}</span><span class="ss-track"><span class="${cls}" style="left:${ssPct(pos)}">${text}</span></span></div>`;
+    const view = (id, on) => `<input type="radio" name="ss-view" id="ss-v-${id}" class="ss-v ss-v-${id}"${on ? ' checked' : ''}>`;
+    return [
+        '<figure class="ss-figure ss-range">',
+        prior ? view('bar', true) + view('bell') : '',
+        prior ? `<div class="ss-view"><label for="ss-v-bar">${en('막대로 보기', 'Bars')}</label><label for="ss-v-bell">${en('종 모양으로 보기', 'Bell curves')}</label></div>` : '',
+        '<div class="ss-plot">',
+        head('ss-head-lab ss-head-band', (P(E.p10) + P(E.p90)) / 2, en(`전국 판매점 80% (${salesEok(E.p10)}~${salesEok(E.p90)}억)`, `80% of retailers (₩${salesBil(E.p10)}–${salesBil(E.p90)}B)`)),
+        head('ss-head-lab ss-head-avg', P(E.avg), en(`전국 평균 ${salesEok(E.avg)}억`, `national average ₩${salesBil(E.avg)}B`), en(`3년 1 · 2등`, `3-yr prizes`)),
+        '<div class="ss-rows">',
+        '<div class="ss-bg" aria-hidden="true">'
+            + ticks.map(v => `<i class="ss-grid${String(v)[0] !== '1' ? ' ss-minor' : ''}" style="left:${ssPct(P(v))}"></i>`).join('')
+            + `<i class="ss-band" style="left:${ssPct(P(E.p10))};width:${ssPct(P(E.p90) - P(E.p10))}"></i>`
+            + `<i class="ss-avg" style="left:${ssPct(P(E.avg))}"></i></div>`,
+        priorCurve ? `<div class="ss-row ss-row-prior"><span class="ss-lab">${en('전국 판매점', 'All retailers')}</span><span class="ss-track">${bell(priorCurve)}</span></div>` : '',
+        rows.map(row).join('\n'),
+        '</div>',
+        `<div class="ss-row ss-axis"><span></span><span class="ss-track">`
+            + ticks.map((v, i) => `<span class="ss-tick${String(v)[0] !== '1' ? ' ss-minor' : ''}${ssEnd(i, ticks.length)}" style="left:${ssPct(P(v))}">${tickText(v)}</span>`).join('') + '</span></div>',
+        `<div class="ss-row ss-axis-title"><span></span><span>${en('추정 연 판매액 (로그 눈금 — 한 칸마다 몇 배씩)', 'Estimated annual sales (log scale — each step multiplies)')}</span></div>`,
+        '</div>',
+        '<figcaption>',
+        '<div class="dist-legend ss-legend-bar">',
+        `<span><i class="key-ss-bar"></i>${en('95% 범위', '95% range')}</span>`,
+        `<span><i class="key-ss-mid"></i>${en('가운데 값', 'middle value')}</span>`,
+        `<span><i class="key-ss-naive"></i>${en('그대로 나눈 값', 'straight division')}</span>`,
+        `<span><i class="key-ss-band"></i>${en('전국 판매점 80% (하위 · 상위 10% 뺌)', '80% of retailers (bottom and top 10% left out)')}</span>`,
+        `<span><i class="key-ss-avg"></i>${en('전국 평균', 'national average')}</span>`,
+        '</div>',
+        prior ? ['<div class="dist-legend ss-legend-bell">',
+            `<span><i class="key-ss-all"></i>${en('곡선 아래 넓이 = 100% (줄마다 같다)', 'area under each curve = 100% (the same for every row)')}</span>`,
+            `<span><i class="key-ss-95"></i>${en('진한 면 = 가운데 95% = 95% 범위(막대)', 'dark part = middle 95% = the 95% range (bar)')}</span>`,
+            `<span><i class="key-ss-line"></i>${en('가운데 값 — 넓이를 반으로 나누는 곳', 'middle value — splits the area in half')}</span>`,
+            `<span><i class="key-ss-prior"></i>${en('전국 판매점 분포', 'all retailers')}</span>`,
+            '</div>'].join('') : '',
+        `<p class="ss-note ss-note-bar">${en(`1 · 2등이 적을수록 막대가 바탕 띠(판매점 대부분)를 거의 다 덮어 정보가 적고, 많을수록 짧아지며 오른쪽으로 갑니다. 줄을 짚으면 값이 나옵니다.`,
+            `With few prizes the bar covers almost the whole shaded band (most retailers) and says little; with more it shortens and moves right. Hover or tap a row for its values.`)}</p>`,
+        prior ? `<p class="ss-note ss-note-bell">${en(`줄마다 넓이가 100%로 같아서, 1 · 2등이 많아 폭이 좁아질수록 곡선이 위로 솟습니다. 두 판매액 사이의 넓이가 실제 판매액이 그 사이에 있을 가능성입니다.`,
+            `Every curve has the same area, 100%, so the more prizes and the narrower the curve, the taller it rises. The area between two amounts is the chance that actual sales lie between them.`)}</p>` : '',
+        '</figcaption>',
+        '</figure>',
+    ].join('\n');
+}
+
+// ③ 검증 그림 — 홀 · 짝 회차 나누기, 범위가 맞힌 비율, 평균 회귀(그대로 옮긴 예상 · 이 방식 · 실제)
+function salesCheckChart(E) {
+    const c = E.check, w = E.window;
+    const cells = Array.from({ length: 24 }, (_, i) => `<i class="${(w.first + i) % 2 ? 'is-odd' : 'is-even'}"></i>`).join('');
+    const meter = (lv, got) => `<div class="ss-row ss-meter"><span class="ss-lab">${en(`${Math.round(lv * 100)}% 범위`, `${Math.round(lv * 100)}% range`)}</span><span class="ss-track">`
+        + `<i class="ss-fill" style="width:${ssPct(got)}"></i><i class="ss-target" style="left:${ssPct(lv)}"></i>`
+        + `<span class="ss-target-lab" style="left:${ssPct(lv)}">${en(`목표 ${Math.round(lv * 100)}%`, `target ${Math.round(lv * 100)}%`)}</span>`
+        + `<span class="ss-fill-lab">${en(`${salesPct(got)} 맞힘`, `${salesPct(got)} right`)}</span></span></div>`;
+    const reg = c.reg;
+    let regBlock = '';
+    if (reg) {
+        const max = Math.ceil(Math.max(reg.naive, reg.actual, reg.model) * 1.15 / 5) * 5;
+        const P = v => v / max;
+        const dot = (cls, label, v) => `<div class="ss-row ss-dotrow"><span class="ss-lab">${label}</span><span class="ss-track">`
+            + `<i class="${cls}" style="left:${ssPct(P(v))}"></i><span class="ss-dot-lab" style="left:${ssPct(P(v))}">${en(`${f1(v)}번`, f1(v))}</span></span></div>`;
+        regBlock = [
+            `<div class="ss-sub ss-q">${en(`홀수 회차에 1 · 2등이 10번 이상 나온 ${reg.n}곳 — 짝수 회차에는 평균 몇 번?`, `The ${reg.n} retailers with 10+ in the odd draws — how many on average in the even draws?`)}</div>`,
+            '<div class="ss-rows ss-dots">',
+            `<div class="ss-bg" aria-hidden="true"><i class="ss-actual" style="left:${ssPct(P(reg.actual))}"></i></div>`,
+            dot('ss-naive', en('그대로 옮기면', 'Carried over'), reg.naive),
+            dot('ss-mid', en('이 방식', 'This method'), reg.model),
+            dot('ss-act', en('실제', 'Actual'), reg.actual),
+            '</div>',
+            `<div class="ss-row ss-axis"><span></span><span class="ss-track">`
+                + Array.from({ length: max / 5 + 1 }, (_, i) => `<span class="ss-tick${ssEnd(i, max / 5 + 1)}" style="left:${ssPct(i * 5 / max)}">${i * 5}</span>`).join('') + '</span></div>',
+        ].join('\n');
+    }
+    return [
+        '<figure class="ss-figure ss-check">',
+        `<div class="ss-sub">${en(`① 같은 ${ssYears(E)}년(${w.first}~${w.last}회)을 회차 번호로 번갈아 나눕니다`, `① Split the same ${ssYears(E)} years (draws ${w.first}–${w.last}) by alternating draw number`)}</div>`,
+        `<div class="ss-cells" aria-hidden="true">${cells}<span>…</span></div>`,
+        `<div class="dist-legend"><span><i class="key-ss-odd"></i>${en('홀수 회차 — 범위를 만든다', 'odd draws — build the ranges')}</span><span><i class="key-ss-even"></i>${en('짝수 회차 — 맞혔는지 채점한다', 'even draws — score the ranges')}</span></div>`,
+        `<div class="ss-sub">${en(`② 판매점 ${fmt(c.n)}곳 가운데 범위가 맞힌 비율`, `② Share of ${fmt(c.n)} retailers the ranges got right`)}</div>`,
+        '<div class="ss-plot ss-meters">',
+        meter(0.95, c.all[0.95]),
+        meter(0.8, c.all[0.8]),
+        '</div>',
+        reg ? `<div class="ss-sub">${en('③ 운의 몫을 덜어야 하는 까닭', '③ Why the luck has to come out')}</div>` : '',
+        reg ? `<div class="ss-plot ss-reg">${regBlock}</div>` : '',
+        '</figure>',
+    ].join('\n');
+}
+
 /* ───── 1등 판매점 통계 (stores-data.json — tools/update-stores.js 가 받는다) ─────
  * 핵심 메시지: 1등이 자주 나온 곳은 많이 팔린 곳일 가능성이 크다. 판매점별 판매량은 공개되지 않으므로,
  * 같은 판매점의 2등 횟수를 판매량의 대리 지표로 쓴다 — 2등(5개 + 보너스)은 한 게임에 6/8,145,060 으로 1등보다
@@ -1988,8 +2174,10 @@ function storesPage() {
             `On the other hand, ${fmt(big2no1)} retailers have had more than ten 2nd prizes but never a 1st. Even with high sales, 1st prize can come zero times by chance. A "1st prize ○ times" banner shows only the places where it happened, not those that sold as much and got none (survivorship bias).`),
         S.net ? pEn(`1등이 가장 많이 나온 "판매점"은 동행복권 인터넷 판매입니다(${S.netFirst}회부터, 1등 ${S.net.n1}게임 · 2등 ${fmt(S.net.n2)}게임). 전국에서 한 창구로 가장 많이 팔리니 1등도 가장 많이 나옵니다. 판매량이 1등 횟수를 정한다는 것을 가장 뚜렷하게 보여 주는 예입니다.`,
             `The "retailer" with the most 1st prizes is Dong-haeng Lottery's own online sales (from draw ${S.netFirst}: ${S.net.n1} 1st-prize and ${fmt(S.net.n2)} 2nd-prize games). It is the single outlet that sells the most nationwide, so it produces the most 1st prizes — the clearest example of sales deciding the count.`) : '',
-        pEn(`판매량이 공개되지 않으므로 이 페이지는 "어디가 효율이 좋은가"를 가리지 않습니다. 2등 횟수도 운이 섞인 숫자라 판매량을 그대로 재지는 못합니다. 어느 판매점에서 사도 당첨 확률은 같습니다.`,
-            `Because sales are not published, this page does not rank retailers by "efficiency". 2nd-prize counts are themselves partly luck and only approximate sales. Your odds are the same wherever you buy.`, 'note'),
+        pEn(`판매량이 공개되지 않으므로 이 페이지는 "어디가 효율이 좋은가"를 가리지 않습니다. 2등 횟수도 운이 섞인 숫자라 판매량을 그대로 재지는 못합니다. 어느 판매점에서 사도 당첨 확률은 같습니다.`
+            + (REVENUE_POST ? ` 1 · 2등 수로 판매점별 판매액과 수수료를 오차범위와 함께 거꾸로 셈해 본 글: <a href="blog/${REVENUE_POST}.html">로또 1등 판매점은 얼마 벌까?</a>` : ''),
+            `Because sales are not published, this page does not rank retailers by "efficiency". 2nd-prize counts are themselves partly luck and only approximate sales. Your odds are the same wherever you buy.`
+            + (REVENUE_POST ? ` For each retailer's sales and commission worked backwards from 1st and 2nd prizes, with margins of error, see <a href="blog/${REVENUE_POST}.html">how much does a lucky lotto store earn?</a>` : ''), 'note'),
     ];
 
     const TOPN = 30;
@@ -2934,7 +3122,7 @@ if (STORE_MAP_READY()) {
 }
 if (write(REPEAT_FILE, repeatPage())) changed++;
 // 블로그는 원고(content/blog/)로 만든다. 같은 틀을 쓰고 사이트맵에 같이 넣으려고 여기서 부른다
-const blog = require(path.join(__dirname, 'build-blog.js'))({ shell, write, SITE, OG_IMAGE });
+const blog = require(path.join(__dirname, 'build-blog.js'))({ shell, write, SITE, OG_IMAGE, figures: blogFigures() });
 changed += blog.changed;
 updateHome(blog.posts);
 updateTaxAndTop();

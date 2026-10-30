@@ -1324,6 +1324,7 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 /* 2·3등 당첨금 통계 · 실수령액 표: 한글이 글자 단위로 끊기지 않게(띄어쓰기에서만 줄을 바꾼다).
    긴 설명은 칸 안 둘째 줄(.sub)로 내리고, 휴대폰에서는 글자를 줄여 표가 옆으로 밀리지 않게 한다 */
 .tier-stat th, .tier-stat td { word-break: keep-all; }
+.blog-post .data-table th, .blog-post .data-table td { word-break: keep-all; }   /* 블로그 표: 한글을 글자마다 끊지 않고 띄어쓰기에서 (2026-10-30, 좁은 칸이 많은 표) */
 /* 1등 판매점 30곳(statistics-stores.html): 칸 값을 한 줄로 두고 휴대폰에서는 표만 옆으로 민다(TOP 50 표와 같은 방식) */
 .store-top th, .store-top td { white-space: nowrap; }
 .tier-stat .sub { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; font-weight: normal; }
@@ -1402,6 +1403,111 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 .dist-legend .key-ball { width: 10px; border-radius: 50%; background: var(--ball-1); opacity: 1; }
 .dist-legend .key-curve { height: 0; border-top: 2.5px solid var(--ball-3); }
 .dist-legend .key-band { background: var(--brand-bg, var(--brand)); opacity: .12; }
+
+/* ───── 판매량 추정 그림 (2026-10-30, statistics-stores.html) ─────
+   tools/build-static-stats.js 의 salesFlow(원리 흐름도) · salesRangeChart(범위 그림) · salesCheckChart(검증 그림).
+   휴대폰에서도 글자 크기가 그대로이게 HTML 로 그리고, 막대 · 점의 위치(left · width %)는 생성기가 style 에 넣는다.
+   한 줄 = 이름 칸(--lab) + 그림 칸. 바탕(.ss-bg)은 그림 칸 위에 겹친다 */
+.ss-figure { margin: 14px 0 18px; }
+.ss-flow { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; }
+.ss-flow li { position: relative; display: flex; flex-direction: column; gap: 3px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface, #fff); }
+.ss-flow li:not(:last-child)::after { content: "→"; position: absolute; right: -19px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 16px; }
+.ss-flow li.is-key { border-color: var(--brand); background: var(--tint-blue, #eef3fb); }
+.ss-flow .ss-n { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: var(--brand-bg, var(--brand)); color: #fff; font-size: 12px; font-weight: bold; }
+.ss-flow b { color: var(--fg, #222); font-size: 14px; }
+.ss-flow .ss-v { color: var(--brand); font-size: 20px; font-weight: bold; line-height: 1.25; }
+.ss-flow .ss-d { color: var(--muted); font-size: 12px; line-height: 1.45; }
+.ss-plot { --lab: 84px; position: relative; color: var(--muted); font-size: 12px; }
+.ss-row { position: relative; display: grid; grid-template-columns: var(--lab) minmax(0, 1fr); align-items: center; height: 28px; }
+.ss-rows { position: relative; }
+.ss-rows > .ss-row:hover, .ss-rows > .ss-row:focus { background: var(--soft, #f6f7f9); outline: none; }
+.ss-rows > .ss-row:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+.ss-lab { padding-right: 10px; color: var(--text); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ss-track { position: relative; height: 100%; }
+.ss-bg { position: absolute; top: 0; bottom: 0; left: var(--lab); right: 0; pointer-events: none; }
+.ss-bg i { position: absolute; top: 0; bottom: 0; }
+.ss-grid { border-left: 1px solid var(--line-soft, #eee); }
+.ss-band { background: var(--brand-bg, var(--brand)); opacity: .09; }
+.ss-avg, .ss-actual { border-left: 1px solid var(--muted); }
+.ss-bar { position: absolute; top: 50%; height: 8px; margin-top: -4px; border-radius: 4px; background: var(--brand-bg, var(--brand)); opacity: .45; }
+.ss-mid, .ss-naive, .ss-act { position: absolute; top: 50%; box-sizing: border-box; border-radius: 50%; }
+.ss-mid { width: 10px; height: 10px; margin: -5px 0 0 -5px; background: var(--brand); box-shadow: 0 0 0 2px var(--bg, #fff); }
+.ss-naive { width: 10px; height: 10px; margin: -5px 0 0 -5px; border: 2px solid var(--muted); background: var(--bg, #fff); }
+.ss-act { width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 2px; background: var(--fg, #222); box-shadow: 0 0 0 2px var(--bg, #fff); }
+.ss-tip { position: absolute; top: 50%; z-index: 1; padding: 1px 6px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface, #fff); color: var(--fg, #222); white-space: nowrap; transform: translateY(-50%); opacity: 0; transition: opacity .12s; pointer-events: none; font-variant-numeric: tabular-nums; }
+.ss-rows > .ss-row:hover .ss-tip, .ss-rows > .ss-row:focus .ss-tip { opacity: 1; }
+.ss-head { height: 18px; }
+.ss-head-lab { position: absolute; bottom: 2px; transform: translateX(-50%); white-space: nowrap; font-size: 11px; }
+.ss-head-avg { color: var(--fg, #222); }
+.ss-axis { height: 20px; }
+.ss-axis .ss-lab { color: var(--muted); font-size: 11px; }
+.ss-tick { position: absolute; top: 3px; transform: translateX(-50%); white-space: nowrap; font-size: 11px; font-variant-numeric: tabular-nums; }
+.ss-tick.is-first { transform: none; }
+.ss-tick.is-last { transform: translateX(-100%); }
+.ss-head .ss-lab { align-self: end; padding-bottom: 2px; color: var(--muted); font-size: 11px; }
+.ss-axis-title { height: auto; font-size: 11px; }
+.ss-note { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
+.dist-legend .key-ss-bar { height: 8px; border-radius: 4px; background: var(--brand-bg, var(--brand)); opacity: .45; }
+.dist-legend .key-ss-mid { width: 10px; height: 10px; border-radius: 50%; background: var(--brand); }
+.dist-legend .key-ss-naive { width: 10px; height: 10px; box-sizing: border-box; border: 2px solid var(--muted); border-radius: 50%; }
+.dist-legend .key-ss-band { background: var(--brand-bg, var(--brand)); opacity: .09; }
+.dist-legend .key-ss-avg { width: 0; height: 12px; border-left: 1px solid var(--muted); }
+.dist-legend .key-ss-odd, .dist-legend .key-ss-even { width: 12px; height: 12px; box-sizing: border-box; border: 2px solid var(--brand); border-radius: 2px; }
+.dist-legend .key-ss-odd { background: var(--brand); }
+.ss-sub { margin: 14px 0 6px; color: var(--fg, #222); font-size: 13px; font-weight: bold; }
+.ss-check .ss-sub:first-child { margin-top: 0; }
+.ss-sub.ss-q { margin-top: 0; color: var(--text); font-weight: normal; }
+.ss-cells { display: flex; align-items: center; gap: 2px; }
+.ss-cells i { flex: 1; height: 14px; box-sizing: border-box; border: 2px solid var(--brand); border-radius: 2px; }
+.ss-cells i.is-odd { background: var(--brand); }
+.ss-cells span { padding-left: 4px; color: var(--muted); }
+.ss-meters .ss-row { height: 38px; align-items: end; padding-bottom: 4px; }
+.ss-meters .ss-lab { align-self: end; line-height: 16px; }
+.ss-meter .ss-track { height: 16px; border-radius: 4px; background: var(--brand-bg, var(--brand)); background: color-mix(in srgb, var(--brand-bg, var(--brand)) 14%, transparent); }
+.ss-fill { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 4px; background: var(--brand-bg, var(--brand)); }
+.ss-target { position: absolute; top: -4px; bottom: -4px; margin-left: -1px; border-left: 2px solid var(--fg, #222); }
+.ss-target-lab { position: absolute; bottom: 100%; margin: 0 0 4px -6px; transform: translateX(-100%); color: var(--fg, #222); white-space: nowrap; font-size: 11px; }
+.ss-fill-lab { position: absolute; top: 50%; left: 8px; transform: translateY(-50%); color: #fff; font-size: 11px; font-weight: bold; white-space: nowrap; }
+.ss-reg { --lab: 96px; }
+.ss-dot-lab { position: absolute; top: 50%; margin-left: 8px; padding: 0 3px; transform: translateY(-50%); background: var(--bg, #fff); color: var(--fg, #222); white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* 범위 그림의 "막대로 보기 | 종 모양으로 보기" (2026-10-30) — 라디오 두 개(.ss-v)가 그림 앞 형제라 스크립트 없이 바뀐다.
+   종 모양: 줄마다 사후 분포 곡선(.ss-bell, SVG)이 막대 자리(줄 가운데)에서 솟는다. 높이 눈금이 모든 줄에 같아 넓이가 같다 */
+.ss-v { position: absolute; width: 1px; height: 1px; margin: 0; opacity: 0; pointer-events: none; }
+.ss-view { display: inline-flex; margin: 0 0 8px; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.ss-view label { padding: 5px 12px; color: var(--muted); font-size: 12px; cursor: pointer; user-select: none; }
+.ss-view label + label { border-left: 1px solid var(--line); }
+.ss-v-bar:checked ~ .ss-view label[for="ss-v-bar"], .ss-v-bell:checked ~ .ss-view label[for="ss-v-bell"] { background: var(--brand-bg, var(--brand)); color: #fff; }
+.ss-v-bar:focus-visible ~ .ss-view label[for="ss-v-bar"], .ss-v-bell:focus-visible ~ .ss-view label[for="ss-v-bell"] { outline: 2px solid var(--brand); outline-offset: -2px; }
+.ss-bell { position: absolute; left: 0; bottom: 50%; display: none; width: 100%; height: 92px; overflow: visible; pointer-events: none; transform-origin: 50% 100%; }
+.ss-bell-all { fill: var(--brand-bg, var(--brand)); opacity: .16; }
+.ss-bell-95 { fill: var(--brand-bg, var(--brand)); opacity: .42; }
+.ss-bell-mid { stroke: var(--brand); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.ss-row-prior { display: none; }
+.ss-row-prior .ss-bell-all { fill: var(--muted); opacity: .22; }
+:root[data-theme="dark"] .ss-bell-all { opacity: .3; }
+:root[data-theme="dark"] .ss-row-prior .ss-bell-all { opacity: .3; }
+.ss-legend-bell, .ss-note-bell { display: none; }
+.ss-v-bell:checked ~ .ss-plot .ss-bell { display: block; animation: ss-rise .5s ease-out both; }
+.ss-v-bell:checked ~ .ss-plot .ss-rows > .ss-row { height: 40px; }
+.ss-v-bell:checked ~ .ss-plot .ss-row-prior { display: grid; }
+.ss-v-bell:checked ~ .ss-plot .ss-band, .ss-v-bell:checked ~ .ss-plot .ss-head-band, .ss-v-bell:checked ~ .ss-plot .ss-naive { display: none; }
+.ss-v-bell:checked ~ figcaption .ss-legend-bar, .ss-v-bell:checked ~ figcaption .ss-note-bar { display: none; }
+.ss-v-bell:checked ~ figcaption .ss-legend-bell { display: flex; }
+.ss-v-bell:checked ~ figcaption .ss-note-bell { display: block; }
+@keyframes ss-rise { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@media (prefers-reduced-motion: reduce) { .ss-v-bell:checked ~ .ss-plot .ss-bell { animation: none; } }
+.dist-legend .key-ss-all, .dist-legend .key-ss-95, .dist-legend .key-ss-prior { width: 14px; height: 10px; border-radius: 7px 7px 0 0; background: var(--brand-bg, var(--brand)); }
+.dist-legend .key-ss-all { opacity: .16; }
+.dist-legend .key-ss-95 { opacity: .42; }
+.dist-legend .key-ss-prior { background: var(--muted); opacity: .22; }
+.dist-legend .key-ss-line { width: 0; height: 12px; border-left: 1.5px solid var(--brand); }
+@media (max-width: 599px) {
+    .ss-flow { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+    .ss-flow li:not(:last-child)::after { content: "↓"; right: auto; left: 50%; top: auto; bottom: -20px; transform: translateX(-50%); }
+    .ss-plot { --lab: 66px; }
+    .ss-reg { --lab: 80px; }
+    .ss-minor { display: none; }   /* 휴대폰 눈금은 1억 · 10억 · 100억만 */
+}
 /* 차이(거리) 삼각형 — AC값 페이지 계산기 위 · About. 그림은 tools/build-static-stats.js 의 acTriSvg (2026-10-18) */
 .ac-tri { margin: 6px 0 14px; }
 .ac-tri svg { display: block; width: 100%; max-width: 420px; height: auto; margin: 0 auto; font-family: var(--font); }
