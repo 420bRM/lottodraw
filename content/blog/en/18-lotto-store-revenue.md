@@ -1,6 +1,6 @@
 ---
 title: How much does a lucky lotto store earn? — Working back sales and commission
-description: Lotto retailers' sales are not published, but they can be worked out backwards from how many 1st and 2nd prizes each one sold. One 1st or 2nd prize means about ₩1.16 billion of sales. Over the last three years the top-selling retailer sold about ₩26 billion a year (95% range ₩21–33 billion), earning roughly ₩1.0–1.7 billion a year in commission. And why net profit cannot be known.
+description: Lotto retailers' sales are not published, but 1st and 2nd prizes let you work them out backwards. The top seller moves about ₩26 billion a year and keeps ₩1.0–1.7 billion in commission. And why net profit can't be known.
 ---
 
 Seeing the long Saturday queue outside a "lucky" lotto store, you start to wonder: how much does that shop sell in a year, and how much does it make? Sales per retailer are not published. But one published number lets you work it out backwards surprisingly well: **how many 1st and 2nd prizes it has sold**.

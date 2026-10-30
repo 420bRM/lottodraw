@@ -4,6 +4,8 @@
 //
 //   node tools/indexnow.js <바뀐 파일…>   예: round/1245.html index.html (워크플로가 git diff 로 넘긴다)
 //   node tools/indexnow.js --latest       최신 회차 기준으로 매주 바뀌는 페이지 전부 (수동 실행용)
+//   node tools/indexnow.js --blog [원고…]  블로그 글: 원고(content/blog/…md, en/ 도) → 그 글 + 블로그 목록. 원고를 안 주면 글 전부
+//                                         (.github/workflows/blog-indexnow.yml 이 원고가 html 에 들어올 때 부른다)
 //
 // 보내기 전에 사이트에 실제로 반영됐는지(배포가 끝났는지) 확인한다. 반영 전에 알리면 로봇이
 // 옛 페이지나 404 를 가져간다. 15분이 지나도 반영이 안 보이면 그냥 보낸다.
@@ -22,7 +24,7 @@ const ENDPOINTS = [
     ['네이버', 'https://searchadvisor.naver.com/indexnow'],
     ['Bing', 'https://www.bing.com/indexnow'],
 ];
-// 블로그는 매주 머리글의 최신 회차만 바뀌어서 알리지 않는다. admin 은 검색 제외 페이지다.
+// 블로그는 매주 머리글의 최신 회차만 바뀌어서 알리지 않는다(글을 쓰거나 고쳤을 때는 --blog 로 따로). admin 은 검색 제외 페이지다.
 const SKIP = /^(blog\/|admin\.html$|naver[0-9a-f]+\.html$)/;
 const LIVE_WAIT_MS = 15 * 60 * 1000;
 const LIVE_POLL_MS = 15 * 1000;
@@ -49,6 +51,21 @@ function latestFiles() {
         'probability.html', 'tax.html', 'top-prize.html'];
 }
 
+// --blog: 원고 → blog/<slug>.html (+ 목록). slug 는 원고 머리말의 slug, 없으면 파일 이름에서 번호를 뗀 것(tools/build-blog.js 와 같다)
+function blogFiles(manuscripts) {
+    const dir = path.join(ROOT, 'content', 'blog');
+    const names = manuscripts.length
+        ? manuscripts.map(f => path.basename(f)).filter(f => f.endsWith('.md'))
+        : fs.readdirSync(dir).filter(f => f.endsWith('.md'));
+    const pages = [...new Set(names)].map(name => {
+        const file = path.join(dir, name);   // 영어 원고가 바뀌어도 주소는 한국어 원고의 slug
+        if (!fs.existsSync(file)) return null;   // 지운 원고
+        const m = fs.readFileSync(file, 'utf8').match(/^slug:\s*(\S+)/m);
+        return `blog/${m ? m[1] : name.replace(/\.md$/, '').replace(/^\d+-/, '')}.html`;
+    }).filter(Boolean);
+    return pages.length ? pages.concat('blog/index.html') : [];
+}
+
 // 사이트에 뜬 내용이 저장소 파일과 같아질 때까지 기다린다 (GitHub Pages 는 HTML 을 그대로 올린다)
 async function waitLive(file) {
     const want = fs.readFileSync(path.join(ROOT, file), 'utf8');
@@ -71,8 +88,9 @@ async function waitLive(file) {
 
 async function main() {
     const args = process.argv.slice(2);
-    const files = [...new Set(args.includes('--latest') ? latestFiles() : args)]
-        .filter(f => /\.html$/.test(f) && !SKIP.test(f) && fs.existsSync(path.join(ROOT, f)));
+    const blog = args.includes('--blog');
+    const files = [...new Set(blog ? blogFiles(args.filter(a => a !== '--blog')) : args.includes('--latest') ? latestFiles() : args)]
+        .filter(f => /\.html$/.test(f) && (blog || !SKIP.test(f)) && fs.existsSync(path.join(ROOT, f)));
     if (!files.length) { console.log('알릴 페이지가 없다.'); return; }
 
     const keyFile = path.join(ROOT, `${KEY}.txt`);

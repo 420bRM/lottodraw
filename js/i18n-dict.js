@@ -1081,6 +1081,7 @@ window.I18N_DICT = {
     'blog.sortAria': { ko: '정렬', en: 'Sort' },
     'blog.sortBase': { ko: '기본 순서', en: 'Default order' },
     'blog.sortViews': { ko: '많이 읽은 순', en: 'Most read' },
+    'blog.sortNew': { ko: '최신순', en: 'Newest' },
     // 조회수(js/views.js). {n} 에 1,234 처럼 쉼표를 찍은 수가 들어간다
     'views.n':       { ko: '조회 {n}', en: '{n} views' },
     'views.one':     { ko: '조회 {n}', en: '{n} view' },

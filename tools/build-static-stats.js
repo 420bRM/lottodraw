@@ -2034,6 +2034,8 @@ function salesRangeChart(E) {
             `<span><i class="key-ss-prior"></i>${en('전국 판매점 분포', 'all retailers')}</span>`,
             `<span><i class="key-ss-95"></i>${en('95% 범위 (곡선을 고르면)', '95% range (pick a curve)')}</span>`,
             `<span><i class="key-ss-line"></i>${en('가운데 값 (곡선을 고르면)', 'middle value (pick a curve)')}</span>`,
+            `<span><i class="key-ss-band"></i>${en('전국 판매점 80% (하위 · 상위 10% 뺌)', '80% of retailers (bottom and top 10% left out)')}</span>`,
+            `<span><i class="key-ss-avg"></i>${en('전국 평균', 'national average')}</span>`,
             '</div>'].join('') : '',
         `<p class="ss-note ss-note-bar">${en(`1 · 2등이 적을수록 막대가 바탕 띠(판매점 대부분)를 거의 다 덮어 정보가 적고, 많을수록 짧아지며 오른쪽으로 갑니다. 줄을 짚으면 값이 나옵니다.`,
             `With few prizes the bar covers almost the whole shaded band (most retailers) and says little; with more it shortens and moves right. Hover or tap a row for its values.`)}</p>`,
@@ -2058,6 +2060,7 @@ function logAxis(lows, highs) {
 // 종 모양(분포) 그림 — 줄마다의 사후 분포를 한 판에 겹쳐 그린다. 모든 곡선이 같은 바닥(0)에서 시작해 양 끝이 0으로 내려온다.
 //   가로 = 추정 연 판매액(로그 눈금, 꼬리가 0이 되는 데까지)
 //   세로 = 판매액이 그 값 ±10% 안에 있을 확률(%) — 꼭대기 57%면 "그 값 ±10% 안일 확률 57%"로 그대로 읽는다
+// 바탕에는 막대 그림과 같은 전국 판매점 80% 띠 · 전국 평균선을 깐다 — 두 그림이 같은 내용임을 알아보게.
 // 위 단추(전체 · 전국 판매점 · 0번 … 1위)로 곡선 하나를 고르면 그 곡선만 진하게, 95% 범위(진한 면)와 가운데 값(세로선)이 나온다.
 // 고르기도 라디오 + CSS 라서, 곡선 번호마다의 규칙은 여기서 <style> 로 만든다(곡선 수가 자료에 따라 정해진다)
 function salesDensity(E, rows) {
@@ -2145,7 +2148,10 @@ function salesDensity(E, rows) {
         '<div class="ss-dens">',
         `<div class="ss-chips">` + [`<label for="ss-c-all">${en('전체', 'All curves')}</label>`].concat(curves.map((c, i) => `<label for="ss-c-${i}">${c.prior ? c.label : c.short}</label>`)).join('') + '</div>',
         `<div class="ss-dens-ytitle">${en('세로: 판매액이 그 값 ±10% 안에 있을 확률', 'Vertical: chance that sales lie within ±10% of that amount')}</div>`,
+        `<div class="ss-dens-head"><span class="ss-head-lab" style="left:${ssPct((ax.P(E.p10) + ax.P(E.p90)) / 2)}">${en(`전국 판매점 80% (${salesEok(E.p10)}~${salesEok(E.p90)}억)`, `80% of retailers (₩${salesBil(E.p10)}–${salesBil(E.p90)}B)`)}</span></div>`,
+        `<div class="ss-dens-head"><span class="ss-head-lab ss-head-avg" style="left:${ssPct(ax.P(E.avg))}">${en(`전국 평균 ${salesEok(E.avg)}억`, `national average ₩${salesBil(E.avg)}B`)}</span></div>`,
         '<div class="ss-dens-plot">',
+        `<i class="ss-dens-band" style="left:${ssPct(ax.P(E.p10))};width:${ssPct(ax.P(E.p90) - ax.P(E.p10))}"></i><i class="ss-dens-avg" style="left:${ssPct(ax.P(E.avg))}"></i>`,
         yTicks.map(v => `<i class="ss-ygrid" style="bottom:${ssPct(v / top)}"></i><span class="ss-ytick" style="bottom:${ssPct(v / top)}">${Math.round(v * 100)}%</span>`).join(''),
         ax.ticks.map(v => `<i class="ss-xgrid${String(v)[0] !== '1' ? ' ss-minor' : ''}" style="left:${ssPct(ax.P(v))}"></i>`).join(''),
         `<svg class="ss-dens-svg" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true" focusable="false">${svg}</svg>`,

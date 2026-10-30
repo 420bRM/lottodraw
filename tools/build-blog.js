@@ -14,6 +14,7 @@
 //     description: 목록과 검색 결과에 나오는 요약
 //     date: 2026-10-01             화면에는 안 보인다. 사이트맵·검색엔진용
 //     pick: 3                      흥미도 1~3. 클수록 목록 위쪽에 올 가능성이 크다 (빼면 1)
+//     boost: 1                     (선택) 강세값 0~3. 흥미도에 더한다 — 특히 띄우고 싶은 글(새 글 등)
 //     related: [frequency, tax]    글 끝 "이어지는 페이지" — 아래 RELATED 의 이름
 //     updated: 2026-11-01          (선택) 크게 고친 날. 사이트맵·검색엔진에 갱신일로 간다
 //     ---
@@ -72,7 +73,7 @@ const RELATED = {
 // 글자 수가 420자를 넘으면 멈춘다. 그 아래는 CSS 가 흐리게 덮는다.
 const PREVIEW_BLOCKS = 5;
 const PREVIEW_CHARS = 420;
-// 목록 순서: 방문할 때마다 흥미도(pick) + 0~PICK_JITTER 의 무작위 값으로 줄 세운다.
+// 목록 순서: 방문할 때마다 흥미도(pick) + 강세값(boost) + 0~PICK_JITTER 의 무작위 값으로 줄 세운다.
 // 흥미도가 높은 글이 대체로 위에 오되, 이웃한 단계끼리는 섞인다 (의도된 무작위)
 const PICK_JITTER = 1.6;
 
@@ -307,6 +308,7 @@ module.exports = function buildBlog(ctx) {
             description: m.description || '',
             date: m.date || '',
             pick: Math.min(3, Math.max(1, Number(m.pick) || 1)),
+            boost: Math.min(3, Math.max(0, Number(m.boost) || 0)),
             updated: m.updated || m.date || '',
             category: cat,
             blocks: doc.blocks,
@@ -321,8 +323,8 @@ module.exports = function buildBlog(ctx) {
         warn(`${p.file} 의 slug "${p.slug}" 가 ${slugs[p.slug]} 와 겹친다 — 이 원고는 건너뛴다`);
         posts.splice(i--, 1);
     }
-    // HTML 에 적는 순서(스크립트가 없을 때, 이전·다음 글): 흥미도가 높은 글부터, 같으면 파일 번호 순
-    posts.sort((a, b) => b.pick - a.pick || a.order - b.order);
+    // HTML 에 적는 순서(스크립트가 없을 때, 이전·다음 글): 흥미도 + 강세값이 높은 글부터, 같으면 파일 번호 순
+    posts.sort((a, b) => (b.pick + b.boost) - (a.pick + a.boost) || a.order - b.order);
 
     /* 글마다 본문을 그린다 */
     posts.forEach(p => {
@@ -410,14 +412,16 @@ module.exports = function buildBlog(ctx) {
         + `<li><button type="button" class="chip-btn" data-cat="" aria-pressed="true"><span data-i18n="blog.all">전체</span> <span class="count">${posts.length}</span></button></li>`
         + cats.map(({ c, n }) => `<li><button type="button" class="chip-btn" data-cat="${esc(c.name)}" aria-pressed="false">${catDot(c)}<span${tr(c.en && esc(c.en))}>${esc(c.name)}</span> <span class="count">${n}</span></button></li>`).join('')
         + '</ul>';
-    // 정렬: 기본 순서(흥미도 + 무작위) · 많이 읽은 순. js/views.js 가 조회수를 받아 오면 보인다(못 받으면 숨은 채)
-    const sorter = '<div class="post-sort" hidden><div class="sort-btns" role="group" aria-label="정렬" data-i18n-attr="aria-label:blog.sortAria">'
+    // 정렬: 기본 순서(흥미도 + 강세값 + 무작위) · 최신순(쓴 날 date) · 많이 읽은 순.
+    // "많이 읽은 순"만 js/views.js 가 조회수를 받아 오면 보인다(못 받으면 숨은 채) — 나머지 둘은 늘 있다
+    const sorter = '<div class="post-sort"><div class="sort-btns" role="group" aria-label="정렬" data-i18n-attr="aria-label:blog.sortAria">'
         + '<button type="button" class="sort-btn" data-sort="" aria-pressed="true" data-i18n="blog.sortBase">기본 순서</button>'
-        + '<button type="button" class="sort-btn" data-sort="views" aria-pressed="false" data-i18n="blog.sortViews">많이 읽은 순</button>'
+        + '<button type="button" class="sort-btn" data-sort="new" aria-pressed="false" data-i18n="blog.sortNew">최신순</button>'
+        + '<button type="button" class="sort-btn" data-sort="views" aria-pressed="false" data-i18n="blog.sortViews" hidden>많이 읽은 순</button>'
         + '</div></div>';
     const cards = posts.map(p => {
         const pv = preview(p);
-        return `<li class="post-card" data-cat="${esc(p.category.name)}" data-pick="${p.pick}">`
+        return `<li class="post-card" data-cat="${esc(p.category.name)}" data-pick="${p.pick}"${p.boost ? ` data-boost="${p.boost}"` : ''} data-date="${esc(p.date)}" data-order="${p.order}">`
             + `<div class="post-head">${catBadge(p.category)}${viewsTag(p.slug)}</div>`
             + `<h2 class="post-title"><a href="${p.slug}.html"${tr(p.en && esc(p.en.title))}>${esc(p.title)}</a></h2>`
             + `<p class="post-desc"${tr(p.en && esc(p.en.description))}>${esc(p.description)}</p>`
@@ -452,7 +456,8 @@ module.exports = function buildBlog(ctx) {
         body: [chips, sorter, '<ol class="post-list">' + cards.join('\n') + '</ol>'],
         scripts: ['js/views.js'],
         // 목록 순서와 카테고리 단추.
-        // 처음: 흥미도(data-pick) + 무작위로 줄 세운다 — 방문할 때마다 조금씩 다르다.
+        // 처음: 흥미도(data-pick) + 강세값(data-boost) + 무작위로 줄 세운다 — 방문할 때마다 조금씩 다르다.
+        // 최신순: 쓴 날(data-date) 늦은 순, 같은 날이면 파일 번호 큰 순(나중에 쓴 글).
         // 단추: 그 카테고리 글을 맨 위로 가나다순으로 모으고, 나머지는 흐리게 그 아래에 둔다.
         // 많이 읽은 순: 조회수 큰 순(같으면 처음 순서). 카테고리를 골랐으면 그 카테고리 안에서도 조회수 순.
         //   조회수는 js/views.js 가 카드의 .post-views 에 data-n 으로 적고 'ld:views' 를 알린다.
@@ -463,7 +468,7 @@ module.exports = function buildBlog(ctx) {
             "    var chips = document.querySelectorAll('.chip-btn');",
             '    var cards = Array.prototype.slice.call(list.children);',
             '    var score = cards.map(function (c) {',
-            `        return Number(c.getAttribute('data-pick') || 1) + Math.random() * ${PICK_JITTER};`,
+            `        return Number(c.getAttribute('data-pick') || 1) + Number(c.getAttribute('data-boost') || 0) + Math.random() * ${PICK_JITTER};`,
             '    });',
             '    var base = cards.slice().sort(function (a, b) { return score[cards.indexOf(b)] - score[cards.indexOf(a)]; });',
             "    var reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;",
@@ -494,13 +499,18 @@ module.exports = function buildBlog(ctx) {
             "    function views(c) { var v = c.querySelector('.post-views'); return Number(v && v.getAttribute('data-n')) || 0; }",
             '    function byBase(a, b) { return base.indexOf(a) - base.indexOf(b); }',
             '    function byViews(a, b) { return views(b) - views(a) || byBase(a, b); }',
+            '    function byNew(a, b) {',
+            "        var d = (b.getAttribute('data-date') || '').localeCompare(a.getAttribute('data-date') || '');",
+            "        return d || Number(b.getAttribute('data-order')) - Number(a.getAttribute('data-order'));",
+            '    }',
+            "    var orders = { views: byViews, 'new': byNew };",
             "    function byTitle(a, b) { return title(a).localeCompare(title(b), document.documentElement.lang || 'ko'); }",
             '    function arrange(animate) {',
             "        var hit = function (c) { return !cat || c.getAttribute('data-cat') === cat; };",
             "        cards.forEach(function (c) { c.classList.toggle('is-dim', !hit(c)); });",
-            "        var first = sort === 'views' ? byViews : cat ? byTitle : byBase;",
+            '        var first = orders[sort] || (cat ? byTitle : byBase);',
             '        var rest = cards.filter(function (c) { return !hit(c); });',
-            "        place(cards.filter(hit).sort(first).concat(rest.sort(sort === 'views' ? byViews : byBase)), animate && !reduce);",
+            '        place(cards.filter(hit).sort(first).concat(rest.sort(orders[sort] || byBase)), animate && !reduce);',
             '    }',
             '    place(base, false);',
             '    Array.prototype.forEach.call(chips, function (chip) {',
@@ -519,7 +529,7 @@ module.exports = function buildBlog(ctx) {
             '        });',
             '    });',
             "    document.addEventListener('ld:views', function () {",
-            "        if (list.querySelector('.post-views[data-n]')) sorter.hidden = false;",
+            "        if (list.querySelector('.post-views[data-n]')) sorter.querySelector('[data-sort=\"views\"]').hidden = false;",
             "        if (sort === 'views') arrange(false);",
             '    });',
             '}());',

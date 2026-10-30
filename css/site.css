@@ -1492,6 +1492,10 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 .ss-dens-ytitle { margin: 0 0 6px; }
 .ss-dens-xtitle { margin: 2px 0 0 40px; }
 .ss-dens-plot { position: relative; height: 300px; margin: 0 0 0 40px; border-bottom: 1px solid var(--faint, #999); }
+.ss-dens-head { position: relative; height: 18px; margin-left: 40px; color: var(--muted); }
+.ss-dens-band, .ss-dens-avg { position: absolute; top: 0; bottom: 0; }
+.ss-dens-band { background: var(--brand-bg, var(--brand)); opacity: .09; }   /* 막대 그림의 .ss-band 와 같은 띠 */
+.ss-dens-avg { border-left: 1px solid var(--muted); }
 .ss-ygrid, .ss-xgrid { position: absolute; }
 .ss-ygrid { left: 0; right: 0; border-top: 1px solid var(--line-soft, #eee); }
 .ss-xgrid { top: 0; bottom: 0; border-left: 1px solid var(--line-soft, #eee); }
@@ -1499,7 +1503,7 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 .ss-dens-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; transform-origin: 50% 100%; }
 .ss-cv { transition: opacity .2s; }
 .ss-cv-area { fill: var(--brand-bg, var(--brand)); opacity: .07; }
-.ss-cv-line { fill: none; stroke: var(--brand); stroke-width: 2; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.ss-cv-line { fill: none; stroke: var(--brand); stroke-width: 1; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 .ss-cv-95 { display: none; fill: var(--brand-bg, var(--brand)); opacity: .32; }
 .ss-cv-mid { display: none; stroke: var(--brand); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
 .ss-cv.is-prior .ss-cv-area { fill: var(--muted); opacity: .1; }
@@ -1507,7 +1511,7 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 .ss-peak { position: absolute; margin-bottom: 3px; padding: 0 2px; transform: translateX(-50%); background: var(--bg, #fff); color: var(--text); font-size: 11px; line-height: 1.2; white-space: nowrap; transition: opacity .2s; }
 .ss-dens-x { position: relative; height: 18px; margin-left: 40px; }
 .ss-info { display: none; margin: 8px 0 0; color: var(--text); font-size: 12px; }
-.dist-legend .key-ss-curve, .dist-legend .key-ss-prior { width: 16px; height: 0; border-top: 2px solid var(--brand); }
+.dist-legend .key-ss-curve, .dist-legend .key-ss-prior { width: 16px; height: 0; border-top: 1px solid var(--brand); }
 .dist-legend .key-ss-prior { border-top-color: var(--muted); }
 .dist-legend .key-ss-95 { width: 14px; height: 10px; background: var(--brand-bg, var(--brand)); opacity: .32; }
 .dist-legend .key-ss-line { width: 0; height: 12px; border-left: 1.5px solid var(--brand); }
@@ -1517,7 +1521,7 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
     .ss-plot { --lab: 66px; }
     .ss-reg { --lab: 80px; }
     .ss-dens-plot { height: 240px; margin-left: 34px; }
-    .ss-dens-x { margin-left: 34px; }
+    .ss-dens-x, .ss-dens-head { margin-left: 34px; }
     .ss-dens-xtitle { margin-left: 34px; }
     .ss-peak-pc { display: none; }
     .ss-minor { display: none; }   /* 휴대폰 눈금은 1억 · 10억 · 100억만 */
