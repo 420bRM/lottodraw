@@ -218,6 +218,12 @@ body.sm-full #theme-btn { display: none !important; }
     background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='M9 1.5 12.2 9H5.8z' fill='%23e3402f'/%3E%3Cpath d='M9 16.5 5.8 9h6.4z' fill='%23a3abb7'/%3E%3C/svg%3E") center / contain no-repeat; }
 /* 지도 단추(확대 · 내 위치)는 오른쪽 아래 채팅 말풍선 위로 */
 .sm-map .maplibregl-ctrl-bottom-right { margin-bottom: calc(52px + env(safe-area-inset-bottom)); }
+/* 축척 막대(2026-10-30): 확대/축소 단추 아래, 오른쪽 끝에 맞춘 막대 + 거리 */
+.sm-scale { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; padding: 2px 4px; border-radius: 4px; background: rgba(255, 255, 255, .75);
+    color: #333; font: 600 10px/1.2 system-ui, sans-serif; pointer-events: none; }
+.sm-scale-bar { display: block; height: 4px; border: 1.5px solid #333; border-top: 0; box-sizing: border-box; }
+:root[data-theme="dark"] .sm-scale { background: rgba(20, 26, 35, .75); color: #dfe5ee; }
+:root[data-theme="dark"] .sm-scale-bar { border-color: #dfe5ee; }
 
 /* 휴대폰 카드: 예전의 절반쯤(2026-10-27 사장님 — 지도가 보이게). 폭 · 높이 · 글자 · 공을 줄인다 */
 @media (max-width: 899px) {

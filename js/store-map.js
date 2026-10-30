@@ -232,6 +232,33 @@
         onRemove() { this.box.remove(); }
     }
 
+    // 축척 막대(2026-10-30 사장님): 2 · 5 · 10 · 20 · 50 · 100 · 200 · 500m · 1 · 2 · 5 · 10 · 20 · 50 · 100km 중
+    // 막대가 SCALE_MAX px 를 넘지 않는 가장 큰 값. 화면 가운데 위도로 잰다(기울인 3D 화면에서는 가운데 기준 어림)
+    const SCALE_STEPS = [2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000];
+    const SCALE_MAX = 90;
+    class ScaleBar {
+        onAdd(m) {
+            this.m = m;
+            this.box = document.createElement('div');
+            this.box.className = 'maplibregl-ctrl sm-scale';
+            this.box.innerHTML = '<span class="sm-scale-bar"></span><span class="sm-scale-txt"></span>';
+            this.up = () => this.draw();
+            m.on('move', this.up);
+            m.on('resize', this.up);
+            this.draw();
+            return this.box;
+        }
+        draw() {
+            const m = this.m, lat = m.getCenter().lat;
+            const mpp = 40075016.686 * Math.cos(lat * Math.PI / 180) / (512 * Math.pow(2, m.getZoom()));   // 1px 이 몇 m
+            let step = SCALE_STEPS[0];
+            for (const v of SCALE_STEPS) if (v / mpp <= SCALE_MAX) step = v;
+            this.box.firstChild.style.width = Math.max(8, Math.round(step / mpp)) + 'px';
+            this.box.lastChild.textContent = step >= 1000 ? step / 1000 + 'km' : step + 'm';
+        }
+        onRemove() { this.m.off('move', this.up); this.m.off('resize', this.up); this.box.remove(); }
+    }
+
     // 고른 방식만 센 1등 횟수(방식을 모르는 1등은 늘 센다)
     const eff1 = r => r[2] - (modes.A ? 0 : r[8] || 0) - (modes.M ? 0 : r[9] || 0) - (modes.S ? 0 : r[10] || 0);
     const TOP = 50;
@@ -1363,7 +1390,8 @@
             maxBounds: [[118, 30], [138, 42]], attributionControl: { compact: true }, dragRotate: true, pitchWithRotate: true,
             hash: 'map',   // 주소 끝 #map=줌/위도/경도/방향/기울기 — 보던 화면을 링크로 나눌 수 있다
         });
-        // 오른쪽 아래는 나중에 단 것이 위로 쌓인다: 확대/축소 → 내 위치 → 북쪽 보기
+        // 오른쪽 아래는 나중에 단 것이 위로 쌓인다: 축척 막대 → 확대/축소 → 내 위치 → 북쪽 보기
+        map.addControl(new ScaleBar(), 'bottom-right');
         map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
         // 내 위치: 브라우저 위치 기능(휴대폰 GPS, PC 는 와이파이 · IP 로 어림). 이 기기 안에서만 쓰고 서버로 보내지 않는다(위치정보법 — README 4-9)
         geo = new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: false }, trackUserLocation: false });
