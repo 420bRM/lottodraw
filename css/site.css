@@ -1324,6 +1324,7 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 /* 2·3등 당첨금 통계 · 실수령액 표: 한글이 글자 단위로 끊기지 않게(띄어쓰기에서만 줄을 바꾼다).
    긴 설명은 칸 안 둘째 줄(.sub)로 내리고, 휴대폰에서는 글자를 줄여 표가 옆으로 밀리지 않게 한다 */
 .tier-stat th, .tier-stat td { word-break: keep-all; }
+.blog-post .data-table th, .blog-post .data-table td { word-break: keep-all; }   /* 블로그 표: 한글을 글자마다 끊지 않고 띄어쓰기에서 (2026-10-30, 좁은 칸이 많은 표) */
 /* 1등 판매점 30곳(statistics-stores.html): 칸 값을 한 줄로 두고 휴대폰에서는 표만 옆으로 민다(TOP 50 표와 같은 방식) */
 .store-top th, .store-top td { white-space: nowrap; }
 .tier-stat .sub { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; font-weight: normal; }

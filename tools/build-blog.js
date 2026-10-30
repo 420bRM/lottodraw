@@ -21,6 +21,8 @@
 //
 // 본문 문법: ## 소제목, 문단(줄을 바꾸면 <br>), - 목록, 1. 목록, > 인용, | 표 |,
 // **굵게**, `코드`, [링크](/tax.html). 링크는 사이트 뿌리 기준으로 쓰면 알아서 고쳐 단다.
+// 그림: 한 줄에 {{figure 이름}} — build-static-stats.js 가 넘겨준 그림(ctx.figures[이름], 영문은 그림 안에 들어 있다)을
+// 그 자리에 넣는다. 영어 원고에도 같은 자리에 같은 줄을 쓴다.
 //
 // 영문은 한국어와 블록마다 짝이 맞아야 한다 — 소제목·문단·목록 항목·표 칸·인용의 수와
 // 순서가 같아야 한다. 어긋나면 그 글의 영어만 빼고 경고를 찍는다. 빌드를 멈추지 않는
@@ -103,9 +105,11 @@ const isQuote = line => /^>/.test(line);
 const isUl = line => /^[-*]\s+/.test(line);
 const isOl = line => /^\d+\.\s+/.test(line);
 const isHead = line => /^#{2,}\s+/.test(line);
-const startsBlock = line => isTable(line) || isQuote(line) || isUl(line) || isOl(line) || isHead(line);
+const FIGURE = /^\{\{figure\s+([\w-]+)\}\}$/;
+const isFigure = line => FIGURE.test(line.trim());
+const startsBlock = line => isTable(line) || isQuote(line) || isUl(line) || isOl(line) || isHead(line) || isFigure(line);
 
-// 블록: { type: 'h2' | 'p' | 'quote' | 'ul' | 'ol' | 'table', ... }
+// 블록: { type: 'h2' | 'p' | 'quote' | 'ul' | 'ol' | 'table' | 'figure', ... }
 function parseBlocks(md) {
     const lines = md.split('\n');
     const blocks = [];
@@ -120,6 +124,9 @@ function parseBlocks(md) {
         if (!line.trim()) { i++; continue; }
         if (isHead(line)) {
             blocks.push({ type: 'h2', text: line.replace(/^#+\s+/, '').trim() });
+            i++;
+        } else if (isFigure(line)) {
+            blocks.push({ type: 'figure', name: line.trim().match(FIGURE)[1] });
             i++;
         } else if (isTable(line)) {
             const cells = row => row.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim());
@@ -142,6 +149,7 @@ function parseBlocks(md) {
 
 // 영문과 짝을 맞춰 볼 모양. 종류와 항목·칸 수가 같아야 한다
 const shape = b => b.type
+    + (b.name ? `:${b.name}` : '')
     + (b.items ? `(${b.items.length})` : '')
     + (b.head ? `(${b.head.length}|${b.rows.map(r => r.length).join(',')})` : '');
 
@@ -198,6 +206,8 @@ function renderBlock(b, e, id) {
             + '</tr></thead><tbody>'
             + b.rows.map((r, i) => '<tr>' + r.map((c, j) => `<td${tr(pick(x => inline(x.rows[i][j])))}>${inline(c)}</td>`).join('') + '</tr>').join('')
             + '</tbody></table></div>';
+    case 'figure':
+        return FIGURES[b.name] || '';
     default:
         throw new Error('모르는 블록: ' + b.type);
     }
@@ -221,7 +231,7 @@ function preview(post) {
     let chars = 0;
     for (let i = 0; i < post.blocks.length && ko.length < PREVIEW_BLOCKS && chars < PREVIEW_CHARS; i++) {
         const b = post.blocks[i];
-        if (b.type === 'table') continue;
+        if (b.type === 'table' || b.type === 'figure') continue;
         const html = plainBlock(b);
         ko.push(html);
         if (post.en) en.push(plainBlock(post.en.blocks[i]));
@@ -239,9 +249,13 @@ const catBadge = c => `<span class="post-cat">${catDot(c)}<span${tr(c.en && esc(
 // 숫자는 글에서만 보인다 — 목록 카드의 자리는 숨긴 채 "많이 읽은 순" 정렬에만 쓴다
 const viewsTag = slug => `<span class="post-views" data-post="${esc(slug)}" hidden></span>`;
 
+// 원고의 {{figure 이름}} 자리에 넣을 그림 HTML (buildBlog 가 ctx.figures 로 받는다)
+let FIGURES = {};
+
 module.exports = function buildBlog(ctx) {
     const { shell, write, SITE, OG_IMAGE } = ctx;
     const warn = msg => console.warn(`  ! 블로그: ${msg}`);
+    FIGURES = ctx.figures || {};
 
     if (!fs.existsSync(SRC)) {
         warn('content/blog/ 가 없어 블로그를 건너뛴다');
@@ -280,6 +294,7 @@ module.exports = function buildBlog(ctx) {
             }
         }
 
+        doc.blocks.filter(b => b.type === 'figure' && !FIGURES[b.name]).forEach(b => warn(`${file} 의 그림 "${b.name}" 이 없다 — 그 자리는 비운다`));
         const related = [].concat(m.related || []).filter(k => {
             if (RELATED[k]) return true;
             warn(`${file} 의 related "${k}" 는 RELATED 에 없다`);

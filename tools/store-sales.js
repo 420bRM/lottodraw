@@ -18,6 +18,11 @@
 // 100장이 한 사람). 그래서 한 판매점 · 한 회차에서 수동 1등은 1게임으로, 2등은 3게임까지만 센다.
 // 인터넷 판매는 판매점과 성격이 달라 분포에서 빼고 따로 센다.
 //
+// 블로그 글 "로또 1등 판매점은 얼마 벌까"(content/blog/18-lotto-store-revenue.md)는 날짜를 박은 글이라 본문 숫자와 그림이
+// 매주 바뀌면 안 된다. 그래서 그림은 고정값(content/blog/data/store-sales.json)으로 그린다 — 다시 셈하려면
+//   node tools/store-sales.js --snapshot 1247     (회차를 빼면 마지막 회차)
+// 를 돌리고 글의 숫자도 함께 고친다.
+//
 // 시험: node tools/test-store-sales.js
 'use strict';
 
@@ -170,7 +175,8 @@ function coverage(ids, from, to, levels) {
 function estimate(d, all, prize, opt) {
     const W = (opt && opt.window) || 156;
     const TOPN = (opt && opt.top) || 20;
-    const rounds = Object.keys(d.rounds).map(Number).sort((a, b) => a - b);
+    const lastRound = (opt && opt.last) || Infinity;   // 이 회차까지만 (블로그 고정값)
+    const rounds = Object.keys(d.rounds).map(Number).filter(r => r <= lastRound).sort((a, b) => a - b);
     if (rounds.length < W) return null;
     const win = rounds.slice(-W);
     const prev = rounds.length >= 2 * W ? rounds.slice(-2 * W, -W) : null;
@@ -233,3 +239,21 @@ function estimate(d, all, prize, opt) {
 }
 
 module.exports = { PER_HIT, CAP2, roundHits, sumHits, fitPrior, posterior, quantile, predictInterval, coverage, estimate, G };
+
+// 블로그 고정값 만들기 (맨 위 설명)
+if (require.main === module && process.argv[2] === '--snapshot') {
+    const fs = require('fs');
+    const path = require('path');
+    const ROOT = path.resolve(__dirname, '..');
+    const json = f => JSON.parse(fs.readFileSync(path.join(ROOT, f), 'utf8'));
+    const last = Number(process.argv[3]) || undefined;
+    const E = estimate(json('stores-data.json'), json('shops-all.json'), json('prize-data.json').draws, { last });
+    if (!E) throw new Error('자료가 모자라 추정하지 못했다');
+    const draw = json('lotto-data.json').draws.find(x => x.round === E.window.last);
+    const out = Object.assign({ asOf: { round: E.window.last, date: draw ? draw.date : '' } }, E);
+    out.prior = { mu: E.prior.mu, sd: E.prior.sd, n: E.prior.n };   // 격자 무게(w)는 그림에 쓰지 않는다
+    const file = path.join(ROOT, 'content', 'blog', 'data', 'store-sales.json');
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, JSON.stringify(out, null, 1) + '\n');
+    console.log(`고정값 저장: ${path.relative(ROOT, file)} (${E.window.first}~${E.window.last}회)`);
+}
