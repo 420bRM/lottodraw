@@ -565,8 +565,28 @@
         if (fly) map.flyTo({ center: [lng, lat], zoom: Math.max(map.getZoom(), 15), padding: pad(), essential: true });
         card.scrollTop = 0;
     }
+    // 링크 · 목록 · 검색으로 판매점을 열 때(fly) 그 점이 지금 설정에 가려져 있으면 보이게 푼다(2026-10-30 사장님 — 블로그 '지도에서 보기'로 왔는데
+    // 휴대폰 첫 설정 "1등 10회 이상" · 일반 판매점 꺼짐 때문에 그 판매점이 안 보였다). 흐리게 막대는 0, 꺼진 칩은 켜고, TOP 50 만 보기는 끈다
+    function reveal(kind, i) {
+        const chip = k => root.querySelector('.sm-chip[data-layer="' + k + '"]');
+        const on = k => { if (!shown[k]) { shown[k] = true; const c = chip(k); if (c) c.setAttribute('aria-pressed', 'true'); } };
+        let changed = false;
+        if (shown.top && !(kind === 'w' && props[i] && props[i].top)) { const c = chip('top'); if (c) c.click(); }
+        if (kind === 'w') {
+            const r = data.rows[i];
+            if (fadeT > 0 && props[i].w1 + 1 - fadeT <= 0) { document.getElementById('sm-fade').value = 0; setFade(0); }
+            if (r[2] > 0 && !shown.w1) { on('w1'); changed = true; }
+            if (r[2] === 0 && !shown.w2) { on('w2'); changed = true; }
+            if (r[7] && !shown.closed) { on('closed'); changed = true; }
+        } else {
+            if (fadeT >= 1) { document.getElementById('sm-fade').value = 0; setFade(0); }
+            if (!shown.all) { on('all'); changed = true; }
+        }
+        if (changed) applyLayers();
+    }
     // 일반 판매점 카드
     function openAll(i, fly) {
+        if (fly) reveal('a', i);
         const [lat, lng, name, si, gu] = all.rows[i];
         const place = [all.sido[si] || '', gu].filter(Boolean).join(' ');
         showCard('<h3>' + esc(name) + '</h3><p class="sm-place">' + esc(place) + '</p>' +
@@ -1066,6 +1086,7 @@
 
     // 판매점 카드
     function open(i, fly) {
+        if (fly) reveal('w', i);
         const r = data.rows[i];
         const [lat, lng, w1, w2, name, si, gu, closed, a, m, s] = r;
         const place = [data.sido[si] || '', gu].filter(Boolean).join(' ');
@@ -1379,7 +1400,7 @@
             if (byArea) { /* 지역 공유 링크는 그 지역 화면 그대로, 흐리게 막대도 0 */ }
             else if (!fromLink && isWide()) map.jumpTo({ center: [126.985, 37.538], zoom: 12.9, padding: pad() });
             else if (!fromLink) map.fitBounds([[125.9, 33.9], [129.6, 38.4]], { padding: Object.assign(pad(), { bottom: 150, left: 10 }), animate: false });   // 아래는 왼쪽 아래 도구 몫
-            if (!isWide() && !byArea && !shopQ) { const f = document.getElementById('sm-fade'); f.value = 57; setFade(57); }   // 57 → 1등 10회 이상(setFade 의 셈)
+            if (!isWide() && !byArea && !shopQ && !fromLink) { const f = document.getElementById('sm-fade'); f.value = 57; setFade(57); }   // 링크로 온 화면(#map= · ?shop= · ?area=)은 흐리게 없이   // 57 → 1등 10회 이상(setFade 의 셈)
             if (fromLink && map.getPitch() > 5) { const d3 = document.getElementById('sm-3d'); d3.setAttribute('aria-pressed', 'true'); d3.textContent = '2D'; }   // 기울어진 화면 링크
         });
         // 지도 출처(ⓘ)는 접힌 채로 시작(2026-10-27 사장님 — 휴대폰에서 펼쳐진 채 도착했다). MapLibre 는 좁은 화면에서 처음에 펼쳐 두고
