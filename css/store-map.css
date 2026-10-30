@@ -219,11 +219,11 @@ body.sm-full #theme-btn { display: none !important; }
 /* 지도 단추(확대 · 내 위치)는 오른쪽 아래 채팅 말풍선 위로 */
 .sm-map .maplibregl-ctrl-bottom-right { margin-bottom: calc(52px + env(safe-area-inset-bottom)); }
 /* 축척 막대(2026-10-30): 확대/축소 단추 아래, 오른쪽 끝에 맞춘 막대 + 거리 */
-.sm-scale { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; padding: 2px 4px; border-radius: 4px; background: rgba(255, 255, 255, .75);
-    color: #333; font: 600 10px/1.2 system-ui, sans-serif; pointer-events: none; }
-.sm-scale-bar { display: block; height: 4px; border: 1.5px solid #333; border-top: 0; box-sizing: border-box; }
-:root[data-theme="dark"] .sm-scale { background: rgba(20, 26, 35, .75); color: #dfe5ee; }
-:root[data-theme="dark"] .sm-scale-bar { border-color: #dfe5ee; }
+.sm-scale { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; padding: 2px 4px; background: none;   /* 뒤는 비워 지도가 보이게(10-30 사장님) — 글자 · 막대에 흰 테두리만 */
+    color: #333; font: 700 10px/1.2 system-ui, sans-serif; text-shadow: 0 0 2px #fff, 0 0 2px #fff, 0 0 3px #fff; pointer-events: none; }
+.sm-scale-bar { display: block; height: 4px; border: 1.5px solid #333; border-top: 0; box-sizing: border-box; filter: drop-shadow(0 0 1px #fff) drop-shadow(0 0 1px #fff); }
+:root[data-theme="dark"] .sm-scale { color: #dfe5ee; text-shadow: 0 0 2px #141a23, 0 0 2px #141a23, 0 0 3px #141a23; }
+:root[data-theme="dark"] .sm-scale-bar { border-color: #dfe5ee; filter: drop-shadow(0 0 1px #141a23) drop-shadow(0 0 1px #141a23); }
 
 /* 휴대폰 카드: 예전의 절반쯤(2026-10-27 사장님 — 지도가 보이게). 폭 · 높이 · 글자 · 공을 줄인다 */
 @media (max-width: 899px) {
