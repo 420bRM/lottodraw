@@ -985,6 +985,20 @@ function resultLines(games, draw) {
     return { head, rows };
 }
 
+// Gmail 이 '프로모션'으로 덜 보내게(2026-11-01 — 1247회 메일이 프로모션 탭으로 갔다): 보내는 이름은 사람 이름처럼 짧게,
+// 제목은 [사이트] 머리 대신 그 사람 결과로, 본문 링크는 마이페이지 · 수신 거부 둘만(회차 페이지 링크는 뺐다 — 마이페이지에서 간다).
+// 보내는 주소는 그대로(WEEKLY_MAIL_FROM 또는 MAIL_FROM). WEEKLY_MAIL_FROM 에 이름을 적어 두었으면 그 이름을 쓴다
+function resultFrom(env) {
+    const raw = String(env.WEEKLY_MAIL_FROM || env.MAIL_FROM || '');
+    if (env.WEEKLY_MAIL_FROM && /</.test(raw)) return raw;
+    const addr = (raw.match(/<([^>]+)>/) || [, raw])[1].trim();
+    return '로또드로우 추첨 결과 <' + addr + '>';
+}
+function resultSubject(round, games, draw) {
+    const won = games.map(g => rankOf(g, draw).rank).filter(r => r >= 1 && r <= 5).length;
+    return `${round}회 추첨 결과: 내 번호 ${games.length}게임 ${won ? `중 ${won}게임 당첨` : '모두 낙첨'}`;
+}
+
 function resultText(env, round, games, draw, unsubUrl) {
     const site = siteUrl(env);
     const { head, rows } = resultLines(games, draw);
@@ -998,8 +1012,7 @@ function resultText(env, round, games, draw, unsubUrl) {
         '',
         '당첨 여부는 복권 실물과 동행복권에서 한 번 더 확인해 주세요. 저장할 때 번호를 잘못 적었으면 결과도 다릅니다.',
         '',
-        `${round}회 등수별 당첨금 · 당첨 게임 수: ${site}/round/${round}.html`,
-        `내 번호 전체 결과: ${site}/mypage.html`,
+        `내 번호 전체 결과 · ${round}회 등수별 당첨금: ${site}/mypage.html`,
         '',
         '이 메일은 lottodraw.kr 마이페이지에서 "추첨 결과 메일"을 켜고 그 회차 번호를 내 번호에 저장한 회원에게 보냅니다.',
         `수신 거부: ${unsubUrl}`,
@@ -1019,7 +1032,7 @@ async function resultMail(env, now) {
     const draw = await latestDraw(env);
     if (!draw || draw.round !== round) return { skipped: 'no_draw' };   // 아직 사이트에 올라오지 않았다 — 다음 시간에 다시
     const api = String(env.API_ORIGIN || 'https://api.lottodraw.kr').replace(/\/+$/, '');
-    const from = env.WEEKLY_MAIL_FROM || env.MAIL_FROM;
+    const from = resultFrom(env);
     let total = 0;
     const finish = async () => {
         const st = await community(env, 'mailStatus', { round, day });
@@ -1038,7 +1051,7 @@ async function resultMail(env, now) {
             const unsubUrl = `${api}/api/mail/unsubscribe?r=${encodeURIComponent(it.ref)}&t=${encodeURIComponent(it.token)}`;
             return {
                 from, to: [it.email], reply_to: 'contact@lottodraw.kr',
-                subject: `[lottodraw.kr] ${round}회 당첨번호와 내 번호 결과`,
+                subject: resultSubject(round, it.games, draw),
                 text: resultText(env, round, it.games, draw, unsubUrl),
                 headers: { 'List-Unsubscribe': `<${unsubUrl}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
             };

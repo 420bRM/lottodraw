@@ -1281,6 +1281,7 @@ window.I18N_DICT = {
     'my.mailFail':    { en: 'Could not change it. Please try again in a moment.' },
     'my.mailNotReady': { en: 'Email sending is being set up.' },
     'my.mailNote':    { en: 'Please check any win against the ticket itself and the official lottery site. Every email has an unsubscribe link, and you can turn it off here at any time. No ads.' },
+    'my.mailGmail':   { en: 'In Gmail it may land in the Promotions tab. Drag it to Primary once (or tap "Move to Primary") and later emails will arrive there.' },
     'my.profile':     { en: 'Profile' },
     'my.pass':        { en: 'Pass' },
     'my.score':       { en: 'Points · Ranking' },

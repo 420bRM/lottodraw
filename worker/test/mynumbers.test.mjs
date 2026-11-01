@@ -294,14 +294,15 @@ test('결과 메일: 당첨번호 · 저장한 번호의 등수와 맞은 번호
     assert.deepEqual(sentTo(), ['m0@gmail.com', 'm1@gmail.com'], '그 회차 번호를 저장한 구독자에게만');
     assert.equal(resend.length, 1, '한 묶음(batch)으로');
     for (const m of resend[0].body) {
-        assert.equal(m.subject, `[lottodraw.kr] ${R}회 당첨번호와 내 번호 결과`);
+        assert.equal(m.subject, `${R}회 추첨 결과: 내 번호 3게임 중 2게임 당첨`, '[사이트] 머리 없이 그 사람 결과로(프로모션 탭 덜 가게)');
+        assert.match(m.from, /^로또드로우 추첨 결과 <[^>]+@[^>]+>$/);
         assert.match(m.text, /^10월 17일\(토\) 1246회 추첨 결과입니다\./);
         assert.match(m.text, /당첨번호: 4 · 5 · 25 · 28 · 32 · 42 \+ 보너스 12/);
         assert.match(m.text, /내 번호에 저장한 1246회 번호 3게임 중 2게임 당첨 — 2등 1게임 · 5등 1게임/);
         assert.match(m.text, /1\) {2}4 · 5 · 12 · 25 · 28 · 32 {2}→ {2}2등 \(맞은 번호 4 · 5 · 25 · 28 · 32 \+ 보너스 12\)/);
         assert.match(m.text, /2\) {2}1 · 2 · 3 · 4 · 5 · 25 {2}→ {2}5등 \(맞은 번호 4 · 5 · 25\)/);
         assert.match(m.text, /3\) {2}6 · 7 · 8 · 9 · 10 · 11 {2}→ {2}낙첨 \(맞은 번호 없음\)/);
-        assert.match(m.text, /https:\/\/www\.lottodraw\.kr\/round\/1246\.html/);
+        assert.equal((m.text.match(/https?:\/\//g) || []).length, 2, '링크는 마이페이지 · 수신 거부 둘만');
         assert.match(m.text, /https:\/\/www\.lottodraw\.kr\/mypage\.html/);
         assert.match(m.text, /복권 실물과 동행복권에서 한 번 더 확인/);
         assert.doesNotMatch(m.text, /^[A-E] {3}/m, '생성 번호는 보내지 않는다');

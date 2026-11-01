@@ -1,0 +1,347 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<channel>
+    <title>lottodraw.kr — 로또 당첨번호 · 통계 · 블로그</title>
+    <link>https://www.lottodraw.kr/</link>
+    <description>매주 로또 당첨번호와 회차별 당첨금, 통계와 확률 이야기. 어디서 사든 1등 확률은 1/8,145,060으로 같습니다.</description>
+    <language>ko</language>
+    <lastBuildDate>Fri, 30 Oct 2026 03:00:00 GMT</lastBuildDate>
+    <atom:link href="https://www.lottodraw.kr/rss.xml" rel="self" type="application/rss+xml"/>
+    <item>
+        <title>로또 1등 판매점은 얼마 벌까? — 판매액과 수수료 수입 역산</title>
+        <link>https://www.lottodraw.kr/blog/lotto-store-revenue.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/blog/lotto-store-revenue.html</guid>
+        <pubDate>Fri, 30 Oct 2026 03:00:00 GMT</pubDate>
+        <description>로또 판매점의 매출(판매액)은 공개되지 않지만, 1 · 2등이 몇 번 나왔는지로 거꾸로 셈할 수 있습니다. 1 · 2등 한 번은 약 11.6억 원어치 판매. 최근 3년 기준 판매량 1위 판매점은 연 약 264억 원(95% 범위 207~331억)을 팔아 수수료로 연 10~17억 원쯤 받습니다. 순수익은 왜 알 수 없는지까지.</description>
+    </item>
+    <item>
+        <title>대한민국 끝과 끝의 로또 판매점 — 가장 남쪽 · 북쪽 · 외딴 곳</title>
+        <link>https://www.lottodraw.kr/blog/lotto-store-extremes.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/blog/lotto-store-extremes.html</guid>
+        <pubDate>Mon, 26 Oct 2026 03:00:00 GMT</pubDate>
+        <description>로또를 파는 전국 9천여 곳 가운데 가장 남쪽 · 북쪽 · 서쪽 · 동쪽 판매점, 가장 가까운 판매점까지 151km 떨어진 섬 판매점, 28m 거리에 붙은 1등 판매점 두 곳까지. 판매점 지도로 찾아봤습니다.</description>
+    </item>
+    <item>
+        <title>로또 2등·3등 당첨금은 얼마일까 — 평균 5,695만 원과 145만 원의 계산법</title>
+        <link>https://www.lottodraw.kr/blog/second-third-prize.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/blog/second-third-prize.html</guid>
+        <pubDate>Sat, 10 Oct 2026 03:00:00 GMT</pubDate>
+        <description>2등과 3등 당첨금이 정해지는 방식, 1,158회 실제 기록으로 본 평균·최고·최저, 2등이 664게임 몰린 회차, 판매액이 늘어도 금액이 그대로인 이유, 세금과 받는 곳까지.</description>
+    </item>
+    <item>
+        <title>오래 안 나온 번호는 곧 나올까 — 미출수와 도박사의 오류</title>
+        <link>https://www.lottodraw.kr/blog/cold-numbers-gamblers-fallacy.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/blog/cold-numbers-gamblers-fallacy.html</guid>
+        <pubDate>Thu, 01 Oct 2026 03:00:00 GMT</pubDate>
+        <description>1913년 몬테카를로 카지노에서 검은색이 26번 연속 나온 날의 이야기로 시작해, 미출수가 무엇을 말해 주고 무엇을 말해 주지 못하는지 정리합니다.</description>
+    </item>
+    <item>
+        <title>번호 생성기의 '랜덤'은 어디서 오나 — 의사난수와 공정한 셔플</title>
+        <link>https://www.lottodraw.kr/blog/how-random-generators-work.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/blog/how-random-generators-work.html</guid>
+        <pubDate>Thu, 01 Oct 2026 03:00:00 GMT</pubDate>
+        <description>컴퓨터는 어떻게 무작위 번호를 만들까요. 의사난수의 원리, 이 사이트 생성기가 번호를 뽑는 실제 순서, 피셔-예이츠 방식과 거절 샘플링이 공정한 이유를 정리합니다.</description>
+    </item>
+    <item>
+        <title>34번이 186회 나온 게 특별한가 — 표준편차로 읽는 출현 횟수</title>
+        <link>https://www.lottodraw.kr/blog/is-number-34-special.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/blog/is-number-34-special.html</guid>
+        <pubDate>Thu, 01 Oct 2026 03:00:00 GMT</pubDate>
+        <description>1243회 동안 가장 많이 나온 34번과 가장 적게 나온 9번. 순수한 무작위에서도 이 정도 차이는 당연히 생깁니다. 직접 계산해 봅니다.</description>
+    </item>
+    <item>
+        <title>사람이 직접 고르면 왜 당첨금이 쪼개지나 — 생일 번호와 분할 당첨</title>
+        <link>https://www.lottodraw.kr/blog/why-jackpots-split.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/blog/why-jackpots-split.html</guid>
+        <pubDate>Thu, 01 Oct 2026 03:00:00 GMT</pubDate>
+        <description>확률은 모든 조합이 같지만, 기대 당첨금은 같지 않습니다. 1등 50명이 나온 1019회와 2등이 664게임 나온 1057회로 설명합니다.</description>
+    </item>
+    <item>
+        <title>로또 명당은 정말 있을까 — 1등 배출 횟수를 판매량으로 나눠 보면</title>
+        <link>https://www.lottodraw.kr/blog/lucky-store-myth.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/blog/lucky-store-myth.html</guid>
+        <pubDate>Thu, 01 Oct 2026 03:00:00 GMT</pubDate>
+        <description>1등을 수십 번 배출한 판매점은 운이 좋은 걸까요, 많이 팔았을 뿐일까요. 기준율과 생존자 편향으로 '명당'을 따져 봅니다.</description>
+    </item>
+    <item>
+        <title>궁합수는 진짜 있을까 — 990개 쌍과 다중 비교의 함정</title>
+        <link>https://www.lottodraw.kr/blog/pair-numbers-multiple-comparisons.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/blog/pair-numbers-multiple-comparisons.html</guid>
+        <pubDate>Thu, 01 Oct 2026 03:00:00 GMT</pubDate>
+        <description>함께 자주 나온 번호 쌍은 의미가 있을까요. 생일 문제와 텍사스 명사수의 오류로 '많이 찾으면 반드시 무언가 나온다'는 원리를 설명합니다.</description>
+    </item>
+    <item>
+        <title>연속 번호는 정말 드물까 — 무작위는 생각보다 뭉쳐 있다</title>
+        <link>https://www.lottodraw.kr/blog/consecutive-numbers-clustering-illusion.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/blog/consecutive-numbers-clustering-illusion.html</guid>
+        <pubDate>Thu, 01 Oct 2026 03:00:00 GMT</pubDate>
+        <description>당첨 번호의 절반 이상에 연번이 들어 있습니다. 2차 대전 런던 폭격 지도와 음악 셔플 기능의 일화로, 사람이 무작위를 어떻게 오해하는지 살펴봅니다.</description>
+    </item>
+    <item>
+        <title>로또 세금 완전 정리 — 등수별 실수령액 실제 계산</title>
+        <link>https://www.lottodraw.kr/blog/lotto-tax-guide.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/blog/lotto-tax-guide.html</guid>
+        <pubDate>Thu, 01 Oct 2026 03:00:00 GMT</pubDate>
+        <description>200만 원 비과세 기준, 22%와 33% 구간, 3등이 갑자기 세금을 내는 경우까지 실제 숫자로 계산합니다.</description>
+    </item>
+    <item>
+        <title>1등에 당첨되면 실제로 어떻게 수령하나</title>
+        <link>https://www.lottodraw.kr/blog/how-to-claim-first-prize.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/blog/how-to-claim-first-prize.html</guid>
+        <pubDate>Thu, 01 Oct 2026 03:00:00 GMT</pubDate>
+        <description>지급처, 준비물, 기한, 세금 공제까지. 당첨 확인부터 통장에 돈이 들어오기까지의 실제 절차를 정리했습니다.</description>
+    </item>
+    <item>
+        <title>AC값 제대로 이해하기 — 숫자 사이의 '차이'가 말해 주는 것</title>
+        <link>https://www.lottodraw.kr/blog/ac-value-explained.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/blog/ac-value-explained.html</guid>
+        <pubDate>Thu, 01 Oct 2026 03:00:00 GMT</pubDate>
+        <description>AC값의 정의부터 815만 조합 전체의 실제 분포, 전파망원경 배치에 쓰이는 골롬 자와의 관계까지. AC값으로 할 수 있는 일과 없는 일을 나눠 봅니다.</description>
+    </item>
+    <item>
+        <title>미출수·궁합수·AC값이 무슨 뜻인가 — 로또 통계 용어 정리</title>
+        <link>https://www.lottodraw.kr/blog/lotto-stats-glossary.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/blog/lotto-stats-glossary.html</guid>
+        <pubDate>Thu, 01 Oct 2026 03:00:00 GMT</pubDate>
+        <description>통계 페이지에 나오는 용어를 하나씩 정의하고, 각 지표로 알 수 있는 것과 알 수 없는 것을 구분합니다.</description>
+    </item>
+    <item>
+        <title>로또 당첨금은 어떻게 정해지나 — 판매액·배분 비율·이월</title>
+        <link>https://www.lottodraw.kr/blog/how-prize-pool-works.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/blog/how-prize-pool-works.html</guid>
+        <pubDate>Thu, 01 Oct 2026 03:00:00 GMT</pubDate>
+        <description>1등 당첨금이 회차마다 수억 원에서 수십억 원까지 달라지는 이유. 판매액에서 당첨금이 나오는 순서를 따라가 봅니다.</description>
+    </item>
+    <item>
+        <title>번호 합계는 왜 138 근처에 몰릴까 — 홀짝·고저·합계와 종 모양 분포</title>
+        <link>https://www.lottodraw.kr/blog/sum-odd-even-bell-curve.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/blog/sum-odd-even-bell-curve.html</guid>
+        <pubDate>Thu, 01 Oct 2026 03:00:00 GMT</pubDate>
+        <description>당첨 번호 합계가 100~175 사이에 몰리는 이유를 주사위 두 개로 시작해 중심극한정리까지 설명합니다. 홀짝·고저 비율의 실제 분포도 함께 계산했습니다.</description>
+    </item>
+    <item>
+        <title>814만분의 1은 얼마나 작은가 — 등수별 확률과 기대값</title>
+        <link>https://www.lottodraw.kr/blog/lotto-odds-explained.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/blog/lotto-odds-explained.html</guid>
+        <pubDate>Thu, 01 Oct 2026 03:00:00 GMT</pubDate>
+        <description>1등부터 5등까지 확률이 어디서 나오는지 조합으로 계산하고, 1천 원짜리 한 게임의 기대값이 얼마인지 따져 봅니다.</description>
+    </item>
+    <item>
+        <title>손해인 줄 알면서 왜 살까 — 기대값, 효용, 그리고 전망 이론</title>
+        <link>https://www.lottodraw.kr/blog/why-people-buy-lotto.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/blog/why-people-buy-lotto.html</guid>
+        <pubDate>Thu, 01 Oct 2026 03:00:00 GMT</pubDate>
+        <description>1천 원의 기대값은 500원인데 매주 수백만 명이 로또를 삽니다. 베르누이의 효용 이론부터 카너먼의 전망 이론까지, 경제학과 심리학이 내놓은 설명을 정리합니다.</description>
+    </item>
+    <item>
+        <title>로또 30회 당첨번호 (2003-06-28)</title>
+        <link>https://www.lottodraw.kr/round/30.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/round/30.html</guid>
+        <pubDate>Sat, 28 Jun 2003 03:00:00 GMT</pubDate>
+        <description>당첨번호 8 · 17 · 20 · 35 · 36 · 44 + 보너스 4. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
+    </item>
+    <item>
+        <title>로또 29회 당첨번호 (2003-06-21)</title>
+        <link>https://www.lottodraw.kr/round/29.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/round/29.html</guid>
+        <pubDate>Sat, 21 Jun 2003 03:00:00 GMT</pubDate>
+        <description>당첨번호 1 · 5 · 13 · 34 · 39 · 40 + 보너스 11. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
+    </item>
+    <item>
+        <title>로또 28회 당첨번호 (2003-06-14)</title>
+        <link>https://www.lottodraw.kr/round/28.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/round/28.html</guid>
+        <pubDate>Sat, 14 Jun 2003 03:00:00 GMT</pubDate>
+        <description>당첨번호 9 · 18 · 23 · 25 · 35 · 37 + 보너스 1. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
+    </item>
+    <item>
+        <title>로또 27회 당첨번호 (2003-06-07)</title>
+        <link>https://www.lottodraw.kr/round/27.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/round/27.html</guid>
+        <pubDate>Sat, 07 Jun 2003 03:00:00 GMT</pubDate>
+        <description>당첨번호 1 · 20 · 26 · 28 · 37 · 43 + 보너스 27. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
+    </item>
+    <item>
+        <title>로또 26회 당첨번호 (2003-05-31)</title>
+        <link>https://www.lottodraw.kr/round/26.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/round/26.html</guid>
+        <pubDate>Sat, 31 May 2003 03:00:00 GMT</pubDate>
+        <description>당첨번호 4 · 5 · 7 · 18 · 20 · 25 + 보너스 31. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
+    </item>
+    <item>
+        <title>로또 25회 당첨번호 (2003-05-24)</title>
+        <link>https://www.lottodraw.kr/round/25.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/round/25.html</guid>
+        <pubDate>Sat, 24 May 2003 03:00:00 GMT</pubDate>
+        <description>당첨번호 2 · 4 · 21 · 26 · 43 · 44 + 보너스 16. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
+    </item>
+    <item>
+        <title>로또 24회 당첨번호 (2003-05-17)</title>
+        <link>https://www.lottodraw.kr/round/24.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/round/24.html</guid>
+        <pubDate>Sat, 17 May 2003 03:00:00 GMT</pubDate>
+        <description>당첨번호 7 · 8 · 27 · 29 · 36 · 43 + 보너스 6. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
+    </item>
+    <item>
+        <title>로또 23회 당첨번호 (2003-05-10)</title>
+        <link>https://www.lottodraw.kr/round/23.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/round/23.html</guid>
+        <pubDate>Sat, 10 May 2003 03:00:00 GMT</pubDate>
+        <description>당첨번호 5 · 13 · 17 · 18 · 33 · 42 + 보너스 44. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
+    </item>
+    <item>
+        <title>로또 22회 당첨번호 (2003-05-03)</title>
+        <link>https://www.lottodraw.kr/round/22.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/round/22.html</guid>
+        <pubDate>Sat, 03 May 2003 03:00:00 GMT</pubDate>
+        <description>당첨번호 4 · 5 · 6 · 8 · 17 · 39 + 보너스 25. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
+    </item>
+    <item>
+        <title>로또 21회 당첨번호 (2003-04-26)</title>
+        <link>https://www.lottodraw.kr/round/21.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/round/21.html</guid>
+        <pubDate>Sat, 26 Apr 2003 03:00:00 GMT</pubDate>
+        <description>당첨번호 6 · 12 · 17 · 18 · 31 · 32 + 보너스 21. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
+    </item>
+    <item>
+        <title>로또 20회 당첨번호 (2003-04-19)</title>
+        <link>https://www.lottodraw.kr/round/20.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/round/20.html</guid>
+        <pubDate>Sat, 19 Apr 2003 03:00:00 GMT</pubDate>
+        <description>당첨번호 10 · 14 · 18 · 20 · 23 · 30 + 보너스 41. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
+    </item>
+    <item>
+        <title>로또 19회 당첨번호 (2003-04-12)</title>
+        <link>https://www.lottodraw.kr/round/19.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/round/19.html</guid>
+        <pubDate>Sat, 12 Apr 2003 03:00:00 GMT</pubDate>
+        <description>당첨번호 6 · 30 · 38 · 39 · 40 · 43 + 보너스 26. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
+    </item>
+    <item>
+        <title>로또 18회 당첨번호 (2003-04-05)</title>
+        <link>https://www.lottodraw.kr/round/18.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/round/18.html</guid>
+        <pubDate>Sat, 05 Apr 2003 03:00:00 GMT</pubDate>
+        <description>당첨번호 3 · 12 · 13 · 19 · 32 · 35 + 보너스 29. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
+    </item>
+    <item>
+        <title>로또 17회 당첨번호 (2003-03-29)</title>
+        <link>https://www.lottodraw.kr/round/17.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/round/17.html</guid>
+        <pubDate>Sat, 29 Mar 2003 03:00:00 GMT</pubDate>
+        <description>당첨번호 3 · 4 · 9 · 17 · 32 · 37 + 보너스 1. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
+    </item>
+    <item>
+        <title>로또 16회 당첨번호 (2003-03-22)</title>
+        <link>https://www.lottodraw.kr/round/16.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/round/16.html</guid>
+        <pubDate>Sat, 22 Mar 2003 03:00:00 GMT</pubDate>
+        <description>당첨번호 6 · 7 · 24 · 37 · 38 · 40 + 보너스 33. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
+    </item>
+    <item>
+        <title>로또 15회 당첨번호 (2003-03-15)</title>
+        <link>https://www.lottodraw.kr/round/15.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/round/15.html</guid>
+        <pubDate>Sat, 15 Mar 2003 03:00:00 GMT</pubDate>
+        <description>당첨번호 3 · 4 · 16 · 30 · 31 · 37 + 보너스 13. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
+    </item>
+    <item>
+        <title>로또 14회 당첨번호 (2003-03-08)</title>
+        <link>https://www.lottodraw.kr/round/14.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/round/14.html</guid>
+        <pubDate>Sat, 08 Mar 2003 03:00:00 GMT</pubDate>
+        <description>당첨번호 2 · 6 · 12 · 31 · 33 · 40 + 보너스 15. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
+    </item>
+    <item>
+        <title>로또 13회 당첨번호 (2003-03-01)</title>
+        <link>https://www.lottodraw.kr/round/13.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/round/13.html</guid>
+        <pubDate>Sat, 01 Mar 2003 03:00:00 GMT</pubDate>
+        <description>당첨번호 22 · 23 · 25 · 37 · 38 · 42 + 보너스 26. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
+    </item>
+    <item>
+        <title>로또 12회 당첨번호 (2003-02-22)</title>
+        <link>https://www.lottodraw.kr/round/12.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/round/12.html</guid>
+        <pubDate>Sat, 22 Feb 2003 03:00:00 GMT</pubDate>
+        <description>당첨번호 2 · 11 · 21 · 25 · 39 · 45 + 보너스 44. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
+    </item>
+    <item>
+        <title>로또 11회 당첨번호 (2003-02-15)</title>
+        <link>https://www.lottodraw.kr/round/11.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/round/11.html</guid>
+        <pubDate>Sat, 15 Feb 2003 03:00:00 GMT</pubDate>
+        <description>당첨번호 1 · 7 · 36 · 37 · 41 · 42 + 보너스 14. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
+    </item>
+    <item>
+        <title>로또 10회 당첨번호 (2003-02-08)</title>
+        <link>https://www.lottodraw.kr/round/10.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/round/10.html</guid>
+        <pubDate>Sat, 08 Feb 2003 03:00:00 GMT</pubDate>
+        <description>당첨번호 9 · 25 · 30 · 33 · 41 · 44 + 보너스 6. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
+    </item>
+    <item>
+        <title>로또 9회 당첨번호 (2003-02-01)</title>
+        <link>https://www.lottodraw.kr/round/9.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/round/9.html</guid>
+        <pubDate>Sat, 01 Feb 2003 03:00:00 GMT</pubDate>
+        <description>당첨번호 2 · 4 · 16 · 17 · 36 · 39 + 보너스 14. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
+    </item>
+    <item>
+        <title>로또 8회 당첨번호 (2003-01-25)</title>
+        <link>https://www.lottodraw.kr/round/8.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/round/8.html</guid>
+        <pubDate>Sat, 25 Jan 2003 03:00:00 GMT</pubDate>
+        <description>당첨번호 8 · 19 · 25 · 34 · 37 · 39 + 보너스 9. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
+    </item>
+    <item>
+        <title>로또 7회 당첨번호 (2003-01-18)</title>
+        <link>https://www.lottodraw.kr/round/7.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/round/7.html</guid>
+        <pubDate>Sat, 18 Jan 2003 03:00:00 GMT</pubDate>
+        <description>당첨번호 2 · 9 · 16 · 25 · 26 · 40 + 보너스 42. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
+    </item>
+    <item>
+        <title>로또 6회 당첨번호 (2003-01-11)</title>
+        <link>https://www.lottodraw.kr/round/6.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/round/6.html</guid>
+        <pubDate>Sat, 11 Jan 2003 03:00:00 GMT</pubDate>
+        <description>당첨번호 14 · 15 · 26 · 27 · 40 · 42 + 보너스 34. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
+    </item>
+    <item>
+        <title>로또 5회 당첨번호 (2003-01-04)</title>
+        <link>https://www.lottodraw.kr/round/5.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/round/5.html</guid>
+        <pubDate>Sat, 04 Jan 2003 03:00:00 GMT</pubDate>
+        <description>당첨번호 16 · 24 · 29 · 40 · 41 · 42 + 보너스 3. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
+    </item>
+    <item>
+        <title>로또 4회 당첨번호 (2002-12-28)</title>
+        <link>https://www.lottodraw.kr/round/4.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/round/4.html</guid>
+        <pubDate>Sat, 28 Dec 2002 03:00:00 GMT</pubDate>
+        <description>당첨번호 14 · 27 · 30 · 31 · 40 · 42 + 보너스 2. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
+    </item>
+    <item>
+        <title>로또 3회 당첨번호 (2002-12-21)</title>
+        <link>https://www.lottodraw.kr/round/3.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/round/3.html</guid>
+        <pubDate>Sat, 21 Dec 2002 03:00:00 GMT</pubDate>
+        <description>당첨번호 11 · 16 · 19 · 21 · 27 · 31 + 보너스 30. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
+    </item>
+    <item>
+        <title>로또 2회 당첨번호 (2002-12-14)</title>
+        <link>https://www.lottodraw.kr/round/2.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/round/2.html</guid>
+        <pubDate>Sat, 14 Dec 2002 03:00:00 GMT</pubDate>
+        <description>당첨번호 9 · 13 · 21 · 25 · 32 · 42 + 보너스 2. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
+    </item>
+    <item>
+        <title>로또 1회 당첨번호 (2002-12-07)</title>
+        <link>https://www.lottodraw.kr/round/1.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/round/1.html</guid>
+        <pubDate>Sat, 07 Dec 2002 03:00:00 GMT</pubDate>
+        <description>당첨번호 10 · 23 · 29 · 33 · 37 · 40 + 보너스 16. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
+    </item>
+</channel>
+</rss>
