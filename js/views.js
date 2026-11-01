@@ -11,7 +11,7 @@
 (function () {
     'use strict';
 
-    const MIN = 1;
+    const MIN = 10;   // 10 미만이면 글 안에서도 숨긴다(2026-10-19 결정)
     const KEY = 'ld_viewed';   // { 글 이름: 'YYYY-MM-DD' } — 오늘 센 글만 남긴다
     const spots = Array.prototype.slice.call(document.querySelectorAll('.post-views[data-post]'));
     if (!spots.length || !window.fetch) return;

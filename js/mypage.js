@@ -291,6 +291,8 @@
             el('div', { className: 'my-actions' }, [toggle]),
             !ready ? el('p', { className: 'my-muted', text: tr('my.mailNotReady', '메일 발송을 준비하고 있습니다.') }) : null,
             el('p', { className: 'my-muted', text: tr('my.mailNote', '당첨 여부는 복권 실물과 동행복권에서 한 번 더 확인해 주세요. 메일마다 수신 거부 링크가 있고, 여기서도 언제든 끌 수 있습니다. 광고는 넣지 않습니다.') }),
+            // Gmail 은 처음 몇 통을 '프로모션' 탭에 넣기도 한다(2026-11-01 — 1247회). 한 번 옮기면 그다음부터 기본 탭
+            el('p', { className: 'my-muted', text: tr('my.mailGmail', 'Gmail에서는 프로모션 탭에 들어갈 수 있습니다. 한 번 기본 탭으로 옮기면(끌어 놓거나 "기본으로 이동") 다음부터 기본 탭으로 옵니다.') }),
         ]);
     }
 

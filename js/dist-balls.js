@@ -1,7 +1,7 @@
 // 번호 공을 쌓은 분포 그림(svg.dist-chart 안의 .dist-ball — 많이 나온 번호 순위 · About 미리 보기).
 // 공에 마우스를 올리면(휴대폰은 누르면) 그 공을 밝게 띄우고 나머지는 옅게, 공 위에 "34번 · 187회"를 바로 보인다.
 // data-tip 이 있는 막대(.dist-bar)나 선 그래프의 점(.dist-dot — AC값 그래프)도 같은 방식으로 그 위에 글(영어 화면은 data-tip-en)을 띄운다.
-// 그림은 생성기(tools/build-static-stats.js)가 미리 그린 SVG 다. 이 스크립트가 없어도 CSS :hover 로 밝아지고 <title> 툴팁이 뜬다.
+// 그림은 생성기(tools/build-static-stats.js)가 미리 그린 SVG 다. 이 스크립트가 없어도 CSS :hover 로 밝아진다(글은 aria-label — SVG <title> 은 쪽 제목과 겹쳐 넣지 않는다, 2026-11-01).
 (function () {
     'use strict';
     const NS = 'http://www.w3.org/2000/svg';
@@ -17,7 +17,7 @@
     function enhance(svg) {
         const marks = svg.querySelectorAll(PICK);
         if (!marks.length) return;
-        // 바로 뜨는 이름표가 있으니, 늦게 떠서 겹치는 기본 툴팁(<title>)은 뺀다
+        // 예전 그림에 남은 기본 툴팁(<title>)이 있으면 뺀다(늦게 떠서 이름표와 겹친다)
         marks.forEach(b => { const t = b.querySelector('title'); if (t) t.remove(); });
         const tip = make('g', { class: 'dist-tip', visibility: 'hidden', 'aria-hidden': 'true' });
         const box = make('rect', { rx: 4, ry: 4 });

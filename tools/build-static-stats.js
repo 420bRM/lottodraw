@@ -521,12 +521,12 @@ function normalChart(o) {
             b.numbers.forEach((n, i) => {
                 const cy = Y(i + 0.5);
                 // data-n · data-c: js/dist-balls.js 가 짚은 공 위에 "34번 · 187회"를 바로 띄운다
-                out.push(`<g class="dist-ball" data-band="${LottoStats.bandOf(n)}" data-n="${n}" data-c="${b.counts[i]}"><title>${n}번: ${fmt(b.counts[i])}회</title>`
+                out.push(`<g class="dist-ball" data-band="${LottoStats.bandOf(n)}" data-n="${n}" data-c="${b.counts[i]}" role="img" aria-label="${n}번: ${fmt(b.counts[i])}회">`
                     + `<circle cx="${r2(left + bw / 2)}" cy="${r2(cy)}" r="${r2(size / 2)}"/>`
                     + `<text x="${r2(left + bw / 2)}" y="${r2(cy + 4)}" text-anchor="middle">${n}</text></g>`);
             });
         } else if (b.count) {
-            out.push(`<rect class="dist-bar" x="${r2(left + 1)}" y="${r2(Y(b.count))}" width="${r2(bw - 2)}" height="${r2(Y(0) - Y(b.count))}"><title>${range}: ${fmt(b.count)}${o.unit} (${pct(b.count, o.total)})</title></rect>`);
+            out.push(`<rect class="dist-bar" x="${r2(left + 1)}" y="${r2(Y(b.count))}" width="${r2(bw - 2)}" height="${r2(Y(0) - Y(b.count))}" data-tip="${range}: ${fmt(b.count)}${o.unit} (${pct(b.count, o.total)})" role="img" aria-label="${range}: ${fmt(b.count)}${o.unit} (${pct(b.count, o.total)})"></rect>`);
         }
     });
     if (!o.numbers) out.push(curve);
@@ -1090,7 +1090,7 @@ const AC_ONE_PAIR = 2141646;
     // 막대 없이 선으로, 점 사이는 곡선으로 잇는다 — 단조 3차 곡선(Fritsch–Carlson, d3 의 curveMonotoneX 와 같다)이라
     // 두 점 사이에서 값보다 튀어 오르거나 0 아래로 내려가는 가짜 봉우리가 생기지 않는다.
     // 선 · 점은 셋 다 주황, 점은 작게(반지름 2.5 — 선을 가리지 않게). 그 AC값 세로 칸을 짚거나 누르면 점이 커지고 세로 안내선과 함께 js/dist-balls.js 가 data-tip 글을 띄운다
-    // (없으면 <title> 툴팁). 표본이 10회 미만인 값에 닿는 구간은 옅은 선 — 오차가 크다
+    // (풍선은 js/dist-balls.js — SVG <title> 은 넣지 않는다: 쪽마다 <title> 이 하나여야 한다, 네이버 진단). 표본이 10회 미만인 값에 닿는 구간은 옅은 선 — 오차가 크다
     const ACC_STYLE = `.ac-figure { margin: 16px 0 10px; }
 .acc-toggles { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
 .acc-toggles button { padding: 5px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface, #fff); color: var(--muted); font: 13px/1.4 var(--font); cursor: pointer; }
@@ -1177,7 +1177,7 @@ const AC_ONE_PAIR = 2141646;
                     run.forEach((p, i) => {
                         const isFew = sr.few && sr.few[p.v];
                         const x = pts[i][0];
-                        dots.push(`<g class="dist-dot${sr.cls ? ' ' + sr.cls : ''}${isFew ? ' is-few' : ''}" data-tip="${esc(sr.tips[p.v])}" data-tip-en="${esc(sr.tipsEn[p.v])}"><title>${esc(sr.tips[p.v])}</title>`
+                        dots.push(`<g class="dist-dot${sr.cls ? ' ' + sr.cls : ''}${isFew ? ' is-few' : ''}" data-tip="${esc(sr.tips[p.v])}" data-tip-en="${esc(sr.tipsEn[p.v])}" role="img" aria-label="${esc(sr.tips[p.v])}">`
                             + `<line class="acc-guide" x1="${r2(x)}" x2="${r2(x)}" y1="${T}" y2="${H - B}"/>`
                             + `<circle cx="${r2(x)}" cy="${r2(pts[i][1])}" r="2.5"/>`
                             + `<rect class="acc-hit" x="${r2(x - slot / 2)}" y="${T}" width="${r2(slot)}" height="${H - T - B}"/></g>`);
@@ -3121,6 +3121,37 @@ function updateAbout() {
 }
 
 // blog: build-blog.js 가 돌려준 [{ path, lastmod }]. 글의 날짜를 그대로 lastmod 로 쓴다
+// RSS(2026-11-01): 네이버는 사이트맵보다 RSS 로 새 글을 빨리 모은다(서치어드바이저 → 요청 → RSS 제출). 블로그 글 전부 + 최근 30회 회차 페이지.
+// 날짜는 글 · 회차 날짜만 써서 내용이 같으면 파일도 같다(매주 갱신 때만 바뀐다)
+function rssFeed(posts) {
+    const x = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const rfc = d => new Date(d + 'T12:00:00+09:00').toUTCString();
+    const items = posts.filter(p => p.date).map(p => ({ title: p.title, link: SITE + p.path, date: p.date, desc: p.description }))
+        .concat(draws.slice(-30).map(d => ({ title: `로또 ${d.round}회 당첨번호 (${d.date})`, link: `${SITE}/round/${d.round}.html`, date: d.date,
+            desc: `당첨번호 ${d.numbers.join(' · ')} + 보너스 ${d.bonus}. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.` })))
+        .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+    const newest = items.length ? items[0].date : UPDATED;
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<channel>
+    <title>lottodraw.kr — 로또 당첨번호 · 통계 · 블로그</title>
+    <link>${SITE}/</link>
+    <description>매주 로또 당첨번호와 회차별 당첨금, 통계와 확률 이야기. 어디서 사든 1등 확률은 1/8,145,060으로 같습니다.</description>
+    <language>ko</language>
+    <lastBuildDate>${rfc(newest)}</lastBuildDate>
+    <atom:link href="${SITE}/rss.xml" rel="self" type="application/rss+xml"/>
+${items.map(i => `    <item>
+        <title>${x(i.title)}</title>
+        <link>${x(i.link)}</link>
+        <guid isPermaLink="true">${x(i.link)}</guid>
+        <pubDate>${rfc(i.date)}</pubDate>
+        <description>${x(i.desc)}</description>
+    </item>`).join('\n')}
+</channel>
+</rss>
+`;
+}
+
 function updateSitemap(blog) {
     const old = read('sitemap.xml');
     const keep = {};
@@ -3210,8 +3241,28 @@ updateHome(blog.posts);
 updateTaxAndTop();
 if (updateAbout()) changed++;
 const urls = updateSitemap(blog.sitemap);
+if (write('rss.xml', rssFeed(blog.feed || []))) changed++;
 console.log(`통계 ${STATS.length}쪽${TIER ? ' · 2·3등' : ''}${STORES ? ' · 1등 판매점' : ''} · 중복 · 회차 ${draws.length}쪽 · 전체 조회 · 확률 · 블로그 ${blog.posts}편 · 사이트맵 ${urls}개 (${RANGE}, 갱신일 ${UPDATED})`);
 console.log(`바뀐 생성 페이지: ${changed}쪽`);
 // 손 관리 페이지의 css · js 주소에 내용 지문을 붙인다(배포 직후 옛 파일과 섞이지 않게) — 위에서 index · tax · top · about 을 고친 뒤에
 const versioned = require(path.join(__dirname, 'asset-version.js'))();
 if (versioned) console.log(`css · js 지문을 바꾼 손 관리 페이지: ${versioned}쪽`);
+// 쪽마다 <title> 은 하나(2026-11-01 — 네이버 사이트 진단 '<title> 요소가 2개 이상' 경고: SVG 공 · 막대에 넣던 <title> 때문이었다).
+// 모든 html(검색 사이트 인증 파일은 빼고)을 훑어 하나가 아니면 알리고 실패로 끝낸다 — 매주 워크플로가 빨갛게 되어 바로 보인다
+(function checkTitles() {
+    const bad = [];
+    const walk = dir => {
+        for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+            if (e.name.startsWith('.') || ['node_modules', 'worker', 'tools', 'content', 'preview'].includes(e.name)) continue;
+            const p = path.join(dir, e.name);
+            if (e.isDirectory()) walk(p);
+            else if (e.name.endsWith('.html') && !/^(naver|google)[0-9a-f]+\.html$/.test(e.name)) {
+                const n = (fs.readFileSync(p, 'utf8').match(/<title[\s>]/g) || []).length;
+                if (n !== 1) bad.push(path.relative(ROOT, p) + ' (' + n + '개)');
+            }
+        }
+    };
+    walk(ROOT);
+    if (bad.length) { console.error('<title> 이 하나가 아닌 쪽: ' + bad.join(', ')); process.exitCode = 1; }
+    else console.log('<title> 검사: 모든 쪽 1개');
+})();

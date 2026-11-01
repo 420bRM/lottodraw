@@ -1377,7 +1377,7 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 .dist-mean { stroke: var(--brand); stroke-dasharray: 3 3; opacity: .6; }
 .dist-bar { fill: var(--brand); opacity: .55; }
 .dist-bar:hover { opacity: .85; }
-.dist-curve { fill: none; stroke: var(--ball-3); stroke-width: 2.5; stroke-linejoin: round; }
+.dist-curve { fill: none; stroke: var(--ball-3); stroke-width: 2.5; stroke-linejoin: round; pointer-events: none; }   /* 막대 풍선을 가리지 않게 */
 .dist-ball circle { stroke: var(--surface, #fff); stroke-width: 1; }
 .dist-ball text { fill: #fff; font-size: 11px; font-weight: bold; pointer-events: none; }
 /* 공에 마우스를 올리면(휴대폰은 누르면) 그 공을 밝게 · 조금 크게 · 빛 테두리, 나머지 공은 옅게.

@@ -542,6 +542,8 @@ module.exports = function buildBlog(ctx) {
         changed,
         sitemap: [{ path: `/${OUT}/index.html`, lastmod: newest }]
             .concat(posts.map(p => ({ path: `/${OUT}/${p.slug}.html`, lastmod: p.updated }))),
+        // RSS(rss.xml — 네이버 서치어드바이저에 제출, 2026-11-01)용 글 목록
+        feed: posts.map(p => ({ title: p.title, description: p.description, path: `/${OUT}/${p.slug}.html`, date: p.date })),
     };
 };
 
