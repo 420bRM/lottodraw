@@ -1940,7 +1940,7 @@ const REVENUE_POST = fs.existsSync(path.join(ROOT, 'content', 'blog', '18-lotto-
 function blogFigures() {
     let E;
     try { E = JSON.parse(read('content/blog/data/store-sales.json')); } catch (e) { return {}; }
-    return { 'store-sales-flow': salesFlow(E), 'store-sales-range': salesRangeChart(E), 'store-sales-check': salesCheckChart(E) };
+    return { 'store-sales-flow': salesFlow(E), 'store-sales-range': salesRangeChart(E), 'store-sales-bell': salesBellChart(E), 'store-sales-check': salesCheckChart(E) };
 }
 
 // 판매액(원) → 한국어 "264억" · "4.7억"(10억 아래는 소수 한 자리), 영어 "₩26 billion" · "₩0.47 billion"
@@ -1981,12 +1981,16 @@ function salesFlow(E) {
 }
 
 // ② 범위 그림 — 1 · 2등 수별 95% 범위(막대) · 가운데 값(점) · 그대로 나눈 값(빈 점), 바탕은 전국 판매점 분포. 가로는 로그 눈금.
-// 위 단추 "종 모양으로 보기"를 누르면 같은 내용을 분포 곡선으로 그린 그림(salesDensity)으로 바뀐다 — 막대는 그 곡선의 가운데 95% 다.
-// 단추는 라디오 + CSS 형제 선택자라 스크립트가 없다(css/site.css "판매량 추정 그림")
-function salesRangeChart(E) {
+// 같은 내용을 분포 곡선으로 그린 종 모양 그림(salesBellChart)은 글에서 바로 아래 따로 놓인다 — 막대는 그 곡선의 가운데 95% 다.
+// (2026-11-05 전에는 "막대로 보기 | 종 모양으로 보기" 단추로 바꿔 봤는데, 사람들이 단추를 잘 안 눌러 두 그림을 위아래로 나눴다)
+function salesRows(E) {
     const t = E.top[0];
     const rows = E.rows.map(r => Object.assign({ label: en(`${r.x}번`, String(r.x)), short: en(`${r.x}번`, String(r.x)) }, r));
     if (t && t.x > E.rows[E.rows.length - 1].x) rows.push(Object.assign({}, t, { label: en(`${t.x}번 · 1위`, `${t.x} (#1)`), short: en(`${t.x}번`, String(t.x)) }));
+    return rows;
+}
+function salesRangeChart(E) {
+    const rows = salesRows(E);
     const { P, ticks, tickText } = logAxis([E.p10, ...rows.map(r => r.lo)], [E.p90, ...rows.map(r => r.hi)]);
     const row = r => {
         const tipKo = `${salesEok(r.lo)}~${salesEok(r.hi)}억 · 가운데 ${salesEok(r.mid)}억`;
@@ -2000,12 +2004,8 @@ function salesRangeChart(E) {
             + `<span class="ss-tip" style="${tipAt}">${en(tipKo, tipEn)}</span></span></div>`;
     };
     const head = (cls, pos, text, lab) => `<div class="ss-row ss-head"><span class="ss-lab">${lab || ''}</span><span class="ss-track"><span class="${cls}" style="left:${ssPct(pos)}">${text}</span></span></div>`;
-    const dens = E.prior && E.prior.sd ? salesDensity(E, rows) : null;
-    const view = (id, on) => `<input type="radio" name="ss-view" id="ss-v-${id}" class="ss-v ss-v-${id}"${on ? ' checked' : ''}>`;
     return [
         '<figure class="ss-figure ss-range">',
-        dens ? view('bar', true) + view('bell') + dens.radios : '',
-        dens ? `<div class="ss-view"><label for="ss-v-bar">${en('막대로 보기', 'Bars')}</label><label for="ss-v-bell">${en('종 모양으로 보기', 'Bell curves')}</label></div>` : '',
         '<div class="ss-plot">',
         head('ss-head-lab', (P(E.p10) + P(E.p90)) / 2, en(`전국 판매점 80% (${salesEok(E.p10)}~${salesEok(E.p90)}억)`, `80% of retailers (₩${salesBil(E.p10)}–${salesBil(E.p90)}B)`)),
         head('ss-head-lab ss-head-avg', P(E.avg), en(`전국 평균 ${salesEok(E.avg)}억`, `national average ₩${salesBil(E.avg)}B`), en(`3년 1 · 2등`, `3-yr prizes`)),
@@ -2020,25 +2020,38 @@ function salesRangeChart(E) {
             + ticks.map((v, i) => `<span class="ss-tick${String(v)[0] !== '1' ? ' ss-minor' : ''}${ssEnd(i, ticks.length)}" style="left:${ssPct(P(v))}">${tickText(v)}</span>`).join('') + '</span></div>',
         `<div class="ss-row ss-axis-title"><span></span><span>${en('추정 연 판매액 (로그 눈금 — 한 칸마다 몇 배씩)', 'Estimated annual sales (log scale — each step multiplies)')}</span></div>`,
         '</div>',
-        dens ? dens.html : '',
         '<figcaption>',
-        '<div class="dist-legend ss-legend-bar">',
+        '<div class="dist-legend">',
         `<span><i class="key-ss-bar"></i>${en('95% 범위', '95% range')}</span>`,
         `<span><i class="key-ss-mid"></i>${en('가운데 값', 'middle value')}</span>`,
         `<span><i class="key-ss-naive"></i>${en('그대로 나눈 값', 'straight division')}</span>`,
         `<span><i class="key-ss-band"></i>${en('전국 판매점 80% (하위 · 상위 10% 뺌)', '80% of retailers (bottom and top 10% left out)')}</span>`,
         `<span><i class="key-ss-avg"></i>${en('전국 평균', 'national average')}</span>`,
         '</div>',
-        dens ? ['<div class="dist-legend ss-legend-bell">',
+        `<p class="ss-note">${en(`1 · 2등이 적을수록 막대가 바탕 띠(판매점 대부분)를 거의 다 덮어 정보가 적고, 많을수록 짧아지며 오른쪽으로 갑니다. 줄을 짚으면 값이 나옵니다.`,
+            `With few prizes the bar covers almost the whole shaded band (most retailers) and says little; with more it shortens and moves right. Hover or tap a row for its values.`)}</p>`,
+        '</figcaption>',
+        '</figure>',
+    ].join('\n');
+}
+
+// ②-2 종 모양 그림 — ②와 같은 줄을 분포 곡선으로 겹쳐 그린다(salesDensity). 전국 분포(prior)가 없으면 그리지 않는다
+function salesBellChart(E) {
+    if (!(E.prior && E.prior.sd)) return '';
+    const dens = salesDensity(E, salesRows(E));
+    return [
+        '<figure class="ss-figure ss-bell">',
+        dens.radios,
+        dens.html,
+        '<figcaption>',
+        ['<div class="dist-legend">',
             `<span><i class="key-ss-curve"></i>${en('1 · 2등 수별 판매액 분포', 'sales distribution by prize count')}</span>`,
             `<span><i class="key-ss-prior"></i>${en('전국 판매점 분포', 'all retailers')}</span>`,
             `<span><i class="key-ss-95"></i>${en('95% 범위 (곡선을 고르면)', '95% range (pick a curve)')}</span>`,
             `<span><i class="key-ss-line"></i>${en('가운데 값 (곡선을 고르면)', 'middle value (pick a curve)')}</span>`,
-            '</div>'].join('') : '',
-        `<p class="ss-note ss-note-bar">${en(`1 · 2등이 적을수록 막대가 바탕 띠(판매점 대부분)를 거의 다 덮어 정보가 적고, 많을수록 짧아지며 오른쪽으로 갑니다. 줄을 짚으면 값이 나옵니다.`,
-            `With few prizes the bar covers almost the whole shaded band (most retailers) and says little; with more it shortens and moves right. Hover or tap a row for its values.`)}</p>`,
-        dens ? `<p class="ss-note ss-note-bell">${en(`모든 곡선이 같은 바닥(0%)에서 시작해 양 끝이 0으로 내려옵니다. 곡선마다 넓이(모두 더한 확률)는 같아서, 1 · 2등이 많아 판매액을 좁게 알수록 꼭대기가 높아집니다.`,
-            `Every curve starts from the same floor (0%) and falls back to 0 at both ends. Each curve has the same area (total probability), so the more prizes and the more narrowly sales are known, the higher the peak.`)}</p>` : '',
+            '</div>'].join(''),
+        `<p class="ss-note">${en(`모든 곡선이 같은 바닥(0%)에서 시작해 양 끝이 0으로 내려옵니다. 곡선마다 넓이(모두 더한 확률)는 같아서, 1 · 2등이 많아 판매액을 좁게 알수록 꼭대기가 높아집니다.`,
+            `Every curve starts from the same floor (0%) and falls back to 0 at both ends. Each curve has the same area (total probability), so the more prizes and the more narrowly sales are known, the higher the peak.`)}</p>`,
         '</figcaption>',
         '</figure>',
     ].join('\n');
