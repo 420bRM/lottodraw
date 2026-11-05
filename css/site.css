@@ -1470,22 +1470,10 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 .ss-fill-lab { position: absolute; top: 50%; left: 8px; transform: translateY(-50%); color: #fff; font-size: 11px; font-weight: bold; white-space: nowrap; }
 .ss-reg { --lab: 96px; }
 .ss-dot-lab { position: absolute; top: 50%; margin-left: 8px; padding: 0 3px; transform: translateY(-50%); background: var(--bg, #fff); color: var(--fg, #222); white-space: nowrap; font-variant-numeric: tabular-nums; }
-/* 범위 그림의 "막대로 보기 | 종 모양으로 보기" (2026-10-30) — 라디오(.ss-v)가 그림 앞 형제라 스크립트 없이 바뀐다.
-   종 모양 = .ss-dens: 사후 분포 곡선을 한 판에 겹친다. 모든 곡선이 같은 바닥(0%)에서 시작하고 세로축은 "그 값 ±10% 안일 확률".
-   곡선 고르기(전체 · 전국 · 0번 …)의 번호별 규칙은 생성기가 그림 안 <style> 로 만든다(tools/build-static-stats.js 의 salesDensity) */
+/* 종 모양 그림 .ss-bell (2026-10-30, 11-05부터 막대 그림 아래 따로) — 사후 분포 곡선을 한 판에 겹친다.
+   모든 곡선이 같은 바닥(0%)에서 시작하고 세로축은 "그 값 ±10% 안일 확률".
+   곡선 고르기(전체 · 전국 · 0번 …)는 라디오(.ss-v) + 형제 선택자라 스크립트가 없고, 번호별 규칙은 생성기가 그림 안 <style> 로 만든다(tools/build-static-stats.js 의 salesDensity) */
 .ss-v { position: absolute; width: 1px; height: 1px; margin: 0; opacity: 0; pointer-events: none; }
-.ss-view { display: inline-flex; margin: 0 0 8px; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
-.ss-view label { padding: 5px 12px; color: var(--muted); font-size: 12px; cursor: pointer; user-select: none; }
-.ss-view label + label { border-left: 1px solid var(--line); }
-.ss-v-bar:checked ~ .ss-view label[for="ss-v-bar"], .ss-v-bell:checked ~ .ss-view label[for="ss-v-bell"] { background: var(--brand-bg, var(--brand)); color: #fff; }
-.ss-v-bar:focus-visible ~ .ss-view label[for="ss-v-bar"], .ss-v-bell:focus-visible ~ .ss-view label[for="ss-v-bell"] { outline: 2px solid var(--brand); outline-offset: -2px; }
-.ss-dens, .ss-legend-bell, .ss-note-bell { display: none; }
-.ss-v-bell:checked ~ .ss-plot, .ss-v-bell:checked ~ figcaption .ss-legend-bar, .ss-v-bell:checked ~ figcaption .ss-note-bar { display: none; }
-.ss-v-bell:checked ~ .ss-dens, .ss-v-bell:checked ~ figcaption .ss-note-bell { display: block; }
-.ss-v-bell:checked ~ figcaption .ss-legend-bell { display: flex; }
-.ss-v-bell:checked ~ .ss-dens .ss-dens-svg { animation: ss-rise .6s ease-out both; }
-@keyframes ss-rise { from { transform: scaleY(0); } to { transform: scaleY(1); } }
-@media (prefers-reduced-motion: reduce) { .ss-v-bell:checked ~ .ss-dens .ss-dens-svg { animation: none; } }
 .ss-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
 .ss-chips label { padding: 3px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: 12px; cursor: pointer; user-select: none; white-space: nowrap; }
 .ss-dens-ytitle, .ss-dens-xtitle { color: var(--muted); font-size: 11px; }
