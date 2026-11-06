@@ -3,6 +3,7 @@
  * 모든 공개 페이지가 읽는 js/i18n.js 가 이 파일을 붙인다 — 페이지 1,300여 개의 HTML 을 고치지 않으려고.
  * 서버(/api/config)가 로그인을 켜 두지 않았으면 아무것도 그리지 않는다.
  *
+ *   원탭     로그인하지 않았으면 구글 계정 고르기 창이 저절로 뜬다(PC 오른쪽 위 · 휴대폰 아래, 2026-11-06). 아래 oneTap() 참고.
  *   머리글   "로그인" 단추 → 구글 로그인 창. 체험 이야기는 머리글에 쓰지 않는다("3일만 무료"로 읽힌다) — 로그인 창 안에서만. 로그인하면 "내 계정" 메뉴(체험 기간, 로그아웃, 탈퇴)
  *   카드     오른쪽 아래 "+" → ♥(좋아요)·$(대박 기원) 중 고르기. 수는 아이콘+숫자로 누구나 보고, 누르려면 로그인.
  *            카드가 없는 페이지는 본문 끝에 하나(약관·개인정보·문의·소개 페이지는 빼고).
@@ -20,8 +21,10 @@
     const KEY_STORE = 'lottodraw.premium.key';          // js/license.js 와 같은 자리
     const AUTO_NICK_STORE = 'lottodraw.account.autoNick'; // 자동 별명을 알린 별명(한 번만 알린다)
     const NICK_ASK_STORE = 'lottodraw.account.nickAsk';   // 별명을 정하라고 물은 때의 자동 별명 날짜(nickDue) — 한 번만 묻는다
+    const NO_TAP_STORE = 'lottodraw.account.noTap';       // sessionStorage: 이 탭에서 로그아웃·탈퇴했으면 원탭을 띄우지 않는다
     const CACHE_MS = 10 * 60 * 1000;
     const NO_BAR = ['privacy', 'terms', 'contact', 'about', 'admin', 'ranking', 'mypage'];
+    const NO_TAP = ['admin'];   // 원탭을 띄우지 않는 페이지
 
     const script = document.currentScript;
     const root = script && script.src ? new URL('..', script.src).href : '/';
@@ -178,6 +181,40 @@
         return gisPromise;
     }
 
+    // 구글 로그인 준비 — 로그인 창의 단추와 원탭이 같이 쓴다(한 번만)
+    let gisReady = false;
+    function initGis() {
+        if (gisReady) return;
+        window.google.accounts.id.initialize({
+            client_id: login.google,
+            callback: resp => onCredential(resp),
+            auto_select: false,             // 계정은 늘 직접 고른다
+            cancel_on_tap_outside: false,   // 화면 다른 곳을 눌러도 원탭 창이 닫히지 않게 — 닫기(×)로만
+            context: 'signin',
+            itp_support: true,              // 사파리 · 파이어폭스에서도 원탭
+            use_fedcm_for_prompt: true,     // 크롬은 브라우저가 직접 그리는 계정 고르기 창(FedCM)
+            use_fedcm_for_button: true,
+        });
+        gisReady = true;
+    }
+
+    /* 원탭(2026-11-06): 로그인하지 않은 사람에게 구글 계정 고르기 창을 저절로 띄운다 — 트레이딩뷰처럼
+     * PC 는 오른쪽 위, 휴대폰은 아래. 계정을 누르면 바로 로그인된다. 창은 구글(크롬은 브라우저)이 그리고,
+     * 닫으면 구글 · 크롬이 한동안(2시간 → 하루 → 1주 → 4주) 다시 띄우지 않는다.
+     * 구글에 로그인한 계정이 없는 브라우저에는 뜨지 않는다. 이 탭에서 로그아웃 · 탈퇴했으면 띄우지 않는다. */
+    function oneTap() {
+        if (me || NO_TAP.indexOf(pageId()) !== -1 || temp.get(NO_TAP_STORE)) return;
+        const go = () => loadGis().then(() => {
+            if (me || document.getElementById('acct-modal')) return;   // 그 사이 로그인 창을 열었으면 그쪽 단추로
+            initGis();
+            window.google.accounts.id.prompt();
+        }).catch(() => { /* 광고 차단 등으로 못 불러오면 머리글 "로그인" 단추만 */ });
+        // 첫 화면을 다 그린 뒤에 불러온다
+        if (window.requestIdleCallback) window.requestIdleCallback(go, { timeout: 3000 });
+        else setTimeout(go, 1500);
+    }
+    const cancelTap = () => safe(() => window.google.accounts.id.cancel());
+
     function closeModal() {
         const m = document.getElementById('acct-modal');
         if (m) m.remove();
@@ -224,13 +261,8 @@
 
         try {
             await loadGis();
-            window.google.accounts.id.initialize({
-                client_id: login.google,
-                callback: resp => onCredential(resp, err),
-                auto_select: false,
-                cancel_on_tap_outside: true,
-                use_fedcm_for_button: true,
-            });
+            initGis();
+            cancelTap();   // 원탭 창이 떠 있으면 닫고 이 창의 단추로
             slot.textContent = '';
             window.google.accounts.id.renderButton(slot, { type: 'standard', theme: 'outline', size: 'large', text: 'continue_with', shape: 'pill', locale: lang(), width: 260 });
         } catch (e) {
@@ -238,7 +270,9 @@
         }
     }
 
-    async function onCredential(resp, errBox) {
+    // 로그인 창의 단추로 왔으면 창 안에, 원탭으로 왔으면 안내 줄로 실패를 알린다
+    async function onCredential(resp) {
+        const errBox = document.querySelector('#acct-modal .acct-err');
         try {
             const got = await request('/api/auth/google', { method: 'POST', body: { credential: resp && resp.credential } });
             local.set(SESSION_STORE, { session: got.session, email: got.user.email });
@@ -250,8 +284,8 @@
                 reloadWith({ kind: added ? 'trialBack' : 'login', until: got.user.trial && got.user.trial.expiresAt, askNick: got.isNew && !got.user.nick });
             }
         } catch (e) {
-            errBox.textContent = e.code === 'too_many' ? tr('acct.tooMany', '잠시 뒤 다시 시도해 주세요.') : tr('acct.fail', '로그인하지 못했습니다. 다시 시도해 주세요.');
-            errBox.hidden = false;
+            const msg = e.code === 'too_many' ? tr('acct.tooMany', '잠시 뒤 다시 시도해 주세요.') : tr('acct.fail', '로그인하지 못했습니다. 다시 시도해 주세요.');
+            if (errBox) { errBox.textContent = msg; errBox.hidden = false; } else toast(msg);
         }
     }
 
@@ -411,6 +445,7 @@
     async function logout() {
         try { await request('/api/auth/logout', { method: 'POST', auth: true }); } catch (e) { /* 이미 끝난 세션 */ }
         signOutLocal();
+        temp.set(NO_TAP_STORE, 1);   // 방금 나간 사람에게 원탭을 다시 띄우지 않는다(이 탭에서만)
         reloadWith({ kind: 'logout' });
     }
 
@@ -423,6 +458,7 @@
         try {
             await request('/api/me/delete', { method: 'POST', auth: true, body: { confirm: true } });
             signOutLocal();
+            temp.set(NO_TAP_STORE, 1);
             reloadWith({ kind: 'deleted' });
         } catch (e) {
             if (e.status === 401) { signOutLocal(); renderHeader(); }
@@ -609,6 +645,7 @@
         if (me && me.user) { applyTrial(me.user.trial); applyTrial(me.user.pointPass); }   // 포인트로 연 1일 이용권도 다른 기기에서 그대로
         renderHeader();
         showNote();
+        oneTap();
         const u = me && me.user;
         // 별명이 없으면 자동 별명이 붙기 전에 한 번 직접 정할 기회를 준다. 가입할 때 물었으면(openNick 이 적어 둔다) 다시 묻지 않는다 —
         // 이 기능 전에 가입한 회원 · 관리자가 별명을 지운 회원이 여기서 한 번 받는다
