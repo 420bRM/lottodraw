@@ -126,6 +126,7 @@ async function route(request, env, ctx) {
     if (path === '/api/territory' && method === 'GET') return getTerritory(request, env);
     if (path === '/api/territory/join' && method === 'POST') return territoryJoin(request, env);
     if (path === '/api/territory/leave' && method === 'POST') return territoryLeave(request, env);
+    if (path === '/api/territory/color' && method === 'POST') return territoryColor(request, env);
     if (path === '/api/chat' && method === 'GET') return chatConnect(request, env);
     if (path === '/api/chat/info' && method === 'GET') return chatInfo(request, env);
     if (path === '/api/reactions' && method === 'POST') return react(request, env);
@@ -802,6 +803,17 @@ async function territoryJoin(request, env) {
     for (const id of Object.keys(s.user.visits || {})) { const c = map.get(id); if (c) cells[id] = c; }
     const r = await community(env, 'terrJoin', { sub: s.sub, now: Date.now(), v: TERR_CONSENT, cells });
     if (r.error === 'need_nick') throw new HttpError(409, 'need_nick', '영역은 별명으로 나옵니다. 별명을 먼저 정해 주세요.');
+    if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
+    return json(request, env, { user: r.user });
+}
+
+// 내 영역 칸 색(2026-11-07 사장님 — "본인 화면에선 색을 고르게"). { color: '#rrggbb' | null(기본) }. 남의 화면에는 쓰지 않는다
+async function territoryColor(request, env) {
+    const s = await sessionUser(request, env);
+    await limited(env.REACT_LIMIT, s.hash);
+    const body = await readJson(request);
+    if (body.color !== null && !/^#[0-9a-fA-F]{6}$/.test(String(body.color || ''))) throw new HttpError(400, 'bad_color', '색이 이상합니다.');
+    const r = await community(env, 'setTerrColor', { sub: s.sub, color: body.color === null ? null : String(body.color).toLowerCase() });
     if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
     return json(request, env, { user: r.user });
 }
