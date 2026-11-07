@@ -32,7 +32,7 @@ import { saleRound, cleanGame, rankOf, kstParts, drawDay } from './lotto.js';
 
 import { chatStub, checkText } from './chat.js';
 import { shopInfo, sharePage } from './share.js';
-import { TERR_CONSENT, cellMap, _resetCellsForTests } from './territory.js';
+import { TERR_CONSENT, SKIN_RE, cellMap, _resetCellsForTests } from './territory.js';
 
 export { Community } from './community.js';
 export { ChatRoom } from './chat.js';
@@ -126,7 +126,7 @@ async function route(request, env, ctx) {
     if (path === '/api/territory' && method === 'GET') return getTerritory(request, env);
     if (path === '/api/territory/join' && method === 'POST') return territoryJoin(request, env);
     if (path === '/api/territory/leave' && method === 'POST') return territoryLeave(request, env);
-    if (path === '/api/territory/color' && method === 'POST') return territoryColor(request, env);
+    if (path === '/api/territory/skin' && method === 'POST') return territorySkin(request, env);
     if (path === '/api/chat' && method === 'GET') return chatConnect(request, env);
     if (path === '/api/chat/info' && method === 'GET') return chatInfo(request, env);
     if (path === '/api/reactions' && method === 'POST') return react(request, env);
@@ -807,15 +807,18 @@ async function territoryJoin(request, env) {
     return json(request, env, { user: r.user });
 }
 
-// 내 영역 칸 색(2026-11-07 사장님 — "본인 화면에선 색을 고르게"). { color: '#rrggbb' | null(기본) }. 남의 화면에는 쓰지 않는다
-async function territoryColor(request, env) {
+// 내 영역 칸 모양(2026-11-07 사장님 — 지렁이 게임처럼 참여자마다 다르게, 기본은 무작위, 바꾸려면 포인트).
+// { skin: '주색,보조색,무늬'(territory.js SKIN_RE) | null(무작위로, 무료) }. 모두에게 보인다
+async function territorySkin(request, env) {
     const s = await sessionUser(request, env);
     await limited(env.REACT_LIMIT, s.hash);
     const body = await readJson(request);
-    if (body.color !== null && !/^#[0-9a-fA-F]{6}$/.test(String(body.color || ''))) throw new HttpError(400, 'bad_color', '색이 이상합니다.');
-    const r = await community(env, 'setTerrColor', { sub: s.sub, color: body.color === null ? null : String(body.color).toLowerCase() });
+    const skin = body.skin === null ? null : String(body.skin || '').toLowerCase();
+    if (skin !== null && !SKIN_RE.test(skin)) throw new HttpError(400, 'bad_skin', '칸 모양이 이상합니다.');
+    const r = await community(env, 'setTerrSkin', { sub: s.sub, skin });
+    if (r.error === 'need_points') throw new HttpError(402, 'need_points', `칸 모양을 바꾸려면 ${r.cost}포인트가 필요합니다. (지금 ${r.avail}포인트)`);
     if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
-    return json(request, env, { user: r.user });
+    return json(request, env, { user: r.user, cost: r.cost });
 }
 
 async function territoryLeave(request, env) {

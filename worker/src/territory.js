@@ -19,6 +19,22 @@ export const VISIT_DAILY = 50;   // 하루(한국 날짜)에 다녀온 때를 �
 export const LEGACY_T = Date.UTC(2026, 9, 25, 15);
 export const FIRST_SEASON = '2026Q4';   // 영역을 연 분기 — 이보다 앞은 확정하지 않는다
 const KST = 9 * 3600 * 1000;
+
+// 칸 모양(스킨, 2026-11-07 사장님 — 지렁이 게임처럼 참여자마다 색 · 무늬가 다르게): "주색,보조색,무늬" 예 'e63946,2a9d8f,1'.
+// 무늬 0 단색 · 1 줄무늬 · 2 물방울 · 3 체크. 고르지 않았으면 계정마다 무작위(계정 번호 해시 — 늘 같다). 바꾸는 데 포인트(POINTS.terrSkin), 무작위로 돌리기는 무료.
+// 모두에게 같게 보인다(칸 · 랭킹). 그리기는 js/store-map.js
+export const SKIN_RE = /^[0-9a-f]{6},[0-9a-f]{6},[0-3]$/;
+function fnv(str) { let h = 0x811c9dc5; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return h >>> 0; }
+function hslHex(h, s, l) {
+    s /= 100; l /= 100;
+    const f = n => { const k = (n + h / 30) % 12, a = s * Math.min(l, 1 - l); return Math.round(255 * (l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)))).toString(16).padStart(2, '0'); };
+    return f(0) + f(8) + f(4);
+}
+export function defaultSkin(sub) {
+    const h = fnv('skin:' + sub), h2 = fnv('skin2:' + sub);
+    const hue = h % 360, hue2 = (hue + 90 + (h2 % 180)) % 360;
+    return hslHex(hue, 62 + (h2 >>> 8) % 25, 44 + (h >>> 12) % 16) + ',' + hslHex(hue2, 65 + (h >>> 20) % 25, 50 + (h2 >>> 16) % 20) + ',' + ((h >>> 9) % 4);
+}
 export const kstDay = ms => new Date(ms + KST).toISOString().slice(0, 10);
 
 // 그때가 든 분기. id 예: '2026Q4'
@@ -50,7 +66,7 @@ export function computeTerritory(players, upTo) {
             if (!per.has(cell)) per.set(cell, []);
             per.get(cell).push({ sub: p.sub, n: ts.length, t: Math.max(...ts) });   // 그 칸에 가장 최근에 다녀온 때
         }
-        stat.set(p.sub, { sub: p.sub, nick: p.nick || null, at: p.at || 0, stores, cells: 0, counts });
+        stat.set(p.sub, { sub: p.sub, nick: p.nick || null, skin: p.skin || defaultSkin(p.sub), own: !!p.skin, at: p.at || 0, stores, cells: 0, counts });
     }
     const cells = {};
     for (const [cell, list] of per) {
@@ -67,27 +83,28 @@ export function computeTerritory(players, upTo) {
 // 분기 확정 기록(ts:<분기>): 그 분기 끝 때의 랭킹 50명. 계정 번호는 탈퇴 때 지우려고 둔다(밖으로는 내보내지 않는다)
 export function seasonRecord(t, season, now) {
     return { id: season.id, from: season.from, to: season.to, at: now,
-        rank: t.rank.slice(0, TERR_RANK).map(s => ({ sub: s.sub, nick: s.nick, cells: s.cells, stores: s.stores })) };
+        rank: t.rank.slice(0, TERR_RANK).map(s => ({ sub: s.sub, nick: s.nick, skin: s.skin, cells: s.cells, stores: s.stores })) };
 }
 
 // 화면에 내보내는 모양. 계정 번호는 빼고 별명만. last: 가장 최근에 확정한 분기 기록
 export function publicTerritory(t, season, sub, joined, last) {
     const nickOf = s => (t.stat.get(s) || {}).nick || null;
     const cells = {};
-    for (const [cell, c] of Object.entries(t.cells)) cells[cell] = [nickOf(c.sub), c.n, c.next, c.k];
+    for (const [cell, c] of Object.entries(t.cells)) cells[cell] = [nickOf(c.sub), c.n, c.next, c.k, t.stat.get(c.sub).skin];
     const out = {
         season: { id: season.id, from: season.from, to: season.to },
         cells,
-        rank: t.rank.slice(0, TERR_RANK).map(s => ({ nick: s.nick, cells: s.cells, stores: s.stores })),
+        rank: t.rank.slice(0, TERR_RANK).map(s => ({ nick: s.nick, skin: s.skin, cells: s.cells, stores: s.stores })),
         players: t.stat.size,
-        last: last ? { id: last.id, from: last.from, to: last.to, rank: last.rank.slice(0, TERR_HALL).map(r => ({ nick: r.nick, cells: r.cells, stores: r.stores })) } : null,
+        last: last ? { id: last.id, from: last.from, to: last.to, rank: last.rank.slice(0, TERR_HALL).map(r => ({ nick: r.nick, skin: r.skin || null, cells: r.cells, stores: r.stores })) } : null,
     };
     if (sub) {
         const me = t.stat.get(sub);
         const at = t.rank.findIndex(s => s.sub === sub);
         const was = last ? last.rank.findIndex(r => r.sub === sub) : -1;
         out.me = { joined: !!joined, cells: me ? Object.keys(t.cells).filter(c => t.cells[c].sub === sub) : [], counts: me ? me.counts : {},
-            stores: me ? me.stores : 0, rank: at >= 0 ? at + 1 : null, lastRank: was >= 0 ? was + 1 : null };
+            stores: me ? me.stores : 0, rank: at >= 0 ? at + 1 : null, lastRank: was >= 0 ? was + 1 : null,
+            skin: me ? me.skin : defaultSkin(sub), skinSet: !!(me && me.own) };
     }
     return out;
 }

@@ -6,7 +6,7 @@ import vm from 'node:vm';
 import worker, { _resetForTests, Community } from '../src/index.js';
 import { _resetGoogleForTests } from '../src/google.js';
 import { b64urlEncode } from '../src/keys.js';
-import { seasonOf, prevSeason, computeTerritory, LEGACY_T, TERR_CONSENT, VISIT_DAILY } from '../src/territory.js';
+import { seasonOf, prevSeason, computeTerritory, defaultSkin, LEGACY_T, TERR_CONSENT, VISIT_DAILY } from '../src/territory.js';
 
 const ADMIN = 'admin-token-0123456789abcdef';
 const ORIGIN = 'https://www.lottodraw.kr';
@@ -132,7 +132,12 @@ async function member(env, sub, nick) {
 }
 const visit = (env, s, id, extra) => call(env, 'POST', '/api/me/visits', { headers: auth(s), body: Object.assign({ id, color: '#e63946' }, extra || {}) });
 const join = (env, s, body) => call(env, 'POST', '/api/territory/join', { headers: auth(s), body: body || { agree: true, v: TERR_CONSENT } });
-const terr = (env, s) => call(env, 'GET', '/api/territory', s ? { headers: auth(s) } : {});
+// 칸 [별명, 수, 2위 수, 경쟁자 수, 칸 모양] — 비교는 앞 넷으로(cells), 칸 모양은 full 에
+const terr = async (env, s) => {
+    const r = await call(env, 'GET', '/api/territory', s ? { headers: auth(s) } : {});
+    if (r.data && r.data.cells) { r.data.full = r.data.cells; r.data.cells = Object.fromEntries(Object.entries(r.data.cells).map(([k, v]) => [k, v.slice(0, 4)])); }
+    return r;
+};
 const realNow = Date.now;
 test.after(() => { globalThis.fetch = realFetch; Date.now = realNow; });
 
@@ -220,7 +225,7 @@ test('영역 참여: 동의 · 별명이 있어야 하고, 칸 주인 · 랭킹�
     assert.ok(j.data.user.terr.at > 0, '동의한 때를 적는다');
     let t = await terr(env, a);
     assert.deepEqual(t.data.cells['0,0'], ['가나다', 2, 0, 1], '참여 전에 다녀온 곳도 센다');
-    assert.deepEqual(t.data.me, { joined: true, cells: ['0,0'], counts: { '0,0': 2 }, stores: 2, rank: 1, lastRank: null });
+    assert.deepEqual(t.data.me, { joined: true, cells: ['0,0'], counts: { '0,0': 2 }, stores: 2, rank: 1, lastRank: null, skin: defaultSkin('3001'), skinSet: false });
     assert.equal(t.data.last, null, '아직 확정한 분기가 없다');
 
     // 같은 칸에서 같은 수면 더 최근에 다녀온 사람, 더 많으면 더 많은 사람
@@ -241,7 +246,7 @@ test('영역 참여: 동의 · 별명이 있어야 하고, 칸 주인 · 랭킹�
     t = await terr(env, a);
     assert.deepEqual(t.data.cells['1,0'], ['가나다', 1, 0, 1]);
     assert.equal(t.data.me.stores, 3, '칸에 없는 곳은 안 센다');
-    assert.deepEqual(t.data.rank, [{ nick: '가나다', cells: 1, stores: 3 }, { nick: '라마바', cells: 1, stores: 3 }], '같으면 먼저 참여한 순');
+    assert.deepEqual(t.data.rank.map(r => [r.nick, r.cells, r.stores]), [['가나다', 1, 3], ['라마바', 1, 3]], '같으면 먼저 참여한 순');
     assert.ok(!/3001|3002|gmail/.test(JSON.stringify(t.data)), '계정 번호 · 이메일은 내보내지 않는다');
     assert.ok(!/1110000/.test(JSON.stringify(t.data)), '어느 판매점을 다녀왔는지는 내보내지 않는다');
     assert.equal((await terr(env)).headers.get('Cache-Control'), 'public, max-age=60');
@@ -249,14 +254,31 @@ test('영역 참여: 동의 · 별명이 있어야 하고, 칸 주인 · 랭킹�
     await visit(env, b, '11100002', { color: null });
     assert.deepEqual((await terr(env)).data.cells['0,0'], ['라마바', 2, 2, 2]);
 
-    // 내 칸 색: 내 정보에만(칸 · 랭킹에는 안 나간다), 이상한 색은 거절, null 이면 기본
-    assert.equal((await call(env, 'POST', '/api/territory/color', { body: { color: '#123456' } })).status, 401);
-    assert.equal((await call(env, 'POST', '/api/territory/color', { headers: auth(a), body: { color: 'red' } })).status, 400);
-    const col = await call(env, 'POST', '/api/territory/color', { headers: auth(a), body: { color: '#2A9D8F' } });
-    assert.equal(col.status, 200);
-    assert.equal(col.data.user.terrColor, '#2a9d8f');
-    assert.ok(!/2a9d8f/i.test(JSON.stringify((await terr(env)).data)), '남에게는 안 나간다');
-    assert.equal((await call(env, 'POST', '/api/territory/color', { headers: auth(a), body: { color: null } })).data.user.terrColor, null);
+    // 칸 모양(스킨): 기본은 계정마다 무작위(늘 같다) · 모두에게 보인다 · 바꾸면 30포인트(모자라면 402) · 무작위로 돌리기는 무료 · 운영자는 무료
+    let tt = await terr(env, a);
+    const def = tt.data.full['1,0'][4];
+    assert.match(def, /^[0-9a-f]{6},[0-9a-f]{6},[0-3]$/);
+    assert.equal(tt.data.me.skin, def);
+    assert.equal(tt.data.me.skinSet, false);
+    assert.equal((await terr(env)).data.rank[0].skin, def, '랭킹에도 같은 모양');
+    assert.notEqual(defaultSkin('3001'), defaultSkin('3002'), '계정마다 다르다');
+    assert.equal((await call(env, 'POST', '/api/territory/skin', { body: { skin: 'aabbcc,112233,1' } })).status, 401);
+    assert.equal((await call(env, 'POST', '/api/territory/skin', { headers: auth(a), body: { skin: 'red,blue,1' } })).status, 400);
+    assert.equal((await call(env, 'POST', '/api/territory/skin', { headers: auth(a), body: { skin: 'aabbcc,112233,4' } })).status, 400, '무늬는 0~3');
+    const poor = await call(env, 'POST', '/api/territory/skin', { headers: auth(a), body: { skin: 'AABBCC,112233,2' } });
+    assert.equal(poor.status, 402, '가입 첫날 10포인트 < 30');
+    assert.equal(poor.data.error, 'need_points');
+    assert.equal((await call(env, 'POST', '/api/admin/members/3001/staff', { headers: asAdmin })).status, 200);
+    const sk = await call(env, 'POST', '/api/territory/skin', { headers: auth(a), body: { skin: 'AABBCC,112233,2' } });
+    assert.equal(sk.status, 200, JSON.stringify(sk.data));
+    assert.equal(sk.data.cost, 0, '운영자는 무료');
+    assert.equal(sk.data.user.terrSkin, 'aabbcc,112233,2');
+    tt = await terr(env, a);
+    assert.equal(tt.data.full['1,0'][4], 'aabbcc,112233,2', '고른 모양이 칸에 나온다(모두에게)');
+    assert.equal(tt.data.me.skinSet, true);
+    assert.equal((await call(env, 'POST', '/api/territory/skin', { headers: auth(a), body: { skin: null } })).data.user.terrSkin, null);
+    assert.equal((await terr(env)).data.full['1,0'][4], def, '무작위로 돌리면 처음 모양');
+    assert.equal((await call(env, 'POST', '/api/admin/members/3001/unstaff', { headers: asAdmin })).status, 200);
 
     // 관리자가 별명을 지우면 칸에도 별명 없이
     assert.equal((await call(env, 'POST', '/api/admin/members/3001/clear-nick', { headers: asAdmin })).status, 200);
@@ -317,7 +339,8 @@ test('분기가 끝나면 랭킹을 확정해 남기고 칸은 그대로 · 또 
         assert.deepEqual(rec.rank.map(r => [r.nick, r.cells, r.stores]), [['겨울', 1, 2]], '12/31 끝 때: 겨울 2곳 > 봄바람 1곳');
         let t = await terr(env, a);
         assert.equal(t.data.season.id, '2027Q1');
-        assert.deepEqual(t.data.last.rank, [{ nick: '겨울', cells: 1, stores: 2 }]);
+        assert.deepEqual(t.data.last.rank.map(r => [r.nick, r.cells, r.stores]), [['겨울', 1, 2]]);
+        assert.match(t.data.last.rank[0].skin, /^[0-9a-f]{6},/, '확정 순위에도 칸 모양');
         assert.equal(t.data.last.id, '2026Q4');
         assert.equal(t.data.me.lastRank, 1);
         assert.ok(!/4001|4002/.test(JSON.stringify(t.data)), '확정 순위도 계정 번호는 안 나간다');
@@ -336,8 +359,8 @@ test('분기가 끝나면 랭킹을 확정해 남기고 칸은 그대로 · 또 
         assert.equal(env.COMMUNITY._m.get('ts:2026Q4').at, kstTime(2027, 1, 1, 0, 17));
         // 탈퇴하면 확정 기록의 그 줄은 별명 · 계정 번호 없이 자리만
         assert.equal((await call(env, 'POST', '/api/me/delete', { body: { confirm: true }, headers: auth(a) })).status, 200);
-        assert.deepEqual(env.COMMUNITY._m.get('ts:2026Q4').rank, [{ nick: null, cells: 1, stores: 2 }]);
-        assert.deepEqual((await terr(env, b)).data.last.rank, [{ nick: null, cells: 1, stores: 2 }]);
+        assert.deepEqual(env.COMMUNITY._m.get('ts:2026Q4').rank, [{ nick: null, cells: 1, stores: 2 }], '탈퇴하면 별명 · 계정 번호 · 칸 모양 없이 자리만');
+        assert.deepEqual((await terr(env, b)).data.last.rank, [{ nick: null, skin: null, cells: 1, stores: 2 }]);
     } finally { Date.now = realNow; }
 });
 

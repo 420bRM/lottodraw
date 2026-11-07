@@ -19,7 +19,7 @@
 //                        vt:    { 판매점 번호: 시각 } — 다녀온 곳을 표시한(또는 "또 다녀왔어요"를 누른) 마지막 때(2026-11-07부터. 그 전 것은 없다). 표시를 지우면 같이 지운다
 //                        vday:  { day, n } — 오늘(한국 날짜) 다녀온 때를 새로 적은 횟수(territory.js VISIT_DAILY 까지)
 //                        terr:  { at, v } — 영역(육각 칸) 참여 동의: 동의한 때와 동의 문구 판(territory.js TERR_CONSENT). 그만두면 지운다
-//                        tcolor: '#rrggbb' — 내 영역 칸 색(2026-11-07, 내 화면에만 — 남에게는 별명마다 정해진 색). 없으면 기본 빨강
+//                        tskin: '주색,보조색,무늬' — 내 영역 칸 모양(2026-11-07, territory.js SKIN_RE). 없으면 계정마다 무작위. 모두에게 보인다. 바꾸면 POINTS.terrSkin
 //                        rx:    { 항목: 'h' | 'd' | 'hd' } — 내가 누른 좋아요
 //                        sess:  로그인 세션 해시 (최근 5개)
 //                        cm:    내가 쓴 블로그 댓글 키, cmAt: 마지막으로 쓴 시각, cmDay: { day, n } 오늘 쓴 수
@@ -47,7 +47,7 @@
 //   v:<글>               조회수(숫자) — 블로그 글마다 한 줄(누구나 본다). 같은 브라우저의 같은 글은 하루 한 번만 온다(js/views.js). 누가 읽었는지는 없다
 //   vbase                { n: { 글: 수 }, until, at } — 조회수 시작값: 직접 세기 전(until 까지)의 Cloudflare Web Analytics 페이지뷰(tools/seed-views.js).
 //                        보이는 조회수 = v:<글> + 이 값. 관리자가 통째로 갈아 끼운다
-//   tp:<구글 계정 번호>  { nick, at, v: { 판매점 번호: [표시한 시각, 칸] } } — 영역 참여자 색인(2026-11-07 시험판, territory.js).
+//   tp:<구글 계정 번호>  { nick, skin, at, v: { 판매점 번호: [표시한 시각, 칸] } } — 영역 참여자 색인(2026-11-07 시험판, territory.js).
 //                        영역에 참여한 회원만. 칸 주인 · Map 랭킹은 이 줄들로 센다. 그만두거나 탈퇴하면 지운다
 //   ts:<분기>            { id, from, to, at, rank: [{ sub, nick, cells, stores }] } — 분기마다 확정한 Map 랭킹(50명, 한 시간 예약 terrFinalize).
 //                        밖으로는 별명 · 칸 수 · 다녀온 곳 수만. 탈퇴하면 그 회원 줄의 계정 번호 · 별명을 지운다
@@ -69,7 +69,7 @@ const gameKey = n => n.join(',');
 export const REACT_TYPES = ['h', 'd', 'w'];   // ♥ 좋아요, $ 대박 기원, ₩ 원화
 
 // 랭킹 점수. 바꾸려면 여기만 고친다(이용약관 7조 문구도 같이).
-export const POINTS = { attend: 10, react: 2, buyPer100: 10, nickChange: 500, dayPass: 300, visitColor: 30 };   // buyPer100: 이용권 100원마다 몇 점, nickChange: 별명 바꾸기에 쓰는 포인트, dayPass: 1일 이용권을 여는 포인트, visitColor: 다녀온 곳 색 하나를 여는 포인트
+export const POINTS = { attend: 10, react: 2, buyPer100: 10, nickChange: 500, dayPass: 300, visitColor: 30, terrSkin: 30 };   // buyPer100: 이용권 100원마다 몇 점, nickChange: 별명 바꾸기에 쓰는 포인트, dayPass: 1일 이용권을 여는 포인트, visitColor: 다녀온 곳 색 하나를 여는 포인트, terrSkin: 영역 칸 모양 바꾸기 한 번
 // 채팅 점수 — 공지하지 않는 규칙이라 POINTS(회원에게 내려 보내는 값)와 따로 둔다.
 // per: 메시지 하나에 몇 점, daily: 하루에 점수를 받는 메시지 수 상한(50개 = 5점)
 export const CHAT_POINTS = { per: 0.1, daily: 50 };
@@ -254,9 +254,9 @@ export class Community {
     async saveUser(user) {
         await this.storage.put('u:' + user.sub, user);
         await this.syncBoard(user.sub, boardEntry(user));
-        if (user.terr) {   // 영역 참여자: 별명이 바뀌었으면 칸 · 랭킹에도
+        if (user.terr) {   // 영역 참여자: 별명 · 칸 모양이 바뀌었으면 칸 · 랭킹에도
             const row = await this.terrRow(user.sub);
-            if (row && row.nick !== (user.nick || null)) await this.terrSet(user.sub, Object.assign({}, row, { nick: user.nick || null }));
+            if (row && (row.nick !== (user.nick || null) || (row.skin || null) !== (user.tskin || null))) await this.terrSet(user.sub, Object.assign({}, row, { nick: user.nick || null, skin: user.tskin || null }));
         }
     }
 
@@ -436,17 +436,26 @@ const OPS = {
         await this.saveUser(user);
         const nv = {};
         for (const id of Object.keys(user.visits || {})) if (cells && cells[id]) nv[id] = [(user.vt || {})[id] || 0, cells[id]];
-        await this.terrSet(sub, { nick: user.nick, at: user.terr.at, v: nv });
+        await this.terrSet(sub, { nick: user.nick, skin: user.tskin || null, at: user.terr.at, v: nv });
         return { ok: true, user: view(user) };
     },
 
-    // 내 영역 칸 색(내 화면에만). null 이면 기본으로
-    async setTerrColor({ sub, color }) {
+    // 내 영역 칸 모양(스킨). 바꾸면 POINTS.terrSkin 포인트(운영자 무료), skin 이 null 이면 무작위로 돌린다(무료). 같은 모양이면 포인트를 쓰지 않는다
+    async setTerrSkin({ sub, skin }) {
         const user = await this.storage.get('u:' + sub);
         if (!user) return { error: 'no_user' };
-        if (color) user.tcolor = color; else delete user.tcolor;
+        let cost = 0;
+        if (!skin) delete user.tskin;
+        else if (user.tskin !== skin) {
+            cost = user.staff ? 0 : POINTS.terrSkin;
+            const avail = score(user).avail;
+            if (cost && avail < cost) return { error: 'need_points', cost, avail };
+            user.spent = tenth((user.spent || 0) + cost);
+            user.tskin = skin;
+        }
+        delete user.tcolor;   // 하루 쓰다 만 "내 화면에만 색"(2026-11-07)
         await this.saveUser(user);
-        return { ok: true, user: view(user) };
+        return { ok: true, user: view(user), cost };
     },
 
     // 영역 그만두기: 동의 기록과 참여자 색인을 지운다. 차지한 칸은 바로 다음 사람에게 간다. 다녀온 곳은 그대로
@@ -1113,7 +1122,7 @@ function view(user) {
     const trial = user.trial && user.trial.key ? { key: user.trial.key, keyId: user.trial.keyId, expiresAt: user.trial.expiresAt } : null;
     return {
         email: user.email, nick: user.nick || null, createdAt: user.createdAt, trial, score: pubScore(user), staff: !!user.staff, gen: user.gen || null, visits: user.visits || {}, visitAt: user.vt || {}, visitColors: user.vcolors || [], notes: user.ntN || 0,
-        terr: user.terr ? { at: user.terr.at, v: user.terr.v } : null, terrColor: user.tcolor || null,
+        terr: user.terr ? { at: user.terr.at, v: user.terr.v } : null, terrSkin: user.tskin || null,
         nickAuto: !!(user.nick && user.nickAuto), nickDue: !user.nick && user.nickDue ? user.nickDue : null,
         pointPass: user.ppass && user.ppass.key ? { key: user.ppass.key, keyId: user.ppass.keyId, expiresAt: user.ppass.expiresAt } : null,
     };
