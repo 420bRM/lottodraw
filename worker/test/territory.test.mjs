@@ -6,7 +6,7 @@ import vm from 'node:vm';
 import worker, { _resetForTests, Community } from '../src/index.js';
 import { _resetGoogleForTests } from '../src/google.js';
 import { b64urlEncode } from '../src/keys.js';
-import { seasonOf, prevSeason, computeTerritory, defaultSkin, LEGACY_T, TERR_CONSENT, VISIT_DAILY } from '../src/territory.js';
+import { seasonOf, prevSeason, computeTerritory, defaultSkin, LEGACY_T, TERR_CONSENT, VISIT_DAILY, _resetCellsForTests } from '../src/territory.js';
 
 const ADMIN = 'admin-token-0123456789abcdef';
 const ORIGIN = 'https://www.lottodraw.kr';
@@ -178,19 +178,20 @@ test('칸 주인: 더 많이 다녀온 사람, 같으면 그 칸에 더 최근�
     assert.equal(prevSeason(seasonOf(kstTime(2027, 1, 1, 0, 30))).id, q4.id);
 });
 
-test('지도 칸 계산(js/hexgrid.js): 점은 가장 가까운 칸 중심에 · 꼭짓점은 중심에서 1.2km', () => {
+test('지도 칸 계산(js/hexgrid.js): 점은 가장 가까운 칸 중심에 · 꼭짓점은 중심에서 R(0.6km)', () => {
     const ctx = { window: {} };
     vm.runInNewContext(fs.readFileSync(new URL('../../js/hexgrid.js', import.meta.url), 'utf8'), ctx);
     const H = ctx.window.LottoHex;
+    assert.equal(H.R, 0.6);
     const km = ([lng1, lat1], [lng2, lat2]) => { const R = 6371, r = Math.PI / 180, x = (lng2 - lng1) * r * Math.cos((lat1 + lat2) / 2 * r), y = (lat2 - lat1) * r; return Math.hypot(x, y) * R; };
     for (const [lat, lng] of [[37.5665, 126.978], [35.1796, 129.0756], [33.4996, 126.5312], [38.2, 128.6]]) {
         const k = H.cellOf(lat, lng);
         const c = H.centerOf(k);
         assert.equal(H.cellOf(c[1], c[0]), k);
-        assert.ok(km(c, [lng, lat]) <= 1.25, '점은 칸 중심에서 R 안');
+        assert.ok(km(c, [lng, lat]) <= H.R * 1.05, '점은 칸 중심에서 R 안');
         const ring = H.ringOf(k);
         assert.equal(ring.length, 7);
-        ring.slice(0, 6).forEach(p => { const d = km(c, p); assert.ok(d > 1.1 && d < 1.3, '꼭짓점 거리 ' + d); });
+        ring.slice(0, 6).forEach(p => { const d = km(c, p); assert.ok(d > H.R * 0.92 && d < H.R * 1.08, '꼭짓점 거리 ' + d); });
     }
     assert.equal(H.cellOf(36, 127.5), '0,0');
 });
@@ -217,7 +218,9 @@ test('영역 참여: 동의 · 별명이 있어야 하고, 칸 주인 · 랭킹�
     const noNick = await member(env, '3009');
     assert.equal((await join(env, noNick)).data.error, 'need_nick');
     cellsUp = false;
+    _resetCellsForTests();   // 앞의 영역 보기가 칸 목록을 한 시간 들고 있으므로 비운다
     assert.equal((await join(env, a)).status, 503, '칸 자료를 못 받으면 참여하지 않는다');
+    assert.equal((await terr(env)).status, 200, '칸 목록을 못 받아도 영역 보기는 적어 둔 칸으로');
     cellsUp = true;
     const j = await join(env, a);
     assert.equal(j.status, 200, JSON.stringify(j.data));
@@ -308,6 +311,17 @@ test('영역 참여: 동의 · 별명이 있어야 하고, 칸 주인 · 랭킹�
     await join(env, c);
     await visit(env, c, '11100006');
     env.COMMUNITY.restart();
+    assert.deepEqual((await terr(env)).data.cells, { '2,0': ['사아자', 1, 0, 1] });
+    // 칸 크기를 바꿔 칸 목록이 달라지면(한 시간마다 다시 읽는다) 다시 표시하지 않아도 새 칸으로 센다 · 목록에서 빠진 곳(폐점)은 안 센다
+    const before = CELLS.cells;
+    CELLS.cells = { '9,9': ['11100006'], '8,8': ['11100005'] };
+    _resetCellsForTests();
+    assert.deepEqual((await terr(env)).data.cells, { '9,9': ['사아자', 1, 0, 1] });
+    CELLS.cells = { '9,9': ['11100005'] };
+    _resetCellsForTests();
+    assert.deepEqual((await terr(env)).data.cells, {}, '11100006 이 목록에서 빠지면 안 센다');
+    CELLS.cells = before;
+    _resetCellsForTests();
     assert.deepEqual((await terr(env)).data.cells, { '2,0': ['사아자', 1, 0, 1] });
     Date.now = realNow;
 });

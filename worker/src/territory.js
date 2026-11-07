@@ -47,13 +47,16 @@ export const prevSeason = s => seasonOf(s.from - 1);
 
 // 참여자 기록(tp:<계정>) → 칸 주인 · 랭킹. upTo 를 주면 그 전(t < upTo)에 표시한 것만 센다(분기 확정)
 // players: [{ sub, nick, at, v: { 판매점 번호: [표시한 시각(없으면 0), 칸] } }]
-export function computeTerritory(players, upTo) {
+// map(판매점 번호 → 칸, cellMap)을 주면 표시할 때 적어 둔 칸 대신 지금 칸 목록으로 센다 — 칸 크기를 바꾸거나(2026-11-07 1.2 → 0.6km)
+// 판매점이 폐점 · 이전해도 다시 표시할 필요가 없다. 칸 목록을 못 받았을 때만 적어 둔 칸을 쓴다
+export function computeTerritory(players, upTo, map) {
     const per = new Map();    // 칸 → [{ sub, n, t }]
     const stat = new Map();   // 계정 → { sub, nick, at, stores, cells, counts }
     for (const p of players) {
         const byCell = new Map();
         let stores = 0;
-        for (const [t, cell] of Object.values(p.v || {})) {
+        for (const [id, [t, saved]] of Object.entries(p.v || {})) {
+            const cell = map ? map.get(id) : saved;
             const at = t || LEGACY_T;
             if (!cell || (upTo && at >= upTo)) continue;
             stores++;
