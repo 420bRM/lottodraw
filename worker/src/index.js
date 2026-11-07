@@ -62,7 +62,7 @@ export default {
         ctx.waitUntil(resultMail(env, Date.now()).catch(err => console.error('result mail', err)));
         if (loginReady(env)) ctx.waitUntil(community(env, 'autoNicks', { now: Date.now() }).catch(err => console.error('auto nick', err)));
         // 영역: 분기가 끝나면 그때의 Map 랭킹을 확정해 남긴다(이미 했으면 그냥 지나간다, territory.js)
-        if (loginReady(env)) ctx.waitUntil(community(env, 'terrFinalize', { now: Date.now() }).catch(err => console.error('territory finalize', err)));
+        if (loginReady(env)) ctx.waitUntil(community(env, 'terrFinalize', { now: Date.now(), site: siteUrl(env) }).catch(err => console.error('territory finalize', err)));
     },
     async fetch(request, env, ctx) {
         try {
@@ -787,7 +787,7 @@ async function getTerritory(request, env) {
         const got = await community(env, 'sessionGet', { hash: await sha256('sess:' + bearer(request)), now: Date.now() }).catch(() => ({}));
         sub = got.sub || null;
     }
-    const r = await community(env, 'territory', { sub, now: Date.now() });
+    const r = await community(env, 'territory', { sub, now: Date.now(), site: siteUrl(env) });
     return json(request, env, r, 200, sub ? {} : { 'Cache-Control': 'public, max-age=60' }, !sub);
 }
 

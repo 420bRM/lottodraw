@@ -865,7 +865,7 @@
     }
 
     // ───── 영역(육각 칸 땅따먹기, 2026-11-07 사장님 — 시험판) ─────
-    // 땅을 육각 칸(js/hexgrid.js, 중심에서 꼭짓점까지 1.2km)으로 나누고, 칸마다 "다녀온 곳"이 가장 많은 참여자가 그 칸을 차지한다
+    // 땅을 육각 칸(js/hexgrid.js, 중심에서 꼭짓점까지 0.6km)으로 나누고, 칸마다 "다녀온 곳"이 가장 많은 참여자가 그 칸을 차지한다
     // (같으면 그 칸에 더 최근에 다녀온 사람 — 카드의 "오늘 또 다녀왔어요"로 되찾는다, 같은 곳은 하루 한 번). 칸은 비우지 않고, 분기마다 Map 랭킹만 확정한다(2026-11-07 사장님).
     // 규칙 · 서버는 worker/src/territory.js — /api/territory(누구나, 지난 분기 확정 순위 last 포함), /join · /leave(로그인).
     // 참여는 동의(TERR_V) 뒤에만: 내가 차지한 칸 · Map 랭킹에 별명이 나온다. 어느 판매점을 다녀왔는지는 서버가 내보내지 않는다.
@@ -975,7 +975,7 @@
         let last = 0;
         const tick = now => {
             requestAnimationFrame(tick);
-            if (document.hidden || now - last < 66 || !map.getLayer('terr-glow') || !terrVis('terr-glow') || map.getZoom() < 12) return;
+            if (document.hidden || now - last < 66 || !map.getLayer('terr-glow') || !terrVis('terr-glow') || map.getZoom() < 12.5) return;
             last = now;
             map.setPaintProperty('terr-glow', 'line-gradient', glowGradient((now % 6000) / 6000));
         };
@@ -1000,12 +1000,12 @@
                 'fill-pattern': ['get', 'pat'], 'fill-opacity': ['case', ['==', ['get', 'me'], 1], 0.55, 0.42] } }, below);
             map.addLayer({ id: 'terr-line', type: 'line', source: 'terr', paint: {
                 'line-color': ['get', 'c'], 'line-width': ['case', ['==', ['get', 'me'], 1], 1.76, ['==', ['get', 'o'], 1], 1.12, 0.64],   // 2026-11-07 사장님 — 처음보다 0.8배
-                'line-opacity': ['interpolate', ['linear'], ['zoom'], 6, ['case', ['==', ['get', 'o'], 1], 0.8, 0], 9, ['case', ['==', ['get', 'o'], 1], 0.9, 0.55]] } }, below);
+                'line-opacity': ['interpolate', ['linear'], ['zoom'], 6, ['case', ['==', ['get', 'o'], 1], 0.8, 0], 10, ['case', ['==', ['get', 'o'], 1], 0.9, 0], 12, ['case', ['==', ['get', 'o'], 1], 0.9, 0.55]] } }, below);   // 빈 칸 테두리는 줌 10 부터(칸이 작아 멀리서는 촘촘하다)
             map.addLayer({ id: 'terr-sel', type: 'line', source: 'terr', filter: ['==', ['get', 'k'], ''], paint: { 'line-color': isNight() ? '#f3f4f6' : '#111827', 'line-width': 2.4, 'line-dasharray': [2, 1] } }, below);
-            map.addLayer({ id: 'terr-glow', type: 'line', source: 'terr-ring', minzoom: 12, layout: { 'line-cap': 'round', 'line-join': 'round' },
+            map.addLayer({ id: 'terr-glow', type: 'line', source: 'terr-ring', minzoom: 12.5, layout: { 'line-cap': 'round', 'line-join': 'round' },
                 paint: { 'line-width': 5, 'line-blur': 3, 'line-gradient': glowGradient(0) } }, below);
             terrGlowLoop();
-            map.addLayer({ id: 'terr-name', type: 'symbol', source: 'terr-pt', minzoom: 9.5, layout: { 'text-field': ['get', 'nm'], 'text-font': ['Noto Sans Bold'], 'text-size': 12, 'text-max-width': 8, 'text-padding': 4 },
+            map.addLayer({ id: 'terr-name', type: 'symbol', source: 'terr-pt', minzoom: 11, layout: { 'text-field': ['get', 'nm'], 'text-font': ['Noto Sans Bold'], 'text-size': 12, 'text-max-width': 8, 'text-padding': 4 },
                 paint: { 'text-color': ['get', 'c'], 'text-halo-color': isNight() ? 'rgba(10, 14, 22, .9)' : 'rgba(255, 255, 255, .95)', 'text-halo-width': 1.6 } });
             map.on('click', 'terr-fill', e => {
                 const hits = ['st-w1', 'st-w2', 'st-top', 'st-all', 'st-net', 'st-net-top', 'st-mine'].filter(id => map.getLayer(id));
@@ -1054,7 +1054,7 @@
         buildCells();
         drawTerrLayers();
         drawTerr();
-        if (!flyMine() && map.getZoom() < 9) map.flyTo({ center: map.getCenter(), zoom: 10.5, essential: true });   // 전국을 보고 있으면 칸이 보이는 크기로
+        if (!flyMine() && map.getZoom() < 10) map.flyTo({ center: map.getCenter(), zoom: 11.5, essential: true });   // 전국을 보고 있으면 칸이 보이는 크기로
     }
     // 내 칸이 있으면 그 칸들이 한 화면에 들어오게
     function flyMine() {
@@ -1062,7 +1062,7 @@
         if (!mine.length) return false;
         const b = new maplibregl.LngLatBounds();
         mine.forEach(k => HX.ringOf(k).forEach(p => b.extend(p)));
-        map.fitBounds(b, { padding: isWide() ? pad() : Object.assign(pad(), { bottom: Math.round(window.innerHeight * 0.4) + 16 }), maxZoom: 13, duration: 800 });
+        map.fitBounds(b, { padding: isWide() ? pad() : Object.assign(pad(), { bottom: Math.round(window.innerHeight * 0.4) + 16 }), maxZoom: 14, duration: 800 });
         return true;
     }
     // 동의 · 참여 뒤 · 다녀온 곳을 바꾼 뒤: 서버 답을 다시 받아 칸 색과 목록을 새로
@@ -1179,7 +1179,7 @@
             (rank.length ? rankList(rank, me && me.rank) : '<p class="sm-small">' + T('아직 칸을 차지한 사람이 없습니다.', 'No one holds a cell yet.') + '</p>') +
             (last && last.rank.length ? '<h4 class="sm-terr-h">🏆 ' + T(seasonLabel(last) + ' 확정 순위', seasonLabel(last) + ' final ranking') + '</h4>' + rankList(last.rank, me && me.lastRank, true) : '') +
             '<details class="sm-terr-rules"><summary>' + T('규칙', 'Rules') + '</summary><ul>' +
-            '<li>' + T('칸(육각형, 가운데서 꼭짓점까지 1.2km) 안에서 다녀온 판매점이 가장 많은 사람이 그 칸을 차지합니다.', 'Whoever has visited the most retailers in a hexagon cell (1.2 km centre to corner) holds it.') + '</li>' +
+            '<li>' + T('칸(육각형, 가운데서 꼭짓점까지 0.6km · 걸어서 15분쯤) 안에서 다녀온 판매점이 가장 많은 사람이 그 칸을 차지합니다.', 'Whoever has visited the most retailers in a hexagon cell (0.6 km centre to corner, about a 15-minute walk across) holds it.') + '</li>' +
             '<li>' + T('같은 수면 그 칸에 더 최근에 다녀온 사람이 차지합니다. 빼앗기면 그 칸 판매점 카드의 "오늘 또 다녀왔어요"로 되찾을 수 있습니다(같은 곳은 하루 한 번).', 'On a tie, whoever visited the cell most recently holds it. Lost it? Use "Visited again today" on a retailer card in that cell (once a day per retailer).') + '</li>' +
             '<li>' + T('칸 모양: 참여자마다 색 두 가지와 무늬(단색 · 줄무늬 · 물방울 · 체크)가 무작위로 정해지고 모두에게 같게 보입니다. 내 칸 모양은 ' + SKIN_COST + '포인트로 바꿀 수 있습니다. 내 칸은 테두리가 조금 굵습니다.', 'Skins: each player gets two colours and a pattern (solid, stripes, dots or checks) at random, and everyone sees the same. You can change yours for ' + SKIN_COST + ' points. Your cells have a slightly thicker edge.') + '</li>' +
             '<li>' + T('밤 지도에서 크게 보면 차지한 칸 테두리를 빛이 시계 방향으로 돕니다.', 'On the night map, zoomed in, a light runs clockwise round held cells.') + '</li>' +

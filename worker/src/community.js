@@ -55,7 +55,7 @@
 //
 // 이름·사진은 받지 않는다. 이메일은 "로그인한 계정" 표시, 문의 응대, 회원이 켠 "추첨 결과 메일"에만 쓴다.
 
-import { seasonOf, prevSeason, computeTerritory, publicTerritory, seasonRecord, FIRST_SEASON, VISIT_DAILY, kstDay as kstDate } from './territory.js';
+import { seasonOf, prevSeason, computeTerritory, publicTerritory, seasonRecord, cellMap, FIRST_SEASON, VISIT_DAILY, kstDay as kstDate } from './territory.js';
 
 export const SESSION_DAYS = 30;
 const TRIAL_MEMORY_DAYS = 365;
@@ -469,19 +469,22 @@ const OPS = {
     },
 
     // 칸 주인 · Map 랭킹(누구나). sub 가 있으면 내 칸 · 순위도. 지난 분기 확정 순위도 함께
-    async territory({ sub, now }) {
+    // site: 칸 목록(store-map-cells.json)을 읽을 사이트 주소 — 지금 칸 목록으로 센다(computeTerritory). 칸 목록이 바뀌면(한 시간마다 다시 읽음) 다시 센다
+    async territory({ sub, now, site }) {
         const season = seasonOf(now || Date.now());
-        if (!this.terrCache) this.terrCache = computeTerritory(await this.terrList());
+        const map = site ? await cellMap(site).catch(() => null) : null;
+        if (!this.terrCache || this.terrCacheMap !== map) { this.terrCache = computeTerritory(await this.terrList(), 0, map); this.terrCacheMap = map; }
         const joined = sub ? !!(await this.terrRow(sub)) : false;
         return publicTerritory(this.terrCache, season, sub, joined, await this.terrLastRec(season));
     },
 
     // 한 시간 예약: 지난 분기를 아직 확정하지 않았으면 그 분기 끝 때(t < to)의 랭킹을 ts:<분기> 로 남긴다. 칸은 그대로 둔다
-    async terrFinalize({ now }) {
+    async terrFinalize({ now, site }) {
         const prev = prevSeason(seasonOf(now));
         if (prev.id < FIRST_SEASON) return { skipped: prev.id };
         if (await this.storage.get('ts:' + prev.id)) return { done: false, id: prev.id };
-        const rec = seasonRecord(computeTerritory(await this.terrList(), prev.to), prev, now);
+        const map = site ? await cellMap(site).catch(() => null) : null;
+        const rec = seasonRecord(computeTerritory(await this.terrList(), prev.to, map), prev, now);
         await this.storage.put('ts:' + prev.id, rec);
         this.terrLast = null;
         return { done: true, id: prev.id, ranked: rec.rank.length };
