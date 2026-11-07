@@ -651,6 +651,12 @@
         refresh: async () => { if (!login) return me; me = await loadMe(true); return me; },
         // 홈 번호 생성기 설정 저장(gen = { inc, exc, pat, recent }, null 이면 지움). 저장한 뒤 내 정보를 새로 받는다
         // 서버가 돌려준 내 정보로 바로 바꾼다(다시 받지 않는다). 로그인이 끝났으면 이 브라우저에서도 로그아웃하고 머리글을 다시 그린다
+        // 내 정보의 일부만 바꿔 이 탭에 저장해 둔다(서버가 일부만 돌려줄 때 — 예: 판매점 지도 다녀온 곳). 다음에 열 때 옛 정보로 그리지 않게
+        patchUser: fields => {
+            if (!me || !me.user) return;
+            me = Object.assign({}, me, { user: Object.assign({}, me.user, fields) });
+            temp.set(ME_STORE, me);
+        },
         saveGen: async gen => {
             let got;
             try { got = await request('/api/me/generator', { method: 'POST', auth: true, body: { gen } }); }
