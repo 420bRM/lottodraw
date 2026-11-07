@@ -195,7 +195,7 @@
         if (map.getLayer('st-all')) map.setPaintProperty('st-all', 'circle-stroke-color', rim('#7d8799'));
         if (map.getLayer('terr-name')) map.setPaintProperty('terr-name', 'text-halo-color', on ? 'rgba(10, 14, 22, .9)' : 'rgba(255, 255, 255, .95)');
         if (map.getLayer('terr-sel')) map.setPaintProperty('terr-sel', 'line-color', on ? '#f3f4f6' : '#111827');
-        if (map.getLayer('terr-glow')) map.setLayoutProperty('terr-glow', 'visibility', terrVis('terr-glow') ? 'visible' : 'none');
+        NIGHT_FX.forEach(id => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', terrVis(id) ? 'visible' : 'none'); });
     }
     // 낮/밤은 사이트 값을 따른다(생성기와 같다, 2026-10-27 사장님). 🌙 단추는 사이트 낮/밤 단추(js/theme.js — 지도에서는 감춤)를 대신 누른다 — 저장 · 다른 탭 따라가기는 theme.js 가 한다
     function toggleNight() {
@@ -955,6 +955,7 @@
     function terrFeatures() {
         const cells = (terr && terr.cells) || {}, mine = new Set((terr && terr.me && terr.me.cells) || []);
         const polys = [], pts = [], rings = [];
+        glintCells = [];
         terrCells.forEach((list, k) => {
             const own = cells[k], me = mine.has(k);
             const sk = own ? parseSkin(own[4]) : null;
@@ -963,14 +964,66 @@
             if (own) {
                 pts.push({ type: 'Feature', geometry: { type: 'Point', coordinates: HX.centerOf(k) }, properties: { k, nm: (own[0] || T('(별명 없음)', '(no name)')) + ' · ' + own[1], c } });
                 rings.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: HX.ringOf(k).slice().reverse() }, properties: { k } });   // 시계 방향(빛이 도는 차례)
+                glintCells.push(glintCell(k));
             }
         });
         return { polys: { type: 'FeatureCollection', features: polys }, pts: { type: 'FeatureCollection', features: pts }, rings: { type: 'FeatureCollection', features: rings } };
     }
-    const TERR_LAYERS = ['terr-fill', 'terr-pat', 'terr-line', 'terr-sel', 'terr-glow', 'terr-name'];
+    const TERR_LAYERS = ['terr-fill', 'terr-pat', 'terr-glint', 'terr-line', 'terr-sel', 'terr-glow', 'terr-name'];
     // 밤 지도에서 차지한 칸 테두리를 은은한 빛이 시계 방향으로 돈다(2026-11-07 사장님 — 줌 12 이상, 움직임 줄이기 설정이면 끔)
     const REDUCED = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-    const terrVis = id => shown.terr && (id !== 'terr-glow' || (isNight() && !REDUCED));
+    const NIGHT_FX = ['terr-glow', 'terr-glint'];
+    const terrVis = id => shown.terr && (!NIGHT_FX.includes(id) || (isNight() && !REDUCED));
+    // 밤 지도에서 차지한 칸 면에 유리 반짝임(2026-11-07 사장님 — "유리가 각이 바뀌면서 빛에 비치듯, 45도 방향으로"):
+    // 45° 빛줄기(/)가 칸을 왼쪽 위에서 오른쪽 아래로 훑고 지나간다. 가운데가 밝고 가장자리는 옅게(겹친 띠 셋) + 뒤따르는 가는 줄 하나.
+    // GLINT_CYCLE 마다 한 번, 훑는 데는 그중 GLINT_SWEEP 만큼. 칸마다 시작을 대각선 자리만큼 늦춰 빛이 이웃 칸으로 비스듬히 번져 간다.
+    // 띠는 칸 육각형을 두 평행선으로 잘라 그린다(볼록 다각형 자르기) — 화면에 보이는 내 · 남의 차지한 칸만, 1초 15번
+    const GLINT_CYCLE = 4200, GLINT_SWEEP = 0.34;
+    const COS0 = Math.cos(36 * Math.PI / 180);   // 경도를 위도와 같은 길이로(북위 36°) — 45° 가 화면에서도 45°
+    let glintCells = [];
+    function glintCell(k) {
+        const ring = HX.ringOf(k).slice(0, 6).map(([lng, lat]) => [lng * COS0, lat]);
+        const v = ring.map(p => p[1] - p[0]), c = HX.centerOf(k);
+        const d = c[1] - c[0] * COS0;
+        return { ring, lo: Math.min(...v), hi: Math.max(...v), c, ph: (((d * 18) % 1) + 1) % 1 };
+    }
+    // ring 에서 lo ≤ (y - x) ≤ hi 인 부분(볼록 다각형을 두 반평면으로 자른다)
+    function clipBand(ring, lo, hi) {
+        const cut = (pts, f) => {
+            const out = [];
+            for (let i = 0; i < pts.length; i++) {
+                const a = pts[i], b = pts[(i + 1) % pts.length], fa = f(a), fb = f(b);
+                if (fa >= 0) out.push(a);
+                if ((fa >= 0) !== (fb >= 0)) { const t = fa / (fa - fb); out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]); }
+            }
+            return out;
+        };
+        let pts = cut(ring, p => hi - (p[1] - p[0]));
+        if (pts.length < 3) return null;
+        pts = cut(pts, p => (p[1] - p[0]) - lo);
+        if (pts.length < 3) return null;
+        const geo = pts.map(([x, y]) => [x / COS0, y]);
+        geo.push(geo[0]);
+        return geo;
+    }
+    function glintData(now) {
+        const out = [], b = map.getBounds(), m = 0.02;
+        const W = b.getWest() - m, E = b.getEast() + m, S = b.getSouth() - m, N = b.getNorth() + m;
+        for (const g of glintCells) {
+            if (g.c[0] < W || g.c[0] > E || g.c[1] < S || g.c[1] > N) continue;
+            const t = ((now / GLINT_CYCLE) + g.ph) % 1;
+            if (t > GLINT_SWEEP) continue;
+            const u = t / GLINT_SWEEP, span = g.hi - g.lo, w = span * 0.24;
+            const mid = g.hi + w - u * (span + 2 * w);   // 띠 가운데: 왼쪽 위(큰 값) → 오른쪽 아래
+            const fade = Math.sin(Math.PI * u);           // 들어오고 나갈 때 옅게
+            const add = (center, width, a) => { const poly = clipBand(g.ring, center - width / 2, center + width / 2); if (poly) out.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [poly] }, properties: { a: +(a * fade).toFixed(3) } }); };
+            add(mid, w, 0.08);
+            add(mid, w * 0.55, 0.12);
+            add(mid, w * 0.2, 0.22);
+            add(mid + w * 1.25, w * 0.1, 0.16);          // 뒤따르는 가는 줄(유리 모서리 반사)
+        }
+        return { type: 'FeatureCollection', features: out };
+    }
     function glowGradient(p) {
         const out = ['interpolate', ['linear'], ['line-progress']];
         for (let i = 0; i <= 24; i++) {
@@ -986,9 +1039,11 @@
         let last = 0;
         const tick = now => {
             requestAnimationFrame(tick);
-            if (document.hidden || now - last < 66 || !map.getLayer('terr-glow') || !terrVis('terr-glow') || map.getZoom() < 12.5) return;
+            if (document.hidden || now - last < 66 || !map.getLayer('terr-glow') || !terrVis('terr-glow')) return;
             last = now;
-            map.setPaintProperty('terr-glow', 'line-gradient', glowGradient((now % 6000) / 6000));
+            const z = map.getZoom();
+            if (z >= 12.5) map.setPaintProperty('terr-glow', 'line-gradient', glowGradient((now % 6000) / 6000));
+            if (z >= 11 && map.getSource('terr-glint')) map.getSource('terr-glint').setData(glintData(now));
         };
         requestAnimationFrame(tick);
     }
@@ -1003,12 +1058,14 @@
             map.addSource('terr', { type: 'geojson', data: f.polys });
             map.addSource('terr-pt', { type: 'geojson', data: f.pts });
             map.addSource('terr-ring', { type: 'geojson', data: f.rings, lineMetrics: true });
+            map.addSource('terr-glint', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
             const below = map.getLayer('st-all') ? 'st-all' : 'st-w2';
             // 빈 칸은 옅은 회색, 차지한 칸은 그 사람의 무늬(terr-pat). terr-fill 은 칸 누르기도 받는다
             map.addLayer({ id: 'terr-fill', type: 'fill', source: 'terr', paint: {
                 'fill-color': ['get', 'c'], 'fill-opacity': ['case', ['==', ['get', 'o'], 1], 0, 0.04] } }, below);
             map.addLayer({ id: 'terr-pat', type: 'fill', source: 'terr', filter: ['==', ['get', 'o'], 1], paint: {
                 'fill-pattern': ['get', 'pat'], 'fill-opacity': ['case', ['==', ['get', 'me'], 1], 0.55, 0.42] } }, below);
+            map.addLayer({ id: 'terr-glint', type: 'fill', source: 'terr-glint', minzoom: 11, paint: { 'fill-color': '#fff6dc', 'fill-opacity': ['get', 'a'] } }, below);
             map.addLayer({ id: 'terr-line', type: 'line', source: 'terr', paint: {
                 'line-color': ['get', 'c'], 'line-width': ['case', ['==', ['get', 'me'], 1], 1.76, ['==', ['get', 'o'], 1], 1.12, 0.64],   // 2026-11-07 사장님 — 처음보다 0.8배
                 'line-opacity': ['interpolate', ['linear'], ['zoom'], 6, ['case', ['==', ['get', 'o'], 1], 0.8, 0], 10, ['case', ['==', ['get', 'o'], 1], 0.9, 0], 12, ['case', ['==', ['get', 'o'], 1], 0.9, 0.55]] } }, below);   // 빈 칸 테두리는 줌 10 부터(칸이 작아 멀리서는 촘촘하다)
@@ -1193,7 +1250,7 @@
             '<li>' + T('칸(육각형, 가운데서 꼭짓점까지 0.6km · 걸어서 15분쯤) 안에서 다녀온 판매점이 가장 많은 사람이 그 칸을 차지합니다.', 'Whoever has visited the most retailers in a hexagon cell (0.6 km centre to corner, about a 15-minute walk across) holds it.') + '</li>' +
             '<li>' + T('같은 수면 그 칸에 더 최근에 다녀온 사람이 차지합니다. 빼앗기면 그 칸 판매점 카드의 "오늘 또 다녀왔어요"로 되찾을 수 있습니다(같은 곳은 하루 한 번).', 'On a tie, whoever visited the cell most recently holds it. Lost it? Use "Visited again today" on a retailer card in that cell (once a day per retailer).') + '</li>' +
             '<li>' + T('칸 모양: 참여자마다 색 두 가지와 무늬(단색 · 줄무늬 · 물방울 · 체크)가 무작위로 정해지고 모두에게 같게 보입니다. 내 칸 모양은 ' + SKIN_COST + '포인트로 바꿀 수 있습니다. 내 칸은 테두리가 조금 굵습니다.', 'Skins: each player gets two colours and a pattern (solid, stripes, dots or checks) at random, and everyone sees the same. You can change yours for ' + SKIN_COST + ' points. Your cells have a slightly thicker edge.') + '</li>' +
-            '<li>' + T('밤 지도에서 크게 보면 차지한 칸 테두리를 빛이 시계 방향으로 돕니다.', 'On the night map, zoomed in, a light runs clockwise round held cells.') + '</li>' +
+            '<li>' + T('밤 지도에서 크게 보면 차지한 칸 테두리를 빛이 시계 방향으로 돌고, 칸 면에는 유리에 비친 듯한 빛줄기가 45° 로 지나갑니다.', 'On the night map, zoomed in, a light runs clockwise round held cells and a glassy 45° glint sweeps across them.') + '</li>' +
             '<li>' + T('칸은 비우지 않습니다. 분기(1 · 4 · 7 · 10월 1일 0시)마다 그때의 Map 랭킹을 확정해 남깁니다.', 'Cells are never cleared. At the start of each quarter the Map ranking at that moment is finalised and kept.') + '</li>' +
             '<li>' + T('시험판: 지금은 "다녀왔어요"를 누른 기록만 셉니다. 위치 인증(판매점 50m 안)은 준비 중입니다. 폐점한 곳은 세지 않습니다.', 'Beta: for now a tap on "I\'ve been here" counts. Location check (within 50 m) is coming. Closed retailers do not count.') + '</li>' +
             '<li>' + T('복권을 살 필요는 없습니다. 어디서 사든 1등 확률은 1/8,145,060으로 같습니다.', 'No purchase needed. Your chance of 1st prize is 1 in 8,145,060 wherever you buy.') + '</li>' +
