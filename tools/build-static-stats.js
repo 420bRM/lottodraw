@@ -2488,6 +2488,18 @@ const STORE_MAP_ALL = 'store-map-all.json';
 const STORE_MAP_ROUNDS = 'store-map-rounds.json';
 // 판매점 번호(동행복권 8자리) — 로그인 회원의 "다녀온 곳"을 지도 점과 잇는다. 로그인했을 때만 받는다. w: store-map-data 의 rows 차례, a: store-map-all 의 rows 차례
 const STORE_MAP_IDS = 'store-map-ids.json';
+// 영역(육각 칸, 2026-11-07 시험판): { 칸 "q,r": [판매점 번호…] } — 폐점은 빼고 1 · 2등 판매점 + 일반 판매점. 칸 나누기는 js/hexgrid.js.
+// 서버(worker)가 회원의 "다녀온 곳"을 칸에 넣을 때 이 파일만 읽는다(칸을 직접 계산하지 않는다)
+const STORE_MAP_CELLS = 'store-map-cells.json';
+const HEX = require(path.join(ROOT, 'js', 'hexgrid.js'));
+function storeMapCells(md) {
+    const cells = {};
+    const put = (lat, lng, id) => { const k = HEX.cellOf(lat, lng); (cells[k] = cells[k] || []).push(id); };
+    md.rows.forEach((r, i) => { if (!r[7]) put(r[0], r[1], md.ids[i]); });
+    if (md.all) md.all.rows.forEach((r, i) => { if (md.all.ids[i]) put(r[0], r[1], md.all.ids[i]); });
+    const keys = Object.keys(cells).sort();
+    return { r: HEX.R, note: '영역 칸(js/hexgrid.js) → 그 칸의 판매점 번호. 폐점 제외', cells: Object.fromEntries(keys.map(k => [k, cells[k].sort()])) };
+}
 const ALL_SHOPS = (() => { try { return JSON.parse(fs.readFileSync(path.join(ROOT, 'shops-all.json'), 'utf8')); } catch (e) { return null; } })();
 // 좌표가 있는 판매점이 1,000곳을 넘을 때만 지도 페이지 · 링크를 만든다(좌표를 받기 전 자료에서는 만들지 않는다)
 const STORE_MAP_READY = () => !!(STORES && Object.values(STORES.d.shops).filter(sh => typeof sh[4] === 'number').length > 1000);
@@ -2699,6 +2711,7 @@ function storeMapPage(md, top) {
             ${md.all ? `<button type="button" class="sm-chip" data-layer="all" aria-pressed="false"><span class="sm-dot sm-dot-a"></span><span data-i18n-en="Other retailers">일반 판매점</span></button>` : ''}
             <button type="button" class="sm-chip" data-layer="closed" aria-pressed="false"><span class="sm-dot sm-dot-c"></span><span data-i18n-en="Closed">폐점 포함</span></button>
             <button type="button" class="sm-chip sm-chip-mine" id="sm-mine-chip" aria-pressed="false" hidden title="내가 다녀온 곳 · 내 댓글 (로그인 회원)" data-i18n-attr="title:sm.mineTitle">📍 <span data-i18n-en="My places">내 기록</span></button>
+            <button type="button" class="sm-chip sm-chip-terr" id="sm-terr-chip" aria-pressed="false" hidden title="육각 칸 땅따먹기 · Map 랭킹 (시험판)" data-i18n-attr="title:sm.terrTitle">⬡ <span data-i18n-en="Turf">영역</span></button>
         </div>
         <p class="sm-pcnote" data-i18n-en="On a PC you can see the Top 50 as a list.">PC에서 보면 TOP 50을 목록으로 볼 수 있습니다.</p>
     </div>
@@ -2709,6 +2722,7 @@ function storeMapPage(md, top) {
         ${md.fun && md.fun.length ? `<button type="button" class="sm-tab" data-tab="fun" role="tab" aria-selected="false" data-i18n-en="Unusual">이색 판매점</button>` : ''}
         <button type="button" class="sm-tab" data-tab="info" role="tab" aria-selected="false" data-i18n-en="By province">시도별</button>
         <button type="button" class="sm-tab" data-tab="mine" role="tab" aria-selected="false" hidden data-i18n-en="Mine">내 기록</button>
+        <button type="button" class="sm-tab" data-tab="terr" role="tab" aria-selected="false" hidden data-i18n-en="Turf">영역</button>
     </nav>
     <!-- TOP 50 목록 · 판매점 카드(PC 는 탭 내용, 휴대폰은 목록을 감추고 카드만 아래쪽에) -->
     <div class="sm-right">
@@ -2719,6 +2733,7 @@ function storeMapPage(md, top) {
         <aside class="sm-card" id="sm-card" hidden aria-live="polite"></aside>
         <aside class="sm-near" id="sm-near" hidden aria-live="polite"></aside>
         <aside class="sm-near sm-mine" id="sm-mine" hidden aria-live="polite"></aside>
+        <aside class="sm-near sm-terr" id="sm-terr" hidden aria-live="polite"></aside>
         <p class="sm-card-empty" data-i18n-en="Tap a dot on the map to see the retailer here.">지도에서 점을 누르면 판매점 정보가 여기에 나옵니다.</p>
     </div>
     <!-- 왼쪽 아래: 1등 방식(로그인 회원) · 끌기 막대(낮은 횟수부터 흐리게) — "시도별 · 안내" 위 -->
@@ -2762,6 +2777,7 @@ function storeMapPage(md, top) {
 <script src="${v('js/premium-config.js')}"></script>
 <script src="${v('js/license.js')}"></script>
 <script src="${v('js/vendor/maplibre-gl.js')}"></script>
+<script src="${v('js/hexgrid.js')}"></script>
 <script src="${v('js/store-map.js')}"></script>
 </body>
 </html>
@@ -3243,6 +3259,7 @@ if (STORE_MAP_READY()) {
     if (write(STORE_MAP_IDS, JSON.stringify({ w: STORE_MAP.ids, a: STORE_MAP.all ? STORE_MAP.all.ids : [] }) + '\n')) changed++;
     if (STORE_MAP.all && write(STORE_MAP_ALL, JSON.stringify({ updated: STORE_MAP.all.updated, sido: STORE_MAP.all.sido,
         cols: ['lat', 'lng', 'name', 'sido', 'gu'], rows: STORE_MAP.all.rows }) + '\n')) changed++;
+    if (write(STORE_MAP_CELLS, JSON.stringify(storeMapCells(STORE_MAP)) + '\n')) changed++;
     if (write(STORE_MAP_FILE, storeMapPage(STORE_MAP))) changed++;
     if (write(STORE_MAP_TOP_FILE, storeMapPage(STORE_MAP, true))) changed++;
 }
