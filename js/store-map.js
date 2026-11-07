@@ -862,8 +862,9 @@
     }
 
     // ───── 영역(육각 칸 땅따먹기, 2026-11-07 사장님 — 시험판) ─────
-    // 땅을 육각 칸(js/hexgrid.js, 중심에서 꼭짓점까지 1.2km)으로 나누고, 칸마다 이번 시즌에 "다녀온 곳"이 가장 많은 참여자가 그 칸을 차지한다
-    // (같으면 그 수를 먼저 채운 사람). 시즌은 분기. 규칙 · 서버는 worker/src/territory.js — /api/territory(누구나), /join · /leave(로그인).
+    // 땅을 육각 칸(js/hexgrid.js, 중심에서 꼭짓점까지 1.2km)으로 나누고, 칸마다 "다녀온 곳"이 가장 많은 참여자가 그 칸을 차지한다
+    // (같으면 그 칸에 더 최근에 다녀온 사람 — 카드의 "오늘 또 다녀왔어요"로 되찾는다, 같은 곳은 하루 한 번). 칸은 비우지 않고, 분기마다 Map 랭킹만 확정한다(2026-11-07 사장님).
+    // 규칙 · 서버는 worker/src/territory.js — /api/territory(누구나, 지난 분기 확정 순위 last 포함), /join · /leave(로그인).
     // 참여는 동의(TERR_V) 뒤에만: 내가 차지한 칸 · Map 랭킹에 별명이 나온다. 어느 판매점을 다녀왔는지는 서버가 내보내지 않는다.
     // 시험판: "다녀왔어요"를 누른 기록만 센다. 위치(GPS)는 쓰지 않는다(위치기반서비스사업 신고 뒤 50m 인증으로 바꾼다)
     const TERR_V = 1;   // worker TERR_CONSENT 와 같게. 동의 문구를 크게 바꾸면 둘 다 올린다
@@ -873,13 +874,15 @@
     const TERR_ME = '#e63946';
     const TERR_COLORS = ['#3a86ff', '#8338ec', '#2a9d8f', '#f4a261', '#ff66b3', '#118ab2', '#6d597a', '#e9c46a'];
     const nickColor = nick => { let h = 0; for (const c of String(nick)) h = (h * 31 + c.codePointAt(0)) >>> 0; return TERR_COLORS[h % TERR_COLORS.length]; };
-    // 지금 시즌(한국 시간 분기) — 서버 답이 오기 전 카드의 "또 다녀왔어요"용. 서버의 seasonOf 와 같은 셈
+    // 지금 분기(한국 시간) — 서버 답이 오기 전 랭킹 제목용. 서버의 seasonOf 와 같은 셈
     function seasonNow() {
         const k = new Date(Date.now() + 9 * 3600e3), y = k.getUTCFullYear(), q = Math.floor(k.getUTCMonth() / 3);
         return { from: Date.UTC(y, q * 3, 1) - 9 * 3600e3, to: Date.UTC(y, q * 3 + 3, 1) - 9 * 3600e3, y, q: q + 1 };
     }
     const seasonLabel = s => { const k = new Date(s.to - 1 + 9 * 3600e3); const q = Math.floor(k.getUTCMonth() / 3) + 1; return T(k.getUTCFullYear() + '년 ' + q + '분기', 'Q' + q + ' ' + k.getUTCFullYear()); };
     const seasonEnd = s => { const k = new Date(s.to - 1 + 9 * 3600e3); return (k.getUTCMonth() + 1) + '/' + k.getUTCDate(); };
+    const kstDayOf = ms => new Date(ms + 9 * 3600e3).toISOString().slice(0, 10);
+    const MEDAL = ['🥇', '🥈', '🥉'];
     const joinedNow = () => { const A = account(); const u = A && A.me() && A.me().user; return !!(u && u.terr); };
     async function needAll() {
         if (all || !root.dataset.all) return;
@@ -961,7 +964,7 @@
         terrPanel.innerHTML = '<p class="sm-small">' + T('영역을 불러오는 중…', 'Loading turf…') + '</p>';
         if (isWide()) setTab('terr'); else { card.hidden = true; nearPanel.hidden = true; minePanel.hidden = true; }
         const A = account();
-        await Promise.all([needAll(), loadTerr(), A && A.session() ? loadIds() : null]);   // 판매점 번호: 칸 목록의 ✓(이번 시즌에 다녀온 곳)
+        await Promise.all([needAll(), loadTerr(), A && A.session() ? loadIds() : null]);   // 판매점 번호: 칸 목록의 ✓(다녀온 곳)
         if (!shown.terr) return;
         buildCells();
         drawTerrLayers();
@@ -994,19 +997,27 @@
         const list = (terrCells.get(terrSel) || []).map(x => Object.assign({}, x, terrStoreInfo(x)));
         const own = terr && terr.cells && terr.cells[terrSel];
         const me = terr && terr.me, myN = me && me.counts ? me.counts[terrSel] || 0 : 0, mineCell = me && (me.cells || []).includes(terrSel);
-        const s = terr ? terr.season : seasonNow();
-        const fresh = id => id && visits[id] && (visitAt[id] || Date.UTC(2026, 9, 25, 15)) >= s.from;   // 이번 시즌에 센 곳(시각 없는 예전 기록 = 10/26)
-        list.sort((a, b) => (fresh(b.id) ? 1 : 0) - (fresh(a.id) ? 1 : 0) || (b.w1 - a.w1));
+        const been = id => !!(id && visits[id]);
+        list.sort((a, b) => (been(b.id) ? 1 : 0) - (been(a.id) ? 1 : 0) || (b.w1 - a.w1));
+        // 주인과 같은 수를 채우면 내가 더 최근이라 가져온다. 이미 같은 수면 그 칸 판매점 하나를 "오늘 또 다녀왔어요"
+        const need = own && !mineCell ? own[1] - myN : 0;
+        const myLine = mineCell ? T(' · 내 칸', ' · mine') : !own ? '' : need > 0 ? T(' · ' + need + '곳 더 다녀오면 차지', ' · ' + need + ' more to take it')
+            : T(' · 같은 수 — 이 칸 판매점에 오늘 또 다녀오면 되찾습니다', ' · tied — visit one again today to take it back');
         const where = list.length ? areaOf(list) : '';
         return '<div class="sm-terr-cell"><h4>' + T('고른 칸', 'This cell') + (where ? ' · ' + esc(where) : '') + ' <small>' + T('판매점 ' + fmt(list.length) + '곳', fmt(list.length) + ' retailers') + '</small></h4>' +
             '<p>' + (own ? T('주인 ', 'Held by ') + '<b style="color:' + (mineCell ? TERR_ME : nickColor(own[0] || '?')) + '">' + esc(own[0] || T('(별명 없음)', '(no name)')) + '</b>' +
                 T(' · ' + own[1] + '곳', ' · ' + own[1]) + (own[2] ? T(' (2위 ' + own[2] + '곳)', ' (runner-up ' + own[2] + ')') : '')
                 : T('아직 주인이 없습니다. 이 칸 판매점 한 곳만 다녀와도 차지합니다.', 'No one holds it yet — one visit takes it.')) + '</p>' +
-            (me && me.joined ? '<p class="sm-terr-mine">' + T('나: 이번 시즌 ' + myN + '곳', 'Me: ' + myN + ' this season') + (mineCell ? T(' · 내 칸', ' · mine') : own && !mineCell ? T(' · ' + Math.max(1, own[1] - myN + 1) + '곳 더 다녀오면 차지', ' · ' + Math.max(1, own[1] - myN + 1) + ' more to take it') : '') + '</p>' : '') +
+            (me && me.joined ? '<p class="sm-terr-mine">' + T('나: ' + myN + '곳', 'Me: ' + myN) + myLine + '</p>' : '') +
             (list.length ? '<ol class="sm-near-list sm-terr-stores">' + list.slice(0, 40).map(x => '<li><button type="button" data-t="' + x.t + '" data-i="' + x.i + '"><span class="sm-tname">' +
-                (fresh(x.id) ? '<span class="sm-terr-v" title="' + T('이번 시즌에 다녀온 곳', 'Visited this season') + '">✓</span>' : '') + esc(x.name) + '</span><span class="sm-tcnt">' +
+                (been(x.id) ? '<span class="sm-terr-v" title="' + T('다녀온 곳', 'Visited') + '">✓</span>' : '') + esc(x.name) + '</span><span class="sm-tcnt">' +
                 (x.t === 'w' && x.w1 ? '<small>' + x.w1 + T('번 1등', ' × 1st') + '</small>' : '') + '</span></button></li>').join('') + '</ol>' : '') +
             '</div>';
+    }
+    // 랭킹 목록(지금 · 지난 분기 확정). medal: 1~3위에 메달
+    function rankList(rows, mine, medal) {
+        return '<ol class="sm-terr-rank">' + rows.map((r, k) => '<li' + (mine === k + 1 ? ' class="is-me"' : '') + '><span class="sm-rank">' + (medal && MEDAL[k] ? MEDAL[k] : k + 1) + '</span><span class="sm-tname">' +
+            esc(r.nick || T('(탈퇴했거나 별명 없음)', '(no name)')) + '</span><span class="sm-tcnt"><b>' + fmt(r.cells) + '</b>' + T('칸', '') + '<small>' + T(fmt(r.stores) + '곳', fmt(r.stores) + ' visits') + '</small></span></li>').join('') + '</ol>';
     }
     function drawTerr() {
         if (!shown.terr) return;
@@ -1017,23 +1028,24 @@
         let status;
         if (!A || !A.session()) status = '<button type="button" class="sm-terr-join">' + T('로그인하고 참여하기', 'Sign in to join') + '</button>';
         else if (!(me && me.joined)) status = '<button type="button" class="sm-terr-join">' + T('참여하기', 'Join') + '</button> <span class="sm-small">' + T('동의한 뒤에만 셉니다', 'Counts only after you agree') + '</span>';
-        else status = '<p class="sm-terr-me">' + T('내 칸 <b>' + fmt(me.cells.length) + '</b>' + (me.rank ? ' · <b>' + me.rank + '</b>위' : '') + ' · 이번 시즌 다녀온 곳 ' + fmt(me.stores) + '곳',
-            'My cells <b>' + fmt(me.cells.length) + '</b>' + (me.rank ? ' · rank <b>' + me.rank + '</b>' : '') + ' · ' + fmt(me.stores) + ' visited this season') + '</p>';
+        else status = '<p class="sm-terr-me">' + T('내 칸 <b>' + fmt(me.cells.length) + '</b>' + (me.rank ? ' · <b>' + me.rank + '</b>위' : '') + ' · 다녀온 곳 ' + fmt(me.stores) + '곳',
+            'My cells <b>' + fmt(me.cells.length) + '</b>' + (me.rank ? ' · rank <b>' + me.rank + '</b>' : '') + ' · ' + fmt(me.stores) + ' visited') + '</p>' +
+            (me.lastRank ? '<p class="sm-terr-me">' + (MEDAL[me.lastRank - 1] || '🏅') + ' ' + T(seasonLabel(terr.last) + ' 확정 ' + me.lastRank + '위', seasonLabel(terr.last) + ' final: #' + me.lastRank) + '</p>' : '');
         const rank = (terr && terr.rank) || [];
+        const last = terr && terr.last;
         terrPanel.innerHTML = '<button type="button" class="sm-close" aria-label="' + T('닫기', 'Close') + '">×</button>' +
             '<h3>⬡ ' + T('영역', 'Turf') + ' <small class="sm-terr-beta">' + T('시험판', 'beta') + '</small></h3>' +
-            '<p class="sm-terr-season">' + T(seasonLabel(s) + ' 시즌 · ' + seasonEnd(s) + '까지', seasonLabel(s) + ' season · until ' + seasonEnd(s)) + (terr ? T(' · 참여 ' + fmt(terr.players) + '명', ' · ' + fmt(terr.players) + ' players') : '') + '</p>' +
+            '<p class="sm-terr-season">' + (terr ? T('참여 ' + fmt(terr.players) + '명 · ', fmt(terr.players) + ' players · ') : '') + T('칸은 계속 이어지고, 분기마다 랭킹만 확정합니다', 'Cells carry on; the ranking is finalised each quarter') + '</p>' +
             (terr ? '' : '<p class="sm-small is-warn">' + T('영역을 불러오지 못했습니다. 잠시 뒤 다시 켜 주세요.', 'Could not load the turf. Try again later.') + '</p>') +
             '<div class="sm-terr-status">' + status + '</div>' +
             (terrSel ? cellBlock() : '<p class="sm-small">' + T('칸을 누르면 그 칸의 주인과 판매점이 나옵니다.', 'Tap a cell to see who holds it and its retailers.') + '</p>') +
-            '<h4 class="sm-terr-h">' + T('Map 랭킹', 'Map ranking') + ' <small>' + T('차지한 칸 수', 'cells held') + '</small></h4>' +
-            (rank.length ? '<ol class="sm-terr-rank">' + rank.map((r, k) => '<li' + (me && me.rank === k + 1 ? ' class="is-me"' : '') + '><span class="sm-rank">' + (k + 1) + '</span><span class="sm-tname">' + esc(r.nick || T('(별명 없음)', '(no name)')) +
-                '</span><span class="sm-tcnt"><b>' + fmt(r.cells) + '</b>' + T('칸', '') + '<small>' + T(fmt(r.stores) + '곳', fmt(r.stores) + ' visits') + '</small></span></li>').join('') + '</ol>'
-                : '<p class="sm-small">' + T('아직 칸을 차지한 사람이 없습니다.', 'No one holds a cell yet.') + '</p>') +
+            '<h4 class="sm-terr-h">' + T('Map 랭킹', 'Map ranking') + ' <small>' + T(seasonLabel(s) + ' · ' + seasonEnd(s) + ' 24시에 확정', seasonLabel(s) + ' · final at the end of ' + seasonEnd(s)) + '</small></h4>' +
+            (rank.length ? rankList(rank, me && me.rank) : '<p class="sm-small">' + T('아직 칸을 차지한 사람이 없습니다.', 'No one holds a cell yet.') + '</p>') +
+            (last && last.rank.length ? '<h4 class="sm-terr-h">🏆 ' + T(seasonLabel(last) + ' 확정 순위', seasonLabel(last) + ' final ranking') + '</h4>' + rankList(last.rank, me && me.lastRank, true) : '') +
             '<details class="sm-terr-rules"><summary>' + T('규칙', 'Rules') + '</summary><ul>' +
-            '<li>' + T('칸(육각형, 가운데서 꼭짓점까지 1.2km) 안에서 이번 시즌에 다녀온 판매점이 가장 많은 사람이 그 칸을 차지합니다.', 'Whoever has visited the most retailers in a hexagon cell (1.2 km centre to corner) this season holds it.') + '</li>' +
-            '<li>' + T('같은 수면 그 수를 먼저 채운 사람이 지킵니다.', 'On a tie, whoever got there first keeps it.') + '</li>' +
-            '<li>' + T('시즌은 분기(1 · 4 · 7 · 10월 1일)마다 새로 시작하고 칸은 모두 빕니다. 다녀온 곳 기록은 그대로 남고, 지난 시즌에 표시한 곳은 판매점 카드의 "이번 시즌에 또 다녀왔어요"로 다시 셉니다.', 'Each quarter starts a new season and every cell is cleared. Your visited list stays; mark last season\'s places again with "Visited again this season" on the card.') + '</li>' +
+            '<li>' + T('칸(육각형, 가운데서 꼭짓점까지 1.2km) 안에서 다녀온 판매점이 가장 많은 사람이 그 칸을 차지합니다.', 'Whoever has visited the most retailers in a hexagon cell (1.2 km centre to corner) holds it.') + '</li>' +
+            '<li>' + T('같은 수면 그 칸에 더 최근에 다녀온 사람이 차지합니다. 빼앗기면 그 칸 판매점 카드의 "오늘 또 다녀왔어요"로 되찾을 수 있습니다(같은 곳은 하루 한 번).', 'On a tie, whoever visited the cell most recently holds it. Lost it? Use "Visited again today" on a retailer card in that cell (once a day per retailer).') + '</li>' +
+            '<li>' + T('칸은 비우지 않습니다. 분기(1 · 4 · 7 · 10월 1일 0시)마다 그때의 Map 랭킹을 확정해 남깁니다.', 'Cells are never cleared. At the start of each quarter the Map ranking at that moment is finalised and kept.') + '</li>' +
             '<li>' + T('시험판: 지금은 "다녀왔어요"를 누른 기록만 셉니다. 위치 인증(판매점 50m 안)은 준비 중입니다. 폐점한 곳은 세지 않습니다.', 'Beta: for now a tap on "I\'ve been here" counts. Location check (within 50 m) is coming. Closed retailers do not count.') + '</li>' +
             '<li>' + T('복권을 살 필요는 없습니다. 어디서 사든 1등 확률은 1/8,145,060으로 같습니다.', 'No purchase needed. Your chance of 1st prize is 1 in 8,145,060 wherever you buy.') + '</li>' +
             '</ul></details>' +
@@ -1063,8 +1075,8 @@
         terrPanel.innerHTML = '<button type="button" class="sm-close" aria-label="' + T('닫기', 'Close') + '">×</button>' +
             '<h3>' + T('영역 참여 안내', 'Joining the turf game') + ' <small class="sm-terr-beta">' + T('시험판', 'beta') + '</small></h3>' +
             '<ol class="sm-terr-consent">' +
-            '<li>' + T('참여하면 내가 "다녀온 곳"으로 표시한 판매점을 칸(육각형)마다 세어 영역을 정합니다. 참여 전에 표시한 곳도 이번 시즌 것이면 셉니다.', 'Your marked places are counted per hexagon cell. Places marked before joining count if they are from this season.') + '</li>' +
-            '<li><b>' + T('내가 차지한 칸과 Map 랭킹에 내 별명(' + esc(u && u.nick || '') + ')이 누구에게나 보입니다.', 'Your nickname (' + esc(u && u.nick || '') + ') is shown to everyone on the cells you hold and in the Map ranking.') + '</b> ' +
+            '<li>' + T('참여하면 내가 "다녀온 곳"으로 표시한 판매점을 칸(육각형)마다 세어 영역을 정합니다. 참여 전에 표시한 곳도 셉니다.', 'Your marked places are counted per hexagon cell, including those marked before joining.') + '</li>' +
+            '<li><b>' + T('내가 차지한 칸과 Map 랭킹 · 분기 확정 순위에 내 별명(' + esc(u && u.nick || '') + ')이 누구에게나 보입니다.', 'Your nickname (' + esc(u && u.nick || '') + ') is shown to everyone on the cells you hold, in the Map ranking and in the quarterly final rankings.') + '</b> ' +
                 T('별명과 칸 위치로 내가 자주 다니는 동네를 짐작할 수 있습니다. 어느 판매점을 다녀왔는지는 보이지 않고, 칸마다 다녀온 판매점 수만 보입니다.', 'Others could guess the area you often visit. Which retailers you visited is never shown — only the count per cell.') + '</li>' +
             '<li>' + T('위치(GPS)는 쓰지 않습니다. 시험판에서는 "다녀왔어요"를 누른 기록만 셉니다. 위치 인증을 붙이면 다시 안내하고 동의를 받습니다.', 'No location (GPS) is used. In this beta only your "I\'ve been here" taps count. If location checks are added we will ask again.') + '</li>' +
             '<li>' + T('복권을 살 필요는 없습니다. 만 19세 이상만 참여해 주십시오.', 'No purchase needed. You must be 19 or older.') + '</li>' +
@@ -1253,9 +1265,9 @@
             if (card.dataset.k !== myCard) return;
             const id = ids && ids[k] && ids[k][i];
             const cur = id ? visits[id] : null;
-            // 영역 참여자: 지난 시즌에 표시한 곳이면 "이번 시즌에 또 다녀왔어요"(시각만 새로 — 색은 그대로)
-            const inTerr = joinedNow(), s0 = (terr && terr.season) || seasonNow();
-            const old = !!(cur && inTerr && (visitAt[id] || Date.UTC(2026, 9, 25, 15)) < s0.from);
+            // 영역 참여자: "오늘 또 다녀왔어요"(때만 새로 — 색은 그대로, 같은 곳은 하루 한 번). 같은 수 칸에서 최근에 다녀온 사람이 이긴다
+            const inTerr = joinedNow();
+            const today = !!(cur && visitAt[id] && kstDayOf(visitAt[id]) === kstDayOf(Date.now()));
             box.innerHTML = '<div class="sm-visit-row"><button type="button" class="sm-visit-btn' + (cur ? ' is-on' : '') + '" aria-pressed="' + !!cur + '">' +
                 (cur ? '<span class="sm-swatch" style="background:' + cur + '"></span>' + T('다녀온 곳', 'Visited') : T('＋ 다녀왔어요', '＋ I\'ve been here')) + '</button>' +
                 (cur ? '<span class="sm-colors">' + PALETTE.map(c => '<button type="button" class="sm-color' + (c === cur ? ' is-on' : '') + (opened(c) ? '' : ' is-locked') + '" data-c="' + c + '" style="background:' + c + '" aria-label="' + c + (opened(c) ? '' : T(' (잠김)', ' (locked)')) + '"></button>').join('') +
@@ -1263,9 +1275,10 @@
                 '<p class="sm-visit-note">' + (cur ? (canPick ? T('다시 누르면 지웁니다. 나만 보입니다.', 'Tap again to remove. Only you can see this.')
                     : T('다시 누르면 지웁니다. 🔒 색은 하나에 ' + COLOR_COST + '포인트로 열거나 <a href="statistics.html">이용권</a>으로 모두 엽니다.', 'Tap again to remove. Unlock a 🔒 colour for ' + COLOR_COST + ' points, or all of them with a <a href="statistics.html">pass</a>.'))
                     : T('로그인 회원 기능 · 나만 보입니다(위치는 쓰지 않습니다).', 'Members only · only you can see it (no location used).')) + '</p>' +
-                (old ? '<p class="sm-visit-again-p"><button type="button" class="sm-visit-again">↻ ' + T('이번 시즌에 또 다녀왔어요', 'Visited again this season') + '</button></p>' : '') +
-                (inTerr ? '<p class="sm-visit-note sm-visit-terr">⬡ ' + (old ? T('지난 시즌에 표시한 곳이라 이번 시즌 영역에는 아직 안 셉니다.', 'Marked last season — not counted for this season\'s turf yet.')
-                    : T('영역 참여 중: 칸마다 다녀온 판매점 수에 셉니다(판매점 이름은 공개되지 않습니다).', 'Turf game: counts toward this cell (retailer names stay private).')) + '</p>' : '');
+                (cur && inTerr ? '<p class="sm-visit-again-p">' + (today ? '<span class="sm-visit-today">✓ ' + T('오늘 다녀옴', 'Visited today') + '</span>'
+                    : '<button type="button" class="sm-visit-again">↻ ' + T('오늘 또 다녀왔어요', 'Visited again today') + '</button>') + '</p>' : '') +
+                (inTerr ? '<p class="sm-visit-note sm-visit-terr">⬡ ' + T('영역 참여 중: 이 칸의 다녀온 판매점 수에 셉니다. 같은 수면 최근에 다녀온 사람이 칸을 차지합니다(판매점 이름은 공개되지 않습니다).',
+                    'Turf game: counts toward this cell. On a tie the most recent visitor holds it (retailer names stay private).') + '</p>' : '');
             box.querySelector('.sm-visit-btn').addEventListener('click', () => save(cur ? null : PALETTE[0]));
             const ag = box.querySelector('.sm-visit-again');
             if (ag) ag.addEventListener('click', () => save(cur, true));

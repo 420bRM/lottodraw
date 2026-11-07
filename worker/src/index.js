@@ -61,6 +61,8 @@ export default {
         ctx.waitUntil(watchdog(env));
         ctx.waitUntil(resultMail(env, Date.now()).catch(err => console.error('result mail', err)));
         if (loginReady(env)) ctx.waitUntil(community(env, 'autoNicks', { now: Date.now() }).catch(err => console.error('auto nick', err)));
+        // 영역: 분기가 끝나면 그때의 Map 랭킹을 확정해 남긴다(이미 했으면 그냥 지나간다, territory.js)
+        if (loginReady(env)) ctx.waitUntil(community(env, 'terrFinalize', { now: Date.now() }).catch(err => console.error('territory finalize', err)));
     },
     async fetch(request, env, ctx) {
         try {
@@ -874,7 +876,7 @@ async function saveGenerator(request, env) {
 
 // 판매점 지도 "다녀온 곳"(로그인 회원, 2026-10-26). { id: 동행복권 판매점 번호 8자리, color: '#rrggbb' | null(지움) }.
 // 회원이 지도에서 직접 누른 표시일 뿐 기기 위치(GPS)를 받지 않는다 — 위치정보가 아니다(README 4-9). 한 사람 1,000곳까지.
-// { id, again: true }: 이미 표시한 곳을 "이번 시즌에 또 다녀왔어요"(영역 시즌, 2026-11-07). 영역 참여자면 그 판매점의 칸도 넘긴다
+// { id, again: true }: 이미 표시한 곳을 "또 다녀왔어요"(영역 — 같은 수면 최근에 다녀온 사람이 칸을 차지, 같은 곳은 하루 한 번). 영역 참여자면 그 판매점의 칸도 넘긴다
 const VISIT_MAX = 1000;
 async function saveVisit(request, env) {
     const s = await sessionUser(request, env);
@@ -888,6 +890,8 @@ async function saveVisit(request, env) {
     const r = await community(env, 'setVisit', { sub: s.sub, id, color: again || body.color === null ? null : String(body.color).toLowerCase(), max: VISIT_MAX, now: Date.now(), cell, again });
     if (r.error === 'too_many') throw new HttpError(409, 'too_many_visits', `다녀온 곳은 ${VISIT_MAX}곳까지 저장합니다.`);
     if (r.error === 'not_visited') throw new HttpError(409, 'not_visited', '다녀온 곳으로 표시한 판매점이 아닙니다.');
+    if (r.error === 'again_today') throw new HttpError(409, 'again_today', '오늘은 이미 다녀왔다고 표시했습니다. 같은 곳은 하루 한 번입니다.');
+    if (r.error === 'daily_limit') throw new HttpError(429, 'daily_limit', `다녀온 곳 표시는 하루 ${r.max}번까지입니다. 내일 다시 해 주세요.`);
     if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
     return json(request, env, { visits: r.visits, visitAt: r.visitAt });
 }
