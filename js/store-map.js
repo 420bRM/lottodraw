@@ -748,6 +748,16 @@
             (ids[k] || []).forEach((id, i) => { if (visits[id]) { map.setFeatureState({ source: src, id: i }, { visit: visits[id] }); painted[src].add(i); } });
         });
     }
+    // 다녀온 곳을 서버에서 새로 받는다(2026-11-07 — 내 기록에 방금 · 다른 기기에서 표시한 곳이 빠져 보였다: 이 탭에 10분 저장해 둔 내 정보를 썼다)
+    async function syncVisits() {
+        const A = account();
+        if (!A || !A.session()) return;
+        const m = await A.refresh().catch(() => null);
+        if (!m || !m.user) return;
+        visits = m.user.visits || {};
+        visitAt = m.user.visitAt || {};
+        if (ids) paintVisits();
+    }
     async function initVisits() {
         const A = account();
         if (!A || !A.ready) return;
@@ -796,6 +806,7 @@
         mineChip.setAttribute('aria-pressed', String(on));
         if (!on) { minePanel.hidden = true; if (isWide() && side.dataset.tab === 'mine') setTab('top'); applyLayers(); return; }
         await loadIds();
+        await syncVisits();
         await ensureAll();
         mineSource();
         applyLayers();
@@ -820,7 +831,7 @@
         let body;
         if (mineTab === 'v') {
             body = vs.length ? '<ol class="sm-near-list">' + vs.map(x => '<li><button type="button" data-t="' + x.t + '" data-i="' + x.i + '"><span class="sm-tname"><span class="sm-swatch" style="background:' + esc(x.c) + '"></span>' + esc(x.name) +
-                '<small>' + esc(x.place) + '</small></span><span class="sm-tcnt">' + (x.t === 'w' ? '<b>' + data.rows[x.i][2] + '</b>' + T('번 1등', ' × 1st') : '<small>' + T('일반 판매점', 'retailer') + '</small>') + '</span></button></li>').join('') + '</ol>'
+                '<small>' + esc(x.place) + '</small></span><span class="sm-tcnt">' + (x.t === 'w' ? (data.rows[x.i][2] ? '<b>' + data.rows[x.i][2] + '</b>' + T('번 1등', ' × 1st') : '<small>' + T('2등 ' + data.rows[x.i][3] + '번', data.rows[x.i][3] + ' × 2nd') + '</small>') : '<small>' + T('일반 판매점', 'retailer') + '</small>') + '</span></button></li>').join('') + '</ol>'
                 : '<p class="sm-small">' + T('아직 다녀온 곳이 없습니다. 판매점 카드에서 "＋ 다녀왔어요"를 누르면 여기에 모입니다.', 'No places yet. Tap "＋ I\'ve been here" on a retailer card.') + '</p>';
         } else if (!cs) {
             body = '<p class="sm-small">' + T('불러오는 중…', 'Loading…') + '</p>';
@@ -1049,7 +1060,7 @@
         terrPanel.innerHTML = '<p class="sm-small">' + T('영역을 불러오는 중…', 'Loading turf…') + '</p>';
         if (isWide()) setTab('terr'); else { card.hidden = true; nearPanel.hidden = true; minePanel.hidden = true; }
         const A = account();
-        await Promise.all([needAll(), loadTerr(), A && A.session() ? loadIds() : null]);   // 판매점 번호: 칸 목록의 ✓(다녀온 곳)
+        await Promise.all([needAll(), loadTerr(), A && A.session() ? loadIds().then(syncVisits) : null]);   // 판매점 번호: 칸 목록의 ✓(다녀온 곳)
         if (!shown.terr) return;
         buildCells();
         drawTerrLayers();
@@ -1455,6 +1466,7 @@
                 const r = await account().call('/api/me/visits', { method: 'POST', body: again ? { id, again: true } : { id, color } });
                 visits = r.visits || {};
                 visitAt = r.visitAt || visitAt;
+                if (A.patchUser) A.patchUser({ visits, visitAt });   // 이 탭에 저장해 둔 내 정보도 — 다시 열어도 빠지지 않게
                 paintVisits();
                 draw();
                 refreshTerr();
