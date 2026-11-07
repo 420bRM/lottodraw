@@ -16,7 +16,8 @@
 //                        ppass: { orderId, keyId, key, expiresAt, at } — 포인트로 연 1일 이용권(가장 최근 것), ppassN: 포인트로 연 횟수
 //                        gen:   { inc, exc, pat, recent, ac, acExact, at } — 저장한 번호 생성기 설정(고정수 · 제외수 · 켠 패턴 번호 · 직전 당첨 조합 제외 칸 · AC값 조건과 "이 값만"). 본인에게만 보인다
 //                        visits: { 판매점 번호: '#rrggbb' } — 판매점 지도에서 회원이 직접 표시한 "다녀온 곳"과 색(1,000곳까지). 본인에게만 보인다
-//                        vt:    { 판매점 번호: 시각 } — 다녀온 곳을 표시한(또는 "이번 시즌에 또 다녀왔어요"를 누른) 때(2026-11-07부터. 그 전 것은 없다)
+//                        vt:    { 판매점 번호: 시각 } — 다녀온 곳을 표시한(또는 "또 다녀왔어요"를 누른) 마지막 때(2026-11-07부터. 그 전 것은 없다). 표시를 지우면 같이 지운다
+//                        vday:  { day, n } — 오늘(한국 날짜) 다녀온 때를 새로 적은 횟수(territory.js VISIT_DAILY 까지)
 //                        terr:  { at, v } — 영역(육각 칸) 참여 동의: 동의한 때와 동의 문구 판(territory.js TERR_CONSENT). 그만두면 지운다
 //                        rx:    { 항목: 'h' | 'd' | 'hd' } — 내가 누른 좋아요
 //                        sess:  로그인 세션 해시 (최근 5개)
@@ -47,11 +48,13 @@
 //                        보이는 조회수 = v:<글> + 이 값. 관리자가 통째로 갈아 끼운다
 //   tp:<구글 계정 번호>  { nick, at, v: { 판매점 번호: [표시한 시각, 칸] } } — 영역 참여자 색인(2026-11-07 시험판, territory.js).
 //                        영역에 참여한 회원만. 칸 주인 · Map 랭킹은 이 줄들로 센다. 그만두거나 탈퇴하면 지운다
+//   ts:<분기>            { id, from, to, at, rank: [{ sub, nick, cells, stores }] } — 분기마다 확정한 Map 랭킹(50명, 한 시간 예약 terrFinalize).
+//                        밖으로는 별명 · 칸 수 · 다녀온 곳 수만. 탈퇴하면 그 회원 줄의 계정 번호 · 별명을 지운다
 //   meta                 { users, trials, subs }
 //
 // 이름·사진은 받지 않는다. 이메일은 "로그인한 계정" 표시, 문의 응대, 회원이 켠 "추첨 결과 메일"에만 쓴다.
 
-import { seasonOf, computeTerritory, publicTerritory } from './territory.js';
+import { seasonOf, prevSeason, computeTerritory, publicTerritory, seasonRecord, FIRST_SEASON, VISIT_DAILY, kstDay as kstDate } from './territory.js';
 
 export const SESSION_DAYS = 30;
 const TRIAL_MEMORY_DAYS = 365;
@@ -190,7 +193,8 @@ export class Community {
         this.boardLoading = null;
         this.viewBase = null;       // vbase(조회수 시작값) — 조회수를 읽을 때마다 꺼내지 않게 들고 있는다
         this.tp = null;             // 영역 참여자(tp:) — 계정 → 줄. 처음 영역을 볼 때 읽는다
-        this.terrCache = null;      // { season, result } — 영역 계산 결과. 참여자 줄이 바뀌면 버린다
+        this.terrCache = null;      // 영역 계산 결과. 참여자 줄이 바뀌면 버린다
+        this.terrLast = null;       // { id, rec } — 가장 최근에 확정한 분기 기록(ts:)
     }
 
     // ───── 영역(육각 칸, territory.js) ─────
@@ -206,6 +210,14 @@ export class Community {
         if (row) await this.storage.put('tp:' + sub, row); else await this.storage.delete('tp:' + sub);
         if (this.tp) { if (row) this.tp.set(sub, row); else this.tp.delete(sub); }
         this.terrCache = null;
+    }
+    async terrLastRec(season) {
+        const id = prevSeason(season).id;
+        if (!this.terrLast || this.terrLast.id !== id) this.terrLast = { id, rec: (await this.storage.get('ts:' + id)) || null };
+        return this.terrLast.rec;
+    }
+    async terrList() {
+        return [...(await this.terrPlayers()).entries()].map(([s, row]) => Object.assign({ sub: s }, row));
     }
     async terrRow(sub) {
         return this.tp ? this.tp.get(sub) || null : (await this.storage.get('tp:' + sub)) || null;
@@ -375,19 +387,30 @@ const OPS = {
     },
 
     // 판매점 지도 "다녀온 곳": { 판매점 번호: 색 }. color 가 null 이면 지운다. 새로 더할 때만 max 를 본다.
-    // 새로 표시한 때는 vt 에 적는다(색만 바꾸면 그대로). again: 이미 표시한 곳을 "이번 시즌에 또 다녀왔어요" — 때만 새로.
+    // 새로 표시한 때는 vt 에 적는다(색만 바꾸면 그대로). again: 이미 표시한 곳을 "또 다녀왔어요" — 때만 새로(같은 곳은 하루 한 번).
+    // 때를 새로 적는 것(새로 표시 · 또 다녀왔어요)은 하루 VISIT_DAILY 번까지 — 영역에서 같은 수면 최근에 다녀온 사람이 이기므로 누르기 되풀이를 막는다.
     // 영역 참여자면 참여자 색인(tp:)도 같이: cell 은 Worker 가 store-map-cells.json 에서 찾아 넘긴다(폐점 · 모르는 곳은 null — 칸에 안 센다)
     async setVisit({ sub, id, color, max, now, cell, again }) {
         const user = await this.storage.get('u:' + sub);
         if (!user) return { error: 'no_user' };
         const v = user.visits || {}, vt = user.vt || {};
         now = now || Date.now();
+        const today = kstDate(now);
+        const stamp = () => {
+            const d = user.vday && user.vday.day === today ? user.vday : { day: today, n: 0 };
+            if (d.n >= VISIT_DAILY) return false;
+            d.n += 1;
+            user.vday = d;
+            vt[id] = now;
+            return true;
+        };
         if (again) {
             if (!(id in v)) return { error: 'not_visited' };
-            vt[id] = now;
+            if (vt[id] && kstDate(vt[id]) === today) return { error: 'again_today' };
+            if (!stamp()) return { error: 'daily_limit', max: VISIT_DAILY };
         } else if (color) {
             if (!(id in v) && Object.keys(v).length >= max) return { error: 'too_many' };
-            if (!(id in v)) vt[id] = now;
+            if (!(id in v) && !stamp()) return { error: 'daily_limit', max: VISIT_DAILY };
             v[id] = color;
         } else { delete v[id]; delete vt[id]; }
         if (Object.keys(v).length) user.visits = v; else delete user.visits;
@@ -426,15 +449,23 @@ const OPS = {
         return { ok: true, user: view(user) };
     },
 
-    // 칸 주인 · Map 랭킹(누구나). sub 가 있으면 내 칸 · 순위도
+    // 칸 주인 · Map 랭킹(누구나). sub 가 있으면 내 칸 · 순위도. 지난 분기 확정 순위도 함께
     async territory({ sub, now }) {
         const season = seasonOf(now || Date.now());
-        if (!this.terrCache || this.terrCache.season.id !== season.id) {
-            const players = [...(await this.terrPlayers()).entries()].map(([s, row]) => Object.assign({ sub: s }, row));
-            this.terrCache = { season, result: computeTerritory(players, season) };
-        }
+        if (!this.terrCache) this.terrCache = computeTerritory(await this.terrList());
         const joined = sub ? !!(await this.terrRow(sub)) : false;
-        return publicTerritory(this.terrCache.result, season, sub, joined);
+        return publicTerritory(this.terrCache, season, sub, joined, await this.terrLastRec(season));
+    },
+
+    // 한 시간 예약: 지난 분기를 아직 확정하지 않았으면 그 분기 끝 때(t < to)의 랭킹을 ts:<분기> 로 남긴다. 칸은 그대로 둔다
+    async terrFinalize({ now }) {
+        const prev = prevSeason(seasonOf(now));
+        if (prev.id < FIRST_SEASON) return { skipped: prev.id };
+        if (await this.storage.get('ts:' + prev.id)) return { done: false, id: prev.id };
+        const rec = seasonRecord(computeTerritory(await this.terrList(), prev.to), prev, now);
+        await this.storage.put('ts:' + prev.id, rec);
+        this.terrLast = null;
+        return { done: true, id: prev.id, ranked: rec.rank.length };
     },
 
     // 다녀온 곳 색 하나를 포인트로 연다(2026-10-26). 한 번 연 색은 계속 쓴다(user.vcolors). 이미 열었으면 포인트를 쓰지 않는다
@@ -626,6 +657,12 @@ const OPS = {
         await this.storage.delete('k:' + sub);   // 내 번호
         await this.storage.delete('nt:' + sub);  // 답글 알림
         if (user.terr || (await this.terrRow(sub))) await this.terrSet(sub, null);   // 영역 참여자 색인
+        await this.each('ts:', async (rec, k) => {   // 분기 확정 순위: 그 회원 줄의 계정 번호 · 별명을 지운다(순위 자리는 남긴다)
+            if (!rec.rank.some(r => r.sub === sub)) return;
+            rec.rank = rec.rank.map(r => (r.sub === sub ? { nick: null, cells: r.cells, stores: r.stores } : r));
+            await this.storage.put(k, rec);
+        });
+        this.terrLast = null;
         if (await this.storage.delete('ms:' + sub)) await this.bump('subs', -1);   // 추첨 결과 메일 구독
         await this.storage.delete('u:' + sub);
         await this.syncBoard(sub, null);
@@ -737,6 +774,7 @@ const OPS = {
         this.mailHmac = null;
         this.tp = null;
         this.terrCache = null;
+        this.terrLast = null;
         return { put, skipped: rows.length - put };
     },
 

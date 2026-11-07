@@ -6,7 +6,7 @@ import vm from 'node:vm';
 import worker, { _resetForTests, Community } from '../src/index.js';
 import { _resetGoogleForTests } from '../src/google.js';
 import { b64urlEncode } from '../src/keys.js';
-import { seasonOf, computeTerritory, LEGACY_T, TERR_CONSENT } from '../src/territory.js';
+import { seasonOf, prevSeason, computeTerritory, LEGACY_T, TERR_CONSENT, VISIT_DAILY } from '../src/territory.js';
 
 const ADMIN = 'admin-token-0123456789abcdef';
 const ORIGIN = 'https://www.lottodraw.kr';
@@ -149,24 +149,28 @@ test('시즌은 한국 시간 분기: 10/1 · 1/1 0시에 바뀐다', () => {
     assert.ok(LEGACY_T >= seasonOf(kstTime(2026, 11, 1)).from, '시각 없는 예전 기록은 2026년 4분기 안');
 });
 
-test('칸 주인: 이번 시즌에 더 많이 다녀온 사람, 같으면 그 수를 먼저 채운 사람 · 지난 시즌 · 모르는 칸은 안 센다', () => {
-    const season = seasonOf(kstTime(2026, 11, 7));
+test('칸 주인: 더 많이 다녀온 사람, 같으면 그 칸에 더 최근에 다녀온 사람 · 칸 없는 곳은 안 센다 · 칸은 비우지 않는다', () => {
     const t = d => kstTime(2026, 11, d);
     const players = [
         { sub: 'a', nick: '가', at: t(1), v: { 1: [t(2), '0,0'], 2: [t(3), '0,0'], 4: [t(2), '1,0'] } },
-        { sub: 'b', nick: '나', at: t(2), v: { 1: [t(1), '0,0'], 3: [t(2), '0,0'], 5: [kstTime(2026, 9, 30), '2,0'], 6: [t(4), null] } },
-        { sub: 'c', nick: '다', at: t(3), v: { 5: [0, '2,0'] } },   // 시각 없는 예전 기록 — 이번 시즌(2026Q4)에는 센다
+        { sub: 'b', nick: '나', at: t(2), v: { 1: [t(1), '0,0'], 3: [t(5), '0,0'], 5: [kstTime(2026, 9, 30), '2,0'], 6: [t(4), null] } },
+        { sub: 'c', nick: '다', at: t(3), v: { 5: [0, '2,0'] } },   // 시각 없는 예전 기록(10/26로 본다)
     ];
-    const r = computeTerritory(players, season);
-    assert.equal(r.cells['0,0'].sub, 'b', '둘 다 2곳 — b 는 11/2, a 는 11/3 에 2곳을 채웠다');
+    const r = computeTerritory(players);
+    assert.equal(r.cells['0,0'].sub, 'b', '둘 다 2곳 — b 가 11/5 로 더 최근');
     assert.equal(r.cells['0,0'].next, 2);
     assert.equal(r.cells['1,0'].sub, 'a');
-    assert.equal(r.cells['2,0'].sub, 'c', 'b 의 9/30 표시는 지난 시즌');
-    assert.equal(r.stat.get('b').stores, 2, '지난 시즌 · 칸 없는 곳은 다녀온 곳 수에도 안 든다');
-    assert.deepEqual(r.rank.map(s => s.sub), ['a', 'b', 'c'], '칸 1개씩 — 다녀온 곳 3 > 2 > 1');
-    const q1 = computeTerritory(players, seasonOf(kstTime(2027, 1, 2)));
-    assert.deepEqual(q1.cells, {}, '다음 시즌에는 모두 빈다');
-    assert.equal(q1.rank.length, 0);
+    assert.equal(r.cells['2,0'].sub, 'c', '1곳씩 — c(10/26)가 b(9/30)보다 최근. 기간이 지나도 칸은 그대로 센다');
+    assert.equal(r.stat.get('b').stores, 3, '칸 없는 곳은 다녀온 곳 수에 안 든다');
+    assert.deepEqual(r.rank.map(s => s.sub), ['a', 'b', 'c'], '칸 1개씩 — 다녀온 곳 3 > 3(먼저 참여) … a 가 먼저 참여');
+    players[0].v[3] = [t(6), '0,0'];   // a 가 3곳째
+    assert.equal(computeTerritory(players).cells['0,0'].sub, 'a', '더 많이 다녀오면 가져간다');
+    // 분기 확정: 그 분기 끝(to) 전에 표시한 것만
+    const q4 = seasonOf(t(7));
+    const upTo = computeTerritory(players, kstTime(2026, 11, 4));
+    assert.equal(upTo.cells['0,0'].sub, 'a', '11/4 까지는 a 2곳(11/3) · b 1곳');
+    assert.equal(upTo.cells['0,0'].n, 2);
+    assert.equal(prevSeason(seasonOf(kstTime(2027, 1, 1, 0, 30))).id, q4.id);
 });
 
 test('지도 칸 계산(js/hexgrid.js): 점은 가장 가까운 칸 중심에 · 꼭짓점은 중심에서 1.2km', () => {
@@ -189,6 +193,8 @@ test('지도 칸 계산(js/hexgrid.js): 점은 가장 가까운 칸 중심에 ·
 /* ───── 서버 ───── */
 
 test('영역 참여: 동의 · 별명이 있어야 하고, 칸 주인 · 랭킹은 별명만 공개, 그만두면 바로 빠진다', async () => {
+    let tick = realNow();
+    Date.now = () => (tick = Math.max(realNow(), tick + 1));   // 같은 수면 나중 사람이 이기니 시각이 겹치지 않게
     const env = await fresh();
     const empty = await terr(env);
     assert.equal(empty.status, 200);
@@ -213,16 +219,19 @@ test('영역 참여: 동의 · 별명이 있어야 하고, 칸 주인 · 랭킹�
     assert.equal(j.data.user.terr.v, TERR_CONSENT);
     assert.ok(j.data.user.terr.at > 0, '동의한 때를 적는다');
     let t = await terr(env, a);
-    assert.deepEqual(t.data.cells['0,0'], ['가나다', 2, 0, 1], '참여 전에 다녀온 곳도 이번 시즌이면 센다');
-    assert.deepEqual(t.data.me, { joined: true, cells: ['0,0'], counts: { '0,0': 2 }, stores: 2, rank: 1 });
+    assert.deepEqual(t.data.cells['0,0'], ['가나다', 2, 0, 1], '참여 전에 다녀온 곳도 센다');
+    assert.deepEqual(t.data.me, { joined: true, cells: ['0,0'], counts: { '0,0': 2 }, stores: 2, rank: 1, lastRank: null });
+    assert.equal(t.data.last, null, '아직 확정한 분기가 없다');
 
-    // 나 = 같은 칸에서 같은 수면 먼저 채운 사람이 지킨다, 더 많으면 가져간다
+    // 같은 칸에서 같은 수면 더 최근에 다녀온 사람, 더 많으면 더 많은 사람
     const b = await member(env, '3002', '라마바');
     assert.equal((await join(env, b)).status, 200);
     await visit(env, b, '11100003');
+    t = await terr(env);
+    assert.deepEqual(t.data.cells['0,0'], ['가나다', 2, 1, 2], '2:1');
     await visit(env, b, '11100001');
     t = await terr(env);
-    assert.deepEqual(t.data.cells['0,0'], ['가나다', 2, 2, 2], '2:2 — 먼저 채운 가나다');
+    assert.deepEqual(t.data.cells['0,0'], ['라마바', 2, 2, 2], '2:2 — 나중에 다녀온 라마바');
     await visit(env, b, '11100002');
     t = await terr(env);
     assert.deepEqual(t.data.cells['0,0'], ['라마바', 3, 2, 2]);
@@ -236,9 +245,9 @@ test('영역 참여: 동의 · 별명이 있어야 하고, 칸 주인 · 랭킹�
     assert.ok(!/3001|3002|gmail/.test(JSON.stringify(t.data)), '계정 번호 · 이메일은 내보내지 않는다');
     assert.ok(!/1110000/.test(JSON.stringify(t.data)), '어느 판매점을 다녀왔는지는 내보내지 않는다');
     assert.equal((await terr(env)).headers.get('Cache-Control'), 'public, max-age=60');
-    // 다녀온 곳을 지우면 칸에서도
+    // 다녀온 곳을 지우면 칸에서도: 라마바 2곳(11100003 · 11100001)이 가나다 2곳보다 최근
     await visit(env, b, '11100002', { color: null });
-    assert.deepEqual((await terr(env)).data.cells['0,0'], ['가나다', 2, 2, 2]);
+    assert.deepEqual((await terr(env)).data.cells['0,0'], ['라마바', 2, 2, 2]);
 
     // 관리자가 별명을 지우면 칸에도 별명 없이
     assert.equal((await call(env, 'POST', '/api/admin/members/3001/clear-nick', { headers: asAdmin })).status, 200);
@@ -269,31 +278,67 @@ test('영역 참여: 동의 · 별명이 있어야 하고, 칸 주인 · 랭킹�
     await visit(env, c, '11100006');
     env.COMMUNITY.restart();
     assert.deepEqual((await terr(env)).data.cells, { '2,0': ['사아자', 1, 0, 1] });
+    Date.now = realNow;
 });
 
-test('시즌이 바뀌면 칸이 비고, "이번 시즌에 또 다녀왔어요"로 다시 센다', async () => {
+test('분기가 끝나면 랭킹을 확정해 남기고 칸은 그대로 · 또 다녀왔어요는 하루 한 번 · 탈퇴하면 확정 기록에서 별명을 지운다', async () => {
     let now = kstTime(2026, 12, 31, 23, 0);
     Date.now = () => now;
     try {
         const env = await fresh();
         const a = await member(env, '4001', '겨울');
+        const b = await member(env, '4002', '봄바람');
         await join(env, a);
+        await join(env, b);
         await visit(env, a, '11100005');
         await visit(env, a, '11100006');
-        assert.deepEqual((await terr(env, a)).data.cells, { '2,0': ['겨울', 2, 0, 1] });
-        now = kstTime(2027, 1, 1, 0, 10);
+        await visit(env, b, '11100005');
+        assert.deepEqual((await terr(env, a)).data.cells, { '2,0': ['겨울', 2, 1, 2] });
+        // 또 다녀왔어요: 같은 날은 한 번만 — 오늘 표시한 곳은 바로 안 된다
+        assert.equal((await visit(env, a, '11100005', { again: true })).data.error, 'again_today');
+        assert.equal((await visit(env, a, '11100001', { again: true })).data.error, 'not_visited');
+
+        // 1/1 0시 넘어 한 시간 예약이 돈다 → 2026Q4 확정. 그 사이(0:05)에 b 가 다녀온 것은 확정에 안 든다
+        now = kstTime(2027, 1, 1, 0, 5);
+        await visit(env, b, '11100006');
+        now = kstTime(2027, 1, 1, 0, 17);
+        await env.COMMUNITY.get().fetch('https://community/', { method: 'POST', body: JSON.stringify({ op: 'terrFinalize', now }) });
+        const rec = env.COMMUNITY._m.get('ts:2026Q4');
+        assert.ok(rec, '확정 기록');
+        assert.deepEqual(rec.rank.map(r => [r.nick, r.cells, r.stores]), [['겨울', 1, 2]], '12/31 끝 때: 겨울 2곳 > 봄바람 1곳');
         let t = await terr(env, a);
         assert.equal(t.data.season.id, '2027Q1');
-        assert.deepEqual(t.data.cells, {});
-        assert.deepEqual(t.data.me.counts, {});
-        const me = await call(env, 'GET', '/api/me', { headers: auth(a) });
-        assert.equal(me.data.user.visitAt['11100005'], kstTime(2026, 12, 31, 23, 0), '표시한 때가 내 정보에 나온다(화면이 지난 시즌 것을 안다)');
-        const again = await visit(env, a, '11100005', { again: true, color: undefined });
+        assert.deepEqual(t.data.last.rank, [{ nick: '겨울', cells: 1, stores: 2 }]);
+        assert.equal(t.data.last.id, '2026Q4');
+        assert.equal(t.data.me.lastRank, 1);
+        assert.ok(!/4001|4002/.test(JSON.stringify(t.data)), '확정 순위도 계정 번호는 안 나간다');
+        // 칸은 비우지 않는다: 지금은 2:2 — 봄바람이 1/1 0:05 로 더 최근
+        assert.deepEqual(t.data.cells, { '2,0': ['봄바람', 2, 2, 2] });
+        // 다음 날 겨울이 또 다녀왔어요 → 되찾는다(색은 그대로, 때만 새로)
+        now = kstTime(2027, 1, 2, 10, 0);
+        const again = await visit(env, a, '11100005', { again: true });
         assert.equal(again.status, 200, JSON.stringify(again.data));
-        assert.equal(again.data.visits['11100005'], '#e63946', '색은 그대로');
+        assert.equal(again.data.visits['11100005'], '#e63946');
         assert.equal(again.data.visitAt['11100005'], now);
-        t = await terr(env, a);
-        assert.deepEqual(t.data.cells, { '2,0': ['겨울', 1, 0, 1] });
-        assert.equal((await visit(env, a, '11100001', { again: true })).data.error, 'not_visited');
+        assert.deepEqual((await terr(env)).data.cells, { '2,0': ['겨울', 2, 2, 2] });
+        assert.equal((await visit(env, a, '11100005', { again: true })).data.error, 'again_today');
+        // 한 번 더 돌아도 다시 확정하지 않는다
+        await env.COMMUNITY.get().fetch('https://community/', { method: 'POST', body: JSON.stringify({ op: 'terrFinalize', now }) });
+        assert.equal(env.COMMUNITY._m.get('ts:2026Q4').at, kstTime(2027, 1, 1, 0, 17));
+        // 탈퇴하면 확정 기록의 그 줄은 별명 · 계정 번호 없이 자리만
+        assert.equal((await call(env, 'POST', '/api/me/delete', { body: { confirm: true }, headers: auth(a) })).status, 200);
+        assert.deepEqual(env.COMMUNITY._m.get('ts:2026Q4').rank, [{ nick: null, cells: 1, stores: 2 }]);
+        assert.deepEqual((await terr(env, b)).data.last.rank, [{ nick: null, cells: 1, stores: 2 }]);
     } finally { Date.now = realNow; }
+});
+
+test('다녀온 때를 새로 적는 것은 하루 VISIT_DAILY 번까지(색 바꾸기 · 지우기는 세지 않는다)', async () => {
+    const env = await fresh();
+    const a = await member(env, '5001', '부지런');
+    for (let k = 0; k < VISIT_DAILY; k++) assert.equal((await visit(env, a, String(11200000 + k))).status, 200);
+    const over = await visit(env, a, '11299999');
+    assert.equal(over.status, 429);
+    assert.equal(over.data.error, 'daily_limit');
+    assert.equal((await visit(env, a, '11200000', { color: '#3a86ff' })).status, 200, '색 바꾸기는 된다');
+    assert.equal((await visit(env, a, '11200000', { color: null })).status, 200, '지우기는 된다');
 });
