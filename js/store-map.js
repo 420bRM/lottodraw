@@ -195,6 +195,7 @@
         if (map.getLayer('st-all')) map.setPaintProperty('st-all', 'circle-stroke-color', rim('#7d8799'));
         if (map.getLayer('terr-name')) map.setPaintProperty('terr-name', 'text-halo-color', on ? 'rgba(10, 14, 22, .9)' : 'rgba(255, 255, 255, .95)');
         if (map.getLayer('terr-sel')) map.setPaintProperty('terr-sel', 'line-color', on ? '#f3f4f6' : '#111827');
+        if (map.getLayer('terr-glow')) map.setLayoutProperty('terr-glow', 'visibility', terrVis('terr-glow') ? 'visible' : 'none');
     }
     // 낮/밤은 사이트 값을 따른다(생성기와 같다, 2026-10-27 사장님). 🌙 단추는 사이트 낮/밤 단추(js/theme.js — 지도에서는 감춤)를 대신 누른다 — 저장 · 다른 탭 따라가기는 theme.js 가 한다
     function toggleNight() {
@@ -873,11 +874,43 @@
     const HX = window.LottoHex;
     const terrPanel = document.getElementById('sm-terr'), terrChip = document.getElementById('sm-terr-chip');
     let terr = null, terrCells = null, terrSel = null, terrView = 'main', terrLoading = null, visitAt = {};
-    const TERR_ME = '#e63946';   // 내 칸 기본색. 내 화면에서는 고른 색(내 정보 terrColor, /api/territory/color)
-    const myColor = () => { const A = account(), u = A && A.me() && A.me().user; return (u && u.terrColor) || TERR_ME; };
     let terrOpen = false;   // 영역 창이 열려 있는가 — 창을 닫아도 칸은 지도에 남는다(2026-11-07 사장님)
-    const TERR_COLORS = ['#3a86ff', '#8338ec', '#2a9d8f', '#f4a261', '#ff66b3', '#118ab2', '#6d597a', '#e9c46a'];
-    const nickColor = nick => { let h = 0; for (const c of String(nick)) h = (h * 31 + c.codePointAt(0)) >>> 0; return TERR_COLORS[h % TERR_COLORS.length]; };
+    // 칸 모양(스킨, 2026-11-07 사장님 — 지렁이 게임처럼 참여자마다 색 · 무늬가 다르게): 서버가 주는 "주색,보조색,무늬"(worker/src/territory.js SKIN_RE).
+    // 무늬 0 단색 · 1 줄무늬 · 2 물방울 · 3 체크. 기본은 계정마다 무작위, 바꾸면 SKIN_COST 포인트(무작위로 돌리기는 무료). 모두에게 같게 보인다
+    const SKIN_COST = 30;   // worker POINTS.terrSkin 과 같게
+    const HEX6 = /^[0-9a-f]{6}$/i;
+    function parseSkin(str) {
+        const p = String(str || '').split(',');
+        const c = HEX6.test(p[0]) ? '#' + p[0].toLowerCase() : '#8a94a6';
+        return { c, d: HEX6.test(p[1]) ? '#' + p[1].toLowerCase() : c, p: Math.max(0, Math.min(3, Number(p[2]) || 0)) };
+    }
+    const skinStr = k => k.c.slice(1) + ',' + k.d.slice(1) + ',' + k.p;
+    // 랭킹 · 고르기 화면의 작은 견본(CSS 배경)
+    function skinCss(str) {
+        const k = parseSkin(str);
+        if (k.p === 1) return 'repeating-linear-gradient(45deg,' + k.d + ' 0 3px,' + k.c + ' 3px 6px)';
+        if (k.p === 2) return 'radial-gradient(circle,' + k.d + ' 0 34%,transparent 38%) 0 0/7px 7px,' + k.c;
+        if (k.p === 3) return 'conic-gradient(' + k.c + ' 0 25%,' + k.d + ' 0 50%,' + k.c + ' 0 75%,' + k.d + ' 0) 0 0/8px 8px';
+        return k.c;
+    }
+    const swatch = (str, cls) => '<span class="sm-skin' + (cls ? ' ' + cls : '') + '" style="background:' + skinCss(str) + '" aria-hidden="true"></span>';
+    // 지도 칸을 채우는 무늬 그림(32px, 화면에서는 16px 타일). 모양마다 한 번 만든다
+    function skinImage(str) {
+        const k = parseSkin(str), id = 'tsk-' + skinStr(k).replace(/,/g, '-');
+        if (map.hasImage(id)) return id;
+        const S = 32, px = new Uint8Array(S * S * 4);
+        const rgb = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+        const A = rgb(k.c), B = rgb(k.d);
+        for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+            const two = k.p === 1 ? ((x + y) % 16) < 8
+                : k.p === 2 ? Math.min(Math.hypot(x - 8, y - 8), Math.hypot(x - 24, y - 24)) < 5.2
+                : k.p === 3 ? ((x >> 4) + (y >> 4)) % 2 === 1 : false;
+            const c = two ? B : A, o = (y * S + x) * 4;
+            px[o] = c[0]; px[o + 1] = c[1]; px[o + 2] = c[2]; px[o + 3] = 255;
+        }
+        map.addImage(id, { width: S, height: S, data: px }, { pixelRatio: 2 });
+        return id;
+    }
     // 지금 분기(한국 시간) — 서버 답이 오기 전 랭킹 제목용. 서버의 seasonOf 와 같은 셈
     function seasonNow() {
         const k = new Date(Date.now() + 9 * 3600e3), y = k.getUTCFullYear(), q = Math.floor(k.getUTCMonth() / 3);
@@ -910,32 +943,68 @@
     }
     function terrFeatures() {
         const cells = (terr && terr.cells) || {}, mine = new Set((terr && terr.me && terr.me.cells) || []);
-        const polys = [], pts = [];
+        const polys = [], pts = [], rings = [];
         terrCells.forEach((list, k) => {
             const own = cells[k], me = mine.has(k);
-            const c = own ? (me ? myColor() : nickColor(own[0] || '?')) : '#8a94a6';
-            polys.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [HX.ringOf(k)] }, properties: { k, o: own ? 1 : 0, me: me ? 1 : 0, c } });
-            if (own) pts.push({ type: 'Feature', geometry: { type: 'Point', coordinates: HX.centerOf(k) }, properties: { k, nm: (own[0] || T('(별명 없음)', '(no name)')) + ' · ' + own[1], c } });
+            const sk = own ? parseSkin(own[4]) : null;
+            const c = sk ? sk.c : '#8a94a6';
+            polys.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [HX.ringOf(k)] }, properties: { k, o: own ? 1 : 0, me: me ? 1 : 0, c, pat: own ? skinImage(own[4]) : '' } });
+            if (own) {
+                pts.push({ type: 'Feature', geometry: { type: 'Point', coordinates: HX.centerOf(k) }, properties: { k, nm: (own[0] || T('(별명 없음)', '(no name)')) + ' · ' + own[1], c } });
+                rings.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: HX.ringOf(k).slice().reverse() }, properties: { k } });   // 시계 방향(빛이 도는 차례)
+            }
         });
-        return { polys: { type: 'FeatureCollection', features: polys }, pts: { type: 'FeatureCollection', features: pts } };
+        return { polys: { type: 'FeatureCollection', features: polys }, pts: { type: 'FeatureCollection', features: pts }, rings: { type: 'FeatureCollection', features: rings } };
     }
-    const TERR_LAYERS = ['terr-fill', 'terr-line', 'terr-sel', 'terr-name'];
+    const TERR_LAYERS = ['terr-fill', 'terr-pat', 'terr-line', 'terr-sel', 'terr-glow', 'terr-name'];
+    // 밤 지도에서 차지한 칸 테두리를 은은한 빛이 시계 방향으로 돈다(2026-11-07 사장님 — 줌 12 이상, 움직임 줄이기 설정이면 끔)
+    const REDUCED = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    const terrVis = id => shown.terr && (id !== 'terr-glow' || (isNight() && !REDUCED));
+    function glowGradient(p) {
+        const out = ['interpolate', ['linear'], ['line-progress']];
+        for (let i = 0; i <= 24; i++) {
+            const x = i / 24, d = Math.min(Math.abs(x - p), 1 - Math.abs(x - p)), a = Math.max(0, 1 - d / 0.16);
+            out.push(x, 'rgba(255, 244, 214, ' + Math.min(1, 1.1 * a * a).toFixed(3) + ')');   // 빛 한 덩이(둘레의 1/3쯤에 걸쳐 옅어진다)
+        }
+        return out;
+    }
+    let glowing = false;
+    function terrGlowLoop() {
+        if (glowing || REDUCED) return;
+        glowing = true;
+        let last = 0;
+        const tick = now => {
+            requestAnimationFrame(tick);
+            if (document.hidden || now - last < 66 || !map.getLayer('terr-glow') || !terrVis('terr-glow') || map.getZoom() < 12) return;
+            last = now;
+            map.setPaintProperty('terr-glow', 'line-gradient', glowGradient((now % 6000) / 6000));
+        };
+        requestAnimationFrame(tick);
+    }
     function drawTerrLayers() {
         if (!map || !terrCells) return;
         const f = terrFeatures();
         if (map.getSource('terr')) {
             map.getSource('terr').setData(f.polys);
             map.getSource('terr-pt').setData(f.pts);
+            map.getSource('terr-ring').setData(f.rings);
         } else {
             map.addSource('terr', { type: 'geojson', data: f.polys });
             map.addSource('terr-pt', { type: 'geojson', data: f.pts });
+            map.addSource('terr-ring', { type: 'geojson', data: f.rings, lineMetrics: true });
             const below = map.getLayer('st-all') ? 'st-all' : 'st-w2';
+            // 빈 칸은 옅은 회색, 차지한 칸은 그 사람의 무늬(terr-pat). terr-fill 은 칸 누르기도 받는다
             map.addLayer({ id: 'terr-fill', type: 'fill', source: 'terr', paint: {
-                'fill-color': ['get', 'c'], 'fill-opacity': ['case', ['==', ['get', 'me'], 1], 0.4, ['==', ['get', 'o'], 1], 0.3, 0.04] } }, below);
+                'fill-color': ['get', 'c'], 'fill-opacity': ['case', ['==', ['get', 'o'], 1], 0, 0.04] } }, below);
+            map.addLayer({ id: 'terr-pat', type: 'fill', source: 'terr', filter: ['==', ['get', 'o'], 1], paint: {
+                'fill-pattern': ['get', 'pat'], 'fill-opacity': ['case', ['==', ['get', 'me'], 1], 0.55, 0.42] } }, below);
             map.addLayer({ id: 'terr-line', type: 'line', source: 'terr', paint: {
                 'line-color': ['get', 'c'], 'line-width': ['case', ['==', ['get', 'me'], 1], 1.76, ['==', ['get', 'o'], 1], 1.12, 0.64],   // 2026-11-07 사장님 — 처음보다 0.8배
                 'line-opacity': ['interpolate', ['linear'], ['zoom'], 6, ['case', ['==', ['get', 'o'], 1], 0.8, 0], 9, ['case', ['==', ['get', 'o'], 1], 0.9, 0.55]] } }, below);
             map.addLayer({ id: 'terr-sel', type: 'line', source: 'terr', filter: ['==', ['get', 'k'], ''], paint: { 'line-color': isNight() ? '#f3f4f6' : '#111827', 'line-width': 2.4, 'line-dasharray': [2, 1] } }, below);
+            map.addLayer({ id: 'terr-glow', type: 'line', source: 'terr-ring', minzoom: 12, layout: { 'line-cap': 'round', 'line-join': 'round' },
+                paint: { 'line-width': 5, 'line-blur': 3, 'line-gradient': glowGradient(0) } }, below);
+            terrGlowLoop();
             map.addLayer({ id: 'terr-name', type: 'symbol', source: 'terr-pt', minzoom: 9.5, layout: { 'text-field': ['get', 'nm'], 'text-font': ['Noto Sans Bold'], 'text-size': 12, 'text-max-width': 8, 'text-padding': 4 },
                 paint: { 'text-color': ['get', 'c'], 'text-halo-color': isNight() ? 'rgba(10, 14, 22, .9)' : 'rgba(255, 255, 255, .95)', 'text-halo-width': 1.6 } });
             map.on('click', 'terr-fill', e => {
@@ -945,7 +1014,7 @@
                 if (ft) pickCell(ft.properties.k);
             });
         }
-        TERR_LAYERS.forEach(id => map.setLayoutProperty(id, 'visibility', shown.terr ? 'visible' : 'none'));
+        TERR_LAYERS.forEach(id => map.setLayoutProperty(id, 'visibility', terrVis(id) ? 'visible' : 'none'));
         map.setFilter('terr-sel', ['==', ['get', 'k'], terrSel || '']);
     }
     function pickCell(k) {
@@ -1021,7 +1090,7 @@
             : T(' · 같은 수 — 이 칸 판매점에 오늘 또 다녀오면 되찾습니다', ' · tied — visit one again today to take it back');
         const where = list.length ? areaOf(list) : '';
         return '<div class="sm-terr-cell"><h4>' + T('고른 칸', 'This cell') + (where ? ' · ' + esc(where) : '') + ' <small>' + T('판매점 ' + fmt(list.length) + '곳', fmt(list.length) + ' retailers') + '</small></h4>' +
-            '<p>' + (own ? T('주인 ', 'Held by ') + '<b style="color:' + (mineCell ? myColor() : nickColor(own[0] || '?')) + '">' + esc(own[0] || T('(별명 없음)', '(no name)')) + '</b>' +
+            '<p>' + (own ? T('주인 ', 'Held by ') + swatch(own[4]) + '<b>' + esc(own[0] || T('(별명 없음)', '(no name)')) + '</b>' +
                 T(' · ' + own[1] + '곳', ' · ' + own[1]) + (own[2] ? T(' (2위 ' + own[2] + '곳)', ' (runner-up ' + own[2] + ')') : '')
                 : T('아직 주인이 없습니다. 이 칸 판매점 한 곳만 다녀와도 차지합니다.', 'No one holds it yet — one visit takes it.')) + '</p>' +
             (me && me.joined ? '<p class="sm-terr-mine">' + T('나: ' + myN + '곳', 'Me: ' + myN) + myLine + '</p>' : '') +
@@ -1030,30 +1099,60 @@
                 (x.t === 'w' && x.w1 ? '<small>' + x.w1 + T('번 1등', ' × 1st') + '</small>' : '') + '</span></button></li>').join('') + '</ol>' : '') +
             '</div>';
     }
-    // 내 칸 색 고르기(2026-11-07 사장님 — 내 화면에서만. 남의 칸은 별명마다 정해진 색): 기본 빨강 + 다녀온 곳 색 목록 + 아무 색
-    const TERR_PICK = [TERR_ME, '#f4a261', '#e9c46a', '#2a9d8f', '#3a86ff', '#8338ec', '#ff66b3', '#1f2937'];
-    function colorRow() {
-        const cur = myColor();
-        return '<div class="sm-terr-colors"><span class="sm-small">' + T('내 칸 색', 'My colour') + '</span>' +
-            TERR_PICK.map(c => '<button type="button" class="sm-terr-color' + (c === cur ? ' is-on' : '') + '" data-c="' + (c === TERR_ME ? '' : c) + '" style="background:' + c + '" aria-label="' + c + '"></button>').join('') +
-            '<label class="sm-terr-color sm-terr-any" title="' + T('다른 색', 'Any colour') + '"><input type="color" value="' + cur + '" aria-label="' + T('다른 색', 'Any colour') + '"></label>' +
-            '<span class="sm-small">' + T('나만 보입니다', 'only you see it') + '</span></div>';
+    // 내 칸 모양 바꾸기(2026-11-07 사장님 — 기본은 무작위, 바꾸려면 포인트). 주색 · 보조색 16가지(+ 아무 색) × 무늬 4가지
+    const SKIN_COLORS = ['#e63946', '#ff7f50', '#f4a261', '#e9c46a', '#b5e48c', '#52b788', '#2a9d8f', '#48cae4', '#3a86ff', '#4361ee', '#8338ec', '#c77dff', '#ff66b3', '#ff006e', '#8d6e63', '#1f2937'];
+    const SKIN_PATS = () => [T('단색', 'Solid'), T('줄무늬', 'Stripes'), T('물방울', 'Dots'), T('체크', 'Checks')];
+    let skinDraft = null;   // 고르는 중인 { c, d, p } — null 이면 닫힘
+    function skinRow(me) {
+        const A = account(), u = A && A.me() && A.me().user, avail = u && u.score ? Math.floor(u.score.avail) : null;
+        let h = '<div class="sm-terr-skin">' + swatch(me.skin, 'sm-skin-lg') + '<span>' + T('내 칸 모양', 'My cell skin') + (me.skinSet ? '' : T(' <small>(무작위)</small>', ' <small>(random)</small>')) + '</span>' +
+            (skinDraft ? '' : '<button type="button" class="sm-terr-skin-edit">' + T('바꾸기', 'Change') + '</button>') + '</div>';
+        if (!skinDraft) return h;
+        const k = skinDraft, row = (key, cur) => '<div class="sm-skin-row" data-key="' + key + '">' + SKIN_COLORS.map(c => '<button type="button" class="sm-skin-pick' + (c === cur ? ' is-on' : '') + '" data-v="' + c + '" style="background:' + c + '" aria-label="' + c + '"></button>').join('') +
+            '<label class="sm-skin-pick sm-terr-any" title="' + T('다른 색', 'Any colour') + '"><input type="color" value="' + cur + '" aria-label="' + T('다른 색', 'Any colour') + '"></label></div>';
+        const same = skinStr(k) === parseSkin(me.skin) && me.skinSet;
+        h += '<div class="sm-skin-edit">' +
+            '<p class="sm-skin-h">' + T('주색', 'Main colour') + '</p>' + row('c', k.c) +
+            '<p class="sm-skin-h">' + T('보조색', 'Second colour') + '</p>' + row('d', k.d) +
+            '<p class="sm-skin-h">' + T('무늬', 'Pattern') + '</p><div class="sm-skin-pats">' + SKIN_PATS().map((n, i) => '<button type="button" class="sm-skin-pat' + (i === k.p ? ' is-on' : '') + '" data-p="' + i + '">' + swatch(skinStr(Object.assign({}, k, { p: i }))) + n + '</button>').join('') + '</div>' +
+            '<p class="sm-skin-prev">' + swatch(skinStr(k), 'sm-skin-xl') + '</p>' +
+            '<p class="sm-skin-btns"><button type="button" class="sm-terr-ok sm-skin-apply"' + (same ? ' disabled' : '') + '>' + T('적용 · ' + SKIN_COST + '포인트', 'Apply · ' + SKIN_COST + ' points') + '</button> ' +
+            '<button type="button" class="sm-terr-cancel sm-skin-cancel">' + T('취소', 'Cancel') + '</button>' +
+            (me.skinSet ? ' <button type="button" class="sm-terr-cancel sm-skin-reset">' + T('무작위로 돌리기(무료)', 'Back to random (free)') + '</button>' : '') + '</p>' +
+            '<p class="sm-small">' + T('바꾼 모양은 모두에게 보입니다.', 'Everyone sees your skin.') + (avail != null ? T(' 지금 ' + fmt(avail) + '포인트', ' You have ' + fmt(avail) + ' points') : '') + '</p></div>';
+        return h;
     }
-    async function saveTerrColor(color) {
+    function bindSkin() {
+        const me = terr && terr.me;
+        const ed = terrPanel.querySelector('.sm-terr-skin-edit');
+        if (ed) ed.addEventListener('click', () => { skinDraft = parseSkin(me.skin); drawTerr(); });
+        if (!skinDraft) return;
+        terrPanel.querySelectorAll('.sm-skin-row').forEach(rw => {
+            const key = rw.dataset.key;
+            rw.querySelectorAll('button.sm-skin-pick').forEach(b => b.addEventListener('click', () => { skinDraft[key] = b.dataset.v; drawTerr(); }));
+            const inp = rw.querySelector('input[type="color"]');
+            if (inp) inp.addEventListener('change', () => { skinDraft[key] = inp.value.toLowerCase(); drawTerr(); });
+        });
+        terrPanel.querySelectorAll('.sm-skin-pat').forEach(b => b.addEventListener('click', () => { skinDraft.p = Number(b.dataset.p); drawTerr(); }));
+        terrPanel.querySelector('.sm-skin-cancel').addEventListener('click', () => { skinDraft = null; drawTerr(); });
+        terrPanel.querySelector('.sm-skin-apply').addEventListener('click', () => saveSkin(skinStr(skinDraft)));
+        const rs = terrPanel.querySelector('.sm-skin-reset');
+        if (rs) rs.addEventListener('click', () => saveSkin(null));
+    }
+    async function saveSkin(skin) {
         const A = account();
-        try {
-            const r = await A.call('/api/territory/color', { method: 'POST', body: { color } });
-            const m = A.me();
-            if (m && m.user) m.user.terrColor = (r.user && r.user.terrColor) || null;
-            await A.refresh().catch(() => null);
-        } catch (e) { const msg = terrPanel.querySelector('.sm-terr-msg'); if (msg) msg.textContent = (e && e.message) || T('저장하지 못했습니다.', 'Could not save.'); return; }
+        try { await A.call('/api/territory/skin', { method: 'POST', body: { skin } }); }
+        catch (e) { const msg = terrPanel.querySelector('.sm-terr-msg'); if (msg) msg.textContent = (e && e.message) || T('저장하지 못했습니다.', 'Could not save.'); return; }
+        skinDraft = null;
+        await A.refresh().catch(() => null);
+        await loadTerr();
         drawTerrLayers();
         drawTerr();
     }
     // 랭킹 목록(지금 · 지난 분기 확정). medal: 1~3위에 메달
     function rankList(rows, mine, medal) {
         return '<ol class="sm-terr-rank">' + rows.map((r, k) => '<li' + (mine === k + 1 ? ' class="is-me"' : '') + '><span class="sm-rank">' + (medal && MEDAL[k] ? MEDAL[k] : k + 1) + '</span><span class="sm-tname">' +
-            esc(r.nick || T('(탈퇴했거나 별명 없음)', '(no name)')) + '</span><span class="sm-tcnt"><b>' + fmt(r.cells) + '</b>' + T('칸', '') + '<small>' + T(fmt(r.stores) + '곳', fmt(r.stores) + ' visits') + '</small></span></li>').join('') + '</ol>';
+            (r.skin ? swatch(r.skin) : '') + esc(r.nick || T('(탈퇴했거나 별명 없음)', '(no name)')) + '</span><span class="sm-tcnt"><b>' + fmt(r.cells) + '</b>' + T('칸', '') + '<small>' + T(fmt(r.stores) + '곳', fmt(r.stores) + ' visits') + '</small></span></li>').join('') + '</ol>';
     }
     function drawTerr() {
         if (!shown.terr || !terrOpen) return;   // 창을 닫았으면 칸만 새로 그린다(drawTerrLayers)
@@ -1067,7 +1166,7 @@
         else status = '<p class="sm-terr-me">' + T('내 칸 <b>' + fmt(me.cells.length) + '</b>' + (me.rank ? ' · <b>' + me.rank + '</b>위' : '') + ' · 다녀온 곳 ' + fmt(me.stores) + '곳',
             'My cells <b>' + fmt(me.cells.length) + '</b>' + (me.rank ? ' · rank <b>' + me.rank + '</b>' : '') + ' · ' + fmt(me.stores) + ' visited') + '</p>' +
             (me.lastRank ? '<p class="sm-terr-me">' + (MEDAL[me.lastRank - 1] || '🏅') + ' ' + T(seasonLabel(terr.last) + ' 확정 ' + me.lastRank + '위', seasonLabel(terr.last) + ' final: #' + me.lastRank) + '</p>' : '') +
-            colorRow();
+            skinRow(me);
         const rank = (terr && terr.rank) || [];
         const last = terr && terr.last;
         terrPanel.innerHTML = '<button type="button" class="sm-close" aria-label="' + T('닫기', 'Close') + '">×</button>' +
@@ -1082,7 +1181,8 @@
             '<details class="sm-terr-rules"><summary>' + T('규칙', 'Rules') + '</summary><ul>' +
             '<li>' + T('칸(육각형, 가운데서 꼭짓점까지 1.2km) 안에서 다녀온 판매점이 가장 많은 사람이 그 칸을 차지합니다.', 'Whoever has visited the most retailers in a hexagon cell (1.2 km centre to corner) holds it.') + '</li>' +
             '<li>' + T('같은 수면 그 칸에 더 최근에 다녀온 사람이 차지합니다. 빼앗기면 그 칸 판매점 카드의 "오늘 또 다녀왔어요"로 되찾을 수 있습니다(같은 곳은 하루 한 번).', 'On a tie, whoever visited the cell most recently holds it. Lost it? Use "Visited again today" on a retailer card in that cell (once a day per retailer).') + '</li>' +
-            '<li>' + T('색: 남의 칸은 별명마다 정해진 색(8가지 중 하나), 내 칸은 기본 빨강이고 위에서 바꿀 수 있습니다(내 화면에만). 내 칸은 테두리가 조금 굵습니다.', 'Colours: other players\' cells get a colour fixed by nickname (one of eight); yours is red by default and you can change it above (only on your screen). Your cells have a slightly thicker edge.') + '</li>' +
+            '<li>' + T('칸 모양: 참여자마다 색 두 가지와 무늬(단색 · 줄무늬 · 물방울 · 체크)가 무작위로 정해지고 모두에게 같게 보입니다. 내 칸 모양은 ' + SKIN_COST + '포인트로 바꿀 수 있습니다. 내 칸은 테두리가 조금 굵습니다.', 'Skins: each player gets two colours and a pattern (solid, stripes, dots or checks) at random, and everyone sees the same. You can change yours for ' + SKIN_COST + ' points. Your cells have a slightly thicker edge.') + '</li>' +
+            '<li>' + T('밤 지도에서 크게 보면 차지한 칸 테두리를 빛이 시계 방향으로 돕니다.', 'On the night map, zoomed in, a light runs clockwise round held cells.') + '</li>' +
             '<li>' + T('칸은 비우지 않습니다. 분기(1 · 4 · 7 · 10월 1일 0시)마다 그때의 Map 랭킹을 확정해 남깁니다.', 'Cells are never cleared. At the start of each quarter the Map ranking at that moment is finalised and kept.') + '</li>' +
             '<li>' + T('시험판: 지금은 "다녀왔어요"를 누른 기록만 셉니다. 위치 인증(판매점 50m 안)은 준비 중입니다. 폐점한 곳은 세지 않습니다.', 'Beta: for now a tap on "I\'ve been here" counts. Location check (within 50 m) is coming. Closed retailers do not count.') + '</li>' +
             '<li>' + T('복권을 살 필요는 없습니다. 어디서 사든 1등 확률은 1/8,145,060으로 같습니다.', 'No purchase needed. Your chance of 1st prize is 1 in 8,145,060 wherever you buy.') + '</li>' +
@@ -1091,9 +1191,7 @@
             '<p class="sm-terr-msg" role="status"></p>';
         terrPanel.hidden = false;
         terrPanel.querySelector('.sm-close').addEventListener('click', closeTerrPanel);
-        terrPanel.querySelectorAll('button.sm-terr-color').forEach(b => b.addEventListener('click', () => saveTerrColor(b.dataset.c || null)));
-        const anyC = terrPanel.querySelector('.sm-terr-colors input[type="color"]');
-        if (anyC) anyC.addEventListener('change', () => saveTerrColor(anyC.value));
+        bindSkin();
         const jb = terrPanel.querySelector('.sm-terr-join');
         if (jb) jb.addEventListener('click', async () => {
             if (!(await member(T('영역은 로그인한 회원이 참여합니다.', 'Sign in to join the turf game.')))) return;

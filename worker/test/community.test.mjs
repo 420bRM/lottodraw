@@ -581,7 +581,7 @@ test('랭킹: 출석(하루 한 번)·반응·로그인한 채 산 이용권으�
     let r = (await call(env, 'GET', '/api/ranking')).data;
     assert.deepEqual(r.top, [{ rank: 1, nick: '첫째', points: 10 + 4 + buyPts, days: 1 }], '별명 없는 B 는 공개 목록에 없다');
     assert.equal(r.me, null);
-    assert.deepEqual(r.points, { attend: 10, react: 2, buyPer100: 10, nickChange: 500, dayPass: 300, visitColor: 30 });
+    assert.deepEqual(r.points, { attend: 10, react: 2, buyPer100: 10, nickChange: 500, dayPass: 300, visitColor: 30, terrSkin: 30 });
 
     // 내 순위: 별명이 없어도 알려 준다
     r = (await call(env, 'GET', '/api/ranking', { headers: auth(b.session) })).data;
