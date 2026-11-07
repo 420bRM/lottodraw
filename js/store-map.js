@@ -178,7 +178,7 @@
         const N = k => (on ? NIGHT[k] : null);
         for (const l of map.getStyle().layers) {
             const sl = l['source-layer'], id = l.id;
-            if (/^st-/.test(id)) continue;
+            if (/^(st|terr)-/.test(id)) continue;   // 판매점 점 · 영역 칸은 제 색 그대로(영역 칸이 땅 색으로 칠해져 밤에 안 보였다 — 2026-11-07)
             if (id === 'sm-bld') setP(id, 'fill-extrusion-color', N('extr'));
             else if (id === 'sm-bld-line') setP(id, 'line-color', N('edge'));
             else if (l.type === 'background') setP(id, 'background-color', N('bg'));
@@ -193,6 +193,8 @@
         map.setPaintProperty('st-w1', 'circle-stroke-color', rim('#f07a1a'));
         map.setPaintProperty('st-w2', 'circle-stroke-color', rim('#3b6fd8'));
         if (map.getLayer('st-all')) map.setPaintProperty('st-all', 'circle-stroke-color', rim('#7d8799'));
+        if (map.getLayer('terr-name')) map.setPaintProperty('terr-name', 'text-halo-color', on ? 'rgba(10, 14, 22, .9)' : 'rgba(255, 255, 255, .95)');
+        if (map.getLayer('terr-sel')) map.setPaintProperty('terr-sel', 'line-color', on ? '#f3f4f6' : '#111827');
     }
     // 낮/밤은 사이트 값을 따른다(생성기와 같다, 2026-10-27 사장님). 🌙 단추는 사이트 낮/밤 단추(js/theme.js — 지도에서는 감춤)를 대신 누른다 — 저장 · 다른 탭 따라가기는 theme.js 가 한다
     function toggleNight() {
@@ -587,7 +589,7 @@
         card.innerHTML = '<button type="button" class="sm-close" aria-label="' + T('닫기', 'Close') + '">×</button>' + html;
         card.hidden = false;
         if (!isWide()) { nearPanel.hidden = true; minePanel.hidden = true; terrPanel.hidden = true; }   // 휴대폰은 카드 하나만
-        card.querySelector('.sm-close').addEventListener('click', () => { card.hidden = true; markTop(null); if (shown.terr && !isWide()) { terrPanel.hidden = false; drawTerr(); } });
+        card.querySelector('.sm-close').addEventListener('click', () => { card.hidden = true; markTop(null); if (shown.terr && terrOpen && !isWide()) drawTerr(); });
         if (isWide()) setTab('card');
         if (fly) map.flyTo({ center: [lng, lat], zoom: Math.max(map.getZoom(), 15), padding: pad(), essential: true });
         card.scrollTop = 0;
@@ -871,7 +873,9 @@
     const HX = window.LottoHex;
     const terrPanel = document.getElementById('sm-terr'), terrChip = document.getElementById('sm-terr-chip');
     let terr = null, terrCells = null, terrSel = null, terrView = 'main', terrLoading = null, visitAt = {};
-    const TERR_ME = '#e63946';
+    const TERR_ME = '#e63946';   // 내 칸 기본색. 내 화면에서는 고른 색(내 정보 terrColor, /api/territory/color)
+    const myColor = () => { const A = account(), u = A && A.me() && A.me().user; return (u && u.terrColor) || TERR_ME; };
+    let terrOpen = false;   // 영역 창이 열려 있는가 — 창을 닫아도 칸은 지도에 남는다(2026-11-07 사장님)
     const TERR_COLORS = ['#3a86ff', '#8338ec', '#2a9d8f', '#f4a261', '#ff66b3', '#118ab2', '#6d597a', '#e9c46a'];
     const nickColor = nick => { let h = 0; for (const c of String(nick)) h = (h * 31 + c.codePointAt(0)) >>> 0; return TERR_COLORS[h % TERR_COLORS.length]; };
     // 지금 분기(한국 시간) — 서버 답이 오기 전 랭킹 제목용. 서버의 seasonOf 와 같은 셈
@@ -909,7 +913,7 @@
         const polys = [], pts = [];
         terrCells.forEach((list, k) => {
             const own = cells[k], me = mine.has(k);
-            const c = own ? (me ? TERR_ME : nickColor(own[0] || '?')) : '#8a94a6';
+            const c = own ? (me ? myColor() : nickColor(own[0] || '?')) : '#8a94a6';
             polys.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [HX.ringOf(k)] }, properties: { k, o: own ? 1 : 0, me: me ? 1 : 0, c } });
             if (own) pts.push({ type: 'Feature', geometry: { type: 'Point', coordinates: HX.centerOf(k) }, properties: { k, nm: (own[0] || T('(별명 없음)', '(no name)')) + ' · ' + own[1], c } });
         });
@@ -929,9 +933,9 @@
             map.addLayer({ id: 'terr-fill', type: 'fill', source: 'terr', paint: {
                 'fill-color': ['get', 'c'], 'fill-opacity': ['case', ['==', ['get', 'me'], 1], 0.4, ['==', ['get', 'o'], 1], 0.3, 0.04] } }, below);
             map.addLayer({ id: 'terr-line', type: 'line', source: 'terr', paint: {
-                'line-color': ['get', 'c'], 'line-width': ['case', ['==', ['get', 'me'], 1], 2.2, ['==', ['get', 'o'], 1], 1.4, 0.8],
+                'line-color': ['get', 'c'], 'line-width': ['case', ['==', ['get', 'me'], 1], 1.76, ['==', ['get', 'o'], 1], 1.12, 0.64],   // 2026-11-07 사장님 — 처음보다 0.8배
                 'line-opacity': ['interpolate', ['linear'], ['zoom'], 6, ['case', ['==', ['get', 'o'], 1], 0.8, 0], 9, ['case', ['==', ['get', 'o'], 1], 0.9, 0.55]] } }, below);
-            map.addLayer({ id: 'terr-sel', type: 'line', source: 'terr', filter: ['==', ['get', 'k'], ''], paint: { 'line-color': '#111827', 'line-width': 3, 'line-dasharray': [2, 1] } }, below);
+            map.addLayer({ id: 'terr-sel', type: 'line', source: 'terr', filter: ['==', ['get', 'k'], ''], paint: { 'line-color': isNight() ? '#f3f4f6' : '#111827', 'line-width': 2.4, 'line-dasharray': [2, 1] } }, below);
             map.addLayer({ id: 'terr-name', type: 'symbol', source: 'terr-pt', minzoom: 9.5, layout: { 'text-field': ['get', 'nm'], 'text-font': ['Noto Sans Bold'], 'text-size': 12, 'text-max-width': 8, 'text-padding': 4 },
                 paint: { 'text-color': ['get', 'c'], 'text-halo-color': isNight() ? 'rgba(10, 14, 22, .9)' : 'rgba(255, 255, 255, .95)', 'text-halo-width': 1.6 } });
             map.on('click', 'terr-fill', e => {
@@ -948,18 +952,30 @@
         terrSel = k;
         terrView = 'main';
         if (map.getLayer('terr-sel')) map.setFilter('terr-sel', ['==', ['get', 'k'], k]);
-        drawTerr();
+        openTerrPanel();
         terrPanel.scrollTop = 0;
+    }
+    // 영역 창 열기(칸을 누르거나 칩을 켤 때 · PC 의 "영역" 탭). 휴대폰은 창 하나만
+    function openTerrPanel() {
+        terrOpen = true;
+        if (isWide()) setTab('terr'); else { card.hidden = true; nearPanel.hidden = true; minePanel.hidden = true; }
+        drawTerr();
+    }
+    // 창만 닫기 — 칸은 지도에 그대로(끄려면 칩을 다시 누른다)
+    function closeTerrPanel() {
+        terrOpen = false;
+        terrPanel.hidden = true;
+        if (isWide() && side.dataset.tab === 'terr') setTab('top');
     }
     async function setTerr(on) {
         shown.terr = on;
         if (terrChip) terrChip.setAttribute('aria-pressed', String(on));
         if (!on) {
-            terrPanel.hidden = true;
+            closeTerrPanel();
             TERR_LAYERS.forEach(id => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none'); });
-            if (isWide() && side.dataset.tab === 'terr') setTab('top');
             return;
         }
+        terrOpen = true;
         terrPanel.hidden = false;
         terrPanel.innerHTML = '<p class="sm-small">' + T('영역을 불러오는 중…', 'Loading turf…') + '</p>';
         if (isWide()) setTab('terr'); else { card.hidden = true; nearPanel.hidden = true; minePanel.hidden = true; }
@@ -1005,7 +1021,7 @@
             : T(' · 같은 수 — 이 칸 판매점에 오늘 또 다녀오면 되찾습니다', ' · tied — visit one again today to take it back');
         const where = list.length ? areaOf(list) : '';
         return '<div class="sm-terr-cell"><h4>' + T('고른 칸', 'This cell') + (where ? ' · ' + esc(where) : '') + ' <small>' + T('판매점 ' + fmt(list.length) + '곳', fmt(list.length) + ' retailers') + '</small></h4>' +
-            '<p>' + (own ? T('주인 ', 'Held by ') + '<b style="color:' + (mineCell ? TERR_ME : nickColor(own[0] || '?')) + '">' + esc(own[0] || T('(별명 없음)', '(no name)')) + '</b>' +
+            '<p>' + (own ? T('주인 ', 'Held by ') + '<b style="color:' + (mineCell ? myColor() : nickColor(own[0] || '?')) + '">' + esc(own[0] || T('(별명 없음)', '(no name)')) + '</b>' +
                 T(' · ' + own[1] + '곳', ' · ' + own[1]) + (own[2] ? T(' (2위 ' + own[2] + '곳)', ' (runner-up ' + own[2] + ')') : '')
                 : T('아직 주인이 없습니다. 이 칸 판매점 한 곳만 다녀와도 차지합니다.', 'No one holds it yet — one visit takes it.')) + '</p>' +
             (me && me.joined ? '<p class="sm-terr-mine">' + T('나: ' + myN + '곳', 'Me: ' + myN) + myLine + '</p>' : '') +
@@ -1014,13 +1030,33 @@
                 (x.t === 'w' && x.w1 ? '<small>' + x.w1 + T('번 1등', ' × 1st') + '</small>' : '') + '</span></button></li>').join('') + '</ol>' : '') +
             '</div>';
     }
+    // 내 칸 색 고르기(2026-11-07 사장님 — 내 화면에서만. 남의 칸은 별명마다 정해진 색): 기본 빨강 + 다녀온 곳 색 목록 + 아무 색
+    const TERR_PICK = [TERR_ME, '#f4a261', '#e9c46a', '#2a9d8f', '#3a86ff', '#8338ec', '#ff66b3', '#1f2937'];
+    function colorRow() {
+        const cur = myColor();
+        return '<div class="sm-terr-colors"><span class="sm-small">' + T('내 칸 색', 'My colour') + '</span>' +
+            TERR_PICK.map(c => '<button type="button" class="sm-terr-color' + (c === cur ? ' is-on' : '') + '" data-c="' + (c === TERR_ME ? '' : c) + '" style="background:' + c + '" aria-label="' + c + '"></button>').join('') +
+            '<label class="sm-terr-color sm-terr-any" title="' + T('다른 색', 'Any colour') + '"><input type="color" value="' + cur + '" aria-label="' + T('다른 색', 'Any colour') + '"></label>' +
+            '<span class="sm-small">' + T('나만 보입니다', 'only you see it') + '</span></div>';
+    }
+    async function saveTerrColor(color) {
+        const A = account();
+        try {
+            const r = await A.call('/api/territory/color', { method: 'POST', body: { color } });
+            const m = A.me();
+            if (m && m.user) m.user.terrColor = (r.user && r.user.terrColor) || null;
+            await A.refresh().catch(() => null);
+        } catch (e) { const msg = terrPanel.querySelector('.sm-terr-msg'); if (msg) msg.textContent = (e && e.message) || T('저장하지 못했습니다.', 'Could not save.'); return; }
+        drawTerrLayers();
+        drawTerr();
+    }
     // 랭킹 목록(지금 · 지난 분기 확정). medal: 1~3위에 메달
     function rankList(rows, mine, medal) {
         return '<ol class="sm-terr-rank">' + rows.map((r, k) => '<li' + (mine === k + 1 ? ' class="is-me"' : '') + '><span class="sm-rank">' + (medal && MEDAL[k] ? MEDAL[k] : k + 1) + '</span><span class="sm-tname">' +
             esc(r.nick || T('(탈퇴했거나 별명 없음)', '(no name)')) + '</span><span class="sm-tcnt"><b>' + fmt(r.cells) + '</b>' + T('칸', '') + '<small>' + T(fmt(r.stores) + '곳', fmt(r.stores) + ' visits') + '</small></span></li>').join('') + '</ol>';
     }
     function drawTerr() {
-        if (!shown.terr) return;
+        if (!shown.terr || !terrOpen) return;   // 창을 닫았으면 칸만 새로 그린다(drawTerrLayers)
         const A = account();
         const s = terr ? terr.season : seasonNow();
         if (terrView === 'consent') { drawConsent(); return; }
@@ -1030,7 +1066,8 @@
         else if (!(me && me.joined)) status = '<button type="button" class="sm-terr-join">' + T('참여하기', 'Join') + '</button> <span class="sm-small">' + T('동의한 뒤에만 셉니다', 'Counts only after you agree') + '</span>';
         else status = '<p class="sm-terr-me">' + T('내 칸 <b>' + fmt(me.cells.length) + '</b>' + (me.rank ? ' · <b>' + me.rank + '</b>위' : '') + ' · 다녀온 곳 ' + fmt(me.stores) + '곳',
             'My cells <b>' + fmt(me.cells.length) + '</b>' + (me.rank ? ' · rank <b>' + me.rank + '</b>' : '') + ' · ' + fmt(me.stores) + ' visited') + '</p>' +
-            (me.lastRank ? '<p class="sm-terr-me">' + (MEDAL[me.lastRank - 1] || '🏅') + ' ' + T(seasonLabel(terr.last) + ' 확정 ' + me.lastRank + '위', seasonLabel(terr.last) + ' final: #' + me.lastRank) + '</p>' : '');
+            (me.lastRank ? '<p class="sm-terr-me">' + (MEDAL[me.lastRank - 1] || '🏅') + ' ' + T(seasonLabel(terr.last) + ' 확정 ' + me.lastRank + '위', seasonLabel(terr.last) + ' final: #' + me.lastRank) + '</p>' : '') +
+            colorRow();
         const rank = (terr && terr.rank) || [];
         const last = terr && terr.last;
         terrPanel.innerHTML = '<button type="button" class="sm-close" aria-label="' + T('닫기', 'Close') + '">×</button>' +
@@ -1045,6 +1082,7 @@
             '<details class="sm-terr-rules"><summary>' + T('규칙', 'Rules') + '</summary><ul>' +
             '<li>' + T('칸(육각형, 가운데서 꼭짓점까지 1.2km) 안에서 다녀온 판매점이 가장 많은 사람이 그 칸을 차지합니다.', 'Whoever has visited the most retailers in a hexagon cell (1.2 km centre to corner) holds it.') + '</li>' +
             '<li>' + T('같은 수면 그 칸에 더 최근에 다녀온 사람이 차지합니다. 빼앗기면 그 칸 판매점 카드의 "오늘 또 다녀왔어요"로 되찾을 수 있습니다(같은 곳은 하루 한 번).', 'On a tie, whoever visited the cell most recently holds it. Lost it? Use "Visited again today" on a retailer card in that cell (once a day per retailer).') + '</li>' +
+            '<li>' + T('색: 남의 칸은 별명마다 정해진 색(8가지 중 하나), 내 칸은 기본 빨강이고 위에서 바꿀 수 있습니다(내 화면에만). 내 칸은 테두리가 조금 굵습니다.', 'Colours: other players\' cells get a colour fixed by nickname (one of eight); yours is red by default and you can change it above (only on your screen). Your cells have a slightly thicker edge.') + '</li>' +
             '<li>' + T('칸은 비우지 않습니다. 분기(1 · 4 · 7 · 10월 1일 0시)마다 그때의 Map 랭킹을 확정해 남깁니다.', 'Cells are never cleared. At the start of each quarter the Map ranking at that moment is finalised and kept.') + '</li>' +
             '<li>' + T('시험판: 지금은 "다녀왔어요"를 누른 기록만 셉니다. 위치 인증(판매점 50m 안)은 준비 중입니다. 폐점한 곳은 세지 않습니다.', 'Beta: for now a tap on "I\'ve been here" counts. Location check (within 50 m) is coming. Closed retailers do not count.') + '</li>' +
             '<li>' + T('복권을 살 필요는 없습니다. 어디서 사든 1등 확률은 1/8,145,060으로 같습니다.', 'No purchase needed. Your chance of 1st prize is 1 in 8,145,060 wherever you buy.') + '</li>' +
@@ -1052,7 +1090,10 @@
             (me && me.joined ? '<p class="sm-terr-leave-p"><button type="button" class="sm-terr-leave">' + T('영역 그만두기', 'Leave turf') + '</button></p>' : '') +
             '<p class="sm-terr-msg" role="status"></p>';
         terrPanel.hidden = false;
-        terrPanel.querySelector('.sm-close').addEventListener('click', () => setTerr(false));
+        terrPanel.querySelector('.sm-close').addEventListener('click', closeTerrPanel);
+        terrPanel.querySelectorAll('button.sm-terr-color').forEach(b => b.addEventListener('click', () => saveTerrColor(b.dataset.c || null)));
+        const anyC = terrPanel.querySelector('.sm-terr-colors input[type="color"]');
+        if (anyC) anyC.addEventListener('change', () => saveTerrColor(anyC.value));
         const jb = terrPanel.querySelector('.sm-terr-join');
         if (jb) jb.addEventListener('click', async () => {
             if (!(await member(T('영역은 로그인한 회원이 참여합니다.', 'Sign in to join the turf game.')))) return;
@@ -1629,7 +1670,7 @@
             set3d(on);
         });
         document.getElementById('sm-night').addEventListener('click', () => { nightByTop = false; toggleNight(); });
-        side.querySelectorAll('.sm-tab').forEach(b => b.addEventListener('click', () => (b.dataset.tab === 'near' ? openNear() : b.dataset.tab === 'mine' && !shown.mine ? setMine(true) : b.dataset.tab === 'terr' && !shown.terr ? setTerr(true) : setTab(b.dataset.tab))));
+        side.querySelectorAll('.sm-tab').forEach(b => b.addEventListener('click', () => (b.dataset.tab === 'near' ? openNear() : b.dataset.tab === 'mine' && !shown.mine ? setMine(true) : b.dataset.tab === 'terr' ? (shown.terr ? openTerrPanel() : setTerr(true)) : setTab(b.dataset.tab))));
         nearBtn.addEventListener('click', openNear);
         placeNearBtn();
         window.addEventListener('resize', placeNearBtn);

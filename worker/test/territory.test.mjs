@@ -249,6 +249,15 @@ test('영역 참여: 동의 · 별명이 있어야 하고, 칸 주인 · 랭킹�
     await visit(env, b, '11100002', { color: null });
     assert.deepEqual((await terr(env)).data.cells['0,0'], ['라마바', 2, 2, 2]);
 
+    // 내 칸 색: 내 정보에만(칸 · 랭킹에는 안 나간다), 이상한 색은 거절, null 이면 기본
+    assert.equal((await call(env, 'POST', '/api/territory/color', { body: { color: '#123456' } })).status, 401);
+    assert.equal((await call(env, 'POST', '/api/territory/color', { headers: auth(a), body: { color: 'red' } })).status, 400);
+    const col = await call(env, 'POST', '/api/territory/color', { headers: auth(a), body: { color: '#2A9D8F' } });
+    assert.equal(col.status, 200);
+    assert.equal(col.data.user.terrColor, '#2a9d8f');
+    assert.ok(!/2a9d8f/i.test(JSON.stringify((await terr(env)).data)), '남에게는 안 나간다');
+    assert.equal((await call(env, 'POST', '/api/territory/color', { headers: auth(a), body: { color: null } })).data.user.terrColor, null);
+
     // 관리자가 별명을 지우면 칸에도 별명 없이
     assert.equal((await call(env, 'POST', '/api/admin/members/3001/clear-nick', { headers: asAdmin })).status, 200);
     assert.equal((await terr(env)).data.cells['1,0'][0], null);

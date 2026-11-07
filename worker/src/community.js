@@ -19,6 +19,7 @@
 //                        vt:    { 판매점 번호: 시각 } — 다녀온 곳을 표시한(또는 "또 다녀왔어요"를 누른) 마지막 때(2026-11-07부터. 그 전 것은 없다). 표시를 지우면 같이 지운다
 //                        vday:  { day, n } — 오늘(한국 날짜) 다녀온 때를 새로 적은 횟수(territory.js VISIT_DAILY 까지)
 //                        terr:  { at, v } — 영역(육각 칸) 참여 동의: 동의한 때와 동의 문구 판(territory.js TERR_CONSENT). 그만두면 지운다
+//                        tcolor: '#rrggbb' — 내 영역 칸 색(2026-11-07, 내 화면에만 — 남에게는 별명마다 정해진 색). 없으면 기본 빨강
 //                        rx:    { 항목: 'h' | 'd' | 'hd' } — 내가 누른 좋아요
 //                        sess:  로그인 세션 해시 (최근 5개)
 //                        cm:    내가 쓴 블로그 댓글 키, cmAt: 마지막으로 쓴 시각, cmDay: { day, n } 오늘 쓴 수
@@ -436,6 +437,15 @@ const OPS = {
         const nv = {};
         for (const id of Object.keys(user.visits || {})) if (cells && cells[id]) nv[id] = [(user.vt || {})[id] || 0, cells[id]];
         await this.terrSet(sub, { nick: user.nick, at: user.terr.at, v: nv });
+        return { ok: true, user: view(user) };
+    },
+
+    // 내 영역 칸 색(내 화면에만). null 이면 기본으로
+    async setTerrColor({ sub, color }) {
+        const user = await this.storage.get('u:' + sub);
+        if (!user) return { error: 'no_user' };
+        if (color) user.tcolor = color; else delete user.tcolor;
+        await this.saveUser(user);
         return { ok: true, user: view(user) };
     },
 
@@ -1103,7 +1113,7 @@ function view(user) {
     const trial = user.trial && user.trial.key ? { key: user.trial.key, keyId: user.trial.keyId, expiresAt: user.trial.expiresAt } : null;
     return {
         email: user.email, nick: user.nick || null, createdAt: user.createdAt, trial, score: pubScore(user), staff: !!user.staff, gen: user.gen || null, visits: user.visits || {}, visitAt: user.vt || {}, visitColors: user.vcolors || [], notes: user.ntN || 0,
-        terr: user.terr ? { at: user.terr.at, v: user.terr.v } : null,
+        terr: user.terr ? { at: user.terr.at, v: user.terr.v } : null, terrColor: user.tcolor || null,
         nickAuto: !!(user.nick && user.nickAuto), nickDue: !user.nick && user.nickDue ? user.nickDue : null,
         pointPass: user.ppass && user.ppass.key ? { key: user.ppass.key, keyId: user.ppass.keyId, expiresAt: user.ppass.expiresAt } : null,
     };
