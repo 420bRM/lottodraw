@@ -354,6 +354,52 @@ body.sm-full #theme-btn { display: none !important; }
     .sm-tab[hidden] { display: none; }
 }
 
+/* 영역(육각 칸 땅따먹기, 2026-11-07 시험판) — 칸 · 동의 · Map 랭킹. 패널은 .sm-near 모양(휴대폰 왼쪽 아래, PC 는 "영역" 탭) */
+.sm-chip-terr[hidden] { display: none; }
+.sm-terr-beta { padding: 0 6px; border-radius: 999px; background: #fde8ea; color: #c41f30 !important; font-size: 10px !important; font-weight: bold !important; vertical-align: 1px; }
+.sm-terr-season { margin: 0 0 6px; color: var(--muted, #666); font-size: 11px; }
+.sm-terr-status { margin: 0 0 8px; }
+.sm-terr-status .sm-small { margin-left: 4px; }
+.sm-terr-join, .sm-terr-ok { padding: 5px 14px; border: 0; border-radius: 999px; background: #e63946; color: #fff; font: inherit; font-size: 12px; font-weight: bold; cursor: pointer; }
+.sm-terr-ok:disabled { opacity: .45; cursor: default; }
+.sm-terr-cancel, .sm-terr-leave { padding: 4px 10px; border: 1px solid var(--line, #ddd); border-radius: 999px; background: var(--surface, #fff); color: var(--muted, #555); font: inherit; font-size: 11px; cursor: pointer; }
+.sm-terr-me { margin: 0; font-size: 12px; }
+.sm-terr-me b { color: #e63946; }
+.sm-terr-cell { margin: 0 0 8px; padding: 8px; border: 1px solid var(--line, #e3e3e3); border-radius: 8px; background: var(--soft, #f7f8fb); }
+.sm-terr-cell h4, .sm-terr-h { margin: 0 0 4px; font-size: 12.5px; }
+.sm-terr-cell h4 small, .sm-terr-h small { color: var(--faint, #888); font-weight: normal; }
+.sm-terr-cell p { margin: 0 0 4px; font-size: 11.5px; }
+.sm-terr-mine { color: #c41f30; font-weight: bold; }
+
+.sm-terr-v { display: inline-block; margin-right: 4px; color: #16a34a; }
+.sm-terr-h { margin-top: 8px; }
+.sm-terr-rank { margin: 0; padding: 0; list-style: none; }
+.sm-terr-rank li { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: center; gap: 6px; padding: 4px 2px; border-bottom: 1px solid var(--line-soft, #f0f1f4); font-size: 12px; }
+.sm-terr-rank li.is-me { background: #fdecee; }
+.sm-terr-rank .sm-rank { color: #e63946; font-weight: bold; text-align: right; }
+.sm-terr-rank .sm-tname { overflow: hidden; font-weight: bold; text-overflow: ellipsis; white-space: nowrap; }
+.sm-terr-rank .sm-tcnt { text-align: right; white-space: nowrap; }
+.sm-terr-rank .sm-tcnt b { color: var(--brand, #003087); }
+.sm-terr-rank .sm-tcnt small { margin-left: 4px; color: var(--faint, #777); }
+.sm-terr-rules { margin: 8px 0 0; font-size: 11px; }
+.sm-terr-rules summary { color: var(--brand, #003087); font-weight: bold; cursor: pointer; }
+.sm-terr-rules ul, .sm-terr-consent { margin: 4px 0 0; padding-left: 16px; }
+.sm-terr-rules li, .sm-terr-consent li { margin: 0 0 4px; line-height: 1.45; }
+.sm-terr-consent { font-size: 11.5px; }
+.sm-terr-agree { display: flex; gap: 6px; align-items: flex-start; margin: 8px 0; font-size: 12px; font-weight: bold; cursor: pointer; }
+.sm-terr-agree input { margin-top: 2px; }
+.sm-terr-btns, .sm-terr-leave-p { margin: 6px 0 0; }
+.sm-terr-msg { margin: 4px 0 0; color: #c41f30; font-size: 11px; }
+.sm-terr-msg:empty { display: none; }
+.sm-visit-again-p { margin: 4px 0 0; }
+.sm-visit-again { padding: 4px 10px; border: 1px solid #e63946; border-radius: 999px; background: var(--surface, #fff); color: #e63946; font: inherit; font-size: 11.5px; font-weight: bold; cursor: pointer; }
+.sm-visit-terr { color: #c41f30 !important; }
+@media (min-width: 900px) {
+    .sm-side[data-tab="terr"] .sm-terr:not([hidden]) { display: block; }
+    .sm-terr-season, .sm-terr-cell p, .sm-terr-consent, .sm-terr-rules { font-size: 12.5px; }
+    .sm-terr-rank li { font-size: 13px; }
+}
+
 /* 해당 판매점 공유하기(2026-10-28) */
 .sm-share-shop { margin: 6px 0 0; }
 .sm-share-btn { padding: 5px 12px; border: 1px solid var(--brand, #003087); border-radius: 999px; background: var(--surface, #fff); color: var(--brand, #003087); font: inherit; font-size: 12px; font-weight: bold; cursor: pointer; }

@@ -32,6 +32,7 @@ import { saleRound, cleanGame, rankOf, kstParts, drawDay } from './lotto.js';
 
 import { chatStub, checkText } from './chat.js';
 import { shopInfo, sharePage } from './share.js';
+import { TERR_CONSENT, cellMap, _resetCellsForTests } from './territory.js';
 
 export { Community } from './community.js';
 export { ChatRoom } from './chat.js';
@@ -120,6 +121,9 @@ async function route(request, env, ctx) {
     if (path === '/api/mail/unsubscribe' && (method === 'GET' || method === 'POST')) return unsubscribe(request, env, url);
     if (path === '/api/reactions' && method === 'GET') return getReactions(request, env, url);
     if (path === '/api/ranking' && method === 'GET') return getRanking(request, env);
+    if (path === '/api/territory' && method === 'GET') return getTerritory(request, env);
+    if (path === '/api/territory/join' && method === 'POST') return territoryJoin(request, env);
+    if (path === '/api/territory/leave' && method === 'POST') return territoryLeave(request, env);
     if (path === '/api/chat' && method === 'GET') return chatConnect(request, env);
     if (path === '/api/chat/info' && method === 'GET') return chatInfo(request, env);
     if (path === '/api/reactions' && method === 'POST') return react(request, env);
@@ -772,6 +776,41 @@ async function getRanking(request, env) {
     return json(request, env, Object.assign(r, { points: POINTS }), 200, sub ? {} : { 'Cache-Control': 'public, max-age=60' }, !sub);
 }
 
+// 영역(육각 칸, 2026-11-07 시험판 — territory.js): 칸 주인 · Map 랭킹은 누구나, 로그인했으면 내 칸 · 순위도
+async function getTerritory(request, env) {
+    needLogin(env);
+    let sub = null;
+    if (bearer(request)) {
+        const got = await community(env, 'sessionGet', { hash: await sha256('sess:' + bearer(request)), now: Date.now() }).catch(() => ({}));
+        sub = got.sub || null;
+    }
+    const r = await community(env, 'territory', { sub, now: Date.now() });
+    return json(request, env, r, 200, sub ? {} : { 'Cache-Control': 'public, max-age=60' }, !sub);
+}
+
+// 참여: 동의 문구 판(v)을 그대로 보내야 한다. 별명이 있어야 한다. 지금까지 다녀온 곳도 이번 시즌 것이면 바로 센다
+async function territoryJoin(request, env) {
+    const s = await sessionUser(request, env);
+    await limited(env.REACT_LIMIT, s.hash);
+    const body = await readJson(request);
+    if (body.agree !== true || body.v !== TERR_CONSENT) throw new HttpError(400, 'need_consent', '참여 안내를 읽고 동의해 주세요.');
+    if (!s.user.nick) throw new HttpError(409, 'need_nick', '영역은 별명으로 나옵니다. 별명을 먼저 정해 주세요.');
+    const map = await cellMap(siteUrl(env)).catch(() => { throw new HttpError(503, 'cells_unavailable', '칸 자료를 불러오지 못했습니다. 잠시 뒤 다시 해 주세요.'); });
+    const cells = {};
+    for (const id of Object.keys(s.user.visits || {})) { const c = map.get(id); if (c) cells[id] = c; }
+    const r = await community(env, 'terrJoin', { sub: s.sub, now: Date.now(), v: TERR_CONSENT, cells });
+    if (r.error === 'need_nick') throw new HttpError(409, 'need_nick', '영역은 별명으로 나옵니다. 별명을 먼저 정해 주세요.');
+    if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
+    return json(request, env, { user: r.user });
+}
+
+async function territoryLeave(request, env) {
+    const s = await sessionUser(request, env);
+    const r = await community(env, 'terrLeave', { sub: s.sub });
+    if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
+    return json(request, env, { user: r.user });
+}
+
 async function logout(request, env) {
     needLogin(env);
     const token = bearer(request);
@@ -834,7 +873,8 @@ async function saveGenerator(request, env) {
 }
 
 // 판매점 지도 "다녀온 곳"(로그인 회원, 2026-10-26). { id: 동행복권 판매점 번호 8자리, color: '#rrggbb' | null(지움) }.
-// 회원이 지도에서 직접 누른 표시일 뿐 기기 위치(GPS)를 받지 않는다 — 위치정보가 아니다(README 4-9). 한 사람 1,000곳까지
+// 회원이 지도에서 직접 누른 표시일 뿐 기기 위치(GPS)를 받지 않는다 — 위치정보가 아니다(README 4-9). 한 사람 1,000곳까지.
+// { id, again: true }: 이미 표시한 곳을 "이번 시즌에 또 다녀왔어요"(영역 시즌, 2026-11-07). 영역 참여자면 그 판매점의 칸도 넘긴다
 const VISIT_MAX = 1000;
 async function saveVisit(request, env) {
     const s = await sessionUser(request, env);
@@ -842,11 +882,14 @@ async function saveVisit(request, env) {
     const body = await readJson(request);
     const id = String(body.id || '');
     if (!/^\d{8}$/.test(id)) throw new HttpError(400, 'bad_visit', '판매점 번호가 이상합니다.');
-    if (body.color !== null && !/^#[0-9a-fA-F]{6}$/.test(String(body.color || ''))) throw new HttpError(400, 'bad_visit', '색이 이상합니다.');
-    const r = await community(env, 'setVisit', { sub: s.sub, id, color: body.color === null ? null : String(body.color).toLowerCase(), max: VISIT_MAX });
+    const again = body.again === true;
+    if (!again && body.color !== null && !/^#[0-9a-fA-F]{6}$/.test(String(body.color || ''))) throw new HttpError(400, 'bad_visit', '색이 이상합니다.');
+    const cell = s.user.terr ? (await cellMap(siteUrl(env)).catch(() => new Map())).get(id) || null : null;
+    const r = await community(env, 'setVisit', { sub: s.sub, id, color: again || body.color === null ? null : String(body.color).toLowerCase(), max: VISIT_MAX, now: Date.now(), cell, again });
     if (r.error === 'too_many') throw new HttpError(409, 'too_many_visits', `다녀온 곳은 ${VISIT_MAX}곳까지 저장합니다.`);
+    if (r.error === 'not_visited') throw new HttpError(409, 'not_visited', '다녀온 곳으로 표시한 판매점이 아닙니다.');
     if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
-    return json(request, env, { visits: r.visits });
+    return json(request, env, { visits: r.visits, visitAt: r.visitAt });
 }
 
 // 다녀온 곳 색 열기(2026-10-26): 첫 색(빨강)은 누구나, 나머지 7색은 이용권이 있으면 화면에서 바로, 없으면 하나에 POINTS.visitColor 포인트.
@@ -1624,7 +1667,7 @@ async function revoke(env, id) {
  */
 let cachedSigner = null;
 
-export function _resetForTests() { cachedSigner = null; }
+export function _resetForTests() { cachedSigner = null; _resetCellsForTests(); }
 export const _resultMailForTests = resultMail;
 
 async function signer(env, fresh) {
