@@ -975,17 +975,18 @@
     const NIGHT_FX = ['terr-glow', 'terr-glint'];
     const terrVis = id => shown.terr && (!NIGHT_FX.includes(id) || (isNight() && !REDUCED));
     // 밤 지도에서 차지한 칸 면에 유리 반짝임(2026-11-07 사장님 — "유리가 각이 바뀌면서 빛에 비치듯, 45도 방향으로"):
-    // 45° 빛줄기(/)가 칸을 왼쪽 위에서 오른쪽 아래로 훑고 지나간다. 가운데가 밝고 가장자리는 옅게(겹친 띠 셋) + 뒤따르는 가는 줄 하나.
-    // GLINT_CYCLE 마다 한 번, 훑는 데는 그중 GLINT_SWEEP 만큼. 칸마다 시작을 대각선 자리만큼 늦춰 빛이 이웃 칸으로 비스듬히 번져 간다.
-    // 띠는 칸 육각형을 두 평행선으로 잘라 그린다(볼록 다각형 자르기) — 화면에 보이는 내 · 남의 차지한 칸만, 1초 15번
-    const GLINT_CYCLE = 4200, GLINT_SWEEP = 0.34;
+    // 45° 빛줄기(/)가 칸을 왼쪽 위에서 오른쪽 아래로 번쩍 훑고 지나간다. 가운데가 밝고 가장자리는 옅게(겹친 띠 셋) + 뒤따르는 가는 줄 하나.
+    // GLINT_CYCLE 마다 한 번, 훑는 데는 GLINT_MS 만(같은 날 사장님 — "좀 빠르게": 처음 4.2초마다 1.4초 → 2.8초마다 0.38초, 더 밝고 가늘게).
+    // 칸마다 시작을 대각선 자리만큼 늦춰 빛이 이웃 칸으로 비스듬히 건너간다(이웃 칸까지 0.3초쯤).
+    // 띠는 칸 육각형을 두 평행선으로 잘라 그린다(볼록 다각형 자르기) — 화면에 보이는 내 · 남의 차지한 칸만, 1초 30번(테두리 빛은 15번)
+    const GLINT_CYCLE = 2800, GLINT_MS = 380, GLINT_SWEEP = GLINT_MS / GLINT_CYCLE;
     const COS0 = Math.cos(36 * Math.PI / 180);   // 경도를 위도와 같은 길이로(북위 36°) — 45° 가 화면에서도 45°
     let glintCells = [];
     function glintCell(k) {
         const ring = HX.ringOf(k).slice(0, 6).map(([lng, lat]) => [lng * COS0, lat]);
         const v = ring.map(p => p[1] - p[0]), c = HX.centerOf(k);
         const d = c[1] - c[0] * COS0;
-        return { ring, lo: Math.min(...v), hi: Math.max(...v), c, ph: (((d * 18) % 1) + 1) % 1 };
+        return { ring, lo: Math.min(...v), hi: Math.max(...v), c, ph: (((d * 12) % 1) + 1) % 1 };
     }
     // ring 에서 lo ≤ (y - x) ≤ hi 인 부분(볼록 다각형을 두 반평면으로 자른다)
     function clipBand(ring, lo, hi) {
@@ -1013,14 +1014,14 @@
             if (g.c[0] < W || g.c[0] > E || g.c[1] < S || g.c[1] > N) continue;
             const t = ((now / GLINT_CYCLE) + g.ph) % 1;
             if (t > GLINT_SWEEP) continue;
-            const u = t / GLINT_SWEEP, span = g.hi - g.lo, w = span * 0.24;
+            const u = t / GLINT_SWEEP, span = g.hi - g.lo, w = span * 0.16;
             const mid = g.hi + w - u * (span + 2 * w);   // 띠 가운데: 왼쪽 위(큰 값) → 오른쪽 아래
             const fade = Math.sin(Math.PI * u);           // 들어오고 나갈 때 옅게
             const add = (center, width, a) => { const poly = clipBand(g.ring, center - width / 2, center + width / 2); if (poly) out.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [poly] }, properties: { a: +(a * fade).toFixed(3) } }); };
-            add(mid, w, 0.08);
-            add(mid, w * 0.55, 0.12);
-            add(mid, w * 0.2, 0.22);
-            add(mid + w * 1.25, w * 0.1, 0.16);          // 뒤따르는 가는 줄(유리 모서리 반사)
+            add(mid, w, 0.12);
+            add(mid, w * 0.5, 0.2);
+            add(mid, w * 0.18, 0.38);
+            add(mid + w * 1.3, w * 0.12, 0.22);          // 뒤따르는 가는 줄(유리 모서리 반사)
         }
         return { type: 'FeatureCollection', features: out };
     }
@@ -1036,14 +1037,18 @@
     function terrGlowLoop() {
         if (glowing || REDUCED) return;
         glowing = true;
-        let last = 0;
+        let lastGlow = 0, lastGlint = 0, glintEmpty = true;
         const tick = now => {
             requestAnimationFrame(tick);
-            if (document.hidden || now - last < 66 || !map.getLayer('terr-glow') || !terrVis('terr-glow')) return;
-            last = now;
+            if (document.hidden || !map.getLayer('terr-glow') || !terrVis('terr-glow')) return;
             const z = map.getZoom();
-            if (z >= 12.5) map.setPaintProperty('terr-glow', 'line-gradient', glowGradient((now % 6000) / 6000));
-            if (z >= 11 && map.getSource('terr-glint')) map.getSource('terr-glint').setData(glintData(now));
+            if (z >= 12.5 && now - lastGlow >= 66) { lastGlow = now; map.setPaintProperty('terr-glow', 'line-gradient', glowGradient((now % 6000) / 6000)); }
+            if (z >= 11 && now - lastGlint >= 33 && map.getSource('terr-glint')) {
+                lastGlint = now;
+                const d = glintData(now);
+                if (d.features.length || !glintEmpty) map.getSource('terr-glint').setData(d);   // 빛이 없는 동안은 다시 넣지 않는다
+                glintEmpty = !d.features.length;
+            }
         };
         requestAnimationFrame(tick);
     }
@@ -1250,7 +1255,7 @@
             '<li>' + T('칸(육각형, 가운데서 꼭짓점까지 0.6km · 걸어서 15분쯤) 안에서 다녀온 판매점이 가장 많은 사람이 그 칸을 차지합니다.', 'Whoever has visited the most retailers in a hexagon cell (0.6 km centre to corner, about a 15-minute walk across) holds it.') + '</li>' +
             '<li>' + T('같은 수면 그 칸에 더 최근에 다녀온 사람이 차지합니다. 빼앗기면 그 칸 판매점 카드의 "오늘 또 다녀왔어요"로 되찾을 수 있습니다(같은 곳은 하루 한 번).', 'On a tie, whoever visited the cell most recently holds it. Lost it? Use "Visited again today" on a retailer card in that cell (once a day per retailer).') + '</li>' +
             '<li>' + T('칸 모양: 참여자마다 색 두 가지와 무늬(단색 · 줄무늬 · 물방울 · 체크)가 무작위로 정해지고 모두에게 같게 보입니다. 내 칸 모양은 ' + SKIN_COST + '포인트로 바꿀 수 있습니다. 내 칸은 테두리가 조금 굵습니다.', 'Skins: each player gets two colours and a pattern (solid, stripes, dots or checks) at random, and everyone sees the same. You can change yours for ' + SKIN_COST + ' points. Your cells have a slightly thicker edge.') + '</li>' +
-            '<li>' + T('밤 지도에서 크게 보면 차지한 칸 테두리를 빛이 시계 방향으로 돌고, 칸 면에는 유리에 비친 듯한 빛줄기가 45° 로 지나갑니다.', 'On the night map, zoomed in, a light runs clockwise round held cells and a glassy 45° glint sweeps across them.') + '</li>' +
+            '<li>' + T('밤 지도에서 크게 보면 차지한 칸 테두리를 빛이 시계 방향으로 돌고, 칸 면에는 유리에 비친 듯한 45° 빛이 번쩍 지나갑니다.', 'On the night map, zoomed in, a light runs clockwise round held cells and a quick glassy 45° glint flashes across them.') + '</li>' +
             '<li>' + T('칸은 비우지 않습니다. 분기(1 · 4 · 7 · 10월 1일 0시)마다 그때의 Map 랭킹을 확정해 남깁니다.', 'Cells are never cleared. At the start of each quarter the Map ranking at that moment is finalised and kept.') + '</li>' +
             '<li>' + T('시험판: 지금은 "다녀왔어요"를 누른 기록만 셉니다. 위치 인증(판매점 50m 안)은 준비 중입니다. 폐점한 곳은 세지 않습니다.', 'Beta: for now a tap on "I\'ve been here" counts. Location check (within 50 m) is coming. Closed retailers do not count.') + '</li>' +
             '<li>' + T('복권을 살 필요는 없습니다. 어디서 사든 1등 확률은 1/8,145,060으로 같습니다.', 'No purchase needed. Your chance of 1st prize is 1 in 8,145,060 wherever you buy.') + '</li>' +
