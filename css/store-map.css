@@ -374,7 +374,8 @@ body.sm-full #theme-btn { display: none !important; }
 .sm-terr-h { margin-top: 8px; }
 .sm-terr-rank { margin: 0; padding: 0; list-style: none; }
 .sm-terr-rank li { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: center; gap: 6px; padding: 4px 2px; border-bottom: 1px solid var(--line-soft, #f0f1f4); font-size: 12px; }
-.sm-terr-rank li.is-me { background: #fdecee; }
+.sm-terr-rank li.is-me { background: #fdecee; box-shadow: inset 3px 0 0 #e63946; }
+:root[data-theme="dark"] .sm-terr-rank li.is-me { background: rgba(255, 111, 174, .14); box-shadow: inset 3px 0 0 #ff6fae; }   /* 밤에 내 줄이 밝은 분홍 바탕에 밝은 글자라 안 보였다(2026-11-08 이용자) */
 .sm-terr-rank .sm-rank { color: #e63946; font-weight: bold; text-align: right; }
 .sm-terr-rank .sm-tname { overflow: hidden; font-weight: bold; text-overflow: ellipsis; white-space: nowrap; }
 .sm-terr-rank .sm-tcnt { text-align: right; white-space: nowrap; }
