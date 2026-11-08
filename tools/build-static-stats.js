@@ -2704,14 +2704,25 @@ function storeMapPage(md, top) {
             <input type="search" class="sm-search" id="sm-search" placeholder="판매점 이름 찾기" data-i18n-attr="placeholder:sm.search" aria-label="판매점 이름 찾기" autocomplete="off">
             <ul class="sm-found" id="sm-found" hidden></ul>
         </div>
-        <div class="sm-chips" role="group" aria-label="보이는 판매점" data-i18n-attr="aria-label:sm.layers">
+        <!-- PC(2026-11-08 사장님 — "둥근 단추가 막 나열돼 정리가 안 돼 보인다, 게임인 영역은 비중 있게"): 맨 위 영역 카드 → "지도에 보기" 3칸 격자 → 내 기록(한 줄).
+             휴대폰은 지금처럼 한 줄로 흐르는 칩(영역 카드도 칩 하나 + 켜면 "영역만") -->
+        <div class="sm-chips" role="group" aria-label="지도에 보기" data-i18n-attr="aria-label:sm.layers">
+            <div class="sm-turf" id="sm-turf" hidden>
+                <button type="button" class="sm-turf-main" id="sm-terr-chip" aria-pressed="false" title="육각 칸 땅따먹기 · Map 랭킹 (시험판)" data-i18n-attr="title:sm.terrTitle">
+                    <span class="sm-turf-ico" aria-hidden="true"></span>
+                    <span class="sm-turf-txt"><b><span data-i18n-en="Turf">영역</span><span class="sm-turf-beta" data-i18n-en="beta">시험판</span></b><small class="sm-turf-sub"><span class="sm-turf-def" data-i18n-en="Hexagon land grab · Map ranking">육각 칸 땅따먹기 · Map 랭킹</span><span class="sm-turf-stat" id="sm-turf-stat"></span></small></span>
+                    <span class="sm-turf-sw" aria-hidden="true"></span>
+                </button>
+                <button type="button" class="sm-turf-only" id="sm-terr-only" aria-pressed="false" title="판매점 점은 감추고 영역 칸만 보기" data-i18n-attr="title:sm.terrOnlyTitle"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Turf only">영역만 보기</span></button>
+            </div>
+            <span class="sm-chips-h" data-i18n-en="On the map">지도에 보기</span>
             <button type="button" class="sm-chip sm-chip-top" data-layer="top" aria-pressed="false" title="TOP 50 판매점만 별로 보기" data-i18n-attr="title:sm.topTitle"><span class="sm-star-ico" aria-hidden="true">✦</span>TOP 50</button>
             <button type="button" class="sm-chip" data-layer="w1" aria-pressed="true"><span class="sm-dot sm-dot-1"></span><span data-i18n-en="1st prize">1등 나온 곳</span></button>
             <button type="button" class="sm-chip" data-layer="w2" aria-pressed="true"><span class="sm-dot sm-dot-2"></span><span data-i18n-en="2nd only">2등만 나온 곳</span></button>
-            ${md.all ? `<button type="button" class="sm-chip" data-layer="all" aria-pressed="false"><span class="sm-dot sm-dot-a"></span><span data-i18n-en="Other retailers">일반 판매점</span></button>` : ''}
+            ${md.all ? `<button type="button" class="sm-chip" data-layer="all" aria-pressed="false"><span class="sm-dot sm-dot-a"></span><span data-i18n-en="All others">일반 판매점</span></button>` : ''}
             <button type="button" class="sm-chip" data-layer="closed" aria-pressed="false"><span class="sm-dot sm-dot-c"></span><span data-i18n-en="Closed">폐점 포함</span></button>
-            <button type="button" class="sm-chip sm-chip-mine" id="sm-mine-chip" aria-pressed="false" hidden title="내가 다녀온 곳 · 내 댓글 (로그인 회원)" data-i18n-attr="title:sm.mineTitle">📍 <span data-i18n-en="My places">내 기록</span></button>
-            <button type="button" class="sm-chip sm-chip-terr" id="sm-terr-chip" aria-pressed="false" hidden title="육각 칸 땅따먹기 · Map 랭킹 (시험판)" data-i18n-attr="title:sm.terrTitle">⬡ <span data-i18n-en="Turf">영역</span></button>
+            ${md.fun && md.fun.length ? `<button type="button" class="sm-chip sm-chip-fun sm-fun-toggle" aria-pressed="false" aria-controls="sm-fun"><span aria-hidden="true">🏆</span><span data-i18n-en="Unusual">이색 판매점</span></button>` : ''}
+            <button type="button" class="sm-chip sm-chip-mine" id="sm-mine-chip" aria-pressed="false" hidden title="내가 다녀온 곳 · 내 댓글 (로그인 회원)" data-i18n-attr="title:sm.mineTitle">📍 <span data-i18n-en="My places">내 기록</span><small class="sm-mine-sub" data-i18n-en="places I've been · my comments">다녀온 곳 · 내 댓글</small></button>
         </div>
         <p class="sm-pcnote" data-i18n-en="On a PC you can see the Top 50 as a list.">PC에서 보면 TOP 50을 목록으로 볼 수 있습니다.</p>
     </div>
@@ -2738,13 +2749,14 @@ function storeMapPage(md, top) {
     </div>
     <!-- 왼쪽 아래: 1등 방식(로그인 회원) · 끌기 막대(낮은 횟수부터 흐리게) — "시도별 · 안내" 위 -->
     <div class="sm-bl">
-        ${md.fun && md.fun.length ? `<button type="button" class="sm-fun-btn" id="sm-fun-btn" aria-pressed="false" aria-controls="sm-fun" data-i18n-en="🏆 Unusual retailers">🏆 이색 판매점</button>
+        ${md.fun && md.fun.length ? `<button type="button" class="sm-fun-btn sm-fun-toggle" id="sm-fun-btn" aria-pressed="false" aria-controls="sm-fun" data-i18n-en="🏆 Unusual retailers">🏆 이색 판매점</button>
         <div class="sm-fun" id="sm-fun" hidden>
             <h2 data-i18n-en="Unusual retailers">이색 판매점</h2>
             <ol>${md.fun.map((f, k) => `<li><button type="button" class="sm-fun-item" data-k="${k}"><span class="sm-fun-ico" aria-hidden="true">${f.icon}</span><span><b data-i18n-en="${esc(f.titleEn)}">${esc(f.title)}</b><span class="sm-fun-name">${esc(f.name)} <small>${esc(f.place)}</small></span><small data-i18n-en="${esc(f.textEn)}">${esc(f.text)}</small></span></button></li>`).join('')}</ol>
             <p class="sm-small" data-i18n-en="Open retailers only, from Dong-haeng Lottery data. More in the blog post.">문을 연 판매점 기준(동행복권 자료). <a href="blog/lotto-store-extremes.html">블로그 글로 보기</a></p>
         </div>` : ''}
         <div class="sm-chips sm-modes" role="group" aria-label="1등 방식 (로그인 회원)" data-i18n-attr="aria-label:sm.modes">
+                <span class="sm-modes-label" data-i18n-en="1st-prize type">1등 방식</span>
                 <button type="button" class="sm-chip sm-mode" data-mode="A" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Auto">자동</span></button>
                 <button type="button" class="sm-chip sm-mode" data-mode="M" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Manual">수동</span></button>
                 <button type="button" class="sm-chip sm-mode" data-mode="S" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Semi">반자동</span></button>
@@ -2766,7 +2778,7 @@ function storeMapPage(md, top) {
                 `Dot size is 2nd prizes + 1st prizes × 6 (a 1st prize is six times rarer). Sales per retailer are not published, so this only gauges how much was sold; it says nothing about where the next 1st prize will come from. Dong-haeng Lottery's online sales (${net ? net.n1 : 0} 1st-prize games) are not one location, so they are pinned in red as "#0" at the company office (tickets are not sold there).`
                 + (md.noCoord ? ` ${fmt(md.noCoord)} retailers without a published location are also left out.` : ''), 'sm-small')}
             ${md.all ? pEn(`"일반 판매점"을 켜면 지금 로또를 파는 전국 판매점 ${fmt(md.all.total)}곳 중 1등 · 2등 기록이 없는 ${fmt(md.all.rows.length)}곳이 회색 점으로 보입니다(출처: 동행복권 판매점 찾기, ${md.all.updated} 기준 · 매달 갱신).`,
-                `"Other retailers" shows the ${fmt(md.all.rows.length)} of ${fmt(md.all.total)} current lotto retailers with no 1st or 2nd prize on record, as grey dots (source: Dong-haeng Lottery retailer search, as of ${md.all.updated}, updated monthly).`, 'sm-small') : ''}
+                `"All others" shows the ${fmt(md.all.rows.length)} of ${fmt(md.all.total)} current lotto retailers with no 1st or 2nd prize on record, as grey dots (source: Dong-haeng Lottery retailer search, as of ${md.all.updated}, updated monthly).`, 'sm-small') : ''}
             ${pEn(`순위와 "많이 팔린 곳"인지 견주는 방법은 <a href="${STORES_FILE}">1등 판매점 통계</a>에 있습니다. 함께 읽기: <a href="blog/lucky-store-myth.html">로또 명당은 정말 있을까</a>`,
                 `Rankings and how we check whether a place simply sells a lot are in <a href="${STORES_FILE}">1st-prize retailer statistics</a>. Read next: <a href="blog/lucky-store-myth.html">are there really lucky lottery stores?</a>`)}
             <p class="sm-small">지도: <a href="https://maplibre.org/" rel="noopener">MapLibre</a> · <a href="https://openfreemap.org/" rel="noopener">OpenFreeMap</a> · © <a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap</a> 기여자 · <a href="privacy.html" data-i18n="footer.privacy">개인정보 처리방침</a></p>

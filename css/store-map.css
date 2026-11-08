@@ -355,7 +355,6 @@ body.sm-full #theme-btn { display: none !important; }
 }
 
 /* 영역(육각 칸 땅따먹기, 2026-11-07 시험판) — 칸 · 동의 · Map 랭킹. 패널은 .sm-near 모양(휴대폰 왼쪽 아래, PC 는 "영역" 탭) */
-.sm-chip-terr[hidden] { display: none; }
 .sm-terr-beta { padding: 0 6px; border-radius: 999px; background: #fde8ea; color: #c41f30 !important; font-size: 10px !important; font-weight: bold !important; vertical-align: 1px; }
 .sm-terr-season { margin: 0 0 6px; color: var(--muted, #666); font-size: 11px; }
 .sm-terr-status { margin: 0 0 8px; }
@@ -430,3 +429,75 @@ body.sm-full #theme-btn { display: none !important; }
 .sm-share-msg { margin: 4px 0 0; color: var(--muted, #555); font-size: 11px; }
 .sm-share-msg:empty { display: none; }
 @media (max-width: 899px) { .sm-share-btn { padding: 3px 9px; font-size: 10.5px; } .sm-share-acts button, .sm-share-acts a { font-size: 10.5px; } }
+
+/* ───── 영역 카드 · 보기 격자(2026-11-08 사장님 — "둥근 단추가 막 나열돼 정리가 안 돼 보인다, 게임인 영역은 비중 있게" · "영역만 보는 기능도") ─────
+   휴대폰: 칩은 지금처럼 한 줄로 흐르고, 영역만 남색 칩(켜면 옆에 "영역만"). PC: 왼쪽 칸 맨 위 영역 카드 → "지도에 보기" 3칸 격자 → 내 기록 한 줄 → 1등 방식 · 흐리게 */
+.sm-turf { display: contents; }
+.sm-turf-main, .sm-turf-only { order: 2; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px 2px 6px; border: 1px solid #4b3bb8; border-radius: 999px;
+    background: linear-gradient(135deg, #24135f, #2d3a8f 60%, #0f6170); color: #fff; box-shadow: 0 1px 6px rgba(36, 19, 95, .35); font: inherit; font-size: 10.5px; font-weight: bold; white-space: nowrap; cursor: pointer; }
+.sm-turf-main[aria-pressed="true"] { box-shadow: 0 0 0 2px rgba(255, 196, 92, .7), 0 1px 6px rgba(36, 19, 95, .35); }
+.sm-turf-ico { flex: none; width: 11px; height: 12px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: linear-gradient(160deg, #ffd76a, #ff6fae 55%, #8f7bff); }
+.sm-turf-txt b { font-weight: inherit; }
+.sm-turf-only { display: none; border-color: #4b3bb8; background: var(--surface, #fff); color: #3d2fa0; }
+:root[data-theme="dark"] .sm-turf-only { background: #1d2033; color: #c9c1ff; }
+.sm-turf-main[aria-pressed="true"] + .sm-turf-only { display: inline-flex; }
+.sm-turf-only[aria-pressed="true"] .sm-check, .sm-mode[aria-pressed="true"] .sm-check { border-color: #f07a1a; background: #f07a1a url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.2 5 8.6 9.5 3.6' fill='none' stroke='%23fff' stroke-width='1.8'/%3E%3C/svg%3E") center / 100% no-repeat; }
+.sm-turf-beta, .sm-turf-sub, .sm-turf-sw, .sm-chips-h, .sm-chip-fun, .sm-mine-sub, .sm-modes-label { display: none; }
+.sm-chip-mine { order: 1; }
+.is-terr-only .sm-star { display: none; }   /* 영역만 보기: 이색 판매점 별(마커)도 감춘다 */
+
+@media (min-width: 900px) {
+    .sm-chips:not(.sm-modes) { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 5px; padding: 12px 13px 0; }
+    .sm-chips-h { display: block; order: -1; grid-column: 1 / -1; margin: 10px 2px 0; color: var(--faint, #888); font-size: 11.5px; font-weight: bold; }
+    .sm-chips:not(.sm-modes) > .sm-chip { order: 0; justify-content: flex-start; gap: 4px; min-width: 0; padding: 7px 6px 7px 8px; border-radius: 9px; font-size: 11.5px; letter-spacing: -.01em; }
+    .sm-chips:not(.sm-modes) > .sm-chip .sm-dot { width: 8px; height: 8px; }
+    .sm-chips:not(.sm-modes) > .sm-chip > span:last-child { overflow: hidden; text-overflow: ellipsis; }
+    .sm-chips:not(.sm-modes) > .sm-chip[aria-pressed="true"] { background: rgba(0, 48, 135, .05); }
+    :root[data-theme="dark"] .sm-chips:not(.sm-modes) > .sm-chip[aria-pressed="true"] { background: rgba(120, 160, 255, .09); }
+    .sm-chips:not(.sm-modes) > .sm-chip-top[aria-pressed="true"] { background: #fff4cc; }
+    :root[data-theme="dark"] .sm-chips:not(.sm-modes) > .sm-chip-top[aria-pressed="true"] { background: #3a2f10; }
+    .sm-chips:not(.sm-modes) > .sm-chip-fun { display: inline-flex; }
+    .sm-chips:not(.sm-modes) > .sm-chip-fun[aria-pressed="true"] { border-color: #e0a800; background: #fff8e6; color: #8a5a00; }
+    :root[data-theme="dark"] .sm-chips:not(.sm-modes) > .sm-chip-fun[aria-pressed="true"] { border-color: #8a6a1c; background: #3a2f12; color: #ffd76a; }
+    .sm-fun-btn { display: none; }
+    .sm-chips:not(.sm-modes) > .sm-chip-mine { order: 1; grid-column: 1 / -1; }
+    .sm-chips:not(.sm-modes) > .sm-chip-mine[hidden] { display: none; }
+    .sm-mine-sub { display: inline; margin-left: auto; color: var(--faint, #888); font-size: 11px; font-weight: normal; }
+    /* 영역 카드: 남색 · 청록 바탕에 옅은 육각 무늬, 켜고 끄기 스위치, 둘째 줄은 내 칸 · 순위 */
+    .sm-turf { order: -2; grid-column: 1 / -1; position: relative; isolation: isolate; display: grid; gap: 9px; padding: 12px 12px 11px; overflow: hidden; border-radius: 14px;
+        background: radial-gradient(120% 90% at 100% 0, rgba(255, 111, 174, .28), transparent 60%), linear-gradient(135deg, #24135f 0%, #2d3a8f 58%, #0f6170 100%);
+        color: #fff; box-shadow: 0 6px 18px rgba(36, 19, 95, .26); }
+    :root[data-theme="dark"] .sm-turf { box-shadow: 0 0 0 1px rgba(255, 255, 255, .08), 0 6px 18px rgba(0, 0, 0, .35); }
+    .sm-turf::before { content: ''; position: absolute; inset: 0; z-index: -1; opacity: .13;
+        background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='48'%3E%3Cpath d='M14 0L28 8V24L14 32L0 24V8Z M14 32V48' fill='none' stroke='%23fff' stroke-width='1'/%3E%3C/svg%3E") 6px -4px / 28px 48px; }
+    .sm-turf-main { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; align-items: center; gap: 11px; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none;
+        font-size: 13px; text-align: left; white-space: normal; }
+    .sm-turf-main[aria-pressed="true"] { box-shadow: none; }
+    .sm-turf-ico { width: 38px; height: 42px; }
+    .sm-turf-main[aria-pressed="false"] .sm-turf-ico { filter: saturate(.75) brightness(.92); }
+    .sm-turf-txt { display: grid; gap: 2px; min-width: 0; }
+    .sm-turf-txt b { display: flex; align-items: center; gap: 7px; font-size: 16px; font-weight: 800; }
+    .sm-turf-beta { display: inline-block; padding: 1px 7px; border-radius: 999px; background: rgba(255, 255, 255, .16); color: #ffd76a; font-size: 10px; font-weight: bold; }
+    .sm-turf-sub { display: block; overflow: hidden; color: rgba(255, 255, 255, .8); font-size: 11.5px; font-weight: normal; text-overflow: ellipsis; white-space: nowrap; }
+    .sm-turf-sw { display: block; position: relative; width: 38px; height: 22px; border-radius: 999px; background: rgba(255, 255, 255, .22); transition: background .2s; }
+    .sm-turf-sw::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .3); transition: transform .2s; }
+    .sm-turf-main[aria-pressed="true"] .sm-turf-sw { background: #ffa94d; }
+    .sm-turf-main[aria-pressed="true"] .sm-turf-sw::after { transform: translateX(16px); }
+    .sm-turf-only, .sm-turf-main[aria-pressed="true"] + .sm-turf-only { display: inline-flex; justify-self: start; gap: 6px; margin-left: 49px; padding: 5px 10px; border: 1px solid rgba(255, 255, 255, .28); border-radius: 8px;
+        background: rgba(255, 255, 255, .08); color: #fff; box-shadow: none; font-size: 12px; }
+    :root[data-theme="dark"] .sm-turf-only { background: rgba(255, 255, 255, .08); color: #fff; }
+    .sm-turf-only[aria-pressed="true"] { border-color: #ffa94d; background: rgba(255, 169, 77, .2); }
+    .sm-turf-only .sm-check { width: 11px; height: 11px; }
+    .sm-turf-main:focus-visible, .sm-turf-only:focus-visible { outline: 2px solid #ffd76a; outline-offset: 3px; }
+    .sm-turf-main:hover .sm-turf-sw { background: rgba(255, 255, 255, .32); }
+    .sm-turf-main[aria-pressed="true"]:hover .sm-turf-sw { background: #ffb866; }
+    /* 1등 방식 · 흐리게: 왼쪽 이름 칸을 맞춘 두 줄, 1등 방식은 붙은 단추 셋 */
+    .sm-modes { display: flex; align-items: center; gap: 0; padding: 14px 14px 0; }
+    .sm-modes-label, .sm-fade > span { display: block; flex: none; width: 112px; color: var(--muted, #555); font-size: 12px; font-weight: bold; text-shadow: none; }
+    .sm-modes .sm-mode { flex: 1 1 0; justify-content: center; min-width: 0; margin-left: -1px; padding: 6px 4px; border-radius: 0; }
+    .sm-modes .sm-mode:first-of-type { margin-left: 0; border-radius: 9px 0 0 9px; }
+    .sm-modes .sm-mode:last-of-type { border-radius: 0 9px 9px 0; }
+    .sm-modes .sm-mode[aria-pressed="true"] { position: relative; z-index: 1; }
+    .sm-fade { margin: 10px 14px 0; padding: 0; border: 0; background: none; }
+    .sm-tabs { gap: 0; padding: 0 4px; }   /* 탭 일곱 개가 340px 안에(영역 탭이 잘렸다) */
+}
