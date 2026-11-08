@@ -635,8 +635,7 @@
         const [lat, lng, name, si, gu] = all.rows[i];
         const place = [all.sido[si] || '', gu].filter(Boolean).join(' ');
         showCard('<h3>' + esc(name) + '</h3><p class="sm-place">' + esc(place) + '</p>' +
-            '<p class="sm-why">' + T(data.first + '회부터 1등 · 2등 기록이 없는 판매점입니다. 어느 판매점에서 사든 1등 확률은 1/8,145,060으로 같습니다.',
-                'No 1st or 2nd prize here since draw ' + data.first + '. Your chance of 1st prize is 1 in 8,145,060 wherever you buy.') + '</p>' + links(name, place, lat, lng) + '<div class="sm-share-shop" id="sm-share-shop"><button type="button" class="sm-share-btn">🔗 ' + T('해당 판매점 공유하기', 'Share this retailer') + '</button></div>' +
+            '<p class="sm-why">' + T(data.first + '회부터 1등 · 2등 기록이 없는 판매점입니다.', 'No 1st or 2nd prize here since draw ' + data.first + '.') + '</p>' + links(name, place, lat, lng) + '<div class="sm-share-shop" id="sm-share-shop"><button type="button" class="sm-share-btn">🔗 ' + T('해당 판매점 공유하기', 'Share this retailer') + '</button></div>' +
             '<div class="sm-visit" id="sm-visit"></div><div class="sm-cmt" id="sm-cmt"></div>', lat, lng, fly);
         shareUi('a', i, { name, place, w1: 0, w2: 0, sido: all.sido[si] || '' });
         visitUi('a', i);
@@ -1307,6 +1306,8 @@
         if (on === hexMode) return;
         if (!on) {
             modeIntro('store', () => {
+                const cp = document.getElementById('sm-consent-pop');
+                if (cp) cp.hidden = true;
                 hexMode = false;
                 root.classList.remove('is-hex');
                 setTerr(false);
@@ -1648,6 +1649,7 @@
             if (!(await member(T('LottoHex는 로그인한 회원이 참여합니다.', 'Sign in to join LottoHex.')))) return;
             const u = A.me() && A.me().user;
             if (!u || !u.nick) { terrPanel.querySelector('.sm-terr-msg').textContent = T('LottoHex에는 별명으로 나옵니다. 별명을 먼저 정해 주세요.', 'You appear by nickname. Choose one first.'); if (A.openNick) A.openNick(false); return; }
+            if (hexMobile()) { drawConsent(); return; }   // 휴대폰: 가운데 창만 띄우고 아래 판은 그대로
             terrView = 'consent';
             drawTerr();
         });
@@ -1672,30 +1674,34 @@
             '<li>' + T('참여하면 내가 "다녀온 곳"으로 표시한 판매점을 칸(육각형)마다 세어 칸 주인을 정합니다. 참여 전에 표시한 곳도 셉니다.', 'Your marked places are counted per hexagon cell, including those marked before joining.') + '</li>' +
             '<li><b>' + T('내가 차지한 칸과 Map 랭킹 · 분기 확정 순위에 내 별명(' + esc(u && u.nick || '') + ')이 누구에게나 보입니다.', 'Your nickname (' + esc(u && u.nick || '') + ') is shown to everyone on the cells you hold, in the Map ranking and in the quarterly final rankings.') + '</b> ' +
                 T('별명과 칸 위치로 내가 자주 다니는 동네를 짐작할 수 있습니다. 어느 판매점을 다녀왔는지는 보이지 않고, 칸마다 다녀온 판매점 수만 보입니다.', 'Others could guess the area you often visit. Which retailers you visited is never shown — only the count per cell.') + '</li>' +
-            '<li>' + T('위치(GPS)는 쓰지 않습니다. 시험판에서는 "다녀왔어요"를 누른 기록만 셉니다. 위치 인증을 붙이면 다시 안내하고 동의를 받습니다.', 'No location (GPS) is used. In this beta only your "I\'ve been here" taps count. If location checks are added we will ask again.') + '</li>' +
-            '<li>' + T('복권을 살 필요는 없습니다. 만 19세 이상만 참여해 주십시오.', 'No purchase needed. You must be 19 or older.') + '</li>' +
-            '<li>' + T('언제든 "LottoHex 그만두기"로 그만둘 수 있고, 그만두면 바로 칸과 랭킹에서 빠집니다. 동의한 때는 기록해 둡니다.', 'You can leave any time; you disappear from cells and the ranking at once. We keep the time you agreed.') + '</li>' +
-            '</ol>' +
+            '</ol>' +   // 3 · 4 · 5번(위치 안 씀 · 살 필요 없음 · 그만두기)은 뺐다(2026-11-08 사장님 — 너무 조심스럽다, 곧 GPS). 19세는 아래 체크에
             '<label class="sm-terr-agree"><input type="checkbox"> ' + T('위 내용을 읽었고 동의합니다 (만 19세 이상)', 'I have read and agree (19 or older)') + '</label>' +
             '<p class="sm-terr-btns"><button type="button" class="sm-terr-ok" disabled>' + T('동의하고 참여', 'Agree and join') + '</button> <button type="button" class="sm-terr-cancel">' + T('취소', 'Cancel') + '</button></p>' +
             '<p class="sm-small"><a href="privacy.html">' + T('개인정보 처리방침', 'Privacy policy') + '</a></p>' +
             '<p class="sm-terr-msg" role="status"></p>';
-        // 휴대폰 LottoHex 모드는 아래 판 안에(다 펴서)
-        terrPanel.innerHTML = hexMobile() ? '<div class="sm-sheet-head"><span class="sm-sheet-grip" aria-hidden="true"></span></div><div class="sm-sheet-body">' + html + '</div>' : html;
-        if (hexMobile()) setSheet('full');
-        terrPanel.hidden = false;
-        terrPanel.scrollTop = 0;
-        const box = terrPanel.querySelector('.sm-terr-agree input'), ok = terrPanel.querySelector('.sm-terr-ok');
+        // 휴대폰 LottoHex 모드는 화면 가운데 중간 크기 창(2026-11-08 사장님 — "대문짝만하다, 지도가 보이게"). PC 는 왼쪽 칸 그대로
+        let pop = null, el = terrPanel;
+        if (hexMobile()) {
+            pop = document.getElementById('sm-consent-pop');
+            if (!pop) { pop = document.createElement('div'); pop.id = 'sm-consent-pop'; pop.className = 'sm-consent-pop'; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-modal', 'true'); root.appendChild(pop); }
+            pop.setAttribute('aria-label', T('LottoHex 참여 안내', 'Joining LottoHex'));
+            el = pop;
+        }
+        el.innerHTML = html;
+        el.hidden = false;
+        el.scrollTop = 0;
+        const box = el.querySelector('.sm-terr-agree input'), ok = el.querySelector('.sm-terr-ok');
         box.addEventListener('change', () => { ok.disabled = !box.checked; });
-        const back = () => { terrView = 'main'; drawTerr(); };
-        terrPanel.querySelector('.sm-close').addEventListener('click', back);
-        terrPanel.querySelector('.sm-terr-cancel').addEventListener('click', back);
+        const back = () => { terrView = 'main'; if (pop) pop.hidden = true; else drawTerr(); };
+        el.querySelector('.sm-close').addEventListener('click', back);
+        el.querySelector('.sm-terr-cancel').addEventListener('click', back);
         ok.addEventListener('click', async () => {
             ok.disabled = true;
             try {
                 await A.call('/api/territory/join', { method: 'POST', body: { agree: true, v: TERR_V } });
                 await A.refresh().catch(() => null);
                 terrView = 'main';
+                if (pop) pop.hidden = true;
                 await loadTerr();
                 drawTerrLayers();
                 drawTerr();
@@ -1703,7 +1709,7 @@
                 flyMine();
             } catch (e) {
                 ok.disabled = false;
-                terrPanel.querySelector('.sm-terr-msg').textContent = (e && e.message) || T('참여하지 못했습니다.', 'Could not join.');
+                el.querySelector('.sm-terr-msg').textContent = (e && e.message) || T('참여하지 못했습니다.', 'Could not join.');
             }
         });
     }
@@ -1880,13 +1886,12 @@
                 (cur ? '<span class="sm-swatch" style="background:' + cur + '"></span>' + T('다녀온 곳', 'Visited') : T('＋ 다녀왔어요', '＋ I\'ve been here')) + '</button>' +
                 (cur ? '<span class="sm-colors">' + PALETTE.map(c => '<button type="button" class="sm-color' + (c === cur ? ' is-on' : '') + (opened(c) ? '' : ' is-locked') + '" data-c="' + c + '" style="background:' + c + '" aria-label="' + c + (opened(c) ? '' : T(' (잠김)', ' (locked)')) + '"></button>').join('') +
                     (canPick ? '<label class="sm-color sm-color-any" title="' + T('다른 색', 'Any colour') + '"><input type="color" value="' + cur + '" aria-label="' + T('다른 색', 'Any colour') + '"></label>' : '') + '</span>' : '') + '</div>' +
-                '<p class="sm-visit-note">' + (cur ? (canPick ? T('다시 누르면 지웁니다. 색을 고르면 다녀온 곳이 모두 그 색이 됩니다. 나만 보입니다.', 'Tap again to remove. Picking a colour changes all your visited places. Only you can see this.')
-                    : T('다시 누르면 지웁니다. 색을 고르면 다녀온 곳이 모두 그 색이 됩니다. 🔒 색은 하나에 ' + COLOR_COST + '포인트로 열거나 <a href="statistics.html">이용권</a>으로 모두 엽니다.', 'Tap again to remove. Unlock a 🔒 colour for ' + COLOR_COST + ' points, or all of them with a <a href="statistics.html">pass</a>.'))
-                    : T('로그인 회원 기능 · 나만 보입니다(위치는 쓰지 않습니다).', 'Members only · only you can see it (no location used).')) + '</p>' +
+                '<p class="sm-visit-note">' + (cur ? (canPick ? T('다시 누르면 지웁니다. 고른 색은 다녀온 곳 모두에 씁니다.', 'Tap again to remove. The colour applies to all your places.')
+                    : T('다시 누르면 지웁니다. 고른 색은 다녀온 곳 모두에 씁니다. 🔒 색은 하나에 ' + COLOR_COST + '포인트로 열거나 <a href="statistics.html">이용권</a>으로 모두 엽니다.', 'Tap again to remove. Unlock a 🔒 colour for ' + COLOR_COST + ' points, or all of them with a <a href="statistics.html">pass</a>.'))
+                    : T('나만 보입니다.', 'Only you can see it.')) + '</p>' +
                 (cur && inTerr ? '<p class="sm-visit-again-p">' + (today ? '<span class="sm-visit-today">✓ ' + T('오늘 다녀옴', 'Visited today') + '</span>'
                     : '<button type="button" class="sm-visit-again">↻ ' + T('오늘 또 다녀왔어요', 'Visited again today') + '</button>') + '</p>' : '') +
-                (inTerr ? '<p class="sm-visit-note sm-visit-terr">⬡ ' + T('LottoHex 참여 중: 이 칸의 다녀온 판매점 수에 셉니다. 같은 수면 최근에 다녀온 사람이 칸을 차지합니다(판매점 이름은 공개되지 않습니다).',
-                    'LottoHex: counts toward this cell. On a tie the most recent visitor holds it (retailer names stay private).') + '</p>' : '');
+                '';   // LottoHex 안내 문구는 뺐다(2026-11-08 사장님 — 말이 많다)
             box.querySelector('.sm-visit-btn').addEventListener('click', () => save(cur ? null : myVisitColor()));
             const ag = box.querySelector('.sm-visit-again');
             if (ag) ag.addEventListener('click', () => save(cur, true));
@@ -2021,8 +2026,7 @@
             '<p class="sm-counts"><span><b>' + fmt(w1) + '</b>' + T('번 1등', ' × 1st') + (how ? ' <small>(' + esc(how) + ')</small>' : '') + '</span>' +
             '<span><b>' + fmt(w2) + '</b>' + T('번 2등', ' × 2nd') + '</span></p>' +
             '<div class="sm-rounds" id="sm-rounds"><p class="sm-small">' + T('당첨 회차 불러오는 중…', 'Loading draws…') + '</p></div>' +
-            '<p class="sm-why">' + T('1등 · 2등이 많을수록 많이 팔린 곳일 가능성이 큽니다. 어느 판매점에서 사든 1등 확률은 1/8,145,060으로 같습니다.',
-                'More 1st and 2nd prizes most likely means more tickets sold. Your chance of 1st prize is 1 in 8,145,060 wherever you buy.') + '</p>' +
+            '<p class="sm-why">' + T('1등 · 2등이 많을수록 많이 팔린 곳일 가능성이 큽니다.', 'More 1st and 2nd prizes most likely means more tickets sold.') + '</p>' +   // 확률 문장은 카드에서 뺐다(2026-11-08 사장님 — 말이 많다). 공유 · LottoHex 규칙 · 안내에는 남는다
             links(name, place, lat, lng) + '<div class="sm-share-shop" id="sm-share-shop"><button type="button" class="sm-share-btn">🔗 ' + T('해당 판매점 공유하기', 'Share this retailer') + '</button></div>' + '<div class="sm-visit" id="sm-visit"></div><div class="sm-cmt" id="sm-cmt"></div>', lat, lng, fly);
         card.dataset.i = String(i);
         shareUi('w', i, { name, place, w1, w2, sido: data.sido[si] || '' });
@@ -2203,9 +2207,9 @@
             '<p class="sm-counts"><span><b>' + fmt(n.n1) + '</b>' + T('번 1등', ' × 1st') + (how ? ' <small>(' + how + ')</small>' : '') + '</span><span><b>' + fmt(n.n2) + '</b>' + T('번 2등', ' × 2nd') + '</span></p>' +
             '<div class="sm-rounds" id="sm-rounds"><p class="sm-small">' + T('당첨 회차 불러오는 중…', 'Loading draws…') + '</p></div>' +
             '<p class="sm-why">' + T('동행복권 누리집에서 인터넷으로 산 로또입니다(' + n.first + '회부터). 전국 어느 판매점보다 1등이 많이 나왔습니다 — 한 창구에서 가장 많이 팔리기 때문입니다. ' +
-                '지도 위치는 회사 자리이며 이곳에서 복권을 팔지는 않습니다. 어디서 사든 1등 확률은 1/8,145,060으로 같습니다.',
+                '지도 위치는 회사 자리이며 이곳에서 복권을 팔지는 않습니다.',
                 'Lotto bought online on the Dong-haeng Lottery website (from draw ' + n.first + '). More 1st prizes than any shop — simply because it sells the most. ' +
-                'The pin marks the company office; tickets are not sold there. Your chance of 1st prize is 1 in 8,145,060 wherever you buy.') + '</p>' +
+                'The pin marks the company office; tickets are not sold there.') + '</p>' +
             '<p class="sm-links"><a href="https://www.dhlottery.co.kr/" target="_blank" rel="noopener">' + T('동행복권 누리집', 'Dong-haeng Lottery') + '</a></p>', n.lat, n.lng, fly);
         card.dataset.i = 'n';
         loadRounds().then(rd => {
