@@ -1164,16 +1164,18 @@
     }
     // ───── LottoHex 판매점 층(2026-11-08 사장님 — "당첨 수에 따른 버블 크기를 없애고 일반 판매점과 같은 크기, 필터는 다 풀어 모든 판매점이 보이게, 판매점이 빛나게") ─────
     // LottoHex 에서는 원래 판매점 층(st-*: 1등 횟수 크기 · 칩 · 흐리게 막대 · TOP 50 · 1등 방식)을 감추고, 문을 연 모든 판매점(1 · 2등 + 일반, 폐점 빼고 — 칸이 세는 판매점과 같다)을
-    // 일반 판매점 크기의 같은 점으로. 점 밑의 금빛 번짐은 세 무리(g)로 나눠 2.4초에 한 번씩 번갈아 밝아진다(움직임 줄이기면 멈춤). 다녀온 곳은 점 · 번짐이 내 색
+    // 일반 판매점 크기의 같은 점으로. 점 밑의 번짐은 세 무리(g)로 나눠 2.4초에 한 번씩 번갈아 밝아진다(움직임 줄이기면 멈춤). 다녀온 곳은 점이 내 색, 테두리 · 번짐은 판매점 색
     const HX_A = 1e6;   // 일반 판매점 점 번호(1 · 2등 판매점 자리 번호와 겹치지 않게)
     const HX_LAYERS = ['hx-glow-0', 'hx-glow-1', 'hx-glow-2', 'hx-dot', 'hx-name'];
-    const hxDot = () => (isNight() ? '#ffd76a' : '#f0a500');
-    const hxGlow = () => (isNight() ? '#ffcf4a' : '#ffb000');
+    // 색은 원래 지도와 같게(2026-11-08 사장님 — "빛나는 건 좋은데 1등 · 2등 · 일반 색은 유지, 일반은 하얀 계열로 빛나게"): k 1 = 1등 나온 곳(원래 1등 기록, 1등 방식과 무관) · 2 = 2등만 · 0 = 일반.
+    // 일반 판매점 빛은 밤엔 흰빛, 낮엔 밝은 바탕에 묻히지 않게 은빛. 판매점이 가장 많아 조금 옅게(색의 투명도)
+    const hxDot = () => ['match', ['get', 'k'], 1, '#f07a1a', 2, '#3b6fd8', isNight() ? '#cfd6e0' : '#8a94a6'];
+    const hxGlow = () => ['match', ['get', 'k'], 1, isNight() ? '#ff9a3c' : '#ff8a1f', 2, isNight() ? '#6f9dff' : '#4f86ff', isNight() ? 'rgba(255, 255, 255, .72)' : 'rgba(176, 188, 206, .85)'];
     function hexStoreData() {
         const f = [];
-        const add = (id, r, lat, lng, nm, t, i) => f.push({ type: 'Feature', id, geometry: { type: 'Point', coordinates: [lng, lat] }, properties: { t, i, nm, g: (id + (id >= HX_A ? 1 : 0)) % 3 } });
-        data.rows.forEach((r, i) => { if (!r[7]) add(i, r, r[0], r[1], r[4], 'w', i); });
-        if (all) all.rows.forEach((r, i) => add(HX_A + i, r, r[0], r[1], r[2], 'a', i));
+        const add = (id, k, lat, lng, nm, t, i) => f.push({ type: 'Feature', id, geometry: { type: 'Point', coordinates: [lng, lat] }, properties: { t, i, nm, k, g: (id + (id >= HX_A ? 1 : 0)) % 3 } });
+        data.rows.forEach((r, i) => { if (!r[7]) add(i, r[2] > 0 ? 1 : 2, r[0], r[1], r[4], 'w', i); });
+        if (all) all.rows.forEach((r, i) => add(HX_A + i, 0, r[0], r[1], r[2], 'a', i));
         return { type: 'FeatureCollection', features: f };
     }
     let hxAll = false;   // 일반 판매점까지 넣었는가
@@ -1184,7 +1186,7 @@
         map.addSource('hexstores', { type: 'geojson', data: hexStoreData() });
         const v = ['to-boolean', ['feature-state', 'visit']];
         for (let g = 0; g < 3; g++) map.addLayer({ id: 'hx-glow-' + g, type: 'circle', source: 'hexstores', filter: ['==', ['get', 'g'], g], minzoom: 8, layout: { visibility: 'none' }, paint: {
-            'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 5, 11, 10, 15, 20], 'circle-color': ['coalesce', ['feature-state', 'visit'], hxGlow()], 'circle-blur': 1, 'circle-opacity': 0.5 } }, 'terr-name');
+            'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 5, 11, 10, 15, 20], 'circle-color': hxGlow(), 'circle-blur': 1, 'circle-opacity': 0.5 } }, 'terr-name');
         map.addLayer({ id: 'hx-dot', type: 'circle', source: 'hexstores', layout: { visibility: 'none' }, paint: {
             'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, ['case', v, 3, 1.2], 10, ['case', v, 5, 2.6], 15, ['case', v, 8, 6]],   // 일반 판매점(st-all)과 같은 크기
             'circle-color': ['coalesce', ['feature-state', 'visit'], hxDot()], 'circle-stroke-color': rim(hxDot()),
@@ -1200,7 +1202,7 @@
         if (!map || !map.getLayer('hx-dot')) return;
         map.setPaintProperty('hx-dot', 'circle-color', ['coalesce', ['feature-state', 'visit'], hxDot()]);
         map.setPaintProperty('hx-dot', 'circle-stroke-color', rim(hxDot()));
-        for (let g = 0; g < 3; g++) map.setPaintProperty('hx-glow-' + g, 'circle-color', ['coalesce', ['feature-state', 'visit'], hxGlow()]);
+        for (let g = 0; g < 3; g++) map.setPaintProperty('hx-glow-' + g, 'circle-color', hxGlow());
         const pt = namePaint();
         ['text-color', 'text-halo-color'].forEach(k => map.setPaintProperty('hx-name', k, pt[k]));
     }
