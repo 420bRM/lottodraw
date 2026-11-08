@@ -2696,9 +2696,18 @@ function storeMapPage(md, top) {
         <div class="sm-row">
             <a class="sm-back" href="index.html" data-i18n-en="← Generator">← 생성기로</a>
             <h1 class="sm-title" data-i18n-en="Lotto retailer map">로또 판매점 지도</h1>
+            <!-- 휴대폰: 지도 모드(2026-11-08 사장님 — "LottoHex 랑 지도 기능이 한곳에 모여 불편"). 제목 자리에 놓아 줄이 늘지 않게. PC 는 감춘다 -->
+            <div class="sm-mode-sw" id="sm-mode-sw" role="group" aria-label="지도 모드" data-i18n-attr="aria-label:sm.modeSw" hidden>
+                <button type="button" data-mode-to="store" aria-pressed="true" data-i18n-en="Retailers">판매점</button><button type="button" data-mode-to="hex" aria-pressed="false"><span class="sm-turf-ico" aria-hidden="true"></span>LottoHex</button>
+            </div>
             <div class="lang-switch sm-lang" role="group" aria-label="Language"><button type="button" data-lang-btn="ko">KO</button><button type="button" data-lang-btn="en">EN</button></div>
             <button type="button" class="sm-night" id="sm-night" aria-pressed="false" title="밤 지도" aria-label="밤 지도" data-i18n-attr="title:sm.night aria-label:sm.night">🌙</button>
             <button type="button" class="sm-3d" id="sm-3d" aria-pressed="false">3D</button>
+        </div>
+        <!-- 휴대폰 LottoHex 모드의 한 줄: 내 칸 · 순위 · 소식(누르면 아래 판) + 판매점 감추기 -->
+        <div class="sm-hexbar" id="sm-hexbar">
+            <button type="button" class="sm-hexbar-stat" id="sm-hexbar-stat"><span class="sm-turf-ico" aria-hidden="true"></span><span class="sm-hexbar-txt">LottoHex</span></button>
+            <button type="button" class="sm-hexbar-only" data-terr-only aria-pressed="false"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Hide retailers">판매점 감추기</span></button>
         </div>
         <div class="sm-row sm-searchbox">
             <input type="search" class="sm-search" id="sm-search" placeholder="판매점 이름 찾기" data-i18n-attr="placeholder:sm.search" aria-label="판매점 이름 찾기" autocomplete="off">
@@ -2713,7 +2722,7 @@ function storeMapPage(md, top) {
                     <span class="sm-turf-txt"><b><span>LottoHex</span><span class="sm-turf-beta" data-i18n-en="beta">시험판</span></b><small class="sm-turf-sub" id="sm-turf-stat"></small></span>
                     <span class="sm-turf-sw" aria-hidden="true"></span>
                 </button>
-                <button type="button" class="sm-turf-only" id="sm-terr-only" aria-pressed="false" title="판매점 점은 감추고 LottoHex 칸만 보기" data-i18n-attr="title:sm.terrOnlyTitle"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="LottoHex only">LottoHex만 보기</span></button>
+                <button type="button" class="sm-turf-only" id="sm-terr-only" data-terr-only aria-pressed="false" title="판매점 점은 감추고 LottoHex 칸만 보기" data-i18n-attr="title:sm.terrOnlyTitle"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="LottoHex only">LottoHex만 보기</span></button>
             </div>
             <span class="sm-chips-h" data-i18n-en="On the map">지도에 보기</span>
             <button type="button" class="sm-chip sm-chip-top" data-layer="top" aria-pressed="false" title="TOP 50 판매점만 별로 보기" data-i18n-attr="title:sm.topTitle"><span class="sm-star-ico" aria-hidden="true">✦</span>TOP 50</button>

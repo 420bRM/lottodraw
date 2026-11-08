@@ -533,6 +533,7 @@ window.I18N_DICT = {
     'sm.topTitle':   { ko: 'TOP 50 판매점만 별로 보기', en: 'Show only the Top 50 as stars' },
     'sm.mineTitle':  { ko: '내가 다녀온 곳 · 내 댓글 (로그인 회원)', en: 'Places I\'ve been · my comments (members)' },
     'sm.terrTitle':  { ko: 'LottoHex — 육각 칸 땅따먹기 · Map 랭킹 (시험판)', en: 'LottoHex — hexagon land grab · Map ranking (beta)' },
+    'sm.modeSw':    { ko: '지도 모드', en: 'Map mode' },
     'sm.terrOnlyTitle': { ko: '판매점 점은 감추고 LottoHex 칸만 보기', en: 'Hide retailer dots and show only LottoHex cells' },
     'mapLink.go':    { ko: '지도 열기 →', en: 'Open the map →' },
     'mapLink.l1':    { ko: '1등 나온 곳', en: '1st prize' },
