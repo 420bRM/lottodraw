@@ -1327,6 +1327,7 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 .blog-post .data-table th, .blog-post .data-table td { word-break: keep-all; }   /* 블로그 표: 한글을 글자마다 끊지 않고 띄어쓰기에서 (2026-10-30, 좁은 칸이 많은 표) */
 /* 1등 판매점 30곳(statistics-stores.html): 칸 값을 한 줄로 두고 휴대폰에서는 표만 옆으로 민다(TOP 50 표와 같은 방식) */
 .store-top th, .store-top td { white-space: nowrap; }
+.round-stores th:nth-child(n+3), .round-stores td:nth-child(n+3) { white-space: nowrap; }   /* 회차 페이지 1등 판매점 — 방식 · 누적 1등은 한 줄 */
 .tier-stat .sub { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; font-weight: normal; }
 .tier-glance td:first-child, .tier-records td:first-child, .tier-tax td:first-child { font-weight: bold; text-align: left; }
 /* 금액 칸은 "원"만 다음 줄로 떨어지지 않게 한 줄로 (첫 칸 이름표만 줄을 바꾼다) */
