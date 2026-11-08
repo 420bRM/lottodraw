@@ -43,6 +43,7 @@
     let all = null;       // 일반 판매점 { sido, rows } — 칩을 켤 때 받는다
     let map = null;
     const shown = { top: false, w1: true, w2: true, closed: false, all: false, mine: false, terr: false };   // terr: 영역(육각 칸, 2026-11-07 시험판)   // mine: 내 기록(다녀온 곳만, 2026-10-27)   // top: TOP 50 만 별로 보기(2026-10-27)
+    let terrOnly = false;                          // 영역만 보기(2026-11-08) — 영역을 켰을 때만 뜻이 있다
     const modes = { A: true, M: true, S: true };   // 1등 방식 체크(로그인 회원)
     let fadeT = 0;                                 // 끌기 막대: 1등 횟수 + 1 이 이 값보다 작으면 흐려진다(0 = 다 보임)
     const isWide = () => window.innerWidth >= 900;
@@ -83,12 +84,15 @@
         else if (shown.all) loadAll();
         mineOnly();
     }
-    // 내 기록을 켜면 다른 점 · 별 · 이름은 다 감추고 다녀온 곳만(끄면 applyLayers 가 원래대로 되돌린다)
+    // 내 기록을 켜면 다른 점 · 별 · 이름은 다 감추고 다녀온 곳만(끄면 applyLayers 가 원래대로 되돌린다).
+    // "영역만 보기"(2026-11-08 사장님)를 켜면 다녀온 곳까지 판매점은 다 감추고 영역 칸만
     const OTHER_LAYERS = ['st-w1', 'st-w2', 'st-num', 'st-top', 'st-top-glow', 'st-name', 'st-all', 'st-all-name', 'st-net', 'st-net-top', 'st-net-glow', 'st-net-num', 'st-net-name'];
     function mineOnly() {
         if (!map) return;
-        if (shown.mine) OTHER_LAYERS.forEach(id => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none'); });
-        ['st-mine', 'st-mine-name'].forEach(id => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', shown.mine ? 'visible' : 'none'); });
+        const only = shown.terr && terrOnly;
+        if (shown.mine || only) OTHER_LAYERS.forEach(id => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none'); });
+        ['st-mine', 'st-mine-name'].forEach(id => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', shown.mine && !only ? 'visible' : 'none'); });
+        root.classList.toggle('is-terr-only', only);   // 이색 판매점 별(마커)도 감춘다(CSS)
     }
 
     // 일반 판매점 층: 처음 켤 때 한 번 받아 1등 · 2등 점 아래에 깐다
@@ -883,7 +887,7 @@
     // 시험판: "다녀왔어요"를 누른 기록만 센다. 위치(GPS)는 쓰지 않는다(위치기반서비스사업 신고 뒤 50m 인증으로 바꾼다)
     const TERR_V = 1;   // worker TERR_CONSENT 와 같게. 동의 문구를 크게 바꾸면 둘 다 올린다
     const HX = window.LottoHex;
-    const terrPanel = document.getElementById('sm-terr'), terrChip = document.getElementById('sm-terr-chip');
+    const terrPanel = document.getElementById('sm-terr'), terrChip = document.getElementById('sm-terr-chip'), terrOnlyBtn = document.getElementById('sm-terr-only');
     let terr = null, terrCells = null, terrSel = null, terrView = 'main', terrLoading = null, visitAt = {};
     let terrOpen = false;   // 영역 창이 열려 있는가 — 창을 닫아도 칸은 지도에 남는다(2026-11-07 사장님)
     // 칸 모양(스킨, 2026-11-07 사장님 — 지렁이 게임처럼 참여자마다 색 · 무늬가 다르게): 서버가 주는 "주색,보조색,무늬"(worker/src/territory.js SKIN_RE).
@@ -951,6 +955,7 @@
         terrLoading = p;
         try { const r = await p; if (terrLoading === p) terr = r; } catch (e) { if (terrLoading === p) terr = terr || null; }
         if (terrLoading === p) terrLoading = null;
+        turfStatus();
     }
     function terrFeatures() {
         const cells = (terr && terr.cells) || {}, mine = new Set((terr && terr.me && terr.me.cells) || []);
@@ -1115,6 +1120,7 @@
         if (!on) {
             closeTerrPanel();
             TERR_LAYERS.forEach(id => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none'); });
+            if (terrOnly) setTerrOnly(false);
             return;
         }
         terrOpen = true;
@@ -1128,6 +1134,23 @@
         drawTerrLayers();
         drawTerr();
         if (!flyMine() && map.getZoom() < 10) map.flyTo({ center: map.getCenter(), zoom: 11.5, essential: true });   // 전국을 보고 있으면 칸이 보이는 크기로
+    }
+    // 영역만 보기: 판매점 점 · 별 · 이름 · 다녀온 곳을 다 감추고 칸만. 영역이 꺼져 있으면 함께 켠다
+    function setTerrOnly(on) {
+        terrOnly = on;
+        if (terrOnlyBtn) terrOnlyBtn.setAttribute('aria-pressed', String(on));
+        if (on && !shown.terr) setTerr(true);
+        applyLayers();
+    }
+    // 영역 카드(PC)의 둘째 줄: 불러온 뒤에는 내 칸 · 순위(참여 전이면 참여자 수)
+    function turfStatus() {
+        const el = document.getElementById('sm-turf-stat');
+        if (!el || !terr) return;
+        const me = terr.me;
+        el.textContent = me && me.joined
+            ? T('내 칸 ' + fmt(me.cells.length) + ' · ' + (me.rank ? me.rank + '위' : '순위 밖'), 'My cells ' + fmt(me.cells.length) + ' · ' + (me.rank ? '#' + me.rank : 'unranked'))
+            : T('참여 ' + fmt(terr.players || 0) + '명 · 칸을 차지해 보세요', fmt(terr.players || 0) + ' players · grab a cell');
+        el.previousElementSibling.hidden = true;
     }
     // 내 칸이 있으면 그 칸들이 한 화면에 들어오게
     function flyMine() {
@@ -1327,11 +1350,12 @@
         if (!terrChip || !terrPanel || !HX || !A || !A.ready) return;
         A.ready.then(() => {
             if (!A.loginOn()) return;   // 서버에 로그인이 꺼져 있으면 영역도 없다
-            terrChip.hidden = false;
+            document.getElementById('sm-turf').hidden = false;
             const tab = side.querySelector('.sm-tab[data-tab="terr"]');
             if (tab) tab.hidden = false;
         });
         terrChip.addEventListener('click', () => setTerr(!shown.terr));
+        if (terrOnlyBtn) terrOnlyBtn.addEventListener('click', () => setTerrOnly(!terrOnly));
         window.addEventListener('lottodraw:account', () => { if (shown.terr) refreshTerr(); });
     }
 
@@ -1715,8 +1739,8 @@
     // 🏆 단추로 켜고 끈다(처음엔 꺼짐 — 2026-10-26 사장님). 켜면 지도 위 아이콘 + 목록, 끄면 둘 다 감춘다
     let funMarkers = null;
     function setFun(on) {
-        const btn = document.getElementById('sm-fun-btn'), box = document.getElementById('sm-fun');
-        btn.setAttribute('aria-pressed', String(on));
+        const box = document.getElementById('sm-fun');
+        root.querySelectorAll('.sm-fun-toggle').forEach(b => b.setAttribute('aria-pressed', String(on)));   // PC 는 "지도에 보기" 격자, 휴대폰은 왼쪽 아래 단추
         box.hidden = !on;
         if (on && !funMarkers) {
             funMarkers = data.fun.map((f, k) => {
@@ -1733,9 +1757,9 @@
         (funMarkers || []).forEach(m => (on ? m.addTo(map) : m.remove()));
     }
     function initFun() {
-        const btn = document.getElementById('sm-fun-btn'), box = document.getElementById('sm-fun');
-        if (!btn || !data.fun) return;
-        btn.addEventListener('click', () => { const on = btn.getAttribute('aria-pressed') !== 'true'; setFun(on); if (on && isWide()) setTab('fun'); });
+        const btns = root.querySelectorAll('.sm-fun-toggle'), box = document.getElementById('sm-fun');
+        if (!btns.length || !data.fun) return;
+        btns.forEach(btn => btn.addEventListener('click', () => { const on = btn.getAttribute('aria-pressed') !== 'true'; setFun(on); if (on && isWide()) setTab('fun'); }));
         box.querySelectorAll('.sm-fun-item').forEach(b => b.addEventListener('click', () => openFun(Number(b.dataset.k))));
     }
 
