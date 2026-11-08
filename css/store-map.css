@@ -430,7 +430,7 @@ body.sm-full #theme-btn { display: none !important; }
 .sm-share-msg:empty { display: none; }
 @media (max-width: 899px) { .sm-share-btn { padding: 3px 9px; font-size: 10.5px; } .sm-share-acts button, .sm-share-acts a { font-size: 10.5px; } }
 
-/* ───── 영역 카드 · 보기 격자(2026-11-08 사장님 — "둥근 단추가 막 나열돼 정리가 안 돼 보인다, 게임인 영역은 비중 있게" · "영역만 보는 기능도") ─────
+/* ───── LottoHex 카드(이름은 2026-11-08 "영역" → LottoHex) · 보기 격자(2026-11-08 사장님 — "둥근 단추가 막 나열돼 정리가 안 돼 보인다, 게임인 영역은 비중 있게" · "영역만 보는 기능도") ─────
    휴대폰: 칩은 지금처럼 한 줄로 흐르고, 영역만 남색 칩(켜면 옆에 "영역만"). PC: 왼쪽 칸 맨 위 영역 카드 → "지도에 보기" 3칸 격자 → 내 기록 한 줄 → 1등 방식 · 흐리게 */
 .sm-turf { display: contents; }
 .sm-turf-main, .sm-turf-only { order: 2; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px 2px 6px; border: 1px solid #4b3bb8; border-radius: 999px;
@@ -444,7 +444,8 @@ body.sm-full #theme-btn { display: none !important; }
 .sm-turf-only[aria-pressed="true"] .sm-check, .sm-mode[aria-pressed="true"] .sm-check { border-color: #f07a1a; background: #f07a1a url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.2 5 8.6 9.5 3.6' fill='none' stroke='%23fff' stroke-width='1.8'/%3E%3C/svg%3E") center / 100% no-repeat; }
 .sm-turf-beta, .sm-turf-sub, .sm-turf-sw, .sm-chips-h, .sm-chip-fun, .sm-mine-sub, .sm-modes-label { display: none; }
 .sm-chip-mine { order: 1; }
-.is-terr-only .sm-star { display: none; }   /* 영역만 보기: 이색 판매점 별(마커)도 감춘다 */
+.is-terr-only .sm-star { display: none; }   /* LottoHex만 보기: 이색 판매점 별(마커)도 감춘다 */
+.sm-terr h3 .sm-turf-ico { display: inline-block; width: 13px; height: 15px; margin-right: 1px; vertical-align: -2px; }
 
 @media (min-width: 900px) {
     .sm-chips:not(.sm-modes) { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 5px; padding: 12px 13px 0; }
@@ -473,12 +474,13 @@ body.sm-full #theme-btn { display: none !important; }
     .sm-turf-main { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; align-items: center; gap: 11px; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none;
         font-size: 13px; text-align: left; white-space: normal; }
     .sm-turf-main[aria-pressed="true"] { box-shadow: none; }
-    .sm-turf-ico { width: 38px; height: 42px; }
+    .sm-turf-main .sm-turf-ico { width: 38px; height: 42px; }
     .sm-turf-main[aria-pressed="false"] .sm-turf-ico { filter: saturate(.75) brightness(.92); }
     .sm-turf-txt { display: grid; gap: 2px; min-width: 0; }
     .sm-turf-txt b { display: flex; align-items: center; gap: 7px; font-size: 16px; font-weight: 800; }
     .sm-turf-beta { display: inline-block; padding: 1px 7px; border-radius: 999px; background: rgba(255, 255, 255, .16); color: #ffd76a; font-size: 10px; font-weight: bold; }
     .sm-turf-sub { display: block; overflow: hidden; color: rgba(255, 255, 255, .8); font-size: 11.5px; font-weight: normal; text-overflow: ellipsis; white-space: nowrap; }
+    .sm-turf-sub:empty { display: none; }   /* 부제는 없다(2026-11-08 사장님) — 켠 뒤에만 내 칸 · 순위 */
     .sm-turf-sw { display: block; position: relative; width: 38px; height: 22px; border-radius: 999px; background: rgba(255, 255, 255, .22); transition: background .2s; }
     .sm-turf-sw::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .3); transition: transform .2s; }
     .sm-turf-main[aria-pressed="true"] .sm-turf-sw { background: #ffa94d; }
@@ -499,5 +501,6 @@ body.sm-full #theme-btn { display: none !important; }
     .sm-modes .sm-mode:last-of-type { border-radius: 0 9px 9px 0; }
     .sm-modes .sm-mode[aria-pressed="true"] { position: relative; z-index: 1; }
     .sm-fade { margin: 10px 14px 0; padding: 0; border: 0; background: none; }
-    .sm-tabs { gap: 0; padding: 0 4px; }   /* 탭 일곱 개가 340px 안에(영역 탭이 잘렸다) */
+    .sm-tabs { gap: 0; padding: 0 4px; }   /* 탭 일곱 개가 340px 안에(마지막 탭이 잘렸다) */
+    .sm-tab { padding-left: 1px; padding-right: 1px; font-size: 12px; letter-spacing: -.01em; }   /* LottoHex 탭이 길어서(2026-11-08) */
 }
