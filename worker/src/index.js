@@ -779,7 +779,7 @@ async function getRanking(request, env) {
     return json(request, env, Object.assign(r, { points: POINTS }), 200, sub ? {} : { 'Cache-Control': 'public, max-age=60' }, !sub);
 }
 
-// 영역(육각 칸, 2026-11-07 시험판 — territory.js): 칸 주인 · Map 랭킹은 누구나, 로그인했으면 내 칸 · 순위도
+// LottoHex(육각 칸, 2026-11-07 시험판, 처음 이름 "영역" — territory.js): 칸 주인 · Map 랭킹은 누구나, 로그인했으면 내 칸 · 순위도
 async function getTerritory(request, env) {
     needLogin(env);
     let sub = null;
@@ -797,12 +797,12 @@ async function territoryJoin(request, env) {
     await limited(env.REACT_LIMIT, s.hash);
     const body = await readJson(request);
     if (body.agree !== true || body.v !== TERR_CONSENT) throw new HttpError(400, 'need_consent', '참여 안내를 읽고 동의해 주세요.');
-    if (!s.user.nick) throw new HttpError(409, 'need_nick', '영역은 별명으로 나옵니다. 별명을 먼저 정해 주세요.');
+    if (!s.user.nick) throw new HttpError(409, 'need_nick', 'LottoHex에는 별명으로 나옵니다. 별명을 먼저 정해 주세요.');
     const map = await cellMap(siteUrl(env)).catch(() => { throw new HttpError(503, 'cells_unavailable', '칸 자료를 불러오지 못했습니다. 잠시 뒤 다시 해 주세요.'); });
     const cells = {};
     for (const id of Object.keys(s.user.visits || {})) { const c = map.get(id); if (c) cells[id] = c; }
     const r = await community(env, 'terrJoin', { sub: s.sub, now: Date.now(), v: TERR_CONSENT, cells });
-    if (r.error === 'need_nick') throw new HttpError(409, 'need_nick', '영역은 별명으로 나옵니다. 별명을 먼저 정해 주세요.');
+    if (r.error === 'need_nick') throw new HttpError(409, 'need_nick', 'LottoHex에는 별명으로 나옵니다. 별명을 먼저 정해 주세요.');
     if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
     return json(request, env, { user: r.user });
 }

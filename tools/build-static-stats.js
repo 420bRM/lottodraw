@@ -2488,7 +2488,7 @@ const STORE_MAP_ALL = 'store-map-all.json';
 const STORE_MAP_ROUNDS = 'store-map-rounds.json';
 // 판매점 번호(동행복권 8자리) — 로그인 회원의 "다녀온 곳"을 지도 점과 잇는다. 로그인했을 때만 받는다. w: store-map-data 의 rows 차례, a: store-map-all 의 rows 차례
 const STORE_MAP_IDS = 'store-map-ids.json';
-// 영역(육각 칸, 2026-11-07 시험판): { 칸 "q,r": [판매점 번호…] } — 폐점은 빼고 1 · 2등 판매점 + 일반 판매점. 칸 나누기는 js/hexgrid.js.
+// LottoHex(육각 칸 — 2026-11-07 시험판, 처음 이름 "영역"): { 칸 "q,r": [판매점 번호…] } — 폐점은 빼고 1 · 2등 판매점 + 일반 판매점. 칸 나누기는 js/hexgrid.js.
 // 서버(worker)가 회원의 "다녀온 곳"을 칸에 넣을 때 이 파일만 읽는다(칸을 직접 계산하지 않는다)
 const STORE_MAP_CELLS = 'store-map-cells.json';
 const HEX = require(path.join(ROOT, 'js', 'hexgrid.js'));
@@ -2498,7 +2498,7 @@ function storeMapCells(md) {
     md.rows.forEach((r, i) => { if (!r[7]) put(r[0], r[1], md.ids[i]); });
     if (md.all) md.all.rows.forEach((r, i) => { if (md.all.ids[i]) put(r[0], r[1], md.all.ids[i]); });
     const keys = Object.keys(cells).sort();
-    return { r: HEX.R, note: '영역 칸(js/hexgrid.js) → 그 칸의 판매점 번호. 폐점 제외', cells: Object.fromEntries(keys.map(k => [k, cells[k].sort()])) };
+    return { r: HEX.R, note: 'LottoHex 칸(js/hexgrid.js) → 그 칸의 판매점 번호. 폐점 제외', cells: Object.fromEntries(keys.map(k => [k, cells[k].sort()])) };
 }
 const ALL_SHOPS = (() => { try { return JSON.parse(fs.readFileSync(path.join(ROOT, 'shops-all.json'), 'utf8')); } catch (e) { return null; } })();
 // 좌표가 있는 판매점이 1,000곳을 넘을 때만 지도 페이지 · 링크를 만든다(좌표를 받기 전 자료에서는 만들지 않는다)
@@ -2704,16 +2704,16 @@ function storeMapPage(md, top) {
             <input type="search" class="sm-search" id="sm-search" placeholder="판매점 이름 찾기" data-i18n-attr="placeholder:sm.search" aria-label="판매점 이름 찾기" autocomplete="off">
             <ul class="sm-found" id="sm-found" hidden></ul>
         </div>
-        <!-- PC(2026-11-08 사장님 — "둥근 단추가 막 나열돼 정리가 안 돼 보인다, 게임인 영역은 비중 있게"): 맨 위 영역 카드 → "지도에 보기" 3칸 격자 → 내 기록(한 줄).
-             휴대폰은 지금처럼 한 줄로 흐르는 칩(영역 카드도 칩 하나 + 켜면 "영역만") -->
+        <!-- PC(2026-11-08 사장님 — "둥근 단추가 막 나열돼 정리가 안 돼 보인다, 게임인 영역은 비중 있게"): 맨 위 LottoHex 카드(이름은 2026-11-08 "영역" → LottoHex, 부제 없음) → "지도에 보기" 3칸 격자 → 내 기록(한 줄).
+             휴대폰은 지금처럼 한 줄로 흐르는 칩(LottoHex 카드도 칩 하나 + 켜면 "LottoHex만 보기") -->
         <div class="sm-chips" role="group" aria-label="지도에 보기" data-i18n-attr="aria-label:sm.layers">
             <div class="sm-turf" id="sm-turf" hidden>
                 <button type="button" class="sm-turf-main" id="sm-terr-chip" aria-pressed="false" title="육각 칸 땅따먹기 · Map 랭킹 (시험판)" data-i18n-attr="title:sm.terrTitle">
                     <span class="sm-turf-ico" aria-hidden="true"></span>
-                    <span class="sm-turf-txt"><b><span data-i18n-en="Turf">영역</span><span class="sm-turf-beta" data-i18n-en="beta">시험판</span></b><small class="sm-turf-sub"><span class="sm-turf-def" data-i18n-en="Hexagon land grab · Map ranking">육각 칸 땅따먹기 · Map 랭킹</span><span class="sm-turf-stat" id="sm-turf-stat"></span></small></span>
+                    <span class="sm-turf-txt"><b><span>LottoHex</span><span class="sm-turf-beta" data-i18n-en="beta">시험판</span></b><small class="sm-turf-sub" id="sm-turf-stat"></small></span>
                     <span class="sm-turf-sw" aria-hidden="true"></span>
                 </button>
-                <button type="button" class="sm-turf-only" id="sm-terr-only" aria-pressed="false" title="판매점 점은 감추고 영역 칸만 보기" data-i18n-attr="title:sm.terrOnlyTitle"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Turf only">영역만 보기</span></button>
+                <button type="button" class="sm-turf-only" id="sm-terr-only" aria-pressed="false" title="판매점 점은 감추고 LottoHex 칸만 보기" data-i18n-attr="title:sm.terrOnlyTitle"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="LottoHex only">LottoHex만 보기</span></button>
             </div>
             <span class="sm-chips-h" data-i18n-en="On the map">지도에 보기</span>
             <button type="button" class="sm-chip sm-chip-top" data-layer="top" aria-pressed="false" title="TOP 50 판매점만 별로 보기" data-i18n-attr="title:sm.topTitle"><span class="sm-star-ico" aria-hidden="true">✦</span>TOP 50</button>
@@ -2731,9 +2731,9 @@ function storeMapPage(md, top) {
         <button type="button" class="sm-tab" data-tab="card" role="tab" aria-selected="false" data-i18n-en="Retailer">판매점</button>
         <button type="button" class="sm-tab" data-tab="near" role="tab" aria-selected="false" data-i18n-en="Nearby">내 근처</button>
         ${md.fun && md.fun.length ? `<button type="button" class="sm-tab" data-tab="fun" role="tab" aria-selected="false" data-i18n-en="Unusual">이색 판매점</button>` : ''}
-        <button type="button" class="sm-tab" data-tab="info" role="tab" aria-selected="false" data-i18n-en="By province">시도별</button>
+        <button type="button" class="sm-tab" data-tab="info" role="tab" aria-selected="false" data-i18n-en="Regions">시도별</button>
         <button type="button" class="sm-tab" data-tab="mine" role="tab" aria-selected="false" hidden data-i18n-en="Mine">내 기록</button>
-        <button type="button" class="sm-tab" data-tab="terr" role="tab" aria-selected="false" hidden data-i18n-en="Turf">영역</button>
+        <button type="button" class="sm-tab" data-tab="terr" role="tab" aria-selected="false" hidden>LottoHex</button>
     </nav>
     <!-- TOP 50 목록 · 판매점 카드(PC 는 탭 내용, 휴대폰은 목록을 감추고 카드만 아래쪽에) -->
     <div class="sm-right">
