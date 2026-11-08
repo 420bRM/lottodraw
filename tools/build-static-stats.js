@@ -1513,37 +1513,47 @@ function roundStores(d, winners) {
     const rec = STORES && STORES.d.rounds[d.round];
     if (!rec) return [];
     const nth = ROUND_SHOP_NTH[d.round];
+    const mapReady = STORE_MAP_READY();
     const mapHref = id => `../${STORE_MAP_FILE}?shop=${id}`;
-    const onMap = id => { const s = STORES.shop(id); return STORE_MAP_READY() && (id === NET_ID || typeof s[4] === 'number'); };
+    const onMap = id => mapReady && (id === NET_ID || typeof STORES.shop(id)[4] === 'number');
     const shopCell = id => {
         const s = STORES.shop(id);
-        const name = esc(s[0]) + (s[3] ? ` <span class="muted" data-i18n-en="(closed)">(폐점)</span>` : '');
+        const name = id === NET_ID ? en('동행복권 인터넷 판매', 'Dong-haeng Lottery online')
+            : esc(s[0]) + (s[3] ? ` <span class="muted" data-i18n-en="(closed)">(폐점)</span>` : '');
         return onMap(id) ? `<a href="${mapHref(id)}">${name}</a>` : name;
     };
     const area = id => { const s = STORES.shop(id); return s[1] === '인터넷' ? en('인터넷', 'Online') : esc([s[1], s[2]].filter(Boolean).join(' ')) || '—'; };
     const how = h => h === 'A' ? en('자동', 'Auto') : h === 'M' ? en('수동', 'Manual') : h === 'S' ? en('반자동', 'Semi-auto') : '—';
+    const ord = n => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th');
     const out = [h2En(`${d.round}회 1등 판매점`, `1st-prize retailers, draw ${d.round}`)];
     if (rec.w1.length) {
-        out.push(table([['판매점', 'Retailer'], ['지역', 'Area'], ['방식', 'Method'], ['누적 1등', "Retailer's 1st prizes"]],
+        out.push(table([['판매점', 'Retailer'], ['지역', 'Area'], ['방식', 'Method'], ['누적 1등', 'Its 1st prizes']],
             rec.w1.map(([id, h], i) => [shopCell(id), area(id), how(h),
-                nth[i] === 1 ? en('첫 1등', 'first') : en(`${nth[i]}번째`, `#${nth[i]}`)]), 'tier-stat round-stores'));
+                nth[i] === 1 ? en('첫 1등', 'first') : en(`${nth[i]}번째`, ord(nth[i]))]), 'tier-stat round-stores'));
     } else if (winners === 0) {
         out.push(pEn('이 회차는 1등이 없어 1등 판매점도 없습니다.', 'Nobody won 1st prize, so there are no 1st-prize retailers for this draw.'));
     }
-    // 2등: 시도별 게임 수
+    // 2등: 시도별 게임 수. 판매점 자료의 게임 수가 등수별 당첨금 표(prize-data)와 다르면 "판매점 자료로 확인된"을 붙인다
     const bySido = new Map();
     for (const id of rec.w2) { const k = STORES.shop(id)[1] || '기타'; bySido.set(k, (bySido.get(k) || 0) + 1); }
     const sidoList = [...bySido.entries()].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1));
     const sidoKo = sidoList.map(([k, v]) => `${k === '기타' ? '주소 없음' : esc(k)} ${v}`).join(' · ');
     const sidoEn = sidoList.map(([k, v]) => `${k === '인터넷' ? 'online' : k === '기타' ? 'no address' : esc(k)} ${v}`).join(' · ');
-    const shops2 = new Set(rec.w2).size;
-    const w1shops = new Set(rec.w1.map(([id]) => id)).size;
-    out.push(pEn((rec.w1.length ? `1등 ${fmt(rec.w1.length)}게임은 ${fmt(w1shops)}곳에서 나왔습니다. ` : '')
-        + (rec.w2.length ? `2등 ${fmt(rec.w2.length)}게임은 ${fmt(shops2)}곳에서 나왔습니다(${sidoKo}). ` : '')
-        + `'누적 1등'은 ${STORES.first}회부터 이 회차까지 그 판매점에서 나온 1등 가운데 몇 번째인지입니다. 판매점 이름을 누르면 <a href="../${STORE_MAP_FILE}">로또 판매점 지도</a>에서 그 판매점의 1 · 2등 기록을 볼 수 있고, 판매점별 순위는 <a href="../${STORES_FILE}">1등 판매점 통계</a>에 있습니다.`,
-        (rec.w1.length ? `The ${fmt(rec.w1.length)} 1st-prize games came from ${fmt(w1shops)} retailers. ` : '')
-        + (rec.w2.length ? `The ${fmt(rec.w2.length)} 2nd-prize games came from ${fmt(shops2)} retailers (${sidoEn}). ` : '')
-        + `"Retailer's 1st prizes" counts which 1st prize this was for that retailer, from draw ${STORES.first} up to this draw. Click a retailer to see its 1st and 2nd prizes on <a href="../${STORE_MAP_FILE}">the lotto retailer map</a>; rankings are in <a href="../${STORES_FILE}">1st-prize retailer statistics</a>.`, 'note'));
+    const n1 = rec.w1.length, n2 = rec.w2.length;
+    const s1 = new Set(rec.w1.map(([id]) => id)).size, s2 = new Set(rec.w2).size;
+    const p = prizeOf[d.round];
+    const part1 = typeof winners === 'number' && winners !== n1, part2 = !!p && p.w2 !== n2;
+    const gamesEn = (n, tier) => n === 1 ? `The only ${tier}-prize game` : `The ${fmt(n)} ${tier}-prize games`;
+    const fromEn = s => `came from ${fmt(s)} retailer${s === 1 ? '' : 's'}`;
+    const ko = (n1 ? `${part1 ? '판매점 자료로 확인된 ' : ''}1등 ${fmt(n1)}게임은 ${fmt(s1)}곳에서 나왔습니다. ` : '')
+        + (n2 ? `${part2 ? '판매점 자료로 확인된 ' : ''}2등 ${fmt(n2)}게임은 ${fmt(s2)}곳에서 나왔습니다(${sidoKo}). ` : '')
+        + (n1 ? `'누적 1등'은 ${STORES.first}회부터 이 회차까지 그 판매점에서 나온 1등 가운데 몇 번째인지입니다. 판매점 이름을 누르면 <a href="../${STORE_MAP_FILE}">로또 판매점 지도</a>에서 그 판매점의 1 · 2등 기록을 볼 수 있고, 판매점별 순위는 <a href="../${STORES_FILE}">1등 판매점 통계</a>에 있습니다.`
+            : `판매점 위치는 <a href="../${STORE_MAP_FILE}">로또 판매점 지도</a>, 판매점별 순위는 <a href="../${STORES_FILE}">1등 판매점 통계</a>에 있습니다.`);
+    const english = (n1 ? `${part1 ? '(Retailer data) ' : ''}${gamesEn(n1, '1st')} ${fromEn(s1)}. ` : '')
+        + (n2 ? `${part2 ? '(Retailer data) ' : ''}${gamesEn(n2, '2nd')} ${fromEn(s2)} (${sidoEn}). ` : '')
+        + (n1 ? `"Its 1st prizes" shows which 1st prize this was for that retailer, counting from draw ${STORES.first} up to this draw. Click a retailer to see its 1st and 2nd prizes on <a href="../${STORE_MAP_FILE}">the lotto retailer map</a>; rankings are in <a href="../${STORES_FILE}">1st-prize retailer statistics</a>.`
+            : `Retailer locations are on <a href="../${STORE_MAP_FILE}">the lotto retailer map</a>; rankings are in <a href="../${STORES_FILE}">1st-prize retailer statistics</a>.`);
+    out.push(pEn(ko, english, 'note'));
     return out;
 }
 
