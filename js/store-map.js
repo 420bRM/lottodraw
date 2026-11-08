@@ -955,6 +955,7 @@
         terrLoading = p;
         try { const r = await p; if (terrLoading === p) terr = r; } catch (e) { if (terrLoading === p) terr = terr || null; }
         if (terrLoading === p) terrLoading = null;
+        hexNews();
         turfStatus();
     }
     function terrFeatures() {
@@ -1147,17 +1148,17 @@
         const el = document.getElementById('sm-turf-stat');
         if (!el || !terr) return;
         const me = terr.me;
-        el.textContent = me && me.joined
+        const n = newsState === 'pending' && terrNews;
+        el.textContent = (me && me.joined
             ? T('내 칸 ' + fmt(me.cells.length) + ' · ' + (me.rank ? me.rank + '위' : '순위 밖'), 'My cells ' + fmt(me.cells.length) + ' · ' + (me.rank ? '#' + me.rank : 'unranked'))
-            : T('참여 ' + fmt(terr.players || 0) + '명 · 칸을 차지해 보세요', fmt(terr.players || 0) + ' players · grab a cell');
+            : T('참여 ' + fmt(terr.players || 0) + '명 · 칸을 차지해 보세요', fmt(terr.players || 0) + ' players · grab a cell')) +
+            (n ? (n.lost.length ? T(' · 칸 ' + n.lost.length + '개 잃음', ' · lost ' + n.lost.length) : '') + (n.won.length ? T(' · ' + n.won.length + '개 얻음', ' · gained ' + n.won.length) : '') : '');
     }
     // 내 칸이 있으면 그 칸들이 한 화면에 들어오게
     function flyMine() {
         const mine = (terr && terr.me && terr.me.cells) || [];
         if (!mine.length) return false;
-        const b = new maplibregl.LngLatBounds();
-        mine.forEach(k => HX.ringOf(k).forEach(p => b.extend(p)));
-        map.fitBounds(b, { padding: isWide() ? pad() : Object.assign(pad(), { bottom: Math.round(window.innerHeight * 0.4) + 16 }), maxZoom: 14, duration: 800 });
+        fitCells(mine);
         return true;
     }
     // 동의 · 참여 뒤 · 다녀온 곳을 바꾼 뒤: 서버 답을 다시 받아 칸 색과 목록을 새로
@@ -1192,6 +1193,128 @@
             (list.length ? '<ol class="sm-near-list sm-terr-stores">' + list.slice(0, 40).map(x => '<li><button type="button" data-t="' + x.t + '" data-i="' + x.i + '"><span class="sm-tname">' +
                 (been(x.id) ? '<span class="sm-terr-v" title="' + T('다녀온 곳', 'Visited') + '">✓</span>' : '') + esc(x.name) + '</span><span class="sm-tcnt">' +
                 (x.t === 'w' && x.w1 ? '<small>' + x.w1 + T('번 1등', ' × 1st') + '</small>' : '') + '</span></button></li>').join('') + '</ol>' : '') +
+            '</div>';
+    }
+    // ───── LottoHex 할 거리(2026-11-08 사장님 — 다른 세션의 발전안 1 · 2 · 6번) ─────
+    // 칸 하나 짚기: 고르고 그 칸이 한 화면에(휴대폰은 아래 창을 비켜서)
+    function fitCells(keys) {
+        const b = new maplibregl.LngLatBounds();
+        keys.forEach(k => HX.ringOf(k).forEach(p => b.extend(p)));
+        map.fitBounds(b, { padding: isWide() ? pad() : Object.assign(pad(), { bottom: Math.round(window.innerHeight * 0.4) + 16 }), maxZoom: 14, duration: 800 });
+    }
+    function goCell(k) { pickCell(k); fitCells([k]); }
+    const cellStores = k => (terrCells && terrCells.get(k)) || [];
+    // 칸 이름: 시군구 + 그 칸에서 1등이 가장 많은(없으면 첫) 판매점 — "노원구 · 스파 외 2곳"
+    function cellLabel(k) {
+        const list = cellStores(k);
+        if (!list.length) return { gu: '', shop: '' };
+        let best = list[0], bw = -1;
+        list.forEach(x => { const w = x.t === 'w' ? props[x.i].w1 : 0; if (w > bw) { best = x; bw = w; } });
+        const name = best.t === 'w' ? data.rows[best.i][4] : all.rows[best.i][2];
+        return { gu: areaOf(list), shop: list.length > 1 ? T(name + ' 외 ' + (list.length - 1) + '곳', name + ' +' + (list.length - 1)) : name };
+    }
+    // 한 줄: [칸 모양] 구 · 판매점 / 아랫줄 설명(note). tag 는 오른쪽 짧은 표시(잃음 · 얻음)
+    const cellRow = (k, note, cls, sk, tag) => {
+        const l = cellLabel(k);
+        return '<li' + (cls ? ' class="' + cls + '"' : '') + '><button type="button" data-k="' + esc(k) + '">' + (sk ? swatch(sk) : '<span class="sm-skin sm-skin-empty" aria-hidden="true"></span>') +
+            '<span class="sm-tname"><span class="sm-todo-where"><b>' + esc(l.gu || T('(이름 없는 칸)', '(cell)')) + '</b> <small>' + esc(l.shop) + '</small></span>' +
+            (note ? '<span class="sm-todo-note">' + note + '</span>' : '') + '</span>' + (tag ? '<span class="sm-todo-tag">' + tag + '</span>' : '') + '</button></li>';
+    };
+    const HEX_NB = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, -1], [-1, 1]];
+    const nbOf = k => { const [q, r] = k.split(',').map(Number); return HEX_NB.map(([a, b]) => (q + a) + ',' + (r + b)); };
+    // 1. 지킬 칸: 2위가 같은 수(또 다녀오기만 해도 넘어감) · 1곳 차이. 노릴 칸: 같은 수(내가 또 다녀오면) · 1곳 더 · 내 칸 옆 빈 칸
+    function todoLists(me) {
+        const cells = terr.cells || {}, mine = new Set(me.cells), cnt = me.counts || {};
+        const keep = me.cells.map(k => ({ k, c: cells[k] })).filter(x => x.c && x.c[2] >= x.c[1] - 1)
+            .sort((a, b) => (a.c[1] - a.c[2]) - (b.c[1] - b.c[2]) || a.c[1] - b.c[1]);
+        const seen = new Set(), aim = [];
+        const consider = k => {
+            if (seen.has(k) || mine.has(k)) return;
+            seen.add(k);
+            const total = cellStores(k).length, my = cnt[k] || 0, c = cells[k];
+            if (!total) return;
+            if (!c) { if (my === 0) aim.push({ k, need: 1, empty: true }); return; }
+            const need = c[1] - my;
+            if (need === 0 && my > 0) aim.push({ k, need: 0, c });
+            else if (need === 1 && total > my) aim.push({ k, need: 1, c });
+        };
+        Object.keys(cnt).forEach(consider);
+        me.cells.concat(Object.keys(cnt)).forEach(k => nbOf(k).forEach(consider));
+        aim.sort((a, b) => a.need - b.need || (a.empty ? 1 : 0) - (b.empty ? 1 : 0));
+        const MAX = 4, more = (n, key) => (n > MAX ? '<button type="button" class="sm-todo-more" data-more="' + key + '">' + T('+ ' + (n - MAX) + '칸 더 보기', '+ ' + (n - MAX) + ' more') + '</button>' : '');
+        const cut = (arr, key) => (todoOpen[key] ? arr : arr.slice(0, MAX));
+        const keepNote = x => (x.c[2] >= x.c[1] ? '<b class="is-hot">' + T('같은 수', 'tied') + '</b>' + T(' · 상대가 또 다녀오면 넘어감', ' · a revisit takes it')
+            : '<b>' + T('1곳 차이', '1 ahead') + '</b>') + (cellStores(x.k).length > x.c[1] ? T(' — 한 곳 더 다녀오면 지킴', ' — one more visit secures it') : T(' — 오늘 또 다녀오면 지킴', ' — revisit today to hold'));
+        const aimNote = x => (x.empty ? T('빈 칸 · 한 곳만 다녀오면 차지', 'empty · one visit takes it')
+            : x.need === 0 ? '<b class="is-hot">' + T('같은 수', 'tied') + '</b>' + T(' · 오늘 또 다녀오면 차지', ' · revisit today to take it')
+            : '<b>' + T('1곳 더', '1 more') + '</b>' + T(' 다녀오면 차지', ' visit takes it'));
+        return '<div class="sm-terr-todo">' +
+            '<h4 class="sm-terr-h">🛡 ' + T('지킬 칸', 'Cells to defend') + ' <small>' + fmt(keep.length) + '</small></h4>' +
+            (keep.length ? '<ol class="sm-todo-list">' + cut(keep, 'keep').map(x => cellRow(x.k, keepNote(x), x.c[2] >= x.c[1] ? 'is-hot' : '', x.c[4])).join('') + '</ol>' + more(keep.length, 'keep')
+                : '<p class="sm-small">' + T(me.cells.length ? '모든 내 칸이 2곳 이상 앞서 있습니다.' : '아직 내 칸이 없습니다.', me.cells.length ? 'All your cells lead by 2 or more.' : 'You hold no cells yet.') + '</p>') +
+            '<h4 class="sm-terr-h">🎯 ' + T('노릴 칸', 'Cells within reach') + ' <small>' + fmt(aim.length) + '</small></h4>' +
+            (aim.length ? '<ol class="sm-todo-list">' + cut(aim, 'aim').map(x => cellRow(x.k, aimNote(x), x.need === 0 ? 'is-hot' : '', x.c && x.c[4])).join('') + '</ol>' + more(aim.length, 'aim')
+                : '<p class="sm-small">' + T('다녀온 칸과 그 옆에서 한 번에 차지할 칸이 없습니다.', 'Nothing within one visit around your cells.') + '</p>') +
+            '</div>';
+    }
+    const todoOpen = { keep: false, aim: false };
+    // 2. 잃은 칸 · 얻은 칸: 이 기기에 "마지막으로 본 내 칸"(칸 크기 R · 계정과 함께)을 두고 들어올 때 견준다. 서버는 그대로.
+    // 누가 · 언제 가져갔는지는 보이지 않는다(생활 반경 · 시간대). 처음이거나 칸 크기가 바뀌었으면 조용히 새로 적는다
+    const SEEN_KEY = 'lottodraw.hex.seen';
+    let terrNews = null, newsState = null;   // newsState: null(아직 안 견줌) · 'pending'(안 봄) · 'seen'
+    const whoKey = () => { const A = account(), u = A && A.me() && A.me().user; let h = 0x811c9dc5; const str = String((u && (u.email || u.nick)) || ''); for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return h.toString(36); };
+    function readSeen() { try { const j = JSON.parse(localStorage.getItem(SEEN_KEY) || 'null'); return j && j.who === whoKey() && j.r === HX.R && Array.isArray(j.cells) ? j : null; } catch (e) { return null; } }
+    function writeSeen(cells) { try { localStorage.setItem(SEEN_KEY, JSON.stringify({ who: whoKey(), r: HX.R, at: Date.now(), cells })); } catch (e) { /* 저장 못 해도 지도는 된다 */ } }
+    function hexNews() {
+        const me = terr && terr.me, A = account();
+        if (!me || !me.joined || !A || !A.session()) return;
+        if (newsState === null) {
+            const prev = readSeen(), cur = new Set(me.cells);
+            if (prev) {
+                const was = new Set(prev.cells), lost = prev.cells.filter(k => !cur.has(k)), won = me.cells.filter(k => !was.has(k));
+                if (lost.length || won.length) terrNews = { lost, won, since: prev.at };
+            }
+            newsState = terrNews ? 'pending' : 'seen';
+        }
+        if (newsState === 'seen') writeSeen(me.cells);
+        if (terrChip) terrChip.classList.toggle('has-new', newsState === 'pending');
+    }
+    function newsBlock() {
+        if (!terrNews) return '';
+        const n = terrNews, d = new Date(n.since + 9 * 3600e3);
+        const when = (d.getUTCMonth() + 1) + '/' + d.getUTCDate() + ' ' + String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0');
+        const head = T('지난번(' + when + ') 뒤로 ' + [n.lost.length ? '칸 ' + n.lost.length + '개를 잃었' : '', n.won.length ? (n.lost.length ? '고 ' : '칸 ') + n.won.length + '개를 얻었' : ''].join('') + '습니다.',
+            'Since ' + when + ': ' + [n.lost.length ? 'lost ' + n.lost.length : '', n.won.length ? 'gained ' + n.won.length : ''].filter(Boolean).join(', ') + ' cell(s).');
+        if (newsState === 'pending') { newsState = 'seen'; writeSeen(terr.me.cells); if (terrChip) terrChip.classList.remove('has-new'); turfStatus(); }
+        return '<div class="sm-terr-news" role="status"><p><b>' + head + '</b> <button type="button" class="sm-news-ok">' + T('확인', 'OK') + '</button></p>' +
+            '<ol class="sm-todo-list">' + n.lost.map(k => cellRow(k, '', 'is-lost', null, '<b class="is-hot">' + T('잃음', 'lost') + '</b>')).join('') + n.won.map(k => cellRow(k, '', 'is-won', (terr.cells[k] || [])[4], '<b class="is-won">' + T('얻음', 'gained') + '</b>')).join('') + '</ol>' +
+            '<p class="sm-small">' + T('폐점 · 칸 목록이 바뀌어 빠진 칸도 잃은 칸으로 나옵니다.', 'Cells dropped because a retailer closed also show as lost.') + '</p></div>';
+    }
+    // 6. 칸 도감: 다녀온 곳이 있는 칸 / 전국 칸(폐점 빼고 판매점이 있는 칸). 시 · 도는 칸 안 판매점의 다수결. 참여하지 않은 회원도 본다
+    let cellSido = null;
+    const DEX_BADGES = [10, 50, 100];
+    function dexBlock() {
+        if (!terrCells || !ids || !Object.keys(visits).length) return '';
+        if (!cellSido) { cellSido = new Map(); terrCells.forEach((list, k) => cellSido.set(k, (areaKeyOf(list).split(' ')[0]) || '')); }
+        const idOf = x => (x.t === 'w' ? ids.w[x.i] : ids.a && ids.a[x.i]);
+        const tot = new Map(), got = new Map();
+        let n = 0;
+        terrCells.forEach((list, k) => {
+            const si = cellSido.get(k);
+            tot.set(si, (tot.get(si) || 0) + 1);
+            if (list.some(x => { const id = idOf(x); return id && visits[id]; })) { n++; got.set(si, (got.get(si) || 0) + 1); }
+        });
+        const all_ = terrCells.size, pct = v => (v * 100).toFixed(v < 0.01 ? 2 : v < 0.1 ? 1 : 0) + '%';
+        const bar = (a, b) => '<span class="sm-dex-bar"><i style="width:' + Math.max(a ? 3 : 0, Math.round(a / b * 100)) + '%"></i></span>';
+        const sido = [...tot.keys()].filter(Boolean).sort((a, b) => (got.get(b) || 0) - (got.get(a) || 0) || tot.get(b) - tot.get(a));
+        const row = si => '<li><span>' + esc(si) + '</span>' + bar(got.get(si) || 0, tot.get(si)) + '<b>' + fmt(got.get(si) || 0) + '</b><small>/' + fmt(tot.get(si)) + '</small></li>';
+        const on = sido.filter(si => got.get(si)), off = sido.filter(si => !got.get(si));
+        return '<div class="sm-hexdex"><h4 class="sm-terr-h">📖 ' + T('칸 도감', 'Cell collection') + ' <small>' + T('다녀온 곳이 있는 칸', 'cells with a place you visited') + '</small></h4>' +
+            '<p class="sm-dex-total"><b>' + fmt(n) + '</b> / ' + T(fmt(all_) + '칸', fmt(all_) + ' cells') + ' <small>' + pct(n / all_) + '</small></p>' + bar(n, all_) +
+            '<p class="sm-dex-badges">' + DEX_BADGES.map(b => '<span class="sm-dex-badge' + (n >= b ? ' is-on' : '') + '" title="' + T(b + '칸 다녀오기', 'Visit ' + b + ' cells') + '">⬡ ' + b +
+                (n >= b ? '' : '<small>' + T((b - n) + '칸 남음', (b - n) + ' to go') + '</small>') + '</span>').join('') + '</p>' +
+            (on.length ? '<ul class="sm-dex-sido">' + on.map(row).join('') + '</ul>' : '') +
+            (off.length ? '<details class="sm-dex-more"><summary>' + T('나머지 시 · 도 ' + off.length + '곳', off.length + ' more regions') + '</summary><ul class="sm-dex-sido">' + off.map(row).join('') + '</ul></details>' : '') +
             '</div>';
     }
     // 내 칸 모양 바꾸기(2026-11-07 사장님 — 기본은 무작위, 바꾸려면 포인트). 주색 · 보조색 16가지(+ 아무 색) × 무늬 4가지
@@ -1270,6 +1393,9 @@
             (terr ? '' : '<p class="sm-small is-warn">' + T('LottoHex를 불러오지 못했습니다. 잠시 뒤 다시 켜 주세요.', 'Could not load LottoHex. Try again later.') + '</p>') +
             '<div class="sm-terr-status">' + status + '</div>' +
             (terrSel ? cellBlock() : '<p class="sm-small">' + T('칸을 누르면 그 칸의 주인과 판매점이 나옵니다.', 'Tap a cell to see who holds it and its retailers.') + '</p>') +
+            (A && A.session() && me && me.joined ? newsBlock() : '') +
+            (A && A.session() && me && me.joined && terrCells ? todoLists(me) : '') +
+            (A && A.session() ? dexBlock() : '') +
             '<h4 class="sm-terr-h">' + T('Map 랭킹', 'Map ranking') + ' <small>' + T(seasonLabel(s) + ' · ' + seasonEnd(s) + ' 24시에 확정', seasonLabel(s) + ' · final at the end of ' + seasonEnd(s)) + '</small></h4>' +
             (rank.length ? rankList(rank, me && me.rank) : '<p class="sm-small">' + T('아직 칸을 차지한 사람이 없습니다.', 'No one holds a cell yet.') + '</p>') +
             (last && last.rank.length ? '<h4 class="sm-terr-h">🏆 ' + T(seasonLabel(last) + ' 확정 순위', seasonLabel(last) + ' final ranking') + '</h4>' + rankList(last.rank, me && me.lastRank, true) : '') +
@@ -1302,6 +1428,10 @@
             catch (e) { terrPanel.querySelector('.sm-terr-msg').textContent = e.message || T('그만두지 못했습니다.', 'Could not leave.'); }
         });
         terrPanel.querySelectorAll('.sm-terr-stores button').forEach(b => b.addEventListener('click', () => (b.dataset.t === 'w' ? open : openAll)(Number(b.dataset.i), true)));
+        terrPanel.querySelectorAll('.sm-todo-list button[data-k]').forEach(b => b.addEventListener('click', () => goCell(b.dataset.k)));
+        terrPanel.querySelectorAll('.sm-todo-more').forEach(b => b.addEventListener('click', () => { todoOpen[b.dataset.more] = true; drawTerr(); }));
+        const nk = terrPanel.querySelector('.sm-news-ok');
+        if (nk) nk.addEventListener('click', () => { terrNews = null; drawTerr(); });
     }
     // 참여 동의(2026-11-07 사장님 — "이 기능을 쓰려면 먼저 동의"). 서버는 동의 문구 판(TERR_V)과 동의한 때를 적는다
     function drawConsent() {
@@ -1352,6 +1482,7 @@
             document.getElementById('sm-turf').hidden = false;
             const tab = side.querySelector('.sm-tab[data-tab="terr"]');
             if (tab) tab.hidden = false;
+            if (joinedNow() && !terr) loadTerr();   // 참여자는 들어올 때 한 번 받아 잃은 칸 · 얻은 칸을 견준다(카드 · 칩에 빨간 점)
         });
         terrChip.addEventListener('click', () => setTerr(!shown.terr));
         if (terrOnlyBtn) terrOnlyBtn.addEventListener('click', () => setTerrOnly(!terrOnly));

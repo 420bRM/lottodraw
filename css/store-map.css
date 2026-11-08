@@ -504,3 +504,49 @@ body.sm-full #theme-btn { display: none !important; }
     .sm-tabs { gap: 0; padding: 0 4px; }   /* 탭 일곱 개가 340px 안에(마지막 탭이 잘렸다) */
     .sm-tab { padding-left: 1px; padding-right: 1px; font-size: 12px; letter-spacing: -.01em; }   /* LottoHex 탭이 길어서(2026-11-08) */
 }
+
+/* ───── LottoHex 할 거리(2026-11-08): 잃은 칸 · 얻은 칸 알림, 지킬 칸 · 노릴 칸, 칸 도감 ───── */
+.sm-turf-main { position: relative; }
+.sm-turf-main.has-new::after { content: ''; position: absolute; top: -3px; right: -3px; width: 8px; height: 8px; border: 1.5px solid var(--surface, #fff); border-radius: 50%; background: #e0283a; }
+@media (min-width: 900px) { .sm-turf-main.has-new::after { top: -4px; right: auto; left: 30px; } }
+.sm-terr-news { margin: 8px 0 4px; padding: 8px 10px; border: 1px solid #f3c2c8; border-radius: 10px; background: #fff5f6; }
+:root[data-theme="dark"] .sm-terr-news { border-color: #5a2a33; background: #2a1a20; }
+.sm-terr-news > p { display: flex; align-items: center; gap: 6px; margin: 0 0 4px; font-size: 12px; }
+.sm-terr-news > p b { flex: 1 1 auto; }
+.sm-terr-news .sm-small { margin: 4px 0 0; }
+.sm-news-ok { flex: none; padding: 2px 8px; border: 1px solid var(--line, #ddd); border-radius: 7px; background: var(--surface, #fff); color: var(--fg, #333); font: inherit; font-size: 11px; cursor: pointer; }
+.sm-terr-todo { margin-top: 4px; }
+.sm-todo-list { margin: 0 0 2px; padding: 0; list-style: none; }
+.sm-todo-list button { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 7px; width: 100%; padding: 5px 4px; border: 0; border-bottom: 1px solid var(--line-soft, #f0f1f4);
+    border-radius: 0; background: none; color: var(--fg, #333); font: inherit; font-size: 12px; text-align: left; cursor: pointer; }
+.sm-todo-list button:hover { background: var(--soft, #f3f6fb); }
+.sm-todo-list .sm-skin { width: 14px; height: 16px; border-radius: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
+.sm-skin-empty { background: repeating-linear-gradient(45deg, #c9ced8 0 2px, transparent 2px 4px); }
+.sm-todo-list .sm-tname { display: grid; gap: 1px; min-width: 0; font-weight: normal; }
+.sm-todo-where { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sm-todo-list .sm-todo-where small { display: inline; color: var(--faint, #888); font-size: 11px; }   /* PC 의 TOP 50 목록 규칙(.sm-tname small 한 줄 내림)을 덮는다 */
+.sm-todo-note { color: var(--muted, #555); font-size: 11px; }
+.sm-todo-tag { font-size: 11.5px; white-space: nowrap; }
+.sm-todo-note b, .sm-todo-tag b { color: var(--brand, #003087); }
+.sm-todo-list b.is-hot { color: #d12a3c; }
+.sm-todo-list b.is-won { color: #1a8a4a; }
+:root[data-theme="dark"] .sm-todo-note b, :root[data-theme="dark"] .sm-todo-tag b { color: #9db8ff; }
+:root[data-theme="dark"] .sm-todo-list b.is-hot { color: #ff7b8a; }
+:root[data-theme="dark"] .sm-todo-list b.is-won { color: #6fd39a; }
+.sm-todo-more { margin: 2px 0 4px; padding: 0; border: 0; background: none; color: var(--brand, #003087); font: inherit; font-size: 11.5px; cursor: pointer; }
+:root[data-theme="dark"] .sm-todo-more { color: #9db8ff; }
+.sm-hexdex { margin-top: 4px; }
+.sm-dex-total { margin: 2px 0 4px; font-size: 12px; }
+.sm-dex-total b { font-size: 18px; }
+.sm-dex-total small { margin-left: 4px; color: var(--faint, #888); }
+.sm-dex-bar { position: relative; display: block; height: 6px; overflow: hidden; border-radius: 999px; background: var(--soft, #eef1f6); }
+.sm-dex-bar i { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: linear-gradient(90deg, #8f7bff, #ff6fae 60%, #ffd76a); }
+:root[data-theme="dark"] .sm-dex-bar { background: #262d3a; }
+.sm-dex-badges { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0 4px; }
+.sm-dex-badge { display: inline-flex; align-items: baseline; gap: 4px; padding: 3px 9px; border: 1px dashed var(--line, #cfd5df); border-radius: 999px; color: var(--faint, #888); font-size: 11.5px; font-weight: bold; }
+.sm-dex-badge small { font-weight: normal; }
+.sm-dex-badge.is-on { border: 1px solid #4b3bb8; background: linear-gradient(135deg, #24135f, #2d3a8f 60%, #0f6170); color: #ffd76a; }
+.sm-dex-sido { margin: 4px 0 0; padding: 0; list-style: none; }
+.sm-dex-sido li { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto auto; align-items: center; gap: 6px; padding: 2px 0; font-size: 11.5px; }
+.sm-dex-sido small { color: var(--faint, #888); }
+.sm-dex-more summary { margin-top: 4px; color: var(--muted, #666); font-size: 11.5px; cursor: pointer; }
