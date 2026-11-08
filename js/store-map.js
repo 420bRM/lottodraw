@@ -44,6 +44,9 @@
     let map = null;
     const shown = { top: false, w1: true, w2: true, closed: false, all: false, mine: false, terr: false };   // terr: 영역(육각 칸, 2026-11-07 시험판)   // mine: 내 기록(다녀온 곳만, 2026-10-27)   // top: TOP 50 만 별로 보기(2026-10-27)
     let terrOnly = false;                          // 영역만 보기(2026-11-08) — 영역을 켰을 때만 뜻이 있다
+    // 휴대폰 지도 모드(2026-11-08 사장님 — "LottoHex 랑 지도 기능이 한곳에 모여 불편"): 'store' 판매점 · 'hex' LottoHex(아래 판 + 탭)
+    let hexMode = false, terrTab = 'now', sheetSnap = 'half', sheetNoClick = 0, sheetBefore = null;
+    const hexMobile = () => hexMode && !isWide();
     const modes = { A: true, M: true, S: true };   // 1등 방식 체크(로그인 회원)
     let fadeT = 0;                                 // 끌기 막대: 1등 횟수 + 1 이 이 값보다 작으면 흐려진다(0 = 다 보임)
     const isWide = () => window.innerWidth >= 900;
@@ -594,8 +597,13 @@
         markTop(null);
         card.innerHTML = '<button type="button" class="sm-close" aria-label="' + T('닫기', 'Close') + '">×</button>' + html;
         card.hidden = false;
-        if (!isWide()) { nearPanel.hidden = true; minePanel.hidden = true; terrPanel.hidden = true; }   // 휴대폰은 카드 하나만
-        card.querySelector('.sm-close').addEventListener('click', () => { card.hidden = true; markTop(null); if (shown.terr && terrOpen && !isWide()) drawTerr(); });
+        if (hexMobile()) { if (sheetSnap !== 'peek') { sheetBefore = sheetSnap; setSheet('peek'); } }   // LottoHex 모드: 판은 접고 카드는 그 위에
+        else if (!isWide()) { nearPanel.hidden = true; minePanel.hidden = true; terrPanel.hidden = true; }   // 휴대폰은 카드 하나만
+        card.querySelector('.sm-close').addEventListener('click', () => {
+            card.hidden = true; markTop(null);
+            if (shown.terr && terrOpen && !isWide()) drawTerr();
+            if (hexMobile() && sheetBefore) { setSheet(sheetBefore); sheetBefore = null; }
+        });
         if (isWide()) setTab('card');
         if (fly) map.flyTo({ center: [lng, lat], zoom: Math.max(map.getZoom(), 15), padding: pad(), essential: true });
         card.scrollTop = 0;
@@ -1103,9 +1111,12 @@
     function pickCell(k) {
         terrSel = k;
         terrView = 'main';
+        if (hexMobile()) { terrTab = 'now'; if (sheetSnap === 'peek') setSheet('half'); }
         if (map.getLayer('terr-sel')) map.setFilter('terr-sel', ['==', ['get', 'k'], k]);
         openTerrPanel();
         terrPanel.scrollTop = 0;
+        const sb = terrPanel.querySelector('.sm-sheet-body');
+        if (sb) sb.scrollTop = 0;
     }
     // 영역 창 열기(칸을 누르거나 칩을 켤 때 · PC 의 "영역" 탭). 휴대폰은 창 하나만
     function openTerrPanel() {
@@ -1130,7 +1141,8 @@
         }
         terrOpen = true;
         terrPanel.hidden = false;
-        terrPanel.innerHTML = '<p class="sm-small">' + T('LottoHex를 불러오는 중…', 'Loading LottoHex…') + '</p>';
+        const loading = '<p class="sm-small">' + T('LottoHex를 불러오는 중…', 'Loading LottoHex…') + '</p>';
+        terrPanel.innerHTML = hexMobile() ? '<div class="sm-sheet-head"><span class="sm-sheet-grip" aria-hidden="true"></span></div><div class="sm-sheet-body">' + loading + '</div>' : loading;
         if (isWide()) setTab('terr'); else { card.hidden = true; nearPanel.hidden = true; minePanel.hidden = true; }
         const A = account();
         await Promise.all([needAll(), loadTerr(), A && A.session() ? loadIds().then(syncVisits) : null]);   // 판매점 번호: 칸 목록의 ✓(다녀온 곳)
@@ -1138,25 +1150,98 @@
         buildCells();
         drawTerrLayers();
         drawTerr();
+        if (hexMobile()) setSheet(sheetSnap);
         if (!flyMine() && map.getZoom() < 10) map.flyTo({ center: map.getCenter(), zoom: 11.5, essential: true });   // 전국을 보고 있으면 칸이 보이는 크기로
+    }
+    // ───── 휴대폰 LottoHex 모드: 아래 판(peek 탭만 · half 반 · full 거의 다) ─────
+    function sheetPx(snap) {
+        const head = terrPanel.querySelector('.sm-sheet-head'), peek = head ? head.offsetHeight : 62;
+        const top = (document.querySelector('.sm-top').offsetHeight || 80) + 14;
+        return snap === 'peek' ? peek : snap === 'full' ? Math.max(peek, window.innerHeight - top) : Math.round(window.innerHeight * 0.46);
+    }
+    function applySheet(px) { root.style.setProperty('--sheet-h', Math.round(px) + 'px'); }
+    function setSheet(snap) { sheetSnap = snap; if (hexMobile()) applySheet(sheetPx(snap)); }
+    const sheetNow = () => { const v = parseFloat(getComputedStyle(root).getPropertyValue('--sheet-h')); return isNaN(v) ? sheetPx(sheetSnap) : v; };
+    // 손잡이 · 탭 줄을 위아래로 끌면 판 높이가 따라오고, 놓으면 가까운 높이(빠르게 튕기면 그 방향)로. 판 위의 누르기는 지도로 가지 않는다
+    function initSheetDrag() {
+        let d = null;
+        const move = e => {
+            if (!d || e.pointerId !== d.id) return;
+            const dy = e.clientY - d.y;
+            if (!d.moved) { if (Math.abs(dy) < 6) return; d.moved = true; terrPanel.classList.add('is-drag'); }
+            if (e.cancelable) e.preventDefault();
+            const now = performance.now();
+            d.v = (e.clientY - d.lastY) / Math.max(1, now - d.lastT); d.lastY = e.clientY; d.lastT = now;
+            applySheet(Math.min(sheetPx('full'), Math.max(sheetPx('peek'), d.h - dy)));
+        };
+        const end = e => {
+            if (!d || e.pointerId !== d.id) return;
+            const m = d; d = null;
+            window.removeEventListener('pointermove', move);
+            window.removeEventListener('pointerup', end);
+            window.removeEventListener('pointercancel', end);
+            terrPanel.classList.remove('is-drag');
+            if (!m.moved) {   // 손잡이만 톡: 접혀 있으면 펴고, 펴져 있으면 접는다
+                if (e.target && e.target.closest && e.target.closest('.sm-sheet-grip')) setSheet(sheetSnap === 'peek' ? 'half' : 'peek');
+                return;
+            }
+            sheetNoClick = Date.now() + 350;
+            const h = sheetNow(), snaps = ['peek', 'half', 'full'];
+            let pick = snaps.reduce((a, b) => (Math.abs(sheetPx(b) - h) < Math.abs(sheetPx(a) - h) ? b : a));   // 가장 가까운 높이
+            if (m.v < -0.5) pick = snaps.find(k => sheetPx(k) > h + 4) || 'full';                       // 위로 튕기면 바로 위 높이
+            else if (m.v > 0.5) pick = snaps.slice().reverse().find(k => sheetPx(k) < h - 4) || 'peek';   // 아래로 튕기면 바로 아래 높이
+            setSheet(pick);
+        };
+        // 끄는 동안은 창 전체에서 듣는다(손가락 · 마우스가 판 밖 지도 위로 나가도 따라온다)
+        terrPanel.addEventListener('pointerdown', e => {
+            if (!hexMobile() || !e.target.closest('.sm-sheet-head')) return;
+            d = { y: e.clientY, h: sheetNow(), id: e.pointerId, moved: false, lastY: e.clientY, lastT: performance.now(), v: 0 };
+            window.addEventListener('pointermove', move, { passive: false });
+            window.addEventListener('pointerup', end);
+            window.addEventListener('pointercancel', end);
+        });
+        window.addEventListener('resize', () => { if (hexMobile()) setSheet(sheetSnap); });
+    }
+    // 모드 바꾸기. LottoHex 로 가면 판매점 도구(칩 · 검색 · 이 근처 · 이색 · 1등 방식 · 흐리게 · 시도별)는 CSS 가 감추고 칸을 켠다. 판매점으로 오면 칸을 끈다
+    function setMapMode(m) {
+        const on = m === 'hex';
+        root.querySelectorAll('[data-mode-to]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.modeTo === m)));
+        if (on === hexMode) return;
+        hexMode = on;
+        root.classList.toggle('is-hex', on);
+        if (on) {
+            if (shown.mine) setMine(false);
+            if (root.querySelector('.sm-fun-toggle[aria-pressed="true"]')) setFun(false);
+            card.hidden = true; nearPanel.hidden = true;
+            terrTab = 'now';
+            sheetSnap = 'half';
+            if (!shown.terr) setTerr(true); else openTerrPanel();
+            requestAnimationFrame(() => setSheet(sheetSnap));
+        } else {
+            setTerr(false);
+        }
+        placeNearBtn();
     }
     // 영역만 보기: 판매점 점 · 별 · 이름 · 다녀온 곳을 다 감추고 칸만. 영역이 꺼져 있으면 함께 켠다
     function setTerrOnly(on) {
         terrOnly = on;
-        if (terrOnlyBtn) terrOnlyBtn.setAttribute('aria-pressed', String(on));
+        root.querySelectorAll('[data-terr-only]').forEach(b => b.setAttribute('aria-pressed', String(on)));   // PC 카드 · 휴대폰 한 줄
         if (on && !shown.terr) setTerr(true);
         applyLayers();
     }
     // LottoHex 카드(PC)의 둘째 줄: 불러온 뒤에만 내 칸 · 순위(참여 전이면 참여자 수). 부제는 두지 않는다(2026-11-08 사장님)
     function turfStatus() {
         const el = document.getElementById('sm-turf-stat');
-        if (!el || !terr) return;
+        if (!el || !terr) return;   // 휴대폰 한 줄(.sm-hexbar-txt)도 같은 글
         const me = terr.me;
         const n = newsState === 'pending' && terrNews;
-        el.textContent = (me && me.joined
+        const txt = (me && me.joined
             ? T('내 칸 ' + fmt(me.cells.length) + ' · ' + (me.rank ? me.rank + '위' : '순위 밖'), 'My cells ' + fmt(me.cells.length) + ' · ' + (me.rank ? '#' + me.rank : 'unranked'))
             : T('참여 ' + fmt(terr.players || 0) + '명 · 칸을 차지해 보세요', fmt(terr.players || 0) + ' players · grab a cell')) +
             (n ? (n.lost.length ? T(' · 칸 ' + n.lost.length + '개 잃음', ' · lost ' + n.lost.length) : '') + (n.won.length ? T(' · ' + n.won.length + '개 얻음', ' · gained ' + n.won.length) : '') : '');
+        el.textContent = txt;
+        const hb = root.querySelector('.sm-hexbar-txt');
+        if (hb) hb.textContent = txt;
     }
     // 내 칸이 있으면 그 칸들이 한 화면에 들어오게
     function flyMine() {
@@ -1204,7 +1289,8 @@
     function fitCells(keys) {
         const b = new maplibregl.LngLatBounds();
         keys.forEach(k => HX.ringOf(k).forEach(p => b.extend(p)));
-        map.fitBounds(b, { padding: isWide() ? pad() : Object.assign(pad(), { bottom: Math.round(window.innerHeight * 0.4) + 16 }), maxZoom: 14, duration: 800 });
+        const bottom = hexMobile() ? sheetNow() + 16 : Math.round(window.innerHeight * 0.4) + 16;
+        map.fitBounds(b, { padding: isWide() ? pad() : Object.assign(pad(), { bottom }), maxZoom: 14, duration: 800 });
     }
     function goCell(k) { pickCell(k); fitCells([k]); }
     const cellStores = k => (terrCells && terrCells.get(k)) || [];
@@ -1245,6 +1331,7 @@
         Object.keys(cnt).forEach(consider);
         me.cells.concat(Object.keys(cnt)).forEach(k => nbOf(k).forEach(consider));
         aim.sort((a, b) => a.need - b.need || (a.empty ? 1 : 0) - (b.empty ? 1 : 0));
+        lastTodo = { keep: keep.length, hot: keep.filter(x => x.c[2] >= x.c[1]).length, aim: aim.length };
         const MAX = 4, more = (n, key) => (n > MAX ? '<button type="button" class="sm-todo-more" data-more="' + key + '">' + T('+ ' + (n - MAX) + '칸 더 보기', '+ ' + (n - MAX) + ' more') + '</button>' : '');
         const cut = (arr, key) => (todoOpen[key] ? arr : arr.slice(0, MAX));
         const keepNote = x => (x.c[2] >= x.c[1] ? '<b class="is-hot">' + T('같은 수', 'tied') + '</b>' + T(' · 상대가 또 다녀오면 넘어감', ' · a revisit takes it')
@@ -1262,6 +1349,7 @@
             '</div>';
     }
     const todoOpen = { keep: false, aim: false };
+    let lastTodo = { keep: 0, hot: 0, aim: 0 };   // 휴대폰 "할 일" 탭의 빨간 점(같은 수로 쫓기는 내 칸이 있으면)
     // 2. 잃은 칸 · 얻은 칸: 이 기기에 "마지막으로 본 내 칸"(칸 크기 R · 계정과 함께)을 두고 들어올 때 견준다. 서버는 그대로.
     // 누가 · 언제 가져갔는지는 보이지 않는다(생활 반경 · 시간대). 처음이거나 칸 크기가 바뀌었으면 조용히 새로 적는다
     const SEEN_KEY = 'lottodraw.hex.seen';
@@ -1281,7 +1369,12 @@
             newsState = terrNews ? 'pending' : 'seen';
         }
         if (newsState === 'seen') writeSeen(me.cells);
-        if (terrChip) terrChip.classList.toggle('has-new', newsState === 'pending');
+        newsDots();
+    }
+    // 새 소식(잃은 칸 · 얻은 칸) 빨간 점: PC 카드 · 휴대폰 모드 단추 · 휴대폰 한 줄
+    function newsDots() {
+        const on = newsState === 'pending';
+        [terrChip, root.querySelector('[data-mode-to="hex"]'), document.getElementById('sm-hexbar-stat')].forEach(b => { if (b) b.classList.toggle('has-new', on); });
     }
     function newsBlock() {
         if (!terrNews) return '';
@@ -1289,7 +1382,7 @@
         const when = (d.getUTCMonth() + 1) + '/' + d.getUTCDate() + ' ' + String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0');
         const head = T('지난번(' + when + ') 뒤로 ' + [n.lost.length ? '칸 ' + n.lost.length + '개를 잃었' : '', n.won.length ? (n.lost.length ? '고 ' : '칸 ') + n.won.length + '개를 얻었' : ''].join('') + '습니다.',
             'Since ' + when + ': ' + [n.lost.length ? 'lost ' + n.lost.length : '', n.won.length ? 'gained ' + n.won.length : ''].filter(Boolean).join(', ') + ' cell(s).');
-        if (newsState === 'pending') { newsState = 'seen'; writeSeen(terr.me.cells); if (terrChip) terrChip.classList.remove('has-new'); turfStatus(); }
+        if (newsState === 'pending') { newsState = 'seen'; writeSeen(terr.me.cells); newsDots(); turfStatus(); }
         return '<div class="sm-terr-news" role="status"><p><b>' + head + '</b> <button type="button" class="sm-news-ok">' + T('확인', 'OK') + '</button></p>' +
             '<ol class="sm-todo-list">' + n.lost.map(k => cellRow(k, '', 'is-lost', null, '<b class="is-hot">' + T('잃음', 'lost') + '</b>')).join('') + n.won.map(k => cellRow(k, '', 'is-won', (terr.cells[k] || [])[4], '<b class="is-won">' + T('얻음', 'gained') + '</b>')).join('') + '</ol>' +
             '<p class="sm-small">' + T('폐점 · 칸 목록이 바뀌어 빠진 칸도 잃은 칸으로 나옵니다.', 'Cells dropped because a retailer closed also show as lost.') + '</p></div>';
@@ -1348,7 +1441,7 @@
         const me = terr && terr.me;
         const ed = terrPanel.querySelector('.sm-terr-skin-edit');
         if (ed) ed.addEventListener('click', () => { skinDraft = parseSkin(me.skin); drawTerr(); });
-        if (!skinDraft) return;
+        if (!skinDraft || !terrPanel.querySelector('.sm-skin-edit')) return;
         terrPanel.querySelectorAll('.sm-skin-row').forEach(rw => {
             const key = rw.dataset.key;
             rw.querySelectorAll('button.sm-skin-pick').forEach(b => b.addEventListener('click', () => { skinDraft[key] = b.dataset.v; drawTerr(); }));
@@ -1391,19 +1484,20 @@
             skinRow(me);
         const rank = (terr && terr.rank) || [];
         const last = terr && terr.last;
-        terrPanel.innerHTML = '<button type="button" class="sm-close" aria-label="' + T('닫기', 'Close') + '">×</button>' +
-            '<h3><span class="sm-turf-ico" aria-hidden="true"></span> LottoHex <small class="sm-terr-beta">' + T('시험판', 'beta') + '</small></h3>' +
+        const joined = !!(A && A.session() && me && me.joined), sheet = hexMobile();
+        const title = '<h3><span class="sm-turf-ico" aria-hidden="true"></span> LottoHex <small class="sm-terr-beta">' + T('시험판', 'beta') + '</small></h3>' +
             '<p class="sm-terr-season">' + (terr ? T('참여 ' + fmt(terr.players) + '명 · ', fmt(terr.players) + ' players · ') : '') + T('칸은 계속 이어지고, 분기마다 랭킹만 확정합니다', 'Cells carry on; the ranking is finalised each quarter') + '</p>' +
-            (terr ? '' : '<p class="sm-small is-warn">' + T('LottoHex를 불러오지 못했습니다. 잠시 뒤 다시 켜 주세요.', 'Could not load LottoHex. Try again later.') + '</p>') +
-            '<div class="sm-terr-status">' + status + '</div>' +
-            (terrSel ? cellBlock() : '<p class="sm-small">' + T('칸을 누르면 그 칸의 주인과 판매점이 나옵니다.', 'Tap a cell to see who holds it and its retailers.') + '</p>') +
-            (A && A.session() && me && me.joined ? newsBlock() : '') +
-            (A && A.session() && me && me.joined && terrCells ? todoLists(me) : '') +
-            (A && A.session() ? dexBlock() : '') +
-            '<h4 class="sm-terr-h">' + T('Map 랭킹', 'Map ranking') + ' <small>' + T(seasonLabel(s) + ' · ' + seasonEnd(s) + ' 24시에 확정', seasonLabel(s) + ' · final at the end of ' + seasonEnd(s)) + '</small></h4>' +
+            (terr ? '' : '<p class="sm-small is-warn">' + T('LottoHex를 불러오지 못했습니다. 잠시 뒤 다시 켜 주세요.', 'Could not load LottoHex. Try again later.') + '</p>');
+        const statusPart = '<div class="sm-terr-status">' + status + '</div>';
+        const cellPart = terrSel ? cellBlock() : '', hint = terrSel ? '' : '<p class="sm-small">' + T('칸을 누르면 그 칸의 주인과 판매점이 나옵니다.', 'Tap a cell to see who holds it and its retailers.') + '</p>';
+        const tab = sheet ? terrTab : null;
+        const news = joined && (!sheet || tab === 'now') ? newsBlock() : '';   // newsBlock 은 보이면 "봄"으로 적는다 — 보일 때만 부른다
+        const todo = joined && terrCells ? todoLists(me) : '';
+        const dex = A && A.session() ? dexBlock() : '';
+        const rankPart = '<h4 class="sm-terr-h">' + T('Map 랭킹', 'Map ranking') + ' <small>' + T(seasonLabel(s) + ' · ' + seasonEnd(s) + ' 24시에 확정', seasonLabel(s) + ' · final at the end of ' + seasonEnd(s)) + '</small></h4>' +
             (rank.length ? rankList(rank, me && me.rank) : '<p class="sm-small">' + T('아직 칸을 차지한 사람이 없습니다.', 'No one holds a cell yet.') + '</p>') +
-            (last && last.rank.length ? '<h4 class="sm-terr-h">🏆 ' + T(seasonLabel(last) + ' 확정 순위', seasonLabel(last) + ' final ranking') + '</h4>' + rankList(last.rank, me && me.lastRank, true) : '') +
-            '<details class="sm-terr-rules"><summary>' + T('규칙', 'Rules') + '</summary><ul>' +
+            (last && last.rank.length ? '<h4 class="sm-terr-h">🏆 ' + T(seasonLabel(last) + ' 확정 순위', seasonLabel(last) + ' final ranking') + '</h4>' + rankList(last.rank, me && me.lastRank, true) : '');
+        const rules = '<details class="sm-terr-rules"><summary>' + T('규칙', 'Rules') + '</summary><ul>' +
             '<li>' + T('칸(육각형, 가운데서 꼭짓점까지 0.6km · 걸어서 15분쯤) 안에서 다녀온 판매점이 가장 많은 사람이 그 칸을 차지합니다.', 'Whoever has visited the most retailers in a hexagon cell (0.6 km centre to corner, about a 15-minute walk across) holds it.') + '</li>' +
             '<li>' + T('주인이 없는 칸은 <b>회색지대</b>로, 지도에 옅은 회색으로 보입니다. 판매점 한 곳만 다녀와도 차지합니다.', 'Cells no one holds are the <b>grey zone</b>, shown in light grey. One visit takes one.') + '</li>' +
             '<li>' + T('같은 수면 그 칸에 더 최근에 다녀온 사람이 차지합니다. 빼앗기면 그 칸 판매점 카드의 "오늘 또 다녀왔어요"로 되찾을 수 있습니다(같은 곳은 하루 한 번).', 'On a tie, whoever visited the cell most recently holds it. Lost it? Use "Visited again today" on a retailer card in that cell (once a day per retailer).') + '</li>' +
@@ -1412,11 +1506,34 @@
             '<li>' + T('칸은 비우지 않습니다. 분기(1 · 4 · 7 · 10월 1일 0시)마다 그때의 Map 랭킹을 확정해 남깁니다.', 'Cells are never cleared. At the start of each quarter the Map ranking at that moment is finalised and kept.') + '</li>' +
             '<li>' + T('시험판: 지금은 "다녀왔어요"를 누른 기록만 셉니다. 위치 인증(판매점 50m 안)은 준비 중입니다. 폐점한 곳은 세지 않습니다.', 'Beta: for now a tap on "I\'ve been here" counts. Location check (within 50 m) is coming. Closed retailers do not count.') + '</li>' +
             '<li>' + T('복권을 살 필요는 없습니다. 어디서 사든 1등 확률은 1/8,145,060으로 같습니다.', 'No purchase needed. Your chance of 1st prize is 1 in 8,145,060 wherever you buy.') + '</li>' +
-            '</ul></details>' +
-            (me && me.joined ? '<p class="sm-terr-leave-p"><button type="button" class="sm-terr-leave">' + T('LottoHex 그만두기', 'Leave LottoHex') + '</button></p>' : '') +
-            '<p class="sm-terr-msg" role="status"></p>';
+            '</ul></details>';
+        const leave = me && me.joined ? '<p class="sm-terr-leave-p"><button type="button" class="sm-terr-leave">' + T('LottoHex 그만두기', 'Leave LottoHex') + '</button></p>' : '';
+        const msg = '<p class="sm-terr-msg" role="status"></p>';
+        if (sheet) {
+            // 휴대폰 LottoHex 모드: 아래 판 — 손잡이 + 탭(현황 · 할 일 · 도감 · 랭킹), 고른 탭만
+            const join = '<p class="sm-small">' + T('참여하면 여기에 나옵니다. "현황"에서 참여할 수 있습니다.', 'Join LottoHex (in Status) to see this.') + '</p>';
+            const body = tab === 'todo' ? (todo || join)
+                : tab === 'dex' ? (dex || '<p class="sm-small">' + T('로그인하고 "다녀왔어요"를 표시하면 다녀온 칸을 모아 볼 수 있습니다.', 'Sign in and mark places you have been to collect cells.') + '</p>')
+                : tab === 'rank' ? rankPart
+                : title + cellPart + statusPart + news + hint + rules + leave;
+            const dot = on => (on ? '<i class="sm-tab-dot" aria-hidden="true"></i>' : '');
+            const tabs = [['now', T('현황', 'Status'), newsState === 'pending'], ['todo', T('할 일', 'To do'), joined && lastTodo.hot > 0], ['dex', T('도감', 'Collection')], ['rank', T('랭킹', 'Ranking')]];
+            terrPanel.innerHTML = '<div class="sm-sheet-head"><span class="sm-sheet-grip" aria-hidden="true"></span><div class="sm-sheet-tabs" role="tablist">' +
+                tabs.map(([k, n, d]) => '<button type="button" role="tab" data-ttab="' + k + '" aria-selected="' + (k === tab) + '">' + n + dot(d) + '</button>').join('') + '</div></div>' +
+                '<div class="sm-sheet-body">' + body + msg + '</div>';
+        } else {
+            terrPanel.innerHTML = '<button type="button" class="sm-close" aria-label="' + T('닫기', 'Close') + '">×</button>' +
+                title + statusPart + cellPart + hint + news + todo + dex + rankPart + rules + leave + msg;
+        }
         terrPanel.hidden = false;
-        terrPanel.querySelector('.sm-close').addEventListener('click', closeTerrPanel);
+        const cb = terrPanel.querySelector('.sm-close');
+        if (cb) cb.addEventListener('click', closeTerrPanel);
+        terrPanel.querySelectorAll('[data-ttab]').forEach(b => b.addEventListener('click', () => {
+            if (Date.now() < sheetNoClick) return;   // 판을 끈 뒤 바로 오는 누르기는 무시
+            terrTab = b.dataset.ttab;
+            if (sheetSnap === 'peek') setSheet('half');
+            drawTerr();
+        }));
         bindSkin();
         const jb = terrPanel.querySelector('.sm-terr-join');
         if (jb) jb.addEventListener('click', async () => {
@@ -1441,7 +1558,7 @@
     // 참여 동의(2026-11-07 사장님 — "이 기능을 쓰려면 먼저 동의"). 서버는 동의 문구 판(TERR_V)과 동의한 때를 적는다
     function drawConsent() {
         const A = account(), u = A.me() && A.me().user;
-        terrPanel.innerHTML = '<button type="button" class="sm-close" aria-label="' + T('닫기', 'Close') + '">×</button>' +
+        const html = '<button type="button" class="sm-close" aria-label="' + T('닫기', 'Close') + '">×</button>' +
             '<h3>' + T('LottoHex 참여 안내', 'Joining LottoHex') + ' <small class="sm-terr-beta">' + T('시험판', 'beta') + '</small></h3>' +
             '<ol class="sm-terr-consent">' +
             '<li>' + T('참여하면 내가 "다녀온 곳"으로 표시한 판매점을 칸(육각형)마다 세어 칸 주인을 정합니다. 참여 전에 표시한 곳도 셉니다.', 'Your marked places are counted per hexagon cell, including those marked before joining.') + '</li>' +
@@ -1455,6 +1572,9 @@
             '<p class="sm-terr-btns"><button type="button" class="sm-terr-ok" disabled>' + T('동의하고 참여', 'Agree and join') + '</button> <button type="button" class="sm-terr-cancel">' + T('취소', 'Cancel') + '</button></p>' +
             '<p class="sm-small"><a href="privacy.html">' + T('개인정보 처리방침', 'Privacy policy') + '</a></p>' +
             '<p class="sm-terr-msg" role="status"></p>';
+        // 휴대폰 LottoHex 모드는 아래 판 안에(다 펴서)
+        terrPanel.innerHTML = hexMobile() ? '<div class="sm-sheet-head"><span class="sm-sheet-grip" aria-hidden="true"></span></div><div class="sm-sheet-body">' + html + '</div>' : html;
+        if (hexMobile()) setSheet('full');
         terrPanel.hidden = false;
         terrPanel.scrollTop = 0;
         const box = terrPanel.querySelector('.sm-terr-agree input'), ok = terrPanel.querySelector('.sm-terr-ok');
@@ -1485,12 +1605,21 @@
         A.ready.then(() => {
             if (!A.loginOn()) return;   // 서버에 로그인이 꺼져 있으면 영역도 없다
             document.getElementById('sm-turf').hidden = false;
+            const sw = document.getElementById('sm-mode-sw');
+            if (sw) { sw.hidden = false; root.classList.add('has-modes'); }   // 휴대폰: 제목 자리에 [판매점 | LottoHex]
             const tab = side.querySelector('.sm-tab[data-tab="terr"]');
             if (tab) tab.hidden = false;
-            if (joinedNow() && !terr) loadTerr();   // 참여자는 들어올 때 한 번 받아 잃은 칸 · 얻은 칸을 견준다(카드 · 칩에 빨간 점)
+            let q = null;
+            try { q = new URLSearchParams(location.search).get('mode'); } catch (e) { /* 구형 */ }
+            if (q === 'hex') setMapMode('hex');   // store-map.html?mode=hex — LottoHex 로 바로(나중에 게임 입구)
+            else if (joinedNow() && !terr) loadTerr();   // 참여자는 들어올 때 한 번 받아 잃은 칸 · 얻은 칸을 견준다(빨간 점)
         });
         terrChip.addEventListener('click', () => setTerr(!shown.terr));
-        if (terrOnlyBtn) terrOnlyBtn.addEventListener('click', () => setTerrOnly(!terrOnly));
+        root.querySelectorAll('[data-terr-only]').forEach(b => b.addEventListener('click', () => setTerrOnly(!terrOnly)));
+        root.querySelectorAll('[data-mode-to]').forEach(b => b.addEventListener('click', () => setMapMode(b.dataset.modeTo)));
+        const hs = document.getElementById('sm-hexbar-stat');
+        if (hs) hs.addEventListener('click', () => { terrTab = 'now'; setSheet(sheetSnap === 'peek' ? 'half' : sheetSnap); if (shown.terr) openTerrPanel(); });
+        initSheetDrag();
         window.addEventListener('lottodraw:account', () => { if (shown.terr) refreshTerr(); });
     }
 

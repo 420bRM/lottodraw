@@ -552,3 +552,48 @@ body.sm-full #theme-btn { display: none !important; }
 .sm-dex-sido li { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto auto; align-items: center; gap: 6px; padding: 2px 0; font-size: 11.5px; }
 .sm-dex-sido small { color: var(--faint, #888); }
 .sm-dex-more summary { margin-top: 4px; color: var(--muted, #666); font-size: 11.5px; cursor: pointer; }
+
+/* ───── 휴대폰 지도 모드(2026-11-08 사장님 — "LottoHex 랑 지도 기능이 한곳에 모여 불편"): [판매점 | LottoHex] ─────
+   제목 자리에 모드 단추(줄이 늘지 않게). LottoHex 모드는 판매점 도구를 감추고, 위 한 줄(내 칸 · 순위 · 소식 + 판매점 감추기) + 아래 판(손잡이 + 탭) */
+.sm-mode-sw, .sm-hexbar { display: none; }
+@media (max-width: 899px) {
+    .has-modes .sm-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }   /* 제목은 글 속에만 남긴다 */
+    .sm-mode-sw:not([hidden]) { flex: 1 1 auto; display: flex; justify-content: center; min-width: 0; }
+    .sm-mode-sw button { display: inline-flex; align-items: center; gap: 4px; min-width: 0; padding: 4px 10px; border: 1px solid var(--line, #ddd); background: var(--surface, #fff); color: var(--muted, #555);
+        box-shadow: 0 1px 5px rgba(0, 0, 0, .12); font: inherit; font-size: 11.5px; font-weight: bold; white-space: nowrap; cursor: pointer; }
+    .sm-mode-sw button:first-child { border-radius: 8px 0 0 8px; }
+    .sm-mode-sw button:last-child { margin-left: -1px; border-radius: 0 8px 8px 0; }
+    .sm-mode-sw button[data-mode-to="store"][aria-pressed="true"] { position: relative; z-index: 1; border-color: var(--brand, #003087); background: var(--brand-bg, #003087); color: #fff; }
+    .sm-mode-sw button[data-mode-to="hex"][aria-pressed="true"] { position: relative; z-index: 1; border-color: #4b3bb8; background: linear-gradient(135deg, #24135f, #2d3a8f 60%, #0f6170); color: #fff; }
+    .sm-mode-sw .sm-turf-ico, .sm-hexbar .sm-turf-ico { width: 10px; height: 11px; }
+    .sm-mode-sw button.has-new, .sm-hexbar-stat.has-new { position: relative; }
+    .sm-mode-sw button.has-new::after, .sm-hexbar-stat.has-new::after { content: ''; position: absolute; top: -3px; right: -3px; width: 8px; height: 8px; border: 1.5px solid var(--surface, #fff); border-radius: 50%; background: #e0283a; }
+    .sm-turf { display: none !important; }   /* 판매점 모드 칩 줄에서 LottoHex 칩은 빠진다(모드 단추가 대신) */
+    /* LottoHex 모드: 판매점 도구는 감춘다 */
+    .is-hex .sm-searchbox, .is-hex .sm-chips:not(.sm-modes), .is-hex .sm-pcnote, .is-hex .sm-near-btn, .is-hex .sm-bl, .is-hex .sm-info, .is-hex .sm-near:not(.sm-terr) { display: none !important; }
+    .is-hex .sm-hexbar { display: flex; align-items: center; gap: 5px; }
+    .sm-hexbar-stat { display: inline-flex; flex: 1 1 auto; align-items: center; gap: 6px; min-width: 0; padding: 5px 10px; border: 1px solid #4b3bb8; border-radius: 9px;
+        background: linear-gradient(135deg, #24135f, #2d3a8f 60%, #0f6170); color: #fff; box-shadow: 0 1px 6px rgba(36, 19, 95, .35); font: inherit; font-size: 12px; font-weight: bold; text-align: left; cursor: pointer; }
+    .sm-hexbar-txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sm-hexbar-only { display: inline-flex; flex: none; align-items: center; gap: 4px; padding: 5px 9px; border: 1px solid var(--line, #ddd); border-radius: 9px; background: var(--surface, #fff); color: var(--fg, #333);
+        box-shadow: 0 1px 5px rgba(0, 0, 0, .12); font: inherit; font-size: 11.5px; cursor: pointer; }
+    .sm-hexbar-only[aria-pressed="true"] .sm-check { border-color: #f07a1a; background: #f07a1a url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.2 5 8.6 9.5 3.6' fill='none' stroke='%23fff' stroke-width='1.8'/%3E%3C/svg%3E") center / 100% no-repeat; }
+    /* 아래 판: 화면 폭 전체, 높이는 --sheet-h(peek 탭만 · half · full), 손잡이 · 탭 줄을 끌어 올리고 내린다 */
+    .is-hex .sm-terr { left: 0; right: 0; bottom: 0; z-index: 4; display: flex; flex-direction: column; width: auto; height: var(--sheet-h, 46vh); max-height: none; padding: 0; overflow: hidden;
+        border-radius: 16px 16px 0 0; box-shadow: 0 -6px 24px rgba(0, 0, 0, .2); font-size: 12.5px; transition: height .25s ease; }
+    .is-hex .sm-terr[hidden] { display: none; }
+    .is-hex .sm-terr.is-drag { transition: none; }
+    .is-hex .sm-terr .sm-close { display: none; }
+    .sm-sheet-head { flex: none; padding: 7px 8px 0; border-bottom: 1px solid var(--line, #e3e6eb); cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+    .sm-sheet-grip { display: block; width: 40px; height: 5px; margin: 0 auto 4px; border-radius: 3px; background: var(--line, #cfd5df); }
+    .sm-sheet-tabs { display: flex; }
+    .sm-sheet-tabs button { position: relative; flex: 1 1 0; padding: 8px 2px 9px; border: 0; border-bottom: 2.5px solid transparent; background: none; color: var(--muted, #667); font: inherit; font-size: 13px; font-weight: bold; cursor: pointer; }
+    .sm-sheet-tabs button[aria-selected="true"] { border-bottom-color: #5b47d6; color: #3d2fa0; }
+    :root[data-theme="dark"] .sm-sheet-tabs button[aria-selected="true"] { border-bottom-color: #a99bff; color: #c9c1ff; }
+    .sm-tab-dot { position: absolute; top: 6px; margin-left: 2px; width: 7px; height: 7px; border-radius: 50%; background: #e0283a; }
+    .sm-sheet-body { flex: 1 1 auto; min-height: 0; padding: 10px 14px calc(16px + env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain; }
+    .sm-sheet-body h3 { margin-right: 0; font-size: 15px; }
+    /* 판매점 카드는 판 위에 뜬다, 지도 단추도 판 위로 */
+    .is-hex .sm-card { bottom: calc(var(--sheet-h, 62px) + 8px); z-index: 5; }
+    .is-hex .sm-map .maplibregl-ctrl-bottom-right { margin-bottom: calc(var(--sheet-h, 62px) + 10px); transition: margin-bottom .25s ease; }
+}
