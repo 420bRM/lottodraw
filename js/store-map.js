@@ -199,6 +199,7 @@
         if (map.getLayer('st-all')) map.setPaintProperty('st-all', 'circle-stroke-color', rim('#7d8799'));
         if (map.getLayer('terr-name')) map.setPaintProperty('terr-name', 'text-halo-color', on ? 'rgba(10, 14, 22, .9)' : 'rgba(255, 255, 255, .95)');
         if (map.getLayer('terr-sel')) map.setPaintProperty('terr-sel', 'line-color', on ? '#f3f4f6' : '#111827');
+        if (map.getLayer('terr-fill')) { map.setPaintProperty('terr-fill', 'fill-color', greyColor()); map.setPaintProperty('terr-fill', 'fill-opacity', greyFill()); map.setPaintProperty('terr-line', 'line-color', greyColor()); }
         NIGHT_FX.forEach(id => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', terrVis(id) ? 'visible' : 'none'); });
     }
     // 낮/밤은 사이트 값을 따른다(생성기와 같다, 2026-10-27 사장님). 🌙 단추는 사이트 낮/밤 단추(js/theme.js — 지도에서는 감춤)를 대신 누른다 — 저장 · 다른 탭 따라가기는 theme.js 가 한다
@@ -976,6 +977,10 @@
         return { polys: { type: 'FeatureCollection', features: polys }, pts: { type: 'FeatureCollection', features: pts }, rings: { type: 'FeatureCollection', features: rings } };
     }
     const TERR_LAYERS = ['terr-fill', 'terr-pat', 'terr-glint', 'terr-line', 'terr-sel', 'terr-glow', 'terr-name'];
+    // 회색지대(2026-11-08 사장님): 주인 없는 칸은 옅은 회색. 낮은 밝은 지도라 조금 진하게, 밤은 어두운 지도에서 밝은 회색이 옅게 비치게. 멀리서는 더 옅게
+    const GREY = () => (isNight() ? '#b4bcc9' : '#8a93a2');
+    const greyFill = () => { const g = isNight() ? 0.13 : 0.17; return ['interpolate', ['linear'], ['zoom'], 6, ['case', ['==', ['get', 'o'], 1], 0, g * 0.5], 10, ['case', ['==', ['get', 'o'], 1], 0, g]]; };
+    const greyColor = () => ['case', ['==', ['get', 'o'], 1], ['get', 'c'], GREY()];
     // 밤 지도에서 차지한 칸 테두리를 은은한 빛이 시계 방향으로 돈다(2026-11-07 사장님 — 줌 12 이상, 움직임 줄이기 설정이면 끔)
     const REDUCED = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     const NIGHT_FX = ['terr-glow', 'terr-glint'];
@@ -1071,15 +1076,14 @@
             map.addSource('terr-ring', { type: 'geojson', data: f.rings, lineMetrics: true });
             map.addSource('terr-glint', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
             const below = map.getLayer('st-all') ? 'st-all' : 'st-w2';
-            // 빈 칸은 옅은 회색, 차지한 칸은 그 사람의 무늬(terr-pat). terr-fill 은 칸 누르기도 받는다
-            map.addLayer({ id: 'terr-fill', type: 'fill', source: 'terr', paint: {
-                'fill-color': ['get', 'c'], 'fill-opacity': ['case', ['==', ['get', 'o'], 1], 0, 0.04] } }, below);
+            // 주인 없는 칸 = 회색지대(옅은 회색), 차지한 칸은 그 사람의 무늬(terr-pat). terr-fill 은 칸 누르기도 받는다
+            map.addLayer({ id: 'terr-fill', type: 'fill', source: 'terr', paint: { 'fill-color': greyColor(), 'fill-opacity': greyFill() } }, below);
             map.addLayer({ id: 'terr-pat', type: 'fill', source: 'terr', filter: ['==', ['get', 'o'], 1], paint: {
                 'fill-pattern': ['get', 'pat'], 'fill-opacity': ['case', ['==', ['get', 'me'], 1], 0.55, 0.42] } }, below);
             map.addLayer({ id: 'terr-glint', type: 'fill', source: 'terr-glint', minzoom: 11, paint: { 'fill-color': '#fff6dc', 'fill-opacity': ['get', 'a'] } }, below);
             map.addLayer({ id: 'terr-line', type: 'line', source: 'terr', paint: {
-                'line-color': ['get', 'c'], 'line-width': ['case', ['==', ['get', 'me'], 1], 1.76, ['==', ['get', 'o'], 1], 1.12, 0.64],   // 2026-11-07 사장님 — 처음보다 0.8배
-                'line-opacity': ['interpolate', ['linear'], ['zoom'], 6, ['case', ['==', ['get', 'o'], 1], 0.8, 0], 10, ['case', ['==', ['get', 'o'], 1], 0.9, 0], 12, ['case', ['==', ['get', 'o'], 1], 0.9, 0.55]] } }, below);   // 빈 칸 테두리는 줌 10 부터(칸이 작아 멀리서는 촘촘하다)
+                'line-color': greyColor(), 'line-width': ['case', ['==', ['get', 'me'], 1], 1.76, ['==', ['get', 'o'], 1], 1.12, 0.64],   // 2026-11-07 사장님 — 처음보다 0.8배
+                'line-opacity': ['interpolate', ['linear'], ['zoom'], 6, ['case', ['==', ['get', 'o'], 1], 0.8, 0], 10, ['case', ['==', ['get', 'o'], 1], 0.9, 0], 12, ['case', ['==', ['get', 'o'], 1], 0.9, 0.55]] } }, below);   // 회색지대 테두리는 줌 10 부터(칸이 작아 멀리서는 촘촘하다)
             map.addLayer({ id: 'terr-sel', type: 'line', source: 'terr', filter: ['==', ['get', 'k'], ''], paint: { 'line-color': isNight() ? '#f3f4f6' : '#111827', 'line-width': 2.4, 'line-dasharray': [2, 1] } }, below);
             map.addLayer({ id: 'terr-glow', type: 'line', source: 'terr-ring', minzoom: 12.5, layout: { 'line-cap': 'round', 'line-join': 'round' },
                 paint: { 'line-width': 5, 'line-blur': 3, 'line-gradient': glowGradient(0) } }, below);
@@ -1188,7 +1192,7 @@
         return '<div class="sm-terr-cell"><h4>' + T('고른 칸', 'This cell') + (where ? ' · ' + esc(where) : '') + ' <small>' + T('판매점 ' + fmt(list.length) + '곳', fmt(list.length) + ' retailers') + '</small></h4>' +
             '<p>' + (own ? T('주인 ', 'Held by ') + swatch(own[4]) + '<b>' + esc(own[0] || T('(별명 없음)', '(no name)')) + '</b>' +
                 T(' · ' + own[1] + '곳', ' · ' + own[1]) + (own[2] ? T(' (2위 ' + own[2] + '곳)', ' (runner-up ' + own[2] + ')') : '')
-                : T('아직 주인이 없습니다. 이 칸 판매점 한 곳만 다녀와도 차지합니다.', 'No one holds it yet — one visit takes it.')) + '</p>' +
+                : '<span class="sm-skin sm-skin-grey" aria-hidden="true"></span><b>' + T('회색지대', 'Grey zone') + '</b>' + T(' — 아직 주인이 없는 칸입니다. 이 칸 판매점 한 곳만 다녀와도 차지합니다.', ' — no one holds it yet; one visit takes it.')) + '</p>' +
             (me && me.joined ? '<p class="sm-terr-mine">' + T('나: ' + myN + '곳', 'Me: ' + myN) + myLine + '</p>' : '') +
             (list.length ? '<ol class="sm-near-list sm-terr-stores">' + list.slice(0, 40).map(x => '<li><button type="button" data-t="' + x.t + '" data-i="' + x.i + '"><span class="sm-tname">' +
                 (been(x.id) ? '<span class="sm-terr-v" title="' + T('다녀온 곳', 'Visited') + '">✓</span>' : '') + esc(x.name) + '</span><span class="sm-tcnt">' +
@@ -1216,13 +1220,13 @@
     // 한 줄: [칸 모양] 구 · 판매점 / 아랫줄 설명(note). tag 는 오른쪽 짧은 표시(잃음 · 얻음)
     const cellRow = (k, note, cls, sk, tag) => {
         const l = cellLabel(k);
-        return '<li' + (cls ? ' class="' + cls + '"' : '') + '><button type="button" data-k="' + esc(k) + '">' + (sk ? swatch(sk) : '<span class="sm-skin sm-skin-empty" aria-hidden="true"></span>') +
+        return '<li' + (cls ? ' class="' + cls + '"' : '') + '><button type="button" data-k="' + esc(k) + '">' + (sk ? swatch(sk) : '<span class="sm-skin sm-skin-grey" aria-hidden="true"></span>') +
             '<span class="sm-tname"><span class="sm-todo-where"><b>' + esc(l.gu || T('(이름 없는 칸)', '(cell)')) + '</b> <small>' + esc(l.shop) + '</small></span>' +
             (note ? '<span class="sm-todo-note">' + note + '</span>' : '') + '</span>' + (tag ? '<span class="sm-todo-tag">' + tag + '</span>' : '') + '</button></li>';
     };
     const HEX_NB = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, -1], [-1, 1]];
     const nbOf = k => { const [q, r] = k.split(',').map(Number); return HEX_NB.map(([a, b]) => (q + a) + ',' + (r + b)); };
-    // 1. 지킬 칸: 2위가 같은 수(또 다녀오기만 해도 넘어감) · 1곳 차이. 노릴 칸: 같은 수(내가 또 다녀오면) · 1곳 더 · 내 칸 옆 빈 칸
+    // 1. 지킬 칸: 2위가 같은 수(또 다녀오기만 해도 넘어감) · 1곳 차이. 노릴 칸: 같은 수(내가 또 다녀오면) · 1곳 더 · 내 칸 옆 회색지대(주인 없는 칸)
     function todoLists(me) {
         const cells = terr.cells || {}, mine = new Set(me.cells), cnt = me.counts || {};
         const keep = me.cells.map(k => ({ k, c: cells[k] })).filter(x => x.c && x.c[2] >= x.c[1] - 1)
@@ -1245,7 +1249,7 @@
         const cut = (arr, key) => (todoOpen[key] ? arr : arr.slice(0, MAX));
         const keepNote = x => (x.c[2] >= x.c[1] ? '<b class="is-hot">' + T('같은 수', 'tied') + '</b>' + T(' · 상대가 또 다녀오면 넘어감', ' · a revisit takes it')
             : '<b>' + T('1곳 차이', '1 ahead') + '</b>') + (cellStores(x.k).length > x.c[1] ? T(' — 한 곳 더 다녀오면 지킴', ' — one more visit secures it') : T(' — 오늘 또 다녀오면 지킴', ' — revisit today to hold'));
-        const aimNote = x => (x.empty ? T('빈 칸 · 한 곳만 다녀오면 차지', 'empty · one visit takes it')
+        const aimNote = x => (x.empty ? T('회색지대 · 한 곳만 다녀오면 차지', 'grey zone · one visit takes it')
             : x.need === 0 ? '<b class="is-hot">' + T('같은 수', 'tied') + '</b>' + T(' · 오늘 또 다녀오면 차지', ' · revisit today to take it')
             : '<b>' + T('1곳 더', '1 more') + '</b>' + T(' 다녀오면 차지', ' visit takes it'));
         return '<div class="sm-terr-todo">' +
@@ -1401,6 +1405,7 @@
             (last && last.rank.length ? '<h4 class="sm-terr-h">🏆 ' + T(seasonLabel(last) + ' 확정 순위', seasonLabel(last) + ' final ranking') + '</h4>' + rankList(last.rank, me && me.lastRank, true) : '') +
             '<details class="sm-terr-rules"><summary>' + T('규칙', 'Rules') + '</summary><ul>' +
             '<li>' + T('칸(육각형, 가운데서 꼭짓점까지 0.6km · 걸어서 15분쯤) 안에서 다녀온 판매점이 가장 많은 사람이 그 칸을 차지합니다.', 'Whoever has visited the most retailers in a hexagon cell (0.6 km centre to corner, about a 15-minute walk across) holds it.') + '</li>' +
+            '<li>' + T('주인이 없는 칸은 <b>회색지대</b>로, 지도에 옅은 회색으로 보입니다. 판매점 한 곳만 다녀와도 차지합니다.', 'Cells no one holds are the <b>grey zone</b>, shown in light grey. One visit takes one.') + '</li>' +
             '<li>' + T('같은 수면 그 칸에 더 최근에 다녀온 사람이 차지합니다. 빼앗기면 그 칸 판매점 카드의 "오늘 또 다녀왔어요"로 되찾을 수 있습니다(같은 곳은 하루 한 번).', 'On a tie, whoever visited the cell most recently holds it. Lost it? Use "Visited again today" on a retailer card in that cell (once a day per retailer).') + '</li>' +
             '<li>' + T('칸 모양: 참여자마다 색 두 가지와 무늬(단색 · 줄무늬 · 물방울 · 체크)가 무작위로 정해지고 모두에게 같게 보입니다. 내 칸 모양은 ' + SKIN_COST + '포인트로 바꿀 수 있습니다. 내 칸은 테두리가 조금 굵습니다.', 'Skins: each player gets two colours and a pattern (solid, stripes, dots or checks) at random, and everyone sees the same. You can change yours for ' + SKIN_COST + ' points. Your cells have a slightly thicker edge.') + '</li>' +
             '<li>' + T('밤 지도에서 크게 보면 차지한 칸 테두리를 빛이 시계 방향으로 돌고, 칸 면에는 유리에 비친 듯한 45° 빛이 번쩍 지나갑니다.', 'On the night map, zoomed in, a light runs clockwise round held cells and a quick glassy 45° glint flashes across them.') + '</li>' +
