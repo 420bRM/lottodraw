@@ -413,6 +413,7 @@ const OPS = {
             if (!(id in v) && Object.keys(v).length >= max) return { error: 'too_many' };
             if (!(id in v) && !stamp()) return { error: 'daily_limit', max: VISIT_DAILY };
             v[id] = color;
+            if (!user.vc) user.vc = color;   // 내 색을 아직 안 정했으면 처음 쓴 색
         } else { delete v[id]; delete vt[id]; }
         if (Object.keys(v).length) user.visits = v; else delete user.visits;
         if (Object.keys(vt).length) user.vt = vt; else delete user.vt;
@@ -423,7 +424,17 @@ const OPS = {
             if (id in v && cell) nv[id] = [vt[id] || 0, cell]; else delete nv[id];
             await this.terrSet(sub, Object.assign({}, row, { v: nv }));
         }
-        return { ok: true, visits: user.visits || {}, visitAt: user.vt || {} };
+        return { ok: true, visits: user.visits || {}, visitAt: user.vt || {}, visitColor: user.vc || null };
+    },
+
+    // 내 색 바꾸기(2026-11-08 사장님 — "방문한 곳 색은 고른 하나만"): user.vc 를 바꾸고 이미 표시한 곳도 모두 그 색으로. 다녀온 때(vt)는 그대로
+    async setVisitColorAll({ sub, color }) {
+        const user = await this.storage.get('u:' + sub);
+        if (!user) return { error: 'no_user' };
+        user.vc = color;
+        if (user.visits) for (const id of Object.keys(user.visits)) user.visits[id] = color;
+        await this.saveUser(user);
+        return { ok: true, visits: user.visits || {}, visitAt: user.vt || {}, visitColor: color };
     },
 
     // 영역 참여(동의). 별명이 있어야 한다(칸 · 랭킹에 별명으로 나온다). cells: { 판매점 번호: 칸 } — 지금 다녀온 곳의 칸(Worker 가 찾는다)
@@ -1124,7 +1135,7 @@ const b64url = bytes => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').
 function view(user) {
     const trial = user.trial && user.trial.key ? { key: user.trial.key, keyId: user.trial.keyId, expiresAt: user.trial.expiresAt } : null;
     return {
-        email: user.email, nick: user.nick || null, createdAt: user.createdAt, trial, score: pubScore(user), staff: !!user.staff, gen: user.gen || null, visits: user.visits || {}, visitAt: user.vt || {}, visitColors: user.vcolors || [], notes: user.ntN || 0,
+        email: user.email, nick: user.nick || null, createdAt: user.createdAt, trial, score: pubScore(user), staff: !!user.staff, gen: user.gen || null, visits: user.visits || {}, visitAt: user.vt || {}, visitColor: user.vc || null, visitColors: user.vcolors || [], notes: user.ntN || 0,
         terr: user.terr ? { at: user.terr.at, v: user.terr.v } : null, terrSkin: user.tskin || null,
         nickAuto: !!(user.nick && user.nickAuto), nickDue: !user.nick && user.nickDue ? user.nickDue : null,
         pointPass: user.ppass && user.ppass.key ? { key: user.ppass.key, keyId: user.ppass.keyId, expiresAt: user.ppass.expiresAt } : null,

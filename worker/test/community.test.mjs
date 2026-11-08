@@ -266,6 +266,16 @@ test('판매점 지도 다녀온 곳: 로그인 회원만 · 번호 · 색 검�
     // 지우기
     const del = await call(env, 'POST', '/api/me/visits', { headers: auth(s), body: { id: '11100016', color: null } });
     assert.deepEqual(del.data.visits, { 11100004: '#00aa00' });
+    // 내 색 하나(2026-11-08): 처음 쓴 색이 내 색, { all: true, color } 로 바꾸면 이미 표시한 곳도 모두 그 색 · 내 정보 visitColor
+    assert.equal(me.data.user.visitColor, '#ff8800', '처음 쓴 색이 내 색');
+    await call(env, 'POST', '/api/me/visits', { headers: auth(s), body: { id: '11100016', color: '#ff8800' } });
+    assert.equal((await call(env, 'POST', '/api/me/visits', { headers: auth(s), body: { all: true, color: 'blue' } })).status, 400);
+    const allc = await call(env, 'POST', '/api/me/visits', { headers: auth(s), body: { all: true, color: '#3A86FF' } });
+    assert.equal(allc.status, 200);
+    assert.deepEqual(allc.data.visits, { 11100004: '#3a86ff', 11100016: '#3a86ff' }, '이미 표시한 곳도 모두 새 색');
+    assert.equal(allc.data.visitColor, '#3a86ff');
+    assert.equal((await call(env, 'GET', '/api/me', { headers: auth(s) })).data.user.visitColor, '#3a86ff');
+    await call(env, 'POST', '/api/me/visits', { headers: auth(s), body: { id: '11100016', color: null } });
     // 탈퇴하면 함께 사라진다
     assert.equal((await call(env, 'POST', '/api/me/delete', { body: { confirm: true }, headers: auth(s) })).status, 200);
     assert.ok(![...env.COMMUNITY._m.values()].some(v => v && v.visits), '탈퇴하면 다녀온 곳도 지워진다');
