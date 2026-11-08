@@ -892,11 +892,18 @@ async function saveGenerator(request, env) {
 // 판매점 지도 "다녀온 곳"(로그인 회원, 2026-10-26). { id: 동행복권 판매점 번호 8자리, color: '#rrggbb' | null(지움) }.
 // 회원이 지도에서 직접 누른 표시일 뿐 기기 위치(GPS)를 받지 않는다 — 위치정보가 아니다(README 4-9). 한 사람 1,000곳까지.
 // { id, again: true }: 이미 표시한 곳을 "또 다녀왔어요"(영역 — 같은 수면 최근에 다녀온 사람이 칸을 차지, 같은 곳은 하루 한 번). 영역 참여자면 그 판매점의 칸도 넘긴다
+// { all: true, color }: 내 색(user.vc)을 바꾸고 이미 표시한 곳도 모두 그 색으로(2026-11-08 사장님 — "방문한 곳 색은 고른 하나만"). 어느 색을 쓸 수 있는지는 화면이 본다(열린 색 · 이용권)
 const VISIT_MAX = 1000;
 async function saveVisit(request, env) {
     const s = await sessionUser(request, env);
     await limited(env.REACT_LIMIT, s.hash);
     const body = await readJson(request);
+    if (body.all === true) {
+        if (!/^#[0-9a-fA-F]{6}$/.test(String(body.color || ''))) throw new HttpError(400, 'bad_visit', '색이 이상합니다.');
+        const r = await community(env, 'setVisitColorAll', { sub: s.sub, color: String(body.color).toLowerCase() });
+        if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
+        return json(request, env, { visits: r.visits, visitAt: r.visitAt, visitColor: r.visitColor });
+    }
     const id = String(body.id || '');
     if (!/^\d{8}$/.test(id)) throw new HttpError(400, 'bad_visit', '판매점 번호가 이상합니다.');
     const again = body.again === true;
@@ -908,7 +915,7 @@ async function saveVisit(request, env) {
     if (r.error === 'again_today') throw new HttpError(409, 'again_today', '오늘은 이미 다녀왔다고 표시했습니다. 같은 곳은 하루 한 번입니다.');
     if (r.error === 'daily_limit') throw new HttpError(429, 'daily_limit', `다녀온 곳 표시는 하루 ${r.max}번까지입니다. 내일 다시 해 주세요.`);
     if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
-    return json(request, env, { visits: r.visits, visitAt: r.visitAt });
+    return json(request, env, { visits: r.visits, visitAt: r.visitAt, visitColor: r.visitColor });
 }
 
 // 다녀온 곳 색 열기(2026-10-26): 첫 색(빨강)은 누구나, 나머지 7색은 이용권이 있으면 화면에서 바로, 없으면 하나에 POINTS.visitColor 포인트.

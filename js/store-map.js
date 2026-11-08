@@ -750,23 +750,33 @@
     })());
     const COLOR_COST = 30;   // worker POINTS.visitColor 와 같게
     const PALETTE = ['#e63946', '#f4a261', '#e9c46a', '#2a9d8f', '#3a86ff', '#8338ec', '#ff66b3', '#1f2937'];
+    // 내 색 하나(2026-11-08 사장님 — "방문한 곳 색은 고른 하나만"): 다녀온 곳은 모두 이 색. 서버의 user.vc(내 정보 visitColor),
+    // 아직 없으면(예전 기록) 가장 최근에 표시한 곳의 색, 그것도 없으면 첫 색. 예전에 곳마다 다른 색으로 표시했어도 화면에서는 이 색 하나로 보인다
+    function myVisitColor() {
+        const A = account(), u = A && A.me() && A.me().user;
+        if (u && u.visitColor) return u.visitColor;
+        let best = null, t = -1;
+        for (const id of Object.keys(visits)) { const at = visitAt[id] || 0; if (at >= t) { t = at; best = visits[id]; } }
+        return best || PALETTE[0];
+    }
     const account = () => window.LottoAccount;
     const loadIds = () => (ids ? Promise.resolve(ids) : fetch(root.dataset.ids).then(r => r.json()).then(j => (ids = j)).catch(() => null));
     // 지도 점에 색 입히기(feature-state). 일반 판매점 층은 켤 때 다시 부른다
     const painted = { stores: new Set(), all: new Set(), hexstores: new Set() };
     function paintVisits() {
         if (!ids || !map) return;
+        const mc = myVisitColor();   // 다녀온 곳은 모두 내 색 하나
         [['stores', 'w'], ['all', 'a']].forEach(([src, k]) => {
             if (!map.getSource(src)) return;
             painted[src].forEach(i => map.setFeatureState({ source: src, id: i }, { visit: null }));
             painted[src].clear();
-            (ids[k] || []).forEach((id, i) => { if (visits[id]) { map.setFeatureState({ source: src, id: i }, { visit: visits[id] }); painted[src].add(i); } });
+            (ids[k] || []).forEach((id, i) => { if (visits[id]) { map.setFeatureState({ source: src, id: i }, { visit: mc }); painted[src].add(i); } });
         });
         if (map.getSource('hexstores')) {   // LottoHex 판매점 층: 1 · 2등 판매점은 그 자리 번호, 일반 판매점은 HX_A + 자리
             const H = painted.hexstores;
             H.forEach(i => map.setFeatureState({ source: 'hexstores', id: i }, { visit: null }));
             H.clear();
-            [['w', 0], ['a', HX_A]].forEach(([k, base]) => (ids[k] || []).forEach((id, i) => { if (visits[id]) { map.setFeatureState({ source: 'hexstores', id: base + i }, { visit: visits[id] }); H.add(base + i); } }));
+            [['w', 0], ['a', HX_A]].forEach(([k, base]) => (ids[k] || []).forEach((id, i) => { if (visits[id]) { map.setFeatureState({ source: 'hexstores', id: base + i }, { visit: mc }); H.add(base + i); } }));
         }
     }
     // 다녀온 곳을 서버에서 새로 받는다(2026-11-07 — 내 기록에 방금 · 다른 기기에서 표시한 곳이 빠져 보였다: 이 탭에 10분 저장해 둔 내 정보를 썼다)
@@ -808,7 +818,7 @@
         loadAll();
         for (let k = 0; k < 50 && !all; k++) await new Promise(r => setTimeout(r, 100));
     }
-    const mineList = () => Object.keys(visits).reverse().map(id => Object.assign({ id, c: visits[id] }, shopOf(id) || {})).filter(x => x.t);
+    const mineList = () => { const mc = myVisitColor(); return Object.keys(visits).reverse().map(id => Object.assign({ id, c: mc }, shopOf(id) || {})).filter(x => x.t); };
     function mineSource() {
         const fc = { type: 'FeatureCollection', features: mineList().map(x => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [x.lng, x.lat] }, properties: { t: x.t, i: x.i, c: x.c, nm: x.name } })) };
         if (map.getSource('mine')) { map.getSource('mine').setData(fc); return; }
@@ -1220,16 +1230,26 @@
         };
         requestAnimationFrame(tick);
     }
-    // LottoHex 로 바뀔 때 화면 전환(2026-11-08 사장님 — 페이드인으로 "LottoHex" 글자가 나오고 LottoHex 화면으로). 전환 화면이 다 덮였을 때 실제로 바꾼다
-    let introT = null;
-    function hexIntro(then) {
-        const fx = document.getElementById('sm-hexfx');
+    // 모드가 바뀔 때 화면 전환(2026-11-08 사장님 — 페이드인으로 "LottoHex" 글자가 나오고 LottoHex 화면으로, "판매점"을 눌러도 전환 효과).
+    // LottoHex 는 남색 바탕 · 판매점은 밝은 바탕(뒤집힌 느낌). 전환 화면이 다 덮였을 때 실제로 바꾼다
+    const introT = {};
+    function modeIntro(kind, then) {
+        const fx = document.getElementById(kind === 'hex' ? 'sm-hexfx' : 'sm-storefx');
         if (!fx || REDUCED) { then(); return; }
-        clearTimeout(introT);
+        ['sm-hexfx', 'sm-storefx'].forEach(x => { const el = document.getElementById(x); if (el && el !== fx) { clearTimeout(introT[x]); el.classList.remove('is-play'); el.hidden = true; } });
+        clearTimeout(introT[fx.id]);
         fx.hidden = false;
         fx.classList.remove('is-play'); void fx.offsetWidth; fx.classList.add('is-play');
         setTimeout(then, 280);
-        introT = setTimeout(() => { fx.classList.remove('is-play'); fx.hidden = true; }, 1500);
+        introT[fx.id] = setTimeout(() => { fx.classList.remove('is-play'); fx.hidden = true; }, 1500);
+    }
+    // LottoHex 는 밤 지도로 시작한다(2026-11-08 사장님 — "반전 효과"). 저장하지 않고 이 화면에서만(TOP 50 의 밤처럼),
+    // 판매점으로 돌아오면 되돌린다. LottoHex 중에 🌙 을 직접 누르면 그 뜻을 따른다(되돌리지 않음)
+    let nightByHex = false;
+    function hexNight(on) {
+        const html = document.documentElement;
+        if (on && !isNight()) { nightByHex = true; html.setAttribute('data-theme', 'dark'); }
+        else if (!on && nightByHex) { nightByHex = false; html.removeAttribute('data-theme'); }
     }
     // ───── 휴대폰 LottoHex 모드: 아래 판(peek 탭만 · half 반 · full 거의 다) ─────
     function sheetPx(snap) {
@@ -1286,16 +1306,20 @@
         root.querySelectorAll('[data-mode-to]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.modeTo === m)));
         if (on === hexMode) return;
         if (!on) {
-            hexMode = false;
-            root.classList.remove('is-hex');
-            setTerr(false);
-            applyLayers();   // 원래 판매점 층(칩 · 흐리게 · TOP 50 · 1등 방식)을 그대로 되돌린다
-            placeNearBtn();
+            modeIntro('store', () => {
+                hexMode = false;
+                root.classList.remove('is-hex');
+                setTerr(false);
+                applyLayers();   // 원래 판매점 층(칩 · 흐리게 · TOP 50 · 1등 방식)을 그대로 되돌린다
+                hexNight(false);
+                placeNearBtn();
+            });
             return;
         }
-        hexIntro(() => {
+        modeIntro('hex', () => {
             hexMode = true;
             root.classList.add('is-hex');
+            hexNight(true);
             if (shown.mine) setMine(false);
             if (root.querySelector('.sm-fun-toggle[aria-pressed="true"]')) setFun(false);
             card.hidden = true; nearPanel.hidden = true;
@@ -1848,7 +1872,7 @@
         const draw = () => {
             if (card.dataset.k !== myCard) return;
             const id = ids && ids[k] && ids[k][i];
-            const cur = id ? visits[id] : null;
+            const cur = id && visits[id] ? myVisitColor() : null;   // 다녀온 곳이면 내 색(곳마다 색을 따로 두지 않는다)
             // 영역 참여자: "오늘 또 다녀왔어요"(때만 새로 — 색은 그대로, 같은 곳은 하루 한 번). 같은 수 칸에서 최근에 다녀온 사람이 이긴다
             const inTerr = joinedNow();
             const today = !!(cur && visitAt[id] && kstDayOf(visitAt[id]) === kstDayOf(Date.now()));
@@ -1856,19 +1880,19 @@
                 (cur ? '<span class="sm-swatch" style="background:' + cur + '"></span>' + T('다녀온 곳', 'Visited') : T('＋ 다녀왔어요', '＋ I\'ve been here')) + '</button>' +
                 (cur ? '<span class="sm-colors">' + PALETTE.map(c => '<button type="button" class="sm-color' + (c === cur ? ' is-on' : '') + (opened(c) ? '' : ' is-locked') + '" data-c="' + c + '" style="background:' + c + '" aria-label="' + c + (opened(c) ? '' : T(' (잠김)', ' (locked)')) + '"></button>').join('') +
                     (canPick ? '<label class="sm-color sm-color-any" title="' + T('다른 색', 'Any colour') + '"><input type="color" value="' + cur + '" aria-label="' + T('다른 색', 'Any colour') + '"></label>' : '') + '</span>' : '') + '</div>' +
-                '<p class="sm-visit-note">' + (cur ? (canPick ? T('다시 누르면 지웁니다. 나만 보입니다.', 'Tap again to remove. Only you can see this.')
-                    : T('다시 누르면 지웁니다. 🔒 색은 하나에 ' + COLOR_COST + '포인트로 열거나 <a href="statistics.html">이용권</a>으로 모두 엽니다.', 'Tap again to remove. Unlock a 🔒 colour for ' + COLOR_COST + ' points, or all of them with a <a href="statistics.html">pass</a>.'))
+                '<p class="sm-visit-note">' + (cur ? (canPick ? T('다시 누르면 지웁니다. 색을 고르면 다녀온 곳이 모두 그 색이 됩니다. 나만 보입니다.', 'Tap again to remove. Picking a colour changes all your visited places. Only you can see this.')
+                    : T('다시 누르면 지웁니다. 색을 고르면 다녀온 곳이 모두 그 색이 됩니다. 🔒 색은 하나에 ' + COLOR_COST + '포인트로 열거나 <a href="statistics.html">이용권</a>으로 모두 엽니다.', 'Tap again to remove. Unlock a 🔒 colour for ' + COLOR_COST + ' points, or all of them with a <a href="statistics.html">pass</a>.'))
                     : T('로그인 회원 기능 · 나만 보입니다(위치는 쓰지 않습니다).', 'Members only · only you can see it (no location used).')) + '</p>' +
                 (cur && inTerr ? '<p class="sm-visit-again-p">' + (today ? '<span class="sm-visit-today">✓ ' + T('오늘 다녀옴', 'Visited today') + '</span>'
                     : '<button type="button" class="sm-visit-again">↻ ' + T('오늘 또 다녀왔어요', 'Visited again today') + '</button>') + '</p>' : '') +
                 (inTerr ? '<p class="sm-visit-note sm-visit-terr">⬡ ' + T('LottoHex 참여 중: 이 칸의 다녀온 판매점 수에 셉니다. 같은 수면 최근에 다녀온 사람이 칸을 차지합니다(판매점 이름은 공개되지 않습니다).',
                     'LottoHex: counts toward this cell. On a tie the most recent visitor holds it (retailer names stay private).') + '</p>' : '');
-            box.querySelector('.sm-visit-btn').addEventListener('click', () => save(cur ? null : PALETTE[0]));
+            box.querySelector('.sm-visit-btn').addEventListener('click', () => save(cur ? null : myVisitColor()));
             const ag = box.querySelector('.sm-visit-again');
             if (ag) ag.addEventListener('click', () => save(cur, true));
             box.querySelectorAll('button.sm-color').forEach(b => b.addEventListener('click', () => {
                 const c = b.dataset.c;
-                if (opened(c)) { save(c); return; }
+                if (opened(c)) { saveAll(c); return; }
                 const avail = (meNow().score || {}).avail;
                 const note = box.querySelector('.sm-visit-note');
                 note.classList.add('is-warn');
@@ -1882,14 +1906,14 @@
                         await account().call('/api/me/visit-color', { method: 'POST', body: { color: c } });
                         await A.refresh().catch(() => null);
                         if (!opened(c)) (meNow().visitColors = meNow().visitColors || []).push(c);   // 내 정보를 못 받았어도 이 화면에서는 열린 것으로
-                        save(c);
+                        saveAll(c);
                     } catch (err) {
                         note.textContent = (err && err.message) || T('열지 못했습니다.', 'Could not unlock.');
                     }
                 });
             }));
             const pick = box.querySelector('input[type="color"]');
-            if (pick) pick.addEventListener('change', () => save(pick.value));
+            if (pick) pick.addEventListener('change', () => saveAll(pick.value));
         };
         const save = async (color, again) => {
             if (!(await member(T('다녀온 곳 표시는 로그인 회원 기능입니다.', 'Marking visited retailers is for signed-in members.')))) return;
@@ -1900,12 +1924,27 @@
                 const r = await account().call('/api/me/visits', { method: 'POST', body: again ? { id, again: true } : { id, color } });
                 visits = r.visits || {};
                 visitAt = r.visitAt || visitAt;
-                if (A.patchUser) A.patchUser({ visits, visitAt });   // 이 탭에 저장해 둔 내 정보도 — 다시 열어도 빠지지 않게
+                if (A.patchUser) A.patchUser(Object.assign({ visits, visitAt }, r.visitColor ? { visitColor: r.visitColor } : {}));   // 이 탭에 저장해 둔 내 정보도 — 다시 열어도 빠지지 않게
                 paintVisits();
                 draw();
                 refreshTerr();
                 if (shown.mine) { await ensureAll(); mineSource(); drawMine(); }
                 if (cmtRefresh) cmtRefresh();   // 내 댓글의 "다녀옴" 표시를 바로 바꾼다
+            } catch (e) {
+                box.querySelector('.sm-visit-note').textContent = (e && e.message) || T('저장하지 못했습니다.', 'Could not save.');
+            }
+        };
+        // 내 색 바꾸기: 이미 표시한 곳도 모두 그 색(서버가 한 번에 바꾼다)
+        const saveAll = async color => {
+            if (!(await member(T('다녀온 곳 표시는 로그인 회원 기능입니다.', 'Marking visited retailers is for signed-in members.')))) return;
+            try {
+                const r = await account().call('/api/me/visits', { method: 'POST', body: { all: true, color } });
+                visits = r.visits || {};
+                visitAt = r.visitAt || visitAt;
+                if (A.patchUser) A.patchUser({ visits, visitAt, visitColor: r.visitColor || color });
+                paintVisits();
+                draw();
+                if (shown.mine) { mineSource(); drawMine(); }
             } catch (e) {
                 box.querySelector('.sm-visit-note').textContent = (e && e.message) || T('저장하지 못했습니다.', 'Could not save.');
             }
@@ -2213,7 +2252,7 @@
             keep2d = !on;
             set3d(on);
         });
-        document.getElementById('sm-night').addEventListener('click', () => { nightByTop = false; toggleNight(); });
+        document.getElementById('sm-night').addEventListener('click', () => { nightByTop = false; nightByHex = false; toggleNight(); });
         side.querySelectorAll('.sm-tab').forEach(b => b.addEventListener('click', () => (b.dataset.tab === 'near' ? openNear() : b.dataset.tab === 'mine' && !shown.mine ? setMine(true) : b.dataset.tab === 'terr' ? (shown.terr ? openTerrPanel() : setMapMode('hex')) : setTab(b.dataset.tab))));
         nearBtn.addEventListener('click', openNear);
         placeNearBtn();

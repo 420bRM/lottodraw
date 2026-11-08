@@ -2692,6 +2692,7 @@ function storeMapPage(md, top) {
     <button type="button" class="sm-near-btn" id="sm-near-btn">⟳ <span data-i18n-en="Retailers around here">이 근처 판매점</span></button>
     <!-- LottoHex 로 바뀔 때 전환 화면(2026-11-08 사장님 — 페이드인으로 "LottoHex" 글자가 나오고 LottoHex 화면으로) -->
     <div class="sm-hexfx" id="sm-hexfx" hidden aria-hidden="true"><div class="sm-hexfx-in"><span class="sm-hexfx-ico"></span><b>LottoHex</b></div></div>
+    <div class="sm-hexfx sm-storefx" id="sm-storefx" hidden aria-hidden="true"><div class="sm-hexfx-in"><span class="sm-storefx-ico"><i></i><i></i><i></i></span><b data-i18n-en="Retailer map">판매점 지도</b></div></div>
     <!-- PC: 왼쪽 고정 칸(당근 동네업체처럼 — 2026-10-26 사장님). 도구 · 탭(TOP 50 · 판매점 · 이색 판매점 · 시도별) · 탭 내용. 휴대폰은 칸 없이 지도 위에 떠 있다 -->
     <div class="sm-side" id="sm-side" data-tab="top">
     <div class="sm-top">
