@@ -632,3 +632,21 @@ body.sm-full #theme-btn { display: none !important; }
 .sm-storefx-ico i:nth-child(3) { left: 14px; bottom: 0; width: 14px; height: 14px; background: #8a94a6; }
 .sm-storefx.is-play .sm-storefx-ico { animation: sm-hexfx-ico 1.45s cubic-bezier(.2, .7, .2, 1) both; }
 @media (min-width: 900px) { .sm-storefx-ico { width: 60px; height: 60px; transform-origin: center; } .sm-storefx-ico i:nth-child(1) { width: 32px; height: 32px; } .sm-storefx-ico i:nth-child(2) { width: 24px; height: 24px; top: 18px; } .sm-storefx-ico i:nth-child(3) { width: 18px; height: 18px; left: 18px; } }
+
+/* ───── 이용자 피드백(2026-11-08) ─────
+   × 단추는 창을 끌어 내려도 위에 붙어 있게(판매점 카드 · 근처 · 내 기록 · LottoHex 창). 휴대폰 "+ 다녀왔어요"는 크게. 참여 안내는 휴대폰에서 화면 가운데 중간 크기 창 */
+.sm-card > .sm-close, .sm-near > .sm-close { position: sticky; top: 0; z-index: 3; float: right; display: grid; place-items: center; width: 30px; height: 30px; margin: -4px -6px 0 6px;
+    border-radius: 50%; background: var(--surface, #fff); }
+.sm-consent-pop { position: fixed; left: 50%; top: 46%; z-index: 9; box-sizing: border-box; width: min(330px, calc(100% - 40px)); max-height: 62vh; overflow: auto; padding: 14px 16px 12px;
+    transform: translate(-50%, -50%); border-radius: 14px; background: var(--surface, #fff); color: var(--fg, #333); box-shadow: 0 14px 44px rgba(0, 0, 0, .38); font-size: 12.5px; }
+.sm-consent-pop[hidden] { display: none; }
+.sm-consent-pop h3 { margin: 0 26px 8px 0; font-size: 15px; }
+.sm-consent-pop .sm-close { position: absolute; top: 6px; right: 8px; font-size: 22px; }
+.sm-consent-pop .sm-terr-consent { font-size: 12.5px; }
+.sm-consent-pop .sm-terr-ok { padding: 8px 18px; font-size: 13.5px; }
+.sm-consent-pop .sm-terr-cancel { padding: 7px 14px; font-size: 13px; }
+@media (max-width: 899px) {
+    .sm-visit-btn { gap: 6px; min-height: 38px; padding: 8px 18px; border-width: 1.5px; font-size: 14px; }
+    .sm-visit-btn .sm-swatch { width: 12px; height: 12px; }
+    .sm-visit-again { min-height: 34px; padding: 6px 14px; font-size: 13px; }
+}
