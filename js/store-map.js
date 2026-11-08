@@ -92,9 +92,10 @@
     const OTHER_LAYERS = ['st-w1', 'st-w2', 'st-num', 'st-top', 'st-top-glow', 'st-name', 'st-all', 'st-all-name', 'st-net', 'st-net-top', 'st-net-glow', 'st-net-num', 'st-net-name'];
     function mineOnly() {
         if (!map) return;
-        const only = shown.terr && terrOnly;
-        if (shown.mine || only) OTHER_LAYERS.forEach(id => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none'); });
-        ['st-mine', 'st-mine-name'].forEach(id => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', shown.mine && !only ? 'visible' : 'none'); });
+        const only = shown.terr && terrOnly, hx = hexMode && shown.terr;   // hx: LottoHex 모드는 원래 판매점 층 대신 hx-* 층(같은 크기 · 필터 없음 · 빛남)
+        if (shown.mine || only || hx) OTHER_LAYERS.forEach(id => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none'); });
+        ['st-mine', 'st-mine-name'].forEach(id => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', shown.mine && !only && !hx ? 'visible' : 'none'); });
+        HX_LAYERS.forEach(id => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', hx && !only ? 'visible' : 'none'); });
         root.classList.toggle('is-terr-only', only);   // 이색 판매점 별(마커)도 감춘다(CSS)
     }
 
@@ -202,6 +203,7 @@
         if (map.getLayer('st-all')) map.setPaintProperty('st-all', 'circle-stroke-color', rim('#7d8799'));
         if (map.getLayer('terr-name')) map.setPaintProperty('terr-name', 'text-halo-color', on ? 'rgba(10, 14, 22, .9)' : 'rgba(255, 255, 255, .95)');
         if (map.getLayer('terr-sel')) map.setPaintProperty('terr-sel', 'line-color', on ? '#f3f4f6' : '#111827');
+        hxColors();
         if (map.getLayer('terr-fill')) { map.setPaintProperty('terr-fill', 'fill-color', greyColor()); map.setPaintProperty('terr-fill', 'fill-opacity', greyFill()); map.setPaintProperty('terr-line', 'line-color', greyColor()); }
         NIGHT_FX.forEach(id => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', terrVis(id) ? 'visible' : 'none'); });
     }
@@ -751,7 +753,7 @@
     const account = () => window.LottoAccount;
     const loadIds = () => (ids ? Promise.resolve(ids) : fetch(root.dataset.ids).then(r => r.json()).then(j => (ids = j)).catch(() => null));
     // 지도 점에 색 입히기(feature-state). 일반 판매점 층은 켤 때 다시 부른다
-    const painted = { stores: new Set(), all: new Set() };
+    const painted = { stores: new Set(), all: new Set(), hexstores: new Set() };
     function paintVisits() {
         if (!ids || !map) return;
         [['stores', 'w'], ['all', 'a']].forEach(([src, k]) => {
@@ -760,6 +762,12 @@
             painted[src].clear();
             (ids[k] || []).forEach((id, i) => { if (visits[id]) { map.setFeatureState({ source: src, id: i }, { visit: visits[id] }); painted[src].add(i); } });
         });
+        if (map.getSource('hexstores')) {   // LottoHex 판매점 층: 1 · 2등 판매점은 그 자리 번호, 일반 판매점은 HX_A + 자리
+            const H = painted.hexstores;
+            H.forEach(i => map.setFeatureState({ source: 'hexstores', id: i }, { visit: null }));
+            H.clear();
+            [['w', 0], ['a', HX_A]].forEach(([k, base]) => (ids[k] || []).forEach((id, i) => { if (visits[id]) { map.setFeatureState({ source: 'hexstores', id: base + i }, { visit: visits[id] }); H.add(base + i); } }));
+        }
     }
     // 다녀온 곳을 서버에서 새로 받는다(2026-11-07 — 내 기록에 방금 · 다른 기기에서 표시한 곳이 빠져 보였다: 이 탭에 10분 저장해 둔 내 정보를 썼다)
     async function syncVisits() {
@@ -1099,7 +1107,7 @@
             map.addLayer({ id: 'terr-name', type: 'symbol', source: 'terr-pt', minzoom: 11, layout: { 'text-field': ['get', 'nm'], 'text-font': ['Noto Sans Bold'], 'text-size': 12, 'text-max-width': 8, 'text-padding': 4 },
                 paint: { 'text-color': ['get', 'c'], 'text-halo-color': isNight() ? 'rgba(10, 14, 22, .9)' : 'rgba(255, 255, 255, .95)', 'text-halo-width': 1.6 } });
             map.on('click', 'terr-fill', e => {
-                const hits = ['st-w1', 'st-w2', 'st-top', 'st-all', 'st-net', 'st-net-top', 'st-mine'].filter(id => map.getLayer(id));
+                const hits = ['st-w1', 'st-w2', 'st-top', 'st-all', 'st-net', 'st-net-top', 'st-mine', 'hx-dot'].filter(id => map.getLayer(id) && map.getLayoutProperty(id, 'visibility') !== 'none');
                 if (hits.length && map.queryRenderedFeatures(e.point, { layers: hits }).length) return;   // 판매점 점을 누른 것 — 판매점 카드가 열린다
                 const ft = e.features && e.features[0];
                 if (ft) pickCell(ft.properties.k);
@@ -1149,9 +1157,77 @@
         if (!shown.terr) return;
         buildCells();
         drawTerrLayers();
+        if (hexMode) { ensureHexLayers(); applyLayers(); }
         drawTerr();
         if (hexMobile()) setSheet(sheetSnap);
         if (!flyMine() && map.getZoom() < 10) map.flyTo({ center: map.getCenter(), zoom: 11.5, essential: true });   // 전국을 보고 있으면 칸이 보이는 크기로
+    }
+    // ───── LottoHex 판매점 층(2026-11-08 사장님 — "당첨 수에 따른 버블 크기를 없애고 일반 판매점과 같은 크기, 필터는 다 풀어 모든 판매점이 보이게, 판매점이 빛나게") ─────
+    // LottoHex 에서는 원래 판매점 층(st-*: 1등 횟수 크기 · 칩 · 흐리게 막대 · TOP 50 · 1등 방식)을 감추고, 문을 연 모든 판매점(1 · 2등 + 일반, 폐점 빼고 — 칸이 세는 판매점과 같다)을
+    // 일반 판매점 크기의 같은 점으로. 점 밑의 금빛 번짐은 세 무리(g)로 나눠 2.4초에 한 번씩 번갈아 밝아진다(움직임 줄이기면 멈춤). 다녀온 곳은 점 · 번짐이 내 색
+    const HX_A = 1e6;   // 일반 판매점 점 번호(1 · 2등 판매점 자리 번호와 겹치지 않게)
+    const HX_LAYERS = ['hx-glow-0', 'hx-glow-1', 'hx-glow-2', 'hx-dot', 'hx-name'];
+    const hxDot = () => (isNight() ? '#ffd76a' : '#f0a500');
+    const hxGlow = () => (isNight() ? '#ffcf4a' : '#ffb000');
+    function hexStoreData() {
+        const f = [];
+        const add = (id, r, lat, lng, nm, t, i) => f.push({ type: 'Feature', id, geometry: { type: 'Point', coordinates: [lng, lat] }, properties: { t, i, nm, g: (id + (id >= HX_A ? 1 : 0)) % 3 } });
+        data.rows.forEach((r, i) => { if (!r[7]) add(i, r, r[0], r[1], r[4], 'w', i); });
+        if (all) all.rows.forEach((r, i) => add(HX_A + i, r, r[0], r[1], r[2], 'a', i));
+        return { type: 'FeatureCollection', features: f };
+    }
+    let hxAll = false;   // 일반 판매점까지 넣었는가
+    function ensureHexLayers() {
+        if (!map || !map.getLayer('terr-name')) return;
+        if (map.getSource('hexstores')) { if (all && !hxAll) { hxAll = true; map.getSource('hexstores').setData(hexStoreData()); paintVisits(); } return; }
+        hxAll = !!all;
+        map.addSource('hexstores', { type: 'geojson', data: hexStoreData() });
+        const v = ['to-boolean', ['feature-state', 'visit']];
+        for (let g = 0; g < 3; g++) map.addLayer({ id: 'hx-glow-' + g, type: 'circle', source: 'hexstores', filter: ['==', ['get', 'g'], g], minzoom: 8, layout: { visibility: 'none' }, paint: {
+            'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 5, 11, 10, 15, 20], 'circle-color': ['coalesce', ['feature-state', 'visit'], hxGlow()], 'circle-blur': 1, 'circle-opacity': 0.5 } }, 'terr-name');
+        map.addLayer({ id: 'hx-dot', type: 'circle', source: 'hexstores', layout: { visibility: 'none' }, paint: {
+            'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, ['case', v, 3, 1.2], 10, ['case', v, 5, 2.6], 15, ['case', v, 8, 6]],   // 일반 판매점(st-all)과 같은 크기
+            'circle-color': ['coalesce', ['feature-state', 'visit'], hxDot()], 'circle-stroke-color': rim(hxDot()),
+            'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 8, ['case', v, 1, 0], 13, ['case', v, 2, 1]] } }, 'terr-name');
+        map.addLayer({ id: 'hx-name', type: 'symbol', source: 'hexstores', minzoom: 15, layout: Object.assign(nameLayout(0.6), { visibility: 'none' }), paint: Object.assign(namePaint(), { 'text-opacity': 1 }) }, 'terr-name');
+        map.on('click', 'hx-dot', e => { const p = e.features && e.features[0] && e.features[0].properties; if (p) (p.t === 'w' ? open : openAll)(Number(p.i), false); });
+        map.on('mouseenter', 'hx-dot', () => { map.getCanvas().style.cursor = 'pointer'; });
+        map.on('mouseleave', 'hx-dot', () => { map.getCanvas().style.cursor = ''; });
+        paintVisits();
+        hxGlowLoop();
+    }
+    function hxColors() {
+        if (!map || !map.getLayer('hx-dot')) return;
+        map.setPaintProperty('hx-dot', 'circle-color', ['coalesce', ['feature-state', 'visit'], hxDot()]);
+        map.setPaintProperty('hx-dot', 'circle-stroke-color', rim(hxDot()));
+        for (let g = 0; g < 3; g++) map.setPaintProperty('hx-glow-' + g, 'circle-color', ['coalesce', ['feature-state', 'visit'], hxGlow()]);
+        const pt = namePaint();
+        ['text-color', 'text-halo-color'].forEach(k => map.setPaintProperty('hx-name', k, pt[k]));
+    }
+    let hxGlowing = false;
+    function hxGlowLoop() {
+        if (hxGlowing || REDUCED) return;
+        hxGlowing = true;
+        let last = 0;
+        const tick = now => {
+            requestAnimationFrame(tick);
+            if (document.hidden || now - last < 66 || !hexMode || !shown.terr || terrOnly || !map.getLayer('hx-glow-0')) return;
+            last = now;
+            const base = isNight() ? 0.75 : 0.55;
+            for (let g = 0; g < 3; g++) map.setPaintProperty('hx-glow-' + g, 'circle-opacity', +(base * (0.3 + 0.7 * (0.5 + 0.5 * Math.sin(now / 2400 * 2 * Math.PI + g * 2.094)))).toFixed(3));
+        };
+        requestAnimationFrame(tick);
+    }
+    // LottoHex 로 바뀔 때 화면 전환(2026-11-08 사장님 — 페이드인으로 "LottoHex" 글자가 나오고 LottoHex 화면으로). 전환 화면이 다 덮였을 때 실제로 바꾼다
+    let introT = null;
+    function hexIntro(then) {
+        const fx = document.getElementById('sm-hexfx');
+        if (!fx || REDUCED) { then(); return; }
+        clearTimeout(introT);
+        fx.hidden = false;
+        fx.classList.remove('is-play'); void fx.offsetWidth; fx.classList.add('is-play');
+        setTimeout(then, 280);
+        introT = setTimeout(() => { fx.classList.remove('is-play'); fx.hidden = true; }, 1500);
     }
     // ───── 휴대폰 LottoHex 모드: 아래 판(peek 탭만 · half 반 · full 거의 다) ─────
     function sheetPx(snap) {
@@ -1207,26 +1283,32 @@
         const on = m === 'hex';
         root.querySelectorAll('[data-mode-to]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.modeTo === m)));
         if (on === hexMode) return;
-        hexMode = on;
-        root.classList.toggle('is-hex', on);
-        if (on) {
+        if (!on) {
+            hexMode = false;
+            root.classList.remove('is-hex');
+            setTerr(false);
+            applyLayers();   // 원래 판매점 층(칩 · 흐리게 · TOP 50 · 1등 방식)을 그대로 되돌린다
+            placeNearBtn();
+            return;
+        }
+        hexIntro(() => {
+            hexMode = true;
+            root.classList.add('is-hex');
             if (shown.mine) setMine(false);
             if (root.querySelector('.sm-fun-toggle[aria-pressed="true"]')) setFun(false);
             card.hidden = true; nearPanel.hidden = true;
             terrTab = 'now';
             sheetSnap = 'half';
-            if (!shown.terr) setTerr(true); else openTerrPanel();
+            if (!shown.terr) setTerr(true); else { openTerrPanel(); ensureHexLayers(); applyLayers(); }
             requestAnimationFrame(() => setSheet(sheetSnap));
-        } else {
-            setTerr(false);
-        }
-        placeNearBtn();
+            placeNearBtn();
+        });
     }
     // 영역만 보기: 판매점 점 · 별 · 이름 · 다녀온 곳을 다 감추고 칸만. 영역이 꺼져 있으면 함께 켠다
     function setTerrOnly(on) {
         terrOnly = on;
         root.querySelectorAll('[data-terr-only]').forEach(b => b.setAttribute('aria-pressed', String(on)));   // PC 카드 · 휴대폰 한 줄
-        if (on && !shown.terr) setTerr(true);
+        if (on && !shown.terr) setMapMode('hex');
         applyLayers();
     }
     // LottoHex 카드(PC)의 둘째 줄: 불러온 뒤에만 내 칸 · 순위(참여 전이면 참여자 수). 부제는 두지 않는다(2026-11-08 사장님)
@@ -1614,7 +1696,7 @@
             if (q === 'hex') setMapMode('hex');   // store-map.html?mode=hex — LottoHex 로 바로(나중에 게임 입구)
             else if (joinedNow() && !terr) loadTerr();   // 참여자는 들어올 때 한 번 받아 잃은 칸 · 얻은 칸을 견준다(빨간 점)
         });
-        terrChip.addEventListener('click', () => setTerr(!shown.terr));
+        terrChip.addEventListener('click', () => setMapMode(shown.terr ? 'store' : 'hex'));   // PC 카드도 모드를 바꾼다(LottoHex 판매점 층 · 전환 화면)
         root.querySelectorAll('[data-terr-only]').forEach(b => b.addEventListener('click', () => setTerrOnly(!terrOnly)));
         root.querySelectorAll('[data-mode-to]').forEach(b => b.addEventListener('click', () => setMapMode(b.dataset.modeTo)));
         const hs = document.getElementById('sm-hexbar-stat');
@@ -2130,7 +2212,7 @@
             set3d(on);
         });
         document.getElementById('sm-night').addEventListener('click', () => { nightByTop = false; toggleNight(); });
-        side.querySelectorAll('.sm-tab').forEach(b => b.addEventListener('click', () => (b.dataset.tab === 'near' ? openNear() : b.dataset.tab === 'mine' && !shown.mine ? setMine(true) : b.dataset.tab === 'terr' ? (shown.terr ? openTerrPanel() : setTerr(true)) : setTab(b.dataset.tab))));
+        side.querySelectorAll('.sm-tab').forEach(b => b.addEventListener('click', () => (b.dataset.tab === 'near' ? openNear() : b.dataset.tab === 'mine' && !shown.mine ? setMine(true) : b.dataset.tab === 'terr' ? (shown.terr ? openTerrPanel() : setMapMode('hex')) : setTab(b.dataset.tab))));
         nearBtn.addEventListener('click', openNear);
         placeNearBtn();
         window.addEventListener('resize', placeNearBtn);

@@ -597,3 +597,27 @@ body.sm-full #theme-btn { display: none !important; }
     .is-hex .sm-card { bottom: calc(var(--sheet-h, 62px) + 8px); z-index: 5; }
     .is-hex .sm-map .maplibregl-ctrl-bottom-right { margin-bottom: calc(var(--sheet-h, 62px) + 10px); transition: margin-bottom .25s ease; }
 }
+
+/* ───── LottoHex 전환 화면(2026-11-08): 남색 · 청록 바탕이 덮이고 "LottoHex" 가 떠오른 뒤(글자에 45° 빛이 지나감) 걷힌다. 1.45초, 움직임 줄이기면 없음 ───── */
+.sm-hexfx { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; opacity: 0; pointer-events: none;
+    background: radial-gradient(80% 55% at 75% 15%, rgba(255, 111, 174, .32), transparent 60%), linear-gradient(135deg, #1b0f4a 0%, #2d3a8f 55%, #0f6170 100%); }
+.sm-hexfx[hidden] { display: none; }
+.sm-hexfx::before { content: ''; position: absolute; inset: 0; opacity: .12;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='48'%3E%3Cpath d='M14 0L28 8V24L14 32L0 24V8Z M14 32V48' fill='none' stroke='%23fff' stroke-width='1'/%3E%3C/svg%3E") center / 42px 72px; }
+.sm-hexfx-in { position: relative; display: flex; align-items: center; gap: 14px; color: #fff; font-size: 40px; letter-spacing: -.01em; }
+.sm-hexfx-in b { font-weight: 800; background: linear-gradient(115deg, #fff 0 42%, #ffe9a8 48%, #fff 54% 100%) 120% 0 / 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; }
+.sm-hexfx-ico { width: 44px; height: 50px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: linear-gradient(160deg, #ffd76a, #ff6fae 55%, #8f7bff); }
+.sm-hexfx.is-play { animation: sm-hexfx 1.45s ease both; }
+.sm-hexfx.is-play .sm-hexfx-in { animation: sm-hexfx-in 1.45s cubic-bezier(.2, .7, .2, 1) both; }
+.sm-hexfx.is-play .sm-hexfx-in b { animation: sm-hexfx-glint 1.45s ease both; }
+.sm-hexfx.is-play .sm-hexfx-ico { animation: sm-hexfx-ico 1.45s cubic-bezier(.2, .7, .2, 1) both; }
+@keyframes sm-hexfx { 0% { opacity: 0; } 18% { opacity: 1; } 74% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes sm-hexfx-in { 0%, 12% { opacity: 0; transform: scale(.88); } 42% { opacity: 1; transform: scale(1); } 74% { opacity: 1; transform: scale(1.02); } 100% { opacity: 0; transform: scale(1.07); } }
+@keyframes sm-hexfx-glint { 0%, 40% { background-position: 120% 0; } 75%, 100% { background-position: -20% 0; } }
+@keyframes sm-hexfx-ico { 0%, 12% { transform: rotate(-30deg) scale(.7); } 45% { transform: rotate(0) scale(1); } 100% { transform: rotate(0) scale(1.05); } }
+@media (min-width: 900px) {
+    .sm-hexfx-in { gap: 18px; font-size: 56px; }
+    .sm-hexfx-ico { width: 58px; height: 66px; }
+    /* PC 의 LottoHex: 판매점 필터(지도에 보기 격자 · 1등 방식 · 흐리게 · 이 근처)는 LottoHex 판매점 층에 쓰이지 않아 감춘다. LottoHex 카드는 남는다 */
+    .is-hex .sm-chips:not(.sm-modes) > :not(.sm-turf), .is-hex .sm-modes, .is-hex .sm-fade, .is-hex .sm-near-btn { display: none !important; }
+}

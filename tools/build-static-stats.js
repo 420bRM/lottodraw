@@ -2690,6 +2690,8 @@ function storeMapPage(md, top) {
     <div class="sm-map" id="sm-map" role="region" aria-label="판매점 지도" data-i18n-attr="aria-label:sm.mapAria"><p class="sm-loading" data-i18n-en="Loading the map…">지도를 불러오는 중…</p></div>
     <!-- 지도 위 가운데: 지금 화면(○○구) 근처 판매점 목록 열기 -->
     <button type="button" class="sm-near-btn" id="sm-near-btn">⟳ <span data-i18n-en="Retailers around here">이 근처 판매점</span></button>
+    <!-- LottoHex 로 바뀔 때 전환 화면(2026-11-08 사장님 — 페이드인으로 "LottoHex" 글자가 나오고 LottoHex 화면으로) -->
+    <div class="sm-hexfx" id="sm-hexfx" hidden aria-hidden="true"><div class="sm-hexfx-in"><span class="sm-hexfx-ico"></span><b>LottoHex</b></div></div>
     <!-- PC: 왼쪽 고정 칸(당근 동네업체처럼 — 2026-10-26 사장님). 도구 · 탭(TOP 50 · 판매점 · 이색 판매점 · 시도별) · 탭 내용. 휴대폰은 칸 없이 지도 위에 떠 있다 -->
     <div class="sm-side" id="sm-side" data-tab="top">
     <div class="sm-top">
