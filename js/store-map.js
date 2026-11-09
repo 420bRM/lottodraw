@@ -45,7 +45,7 @@
     const shown = { top: false, w1: true, w2: true, closed: false, all: false, mine: false, terr: false };   // terr: 영역(육각 칸, 2026-11-07 시험판)   // mine: 내 기록(다녀온 곳만, 2026-10-27)   // top: TOP 50 만 별로 보기(2026-10-27)
     let terrOnly = false;                          // 영역만 보기(2026-11-08) — 영역을 켰을 때만 뜻이 있다
     // 휴대폰 지도 모드(2026-11-08 사장님 — "LottoHex 랑 지도 기능이 한곳에 모여 불편"): 'store' 판매점 · 'hex' LottoHex(아래 판 + 탭)
-    let hexMode = false, terrTab = 'now', sheetSnap = 'half', sheetNoClick = 0, sheetBefore = null;
+    let hexMode = false, terrTab = 'now', sheetSnap = 'peek', sheetNoClick = 0, sheetBefore = null;   // 아래 판은 접힌 채로 시작(2026-11-09 사장님)
     const hexMobile = () => hexMode && !isWide();
     const modes = { A: true, M: true, S: true };   // 1등 방식 체크(로그인 회원)
     let fadeT = 0;                                 // 끌기 막대: 1등 횟수 + 1 이 이 값보다 작으면 흐려진다(0 = 다 보임)
@@ -1325,7 +1325,7 @@
             if (root.querySelector('.sm-fun-toggle[aria-pressed="true"]')) setFun(false);
             card.hidden = true; nearPanel.hidden = true;
             terrTab = 'now';
-            sheetSnap = 'half';
+            sheetSnap = 'peek';   // LottoHex 에 들어오면 아래 판은 접힌 채(탭만) — 탭 · 칸 · 위 한 줄을 누르면 반쯤 올라온다(2026-11-09 사장님)
             if (!shown.terr) setTerr(true); else { openTerrPanel(); ensureHexLayers(); applyLayers(); }
             requestAnimationFrame(() => setSheet(sheetSnap));
             placeNearBtn();
