@@ -1076,6 +1076,12 @@ Search Console → 실적 → 검색결과 → 기간 **3개월** → **+ 새 �
       점수(`score()`)에 `verified` · `hex` 가 더해진다(랭킹 점수 · 쓸 수 있는 포인트 모두). 마이페이지 · 랭킹 안내 · 약관 7조 · 처리방침 pv.m6 · m7 · LottoHex 규칙에 적었다.
       **2026-11-09 켬**(사장님 — 소상공인 특례로 개시하고 1개월 안에 신고): 개인정보 처리방침 **5번 "개인위치정보"**(`#location` — 받는 정보 · 좌표 미보관 · 확인자료 6개월 · 내 위치 · 제3자 제공 없음 · Cloudflare · 철회 · 관리책임자 대표 이동찬)와
       이용약관 **8번 "위치기반서비스"**(`#location` — 사업자 · 서비스 내용 · 무료 · 만 14세 · 보관 · 권리 · 정확도와 부정 이용 · 분쟁 조정)를 같은 PR 로 게시. pv.m6 · pv.m7 의 "위치는 쓰지 않는다"를 고치고 11-09 정리 사실을 적었다.
+    - (2026-11-09 사장님 — 실기기 피드백) **동의 창은 한 줄 + 이용약관 링크**: 위치 동의 창(`#sm-geo-pop`)은 "위치정보 서비스 이용에 동의합니다. (만 14세 이상)" 한 줄,
+      LottoHex 참여 창(`drawConsent`)은 "LottoHex 참여에 동의합니다. (만 19세 이상)" 한 줄에 위치 동의가 아직이면 위치 줄을 **따로 한 줄 더**(두 동의는 따로 받고, 둘 다 체크해야 참여 —
+      `POST /api/me/geo` 다음 `/api/territory/join`). 받는 정보 · 보관 · 철회 · 칸과 별명 공개 같은 설명은 창에서 빼고 **이용약관 8번**(`terms.html#location`, LottoHex 줄 `tm.g8` 을 더함) · 처리방침 4 · 5번에 둔다.
+      동의 문구 판(`geoV` 1 · `TERR_V` 2)은 그대로 — 동의하는 내용은 같고 창의 글만 줄였다.
+      **LottoHex 에 들어오면 참여 창을 바로**(`askJoin` — 휴대폰은 아래 판 속 "참여하기"를 찾아야 했다): 로그인 · 별명 있고 참여 전이면 이 페이지에서 한 번, "나중에" · × 면 하루 동안 저절로 안 띄움(`lottodraw.hex.later`).
+      LottoHex 로 열었고 참여 전이면 지도를 열 때의 위치 동의 창은 띄우지 않는다(참여 창이 위치 줄을 함께 묻는다).
     - (2026-11-09 사장님 — 검색에 생성기 · 지도와 따로) **LottoHex 전용 주소 `lottohex.html`**: 같은 지도 앱(js/store-map.js)을 LottoHex 화면으로 연다 — 생성기 `storeMapPage(md, 'hex')`.
       판매점과 같은 화면에 두는 것이 쓰기 편해(다녀왔어요 = 판매점 카드) 앱은 하나로 두고 **주소만 나눴다**: 모드를 바꾸면 주소 · 제목도 바뀐다(`syncModeUrl` — `lottohex.html` ↔ `store-map.html`, replaceState), 새로 고쳐도 같은 화면. 옛 `?mode=hex` 는 `lottohex.html` 로 바뀐다.
       title · description · H1(화면엔 "LottoHex", 설명은 sr-only) · canonical(자기 자신) · OG `img/og-lottohex.jpg` · 구조화 데이터 WebApplication(GameApplication, 평점 · 리뷰 없음) + BreadcrumbList.
@@ -1167,6 +1173,7 @@ Dropbox `260914 클로드` 폴더의 README와 CLAUDE.md는 **실제로 적용�
 
 | 날짜 | 어디서 | 한 일 |
 |---|---|---|
+| 2026-11-09 | Claude Code 웹 | **동의 창 줄이기 · LottoHex 참여 창 바로**(사장님 실기기 — 위치 인증은 됨, 휴대폰 LottoHex 에서 동의가 바로 안 나와 아래 판을 올려 찾음) → [4-9번](#4-9-판매점-지도-2026-10-26) — 위치 동의 · LottoHex 참여 창을 동의 한 줄 + 이용약관 링크로(위치 동의 전이면 참여 창에 위치 줄 따로), LottoHex 에 들어오면 참여 창 바로. 이용약관 8번에 LottoHex 공개 항목(tm.g8), 처리방침 "안내문 판" → "동의 문구 판" |
 | 2026-11-09 | 사장님 | **LottoHex 검색 등록** — `lottohex.html` · `blog/lottohex-how-to-play.html` 을 구글(URL 검사 → 색인 생성 요청) · 네이버(웹 페이지 수집)에 요청 |
 | 2026-11-09 | Claude Code 웹 | **블로그 19 "LottoHex 하는 법"**(사장님) → [4-3번](#4-3-블로그는-어떻게-되어-있나) — 무엇인지 · 시작하는 법 · 칸 지키기 · 포인트와 분기 보상 · 위치 정보 · 자주 묻는 것, 한 · 영. 화면 예시 3장(지도 · 판매점 카드 인증 · 랭킹 — 실제 지도에 예시 별명 · 칸, `BLOG_SHOTS`). 관련 페이지에 `lottohex` · `store-map` |
 | 2026-11-09 | Claude Code 웹 | **LottoHex 전용 주소 `lottohex.html`**(사장님 — 검색에 따로) → [4-9번](#4-9-판매점-지도-2026-10-26) — 같은 지도 앱을 LottoHex 로 여는 주소(모드를 바꾸면 주소도), 자체 title · H1 · canonical · OG 이미지 · WebApplication · Breadcrumb, 자바스크립트 없이 읽히는 안내 · 이번 주 순위(`lottohex-snapshot.json`, 매주), 내부 링크 · sitemap · rss |

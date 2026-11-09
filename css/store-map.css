@@ -644,6 +644,7 @@ body.sm-full #theme-btn { display: none !important; }
 .sm-consent-pop h3 { margin: 0 26px 8px 0; font-size: 15px; }
 .sm-consent-pop .sm-close { position: absolute; top: 6px; right: 8px; font-size: 22px; }
 .sm-consent-pop .sm-terr-consent { font-size: 12.5px; }
+.sm-consent-pop .sm-terr-agree { margin: 10px 0; font-size: 13.5px; }   /* 동의는 한 줄씩(2026-11-09) — 안내 문단이 없으니 조금 크게 */
 .sm-consent-pop .sm-terr-ok { padding: 8px 18px; font-size: 13.5px; }
 .sm-consent-pop .sm-terr-cancel { padding: 7px 14px; font-size: 13px; }
 @media (max-width: 899px) {
