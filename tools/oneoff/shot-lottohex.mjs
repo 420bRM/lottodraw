@@ -69,11 +69,25 @@ async function page(url, geo) {
     await p.goto(BASE + url);
     return { p, ctx };
 }
-const clipOf = async (p, sel, pad = 8) => {
-    const r = await p.evaluate(s => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); return { x: b.x, y: b.y, width: b.width, height: b.height }; }, sel);
+const rectOf = (p, sel) => p.evaluate(s => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); return { x: b.x, y: b.y, width: b.width, height: b.height }; }, sel);
+// 판이 펼쳐지는 중에 재면 엉뚱한 곳을 찍는다(CI 의 소프트웨어 그리기는 느리다) — 세 번 연달아 같은 자리일 때까지 기다린다
+async function stableRect(p, sel, ms = 15000) {
+    let last = null, same = 0;
+    for (const end = Date.now() + ms; Date.now() < end;) {
+        const r = await rectOf(p, sel);
+        const key = r && r.height > 60 ? [r.x, r.y, r.width, r.height].map(Math.round).join() : null;
+        same = key && key === last ? same + 1 : 0; last = key;
+        if (same >= 3) return r;
+        await p.waitForTimeout(300);
+    }
+    return rectOf(p, sel);
+}
+const clipOf = async (p, sel, pad = 8, padTop = pad) => {
+    const r = await stableRect(p, sel);
+    console.log('rect', sel, JSON.stringify(r));
     if (!r) return undefined;
-    const x = Math.max(0, r.x - pad), y = Math.max(0, r.y - pad);
-    return { x, y, width: Math.min(390 - x, r.width + pad * 2), height: Math.min(844 - y, r.height + pad * 2) };
+    const x = Math.max(0, r.x - pad), y = Math.max(0, r.y - padTop);
+    return { x, y, width: Math.min(390 - x, r.width + pad * 2), height: Math.min(844 - y, r.height + pad + padTop) };
 };
 
 // 1) 지도: LottoHex 밤 지도 · 칸 · 아래 판(접힘)
@@ -82,9 +96,12 @@ const clipOf = async (p, sel, pad = 8) => {
     await p.waitForTimeout(11000);
     await p.screenshot({ path: OUT + '/lottohex-map.jpg', type: 'jpeg', quality: 82 });
     // 3) 랭킹: 아래 판 "랭킹" 탭
-    await p.click('.sm-sheet-tabs [data-ttab="rank"]'); await p.waitForTimeout(1200);
+    await p.click('.sm-sheet-tabs [data-ttab="rank"]');
+    await p.waitForSelector('#sm-terr .sm-terr-rank li', { timeout: 15000 }).catch(() => console.log('rank li 없음'));
+    await p.waitForTimeout(1500);
     const rc = await clipOf(p, '#sm-terr', 0);
     const lastY = await p.evaluate(() => { const li = [...document.querySelectorAll('#sm-terr .sm-terr-rank li')].pop(); return li ? li.getBoundingClientRect().bottom : null; });
+    console.log('rank clip', JSON.stringify(rc), 'lastY', lastY);
     if (rc && lastY) rc.height = Math.min(rc.height, lastY - rc.y + 18);
     await p.screenshot({ path: OUT + '/lottohex-rank.jpg', type: 'jpeg', quality: 82, clip: rc });
     await ctx.close();
@@ -101,7 +118,7 @@ const clipOf = async (p, sel, pad = 8) => {
     console.log('note:', await p.evaluate(() => (document.querySelector('#sm-card .sm-visit-note') || {}).textContent));
     await p.evaluate(() => { const v = document.getElementById('sm-visit'); if (v) v.scrollIntoView({ block: 'center' }); });
     await p.waitForTimeout(500);
-    await p.screenshot({ path: OUT + '/lottohex-card.jpg', type: 'jpeg', quality: 82, clip: await clipOf(p, '#sm-visit', 6) });
+    await p.screenshot({ path: OUT + '/lottohex-card.jpg', type: 'jpeg', quality: 82, clip: await clipOf(p, '#sm-visit', 6, -1) });
     await ctx.close();
 }
 await b.close();

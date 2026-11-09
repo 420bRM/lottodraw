@@ -1,5 +1,5 @@
 # 한 번만 쓰는 찍기 — 블로그 "LottoHex 하는 법"의 화면 예시 3장(img/blog/lottohex-*.jpg).
-# 지도 바탕(OpenFreeMap)은 이 환경에서 받지 못해 여기서 찍는다. 머지 전에 지운다
+# 지도 바탕(OpenFreeMap)은 이 환경에서 받지 못해 여기서 찍는다. 머지 전에 지운다 (2차: 랭킹 판이 멈춘 뒤 찍기)
 name: shot-lottohex
 on:
   push:
