@@ -685,6 +685,12 @@ body.sm-full #theme-btn { display: none !important; }
     .sm-map .maplibregl-ctrl-group:has(> .maplibregl-ctrl-zoom-in) { display: none; }
 }
 
+/* 전체화면 단추(2026-11-09): 휴대폰 크기에서만. PC 는 브라우저 F11 이 있다 */
+.sm-full-ctrl { display: none; }
+@media (max-width: 899px) { .sm-full-ctrl { display: block; } }
+.sm-map .sm-full-btn { display: grid; place-items: center; color: #333; }
+.sm-map .sm-full-btn svg { width: 18px; height: 18px; }
+
 /* lottohex.html 정적 안내(2026-11-09 — 검색용 본문, 지도 앱이 뜨면 LottoHex 창 맨 아래에 접혀 붙는다) */
 .sm-hexabout { margin: 10px 0 4px; border-top: 1px solid var(--line, #e3e3e3); padding-top: 6px; font-size: 12px; }
 .sm-hexabout > summary { color: var(--muted, #555); font-size: 12px; font-weight: bold; cursor: pointer; }

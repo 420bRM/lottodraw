@@ -226,6 +226,39 @@
     new MutationObserver(() => nightModel()).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
     // 북쪽 보기 단추 — "내 위치" 단추 위, 같은 크기. 지도가 돌아간 만큼 바늘도 돈다
+    // 전체화면(2026-11-09 사장님 — 휴대폰은 주소창 · 브라우저 도구가 지도를 많이 가린다). 페이지 전체(아래 판 · 카드 · 창 포함)를 전체화면으로.
+    // 휴대폰 크기에서만 보이고(css), 브라우저가 지원할 때만 단다 — 아이폰 Safari 는 페이지 전체화면을 지원하지 않아 단추가 없다
+    const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement || null;
+    const FS_IN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    const FS_OUT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    class FullControl {
+        onAdd() {
+            this.box = document.createElement('div');
+            this.box.className = 'maplibregl-ctrl maplibregl-ctrl-group sm-full-ctrl';
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'sm-full-btn';
+            const paint = () => {
+                const on = !!fsEl();
+                b.innerHTML = on ? FS_OUT : FS_IN;
+                b.title = on ? T('전체화면 끄기', 'Exit full screen') : T('전체화면으로 보기', 'Full screen');
+                b.setAttribute('aria-label', b.title);
+                b.setAttribute('aria-pressed', String(on));
+            };
+            b.addEventListener('click', () => {
+                const d = document, el = d.documentElement;
+                try {
+                    if (fsEl()) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
+                    else { const r = (el.requestFullscreen || el.webkitRequestFullscreen).call(el, { navigationUI: 'hide' }); if (r && r.catch) r.catch(() => {}); }
+                } catch (e) { /* 막혀 있으면 그대로 */ }
+            });
+            ['fullscreenchange', 'webkitfullscreenchange'].forEach(ev => document.addEventListener(ev, paint));
+            paint();
+            this.box.appendChild(b);
+            return this.box;
+        }
+        onRemove() { this.box.remove(); }
+    }
     class NorthControl {
         onAdd(m) {
             this.box = document.createElement('div');
@@ -2593,6 +2626,7 @@
         geo.on('geolocate', e => { myLoc = [e.coords.longitude, e.coords.latitude]; if (!nearPanel.hidden) nearAfterMove = true; });
         geo.on('error', () => { if (!nearPanel.hidden) { const n = nearPanel.querySelector('.sm-near-note'); if (n) n.textContent = T('위치를 받지 못했습니다(브라우저 위치 권한을 확인해 주세요).', 'Could not get your location (check the browser permission).'); } });
         map.addControl(new NorthControl(), 'bottom-right');
+        if (document.fullscreenEnabled || document.webkitFullscreenEnabled) map.addControl(new FullControl(), 'bottom-right');   // 맨 위(휴대폰만 보인다)
         // 처음 화면: 서울 전체(2026-10-26 사장님 — 전국은 시도별 표 · 줌아웃으로)
         map.on('load', () => {
             koreanLabels(); whiteModel(); addStores(); nightModel(); nearLabel();
