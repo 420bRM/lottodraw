@@ -43,6 +43,12 @@ jobs:
         continue-on-error: true
         run: node tools/update-stores.js
 
+      # LottoHex 이번 주 모습(공개 API — 참여자 수 · 차지된 칸 · Map 랭킹 10위)을 lottohex.html 정적 본문용으로 적는다.
+      # 받지 못해도 지난 모습으로 만든다(스크립트가 0 으로 끝난다)
+      - name: LottoHex 순위 받기
+        continue-on-error: true
+        run: node tools/fetch-lottohex.js
+
       # 검색엔진이 읽을 정적 통계 페이지·사이트맵·홈 제목을 새 회차로 다시 쓴다.
       # 블로그(blog/)도 여기서 같이 만든다 — 머리글의 최신 회차가 바뀌고, 원고(content/blog/)를
       # 고치고 생성을 잊었다면 이때 반영된다
@@ -56,7 +62,8 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add lotto-data.json prize-data.json stores-data.json index.html about.html tax.html top-prize.html sitemap.xml statistics-*.html draws.html probability.html store-map*.html store-map*.json round/ blog/
+          git add lotto-data.json prize-data.json stores-data.json index.html about.html tax.html top-prize.html sitemap.xml statistics-*.html draws.html probability.html store-map*.html store-map*.json lottohex.html rss.xml round/ blog/
+          if [ -f lottohex-snapshot.json ]; then git add lottohex-snapshot.json; fi
           if git diff --cached --quiet; then echo "바뀐 파일 없음"; exit 0; fi
           if [ "${{ steps.fetch.outputs.changed }}" = "true" ]; then
             git commit -m "chore: 로또 ${{ steps.fetch.outputs.latest }}회차까지 반영"

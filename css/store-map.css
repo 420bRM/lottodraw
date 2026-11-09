@@ -560,15 +560,15 @@ body.sm-full #theme-btn { display: none !important; }
 @media (max-width: 899px) {
     .has-modes .sm-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }   /* 제목은 글 속에만 남긴다 */
     .sm-mode-sw:not([hidden]) { flex: 1 1 auto; display: flex; justify-content: center; min-width: 0; }
-    .sm-mode-sw button { display: inline-flex; align-items: center; gap: 4px; min-width: 0; padding: 4px 10px; border: 1px solid var(--line, #ddd); background: var(--surface, #fff); color: var(--muted, #555);
+    .sm-mode-sw a { display: inline-flex; align-items: center; text-decoration: none; gap: 4px; min-width: 0; padding: 4px 10px; border: 1px solid var(--line, #ddd); background: var(--surface, #fff); color: var(--muted, #555);
         box-shadow: 0 1px 5px rgba(0, 0, 0, .12); font: inherit; font-size: 11.5px; font-weight: bold; white-space: nowrap; cursor: pointer; }
-    .sm-mode-sw button:first-child { border-radius: 8px 0 0 8px; }
-    .sm-mode-sw button:last-child { margin-left: -1px; border-radius: 0 8px 8px 0; }
-    .sm-mode-sw button[data-mode-to="store"][aria-pressed="true"] { position: relative; z-index: 1; border-color: var(--brand, #003087); background: var(--brand-bg, #003087); color: #fff; }
-    .sm-mode-sw button[data-mode-to="hex"][aria-pressed="true"] { position: relative; z-index: 1; border-color: #4b3bb8; background: linear-gradient(135deg, #24135f, #2d3a8f 60%, #0f6170); color: #fff; }
+    .sm-mode-sw a:first-child { border-radius: 8px 0 0 8px; }
+    .sm-mode-sw a:last-child { margin-left: -1px; border-radius: 0 8px 8px 0; }
+    .sm-mode-sw a[data-mode-to="store"][aria-pressed="true"] { position: relative; z-index: 1; border-color: var(--brand, #003087); background: var(--brand-bg, #003087); color: #fff; }
+    .sm-mode-sw a[data-mode-to="hex"][aria-pressed="true"] { position: relative; z-index: 1; border-color: #4b3bb8; background: linear-gradient(135deg, #24135f, #2d3a8f 60%, #0f6170); color: #fff; }
     .sm-mode-sw .sm-turf-ico, .sm-hexbar .sm-turf-ico { width: 10px; height: 11px; }
-    .sm-mode-sw button.has-new, .sm-hexbar-stat.has-new { position: relative; }
-    .sm-mode-sw button.has-new::after, .sm-hexbar-stat.has-new::after { content: ''; position: absolute; top: -3px; right: -3px; width: 8px; height: 8px; border: 1.5px solid var(--surface, #fff); border-radius: 50%; background: #e0283a; }
+    .sm-mode-sw a.has-new, .sm-hexbar-stat.has-new { position: relative; }
+    .sm-mode-sw a.has-new::after, .sm-hexbar-stat.has-new::after { content: ''; position: absolute; top: -3px; right: -3px; width: 8px; height: 8px; border: 1.5px solid var(--surface, #fff); border-radius: 50%; background: #e0283a; }
     .sm-turf { display: none !important; }   /* 판매점 모드 칩 줄에서 LottoHex 칩은 빠진다(모드 단추가 대신) */
     /* LottoHex 모드: 판매점 도구는 감춘다 */
     .is-hex .sm-searchbox, .is-hex .sm-chips:not(.sm-modes), .is-hex .sm-pcnote, .is-hex .sm-near-btn, .is-hex .sm-bl, .is-hex .sm-info, .is-hex .sm-near:not(.sm-terr) { display: none !important; }
@@ -657,3 +657,13 @@ body.sm-full #theme-btn { display: none !important; }
     .sm-map .maplibregl-ctrl-zoom-in, .sm-map .maplibregl-ctrl-zoom-out { display: none; }
     .sm-map .maplibregl-ctrl-group:has(> .maplibregl-ctrl-zoom-in) { display: none; }
 }
+
+/* lottohex.html 정적 안내(2026-11-09 — 검색용 본문, 지도 앱이 뜨면 LottoHex 창 맨 아래에 접혀 붙는다) */
+.sm-hexabout { margin: 10px 0 4px; border-top: 1px solid var(--line, #e3e3e3); padding-top: 6px; font-size: 12px; }
+.sm-hexabout > summary { color: var(--muted, #555); font-size: 12px; font-weight: bold; cursor: pointer; }
+.sm-hexabout-body h2 { margin: 10px 0 4px; font-size: 13.5px; }
+.sm-hexabout-body h3 { margin: 8px 0 4px; font-size: 12.5px; }
+.sm-hexabout-body p, .sm-hexabout-body li { margin: 0 0 4px; font-size: 12px; line-height: 1.55; }
+.sm-hexabout-body ol, .sm-hexabout-body ul { margin: 0 0 6px; padding-left: 18px; }
+.sm-hexabout-body .sm-hexabout-rank { padding-left: 0; }
+.sm-hexabout-rank .sm-rk-v { color: var(--muted, #666); font-size: 11px; }
