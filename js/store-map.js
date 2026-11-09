@@ -1672,8 +1672,8 @@
             '<h3>' + T('LottoHex 참여 안내', 'Joining LottoHex') + ' <small class="sm-terr-beta">' + T('시험판', 'beta') + '</small></h3>' +
             '<ol class="sm-terr-consent">' +
             '<li>' + T('참여하면 내가 "다녀온 곳"으로 표시한 판매점을 칸(육각형)마다 세어 칸 주인을 정합니다. 참여 전에 표시한 곳도 셉니다.', 'Your marked places are counted per hexagon cell, including those marked before joining.') + '</li>' +
-            '<li><b>' + T('내가 차지한 칸과 Map 랭킹 · 분기 확정 순위에 내 별명(' + esc(u && u.nick || '') + ')이 누구에게나 보입니다.', 'Your nickname (' + esc(u && u.nick || '') + ') is shown to everyone on the cells you hold, in the Map ranking and in the quarterly final rankings.') + '</b> ' +
-                T('별명과 칸 위치로 내가 자주 다니는 동네를 짐작할 수 있습니다. 어느 판매점을 다녀왔는지는 보이지 않고, 칸마다 다녀온 판매점 수만 보입니다.', 'Others could guess the area you often visit. Which retailers you visited is never shown — only the count per cell.') + '</li>' +
+            '<li><b>' + T('내가 차지한 칸(약 1km 육각형)과 별명(' + esc(u && u.nick || '') + '), 칸별 방문 수가 다른 사람에게 보입니다', 'Cells you hold (about 1 km hexagons), your nickname (' + esc(u && u.nick || '') + ') and visits per cell are shown to others') + '</b>' +
+                T('(Map 랭킹 · 분기 확정 순위 포함). 어느 판매점을 언제 다녀왔는지는 보이지 않습니다.', ' (including the Map ranking and quarterly results). Which retailers you visited, and when, is never shown.') + '</li>' +   // 2026-11-09 사장님 — 거부감 없게 사실만
             '</ol>' +   // 3 · 4 · 5번(위치 안 씀 · 살 필요 없음 · 그만두기)은 뺐다(2026-11-08 사장님 — 너무 조심스럽다, 곧 GPS). 19세는 아래 체크에
             '<label class="sm-terr-agree"><input type="checkbox"> ' + T('위 내용을 읽었고 동의합니다 (만 19세 이상)', 'I have read and agree (19 or older)') + '</label>' +
             '<p class="sm-terr-btns"><button type="button" class="sm-terr-ok" disabled>' + T('동의하고 참여', 'Agree and join') + '</button> <button type="button" class="sm-terr-cancel">' + T('취소', 'Cancel') + '</button></p>' +

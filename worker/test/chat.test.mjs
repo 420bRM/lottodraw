@@ -371,7 +371,25 @@ test('판매점 댓글: 글 이름 shop-판매점번호 로 같은 댓글 길을
     await call(env, 'POST', '/api/me/visits', { body: { id: '11100016', color: '#e63946' }, headers: auth(sA) });
     assert.equal((await call(env, 'GET', '/api/comments?post=shop-11100004')).data.comments[0].visited, undefined);
     await call(env, 'POST', '/api/me/visits', { body: { id: '11100004', color: '#e63946' }, headers: auth(sA) });
+    // 실방문자 표시는 회원이 켠 경우에만(2026-11-09 — 기본은 꺼짐)
+    assert.equal((await call(env, 'GET', '/api/comments?post=shop-11100004')).data.comments[0].visited, undefined, '켜기 전에는 표시 없음');
+    assert.equal((await call(env, 'POST', '/api/me/visit-badge', { body: { on: 'yes' }, headers: auth(sA) })).status, 400);
+    const on = await call(env, 'POST', '/api/me/visit-badge', { body: { on: true }, headers: auth(sA) });
+    assert.equal(on.data.user.visitBadge, true);
     assert.equal((await call(env, 'GET', '/api/comments?post=shop-11100004')).data.comments[0].visited, true);
+    await call(env, 'POST', '/api/me/visit-badge', { body: { on: false }, headers: auth(sA) });
+    assert.equal((await call(env, 'GET', '/api/comments?post=shop-11100004')).data.comments[0].visited, undefined, '끄면 다시 사라진다');
+});
+
+test('HTTPS 만: http 로 오면 GET 은 https 로 돌려보내고 나머지는 거절, 응답에 HSTS', async () => {
+    const { env } = setup();
+    const g = await worker.fetch(new Request('http://api.lottodraw.kr/api/config'), env, { waitUntil() {} });
+    assert.equal(g.status, 308);
+    assert.equal(g.headers.get('Location'), 'https://api.lottodraw.kr/api/config');
+    const p = await worker.fetch(new Request('http://api.lottodraw.kr/api/me/visits', { method: 'POST', body: '{}' }), env, { waitUntil() {} });
+    assert.equal(p.status, 403);
+    const ok = await worker.fetch(new Request('https://api.lottodraw.kr/api/config'), env, { waitUntil() {} });
+    assert.equal(ok.headers.get('Strict-Transport-Security'), 'max-age=31536000');
 });
 
 test('댓글 관리: 관리자는 누가 썼는지 보고 지우며, 채팅 금지한 계정은 댓글도 막히고, 탈퇴하면 댓글이 지워진다', async () => {

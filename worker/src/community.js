@@ -427,6 +427,15 @@ const OPS = {
         return { ok: true, visits: user.visits || {}, visitAt: user.vt || {}, visitColor: user.vc || null };
     },
 
+    // "✓ 실방문자" 표시 켜기 · 끄기(2026-11-09 사장님 — 기본은 꺼짐, 회원이 켠 경우에만 판매점 댓글에 표시)
+    async setVisitBadge({ sub, on }) {
+        const user = await this.storage.get('u:' + sub);
+        if (!user) return { error: 'no_user' };
+        if (on) user.vpub = true; else delete user.vpub;
+        await this.saveUser(user);
+        return { ok: true, user: view(user) };
+    },
+
     // 내 색 바꾸기(2026-11-08 사장님 — "방문한 곳 색은 고른 하나만"): user.vc 를 바꾸고 이미 표시한 곳도 모두 그 색으로. 다녀온 때(vt)는 그대로
     async setVisitColorAll({ sub, color }) {
         const user = await this.storage.get('u:' + sub);
@@ -939,11 +948,11 @@ const OPS = {
             for (const w of who) await this.note(w, { at: now, post, id, to: c.to, nick: user.nick, text: text.slice(0, 80) });
         }
         const shop = /^shop-(\d{8})$/.exec(post);
-        return { comment: Object.assign(pubComment(c, sub), shop && user.visits && user.visits[shop[1]] ? { visited: true } : {}) };
+        return { comment: Object.assign(pubComment(c, sub), shop && user.vpub && user.visits && user.visits[shop[1]] ? { visited: true } : {}) };
     },
 
     // 한 글의 댓글(오래된 것부터, 최근 200개). sub 가 있으면 내 댓글에 mine 표시.
-    // 판매점 댓글(shop-번호)은 쓴 사람이 지금 그 판매점을 "다녀온 곳"으로 표시해 두었으면 visited(2026-10-27 사장님 — 다녀온 사람과 구분)
+    // 판매점 댓글(shop-번호)은 쓴 사람이 지금 그 판매점을 "다녀온 곳"으로 표시해 두었고 실방문자 표시를 켰으면 visited(2026-10-27 사장님 — 다녀온 사람과 구분, 2026-11-09 켠 사람만)
     async commentList({ post, sub }) {
         const rows = await this.storage.list({ prefix: 'c:' + post + ':', reverse: true, limit: COMMENT.list });
         const list = [...rows.values()].reverse();
@@ -952,7 +961,7 @@ const OPS = {
         if (shop) {
             for (const who of new Set(list.map(c => c.sub))) {
                 const u = await this.storage.get('u:' + who);
-                if (u && u.visits && u.visits[shop[1]]) been.add(who);
+                if (u && u.vpub && u.visits && u.visits[shop[1]]) been.add(who);   // 회원이 마이페이지에서 켠 경우에만(2026-11-09)
             }
         }
         return { comments: list.map(c => Object.assign(pubComment(c, sub), been.has(c.sub) ? { visited: true } : {})) };
@@ -1135,7 +1144,7 @@ const b64url = bytes => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').
 function view(user) {
     const trial = user.trial && user.trial.key ? { key: user.trial.key, keyId: user.trial.keyId, expiresAt: user.trial.expiresAt } : null;
     return {
-        email: user.email, nick: user.nick || null, createdAt: user.createdAt, trial, score: pubScore(user), staff: !!user.staff, gen: user.gen || null, visits: user.visits || {}, visitAt: user.vt || {}, visitColor: user.vc || null, visitColors: user.vcolors || [], notes: user.ntN || 0,
+        email: user.email, nick: user.nick || null, createdAt: user.createdAt, trial, score: pubScore(user), staff: !!user.staff, gen: user.gen || null, visits: user.visits || {}, visitAt: user.vt || {}, visitColor: user.vc || null, visitBadge: !!user.vpub, visitColors: user.vcolors || [], notes: user.ntN || 0,
         terr: user.terr ? { at: user.terr.at, v: user.terr.v } : null, terrSkin: user.tskin || null,
         nickAuto: !!(user.nick && user.nickAuto), nickDue: !user.nick && user.nickDue ? user.nickDue : null,
         pointPass: user.ppass && user.ppass.key ? { key: user.ppass.key, keyId: user.ppass.keyId, expiresAt: user.ppass.expiresAt } : null,

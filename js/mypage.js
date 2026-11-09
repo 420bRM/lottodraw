@@ -358,6 +358,13 @@
                 A && A.openNick ? btn(user.nick ? (user.nickAuto ? tr('my.nickChangeFree', '무료로 바꾸기') : tr('my.nickChange', '바꾸기')) : tr('my.nickSet', '정하기'), () => A.openNick(!user.nick)) : null),
             row(tr('my.email', '이메일'), user.email || ''),
             row(tr('my.joined', '가입일'), ymd(user.createdAt)),
+            // 판매점 댓글의 "✓ 실방문자"(2026-11-09 사장님 — 마이페이지에서 켜고 끄기, 기본은 꺼짐). 켜면 다녀온 판매점에 단 내 댓글에 표시가 붙는다
+            row(tr('my.vbadge', '실방문자 표시'), user.visitBadge ? tr('my.vbadgeOn', '켜짐 — 다녀온 판매점에 단 내 댓글에 "✓ 실방문자"가 보입니다') : tr('my.vbadgeOff', '꺼짐'),
+                A ? btn(user.visitBadge ? tr('my.vbadgeTurnOff', '끄기') : tr('my.vbadgeTurnOn', '켜기'), async e => {
+                    e.target.disabled = true;
+                    try { const r = await A.call('/api/me/visit-badge', { method: 'POST', body: { on: !user.visitBadge } }); if (A.patchUser) A.patchUser({ visitBadge: r.user.visitBadge }); showProfile(Object.assign({}, user, { visitBadge: r.user.visitBadge })); }
+                    catch (err) { e.target.disabled = false; window.alert((err && err.message) || tr('my.saveFail', '저장하지 못했습니다.')); }
+                }) : null),
             user.staff ? row(tr('my.role', '구분'), tr('my.staff', '운영자 계정')) : null,
         ]);
     }
