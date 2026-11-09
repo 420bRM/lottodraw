@@ -1938,9 +1938,38 @@ function prizeTierPage() {
 // 날짜를 박은 글이라 매주 다시 셈하지 않고 고정값(content/blog/data/store-sales.json)으로 그린다 — 만드는 법은 tools/store-sales.js 첫머리
 const REVENUE_POST = fs.existsSync(path.join(ROOT, 'content', 'blog', '18-lotto-store-revenue.md')) ? 'lotto-store-revenue' : null;
 function blogFigures() {
+    const out = blogShots();
     let E;
-    try { E = JSON.parse(read('content/blog/data/store-sales.json')); } catch (e) { return {}; }
-    return { 'store-sales-flow': salesFlow(E), 'store-sales-range': salesRangeChart(E), 'store-sales-bell': salesBellChart(E), 'store-sales-check': salesCheckChart(E) };
+    try { E = JSON.parse(read('content/blog/data/store-sales.json')); } catch (e) { return out; }
+    return Object.assign(out, { 'store-sales-flow': salesFlow(E), 'store-sales-range': salesRangeChart(E), 'store-sales-bell': salesBellChart(E), 'store-sales-check': salesCheckChart(E) });
+}
+// 블로그 화면 사진(img/blog/*.jpg, 2026-11-09 — 글 19 "LottoHex 하는 법"). 사진은 tools/oneoff/shot-lottohex.mjs 로 찍었다(지도는 실제, 별명 · 칸은 예시).
+// 파일이 없으면 그 그림은 빠진다(빌드가 경고하고 자리를 비운다)
+const BLOG_SHOTS = {
+    'lottohex-map': ['lottohex-map.jpg', 'LottoHex 밤 지도 — 서울 종로 둘레 육각 칸을 참여자들이 나눠 가진 모습', 'LottoHex night map — hexagon cells around Jongno, Seoul held by players',
+        'LottoHex 화면(휴대폰). 칸마다 주인의 별명과 다녀온 판매점 수, 색 없는 칸은 회색지대입니다. 별명과 칸은 설명을 위한 예시입니다.', 'LottoHex on a phone. Each cell shows its holder and the number of retailers visited; uncoloured cells are the grey zone. Nicknames and cells are examples.', 'is-phone'],
+    'lottohex-card': ['lottohex-card.jpg', '판매점 카드 — 다녀왔어요를 누르고 위치로 확인된 모습(+10포인트)', 'Retailer card — a visit verified by location (+10 points)',
+        '판매점 50m 안에서 "다녀왔어요"를 누르면 위치로 확인하고 10포인트를 드립니다(화면 예시).', 'Tap "I\'ve been here" within 50 m of the retailer: your location is checked and you earn 10 points (example screen).', 'is-crop'],
+    'lottohex-rank': ['lottohex-rank.jpg', 'Map 랭킹 — 차지한 칸 수와 다녀온 판매점 수', 'Map ranking — cells held and retailers visited',
+        'Map 랭킹은 차지한 칸 수 순서입니다. 분기가 끝나면 확정해 1~10위에 포인트를 드립니다(별명은 예시).', 'The Map ranking is ordered by cells held. At the end of each quarter it is finalised and the top 10 earn points (nicknames are examples).', 'is-crop'],
+};
+function blogShots() {
+    const out = {};
+    for (const [name, [file, alt, , cap, capEn, cls]] of Object.entries(BLOG_SHOTS)) {   // 영문 alt 는 js/i18n-dict.js 의 blog.shot.<이름>
+        const rel = 'img/blog/' + file, abs = path.join(ROOT, rel);
+        if (!fs.existsSync(abs)) continue;
+        const b = fs.readFileSync(abs);
+        let w = 0, h = 0;   // JPEG 크기(SOF 표시)를 읽어 width · height 를 적는다 — 그림이 늦게 떠도 글이 밀리지 않게
+        for (let i = 2; i < b.length - 8;) {
+            if (b[i] !== 0xFF) { i++; continue; }
+            const m = b[i + 1], len = b.readUInt16BE(i + 2);
+            if (m >= 0xC0 && m <= 0xC3) { h = b.readUInt16BE(i + 5); w = b.readUInt16BE(i + 7); break; }
+            i += 2 + len;
+        }
+        out[name] = `<figure class="blog-shot ${cls}"><img src="../${rel}?v=${fingerprint(rel)}"${w ? ` width="${w}" height="${h}"` : ''} loading="lazy" alt="${esc(alt)}" data-i18n-attr="alt:blog.shot.${name}">` +
+            `<figcaption data-i18n-en="${esc(capEn)}">${esc(cap)}</figcaption></figure>`;
+    }
+    return out;
 }
 
 // 판매액(원) → 한국어 "264억" · "4.7억"(10억 아래는 소수 한 자리), 영어 "₩26 billion" · "₩0.47 billion"
