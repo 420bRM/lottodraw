@@ -648,6 +648,17 @@ body.sm-full #theme-btn { display: none !important; }
     /* PC 의 LottoHex: 판매점 필터(지도에 보기 격자 · 1등 방식 · 흐리게 · 이 근처)는 LottoHex 판매점 층에 쓰이지 않아 감춘다. LottoHex 카드는 남는다 */
     .is-hex .sm-chips:not(.sm-modes) > :not(.sm-turf), .is-hex .sm-modes, .is-hex .sm-fade, .is-hex .sm-near-btn { display: none !important; }
 }
+/* 다른 페이지에서 들어올 때(2026-11-09 사장님 — 바닥글 띠 · 생성기에서 지도로 갈 때도 전환 효과): 생성기가 <head> 에서 html.sm-enter-hex|store 를 달아
+   첫 화면부터 전환 화면이 덮여 있고, 지도가 그려지면 js/store-map.js(enterFx)가 걷는다. 움직임 줄이기면 달지 않는다 */
+html.sm-enter-hex #sm-hexfx, html.sm-enter-store #sm-storefx { display: grid !important; opacity: 1; }
+html.sm-enter-hex #sm-hexfx .sm-hexfx-in, html.sm-enter-store #sm-storefx .sm-hexfx-in { animation: sm-enter-in .6s cubic-bezier(.2, .7, .2, 1) both; }
+html.sm-enter-hex #sm-hexfx .sm-hexfx-in b, html.sm-enter-store #sm-storefx .sm-hexfx-in b { animation: sm-hexfx-glint 1.3s ease both; }
+html.sm-enter-hex #sm-hexfx .sm-hexfx-ico, html.sm-enter-store #sm-storefx .sm-storefx-ico { animation: sm-hexfx-ico .9s cubic-bezier(.2, .7, .2, 1) both; }
+.sm-hexfx.is-leave { animation: sm-fx-leave .45s ease both !important; }
+.sm-hexfx.is-leave .sm-hexfx-in { animation: sm-fx-leave-in .45s ease both !important; }
+@keyframes sm-enter-in { 0% { opacity: 0; transform: scale(.88); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes sm-fx-leave { to { opacity: 0; } }
+@keyframes sm-fx-leave-in { to { opacity: 0; transform: scale(1.07); } }
 /* 판매점으로 돌아올 때(2026-11-08 사장님 — "판매점 눌렀을 때도 전환 효과"): LottoHex 의 남색과 뒤집힌 밝은 바탕 + 1등 · 2등 · 일반 세 점 */
 .sm-storefx { background: radial-gradient(80% 55% at 25% 15%, rgba(240, 122, 26, .16), transparent 60%), radial-gradient(70% 50% at 80% 85%, rgba(59, 111, 216, .14), transparent 60%), linear-gradient(135deg, #ffffff 0%, #f1f4fa 60%, #e8eef8 100%); }
 .sm-storefx::before { opacity: .5; background: radial-gradient(circle, #c9d1dc 0 1.4px, transparent 1.8px) 0 0 / 22px 22px; }

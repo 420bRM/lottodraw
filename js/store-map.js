@@ -34,7 +34,26 @@
     const T = (ko, eng) => (en() ? eng : ko);
     const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const fmt = n => Number(n).toLocaleString(en() ? 'en-US' : 'ko-KR');
-    const fail = msg => { mapBox.innerHTML = '<p class="sm-loading">' + esc(msg) + '</p>'; };
+    // 다른 페이지(생성기 · 바닥글 띠 · 메뉴 · 블로그)에서 들어왔으면 첫 화면부터 전환 화면이 덮여 있다(생성기가 <head> 에서 html.sm-enter-hex|store 를 단다 —
+    // 2026-11-09 사장님 "생성기에서 맵으로 갈 때도 전환 효과"). 지도가 뜨면 걷는다: 페이지를 연 지 1.1초는 보이고, 늦어도 4초에
+    const enterFx = (() => {
+        const html = document.documentElement;
+        const id = html.classList.contains('sm-enter-hex') ? 'sm-hexfx' : html.classList.contains('sm-enter-store') ? 'sm-storefx' : null;
+        if (!id) return () => {};
+        let done = false;
+        const leave = () => {
+            if (done) return;
+            done = true;
+            const fx = document.getElementById(id);
+            setTimeout(() => {
+                if (fx) fx.classList.add('is-leave');
+                setTimeout(() => { html.classList.remove('sm-enter-hex', 'sm-enter-store'); if (fx) { fx.classList.remove('is-leave'); fx.hidden = true; } }, 450);
+            }, Math.max(0, 1100 - performance.now()));
+        };
+        setTimeout(leave, 4000);
+        return leave;
+    })();
+    const fail = msg => { enterFx(); mapBox.innerHTML = '<p class="sm-loading">' + esc(msg) + '</p>'; };
 
     if (!window.maplibregl) { fail(T('지도 스크립트를 불러오지 못했습니다. 아래 시도별 표를 봐 주세요.', 'Could not load the map. See the table below.')); return; }
     if (maplibregl.supported && !maplibregl.supported()) { fail(T('이 브라우저에서는 지도를 그릴 수 없습니다(WebGL). 아래 시도별 표를 봐 주세요.', 'This browser cannot draw the map (WebGL). See the table below.')); return; }
@@ -1293,6 +1312,7 @@
     const introT = {};
     function modeIntro(kind, then) {
         const fx = document.getElementById(kind === 'hex' ? 'sm-hexfx' : 'sm-storefx');
+        document.documentElement.classList.remove('sm-enter-hex', 'sm-enter-store');   // 들어올 때의 전환 화면이 아직 덮여 있으면 바로 걷고 이것만
         if (!fx || REDUCED) { then(); return; }
         ['sm-hexfx', 'sm-storefx'].forEach(x => { const el = document.getElementById(x); if (el && el !== fx) { clearTimeout(introT[x]); el.classList.remove('is-play'); el.hidden = true; } });
         clearTimeout(introT[fx.id]);
@@ -2630,6 +2650,7 @@
         // 처음 화면: 서울 전체(2026-10-26 사장님 — 전국은 시도별 표 · 줌아웃으로)
         map.on('load', () => {
             koreanLabels(); whiteModel(); addStores(); nightModel(); nearLabel();
+            map.once('idle', enterFx);   // 그려지면 들어올 때의 전환 화면을 걷는다
             // ?shop=판매점번호(관리자 페이지의 판매점 댓글 링크 등): 그 판매점 카드를 연다
             const shopQ = new URLSearchParams(location.search).get('shop');
             if (shopQ === '51100000' && data.net) openNet(true);   // 0등(동행복권 인터넷) — TOP 50 구조화 데이터의 주소

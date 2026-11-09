@@ -674,6 +674,15 @@ html.home { scroll-behavior: smooth; }
 @media (min-width: 1100px) {
     .nav .nav-map { position: absolute; top: 50%; right: max(20px, calc((100% - 1440px) / 2 + 20px)); margin: 0; transform: translateY(-50%); }
 }
+/* 휴대폰(600px 밑): 머리글 오른쪽 위(LOTTODRAW.KR 줄)로 옮긴다(2026-11-09 사장님) — 메뉴 끝의 것은 감춘다 */
+.banner-map { display: none; }
+@media (max-width: 599px) {
+    .banner { position: relative; }
+    .banner-map { position: absolute; top: 12px; right: 16px; display: inline-flex; align-items: center; padding: 4px 11px; border: 1px solid var(--brand); border-radius: 999px;
+        background: var(--surface, #fff); color: var(--brand); font-size: 13px; font-weight: bold; line-height: 1.4; text-decoration: none; white-space: nowrap; }
+    .banner-map::before { content: ""; width: 7px; height: 7px; margin-right: 13px; border-radius: 50%; background: #f07a1a; box-shadow: 8px 0 0 #3b6fd8; }
+    .nav .nav-map { display: none; }
+}
 /* 왼쪽 위 "＋ 내 번호" — 방금 만든 번호를 이번 회차 내 번호에 저장(로그인). 사용법 보기와 같은 모양 */
 .tour-btn.mynum-btn { right: auto; left: 10px; }
 .tour-btn.mynum-btn:disabled { color: var(--muted); cursor: default; }
