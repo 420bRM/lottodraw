@@ -651,3 +651,9 @@ body.sm-full #theme-btn { display: none !important; }
     .sm-visit-btn .sm-swatch { width: 12px; height: 12px; }
     .sm-visit-again { min-height: 34px; padding: 6px 14px; font-size: 13px; }
 }
+
+/* 휴대폰은 두 손가락으로 확대 · 축소하니 + − 단추를 감춘다(2026-11-09 사장님 — 판매점 · LottoHex 모두). 나침반 · 내 위치는 남긴다. PC 는 그대로(트랙패드 · 휠이 불편한 사람) */
+@media (max-width: 899px) {
+    .sm-map .maplibregl-ctrl-zoom-in, .sm-map .maplibregl-ctrl-zoom-out { display: none; }
+    .sm-map .maplibregl-ctrl-group:has(> .maplibregl-ctrl-zoom-in) { display: none; }
+}
