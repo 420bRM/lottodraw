@@ -32,7 +32,7 @@ import { saleRound, cleanGame, rankOf, kstParts, drawDay } from './lotto.js';
 
 import { chatStub, checkText } from './chat.js';
 import { shopInfo, sharePage } from './share.js';
-import { TERR_CONSENT, SKIN_RE, cellMap, _resetCellsForTests } from './territory.js';
+import { SKIN_RE, cellMap, _resetCellsForTests, gpsOn, terrConsent, GEO_CONSENT, GEO_RADIUS, GEO_ACC_MAX, distM, storeGeo } from './territory.js';
 
 export { Community } from './community.js';
 export { ChatRoom } from './chat.js';
@@ -62,6 +62,7 @@ export default {
         ctx.waitUntil(resultMail(env, Date.now()).catch(err => console.error('result mail', err)));
         if (loginReady(env)) ctx.waitUntil(community(env, 'autoNicks', { now: Date.now() }).catch(err => console.error('auto nick', err)));
         // 영역: 분기가 끝나면 그때의 Map 랭킹을 확정해 남긴다(이미 했으면 그냥 지나간다, territory.js)
+        if (loginReady(env)) ctx.waitUntil(community(env, 'geoHousekeep', { now: Date.now(), gps: gpsOn(env) }).catch(err => console.error('geo housekeep', err)));   // 위치 인증: 켜는 날 한 번 손 표시 지우기 · 확인자료 6개월 지난 것 지우기
         if (loginReady(env)) ctx.waitUntil(community(env, 'terrFinalize', { now: Date.now(), site: siteUrl(env) }).catch(err => console.error('territory finalize', err)));
     },
     async fetch(request, env, ctx) {
@@ -120,6 +121,7 @@ async function route(request, env, ctx) {
     if (path === '/api/me/visits' && method === 'POST') return saveVisit(request, env);
     if (path === '/api/me/visit-color' && method === 'POST') return openVisitColor(request, env);
     if (path === '/api/me/visit-badge' && method === 'POST') return setVisitBadge(request, env);
+    if (path === '/api/me/geo' && method === 'POST') return setGeo(request, env);
     if (path === '/api/me/comments' && method === 'GET') return myComments(request, env);
     if (path === '/api/me/notes' && method === 'GET') return myNotes(request, env, false);
     if (path === '/api/me/notes/read' && method === 'POST') return myNotes(request, env, true);
@@ -193,7 +195,8 @@ async function getConfig(request, env) {
         // 입금 알림 연결이 살아 있으면 계좌이체도 몇 분 안에 저절로 열린다. 화면 안내 문구가 이걸 따른다.
         autoConfirm: await hookAlive(env),
         // 구글 로그인(가입하면 무료 체험 + 좋아요). 클라이언트 ID 를 넣기 전에는 화면에 로그인 단추가 없다.
-        login: loginReady(env) ? { google: env.GOOGLE_CLIENT_ID, trialDays: signupTrialDays(env) } : null,
+        login: loginReady(env) ? { google: env.GOOGLE_CLIENT_ID, trialDays: signupTrialDays(env),
+            gps: gpsOn(env), geoV: GEO_CONSENT, terrV: terrConsent(env) } : null,   // 위치 인증 스위치(GPS_VERIFY) · 위치 동의 판 · LottoHex 동의 판
         chat: chatReady(env),
     }, 200, { 'Cache-Control': 'public, max-age=60' }, true);
 }
@@ -794,7 +797,7 @@ async function getTerritory(request, env) {
         const got = await community(env, 'sessionGet', { hash: await sha256('sess:' + bearer(request)), now: Date.now() }).catch(() => ({}));
         sub = got.sub || null;
     }
-    const r = await community(env, 'territory', { sub, now: Date.now(), site: siteUrl(env) });
+    const r = await community(env, 'territory', { sub, now: Date.now(), site: siteUrl(env), gps: gpsOn(env) });
     return json(request, env, r, 200, sub ? {} : { 'Cache-Control': 'public, max-age=60' }, !sub);
 }
 
@@ -803,12 +806,12 @@ async function territoryJoin(request, env) {
     const s = await sessionUser(request, env);
     await limited(env.REACT_LIMIT, s.hash);
     const body = await readJson(request);
-    if (body.agree !== true || body.v !== TERR_CONSENT) throw new HttpError(400, 'need_consent', '참여 안내를 읽고 동의해 주세요.');
+    if (body.agree !== true || body.v !== terrConsent(env)) throw new HttpError(400, 'need_consent', '참여 안내를 읽고 동의해 주세요.');
     if (!s.user.nick) throw new HttpError(409, 'need_nick', 'LottoHex에는 별명으로 나옵니다. 별명을 먼저 정해 주세요.');
     const map = await cellMap(siteUrl(env)).catch(() => { throw new HttpError(503, 'cells_unavailable', '칸 자료를 불러오지 못했습니다. 잠시 뒤 다시 해 주세요.'); });
     const cells = {};
     for (const id of Object.keys(s.user.visits || {})) { const c = map.get(id); if (c) cells[id] = c; }
-    const r = await community(env, 'terrJoin', { sub: s.sub, now: Date.now(), v: TERR_CONSENT, cells });
+    const r = await community(env, 'terrJoin', { sub: s.sub, now: Date.now(), v: terrConsent(env), cells });
     if (r.error === 'need_nick') throw new HttpError(409, 'need_nick', 'LottoHex에는 별명으로 나옵니다. 별명을 먼저 정해 주세요.');
     if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
     return json(request, env, { user: r.user });
@@ -915,14 +918,58 @@ async function saveVisit(request, env) {
     if (!/^\d{8}$/.test(id)) throw new HttpError(400, 'bad_visit', '판매점 번호가 이상합니다.');
     const again = body.again === true;
     if (!again && body.color !== null && !/^#[0-9a-fA-F]{6}$/.test(String(body.color || ''))) throw new HttpError(400, 'bad_visit', '색이 이상합니다.');
+    const gps = gpsOn(env);
+    if (gps && (again || body.color !== null)) await verifyVisit(env, s, id, body);   // 위치 인증(켜져 있을 때) — 지우기는 그대로
     const cell = s.user.terr ? (await cellMap(siteUrl(env)).catch(() => new Map())).get(id) || null : null;
-    const r = await community(env, 'setVisit', { sub: s.sub, id, color: again || body.color === null ? null : String(body.color).toLowerCase(), max: VISIT_MAX, now: Date.now(), cell, again });
+    const r = await community(env, 'setVisit', { sub: s.sub, id, color: again || body.color === null ? null : String(body.color).toLowerCase(), max: VISIT_MAX, now: Date.now(), cell, again, gps });
     if (r.error === 'too_many') throw new HttpError(409, 'too_many_visits', `다녀온 곳은 ${VISIT_MAX}곳까지 저장합니다.`);
     if (r.error === 'not_visited') throw new HttpError(409, 'not_visited', '다녀온 곳으로 표시한 판매점이 아닙니다.');
     if (r.error === 'again_today') throw new HttpError(409, 'again_today', '오늘은 이미 다녀왔다고 표시했습니다. 같은 곳은 하루 한 번입니다.');
     if (r.error === 'daily_limit') throw new HttpError(429, 'daily_limit', `다녀온 곳 표시는 하루 ${r.max}번까지입니다. 내일 다시 해 주세요.`);
     if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
     return json(request, env, { visits: r.visits, visitAt: r.visitAt, visitColor: r.visitColor });
+}
+
+// 위치 인증(2026-11-09 사장님 — 위치기반서비스사업 신고). { lat, lng, acc }: "다녀왔어요"를 누른 순간 기기 위치(위도 · 경도 · 오차 m).
+// 판매점(공개된 사업장 좌표)에서 GEO_RADIUS(50m) 안이면 통과. 오차가 GEO_ACC_MAX(100m)를 넘으면 판정하지 않는다.
+// 좌표는 이 함수 안에서만 쓰고 버린다 — 저장 · 로그에 남기지 않는다. 확인자료(gl:)에는 누가(계정 해시) · 언제 · 어느 판매점 · 결과만
+async function verifyVisit(env, s, id, body) {
+    const g = s.user.geo;
+    if (!g || g.v !== GEO_CONSENT) throw new HttpError(409, 'need_geo', '위치 이용에 동의해야 다녀온 곳을 인증할 수 있습니다.');
+    const lat = Number(body.lat), lng = Number(body.lng), acc = Number(body.acc);
+    if (![lat, lng, acc].every(Number.isFinite) || Math.abs(lat) > 90 || Math.abs(lng) > 180 || acc < 0) throw new HttpError(400, 'bad_location', '위치 값이 이상합니다.');
+    const tried = await community(env, 'geoTry', { sub: s.sub, now: Date.now() });
+    if (tried.error === 'too_many_tries') throw new HttpError(429, 'too_many_tries', `위치 확인은 하루 ${tried.max}번까지입니다. 내일 다시 해 주세요.`);
+    let why = null, dist = 0;
+    if (acc > GEO_ACC_MAX) why = 'inaccurate';
+    else {
+        const geo = await storeGeo(siteUrl(env)).catch(() => { throw new HttpError(503, 'geo_unavailable', '판매점 위치 자료를 불러오지 못했습니다. 잠시 뒤 다시 해 주세요.'); });
+        const p = geo.get(id);
+        if (!p) why = 'no_store';
+        else { dist = distM(lat, lng, p[0], p[1]); if (dist > GEO_RADIUS) why = 'too_far'; }
+    }
+    // 여기까지 — 좌표(lat, lng, acc)는 더 쓰지 않는다
+    await community(env, 'geoLog', { u: (await sha256('geo:' + s.sub)).slice(0, 16), t: Date.now(), id, ok: !why, why });
+    if (why === 'inaccurate') throw new HttpError(422, 'gps_inaccurate', `위치 오차가 커서(약 ${Math.round(acc)}m) 확인하지 못했습니다. 밖이나 창가에서 다시 눌러 주세요.`);
+    if (why === 'no_store') throw new HttpError(404, 'no_store', '문을 연 판매점이 아니어서 인증할 수 없습니다.');
+    if (why === 'too_far') throw new HttpError(422, 'too_far', `판매점에서 약 ${Math.round(dist)}m 떨어져 있습니다. 판매점 ${GEO_RADIUS}m 안에서 다시 눌러 주세요.`);
+}
+
+// 위치 이용 동의(2026-11-09). { agree: true, v }: 동의(동의 시각 · 안내문 판을 남긴다). { agree: false }: 철회 —
+// 앞으로 위치를 받지 않고, 위치로 인증한 다녀온 곳과 LottoHex 집계를 지운다
+async function setGeo(request, env) {
+    const s = await sessionUser(request, env);
+    await limited(env.REACT_LIMIT, s.hash);
+    const body = await readJson(request);
+    let r;
+    if (body.agree === true) {
+        if (body.v !== GEO_CONSENT) throw new HttpError(400, 'need_consent', '위치 이용 안내를 읽고 동의해 주세요.');
+        r = await community(env, 'geoConsent', { sub: s.sub, now: Date.now(), v: GEO_CONSENT });
+    } else if (body.agree === false) {
+        r = await community(env, 'geoWithdraw', { sub: s.sub });
+    } else throw new HttpError(400, 'need_consent', '동의 · 철회 값이 이상합니다.');
+    if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
+    return json(request, env, { user: r.user });
 }
 
 // 다녀온 곳 색 열기(2026-10-26): 첫 색(빨강)은 누구나, 나머지 7색은 이용권이 있으면 화면에서 바로, 없으면 하나에 POINTS.visitColor 포인트.

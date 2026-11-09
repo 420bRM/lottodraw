@@ -2500,6 +2500,16 @@ function storeMapCells(md) {
     const keys = Object.keys(cells).sort();
     return { r: HEX.R, note: 'LottoHex 칸(js/hexgrid.js) → 그 칸의 판매점 번호. 폐점 제외', cells: Object.fromEntries(keys.map(k => [k, cells[k].sort()])) };
 }
+// 위치 인증(2026-11-09): 서버가 "판매점 50m 안"을 판정할 때 쓰는 판매점 좌표 — 공개된 사업장 위치(동행복권), 폐점 제외, 칸 목록과 같은 판매점.
+// { 판매점 번호: [위도, 경도] } 소수 다섯째 자리(약 1m)
+const STORE_MAP_GEO = 'store-map-geo.json';
+function storeMapGeo(md) {
+    const out = {}, r5 = v => Math.round(v * 1e5) / 1e5;
+    md.rows.forEach((r, i) => { if (!r[7] && md.ids[i]) out[md.ids[i]] = [r5(r[0]), r5(r[1])]; });
+    if (md.all) md.all.rows.forEach((r, i) => { if (md.all.ids[i]) out[md.all.ids[i]] = [r5(r[0]), r5(r[1])]; });
+    const keys = Object.keys(out).sort();
+    return { note: '판매점 번호 → [위도, 경도] (공개된 사업장 위치, 폐점 제외). 위치 인증 50m 판정용', stores: Object.fromEntries(keys.map(k => [k, out[k]])) };
+}
 const ALL_SHOPS = (() => { try { return JSON.parse(fs.readFileSync(path.join(ROOT, 'shops-all.json'), 'utf8')); } catch (e) { return null; } })();
 // 좌표가 있는 판매점이 1,000곳을 넘을 때만 지도 페이지 · 링크를 만든다(좌표를 받기 전 자료에서는 만들지 않는다)
 const STORE_MAP_READY = () => !!(STORES && Object.values(STORES.d.shops).filter(sh => typeof sh[4] === 'number').length > 1000);
@@ -3284,6 +3294,7 @@ if (STORE_MAP_READY()) {
     if (STORE_MAP.all && write(STORE_MAP_ALL, JSON.stringify({ updated: STORE_MAP.all.updated, sido: STORE_MAP.all.sido,
         cols: ['lat', 'lng', 'name', 'sido', 'gu'], rows: STORE_MAP.all.rows }) + '\n')) changed++;
     if (write(STORE_MAP_CELLS, JSON.stringify(storeMapCells(STORE_MAP)) + '\n')) changed++;
+    if (write(STORE_MAP_GEO, JSON.stringify(storeMapGeo(STORE_MAP)) + '\n')) changed++;
     if (write(STORE_MAP_FILE, storeMapPage(STORE_MAP))) changed++;
     if (write(STORE_MAP_TOP_FILE, storeMapPage(STORE_MAP, true))) changed++;
 }

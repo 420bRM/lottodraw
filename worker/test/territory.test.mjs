@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import worker, { _resetForTests, Community } from '../src/index.js';
+import { community } from '../src/community.js';
 import { _resetGoogleForTests } from '../src/google.js';
 import { b64urlEncode } from '../src/keys.js';
 import { seasonOf, prevSeason, computeTerritory, defaultSkin, LEGACY_T, TERR_CONSENT, VISIT_DAILY, _resetCellsForTests } from '../src/territory.js';
@@ -104,6 +105,8 @@ async function idToken(claims, key = GOOD) {
 
 // 가짜 칸 자료: 칸 0,0 에 세 곳, 1,0 에 한 곳, 2,0 에 두 곳(사이트의 store-map-cells.json 모양)
 const CELLS = { r: 1.2, cells: { '0,0': ['11100001', '11100002', '11100003'], '1,0': ['11100004'], '2,0': ['11100005', '11100006'] } };
+// 가짜 판매점 좌표(사이트의 store-map-geo.json 모양) — 위치 인증 시험용
+const GEO = { stores: { '11100001': [37.5, 127.0], '11100002': [37.5003, 127.0], '11100003': [37.5006, 127.0], '11100004': [37.51, 127.0], '11100005': [37.52, 127.0], '11100006': [37.5203, 127.0] } };
 const realFetch = globalThis.fetch;
 let cellsUp = true;
 function fakeInternet() {
@@ -112,6 +115,7 @@ function fakeInternet() {
         const u = String(url);
         if (u === CERTS_URL) return new Response(JSON.stringify({ keys: [GOOD.jwk] }), { headers: { 'Cache-Control': 'public, max-age=20000' } });
         if (u === 'https://www.lottodraw.kr/store-map-cells.json') return cellsUp ? new Response(JSON.stringify(CELLS)) : new Response('', { status: 500 });
+        if (u === 'https://www.lottodraw.kr/store-map-geo.json') return new Response(JSON.stringify(GEO));
         if (u.startsWith('https://api.telegram.org/')) return new Response('{}');
         throw new Error('바깥 요청: ' + u);
     };
@@ -387,4 +391,119 @@ test('다녀온 때를 새로 적는 것은 하루 VISIT_DAILY 번까지(색 바
     assert.equal(over.data.error, 'daily_limit');
     assert.equal((await visit(env, a, '11200000', { color: '#3a86ff' })).status, 200, '색 바꾸기는 된다');
     assert.equal((await visit(env, a, '11200000', { color: null })).status, 200, '지우기는 된다');
+});
+
+/* ───── 위치 인증(2026-11-09 — 위치기반서비스사업 신고) ───── */
+const near = (lat, lng, extra) => Object.assign({ lat, lng, acc: 15 }, extra || {});   // 판매점 좌표 근처
+const geoAgree = (env, s) => call(env, 'POST', '/api/me/geo', { headers: auth(s), body: { agree: true, v: 1 } });
+const glRows = env => [...env.COMMUNITY._m.entries()].filter(([k]) => k.startsWith('gl:')).map(([, v]) => v);
+
+test('위치 인증 꺼짐(기본): 설정에 gps false · LottoHex 동의 1판, 다녀왔어요는 좌표 없이', async () => {
+    const env = await fresh();
+    const cfg = (await call(env, 'GET', '/api/config')).data.login;
+    assert.equal(cfg.gps, false);
+    assert.equal(cfg.terrV, 1);
+    const a = await member(env, 'g0', '꺼짐');
+    assert.equal((await visit(env, a, '11100001')).status, 200, '꺼져 있으면 누르기만');
+});
+
+test('위치 인증 켜짐: 동의해야 하고, 50m 안만 · 오차 100m 넘으면 판정 안 함 · 좌표는 어디에도 남지 않고 확인자료는 결과만 · 철회하면 지운다', async () => {
+    const env = await fresh();
+    env.GPS_VERIFY = 'on';
+    const cfg = (await call(env, 'GET', '/api/config')).data.login;
+    assert.deepEqual([cfg.gps, cfg.geoV, cfg.terrV], [true, 1, 2], 'LottoHex 는 2판으로 다시 동의');
+    const a = await member(env, 'g1', '위치맨');
+    // 동의 전에는 인증하지 않는다
+    assert.equal((await visit(env, a, '11100001', near(37.5, 127.0))).data.error, 'need_geo');
+    assert.equal((await call(env, 'POST', '/api/me/geo', { headers: auth(a), body: { agree: true, v: 9 } })).status, 400);
+    const ok = await geoAgree(env, a);
+    assert.equal(ok.status, 200);
+    assert.equal(ok.data.user.geo.v, 1);
+    assert.ok(ok.data.user.geo.at > 0, '동의 시각을 남긴다');
+    // 좌표가 없거나 이상하면 거절
+    assert.equal((await visit(env, a, '11100001')).data.error, 'bad_location');
+    assert.equal((await visit(env, a, '11100001', { lat: 'x', lng: 1, acc: 1 })).data.error, 'bad_location');
+    // 오차가 크면 판정하지 않는다
+    const inacc = await visit(env, a, '11100001', near(37.5, 127.0, { acc: 150 }));
+    assert.equal(inacc.status, 422);
+    assert.equal(inacc.data.error, 'gps_inaccurate');
+    // 1km 떨어지면 안 된다(거리를 알려 준다)
+    const far = await visit(env, a, '11100001', near(37.509, 127.0));
+    assert.equal(far.data.error, 'too_far');
+    assert.match(far.data.message, /약 1001m/);
+    // 문 닫은 · 모르는 판매점
+    assert.equal((await visit(env, a, '11199999', near(37.5, 127.0))).data.error, 'no_store');
+    // 30m 안이면 통과
+    const pass = await visit(env, a, '11100001', near(37.50027, 127.0));
+    assert.equal(pass.status, 200, JSON.stringify(pass.data));
+    assert.deepEqual(Object.keys(pass.data.visits), ['11100001']);
+    // 좌표는 저장소 어디에도 없다(위도 37.50027 · 경도 · 오차 값이 어떤 기록에도 없다)
+    const dump = JSON.stringify([...env.COMMUNITY._m.entries()]);
+    assert.ok(!dump.includes('37.50027') && !dump.includes('37.509') && !/"lat"|"lng"|"acc"/.test(dump), '좌표 · 오차를 남기지 않는다');
+    // 확인자료: 시도마다 한 줄 — 계정 해시 · 시각 · 판매점 · 결과만
+    const logs = glRows(env);
+    assert.equal(logs.length, 4, '오차 초과 · 거리 초과 · 없는 판매점 · 통과');
+    logs.forEach(l => assert.deepEqual(Object.keys(l).sort(), ['id', 'ok', 't', 'u', 'why']));
+    assert.deepEqual(logs.map(l => l.why).sort(), [null, 'inaccurate', 'no_store', 'too_far'].sort());
+    assert.ok(logs.every(l => /^[A-Za-z0-9_-]{16}$/.test(l.u) && !l.u.includes('g1')), '계정은 해시로');
+    // 지우기는 위치 없이
+    assert.equal((await visit(env, a, '11100001', { color: null })).status, 200);
+    // 또 다녀왔어요도 위치로
+    await visit(env, a, '11100002', near(37.5003, 127.0001));
+    assert.equal((await visit(env, a, '11100002', { again: true })).data.error, 'bad_location');
+    // 철회: 동의 · 다녀온 곳을 지운다
+    const w = await call(env, 'POST', '/api/me/geo', { headers: auth(a), body: { agree: false } });
+    assert.equal(w.status, 200);
+    assert.equal(w.data.user.geo, null);
+    assert.deepEqual(w.data.user.visits, {});
+    assert.equal((await visit(env, a, '11100002', near(37.5003, 127.0))).data.error, 'need_geo', '철회 뒤에는 다시 동의해야');
+});
+
+test('위치 인증 켠 날: 손 표시 · LottoHex 참여 · 칸 집계를 한 번만 지우고, 그 뒤 인증한 것은 남는다', async () => {
+    const env = await fresh();
+    const a = await member(env, 'g2', '손표시');
+    await visit(env, a, '11100001');
+    await visit(env, a, '11100002');
+    assert.equal((await join(env, a)).status, 200);
+    assert.ok((await terr(env)).data.cells['0,0'], '켜기 전에는 손 표시로 칸을 차지');
+    env.GPS_VERIFY = 'on';
+    const t = await terr(env, a);
+    assert.equal(t.data.cells['0,0'], undefined, '켜면 칸이 모두 회색지대');
+    assert.equal(t.data.me.joined, false, 'LottoHex 는 2판으로 다시 참여');
+    const me = (await call(env, 'GET', '/api/me', { headers: auth(a) })).data.user;
+    assert.deepEqual(me.visits, {}, '손 표시는 지운다');
+    assert.equal(me.terr, null);
+    assert.ok(env.COMMUNITY._m.get('gpsStart') > 0);
+    // 그 뒤 인증한 것은 다시 지우지 않는다
+    await geoAgree(env, a);
+    assert.equal((await visit(env, a, '11100001', near(37.5, 127.0))).status, 200);
+    assert.equal((await join(env, a, { agree: true, v: 1 })).status, 400, '1판 동의는 받지 않는다');
+    assert.equal((await join(env, a, { agree: true, v: 2 })).status, 200);
+    env.COMMUNITY.restart();
+    const t2 = await terr(env, a);
+    assert.ok(t2.data.cells['0,0'], '인증한 방문으로 칸을 차지');
+    assert.deepEqual(Object.keys((await call(env, 'GET', '/api/me', { headers: auth(a) })).data.user.visits), ['11100001']);
+});
+
+test('위치 판정은 하루 100번까지 · 확인자료는 6개월 지난 것부터 지운다', async () => {
+    const env = await fresh();
+    env.GPS_VERIFY = 'on';
+    const a = await member(env, 'g3', '많이눌러');
+    await geoAgree(env, a);
+    const key = [...env.COMMUNITY._m.keys()].find(k => k.startsWith('u:') && env.COMMUNITY._m.get(k).nick === '많이눌러');
+    const u = env.COMMUNITY._m.get(key);
+    const today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+    env.COMMUNITY._m.set(key, Object.assign(u, { gtry: { day: today, n: 100 } }));
+    env.COMMUNITY.restart();
+    const r = await visit(env, a, '11100001', near(37.5, 127.0));
+    assert.equal(r.status, 429);
+    assert.equal(r.data.error, 'too_many_tries');
+    // 오래된 확인자료(200일 전)는 지우고 최근 것은 남긴다
+    const now = Date.now();
+    const day = ms => new Date(ms + 9 * 3600e3).toISOString().slice(0, 10);
+    env.COMMUNITY._m.set('gl:' + day(now - 200 * 86400e3) + ':a:1', { u: 'x', t: now - 200 * 86400e3, id: '11100001', ok: true, why: null });
+    env.COMMUNITY._m.set('gl:' + day(now - 10 * 86400e3) + ':b:1', { u: 'x', t: now - 10 * 86400e3, id: '11100001', ok: true, why: null });
+    const h = await community(env, 'geoHousekeep', { now, gps: true });
+    assert.equal(h.pruned, 1);
+    assert.equal(glRows(env).length, 1);
 });

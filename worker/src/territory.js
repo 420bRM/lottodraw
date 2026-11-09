@@ -11,6 +11,21 @@
 // 공개되는 것(참여 동의 문구 · 개인정보 처리방침과 맞출 것): 칸 주인의 별명 · 그 칸에서 다녀온 판매점 수, 랭킹 · 확정 순위의 별명 · 칸 수 · 다녀온 곳 수.
 // 누가 어느 판매점을 언제 다녀왔는지는 내보내지 않는다
 
+// ───── 위치 인증(2026-11-09 사장님 — 위치기반서비스사업 신고) ─────
+// GPS_VERIFY = "on"(wrangler.toml [vars])이면 "다녀왔어요"는 판매점 50m 안에서 위치로 확인한 것만 받는다. 꺼져 있으면 지금처럼 누르기만(시험판).
+// 좌표는 판정에만 쓰고 저장 · 기록하지 않는다. 남기는 것: 인증한 판매점 번호와 시각(다녀온 곳), 확인자료(누가 · 언제 · 어느 판매점 · 결과, 좌표 없음, 6개월)
+export const gpsOn = env => String((env && env.GPS_VERIFY) || '').toLowerCase() === 'on';
+export const GEO_CONSENT = 1;     // 위치 이용 동의 문구 판(js/store-map.js 동의 창). 문구를 크게 바꾸면 올려서 다시 동의받는다
+export const GEO_RADIUS = 50;     // 판매점에서 이 거리(m) 안이면 인증
+export const GEO_ACC_MAX = 100;   // 위치 오차가 이보다 크면 판정하지 않는다(다시 시도 안내)
+export const GEO_TRIES = 100;     // 하루(한국 날짜) 위치 판정 시도 횟수 — 좌표 없이 횟수만 센다
+export const GEO_LOG_DAYS = 183;  // 확인자료 보관(약 6개월) 뒤 한 시간 예약이 지운다
+export function distM(lat1, lng1, lat2, lng2) {   // 두 점 사이 거리(m, 대원거리)
+    const R = 6371000, d = Math.PI / 180, x = Math.sin((lat2 - lat1) * d / 2), y = Math.sin((lng2 - lng1) * d / 2);
+    return 2 * R * Math.asin(Math.sqrt(x * x + Math.cos(lat1 * d) * Math.cos(lat2 * d) * y * y));
+}
+export const TERR_CONSENT_GPS = 2;   // LottoHex 동의 판(GPS 를 켜면 — "위치로 인증한 다녀온 곳을 센다"). 켜는 날 모두 다시 동의받는다
+export const terrConsent = env => (gpsOn(env) ? TERR_CONSENT_GPS : TERR_CONSENT);
 export const TERR_CONSENT = 1;   // 동의 문구 판. 문구를 크게 바꾸면 올려서 다시 동의를 받는다(js/store-map.js 의 TERR_V 와 같게)
 export const TERR_RANK = 50;     // 랭킹에 보여 주는 수
 export const TERR_HALL = 10;     // 지난 분기 확정 순위에 보여 주는 수
@@ -112,10 +127,21 @@ export function publicTerritory(t, season, sub, joined, last) {
     return out;
 }
 
+// 사이트의 판매점 좌표(store-map-geo.json — 공개된 사업장 위치, 폐점 제외) → 판매점 번호 → [위도, 경도]. 한 시간 들고 있는다
+let geoCache = null;   // { at, map }
+export async function storeGeo(site) {
+    if (geoCache && Date.now() - geoCache.at < 3600 * 1000) return geoCache.map;
+    const r = await fetch(site + '/store-map-geo.json', { cf: { cacheTtl: 3600 } });
+    if (!r.ok) throw new Error('store-map-geo.json ' + r.status);
+    const j = await r.json();
+    geoCache = { at: Date.now(), map: new Map(Object.entries(j.stores || {})) };
+    return geoCache.map;
+}
+
 // 사이트의 칸 목록(store-map-cells.json) → 판매점 번호 → 칸. 한 시간 들고 있는다
 const TTL = 3600 * 1000;
 let cellCache = null;   // { at, map }
-export function _resetCellsForTests() { cellCache = null; }
+export function _resetCellsForTests() { cellCache = null; geoCache = null; }
 export async function cellMap(site) {
     if (cellCache && Date.now() - cellCache.at < TTL) return cellCache.map;
     const r = await fetch(site + '/store-map-cells.json', { cf: { cacheTtl: 3600 } });

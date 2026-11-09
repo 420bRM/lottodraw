@@ -358,6 +358,14 @@
                 A && A.openNick ? btn(user.nick ? (user.nickAuto ? tr('my.nickChangeFree', '무료로 바꾸기') : tr('my.nickChange', '바꾸기')) : tr('my.nickSet', '정하기'), () => A.openNick(!user.nick)) : null),
             row(tr('my.email', '이메일'), user.email || ''),
             row(tr('my.joined', '가입일'), ymd(user.createdAt)),
+            // 위치 이용 동의(2026-11-09 — 서버의 위치 인증이 켜져 있을 때만): 동의한 날 + 철회 단추. 철회하면 위치로 인증한 다녀온 곳을 지운다
+            A && A.gps && A.gps() ? row(tr('my.geo', '위치 이용 동의'), user.geo ? tr('my.geoOn', '동의함 · {date}', { date: ymd(user.geo.at) }) : tr('my.geoOff', '동의 안 함 — 판매점 지도에서 "다녀왔어요"를 누르면 안내가 나옵니다'),
+                user.geo ? btn(tr('my.geoWithdraw', '철회'), async e => {
+                    if (!window.confirm(tr('my.geoConfirm', '위치 이용 동의를 철회합니까? 위치로 인증한 다녀온 곳이 모두 지워지고 LottoHex 집계에서도 빠집니다.'))) return;
+                    e.target.disabled = true;
+                    try { const r = await A.call('/api/me/geo', { method: 'POST', body: { agree: false } }); if (A.patchUser) A.patchUser({ geo: null, visits: {}, visitAt: {} }); showProfile(Object.assign({}, user, { geo: null }, r && r.user ? { visits: r.user.visits } : {})); }
+                    catch (err) { e.target.disabled = false; window.alert((err && err.message) || tr('my.saveFail', '저장하지 못했습니다.')); }
+                }, 'my-danger') : null) : null,
             // 판매점 댓글의 "✓ 실방문자"(2026-11-09 사장님 — 마이페이지에서 켜고 끄기, 기본은 꺼짐). 켜면 다녀온 판매점에 단 내 댓글에 표시가 붙는다
             row(tr('my.vbadge', '실방문자 표시'), user.visitBadge ? tr('my.vbadgeOn', '켜짐 — 다녀온 판매점에 단 내 댓글에 "✓ 실방문자"가 보입니다') : tr('my.vbadgeOff', '꺼짐'),
                 A ? btn(user.visitBadge ? tr('my.vbadgeTurnOff', '끄기') : tr('my.vbadgeTurnOn', '켜기'), async e => {

@@ -498,6 +498,7 @@
     // 지도 위 가운데 "⟳ ○○구 근처 판매점" 단추 → 지금 화면 안 판매점 목록(보이는 칩 · 1등 방식 · 흐리게 막대를 따른다).
     // "내 위치 기준"을 누르면 브라우저 위치로 옮겨 가까운 순 + 거리. 위치는 이 기기 안에서만 쓰고 서버로 보내지 않는다(위치정보법 — README 4-9)
     let myLoc = null, geo = null, nearAfterMove = false;
+    const geoActive = () => !!(geo && geo._watchState && geo._watchState !== 'OFF');   // 내 위치를 받고 있는가(기기 안, 지도를 옮겨도 계속)
     const nearPanel = document.getElementById('sm-near'), nearBtn = document.getElementById('sm-near-btn');
     const NEAR_MAX = 30;
     function distM([lng1, lat1], [lng2, lat2]) {
@@ -582,7 +583,7 @@
         if (isWide()) setTab('near'); else { card.hidden = true; minePanel.hidden = true; terrPanel.hidden = true; }
         nearPanel.scrollTop = 0;
         nearPanel.querySelector('.sm-close').addEventListener('click', () => { nearPanel.hidden = true; if (isWide()) setTab('top'); });
-        nearPanel.querySelector('.sm-near-me').addEventListener('click', () => { if (geo) { nearAfterMove = true; geo.trigger(); } });
+        nearPanel.querySelector('.sm-near-me').addEventListener('click', () => { if (!geo) return; if (myLoc && geoActive()) { openNear(); return; } nearAfterMove = true; geo.trigger(); });   // 이미 받고 있으면 끄지 말고 다시 정렬
         nearPanel.querySelectorAll('.sm-near-list button').forEach(b => b.addEventListener('click', () => {
             const i = Number(b.dataset.i);
             if (b.dataset.t === 'w') open(i, true); else openAll(i, true);
@@ -877,10 +878,13 @@
             '<h3>' + T('내 기록', 'My places') + '</h3>' +
             '<div class="sm-rk sm-mine-tabs" role="group">' + tabBtn('v', T('다녀온 곳', 'Visited'), vs.length) + tabBtn('c', T('내 댓글', 'My comments'), cs ? cs.length : null) + '</div>' +
             (unread ? '<p class="sm-mine-new"><a href="mypage.html#my-notes">' + T('새 답글 ' + fmt(unread) + '개 · 마이페이지에서 보기 →', fmt(unread) + ' new repl' + (unread > 1 ? 'ies' : 'y') + ' · see My page →') + '</a></p>' : '') +
-            body + '<p class="sm-small sm-near-note">' + T('나만 보입니다. 위치는 쓰지 않습니다.', 'Only you can see this. No location used.') + '</p>';
+            body + '<p class="sm-small sm-near-note">' + (gpsCfg() ? T('나만 보입니다. 다녀온 곳은 판매점 50m 안에서 위치로 인증한 곳입니다.', 'Only you can see this. Visits are verified by location (within 50 m).') : T('나만 보입니다. 위치는 쓰지 않습니다.', 'Only you can see this. No location used.')) + '</p>' +
+            (gpsCfg() && geoAgreed() ? '<p class="sm-small"><button type="button" class="sm-geo-withdraw">' + T('위치 이용 동의 철회', 'Withdraw location consent') + '</button></p>' : '');
         minePanel.hidden = false;
         if (isWide()) setTab('mine'); else { card.hidden = true; nearPanel.hidden = true; terrPanel.hidden = true; }
         minePanel.querySelector('.sm-close').addEventListener('click', () => setMine(false));
+        const gw = minePanel.querySelector('.sm-geo-withdraw');
+        if (gw) gw.addEventListener('click', geoWithdraw);
         minePanel.querySelectorAll('.sm-mine-tabs button').forEach(b => b.addEventListener('click', () => { mineTab = b.dataset.k; drawMine(); }));
         minePanel.querySelectorAll('.sm-near-list button').forEach(b => b.addEventListener('click', () => (b.dataset.t === 'w' ? open : openAll)(Number(b.dataset.i), true)));
         minePanel.querySelectorAll('.sm-my-cmts button').forEach(b => b.addEventListener('click', () => {
@@ -911,7 +915,9 @@
     // 규칙 · 서버는 worker/src/territory.js — /api/territory(누구나, 지난 분기 확정 순위 last 포함), /join · /leave(로그인).
     // 참여는 동의(TERR_V) 뒤에만: 내가 차지한 칸 · Map 랭킹에 별명이 나온다. 어느 판매점을 다녀왔는지는 서버가 내보내지 않는다.
     // 시험판: "다녀왔어요"를 누른 기록만 센다. 위치(GPS)는 쓰지 않는다(위치기반서비스사업 신고 뒤 50m 인증으로 바꾼다)
-    const TERR_V = 1;   // worker TERR_CONSENT 와 같게. 동의 문구를 크게 바꾸면 둘 다 올린다
+    // LottoHex 동의 판: 서버가 /api/config 로 알려 준다(위치 인증을 켜면 2 — "위치로 인증한 다녀온 곳을 센다", 2026-11-09)
+    const terrV = () => { const A = account(); return (A && A.terrV && A.terrV()) || 1; };
+    const gpsCfg = () => { const A = account(); return (A && A.gps && A.gps()) || null; };   // 위치 인증이 켜져 있으면 { geoV, terrV }
     const HX = window.LottoHex;
     const terrPanel = document.getElementById('sm-terr'), terrChip = document.getElementById('sm-terr-chip'), terrOnlyBtn = document.getElementById('sm-terr-only');
     let terr = null, terrCells = null, terrSel = null, terrView = 'main', terrLoading = null, visitAt = {};
@@ -1613,7 +1619,8 @@
             '<li>' + T('칸 모양: 참여자마다 색 두 가지와 무늬(단색 · 줄무늬 · 물방울 · 체크)가 무작위로 정해지고 모두에게 같게 보입니다. 내 칸 모양은 ' + SKIN_COST + '포인트로 바꿀 수 있습니다. 내 칸은 테두리가 조금 굵습니다.', 'Skins: each player gets two colours and a pattern (solid, stripes, dots or checks) at random, and everyone sees the same. You can change yours for ' + SKIN_COST + ' points. Your cells have a slightly thicker edge.') + '</li>' +
             '<li>' + T('밤 지도에서 크게 보면 차지한 칸 테두리를 빛이 시계 방향으로 돌고, 칸 면에는 유리에 비친 듯한 45° 빛이 번쩍 지나갑니다.', 'On the night map, zoomed in, a light runs clockwise round held cells and a quick glassy 45° glint flashes across them.') + '</li>' +
             '<li>' + T('칸은 비우지 않습니다. 분기(1 · 4 · 7 · 10월 1일 0시)마다 그때의 Map 랭킹을 확정해 남깁니다.', 'Cells are never cleared. At the start of each quarter the Map ranking at that moment is finalised and kept.') + '</li>' +
-            '<li>' + T('시험판: 지금은 "다녀왔어요"를 누른 기록만 셉니다. 위치 인증(판매점 50m 안)은 준비 중입니다. 폐점한 곳은 세지 않습니다.', 'Beta: for now a tap on "I\'ve been here" counts. Location check (within 50 m) is coming. Closed retailers do not count.') + '</li>' +
+            '<li>' + (gpsCfg() ? T('다녀온 곳은 판매점 50m 안에서 위치로 인증한 곳만 셉니다. 폐점한 곳은 세지 않습니다.', 'Only retailers verified by location (within 50 m) count. Closed retailers do not count.')
+                : T('시험판: 지금은 "다녀왔어요"를 누른 기록만 셉니다. 위치 인증(판매점 50m 안)은 준비 중입니다. 폐점한 곳은 세지 않습니다.', 'Beta: for now a tap on "I\'ve been here" counts. Location check (within 50 m) is coming. Closed retailers do not count.')) + '</li>' +
             '<li>' + T('복권을 살 필요는 없습니다. 어디서 사든 1등 확률은 1/8,145,060으로 같습니다.', 'No purchase needed. Your chance of 1st prize is 1 in 8,145,060 wherever you buy.') + '</li>' +
             '</ul></details>';
         const leave = me && me.joined ? '<p class="sm-terr-leave-p"><button type="button" class="sm-terr-leave">' + T('LottoHex 그만두기', 'Leave LottoHex') + '</button></p>' : '';
@@ -1671,7 +1678,8 @@
         const html = '<button type="button" class="sm-close" aria-label="' + T('닫기', 'Close') + '">×</button>' +
             '<h3>' + T('LottoHex 참여 안내', 'Joining LottoHex') + ' <small class="sm-terr-beta">' + T('시험판', 'beta') + '</small></h3>' +
             '<ol class="sm-terr-consent">' +
-            '<li>' + T('참여하면 내가 "다녀온 곳"으로 표시한 판매점을 칸(육각형)마다 세어 칸 주인을 정합니다. 참여 전에 표시한 곳도 셉니다.', 'Your marked places are counted per hexagon cell, including those marked before joining.') + '</li>' +
+            '<li>' + (gpsCfg() ? T('참여하면 내가 판매점 50m 안에서 위치로 인증한 "다녀온 곳"을 칸(육각형)마다 세어 칸 주인을 정합니다.', 'Retailers you verified by location (within 50 m) are counted per hexagon cell to decide who holds it.')
+                : T('참여하면 내가 "다녀온 곳"으로 표시한 판매점을 칸(육각형)마다 세어 칸 주인을 정합니다. 참여 전에 표시한 곳도 셉니다.', 'Your marked places are counted per hexagon cell, including those marked before joining.')) + '</li>' +
             '<li><b>' + T('내가 차지한 칸(약 1km 육각형)과 별명(' + esc(u && u.nick || '') + '), 칸별 방문 수가 다른 사람에게 보입니다', 'Cells you hold (about 1 km hexagons), your nickname (' + esc(u && u.nick || '') + ') and visits per cell are shown to others') + '</b>' +
                 T('(Map 랭킹 · 분기 확정 순위 포함). 어느 판매점을 언제 다녀왔는지는 보이지 않습니다.', ' (including the Map ranking and quarterly results). Which retailers you visited, and when, is never shown.') + '</li>' +   // 2026-11-09 사장님 — 거부감 없게 사실만
             '</ol>' +   // 3 · 4 · 5번(위치 안 씀 · 살 필요 없음 · 그만두기)은 뺐다(2026-11-08 사장님 — 너무 조심스럽다, 곧 GPS). 19세는 아래 체크에
@@ -1698,7 +1706,7 @@
         ok.addEventListener('click', async () => {
             ok.disabled = true;
             try {
-                await A.call('/api/territory/join', { method: 'POST', body: { agree: true, v: TERR_V } });
+                await A.call('/api/territory/join', { method: 'POST', body: { agree: true, v: terrV() } });
                 await A.refresh().catch(() => null);
                 terrView = 'main';
                 if (pop) pop.hidden = true;
@@ -1865,6 +1873,96 @@
     }
     window.addEventListener('lottodraw:account', () => { if (cmtRefresh) cmtRefresh(); });
 
+    // ───── 위치 인증(2026-11-09 사장님 — 위치기반서비스사업 신고) ─────
+    // 서버 스위치(GPS_VERIFY)가 켜져 있으면: 로그인 회원에게 지도를 열 때 위치 이용 동의를 묻고(나중에를 누르면 3일 뒤 다시), 동의했으면 내 위치를 켠 채로 시작.
+    // "다녀왔어요" · "또 다녀왔어요"를 누르면 그 순간 위치를 한 번 받아 서버로 보내고, 서버가 판매점 50m 안인지 판정한다(좌표는 서버가 저장하지 않는다)
+    const GEO_LATER = 'lottodraw.geo.later';
+    const geoAgreed = () => { const A = account(), u = A && A.me() && A.me().user, g = gpsCfg(); return !!(g && u && u.geo && u.geo.v === g.geoV); };
+    function geoStart() {
+        if (!geo || geoActive()) return;
+        try { geo.trigger(); } catch (e) { /* 지도 준비 전 */ }
+    }
+    function geoPop(then) {
+        const A = account(), g = gpsCfg();
+        if (!g) return;
+        let pop = document.getElementById('sm-geo-pop');
+        if (!pop) { pop = document.createElement('div'); pop.id = 'sm-geo-pop'; pop.className = 'sm-consent-pop sm-geo-pop'; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-modal', 'true'); root.appendChild(pop); }
+        pop.setAttribute('aria-label', T('위치 이용 안내', 'Using your location'));
+        pop.innerHTML = '<button type="button" class="sm-close" aria-label="' + T('닫기', 'Close') + '">×</button>' +
+            '<h3>📍 ' + T('위치 이용 안내', 'Using your location') + '</h3>' +
+            '<ul class="sm-terr-consent">' +
+            '<li>' + T('받는 정보: "다녀왔어요"를 누를 때 한 번, 휴대폰 · PC의 현재 위치(위도 · 경도 · 오차)', 'What: your current location (latitude, longitude, accuracy) once, when you tap "I\'ve been here"') + '</li>' +
+            '<li>' + T('쓰는 곳: 그 판매점 50m 안에 있는지 확인(다녀온 곳 인증)', 'Why: to check you are within 50 m of that retailer') + '</li>' +
+            '<li>' + T('확인 직후 위치 좌표는 버리고 저장하지 않습니다. 인증한 판매점과 시각만 남깁니다.', 'The coordinates are discarded right after the check. Only the retailer and time are kept.') + '</li>' +
+            '<li>' + T('지도의 내 위치는 이 기기 안에서만 보여 주고 서버로 보내지 않습니다.', 'Your position on the map stays on this device.') + '</li>' +
+            '<li>' + T('마이페이지 · 내 기록의 "위치 이용 동의 철회"로 언제든 철회할 수 있고, 철회하면 인증한 다녀온 곳을 지웁니다.', 'Withdraw any time (My page or My places); verified visits are then deleted.') + '</li>' +
+            '<li>' + T('동의하지 않아도 지도 · 검색 · 댓글은 그대로 쓸 수 있습니다.', 'The map, search and comments work without this.') + '</li>' +
+            '</ul>' +
+            '<label class="sm-terr-agree"><input type="checkbox"> ' + T('위 내용에 동의합니다 (만 14세 이상)', 'I agree (I am 14 or older)') + '</label>' +
+            '<p class="sm-terr-btns"><button type="button" class="sm-terr-ok" disabled>' + T('동의하고 위치 켜기', 'Agree and turn on') + '</button> <button type="button" class="sm-terr-cancel">' + T('나중에', 'Later') + '</button></p>' +
+            '<p class="sm-small"><a href="privacy.html">' + T('개인정보 처리방침', 'Privacy policy') + '</a> · <a href="terms.html">' + T('이용약관', 'Terms') + '</a></p>' +
+            '<p class="sm-terr-msg" role="status"></p>';
+        pop.hidden = false;
+        const box = pop.querySelector('.sm-terr-agree input'), ok = pop.querySelector('.sm-terr-ok');
+        box.addEventListener('change', () => { ok.disabled = !box.checked; });
+        const later = () => { pop.hidden = true; try { localStorage.setItem(GEO_LATER, String(Date.now())); } catch (e) { /* 이 기기에서만 */ } };
+        pop.querySelector('.sm-close').addEventListener('click', later);
+        pop.querySelector('.sm-terr-cancel').addEventListener('click', later);
+        ok.addEventListener('click', async () => {
+            ok.disabled = true;
+            try {
+                const r = await A.call('/api/me/geo', { method: 'POST', body: { agree: true, v: g.geoV } });
+                if (A.patchUser) A.patchUser({ geo: r.user.geo });
+                pop.hidden = true;
+                geoStart();
+                if (then) then();
+            } catch (e) {
+                ok.disabled = false;
+                pop.querySelector('.sm-terr-msg').textContent = (e && e.message) || T('저장하지 못했습니다.', 'Could not save.');
+            }
+        });
+    }
+    // 지도를 열 때: 동의했으면 내 위치를 켠 채로, 아직이면 묻는다(공유 링크로 판매점 · 지역을 열었으면 지도를 옮기지 않게 위치는 켜지 않는다)
+    async function initGeo() {
+        const A = account();
+        if (!A || !A.ready) return;
+        await A.ready;
+        if (!gpsCfg() || !A.session() || !A.me()) return;
+        let deep = false;
+        try { const q = new URLSearchParams(location.search); deep = !!(q.get('shop') || q.get('area')) || /map=/.test(location.hash); } catch (e) { /* 구형 */ }
+        if (geoAgreed()) { if (!deep) geoStart(); return; }
+        let later = 0;
+        try { later = Number(localStorage.getItem(GEO_LATER)) || 0; } catch (e) { /* 이 기기에서만 */ }
+        if (Date.now() - later < 3 * 86400000) return;   // "나중에"를 누르면 3일 동안 묻지 않는다
+        geoPop(() => { if (!deep) geoStart(); });
+    }
+    // "다녀왔어요"를 누른 순간 위치 한 번(오차 · 실패를 사람이 읽을 말로)
+    function geoOnce() {
+        return new Promise((resolve, reject) => {
+            if (!navigator.geolocation) { reject(new Error(T('이 브라우저는 위치를 지원하지 않습니다.', 'This browser cannot share location.'))); return; }
+            navigator.geolocation.getCurrentPosition(
+                p => resolve({ lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy }),
+                e => reject(new Error(e && e.code === 1 ? T('브라우저의 위치 권한을 허용해 주세요(주소창 옆 설정).', 'Allow location for this site in your browser settings.')
+                    : T('위치를 받지 못했습니다. 잠시 뒤 다시 눌러 주세요.', 'Could not get your location. Try again.'))),
+                { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 });   // 누른 순간의 새 위치(직전 위치를 다시 쓰지 않는다)
+        });
+    }
+    // 철회: 앞으로 위치를 받지 않고, 위치로 인증한 다녀온 곳 · LottoHex 집계를 지운다
+    async function geoWithdraw() {
+        const A = account();
+        if (!window.confirm(T('위치 이용 동의를 철회합니까? 위치로 인증한 다녀온 곳이 모두 지워지고 LottoHex 집계에서도 빠집니다.', 'Withdraw consent? All verified visits are deleted and removed from LottoHex.'))) return;
+        try {
+            const r = await A.call('/api/me/geo', { method: 'POST', body: { agree: false } });
+            visits = {}; visitAt = {};
+            if (A.patchUser) A.patchUser({ geo: null, visits, visitAt });
+            paintVisits();
+            for (let n = 0; n < 2 && geoActive(); n++) { try { geo.trigger(); } catch (e) { break; } }   // 내 위치도 끈다(지도를 옮긴 상태면 두 번)
+            if (shown.mine) { mineSource(); drawMine(); }
+            refreshTerr();
+            return r;
+        } catch (e) { window.alert((e && e.message) || T('철회하지 못했습니다.', 'Could not withdraw.')); }
+    }
+
     async function visitUi(k, i) {
         const box = document.getElementById('sm-visit');
         const A = account();
@@ -1888,7 +1986,7 @@
                     (canPick ? '<label class="sm-color sm-color-any" title="' + T('다른 색', 'Any colour') + '"><input type="color" value="' + cur + '" aria-label="' + T('다른 색', 'Any colour') + '"></label>' : '') + '</span>' : '') + '</div>' +
                 '<p class="sm-visit-note">' + (cur ? (canPick ? T('다시 누르면 지웁니다. 고른 색은 다녀온 곳 모두에 씁니다.', 'Tap again to remove. The colour applies to all your places.')
                     : T('다시 누르면 지웁니다. 고른 색은 다녀온 곳 모두에 씁니다. 🔒 색은 하나에 ' + COLOR_COST + '포인트로 열거나 <a href="statistics.html">이용권</a>으로 모두 엽니다.', 'Tap again to remove. Unlock a 🔒 colour for ' + COLOR_COST + ' points, or all of them with a <a href="statistics.html">pass</a>.'))
-                    : T('나만 보입니다.', 'Only you can see it.')) + '</p>' +
+                    : gpsCfg() ? T('판매점 50m 안에서 누르면 위치로 확인합니다. 나만 보입니다.', 'Tap within 50 m of the retailer to verify by location. Only you can see it.') : T('나만 보입니다.', 'Only you can see it.')) + '</p>' +
                 (cur && inTerr ? '<p class="sm-visit-again-p">' + (today ? '<span class="sm-visit-today">✓ ' + T('오늘 다녀옴', 'Visited today') + '</span>'
                     : '<button type="button" class="sm-visit-again">↻ ' + T('오늘 또 다녀왔어요', 'Visited again today') + '</button>') + '</p>' : '') +
                 '';   // LottoHex 안내 문구는 뺐다(2026-11-08 사장님 — 말이 많다)
@@ -1925,8 +2023,17 @@
             if (!(await loadIds())) return;
             const id = ids[k] && ids[k][i];
             if (!id) return;
+            const verify = !!gpsCfg() && (again || color);   // 위치 인증: 새로 표시 · 또 다녀왔어요(지우기는 그대로)
+            if (verify && !geoAgreed()) { geoPop(() => save(color, again)); return; }
+            const note = box.querySelector('.sm-visit-note');
             try {
-                const r = await account().call('/api/me/visits', { method: 'POST', body: again ? { id, again: true } : { id, color } });
+                let at = {};
+                if (verify) {
+                    if (note) { note.classList.remove('is-warn'); note.textContent = T('위치 확인 중…', 'Checking your location…'); }
+                    at = await geoOnce();
+                }
+                const r = await account().call('/api/me/visits', { method: 'POST', body: Object.assign(again ? { id, again: true } : { id, color }, at) });
+                at = null;   // 좌표는 보낸 뒤 버린다
                 visits = r.visits || {};
                 visitAt = r.visitAt || visitAt;
                 if (A.patchUser) A.patchUser(Object.assign({ visits, visitAt }, r.visitColor ? { visitColor: r.visitColor } : {}));   // 이 탭에 저장해 둔 내 정보도 — 다시 열어도 빠지지 않게
@@ -1936,7 +2043,8 @@
                 if (shown.mine) { await ensureAll(); mineSource(); drawMine(); }
                 if (cmtRefresh) cmtRefresh();   // 내 댓글의 "다녀옴" 표시를 바로 바꾼다
             } catch (e) {
-                box.querySelector('.sm-visit-note').textContent = (e && e.message) || T('저장하지 못했습니다.', 'Could not save.');
+                const n = box.querySelector('.sm-visit-note');
+                if (n) { n.classList.add('is-warn'); n.textContent = (e && e.message) || T('저장하지 못했습니다.', 'Could not save.'); }
             }
         };
         // 내 색 바꾸기: 이미 표시한 곳도 모두 그 색(서버가 한 번에 바꾼다)
@@ -2296,7 +2404,8 @@
         map.addControl(new ScaleBar(), 'bottom-right');
         map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
         // 내 위치: 브라우저 위치 기능(휴대폰 GPS, PC 는 와이파이 · IP 로 어림). 이 기기 안에서만 쓰고 서버로 보내지 않는다(위치정보법 — README 4-9)
-        geo = new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: false }, trackUserLocation: false });
+        // 내 위치: 켜면 기기 안에서 계속 받아 지도에 표시(서버로 보내지 않는다). 위치 이용에 동의한 회원은 지도를 열 때 켜진 채로(2026-11-09 사장님)
+        geo = new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: true }, trackUserLocation: true });
         map.addControl(geo, 'bottom-right');
         geo.on('geolocate', e => { myLoc = [e.coords.longitude, e.coords.latitude]; if (!nearPanel.hidden) nearAfterMove = true; });
         geo.on('error', () => { if (!nearPanel.hidden) { const n = nearPanel.querySelector('.sm-near-note'); if (n) n.textContent = T('위치를 받지 못했습니다(브라우저 위치 권한을 확인해 주세요).', 'Could not get your location (check the browser permission).'); } });
@@ -2324,7 +2433,7 @@
             const areaQ = (new URLSearchParams(location.search).get('area') || '').trim().slice(0, 40);
             const byArea = !!areaQ && !shopQ && openArea(areaQ);
             // store-map-top50.html(공유용 주소): TOP 50 별로 연다
-            if (root.dataset.top) { const c = root.querySelector('.sm-chip-top'); if (c && !shown.top) c.click(); } renderTop(); initVisits(); initMine(); initTerr(); initFun();
+            if (root.dataset.top) { const c = root.querySelector('.sm-chip-top'); if (c && !shown.top) c.click(); } renderTop(); initVisits(); initMine(); initTerr(); initFun(); initGeo();
             // PC: 이태원로 · 서빙고로 같은 길 이름이 보이는 크기(2026-10-26 사장님) — 용산 둘레.
             // 휴대폰: 남한 전체가 한 화면에 + "적게 나온 곳 흐리게"를 "1등 10회 이상"으로(2026-10-27 사장님 — 많이 나온 곳만 한눈에)
             if (byArea) { /* 지역 공유 링크는 그 지역 화면 그대로, 흐리게 막대도 0 */ }
