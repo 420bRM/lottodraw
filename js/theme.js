@@ -85,6 +85,16 @@
             band.classList.add('has-next');
             band.insertAdjacentElement('afterend', hex);
         }
+        // 휴대폰(600px 밑): "판매점 지도"는 메뉴 끝 대신 머리글 오른쪽 위(2026-11-09 사장님). 넓은 화면은 아래 메뉴 그대로 — css/site.css
+        const bannerEl = document.querySelector('header.banner');
+        if (bannerEl && !bannerEl.querySelector('.banner-map')) {
+            const a = document.createElement('a');
+            a.className = 'banner-map';
+            a.href = base + 'store-map.html';
+            a.textContent = tr('nav.map', '판매점 지도');
+            a.dataset.i18n = 'nav.map';
+            bannerEl.appendChild(a);
+        }
         // 메뉴 맨 오른쪽 "판매점 지도"(2026-10-27 사장님 — 생성기 제목 아래 단추를 옮김). 메뉴는 1,300쪽에 박혀 있어 여기서 붙인다
         const navUl = document.querySelector('nav.nav ul');
         if (navUl && !navUl.querySelector('.nav-map')) {

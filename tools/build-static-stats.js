@@ -2850,6 +2850,7 @@ function storeMapPage(md, variant) {
     <script src="js/i18n-dict.js"></script>
     <script src="js/i18n.js"></script>
     <script type="application/ld+json">${JSON.stringify(ld)}</script>
+    <script>/* 다른 페이지에서 들어오면 첫 화면부터 전환 화면(2026-11-09, js/store-map.js enterFx) */(function(){try{var r=document.referrer,d=document.documentElement;if(r&&r.indexOf(location.origin+'/')===0&&!/\\/(store-map[^\\/]*|lottohex)\\.html/.test(r)&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches))d.classList.add('${hex ? 'sm-enter-hex' : 'sm-enter-store'}');}catch(e){}})();</script>
     ${CF_BEACON_MAP}
 </head>
 <body class="sm-full">
