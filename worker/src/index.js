@@ -65,6 +65,12 @@ export default {
         if (loginReady(env)) ctx.waitUntil(community(env, 'terrFinalize', { now: Date.now(), site: siteUrl(env) }).catch(err => console.error('territory finalize', err)));
     },
     async fetch(request, env, ctx) {
+        // HTTPS 만(2026-11-09 — 위치기반서비스 신고: "사이트와 서버 사이 모든 통신 HTTPS"). http 로 오면 GET 은 https 로 돌려보내고 나머지는 거절
+        const u = new URL(request.url);
+        if (u.protocol === 'http:' && !/^(localhost|127\.0\.0\.1)$/.test(u.hostname)) {
+            if (request.method === 'GET' || request.method === 'HEAD') { u.protocol = 'https:'; return Response.redirect(u.toString(), 308); }
+            return new Response(JSON.stringify({ error: 'https_only', message: 'HTTPS 로만 받습니다.' }), { status: 403, headers: { 'Content-Type': 'application/json; charset=utf-8' } });
+        }
         try {
             return await route(request, env, ctx || { waitUntil() {} });
         } catch (err) {
@@ -113,6 +119,7 @@ async function route(request, env, ctx) {
     if (path === '/api/me/generator' && method === 'POST') return saveGenerator(request, env);
     if (path === '/api/me/visits' && method === 'POST') return saveVisit(request, env);
     if (path === '/api/me/visit-color' && method === 'POST') return openVisitColor(request, env);
+    if (path === '/api/me/visit-badge' && method === 'POST') return setVisitBadge(request, env);
     if (path === '/api/me/comments' && method === 'GET') return myComments(request, env);
     if (path === '/api/me/notes' && method === 'GET') return myNotes(request, env, false);
     if (path === '/api/me/notes/read' && method === 'POST') return myNotes(request, env, true);
@@ -931,6 +938,18 @@ async function openVisitColor(request, env) {
     if (r.error === 'need_points') throw new HttpError(402, 'need_points', `색 하나를 열려면 ${r.cost}포인트가 필요합니다. (지금 ${r.avail}포인트)`);
     if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
     return json(request, env, { user: r.user, cost: r.cost });
+}
+
+// 판매점 댓글의 "✓ 실방문자" 표시(2026-11-09 사장님 — 마이페이지에서 켜고 끄기, 기본은 꺼짐). { on: true | false }
+// 켜면 내가 다녀온 곳으로 표시한 판매점에 단 내 댓글에 표시가 붙어 다른 사람에게 보인다(어느 판매점을 다녀왔는지가 드러난다)
+async function setVisitBadge(request, env) {
+    const s = await sessionUser(request, env);
+    await limited(env.REACT_LIMIT, s.hash);
+    const body = await readJson(request);
+    if (typeof body.on !== 'boolean') throw new HttpError(400, 'bad_badge', '켜기 · 끄기 값이 이상합니다.');
+    const r = await community(env, 'setVisitBadge', { sub: s.sub, on: body.on });
+    if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
+    return json(request, env, { user: r.user });
 }
 
 /* ───── 내 번호 (마이페이지 · 홈 생성기 "내 번호에 저장") ───── */
@@ -1876,7 +1895,7 @@ function json(request, env, data, status, extra, open) {
     return new Response(JSON.stringify(data), {
         status: status || 200,
         headers: Object.assign(
-            { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' },
+            { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Strict-Transport-Security': 'max-age=31536000' },
             corsHeaders(request, env, false, open),
             extra || {}),
     });
