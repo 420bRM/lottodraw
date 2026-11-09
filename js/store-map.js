@@ -1721,10 +1721,10 @@
     function drawConsent() {
         const A = account(), g = gpsCfg(), needGeo = !!g && !geoAgreed();
         const html = '<button type="button" class="sm-close" aria-label="' + T('닫기', 'Close') + '">×</button>' +
-            '<h3>' + T('LottoHex 참여', 'Join LottoHex') + ' <small class="sm-terr-beta">' + T('시험판', 'beta') + '</small></h3>' +
+            '<h3>' + T('LottoHex 참여', 'Join LottoHex') + '</h3>' +   // 시험판 표시 없이(2026-11-09 사장님)
             '<label class="sm-terr-agree"><input type="checkbox"> ' + T('LottoHex 참여에 동의합니다. (만 19세 이상)', 'I agree to join LottoHex. (19 or older)') + '</label>' +
             (needGeo ? geoAgreeLine(false) : '') +
-            '<p class="sm-terr-btns"><button type="button" class="sm-terr-ok" disabled>' + T('동의하고 참여', 'Agree and join') + '</button> <button type="button" class="sm-terr-cancel">' + T('나중에', 'Later') + '</button></p>' +
+            '<p class="sm-terr-btns"><button type="button" class="sm-terr-ok" disabled>' + T('참여', 'Join') + '</button> <button type="button" class="sm-terr-cancel">' + T('나중에', 'Later') + '</button></p>' +
             termsLine() +
             '<p class="sm-terr-msg" role="status"></p>';
         // 휴대폰 LottoHex 모드는 화면 가운데 중간 크기 창(2026-11-08 사장님 — "대문짝만하다, 지도가 보이게"). PC 는 왼쪽 칸 그대로
