@@ -927,7 +927,7 @@ async function saveVisit(request, env) {
     if (r.error === 'again_today') throw new HttpError(409, 'again_today', '오늘은 이미 다녀왔다고 표시했습니다. 같은 곳은 하루 한 번입니다.');
     if (r.error === 'daily_limit') throw new HttpError(429, 'daily_limit', `다녀온 곳 표시는 하루 ${r.max}번까지입니다. 내일 다시 해 주세요.`);
     if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
-    return json(request, env, { visits: r.visits, visitAt: r.visitAt, visitColor: r.visitColor });
+    return json(request, env, { visits: r.visits, visitAt: r.visitAt, visitColor: r.visitColor, earned: r.earned || 0, score: r.score });
 }
 
 // 위치 인증(2026-11-09 사장님 — 위치기반서비스사업 신고). { lat, lng, acc }: "다녀왔어요"를 누른 순간 기기 위치(위도 · 경도 · 오차 m).

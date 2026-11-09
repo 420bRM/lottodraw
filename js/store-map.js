@@ -1619,6 +1619,7 @@
             '<li>' + T('칸 모양: 참여자마다 색 두 가지와 무늬(단색 · 줄무늬 · 물방울 · 체크)가 무작위로 정해지고 모두에게 같게 보입니다. 내 칸 모양은 ' + SKIN_COST + '포인트로 바꿀 수 있습니다. 내 칸은 테두리가 조금 굵습니다.', 'Skins: each player gets two colours and a pattern (solid, stripes, dots or checks) at random, and everyone sees the same. You can change yours for ' + SKIN_COST + ' points. Your cells have a slightly thicker edge.') + '</li>' +
             '<li>' + T('밤 지도에서 크게 보면 차지한 칸 테두리를 빛이 시계 방향으로 돌고, 칸 면에는 유리에 비친 듯한 45° 빛이 번쩍 지나갑니다.', 'On the night map, zoomed in, a light runs clockwise round held cells and a quick glassy 45° glint flashes across them.') + '</li>' +
             '<li>' + T('칸은 비우지 않습니다. 분기(1 · 4 · 7 · 10월 1일 0시)마다 그때의 Map 랭킹을 확정해 남깁니다.', 'Cells are never cleared. At the start of each quarter the Map ranking at that moment is finalised and kept.') + '</li>' +
+            '<li>' + T('확정 순위 보상: 1위 1,000 · 2위 500 · 3위 300 · 4~10위 100포인트(운영자 제외).', 'Quarterly rewards: 1st 1,000 · 2nd 500 · 3rd 300 · 4th–10th 100 points (operators excluded).') + '</li>' +
             '<li>' + (gpsCfg() ? T('다녀온 곳은 판매점 50m 안에서 위치로 인증한 곳만 셉니다. 폐점한 곳은 세지 않습니다.', 'Only retailers verified by location (within 50 m) count. Closed retailers do not count.')
                 : T('시험판: 지금은 "다녀왔어요"를 누른 기록만 셉니다. 위치 인증(판매점 50m 안)은 준비 중입니다. 폐점한 곳은 세지 않습니다.', 'Beta: for now a tap on "I\'ve been here" counts. Location check (within 50 m) is coming. Closed retailers do not count.')) + '</li>' +
             '<li>' + T('복권을 살 필요는 없습니다. 어디서 사든 1등 확률은 1/8,145,060으로 같습니다.', 'No purchase needed. Your chance of 1st prize is 1 in 8,145,060 wherever you buy.') + '</li>' +
@@ -1986,7 +1987,7 @@
                     (canPick ? '<label class="sm-color sm-color-any" title="' + T('다른 색', 'Any colour') + '"><input type="color" value="' + cur + '" aria-label="' + T('다른 색', 'Any colour') + '"></label>' : '') + '</span>' : '') + '</div>' +
                 '<p class="sm-visit-note">' + (cur ? (canPick ? T('다시 누르면 지웁니다. 고른 색은 다녀온 곳 모두에 씁니다.', 'Tap again to remove. The colour applies to all your places.')
                     : T('다시 누르면 지웁니다. 고른 색은 다녀온 곳 모두에 씁니다. 🔒 색은 하나에 ' + COLOR_COST + '포인트로 열거나 <a href="statistics.html">이용권</a>으로 모두 엽니다.', 'Tap again to remove. Unlock a 🔒 colour for ' + COLOR_COST + ' points, or all of them with a <a href="statistics.html">pass</a>.'))
-                    : gpsCfg() ? T('판매점 50m 안에서 누르면 위치로 확인합니다. 나만 보입니다.', 'Tap within 50 m of the retailer to verify by location. Only you can see it.') : T('나만 보입니다.', 'Only you can see it.')) + '</p>' +
+                    : gpsCfg() ? T('판매점 50m 안에서 누르면 위치로 확인하고 10포인트를 드립니다(하루 50포인트까지). 나만 보입니다.', 'Tap within 50 m of the retailer to verify by location and earn 10 points (up to 50 a day). Only you can see it.') : T('나만 보입니다.', 'Only you can see it.')) + '</p>' +
                 (cur && inTerr ? '<p class="sm-visit-again-p">' + (today ? '<span class="sm-visit-today">✓ ' + T('오늘 다녀옴', 'Visited today') + '</span>'
                     : '<button type="button" class="sm-visit-again">↻ ' + T('오늘 또 다녀왔어요', 'Visited again today') + '</button>') + '</p>' : '') +
                 '';   // LottoHex 안내 문구는 뺐다(2026-11-08 사장님 — 말이 많다)
@@ -2036,9 +2037,14 @@
                 at = null;   // 좌표는 보낸 뒤 버린다
                 visits = r.visits || {};
                 visitAt = r.visitAt || visitAt;
-                if (A.patchUser) A.patchUser(Object.assign({ visits, visitAt }, r.visitColor ? { visitColor: r.visitColor } : {}));   // 이 탭에 저장해 둔 내 정보도 — 다시 열어도 빠지지 않게
+                if (A.patchUser) A.patchUser(Object.assign({ visits, visitAt }, r.visitColor ? { visitColor: r.visitColor } : {}, r.score ? { score: r.score } : {}));   // 이 탭에 저장해 둔 내 정보도 — 다시 열어도 빠지지 않게
                 paintVisits();
                 draw();
+                if (verify) {   // 위치로 확인했다는 것과 받은 포인트(같은 곳은 하루 한 번 · 하루 50포인트까지)
+                    const n2 = box.querySelector('.sm-visit-note');
+                    if (n2) n2.textContent = r.earned ? T('✓ 위치로 확인했습니다 · +' + r.earned + '포인트', '✓ Verified by location · +' + r.earned + ' points')
+                        : T('✓ 위치로 확인했습니다. 이 판매점은 오늘 포인트를 이미 받았거나, 오늘 받을 수 있는 50포인트를 다 받았습니다.', '✓ Verified by location. No points this time: already earned here today, or the daily 50 is reached.');
+                }
                 refreshTerr();
                 if (shown.mine) { await ensureAll(); mineSource(); drawMine(); }
                 if (cmtRefresh) cmtRefresh();   // 내 댓글의 "다녀옴" 표시를 바로 바꾼다

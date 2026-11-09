@@ -18,6 +18,8 @@
 //                        visits: { 판매점 번호: '#rrggbb' } — 판매점 지도에서 회원이 직접 표시한 "다녀온 곳"과 색(1,000곳까지). 본인에게만 보인다
 //                        vt:    { 판매점 번호: 시각 } — 다녀온 곳을 표시한(또는 "또 다녀왔어요"를 누른) 마지막 때(2026-11-07부터. 그 전 것은 없다). 표시를 지우면 같이 지운다
 //                        vday:  { day, n } — 오늘(한국 날짜) 다녀온 때를 새로 적은 횟수(territory.js VISIT_DAILY 까지)
+//                        vp:    { n, day, ids } — 위치로 인증해 받은 포인트 횟수 · 그날 받은 판매점(같은 곳 하루 한 번, POINTS.visitDaily 까지, 2026-11-09)
+//                        trw:   { pts, s: { 분기: 점수 } } — LottoHex 분기 확정 순위 보상(POINTS.terrRank)
 //                        terr:  { at, v } — 영역(육각 칸) 참여 동의: 동의한 때와 동의 문구 판(territory.js TERR_CONSENT). 그만두면 지운다
 //                        tskin: '주색,보조색,무늬' — 내 영역 칸 모양(2026-11-07, territory.js SKIN_RE). 없으면 계정마다 무작위. 모두에게 보인다. 바꾸면 POINTS.terrSkin
 //                        rx:    { 항목: 'h' | 'd' | 'hd' } — 내가 누른 좋아요
@@ -49,7 +51,7 @@
 //                        보이는 조회수 = v:<글> + 이 값. 관리자가 통째로 갈아 끼운다
 //   tp:<구글 계정 번호>  { nick, skin, at, v: { 판매점 번호: [표시한 시각, 칸] } } — 영역 참여자 색인(2026-11-07 시험판, territory.js).
 //                        영역에 참여한 회원만. 칸 주인 · Map 랭킹은 이 줄들로 센다. 그만두거나 탈퇴하면 지운다
-//   ts:<분기>            { id, from, to, at, rank: [{ sub, nick, cells, stores }] } — 분기마다 확정한 Map 랭킹(50명, 한 시간 예약 terrFinalize).
+//   ts:<분기>            { id, from, to, at, rank: [{ sub, nick, cells, stores }], paid } — 분기마다 확정한 Map 랭킹(50명, 한 시간 예약 terrFinalize). paid: 10위까지 보상을 다 줬으면 true.
 //                        밖으로는 별명 · 칸 수 · 다녀온 곳 수만. 탈퇴하면 그 회원 줄의 계정 번호 · 별명을 지운다
 //   meta                 { users, trials, subs }
 //
@@ -69,7 +71,7 @@ const gameKey = n => n.join(',');
 export const REACT_TYPES = ['h', 'd', 'w'];   // ♥ 좋아요, $ 대박 기원, ₩ 원화
 
 // 랭킹 점수. 바꾸려면 여기만 고친다(이용약관 7조 문구도 같이).
-export const POINTS = { attend: 10, react: 2, buyPer100: 10, nickChange: 500, dayPass: 300, visitColor: 30, terrSkin: 30 };   // buyPer100: 이용권 100원마다 몇 점, nickChange: 별명 바꾸기에 쓰는 포인트, dayPass: 1일 이용권을 여는 포인트, visitColor: 다녀온 곳 색 하나를 여는 포인트, terrSkin: 영역 칸 모양 바꾸기 한 번
+export const POINTS = { attend: 10, react: 2, buyPer100: 10, nickChange: 500, dayPass: 300, visitColor: 30, terrSkin: 30, visit: 10, visitDaily: 50, terrRank: [1000, 500, 300, 100, 100, 100, 100, 100, 100, 100] };   // buyPer100: 이용권 100원마다 몇 점, nickChange: 별명 바꾸기에 쓰는 포인트, dayPass: 1일 이용권을 여는 포인트, visitColor: 다녀온 곳 색 하나를 여는 포인트, terrSkin: 영역 칸 모양 바꾸기 한 번
 // 채팅 점수 — 공지하지 않는 규칙이라 POINTS(회원에게 내려 보내는 값)와 따로 둔다.
 // per: 메시지 하나에 몇 점, daily: 하루에 점수를 받는 메시지 수 상한(50개 = 5점)
 export const CHAT_POINTS = { per: 0.1, daily: 50 };
@@ -95,9 +97,22 @@ export function score(user) {
     const buy = Math.floor((user.buy || 0) * POINTS.buyPer100 / 100);
     const chats = (user.chat && user.chat.n) || 0;
     const comments = (user.cmPt && user.cmPt.n) || 0;
-    const total = tenth(days * POINTS.attend + reacts * POINTS.react + buy + chats * CHAT_POINTS.per + comments * COMMENT_POINTS.per);
+    const verified = (user.vp && user.vp.n) || 0;          // 위치로 인증한 다녀온 곳(2026-11-09) — 한 번에 POINTS.visit
+    const hex = (user.trw && user.trw.pts) || 0;            // LottoHex 분기 확정 순위 보상(POINTS.terrRank) 합계
+    const total = tenth(days * POINTS.attend + reacts * POINTS.react + buy + chats * CHAT_POINTS.per + comments * COMMENT_POINTS.per + verified * POINTS.visit + hex);
     const spent = user.spent || 0;
-    return { total, days, reacts, buy, chats, comments, spent, avail: tenth(total - spent) };
+    return { total, days, reacts, buy, chats, comments, verified, hex, spent, avail: tenth(total - spent) };
+}
+
+// 다녀온 곳 인증 포인트(2026-11-09 사장님): 위치로 인증한 방문 한 번에 POINTS.visit, 같은 판매점은 하루 한 번, 하루 POINTS.visitDaily 까지.
+// user.vp = { n: 지금까지 받은 횟수, day: 한국 날짜, ids: [그날 받은 판매점 번호] } — 지웠다 다시 표시해도 같은 날 같은 곳은 한 번. 받은 포인트를 돌려준다
+function visitPoint(user, id, day) {
+    const p = user.vp && user.vp.day === day ? user.vp : { n: (user.vp && user.vp.n) || 0, day, ids: [] };
+    user.vp = p;
+    if (p.ids.includes(id) || (p.ids.length + 1) * POINTS.visit > POINTS.visitDaily) return 0;
+    p.ids.push(id);
+    p.n += 1;
+    return POINTS.visit;
 }
 
 // 회원에게 보이는 점수: 채팅·댓글 점수는 공지하지 않는 규칙이라 항목(chats·comments)을 빼고 합계에만 넣는다. 관리자 명부는 score() 그대로.
@@ -417,12 +432,14 @@ const OPS = {
         const v = user.visits || {}, vt = user.vt || {};
         now = now || Date.now();
         const today = kstDate(now);
+        let stamped = false;
         const stamp = () => {
             const d = user.vday && user.vday.day === today ? user.vday : { day: today, n: 0 };
             if (d.n >= VISIT_DAILY) return false;
             d.n += 1;
             user.vday = d;
             vt[id] = now;
+            stamped = true;
             return true;
         };
         if (again) {
@@ -437,6 +454,7 @@ const OPS = {
         } else { delete v[id]; delete vt[id]; }
         if (Object.keys(v).length) user.visits = v; else delete user.visits;
         if (Object.keys(vt).length) user.vt = vt; else delete user.vt;
+        const earned = gps && stamped ? visitPoint(user, id, today) : 0;   // 위치로 인증한 방문만 포인트(켜져 있을 때 index.js 가 이미 판정했다)
         await this.saveUser(user);
         if (user.terr) {
             const row = (await this.terrRow(sub)) || { nick: user.nick || null, at: user.terr.at, v: {} };
@@ -444,7 +462,7 @@ const OPS = {
             if (id in v && cell) nv[id] = [vt[id] || 0, cell]; else delete nv[id];
             await this.terrSet(sub, Object.assign({}, row, { v: nv }));
         }
-        return { ok: true, visits: user.visits || {}, visitAt: user.vt || {}, visitColor: user.vc || null };
+        return { ok: true, visits: user.visits || {}, visitAt: user.vt || {}, visitColor: user.vc || null, earned, score: pubScore(user) };
     },
 
     // ───── 위치 인증(2026-11-09) ─────
@@ -570,12 +588,32 @@ const OPS = {
     async terrFinalize({ now, site }) {
         const prev = prevSeason(seasonOf(now));
         if (prev.id < FIRST_SEASON) return { skipped: prev.id };
-        if (await this.storage.get('ts:' + prev.id)) return { done: false, id: prev.id };
-        const map = site ? await cellMap(site).catch(() => null) : null;
-        const rec = seasonRecord(computeTerritory(await this.terrList(), prev.to, map), prev, now);
+        let rec = await this.storage.get('ts:' + prev.id);
+        if (rec && rec.paid) return { done: false, id: prev.id };
+        if (!rec) {
+            const map = site ? await cellMap(site).catch(() => null) : null;
+            rec = seasonRecord(computeTerritory(await this.terrList(), prev.to, map), prev, now);
+            await this.storage.put('ts:' + prev.id, rec);
+            this.terrLast = null;
+        }
+        // 확정 순위 보상(2026-11-09 사장님): 1위 1,000 · 2위 500 · 3위 300 · 4~10위 100(POINTS.terrRank). 운영자 · 탈퇴한 회원은 건너뛴다.
+        // 회원마다 user.trw.s[분기] 를 남겨 두 번 주지 않고, 다 주면 rec.paid — 중간에 끊겨도 다음 예약이 이어서 준다
+        let paid = 0;
+        for (let i = 0; i < Math.min(rec.rank.length, POINTS.terrRank.length); i++) {
+            const r = rec.rank[i];
+            const user = r.sub && await this.storage.get('u:' + r.sub);
+            if (!user || user.staff) continue;
+            const trw = user.trw || { pts: 0, s: {} };
+            if (trw.s[prev.id] != null) continue;
+            trw.s[prev.id] = POINTS.terrRank[i];
+            trw.pts += POINTS.terrRank[i];
+            user.trw = trw;
+            await this.saveUser(user);
+            paid++;
+        }
+        rec.paid = true;
         await this.storage.put('ts:' + prev.id, rec);
-        this.terrLast = null;
-        return { done: true, id: prev.id, ranked: rec.rank.length };
+        return { done: true, id: prev.id, ranked: rec.rank.length, paid };
     },
 
     // 다녀온 곳 색 하나를 포인트로 연다(2026-10-26). 한 번 연 색은 계속 쓴다(user.vcolors). 이미 열었으면 포인트를 쓰지 않는다

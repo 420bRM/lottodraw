@@ -391,6 +391,8 @@
             row(tr('my.days', '출석'), tr('my.daysN', '{n}일', { n: num(sc.days) })),
             row(tr('my.reacts', '남긴 반응'), tr('my.reactsN', '♥ {h} · $ {d} · ₩ {w}', counts)),
             row(tr('my.buy', '이용권 점수'), tr('my.ptsN', '{n}점', { n: num(sc.buy) })),
+            sc.verified ? row(tr('my.verified', '다녀온 곳 인증'), tr('my.verifiedN', '{n}번 · {p}점', { n: num(sc.verified), p: num(sc.verified * 10) })) : null,
+            sc.hex ? row(tr('my.hex', 'LottoHex 보상'), tr('my.ptsN', '{n}점', { n: num(sc.hex) })) : null,
             sc.spent ? row(tr('my.spent', '쓴 포인트'), tr('my.ptsN', '{n}점', { n: num(sc.spent) })) : null,
             el('div', { className: 'my-actions' }, [el('a', { className: 'btn btn-secondary btn-mini', href: 'ranking.html', text: tr('my.goRanking', '랭킹 보기') })]),
         ]);
