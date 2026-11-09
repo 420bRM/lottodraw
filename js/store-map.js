@@ -1685,7 +1685,7 @@
             '</ol>' +   // 3 · 4 · 5번(위치 안 씀 · 살 필요 없음 · 그만두기)은 뺐다(2026-11-08 사장님 — 너무 조심스럽다, 곧 GPS). 19세는 아래 체크에
             '<label class="sm-terr-agree"><input type="checkbox"> ' + T('위 내용을 읽었고 동의합니다 (만 19세 이상)', 'I have read and agree (19 or older)') + '</label>' +
             '<p class="sm-terr-btns"><button type="button" class="sm-terr-ok" disabled>' + T('동의하고 참여', 'Agree and join') + '</button> <button type="button" class="sm-terr-cancel">' + T('취소', 'Cancel') + '</button></p>' +
-            '<p class="sm-small"><a href="privacy.html">' + T('개인정보 처리방침', 'Privacy policy') + '</a></p>' +
+            '<p class="sm-small"><a href="privacy.html#members">' + T('개인정보 처리방침', 'Privacy policy') + '</a></p>' +
             '<p class="sm-terr-msg" role="status"></p>';
         // 휴대폰 LottoHex 모드는 화면 가운데 중간 크기 창(2026-11-08 사장님 — "대문짝만하다, 지도가 보이게"). PC 는 왼쪽 칸 그대로
         let pop = null, el = terrPanel;
@@ -1900,7 +1900,7 @@
             '</ul>' +
             '<label class="sm-terr-agree"><input type="checkbox"> ' + T('위 내용에 동의합니다 (만 14세 이상)', 'I agree (I am 14 or older)') + '</label>' +
             '<p class="sm-terr-btns"><button type="button" class="sm-terr-ok" disabled>' + T('동의하고 위치 켜기', 'Agree and turn on') + '</button> <button type="button" class="sm-terr-cancel">' + T('나중에', 'Later') + '</button></p>' +
-            '<p class="sm-small"><a href="privacy.html">' + T('개인정보 처리방침', 'Privacy policy') + '</a> · <a href="terms.html">' + T('이용약관', 'Terms') + '</a></p>' +
+            '<p class="sm-small"><a href="privacy.html#location">' + T('개인정보 처리방침', 'Privacy policy') + '</a> · <a href="terms.html#location">' + T('이용약관', 'Terms') + '</a></p>' +
             '<p class="sm-terr-msg" role="status"></p>';
         pop.hidden = false;
         const box = pop.querySelector('.sm-terr-agree input'), ok = pop.querySelector('.sm-terr-ok');
