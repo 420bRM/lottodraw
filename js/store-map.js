@@ -920,6 +920,8 @@
     const gpsCfg = () => { const A = account(); return (A && A.gps && A.gps()) || null; };   // 위치 인증이 켜져 있으면 { geoV, terrV }
     const HX = window.LottoHex;
     const terrPanel = document.getElementById('sm-terr'), terrChip = document.getElementById('sm-terr-chip'), terrOnlyBtn = document.getElementById('sm-terr-only');
+    // lottohex.html(2026-11-09 — 검색용 전용 주소)의 정적 안내(무엇 · 하는 법 · 규칙 · 포인트 · 이번 주): 창을 새로 그려도 맨 아래에 다시 붙인다(접은 채)
+    const hexAbout = document.getElementById('sm-hexabout');
     let terr = null, terrCells = null, terrSel = null, terrView = 'main', terrLoading = null, visitAt = {};
     let terrOpen = false;   // 영역 창이 열려 있는가 — 창을 닫아도 칸은 지도에 남는다(2026-11-07 사장님)
     // 칸 모양(스킨, 2026-11-07 사장님 — 지렁이 게임처럼 참여자마다 색 · 무늬가 다르게): 서버가 주는 "주색,보조색,무늬"(worker/src/territory.js SKIN_RE).
@@ -1306,12 +1308,33 @@
         window.addEventListener('resize', () => { if (hexMobile()) setSheet(sheetSnap); });
     }
     // 모드 바꾸기. LottoHex 로 가면 판매점 도구(칩 · 검색 · 이 근처 · 이색 · 1등 방식 · 흐리게 · 시도별)는 CSS 가 감추고 칸을 켠다. 판매점으로 오면 칸을 끈다
-    function setMapMode(m) {
+    // 주소 · 제목도 모드를 따른다(2026-11-09): LottoHex 는 lottohex.html, 판매점은 store-map.html(TOP 50 공유 주소는 그대로) — 새로 고쳐도 같은 화면, 링크로 나눌 수 있다
+    function syncModeUrl(on) {
+        try {
+            const p = location.pathname, file = p.slice(p.lastIndexOf('/') + 1);
+            const to = on ? 'lottohex.html' : (file === 'lottohex.html' ? 'store-map.html' : file);
+            const q = new URLSearchParams(location.search);
+            q.delete('mode');
+            const qs = q.toString();
+            if (to !== file || /[?&]mode=/.test(location.search)) history.replaceState(history.state, '', p.slice(0, p.lastIndexOf('/') + 1) + to + (qs ? '?' + qs : '') + location.hash);
+        } catch (e) { /* 구형 · file:// */ }
+        const h1 = root.querySelector('.sm-title');
+        if (h1) {   // 화면에는 "LottoHex"만(PC 칸이 좁다), 설명은 글 속에(검색 · 화면 읽기 프로그램)
+            const sub = t => 'LottoHex<span class="sr-only"> · ' + t + '</span>';
+            h1.innerHTML = on ? T(sub('판매점 땅따먹기'), sub('retailer turf game')) : T('로또 판매점 지도', 'Lotto retailer map');
+            h1.setAttribute('data-i18n-en', on ? sub('retailer turf game') : 'Lotto retailer map');
+            h1.dataset.i18nKoEn = on ? sub('판매점 땅따먹기') : '로또 판매점 지도';   // i18n.js 가 기억한 한국어 원문도 바꾼다(언어를 바꿔도 이 모드 제목)
+        }
+        document.title = on ? T('LottoHex · 로또 판매점 땅따먹기 | lottodraw.kr', 'LottoHex · lotto retailer turf game | lottodraw.kr') : T('로또 판매점 지도 | lottodraw.kr', 'Lotto retailer map | lottodraw.kr');
+    }
+    function setMapMode(m, instant) {
         const on = m === 'hex';
         root.querySelectorAll('[data-mode-to]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.modeTo === m)));
         if (on === hexMode) return;
+        if (!instant) syncModeUrl(on);   // 처음 열 때(lottohex.html)는 주소 · 제목이 이미 맞다
+        const intro = instant ? (k, then) => then() : modeIntro;
         if (!on) {
-            modeIntro('store', () => {
+            intro('store', () => {
                 const cp = document.getElementById('sm-consent-pop');
                 if (cp) cp.hidden = true;
                 hexMode = false;
@@ -1323,7 +1346,7 @@
             });
             return;
         }
-        modeIntro('hex', () => {
+        intro('hex', () => {
             hexMode = true;
             root.classList.add('is-hex');
             hexNight(true);
@@ -1643,6 +1666,7 @@
                 title + statusPart + cellPart + hint + news + todo + dex + rankPart + rules + leave + msg;
         }
         terrPanel.hidden = false;
+        if (hexAbout && (!sheet || tab === 'now')) { hexAbout.open = false; (terrPanel.querySelector('.sm-sheet-body') || terrPanel).appendChild(hexAbout); }
         const cb = terrPanel.querySelector('.sm-close');
         if (cb) cb.addEventListener('click', closeTerrPanel);
         terrPanel.querySelectorAll('[data-ttab]').forEach(b => b.addEventListener('click', () => {
@@ -1734,12 +1758,13 @@
             if (tab) tab.hidden = false;
             let q = null;
             try { q = new URLSearchParams(location.search).get('mode'); } catch (e) { /* 구형 */ }
-            if (q === 'hex') setMapMode('hex');   // store-map.html?mode=hex — LottoHex 로 바로(나중에 게임 입구)
+            if (root.dataset.hex) setMapMode('hex', true);   // lottohex.html — 전환 화면 없이 LottoHex 로 시작
+            else if (q === 'hex') setMapMode('hex');   // 옛 주소 store-map.html?mode=hex — LottoHex 로 바로(주소는 lottohex.html 로 바뀐다)
             else if (joinedNow() && !terr) loadTerr();   // 참여자는 들어올 때 한 번 받아 잃은 칸 · 얻은 칸을 견준다(빨간 점)
         });
         terrChip.addEventListener('click', () => setMapMode(shown.terr ? 'store' : 'hex'));   // PC 카드도 모드를 바꾼다(LottoHex 판매점 층 · 전환 화면)
         root.querySelectorAll('[data-terr-only]').forEach(b => b.addEventListener('click', () => setTerrOnly(!terrOnly)));
-        root.querySelectorAll('[data-mode-to]').forEach(b => b.addEventListener('click', () => setMapMode(b.dataset.modeTo)));
+        root.querySelectorAll('[data-mode-to]').forEach(b => b.addEventListener('click', e => { e.preventDefault(); setMapMode(b.dataset.modeTo); }));   // 링크(검색 로봇용)지만 페이지는 그대로 두고 화면만 바꾼다
         const hs = document.getElementById('sm-hexbar-stat');
         if (hs) hs.addEventListener('click', () => { terrTab = 'now'; setSheet(sheetSnap === 'peek' ? 'half' : sheetSnap); if (shown.terr) openTerrPanel(); });
         initSheetDrag();
