@@ -8,6 +8,7 @@ import { community } from '../src/community.js';
 import { _resetGoogleForTests } from '../src/google.js';
 import { b64urlEncode } from '../src/keys.js';
 import { seasonOf, prevSeason, computeTerritory, defaultSkin, LEGACY_T, TERR_CONSENT, VISIT_DAILY, _resetCellsForTests } from '../src/territory.js';
+import { shapeTitles, inducedPath, evaluate, milestonePoints, titleName, catalog, MILESTONES } from '../src/titles.js';
 
 const ADMIN = 'admin-token-0123456789abcdef';
 const ORIGIN = 'https://www.lottodraw.kr';
@@ -109,13 +110,15 @@ const CELLS = { r: 1.2, cells: { '0,0': ['11100001', '11100002', '11100003'], '1
 const GEO = { stores: { '11100001': [37.5, 127.0], '11100002': [37.5003, 127.0], '11100003': [37.5006, 127.0], '11100004': [37.51, 127.0], '11100005': [37.52, 127.0], '11100006': [37.5203, 127.0] } };
 const realFetch = globalThis.fetch;
 let cellsUp = true;
+let site = { cells: CELLS, geo: GEO };   // 칭호 시험은 칸 · 좌표를 바꿔 쓴다
 function fakeInternet() {
     cellsUp = true;
+    site = { cells: CELLS, geo: GEO };
     globalThis.fetch = async url => {
         const u = String(url);
         if (u === CERTS_URL) return new Response(JSON.stringify({ keys: [GOOD.jwk] }), { headers: { 'Cache-Control': 'public, max-age=20000' } });
-        if (u === 'https://www.lottodraw.kr/store-map-cells.json') return cellsUp ? new Response(JSON.stringify(CELLS)) : new Response('', { status: 500 });
-        if (u === 'https://www.lottodraw.kr/store-map-geo.json') return new Response(JSON.stringify(GEO));
+        if (u === 'https://www.lottodraw.kr/store-map-cells.json') return cellsUp ? new Response(JSON.stringify(site.cells)) : new Response('', { status: 500 });
+        if (u === 'https://www.lottodraw.kr/store-map-geo.json') return new Response(JSON.stringify(site.geo));
         if (u.startsWith('https://api.telegram.org/')) return new Response('{}');
         throw new Error('바깥 요청: ' + u);
     };
@@ -537,7 +540,8 @@ test('위치 인증 포인트: 한 번에 10P · 같은 곳은 하루 한 번(�
         assert.equal(r.data.earned, 10);
         const sc = (await call(env, 'GET', '/api/me', { headers: auth(a) })).data.user.score;
         assert.equal(sc.verified, 6);
-        assert.equal(sc.total, sc.days * 10 + 60, '인증 6번 = 60점');
+        assert.equal(sc.ms, 30, '마일스톤: 판매점 1곳 · 3곳(10 + 10) + 칸 3개(10)');
+        assert.equal(sc.total, sc.days * 10 + 60 + 30, '인증 6번 = 60점 + 마일스톤 30점');
         // 위치 인증이 꺼져 있으면(손 표시) 포인트 없음
         const off = await fresh();
         const b = await member(off, 'p2', '손표시만');
@@ -587,4 +591,151 @@ test('LottoHex 분기 보상: 확정 순위 1위 1,000 · 2위 500 … 운영자
         const sc = (await call(env, 'GET', '/api/me', { headers: auth(order[0] === '운영' ? b : (order[0] === '일등' ? a : b)) })).data.user.score;
         assert.ok(sc.hex > 0 && sc.total >= sc.hex, '점수 · 쓸 수 있는 포인트에 들어간다');
     } finally { Date.now = realNow; }
+});
+
+/* ───── 마일스톤 · 칭호(2026-11-09 — src/titles.js) ───── */
+
+const line = (n, q0 = 0, r0 = 0) => Array.from({ length: n }, (_, i) => (q0 + i) + ',' + r0);
+const hexRing = c => { const [q, r] = c.split(',').map(Number); return [[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]].map(([a, b]) => (q + a) + ',' + (r + b)); };
+
+test('칸 모양: 삼각지 · 한 줄 · 벌집 · 도넛 · 섬나라 · 지렁이(가지 없이 이어짐)', () => {
+    assert.deepEqual(shapeTitles([]), []);
+    assert.ok(shapeTitles(['0,0', '1,0', '0,1']).includes('tri'), '세 칸이 서로 맞닿음');
+    assert.ok(!shapeTitles(line(3)).includes('tri'), '한 줄 세 칸은 삼각지가 아니다');
+    const l5 = shapeTitles(line(5));
+    assert.ok(l5.includes('line5') && !l5.includes('line8') && l5.includes('worm4'), '다섯 칸 한 줄 = 일자 진격 + 꼬마지렁이');
+    assert.ok(shapeTitles(line(8)).includes('line8'));
+    assert.ok(shapeTitles(['0,0', '0,1', '0,2', '0,3', '0,4']).includes('line5'), '다른 축도');
+    const hive = ['0,0'].concat(hexRing('0,0'));
+    const h = shapeTitles(hive);
+    assert.ok(h.includes('hive') && !h.includes('donut'), '가운데 + 둘레 6칸 = 벌집');
+    assert.ok(!h.includes('worm7'), '벌집 안에는 가지 없는 7칸 줄이 없다(가운데가 둘레 모두에 닿는다)');
+    const d = shapeTitles(hexRing('0,0'));
+    assert.ok(d.includes('donut') && !d.includes('hive'), '둘레만 = 도넛');
+    // 섬나라: 떨어진 묶음 5개
+    const isles = ['0,0', '3,0', '6,0', '9,0', '12,0'];
+    assert.ok(shapeTitles(isles).includes('isles'));
+    assert.ok(!shapeTitles(isles.slice(0, 4)).includes('isles'));
+    // 왕지렁이: 꺾여도 가지 없이 7칸 — 지그재그
+    const zig = ['0,0', '1,0', '1,1', '2,1', '2,2', '3,2', '3,3'];
+    assert.ok(inducedPath(new Set(zig), 7), JSON.stringify(shapeTitles(zig)));
+    assert.ok(shapeTitles(zig).includes('worm7'));
+    // 자기 몸에 닿으면(고리 · 덩어리) 7칸 지렁이가 아니다
+    assert.ok(!inducedPath(new Set(['0,0', '1,0', '2,0', '2,1', '1,2', '0,2', '0,1']), 7), '둘레를 도는 7칸은 처음과 끝이 닿는다');
+    assert.ok(shapeTitles(line(12)).includes('worm12'));
+    assert.ok(!shapeTitles(line(11)).includes('worm12'));
+    // 이미 얻은 것은 건너뛴다
+    assert.ok(!shapeTitles(line(5), new Set(['line5'])).includes('line5'));
+});
+
+test('마일스톤 · 칭호 셈: 단계 포인트는 한 번 · 지역(시·군·구 10 · 20 · 50곳) · 시·도 완주 · 팔도유람 · 골목대장 · 섬 · 휴게소', () => {
+    const regions = [['서울', '마포구', '마포구'], ['서울', '중구', '서울 중구'], ['제주', '제주시', '제주시'], ['제주', '서귀포시', '서귀포시']];
+    const geo = new Map(), cellOf = new Map(), user = { visits: {} };
+    const add = (id, ri, cell, flag) => { geo.set(id, [37, 127, ri].concat(flag ? [flag] : [])); cellOf.set(id, cell); user.visits[id] = '#e63946'; };
+    for (let i = 0; i < 20; i++) add('m' + i, 0, i < 10 ? '0,0' : '1,0');   // 마포구 20곳(한 칸에 10곳)
+    let r = evaluate(user, { cellOf, geo, regions, held: null, now: 1 });
+    assert.ok(['v3', 'v10', 'r:마포구:0', 'r:마포구:1', 'dense'].every(id => r.titles.includes(id)), JSON.stringify(r.titles));
+    assert.ok(!r.titles.includes('r:마포구:2') && !r.titles.includes('t1'), '50곳 전 · LottoHex 참여 전에는 영토 칭호 없음');
+    assert.deepEqual(user.ach, { v: 3 }, '판매점 1 · 3 · 10곳(20곳은 30 전), 칸 2개 · 시·도 1곳은 첫 단계 전');
+    assert.equal(r.pts, 10 + 10 + 20);
+    assert.equal(milestonePoints(user.ach), 40);
+    // 같은 상태로 다시 세면 새것 없음(포인트 두 번 없음)
+    r = evaluate(user, { cellOf, geo, regions, held: null, now: 2 });
+    assert.deepEqual([r.titles, r.pts], [[], 0]);
+    // 지운 뒤 다시 표시해도 단계는 그대로(포인트 다시 없음)
+    const keep = user.visits; user.visits = {};
+    assert.equal(evaluate(user, { cellOf, geo, regions, held: null }).pts, 0);
+    user.visits = keep;
+    // 제주 두 시를 다녀오면 제주 완주 · 시·도 2곳
+    add('j1', 2, '9,9'); add('j2', 3, '9,8', 1); add('h1', 0, '5,5', 2);
+    r = evaluate(user, { cellOf, geo, regions, held: ['0,0'], now: 3 });
+    assert.ok(['s:제주', 'island', 'rest', 't1'].every(id => r.titles.includes(id)), JSON.stringify(r.titles));
+    assert.ok(!r.titles.includes('s:서울'), '서울은 중구를 안 가 봄');
+    assert.equal(user.ach.s, 1, '시·도 2곳');
+    assert.equal(user.ach.t, 1, '영토 1칸');
+    assert.deepEqual(titleName('r:서울 중구:1'), ['서울 중구 전문가', '서울 중구 Expert']);
+    assert.deepEqual(titleName('s:제주'), ['제주 완주', '제주 Complete']);
+    assert.deepEqual(titleName('worm7'), ['왕지렁이', 'Giant Worm']);
+    assert.equal(titleName('nope'), null);
+    // 화면 목록: 숨은 칭호는 이름 · 조건을 내보내지 않는다
+    const cat = catalog();
+    const hidden = cat.titles.filter(t => t.g === 'hidden');
+    assert.ok(hidden.length >= 3 && hidden.every(t => !t.ko && !t.d));
+    assert.equal(cat.milestones, MILESTONES);
+});
+
+test('칭호 API: 위치로 인증하면 바로 알림(마일스톤 · 칭호 · 개척자) · 얻은 칭호만 달고 칸 · 랭킹에 보인다 · 철회하면 칭호는 지우고 포인트는 남는다', async () => {
+    const env = await fresh();
+    env.GPS_VERIFY = 'on';
+    // 한 줄로 놓인 칸 8개, 칸마다 판매점 하나 — 모두 마포구
+    const ids = Array.from({ length: 8 }, (_, i) => '1110010' + i);
+    site = {
+        cells: { r: 0.6, cells: Object.fromEntries(ids.map((id, i) => [i + ',0', [id]])) },
+        geo: { regions: [['서울', '마포구', '마포구']], stores: Object.fromEntries(ids.map((id, i) => [id, [37.5 + i * 0.01, 127.0, 0]])) },
+    };
+    const a = await member(env, 't1', '지렁이');
+    const b = await member(env, 't2', '구경꾼');
+    await terr(env);   // 위치 인증을 켠 날 한 번 지우기를 먼저 지나게
+    await geoAgree(env, a);
+    assert.equal((await join(env, a, { agree: true, v: 2 })).status, 200);
+    const go = (s, i) => visit(env, s, ids[i], near(37.5 + i * 0.01, 127.0));
+    let r = await go(a, 0);
+    assert.equal(r.status, 200, JSON.stringify(r.data));
+    const got = x => (x.data.fresh ? x.data.fresh.titles.map(t => t.id) : []);
+    assert.deepEqual(got(r).sort(), ['pioneer', 't1'].sort(), '첫 칸 · 아무도 안 간 칸');
+    assert.equal(r.data.fresh.pts, 10 + 10, '판매점 1곳 + 영토 1칸');
+    assert.equal(r.data.score.ms, 20);
+    assert.deepEqual(r.data.fresh.titles.find(t => t.id === 'pioneer'), { id: 'pioneer', ko: '개척자', en: 'Pioneer' });
+    for (let i = 1; i < 7; i++) r = await go(a, i);
+    const me = (await call(env, 'GET', '/api/me', { headers: auth(a) })).data.user;
+    const mine = me.titles.e.map(t => t.id);
+    assert.ok(['t1', 't5', 'v3', 'line5', 'worm4', 'worm7', 'pioneer'].every(id => mine.includes(id)), JSON.stringify(mine));
+    assert.ok(!mine.includes('line8'), '7칸 한 줄은 고속도로 전');
+    assert.equal(me.ach.v, 2, '판매점 7곳: 1 · 3곳 두 단계(10곳 전)');
+    // 아직 못 얻은 칭호는 못 단다
+    assert.equal((await call(env, 'POST', '/api/me/title', { headers: auth(a), body: { id: 'line8' } })).status, 409);
+    const set = await call(env, 'POST', '/api/me/title', { headers: auth(a), body: { id: 'worm7' } });
+    assert.equal(set.status, 200);
+    assert.equal(set.data.user.titles.sel, 'worm7');
+    // 칸 · Map 랭킹(누구나)에 단 칭호
+    const t = await terr(env);
+    assert.deepEqual(t.data.rank[0].tt, ['왕지렁이', 'Giant Worm']);
+    assert.deepEqual(t.data.full['0,0'][5], ['왕지렁이', 'Giant Worm']);
+    // 사이트 랭킹에도
+    const rk = await call(env, 'GET', '/api/ranking', { headers: auth(b) });
+    assert.deepEqual(rk.data.top.find(x => x.nick === '지렁이').tt, ['왕지렁이', 'Giant Worm']);
+    // 떼기
+    assert.equal((await call(env, 'POST', '/api/me/title', { headers: auth(a), body: { id: null } })).data.user.titles.sel, null);
+    assert.equal((await terr(env)).data.rank[0].tt, null);
+    // 8칸째: LottoHex 를 열 때도 셈한다(고속도로)
+    await call(env, 'POST', '/api/me/title', { headers: auth(a), body: { id: 'worm7' } });
+    r = await go(a, 7);
+    assert.ok(got(r).includes('line8'));
+    // 철회: 칭호는 지우고(단 칭호도 칸 · 랭킹에서 빠짐), 마일스톤 포인트는 남는다
+    const before = (await call(env, 'GET', '/api/me', { headers: auth(a) })).data.user.score.ms;
+    assert.ok(before >= 50);
+    const w = await call(env, 'POST', '/api/me/geo', { headers: auth(a), body: { agree: false } });
+    assert.deepEqual(w.data.user.titles, { e: [], sel: null });
+    assert.equal(w.data.user.score.ms, before, '받은 포인트는 그대로');
+    const rk2 = await call(env, 'GET', '/api/ranking', { headers: auth(b) });
+    assert.equal(rk2.data.top.find(x => x.nick === '지렁이').tt, undefined);
+    // 다시 동의하고 인증해도 같은 단계 포인트는 다시 없다
+    await geoAgree(env, a);
+    r = await go(a, 0);
+    assert.equal(r.data.fresh.pts, 0, '단계 포인트는 한 번');
+    assert.ok(got(r).includes('t1'), '칭호는 다시 얻을 수 있다');
+});
+
+test('칭호: 위치 인증이 꺼져 있으면 셈하지 않는다 · 목록은 누구나', async () => {
+    const env = await fresh();
+    const a = await member(env, 't3', '손표시');
+    const r = await visit(env, a, '11100001');
+    assert.equal(r.status, 200);
+    assert.equal(r.data.fresh, null);
+    const me = (await call(env, 'GET', '/api/me', { headers: auth(a) })).data.user;
+    assert.deepEqual([me.titles, me.ach], [{ e: [], sel: null }, {}]);
+    const cat = await call(env, 'GET', '/api/titles');
+    assert.equal(cat.status, 200);
+    assert.ok(cat.data.titles.some(t => t.id === 'worm7' && t.ko === '왕지렁이'));
+    assert.match(cat.headers.get('Cache-Control'), /max-age=3600/);
 });

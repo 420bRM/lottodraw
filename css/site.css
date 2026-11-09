@@ -1743,6 +1743,7 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 .rank-me { margin: 0 0 14px; padding: 10px 14px; border: 2px solid var(--brand); border-radius: 10px; background: var(--soft, #f3f6fd); }
 .rank-me-line { margin: 0; }
 .rank-table { width: 100%; }
+.rank-ttl { display: inline-block; margin: 0 5px 0 0; padding: 0 6px; border: 1px solid #4b3bb8; border-radius: 6px; background: linear-gradient(135deg, #24135f, #2d3a8f 60%, #0f6170); color: #ffd76a; font-size: 11px; font-weight: bold; line-height: 17px; vertical-align: 1px; white-space: nowrap; }   /* LottoHex 칭호(2026-11-09) */
 .rank-table tr.top1 td { font-weight: bold; background: var(--hl, #fff8e1); }
 
 /* ───── 내 번호 성적표 (report.html, js/report.js) ───── */

@@ -2534,14 +2534,33 @@ function storeMapCells(md) {
     return { r: HEX.R, note: 'LottoHex 칸(js/hexgrid.js) → 그 칸의 판매점 번호. 폐점 제외', cells: Object.fromEntries(keys.map(k => [k, cells[k].sort()])) };
 }
 // 위치 인증(2026-11-09): 서버가 "판매점 50m 안"을 판정할 때 쓰는 판매점 좌표 — 공개된 사업장 위치(동행복권), 폐점 제외, 칸 목록과 같은 판매점.
-// { 판매점 번호: [위도, 경도] } 소수 다섯째 자리(약 1m)
+// { 판매점 번호: [위도, 경도, 지역 번호, 표시?] } 소수 다섯째 자리(약 1m).
+// 칭호(2026-11-09, worker/src/titles.js)도 이 파일로 센다: regions[지역 번호] = [시·도, 시·군·구, 칭호에 쓰는 이름]. 시·군·구는 주소의 첫 낱말
+// ("수원시 장안구" → "수원시"), 세종은 시·도 이름. 여러 시·도에 같은 이름이 있으면(중구 · 동구 …) 이름에 시·도를 붙인다("대구 중구").
+// 표시: 1 섬(울릉 · 옹진 · 신안 · 완도군), 2 고속도로 휴게소(상호에 "휴게소") — 숨은 칭호
 const STORE_MAP_GEO = 'store-map-geo.json';
+const ISLAND_GU = /^(울릉군|옹진군|신안군|완도군)$/;
 function storeMapGeo(md) {
     const out = {}, r5 = v => Math.round(v * 1e5) / 1e5;
-    md.rows.forEach((r, i) => { if (!r[7] && md.ids[i]) out[md.ids[i]] = [r5(r[0]), r5(r[1])]; });
-    if (md.all) md.all.rows.forEach((r, i) => { if (md.all.ids[i]) out[md.all.ids[i]] = [r5(r[0]), r5(r[1])]; });
+    const pts = [];
+    md.rows.forEach((r, i) => { if (!r[7] && md.ids[i]) pts.push([md.ids[i], r[0], r[1], md.sidoNames[r[5]], r[6], r[4]]); });
+    if (md.all) md.all.rows.forEach((r, i) => { if (md.all.ids[i]) pts.push([md.all.ids[i], r[0], r[1], md.all.sido[r[3]], r[4], r[2]]); });
+    const guOf = (si, gu) => String(gu || '').trim().split(/\s+/)[0] || si;
+    const sidoOfGu = new Map();
+    pts.forEach(([, , , si, gu]) => { const g = guOf(si, gu); if (!sidoOfGu.has(g)) sidoOfGu.set(g, new Set()); sidoOfGu.get(g).add(si); });
+    const regions = [], rIdx = new Map();
+    pts.map(([, , , si, gu]) => [si, guOf(si, gu)]).sort((a, b) => (a[0] + ' ' + a[1]).localeCompare(b[0] + ' ' + b[1], 'ko')).forEach(([si, g]) => {
+        const k = si + ' ' + g;
+        if (rIdx.has(k)) return;
+        rIdx.set(k, regions.length);
+        regions.push([si, g, sidoOfGu.get(g).size > 1 || g === si ? (g === si ? si : si + ' ' + g) : g]);
+    });
+    for (const [id, lat, lng, si, gu, name] of pts) {
+        const g = guOf(si, gu), flag = ISLAND_GU.test(g) ? 1 : /휴게소/.test(name || '') ? 2 : 0;
+        out[id] = [r5(lat), r5(lng), rIdx.get(si + ' ' + g)].concat(flag ? [flag] : []);
+    }
     const keys = Object.keys(out).sort();
-    return { note: '판매점 번호 → [위도, 경도] (공개된 사업장 위치, 폐점 제외). 위치 인증 50m 판정용', stores: Object.fromEntries(keys.map(k => [k, out[k]])) };
+    return { note: '판매점 번호 → [위도, 경도, 지역 번호, 표시(1 섬 · 2 휴게소)] (공개된 사업장 위치, 폐점 제외). 위치 인증 50m 판정 · 칭호용', regions, stores: Object.fromEntries(keys.map(k => [k, out[k]])) };
 }
 const ALL_SHOPS = (() => { try { return JSON.parse(fs.readFileSync(path.join(ROOT, 'shops-all.json'), 'utf8')); } catch (e) { return null; } })();
 // 좌표가 있는 판매점이 1,000곳을 넘을 때만 지도 페이지 · 링크를 만든다(좌표를 받기 전 자료에서는 만들지 않는다)
@@ -2748,7 +2767,13 @@ function lottohexAboutHtml(md, snap) {
             <ul>
                 ${li(`위치로 인증한 다녀온 곳: 한 번에 ${LH_POINTS.visit}포인트(같은 판매점은 하루 한 번, 하루 ${LH_POINTS.daily}포인트까지)`, `Visits verified by location: ${LH_POINTS.visit} points each (once a day per retailer, up to ${LH_POINTS.daily} a day)`)}
                 ${li(`분기 확정 순위: 1위 ${fmt(p1)} · 2위 ${p2} · 3위 ${p3} · 4~10위 ${p4}포인트(운영자 제외)`, `Quarterly final ranking: 1st ${fmt(p1)} · 2nd ${p2} · 3rd ${p3} · 4th–10th ${p4} points (operators excluded)`)}
+                ${li('마일스톤: 다녀온 판매점 · 다녀온 칸 · 다녀온 시·도 · 최대 영토가 단계에 이를 때마다 10~500포인트(단계마다 한 번)', 'Milestones: 10–500 points each time retailers visited, cells visited, provinces visited or most cells held reaches a new step (once per step)')}
                 ${li('포인트로 칸 모양을 바꾸거나(30) 1일 이용권을 열 수 있습니다(300). 현금으로 바꿀 수 없습니다.', 'Spend points on a new cell skin (30) or a 1-day pass (300). Points cannot be exchanged for cash.')}
+            </ul>
+            <h2 data-i18n-en="Titles">칭호</h2>
+            <ul>
+                ${li('인증한 방문으로 칭호를 얻어 칭호 도감에 모읍니다: 방문(초보탐험가 · 동네 탐험가 …), 영토(첫 깃발 · 세력확장자 · 영주 …), 칸 모양(삼각지 · 일자 진격 · 왕지렁이 · 벌집 · 도넛 …), 지역(마포구 단골 · 전문가 · 터줏대감, 시·도 완주, 팔도유람), 숨은 칭호', 'Verified visits earn titles for your collection: visits (Rookie Explorer …), territory (First Flag, Expansionist, Lord …), cell shapes (Triangle, Straight Ahead, Giant Worm, Honeycomb, Donut …), regions (district Regular · Expert · Local Legend, province Complete, Grand Tour) and hidden titles')}
+                ${li('얻은 칭호 중 하나를 골라 별명 앞에 달면 LottoHex 랭킹 · 칸 · 랭킹 페이지에 보입니다.', 'Wear one of your titles before your nickname on the LottoHex ranking, cells and the ranking page.')}
             </ul>
             ${week}
             ${pEn(`함께 보기: <a href="${STORE_MAP_FILE}">로또 판매점 지도</a> · <a href="${STORES_FILE}">1등 판매점 통계</a> · <a href="terms.html#location">이용약관 위치기반서비스</a> · <a href="privacy.html#location">개인정보 처리방침 개인위치정보</a>`,

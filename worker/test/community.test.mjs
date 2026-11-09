@@ -600,7 +600,7 @@ test('랭킹: 출석(하루 한 번)·반응·로그인한 채 산 이용권으�
     assert.equal(r.me.total, 10);
     assert.equal(r.me.nick, null);
     const meA = (await call(env, 'GET', '/api/me', { headers: auth(a.session) })).data.user.score;
-    assert.deepEqual(meA, { total: 10 + 4 + buyPts, days: 1, reacts: 2, buy: buyPts, verified: 0, hex: 0, spent: 0, avail: 10 + 4 + buyPts });
+    assert.deepEqual(meA, { total: 10 + 4 + buyPts, days: 1, reacts: 2, buy: buyPts, verified: 0, hex: 0, ms: 0, spent: 0, avail: 10 + 4 + buyPts });
 
     // 환불하면 구매 점수가 빠진다
     await call(env, 'POST', `/api/admin/orders/${ord.order.id}/refund`, { headers: asAdmin });
