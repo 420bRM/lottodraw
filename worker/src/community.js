@@ -55,7 +55,7 @@
 //
 // 이름·사진은 받지 않는다. 이메일은 "로그인한 계정" 표시, 문의 응대, 회원이 켠 "추첨 결과 메일"에만 쓴다.
 
-import { seasonOf, prevSeason, computeTerritory, publicTerritory, seasonRecord, cellMap, FIRST_SEASON, VISIT_DAILY, kstDay as kstDate } from './territory.js';
+import { seasonOf, prevSeason, computeTerritory, publicTerritory, seasonRecord, cellMap, FIRST_SEASON, VISIT_DAILY, kstDay as kstDate, GEO_TRIES, GEO_LOG_DAYS } from './territory.js';
 
 export const SESSION_DAYS = 30;
 const TRIAL_MEMORY_DAYS = 365;
@@ -222,6 +222,25 @@ export class Community {
     }
     async terrRow(sub) {
         return this.tp ? this.tp.get(sub) || null : (await this.storage.get('tp:' + sub)) || null;
+    }
+
+    // 위치 인증을 켠 날 한 번(2026-11-09 사장님 — "손으로 방문 표시한 기록은 모두 삭제, GPS 기반으로 시작"):
+    // 모든 회원의 다녀온 곳 · 표시 시각 · 하루 횟수와 LottoHex 참여(동의 1판) · 칸 집계를 지운다 → 모든 칸이 회색지대, 랭킹 새로.
+    // 남기는 것: 내 색 · 연 색 · 칸 모양 · 포인트 · 실방문자 설정 · 위치 동의. 끝나면 gpsStart(시각)를 적어 다시 돌지 않는다
+    async gpsStartOnce(now) {
+        if (this.gpsStarted) return;
+        if (await this.storage.get('gpsStart')) { this.gpsStarted = true; return; }
+        await this.each('u:', async (u, k) => {
+            if (!u || !(u.visits || u.vt || u.vday || u.terr)) return;
+            delete u.visits; delete u.vt; delete u.vday; delete u.terr;
+            await this.storage.put(k, u);
+        });
+        const tp = [];
+        await this.each('tp:', async (row, k) => { tp.push(k); });
+        for (let i = 0; i < tp.length; i += 128) await this.storage.delete(tp.slice(i, i + 128));
+        this.tp = null; this.terrCache = null;
+        await this.storage.put('gpsStart', now || Date.now());
+        this.gpsStarted = true;
     }
 
     async baseViews() {
@@ -391,7 +410,8 @@ const OPS = {
     // 새로 표시한 때는 vt 에 적는다(색만 바꾸면 그대로). again: 이미 표시한 곳을 "또 다녀왔어요" — 때만 새로(같은 곳은 하루 한 번).
     // 때를 새로 적는 것(새로 표시 · 또 다녀왔어요)은 하루 VISIT_DAILY 번까지 — 영역에서 같은 수면 최근에 다녀온 사람이 이기므로 누르기 되풀이를 막는다.
     // 영역 참여자면 참여자 색인(tp:)도 같이: cell 은 Worker 가 store-map-cells.json 에서 찾아 넘긴다(폐점 · 모르는 곳은 null — 칸에 안 센다)
-    async setVisit({ sub, id, color, max, now, cell, again }) {
+    async setVisit({ sub, id, color, max, now, cell, again, gps }) {
+        if (gps) await this.gpsStartOnce(now);   // 켠 날 첫 인증보다 먼저 손 표시를 지운다(같은 객체 안이라 차례가 지켜진다)
         const user = await this.storage.get('u:' + sub);
         if (!user) return { error: 'no_user' };
         const v = user.visits || {}, vt = user.vt || {};
@@ -425,6 +445,53 @@ const OPS = {
             await this.terrSet(sub, Object.assign({}, row, { v: nv }));
         }
         return { ok: true, visits: user.visits || {}, visitAt: user.vt || {}, visitColor: user.vc || null };
+    },
+
+    // ───── 위치 인증(2026-11-09) ─────
+    // 위치 이용 동의: 동의 시각과 안내문 판
+    async geoConsent({ sub, now, v }) {
+        const user = await this.storage.get('u:' + sub);
+        if (!user) return { error: 'no_user' };
+        user.geo = { at: now, v };
+        await this.saveUser(user);
+        return { ok: true, user: view(user) };
+    },
+    // 철회: 동의 기록을 지우고, 위치로 인증한 다녀온 곳 · 표시 시각과 LottoHex 칸 집계를 지운다(참여는 남는다)
+    async geoWithdraw({ sub }) {
+        const user = await this.storage.get('u:' + sub);
+        if (!user) return { error: 'no_user' };
+        delete user.geo; delete user.visits; delete user.vt;
+        await this.saveUser(user);
+        const row = await this.terrRow(sub);
+        if (row) await this.terrSet(sub, Object.assign({}, row, { v: {} }));
+        return { ok: true, user: view(user) };
+    },
+    // 하루 위치 판정 시도 횟수(좌표 없이 횟수만). 넘으면 판정하지 않는다
+    async geoTry({ sub, now }) {
+        const user = await this.storage.get('u:' + sub);
+        if (!user) return { error: 'no_user' };
+        const today = kstDate(now);
+        const g = user.gtry && user.gtry.day === today ? user.gtry : { day: today, n: 0 };
+        if (g.n >= GEO_TRIES) return { error: 'too_many_tries', max: GEO_TRIES };
+        g.n += 1;
+        user.gtry = g;
+        await this.storage.put('u:' + sub, user);
+        return { ok: true };
+    },
+    // 위치정보 이용 · 제공사실 확인자료: 누가(계정 해시 u) · 언제(t) · 어느 판매점(id) · 결과(ok, why). 좌표는 없다. 키는 날짜순(gl:YYYY-MM-DD:…)
+    async geoLog({ u, t, id, ok, why }) {
+        await this.storage.put('gl:' + kstDate(t) + ':' + t.toString(36) + ':' + Math.random().toString(36).slice(2, 8), { u, t, id, ok: !!ok, why: why || null });
+        return { ok: true };
+    },
+    // 한 시간 예약: 켜져 있으면 켠 날 한 번 손 표시 지우기, 확인자료는 GEO_LOG_DAYS(약 6개월) 지난 날짜 것부터 지운다(한 번에 500개)
+    async geoHousekeep({ now, gps }) {
+        if (gps) await this.gpsStartOnce(now);
+        const cut = 'gl:' + kstDate(now - GEO_LOG_DAYS * 86400000) + ':';
+        const old = [];
+        const page = await this.storage.list({ prefix: 'gl:', limit: 500 });
+        for (const k of page.keys()) { if (k >= cut) break; old.push(k); }
+        for (let i = 0; i < old.length; i += 128) await this.storage.delete(old.slice(i, i + 128));
+        return { ok: true, pruned: old.length };
     },
 
     // "✓ 실방문자" 표시 켜기 · 끄기(2026-11-09 사장님 — 기본은 꺼짐, 회원이 켠 경우에만 판매점 댓글에 표시)
@@ -490,7 +557,8 @@ const OPS = {
 
     // 칸 주인 · Map 랭킹(누구나). sub 가 있으면 내 칸 · 순위도. 지난 분기 확정 순위도 함께
     // site: 칸 목록(store-map-cells.json)을 읽을 사이트 주소 — 지금 칸 목록으로 센다(computeTerritory). 칸 목록이 바뀌면(한 시간마다 다시 읽음) 다시 센다
-    async territory({ sub, now, site }) {
+    async territory({ sub, now, site, gps }) {
+        if (gps) await this.gpsStartOnce(now);
         const season = seasonOf(now || Date.now());
         const map = site ? await cellMap(site).catch(() => null) : null;
         if (!this.terrCache || this.terrCacheMap !== map) { this.terrCache = computeTerritory(await this.terrList(), 0, map); this.terrCacheMap = map; }
@@ -1144,7 +1212,7 @@ const b64url = bytes => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').
 function view(user) {
     const trial = user.trial && user.trial.key ? { key: user.trial.key, keyId: user.trial.keyId, expiresAt: user.trial.expiresAt } : null;
     return {
-        email: user.email, nick: user.nick || null, createdAt: user.createdAt, trial, score: pubScore(user), staff: !!user.staff, gen: user.gen || null, visits: user.visits || {}, visitAt: user.vt || {}, visitColor: user.vc || null, visitBadge: !!user.vpub, visitColors: user.vcolors || [], notes: user.ntN || 0,
+        email: user.email, nick: user.nick || null, createdAt: user.createdAt, trial, score: pubScore(user), staff: !!user.staff, gen: user.gen || null, visits: user.visits || {}, visitAt: user.vt || {}, visitColor: user.vc || null, visitBadge: !!user.vpub, geo: user.geo ? { at: user.geo.at, v: user.geo.v } : null, visitColors: user.vcolors || [], notes: user.ntN || 0,
         terr: user.terr ? { at: user.terr.at, v: user.terr.v } : null, terrSkin: user.tskin || null,
         nickAuto: !!(user.nick && user.nickAuto), nickDue: !user.nick && user.nickDue ? user.nickDue : null,
         pointPass: user.ppass && user.ppass.key ? { key: user.ppass.key, keyId: user.ppass.keyId, expiresAt: user.ppass.expiresAt } : null,

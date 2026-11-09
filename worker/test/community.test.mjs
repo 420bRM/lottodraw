@@ -126,9 +126,9 @@ test('로그인 설정: 클라이언트 ID 가 없으면 꺼져 있고, 넣으�
     assert.equal((await call(off, 'GET', '/api/config')).data.login, null);
     assert.equal((await login(off)).data.error, 'no_login');
     const on = await fresh();
-    assert.deepEqual((await call(on, 'GET', '/api/config')).data.login, { google: CLIENT_ID, trialDays: 3 });
+    assert.deepEqual((await call(on, 'GET', '/api/config')).data.login, { google: CLIENT_ID, trialDays: 3, gps: false, geoV: 1, terrV: 1 });
     const noTrial = await fresh({ SIGNUP_TRIAL_DAYS: undefined });
-    assert.deepEqual((await call(noTrial, 'GET', '/api/config')).data.login, { google: CLIENT_ID, trialDays: 0 }, '체험을 끄면 0');
+    assert.deepEqual((await call(noTrial, 'GET', '/api/config')).data.login, { google: CLIENT_ID, trialDays: 0, gps: false, geoV: 1, terrV: 1 }, '체험을 끄면 0');
 });
 
 test('가입 체험 끔(실서버 기본): 새 가입은 키 · 주문 · 체험 기록 없이 가입만, 텔레그램에 새 가입 알림, 예전 체험 키는 그대로', async () => {

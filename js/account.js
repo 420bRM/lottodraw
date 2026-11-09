@@ -646,6 +646,9 @@
         session: () => { const s = local.get(SESSION_STORE); return s && s.session; },
         me: () => me,
         loginOn: () => !!(login && login.google),   // 서버에 구글 로그인이 켜져 있는가
+        // 위치 인증(2026-11-09): 서버 스위치(GPS_VERIFY)가 켜져 있으면 { geoV: 위치 동의 판, terrV: LottoHex 동의 판 }, 꺼져 있으면 null
+        gps: () => (login && login.gps ? { geoV: login.geoV || 1, terrV: login.terrV || 1 } : null),
+        terrV: () => (login && login.terrV) || 1,
         ready: ready,
         // 마이페이지(js/mypage.js)가 쓰는 길: 내 정보 새로 받기, 로그아웃, 탈퇴
         refresh: async () => { if (!login) return me; me = await loadMe(true); return me; },
