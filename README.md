@@ -464,7 +464,7 @@ Polar 설정값과 결제 링크는 커밋 `6017b78` 에 남아 있다.
 
 ## 4-3. 블로그는 어떻게 되어 있나
 
-메뉴의 **블로그**(`blog/index.html`)에 사람이 쓴 글 16편이 있다. 4-2번의 "가치 있는
+메뉴의 **블로그**(`blog/index.html`)에 사람이 쓴 글 19편이 있다(2026-11-09). 4-2번의 "가치 있는
 콘텐츠 부족" 반려에 대응해 2026-10-02에 올렸다. 머리글의 **KO / EN** 으로 영어도 된다.
 
 ```
@@ -473,7 +473,7 @@ content/blog/en/01-is-number-34-special.md   ← 영어 원고. 파일 이름이
         ↓  node tools/build-static-stats.js   (tools/build-blog.js 를 불러 쓴다)
 blog/index.html                               ← 목록: 카테고리 단추, 앞부분 미리보기
 blog/is-number-34-special.html                ← 글: 목차, 이어지는 페이지, 이전·다음 글
-sitemap.xml                                   ← 블로그 주소 17개(목록 + 글 16편)가 같이 들어간다
+sitemap.xml                                   ← 블로그 주소 20개(목록 + 글 19편)가 같이 들어간다
 ```
 
 - **`blog/` 의 HTML 은 직접 고치지 않는다.** 생성기가 다시 만들면 덮어쓰인다.
@@ -504,6 +504,7 @@ updated: 2026-11-01              ← (선택) 크게 고친 날. 사이트맵·�
 - `related` 에 쓰는 이름: `frequency`(많이 나온 번호) · `gap`(미출수) · `pair`(궁합수) ·
   `ac`(AC값) · `sum`(합계) · `even-odd`(홀짝) · `low-high`(저고) · `consecutive`(연속번호) ·
   `prize-stats`(1등 당첨자 수) · `prize-tiers`(2등·3등 당첨금) · `probability`(확률) · `tax`(실수령액) · `top-prize`(TOP 50) ·
+  `stores`(1등 판매점 통계) · `repeat`(같은 번호) · `store-map`(판매점 지도) · `lottohex`(LottoHex) ·
   `generator`(번호 생성기). 새 이름이나 새 카테고리는 `tools/build-blog.js` 맨 위의
   `RELATED` · `CATEGORIES` 에 더한다.
 - 본문 문법: `## 소제목`(목차가 저절로 생긴다), 빈 줄로 나눈 문단(문단 안에서 줄을 바꾸면
@@ -511,6 +512,7 @@ updated: 2026-11-01              ← (선택) 크게 고친 날. 사이트맵·�
   링크는 사이트 뿌리 기준(`/statistics-frequency.html`, `/blog/why-jackpots-split.html`)으로
   쓰면 생성기가 알맞게 고쳐 단다.
 - **그림** (2026-10-30): 한 줄에 `{{figure 이름}}` — 생성기(`build-static-stats.js` 의 `blogFigures()`)가 넘겨준 그림 HTML 이 그 자리에 들어간다(영문은 그림 안에 있다). 영어 원고에도 같은 자리에 같은 줄. 지금 있는 그림: `store-sales-flow` · `store-sales-range` · `store-sales-check`(글 18). 없는 이름이면 경고하고 비운다. 목록 미리보기에서는 표처럼 뺀다
+- **화면 캡처 그림** (2026-11-09): `img/blog/<파일>.jpg` 를 `build-static-stats.js` 의 `BLOG_SHOTS` 에 이름 · 대체 글 · 설명(한 · 영) · 모양(`is-phone` 휴대폰 화면 전체 / `is-crop` 잘라낸 부분)으로 적으면 같은 `{{figure 이름}}` 로 쓴다. 가로 · 세로는 JPEG 에서 읽고, 영어 대체 글은 `js/i18n-dict.js` 의 `blog.shot.<이름>`. 지금: `lottohex-map` · `lottohex-card` · `lottohex-rank`(글 19, 별명 · 칸은 예시라고 설명에 적음). 다시 찍기: `tools/oneoff/shot-lottohex.mjs`(지도 바탕은 이 환경에서 못 받아 GitHub 워크플로에서 찍었다)
 - 문구 규칙은 통계 페이지와 같다 — 예측·적중률·추천 번호는 쓰지 않는다([문구 규칙](#문구-규칙)).
 
 ### 영어 원고는 한국어와 블록 수가 같아야 한다
@@ -1165,6 +1167,7 @@ Dropbox `260914 클로드` 폴더의 README와 CLAUDE.md는 **실제로 적용�
 
 | 날짜 | 어디서 | 한 일 |
 |---|---|---|
+| 2026-11-09 | Claude Code 웹 | **블로그 19 "LottoHex 하는 법"**(사장님) → [4-3번](#4-3-블로그는-어떻게-되어-있나) — 무엇인지 · 시작하는 법 · 칸 지키기 · 포인트와 분기 보상 · 위치 정보 · 자주 묻는 것, 한 · 영. 화면 예시 3장(지도 · 판매점 카드 인증 · 랭킹 — 실제 지도에 예시 별명 · 칸, `BLOG_SHOTS`). 관련 페이지에 `lottohex` · `store-map` |
 | 2026-11-09 | Claude Code 웹 | **LottoHex 전용 주소 `lottohex.html`**(사장님 — 검색에 따로) → [4-9번](#4-9-판매점-지도-2026-10-26) — 같은 지도 앱을 LottoHex 로 여는 주소(모드를 바꾸면 주소도), 자체 title · H1 · canonical · OG 이미지 · WebApplication · Breadcrumb, 자바스크립트 없이 읽히는 안내 · 이번 주 순위(`lottohex-snapshot.json`, 매주), 내부 링크 · sitemap · rss |
 | 2026-11-09 | Claude Code 웹 | **위치 인증 포인트 · LottoHex 분기 보상**(사장님) — 인증 10P(같은 판매점 하루 한 번, 하루 50P), 분기 확정 1위 1,000 · 2위 500 · 3위 300 · 4~10위 100(운영자 제외, 두 번 안 줌). 약관 7조에 색 · 칸 모양 포인트 쓰기도. 마이페이지에 "다녀온 곳 인증 · LottoHex 보상" 줄. 가끔 실패하던 자동 별명 시험(같은 1ms) 고침. 워커 시험 99개 통과 |
 | 2026-11-09 | 사장님 | **소상공인 위치기반서비스사업 신고 접수 완료** — 개시일 11-09(제9조의2 특례, 개시 후 1개월 안 신고). 설명자료는 실제 구현에 맞춘 수정본(일반과세자) |
@@ -1352,7 +1355,9 @@ Dropbox `260914 클로드` 폴더의 README와 CLAUDE.md는 **실제로 적용�
 - [x] **소상공인 위치기반서비스사업 신고 — 2026-11-09 접수 완료**(개시일 11-09, 설명자료 PDF · 약관 8번 · 처리방침 5번). 사업자 구분은 개인사업자(일반과세자).
 - [ ] 수리 통보가 오면 날짜를 여기에 적는다.
 - [ ] **LottoHex 검색 등록**(2026-11-09 공개 뒤): 구글 URL 검사 → 색인 생성 요청(탭 제어 세션), 네이버 서치어드바이저 웹 페이지 수집 요청(사장님) — `https://www.lottodraw.kr/lottohex.html`. 첫 토요일 추첨 뒤 "이번 주" 순위가 채워지는지 확인.
-- [ ] (다음에) LottoHex 소개 블로그 글 한 편(하는 법 · 화면 캡처) — "판매점 지도"로 들어온 사람을 LottoHex 로 보완 요청이 오면 설명자료 · 약관을 함께 고친다.
+- [ ] 보완 요청이 오면 설명자료 · 약관을 함께 고친다.
+- [x] LottoHex 소개 블로그 글 — 2026-11-09 `blog/lottohex-how-to-play.html`(하는 법 · 화면 예시 3장, 한 · 영).
+- [ ] **블로그 새 글 검색 등록**: 구글 URL 검사 → 색인 생성 요청, 네이버 웹 페이지 수집 — `https://www.lottodraw.kr/blog/lottohex-how-to-play.html`.
 - [ ] 켠 뒤 확인: 지도 열면 위치 안내가 뜨는지, 판매점 앞에서 다녀왔어요가 되는지(실기기), 확인자료 `gl:` 가 쌓이는지, 손 표시가 지워졌는지.
 
 ### 🔜 다음 스텝 — "로또 통계" 검색 (2026-10-02, 이 브랜치 머지 직후부터)

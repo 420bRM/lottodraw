@@ -1367,6 +1367,10 @@ window.I18N_DICT = {
     'my.reactsN':     { ko: '♥ {h} · $ {d} · ₩ {w}', en: '♥ {h} · $ {d} · ₩ {w}' },
     'my.buy':         { ko: '이용권 점수', en: 'Pass points' },
     'my.verified':    { ko: '다녀온 곳 인증', en: 'Verified visits' },
+    // 블로그 화면 사진의 alt(생성기 BLOG_SHOTS 와 같은 글, 2026-11-09)
+    'blog.shot.lottohex-map':  { ko: 'LottoHex 밤 지도 — 서울 종로 둘레 육각 칸을 참여자들이 나눠 가진 모습', en: 'LottoHex night map — hexagon cells around Jongno, Seoul held by players' },
+    'blog.shot.lottohex-card': { ko: '판매점 카드 — 다녀왔어요를 누르고 위치로 확인된 모습(+10포인트)', en: 'Retailer card — a visit verified by location (+10 points)' },
+    'blog.shot.lottohex-rank': { ko: 'Map 랭킹 — 차지한 칸 수와 다녀온 판매점 수', en: 'Map ranking — cells held and retailers visited' },
     'my.verifiedN':   { ko: '{n}번 · {p}점', en: '{n} · {p} points' },
     'my.hex':         { ko: 'LottoHex 보상', en: 'LottoHex rewards' },
     'my.spent':       { ko: '쓴 포인트', en: 'Points spent' },

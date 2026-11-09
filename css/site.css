@@ -2041,3 +2041,10 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
     :root[data-theme="dark"] .acct-toast { border: 1px solid var(--line-strong); }
     :root[data-theme="dark"] img:not([src$=".svg"]) { filter: brightness(.92); }
 }
+
+/* ───── 블로그 화면 사진 (2026-11-09, 글 19 LottoHex) — 휴대폰 화면은 폭을 줄여 가운데 ───── */
+.blog-shot { margin: 18px auto; text-align: center; }
+.blog-shot img { display: block; width: 100%; height: auto; margin: 0 auto; border: 1px solid var(--line, #e3e3e3); border-radius: 14px; background: #121620; }
+.blog-shot.is-phone { max-width: 300px; }
+.blog-shot.is-crop { max-width: 390px; }
+.blog-shot figcaption { margin-top: 6px; color: var(--muted, #666); font-size: 12.5px; line-height: 1.5; }
