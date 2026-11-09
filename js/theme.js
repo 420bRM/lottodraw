@@ -80,7 +80,7 @@
             hex.href = base + 'lottohex.html';
             hex.innerHTML = '<span class="hex-band-txt"><span class="hex-band-legend"><i>⬡</i><span></span></span><b><span class="hex-band-ico" aria-hidden="true"></span>LottoHex</b><small></small></span><span class="hex-band-go"></span>';
             hex.querySelector('.hex-band-legend span').textContent = tr('hexLink.legend', '육각 칸 땅따먹기 · 칭호 도감 · 분기 랭킹');
-            hex.querySelector('small').textContent = tr('hexLink.sub', '판매점에 다녀와 위치로 인증하면 육각 칸을 차지합니다. 왕지렁이 · 마포구 전문가 같은 칭호를 모으고 분기 랭킹에 도전해 보세요. 복권은 사지 않아도 됩니다.');
+            hex.querySelector('small').textContent = tr('hexLink.sub', '판매점에 다녀와 위치로 인증하면 육각 칸을 차지합니다. 칭호를 모으고 분기 랭킹에 도전해 보세요.');
             hex.querySelector('.hex-band-go').textContent = tr('hexLink.go', 'LottoHex 열기 →');
             band.classList.add('has-next');
             band.insertAdjacentElement('afterend', hex);
