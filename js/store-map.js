@@ -1925,7 +1925,7 @@
     const geoAgreed = () => { const A = account(), u = A && A.me() && A.me().user, g = gpsCfg(); return !!(g && u && u.geo && u.geo.v === g.geoV); };
     // 동의 창의 줄 · 약관 링크(위치 동의 창과 LottoHex 참여 창이 같이 쓴다)
     const geoAgreeLine = age => '<label class="sm-terr-agree"><input type="checkbox"> ' + T('위치정보 서비스 이용에 동의합니다.' + (age ? ' (만 14세 이상)' : ''), 'I agree to the location-based service.' + (age ? ' (14 or older)' : '')) + '</label>';   // LottoHex 창에서는 위 줄이 19세
-    const termsLine = () => '<p class="sm-small">' + T('자세한 내용은 <a href="terms.html#location">이용약관</a>에서 확인할 수 있습니다.', 'See the <a href="terms.html#location">Terms of Use</a> for details.') + '</p>';
+    const termsLine = () => '<p class="sm-small"><a href="terms.html#location">' + T('이용약관', 'Terms of Use') + '</a></p>';   // 링크만(2026-11-09 사장님)
     // 체크가 모두 되어야 단추가 눌린다
     function agreeBoxes(el, ok) {
         const boxes = [...el.querySelectorAll('.sm-terr-agree input')];
