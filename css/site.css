@@ -1845,7 +1845,31 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 @media (max-width: 599px) {
     :root[data-theme="dark"] .map-band { background: linear-gradient(180deg, #141a23 0%, rgba(20, 26, 35, .92) 48%, rgba(20, 26, 35, .25) 100%), url(../img/map-banner-night-m.jpg) center bottom / cover no-repeat, #141a23; }
 }
-@media print { .map-fab, .map-band { display: none !important; } }
+/* LottoHex 가는 띠(js/theme.js, 2026-11-09): 지도 띠 바로 아래. 낮 · 밤 모두 LottoHex 화면처럼 어두운 남보라, 배경은 실제 밤 지도 위 육각 칸(img/hex-banner*.jpg) */
+.map-band.has-next { margin-bottom: 14px; }
+.hex-band { display: flex; align-items: center; gap: 24px; box-sizing: border-box; width: calc(min(1440px, 100%) - 40px); min-height: 146px; margin: 0 auto 110px; padding: 22px 28px;
+    border: 1px solid #2f2b5c; border-radius: 12px; color: #dfe5ee; text-decoration: none; box-shadow: 0 2px 10px rgba(0, 0, 0, .18);
+    background: linear-gradient(90deg, #12152a 0%, rgba(18, 21, 42, .96) 30%, rgba(18, 21, 42, .55) 52%, rgba(18, 21, 42, 0) 78%),
+        url(../img/hex-banner.jpg) right center / cover no-repeat, #12152a; }
+.hex-band:hover { border-color: #8f7bff; box-shadow: 0 4px 18px rgba(143, 123, 255, .3); }
+.hex-band-txt { flex: 0 1 560px; min-width: 0; }
+.hex-band-legend { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; color: #b9b3e6; font-size: 12px; font-weight: bold; }
+.hex-band-legend i { color: #ff6fae; font-style: normal; }
+.hex-band-txt b { display: flex; align-items: center; gap: 8px; color: #ffd76a; font-size: 22px; letter-spacing: -.01em; }
+.hex-band-ico { display: inline-block; flex: none; width: 19px; height: 21px; background: linear-gradient(135deg, #8f7bff, #ff6fae 60%, #ffd76a); clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
+.hex-band-txt small { display: block; margin-top: 6px; color: #c9cde0; font-size: 13.5px; line-height: 1.6; }
+.hex-band-go { flex: none; margin-left: auto; padding: 9px 16px; border-radius: 9px; background: linear-gradient(135deg, #8f7bff, #ff6fae); color: #fff; font-size: 14px; font-weight: bold; box-shadow: 0 2px 8px rgba(0, 0, 0, .25); }
+.hex-band:hover .hex-band-go { background: linear-gradient(135deg, #a493ff, #ff86bb); }
+@media (max-width: 599px) {
+    .map-band.has-next { margin-bottom: 12px; }
+    .hex-band { flex-direction: column; align-items: flex-start; gap: 12px; width: calc(100% - 24px); min-height: 0; margin: 0 12px 110px; padding: 18px 18px 16px;
+        background: linear-gradient(180deg, #12152a 0%, rgba(18, 21, 42, .9) 50%, rgba(18, 21, 42, .3) 100%), url(../img/hex-banner-m.jpg) center bottom / cover no-repeat, #12152a; }
+    .hex-band-txt { flex: none; }
+    .hex-band-txt b { font-size: 18px; }
+    .hex-band-txt small { font-size: 12.5px; }
+    .hex-band-go { margin-left: 0; }
+}
+@media print { .map-fab, .map-band, .hex-band { display: none !important; } }
 
 /* ───── 실시간 채팅 (js/chat.js) ───── */
 .chat-fab {
