@@ -507,3 +507,84 @@ test('위치 판정은 하루 100번까지 · 확인자료는 6개월 지난 것
     assert.equal(h.pruned, 1);
     assert.equal(glRows(env).length, 1);
 });
+
+test('위치 인증 포인트: 한 번에 10P · 같은 곳은 하루 한 번(지웠다 다시 해도) · 하루 50P까지 · 다음 날 또 다녀왔어요도 10P · 꺼져 있으면 없다', async () => {
+    let now = kstTime(2026, 11, 20, 12, 0);
+    Date.now = () => now;
+    try {
+        const env = await fresh();
+        env.GPS_VERIFY = 'on';
+        const a = await member(env, 'p1', '포인트맨');
+        await geoAgree(env, a);
+        const go = (id, extra) => visit(env, a, id, Object.assign(near(...GEO.stores[id]), extra || {}));
+        let r = await go('11100001');
+        assert.equal(r.status, 200, JSON.stringify(r.data));
+        assert.equal(r.data.earned, 10);
+        assert.equal(r.data.score.verified, 1);
+        // 지웠다가 다시 표시해도 같은 날 같은 곳은 포인트 없음
+        assert.equal((await visit(env, a, '11100001', { color: null })).status, 200);
+        r = await go('11100001');
+        assert.equal(r.status, 200);
+        assert.equal(r.data.earned, 0, '같은 곳은 하루 한 번');
+        for (const id of ['11100002', '11100003', '11100004', '11100005']) assert.equal((await go(id)).data.earned, 10, id);
+        r = await go('11100006');
+        assert.equal(r.status, 200, '포인트가 다 차도 다녀온 곳은 저장');
+        assert.equal(r.data.earned, 0, '하루 50P 까지');
+        assert.equal(r.data.score.verified, 5);
+        // 다음 날: "또 다녀왔어요"도 위치로 인증하면 10P
+        now = kstTime(2026, 11, 21, 12, 0);
+        r = await go('11100002', { again: true });
+        assert.equal(r.data.earned, 10);
+        const sc = (await call(env, 'GET', '/api/me', { headers: auth(a) })).data.user.score;
+        assert.equal(sc.verified, 6);
+        assert.equal(sc.total, sc.days * 10 + 60, '인증 6번 = 60점');
+        // 위치 인증이 꺼져 있으면(손 표시) 포인트 없음
+        const off = await fresh();
+        const b = await member(off, 'p2', '손표시만');
+        r = await visit(off, b, '11100001');
+        assert.equal(r.status, 200);
+        assert.equal(r.data.earned, 0);
+        assert.equal(r.data.score.verified, 0);
+    } finally { Date.now = realNow; }
+});
+
+test('LottoHex 분기 보상: 확정 순위 1위 1,000 · 2위 500 … 운영자는 빼고, 예약이 다시 돌아도 두 번 주지 않는다', async () => {
+    let now = kstTime(2026, 12, 31, 22, 0);
+    Date.now = () => now;
+    try {
+        const env = await fresh();
+        const m = env.COMMUNITY._m;
+        const a = await member(env, '5001', '일등');
+        const b = await member(env, '5002', '이등');
+        const c = await member(env, '5003', '운영');
+        for (const s of [a, b, c]) assert.equal((await join(env, s)).status, 200);
+        await visit(env, a, '11100001');
+        await visit(env, a, '11100004');   // 일등: 칸 2개
+        await visit(env, b, '11100005');   // 이등: 칸 1개(판매점 1)
+        await visit(env, c, '11100002');
+        await visit(env, c, '11100003');   // 운영: 0,0 칸에서 2곳 — 일등(1곳)에게서 빼앗는다
+        const key = nick => [...m.keys()].find(k => k.startsWith('u:') && m.get(k).nick === nick);
+        const st = m.get(key('운영')); st.staff = true; m.set(key('운영'), st);
+        env.COMMUNITY.restart();
+        now = kstTime(2027, 1, 1, 0, 17);
+        const fin = () => env.COMMUNITY.get().fetch('https://community/', { method: 'POST', body: JSON.stringify({ op: 'terrFinalize', now }) }).then(r => r.json());
+        const f1 = await fin();
+        const rec = m.get('ts:2026Q4');
+        assert.ok(rec.paid);
+        const order = rec.rank.map(r => r.nick);
+        const pts = nick => (m.get(key(nick)).trw || { pts: 0 }).pts;
+        const want = { 일등: 0, 이등: 0, 운영: 0 };
+        order.forEach((n, i) => { if (n !== '운영' && i < 10) want[n] = [1000, 500, 300, 100][Math.min(i, 3)]; });
+        assert.deepEqual({ 일등: pts('일등'), 이등: pts('이등'), 운영: pts('운영') }, want, '순위대로 · 운영자 제외 (' + order.join(',') + ')');
+        assert.equal(f1.paid, Object.values(want).filter(Boolean).length);
+        assert.equal(m.get(key(order.find(n => n !== '운영'))).trw.s['2026Q4'], want[order.find(n => n !== '운영')]);
+        // 다시 돌아도(끝까지 줬든 중간에 끊겼든) 두 번 주지 않는다
+        await fin();
+        rec.paid = false; m.set('ts:2026Q4', rec); env.COMMUNITY.restart();
+        const f3 = await fin();
+        assert.equal(f3.paid, 0);
+        assert.deepEqual({ 일등: pts('일등'), 이등: pts('이등'), 운영: pts('운영') }, want);
+        const sc = (await call(env, 'GET', '/api/me', { headers: auth(order[0] === '운영' ? b : (order[0] === '일등' ? a : b)) })).data.user.score;
+        assert.ok(sc.hex > 0 && sc.total >= sc.hex, '점수 · 쓸 수 있는 포인트에 들어간다');
+    } finally { Date.now = realNow; }
+});
