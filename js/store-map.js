@@ -1178,6 +1178,23 @@
         drawTerr();
         if (hexMobile()) setSheet(sheetSnap);
         if (!flyMine() && map.getZoom() < 10) map.flyTo({ center: map.getCenter(), zoom: 11.5, essential: true });   // 전국을 보고 있으면 칸이 보이는 크기로
+        askJoin();
+    }
+    // LottoHex 에 들어왔을 때 아직 참여 전이면 참여 창을 바로 띄운다(2026-11-09 사장님 — 휴대폰에서 아래 판을 올려야 "참여하기"가 보였다).
+    // 이 페이지에서 한 번, "나중에" · ×를 누르면 하루 동안은 저절로 띄우지 않는다(아래 판 "참여하기"는 그대로). 별명이 없으면 띄우지 않는다(참여하기가 별명 창으로)
+    const HEX_LATER = 'lottodraw.hex.later';
+    let joinAsked = false;
+    function askJoin() {
+        if (joinAsked || !hexMode || !terr || (terr.me && terr.me.joined)) return;
+        const A = account(), u = A && A.session() && A.me() && A.me().user;
+        if (!u || !u.nick) return;
+        let later = 0;
+        try { later = Number(localStorage.getItem(HEX_LATER)) || 0; } catch (e) { /* 이 기기에서만 */ }
+        if (Date.now() - later < 86400000) return;
+        joinAsked = true;
+        const gp = document.getElementById('sm-geo-pop');
+        if (gp) gp.hidden = true;   // 위치 동의는 참여 창에 한 줄로 함께
+        if (hexMobile()) drawConsent(); else { terrView = 'consent'; drawTerr(); }
     }
     // ───── LottoHex 판매점 층(2026-11-08 사장님 — "당첨 수에 따른 버블 크기를 없애고 일반 판매점과 같은 크기, 필터는 다 풀어 모든 판매점이 보이게, 판매점이 빛나게") ─────
     // LottoHex 에서는 원래 판매점 층(st-*: 1등 횟수 크기 · 칩 · 흐리게 막대 · TOP 50 · 1등 방식)을 감추고, 문을 연 모든 판매점(1 · 2등 + 일반, 폐점 빼고 — 칸이 세는 판매점과 같다)을
@@ -1337,6 +1354,7 @@
             intro('store', () => {
                 const cp = document.getElementById('sm-consent-pop');
                 if (cp) cp.hidden = true;
+                terrView = 'main';
                 hexMode = false;
                 root.classList.remove('is-hex');
                 setTerr(false);
@@ -1697,40 +1715,41 @@
         const nk = terrPanel.querySelector('.sm-news-ok');
         if (nk) nk.addEventListener('click', () => { terrNews = null; drawTerr(); });
     }
-    // 참여 동의(2026-11-07 사장님 — "이 기능을 쓰려면 먼저 동의"). 서버는 동의 문구 판(TERR_V)과 동의한 때를 적는다
+    // 참여 동의(2026-11-07 사장님 — "이 기능을 쓰려면 먼저 동의"). 서버는 동의 문구 판(TERR_V)과 동의한 때를 적는다.
+    // 2026-11-09 사장님 — 안내 문단 없이 동의 한 줄 + 이용약관 링크(칸 · 별명 공개 같은 내용은 이용약관 8번 · 처리방침 4번에). 위치 동의가 아직이면
+    // 위치 줄을 따로 한 줄 더(두 동의는 따로 받는다), 둘 다 체크해야 참여 — 위치로 인증한 곳만 세니 위치 동의 없이는 칸을 가질 수 없다
     function drawConsent() {
-        const A = account(), u = A.me() && A.me().user;
+        const A = account(), g = gpsCfg(), needGeo = !!g && !geoAgreed();
         const html = '<button type="button" class="sm-close" aria-label="' + T('닫기', 'Close') + '">×</button>' +
-            '<h3>' + T('LottoHex 참여 안내', 'Joining LottoHex') + ' <small class="sm-terr-beta">' + T('시험판', 'beta') + '</small></h3>' +
-            '<ol class="sm-terr-consent">' +
-            '<li>' + (gpsCfg() ? T('참여하면 내가 판매점 50m 안에서 위치로 인증한 "다녀온 곳"을 칸(육각형)마다 세어 칸 주인을 정합니다.', 'Retailers you verified by location (within 50 m) are counted per hexagon cell to decide who holds it.')
-                : T('참여하면 내가 "다녀온 곳"으로 표시한 판매점을 칸(육각형)마다 세어 칸 주인을 정합니다. 참여 전에 표시한 곳도 셉니다.', 'Your marked places are counted per hexagon cell, including those marked before joining.')) + '</li>' +
-            '<li><b>' + T('내가 차지한 칸(약 1km 육각형)과 별명(' + esc(u && u.nick || '') + '), 칸별 방문 수가 다른 사람에게 보입니다', 'Cells you hold (about 1 km hexagons), your nickname (' + esc(u && u.nick || '') + ') and visits per cell are shown to others') + '</b>' +
-                T('(Map 랭킹 · 분기 확정 순위 포함). 어느 판매점을 언제 다녀왔는지는 보이지 않습니다.', ' (including the Map ranking and quarterly results). Which retailers you visited, and when, is never shown.') + '</li>' +   // 2026-11-09 사장님 — 거부감 없게 사실만
-            '</ol>' +   // 3 · 4 · 5번(위치 안 씀 · 살 필요 없음 · 그만두기)은 뺐다(2026-11-08 사장님 — 너무 조심스럽다, 곧 GPS). 19세는 아래 체크에
-            '<label class="sm-terr-agree"><input type="checkbox"> ' + T('위 내용을 읽었고 동의합니다 (만 19세 이상)', 'I have read and agree (19 or older)') + '</label>' +
-            '<p class="sm-terr-btns"><button type="button" class="sm-terr-ok" disabled>' + T('동의하고 참여', 'Agree and join') + '</button> <button type="button" class="sm-terr-cancel">' + T('취소', 'Cancel') + '</button></p>' +
-            '<p class="sm-small"><a href="privacy.html#members">' + T('개인정보 처리방침', 'Privacy policy') + '</a></p>' +
+            '<h3>' + T('LottoHex 참여', 'Join LottoHex') + ' <small class="sm-terr-beta">' + T('시험판', 'beta') + '</small></h3>' +
+            '<label class="sm-terr-agree"><input type="checkbox"> ' + T('LottoHex 참여에 동의합니다. (만 19세 이상)', 'I agree to join LottoHex. (19 or older)') + '</label>' +
+            (needGeo ? geoAgreeLine(false) : '') +
+            '<p class="sm-terr-btns"><button type="button" class="sm-terr-ok" disabled>' + T('동의하고 참여', 'Agree and join') + '</button> <button type="button" class="sm-terr-cancel">' + T('나중에', 'Later') + '</button></p>' +
+            termsLine() +
             '<p class="sm-terr-msg" role="status"></p>';
         // 휴대폰 LottoHex 모드는 화면 가운데 중간 크기 창(2026-11-08 사장님 — "대문짝만하다, 지도가 보이게"). PC 는 왼쪽 칸 그대로
         let pop = null, el = terrPanel;
         if (hexMobile()) {
             pop = document.getElementById('sm-consent-pop');
             if (!pop) { pop = document.createElement('div'); pop.id = 'sm-consent-pop'; pop.className = 'sm-consent-pop'; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-modal', 'true'); root.appendChild(pop); }
-            pop.setAttribute('aria-label', T('LottoHex 참여 안내', 'Joining LottoHex'));
+            pop.setAttribute('aria-label', T('LottoHex 참여', 'Join LottoHex'));
             el = pop;
         }
         el.innerHTML = html;
         el.hidden = false;
         el.scrollTop = 0;
-        const box = el.querySelector('.sm-terr-agree input'), ok = el.querySelector('.sm-terr-ok');
-        box.addEventListener('change', () => { ok.disabled = !box.checked; });
-        const back = () => { terrView = 'main'; if (pop) pop.hidden = true; else drawTerr(); };
+        const ok = el.querySelector('.sm-terr-ok');
+        agreeBoxes(el, ok);
+        const back = () => { terrView = 'main'; if (pop) pop.hidden = true; else drawTerr(); try { localStorage.setItem(HEX_LATER, String(Date.now())); } catch (e) { /* 이 기기에서만 */ } };
         el.querySelector('.sm-close').addEventListener('click', back);
         el.querySelector('.sm-terr-cancel').addEventListener('click', back);
         ok.addEventListener('click', async () => {
             ok.disabled = true;
             try {
+                if (needGeo) {
+                    const r = await A.call('/api/me/geo', { method: 'POST', body: { agree: true, v: g.geoV } });
+                    if (A.patchUser) A.patchUser({ geo: r.user.geo });
+                }
                 await A.call('/api/territory/join', { method: 'POST', body: { agree: true, v: terrV() } });
                 await A.refresh().catch(() => null);
                 terrView = 'main';
@@ -1739,7 +1758,7 @@
                 drawTerrLayers();
                 drawTerr();
                 terrPanel.scrollTop = 0;
-                flyMine();
+                if (!flyMine() && needGeo) geoStart();   // 칸이 아직 없으면 내 위치로(위치를 막 켰을 때)
             } catch (e) {
                 ok.disabled = false;
                 el.querySelector('.sm-terr-msg').textContent = (e && e.message) || T('참여하지 못했습니다.', 'Could not join.');
@@ -1904,6 +1923,14 @@
     // "다녀왔어요" · "또 다녀왔어요"를 누르면 그 순간 위치를 한 번 받아 서버로 보내고, 서버가 판매점 50m 안인지 판정한다(좌표는 서버가 저장하지 않는다)
     const GEO_LATER = 'lottodraw.geo.later';
     const geoAgreed = () => { const A = account(), u = A && A.me() && A.me().user, g = gpsCfg(); return !!(g && u && u.geo && u.geo.v === g.geoV); };
+    // 동의 창의 줄 · 약관 링크(위치 동의 창과 LottoHex 참여 창이 같이 쓴다)
+    const geoAgreeLine = age => '<label class="sm-terr-agree"><input type="checkbox"> ' + T('위치정보 서비스 이용에 동의합니다.' + (age ? ' (만 14세 이상)' : ''), 'I agree to the location-based service.' + (age ? ' (14 or older)' : '')) + '</label>';   // LottoHex 창에서는 위 줄이 19세
+    const termsLine = () => '<p class="sm-small">' + T('자세한 내용은 <a href="terms.html#location">이용약관</a>에서 확인할 수 있습니다.', 'See the <a href="terms.html#location">Terms of Use</a> for details.') + '</p>';
+    // 체크가 모두 되어야 단추가 눌린다
+    function agreeBoxes(el, ok) {
+        const boxes = [...el.querySelectorAll('.sm-terr-agree input')];
+        boxes.forEach(b => b.addEventListener('change', () => { ok.disabled = !boxes.every(x => x.checked); }));
+    }
     function geoStart() {
         if (!geo || geoActive()) return;
         try { geo.trigger(); } catch (e) { /* 지도 준비 전 */ }
@@ -1913,24 +1940,17 @@
         if (!g) return;
         let pop = document.getElementById('sm-geo-pop');
         if (!pop) { pop = document.createElement('div'); pop.id = 'sm-geo-pop'; pop.className = 'sm-consent-pop sm-geo-pop'; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-modal', 'true'); root.appendChild(pop); }
-        pop.setAttribute('aria-label', T('위치 이용 안내', 'Using your location'));
+        // 동의 창은 한 줄만(2026-11-09 사장님 — "이런저런 얘기 없이 '위치정보 서비스 이용에 동의합니다' 정도만, 자세한 건 이용약관 링크"). 받는 정보 · 보관 · 철회는 이용약관 8번 · 처리방침 5번
+        pop.setAttribute('aria-label', T('위치 이용 동의', 'Location consent'));
         pop.innerHTML = '<button type="button" class="sm-close" aria-label="' + T('닫기', 'Close') + '">×</button>' +
-            '<h3>📍 ' + T('위치 이용 안내', 'Using your location') + '</h3>' +
-            '<ul class="sm-terr-consent">' +
-            '<li>' + T('받는 정보: "다녀왔어요"를 누를 때 한 번, 휴대폰 · PC의 현재 위치(위도 · 경도 · 오차)', 'What: your current location (latitude, longitude, accuracy) once, when you tap "I\'ve been here"') + '</li>' +
-            '<li>' + T('쓰는 곳: 그 판매점 50m 안에 있는지 확인(다녀온 곳 인증)', 'Why: to check you are within 50 m of that retailer') + '</li>' +
-            '<li>' + T('확인 직후 위치 좌표는 버리고 저장하지 않습니다. 인증한 판매점과 시각만 남깁니다.', 'The coordinates are discarded right after the check. Only the retailer and time are kept.') + '</li>' +
-            '<li>' + T('지도의 내 위치는 이 기기 안에서만 보여 주고 서버로 보내지 않습니다.', 'Your position on the map stays on this device.') + '</li>' +
-            '<li>' + T('마이페이지 · 내 기록의 "위치 이용 동의 철회"로 언제든 철회할 수 있고, 철회하면 인증한 다녀온 곳을 지웁니다.', 'Withdraw any time (My page or My places); verified visits are then deleted.') + '</li>' +
-            '<li>' + T('동의하지 않아도 지도 · 검색 · 댓글은 그대로 쓸 수 있습니다.', 'The map, search and comments work without this.') + '</li>' +
-            '</ul>' +
-            '<label class="sm-terr-agree"><input type="checkbox"> ' + T('위 내용에 동의합니다 (만 14세 이상)', 'I agree (I am 14 or older)') + '</label>' +
+            '<h3>📍 ' + T('위치 이용 동의', 'Location consent') + '</h3>' +
+            geoAgreeLine(true) +
             '<p class="sm-terr-btns"><button type="button" class="sm-terr-ok" disabled>' + T('동의하고 위치 켜기', 'Agree and turn on') + '</button> <button type="button" class="sm-terr-cancel">' + T('나중에', 'Later') + '</button></p>' +
-            '<p class="sm-small"><a href="privacy.html#location">' + T('개인정보 처리방침', 'Privacy policy') + '</a> · <a href="terms.html#location">' + T('이용약관', 'Terms') + '</a></p>' +
+            termsLine() +
             '<p class="sm-terr-msg" role="status"></p>';
         pop.hidden = false;
-        const box = pop.querySelector('.sm-terr-agree input'), ok = pop.querySelector('.sm-terr-ok');
-        box.addEventListener('change', () => { ok.disabled = !box.checked; });
+        const ok = pop.querySelector('.sm-terr-ok');
+        agreeBoxes(pop, ok);
         const later = () => { pop.hidden = true; try { localStorage.setItem(GEO_LATER, String(Date.now())); } catch (e) { /* 이 기기에서만 */ } };
         pop.querySelector('.sm-close').addEventListener('click', later);
         pop.querySelector('.sm-terr-cancel').addEventListener('click', later);
@@ -1957,6 +1977,7 @@
         let deep = false;
         try { const q = new URLSearchParams(location.search); deep = !!(q.get('shop') || q.get('area')) || /map=/.test(location.hash); } catch (e) { /* 구형 */ }
         if (geoAgreed()) { if (!deep) geoStart(); return; }
+        if (hexMode && !joinedNow()) return;   // LottoHex 참여 창이 위치 동의 줄을 함께 묻는다
         let later = 0;
         try { later = Number(localStorage.getItem(GEO_LATER)) || 0; } catch (e) { /* 이 기기에서만 */ }
         if (Date.now() - later < 3 * 86400000) return;   // "나중에"를 누르면 3일 동안 묻지 않는다
