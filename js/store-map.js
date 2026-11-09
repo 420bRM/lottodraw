@@ -989,6 +989,7 @@
         terrLoading = p;
         try { const r = await p; if (terrLoading === p) terr = r; } catch (e) { if (terrLoading === p) terr = terr || null; }
         if (terrLoading === p) terrLoading = null;
+        if (terr && terr.me && terr.me.fresh) { const f = terr.me.fresh; delete terr.me.fresh; afterFresh(f); }
         hexNews();
         turfStatus();
     }
@@ -1170,7 +1171,7 @@
         terrPanel.innerHTML = hexMobile() ? '<div class="sm-sheet-head"><span class="sm-sheet-grip" aria-hidden="true"></span></div><div class="sm-sheet-body">' + loading + '</div>' : loading;
         if (isWide()) setTab('terr'); else { card.hidden = true; nearPanel.hidden = true; minePanel.hidden = true; }
         const A = account();
-        await Promise.all([needAll(), loadTerr(), A && A.session() ? loadIds().then(syncVisits) : null]);   // 판매점 번호: 칸 목록의 ✓(다녀온 곳)
+        await Promise.all([needAll(), loadTerr(), A && A.session() ? loadIds().then(syncVisits) : null, loadTitleCat()]);   // 판매점 번호: 칸 목록의 ✓(다녀온 곳) · 칭호 목록
         if (!shown.terr) return;
         buildCells();
         drawTerrLayers();
@@ -1431,7 +1432,7 @@
             : T(' · 같은 수 — 이 칸 판매점에 오늘 또 다녀오면 되찾습니다', ' · tied — visit one again today to take it back');
         const where = list.length ? areaOf(list) : '';
         return '<div class="sm-terr-cell"><h4>' + T('고른 칸', 'This cell') + (where ? ' · ' + esc(where) : '') + ' <small>' + T('판매점 ' + fmt(list.length) + '곳', fmt(list.length) + ' retailers') + '</small></h4>' +
-            '<p>' + (own ? T('주인 ', 'Held by ') + swatch(own[4]) + '<b>' + esc(own[0] || T('(별명 없음)', '(no name)')) + '</b>' +
+            '<p>' + (own ? T('주인 ', 'Held by ') + swatch(own[4]) + ttBadge(own[5]) + '<b>' + esc(own[0] || T('(별명 없음)', '(no name)')) + '</b>' +
                 T(' · ' + own[1] + '곳', ' · ' + own[1]) + (own[2] ? T(' (2위 ' + own[2] + '곳)', ' (runner-up ' + own[2] + ')') : '')
                 : '<span class="sm-skin sm-skin-grey" aria-hidden="true"></span><b>' + T('회색지대', 'Grey zone') + '</b>' + T(' — 아직 주인이 없는 칸입니다. 이 칸 판매점 한 곳만 다녀와도 차지합니다.', ' — no one holds it yet; one visit takes it.')) + '</p>' +
             (me && me.joined ? '<p class="sm-terr-mine">' + T('나: ' + myN + '곳', 'Me: ' + myN) + myLine + '</p>' : '') +
@@ -1543,9 +1544,132 @@
             '<ol class="sm-todo-list">' + n.lost.map(k => cellRow(k, '', 'is-lost', null, '<b class="is-hot">' + T('잃음', 'lost') + '</b>')).join('') + n.won.map(k => cellRow(k, '', 'is-won', (terr.cells[k] || [])[4], '<b class="is-won">' + T('얻음', 'gained') + '</b>')).join('') + '</ol>' +
             '<p class="sm-small">' + T('폐점 · 칸 목록이 바뀌어 빠진 칸도 잃은 칸으로 나옵니다.', 'Cells dropped because a retailer closed also show as lost.') + '</p></div>';
     }
+    // ───── 마일스톤 · 칭호(2026-11-09 사장님 — worker/src/titles.js) ─────
+    // 마일스톤 = "얼마나"(쌓이는 숫자의 단계, 단계마다 포인트, 나만 봄 — "할 일" 탭), 칭호 = "어떻게"(이름 붙은 업적, 칭호 도감에 모으고 하나를 골라 별명 앞에 단다 — "도감" 탭).
+    // 목록은 서버(/api/titles, 숨은 칭호는 얻기 전까지 이름 · 조건 없이)에서, 얻은 것은 내 정보(user.titles · user.ach)에서. 셈은 서버가 한다 — 여기 진행률은 보여 주기만
+    let titleCat = null, titleCatP = null;
+    function loadTitleCat() {
+        if (!titleCatP) titleCatP = fetch(apiBase() + '/api/titles').then(r => (r.ok ? r.json() : null)).catch(() => null).then(j => { titleCat = j; return j; });
+        return titleCatP;
+    }
+    const ttName = tt => (tt ? T(tt[0], tt[1]) : '');
+    const ttBadge = tt => (tt ? '<span class="sm-ttl">' + esc(ttName(tt)) + '</span>' : '');
+    const TTL_GROUPS = () => [['visit', '🧭 ' + T('방문', 'Visits')], ['terr', '🚩 ' + T('영토', 'Territory')], ['shape', '⬡ ' + T('칸 모양', 'Shapes')], ['area', '📍 ' + T('지역', 'Regions')], ['hidden', '❔ ' + T('숨은 칭호', 'Hidden')]];
+    // 내 다녀온 곳의 셈(진행률용): 판매점 수 · 칸 · 시·도 · 지역(시·군·구 — 서버의 store-map-geo.json 과 같은 규칙: 주소 첫 낱말, 여러 시·도에 있는 이름은 시·도를 붙임)
+    let regionOf = null;
+    function myCounts() {
+        const out = { v: Object.keys(visits).length, c: 0, s: 0, regions: new Map() };
+        if (!ids) return out;
+        const guOf = (si, gu) => String(gu || '').trim().split(/\s+/)[0] || si;
+        if (!regionOf) {
+            const rows = [];
+            data.rows.forEach((r, i) => { if (!r[7] && ids.w[i]) rows.push([ids.w[i], data.sido[r[5]] || '', r[6]]); });
+            if (all && ids.a) all.rows.forEach((r, i) => { if (ids.a[i]) rows.push([ids.a[i], all.sido[r[3]] || '', r[4]]); });
+            const sidoOf = new Map();
+            rows.forEach(([, si, gu]) => { const g = guOf(si, gu); if (!sidoOf.has(g)) sidoOf.set(g, new Set()); sidoOf.get(g).add(si); });
+            regionOf = new Map(rows.map(([id, si, gu]) => { const g = guOf(si, gu); return [id, [si, g === si ? si : sidoOf.get(g).size > 1 ? si + ' ' + g : g]]; }));
+            if (!all) regionOf.partial = true;   // 일반 판매점을 아직 안 받았으면 다시 만든다
+        }
+        const sido = new Set(), cells = new Set(), idCell = new Map();
+        if (terrCells) terrCells.forEach((list, k) => list.forEach(x => { const id = x.t === 'w' ? ids.w[x.i] : ids.a && ids.a[x.i]; if (id) idCell.set(id, k); }));
+        for (const id of Object.keys(visits)) {
+            const rg = regionOf.get(id);
+            if (rg) { sido.add(rg[0]); out.regions.set(rg[1], (out.regions.get(rg[1]) || 0) + 1); }
+            if (idCell.has(id)) cells.add(idCell.get(id));
+        }
+        if (regionOf.partial && all) regionOf = null;
+        out.c = cells.size; out.s = sido.size;
+        return out;
+    }
+    function milestoneBlock() {
+        const A = account(), u = A && A.me() && A.me().user;
+        if (!titleCat || !u || !gpsCfg()) return '';
+        const ach = u.ach || {}, cnt = myCounts(), held = (terr && terr.me && terr.me.cells) ? terr.me.cells.length : 0;
+        const val = { v: cnt.v, c: cnt.c, s: cnt.s, t: held };
+        const unit = m => T(m.u[0], m.u[1]);
+        const rows = titleCat.milestones.map(m => {
+            const done = Math.max(ach[m.k] || 0, m.steps.filter(x => val[m.k] >= x).length);
+            const fin = done >= m.steps.length, next = fin ? m.steps[m.steps.length - 1] : m.steps[done];
+            const pct = Math.min(100, Math.round(val[m.k] / next * 100));
+            return '<li><p><b>' + T(m.ko, m.en) + '</b> <span class="sm-ms-step">' + T(done + ' / ' + m.steps.length + '단계', 'step ' + done + ' / ' + m.steps.length) + '</span></p>' +
+                '<span class="sm-dex-bar"><i style="width:' + (fin ? 100 : Math.max(val[m.k] ? 3 : 0, pct)) + '%"></i></span>' +
+                '<p class="sm-small">' + (fin ? T('모든 단계를 이뤘습니다 🎉', 'All steps done 🎉')
+                    : T('다음 ' + fmt(next) + unit(m) + ' · 지금 ' + fmt(val[m.k]) + unit(m) + ' · <b>+' + m.pts[done] + 'P</b>', 'Next ' + fmt(next) + ' · now ' + fmt(val[m.k]) + ' · <b>+' + m.pts[done] + 'P</b>')) +
+                (m.k === 't' ? T(' (지금 차지한 칸)', ' (cells held now)') : '') + '</p></li>';
+        }).join('');
+        return '<div class="sm-ms"><h4 class="sm-terr-h">🏁 ' + T('마일스톤', 'Milestones') + ' <small>' + T('단계마다 포인트', 'points at each step') + '</small></h4><ul class="sm-ms-list">' + rows + '</ul>' +
+            '<p class="sm-small">' + T('위치로 인증한 다녀온 곳으로 셉니다. 이룬 단계와 받은 포인트는 다녀온 곳을 지워도 그대로입니다.', 'Counted from places verified by location. Steps reached and points earned stay even if you remove a place.') + '</p></div>';
+    }
+    function titleDex() {
+        const A = account(), u = A && A.me() && A.me().user;
+        if (!titleCat || !u || !gpsCfg()) return '';
+        const my = u.titles || { e: [], sel: null }, got = new Map(my.e.map(t => [t.id, t]));
+        const fixed = titleCat.titles, nGot = fixed.filter(t => got.has(t.id)).length;
+        const areaGot = my.e.filter(t => /^[rs]:/.test(t.id));
+        const item = (id, name, cond, cls) => (got.has(id)
+            ? '<button type="button" class="sm-ttl-item is-on' + (my.sel === id ? ' is-sel' : '') + '" data-ttl="' + esc(id) + '" aria-pressed="' + (my.sel === id) + '"><b>' + esc(name) + '</b><small>' + esc(cond) + '</small></button>'
+            : '<div class="sm-ttl-item' + (cls ? ' ' + cls : '') + '"><b>' + esc(name) + '</b><small>' + esc(cond) + '</small></div>');
+        const cond = d => (d ? T(d[0], d[1]) : '');
+        const groups = TTL_GROUPS().map(([g, label]) => {
+            let items = fixed.filter(t => t.g === g).map(t => {
+                const mine = got.get(t.id);
+                if (t.g === 'hidden') return mine ? item(t.id, T(mine.ko, mine.en), cond(mine.d)) : item(t.id, '???', T('조건을 찾아보세요', 'Find the condition'), 'is-hidden');
+                return item(t.id, T(t.ko, t.en), cond(t.d));
+            }).join('');
+            if (g === 'area') {
+                items += areaGot.map(t => item(t.id, T(t.ko, t.en), /^s:/.test(t.id) ? T('그 시·도의 모든 시·군·구에서 인증', 'Every district of the province') : T('같은 시·군·구에서 인증', 'Verified in one district'))).join('');
+                // 다음 지역 칭호까지(가장 가까운 세 곳)
+                const st = titleCat.area.steps, nm = titleCat.area.names;
+                const near = [...myCounts().regions.entries()].map(([r, n]) => { const k = st.findIndex(x => n < x); return k < 0 ? null : { r, n, k, need: st[k] }; }).filter(Boolean)
+                    .sort((a, b) => (a.need - a.n) - (b.need - b.n)).slice(0, 3);
+                if (near.length) items += '<p class="sm-small sm-ttl-next">' + near.map(x => T(esc(x.r) + ' ' + x.n + '/' + x.need + '곳 → ' + esc(x.r) + ' ' + nm[x.k][0], esc(x.r) + ' ' + x.n + '/' + x.need + ' → ' + nm[x.k][1])).join('<br>') + '</p>';
+            }
+            return '<h5 class="sm-ttl-g">' + label + '</h5><div class="sm-ttl-grid">' + items + '</div>';
+        }).join('');
+        const sel = my.sel && got.get(my.sel);
+        return '<div class="sm-ttldex"><h4 class="sm-terr-h">🏅 ' + T('칭호 도감', 'Titles') + ' <small>' + T(nGot + ' / ' + fixed.length + (areaGot.length ? ' · 지역 칭호 ' + areaGot.length : ''), nGot + ' / ' + fixed.length + (areaGot.length ? ' · regional ' + areaGot.length : '')) + '</small></h4>' +
+            '<p class="sm-ttl-cur">' + (sel ? T('단 칭호 ', 'Wearing ') + '<span class="sm-ttl">' + esc(T(sel.ko, sel.en)) + '</span> <button type="button" class="sm-ttl-off">' + T('떼기', 'Remove') + '</button>'
+                : T('얻은 칭호를 누르면 별명 앞에 달립니다(LottoHex 랭킹 · 칸 · 랭킹 페이지).', 'Tap a title you have earned to show it before your nickname.')) + '</p>' +
+            groups + '<p class="sm-terr-msg sm-ttl-msg" role="status"></p></div>';
+    }
+    async function pickTitle(id) {
+        const A = account();
+        try {
+            const r = await A.call('/api/me/title', { method: 'POST', body: { id } });
+            if (A.patchUser && r.user) A.patchUser({ titles: r.user.titles });
+            await loadTerr(); drawTerrLayers(); drawTerr();
+        } catch (e) { const m = terrPanel.querySelector('.sm-ttl-msg'); if (m) m.textContent = (e && e.message) || T('바꾸지 못했습니다.', 'Could not change.'); }
+    }
+    // 새로 얻은 칭호 · 마일스톤 알림(인증 · LottoHex 를 열 때 서버가 알려 준다)
+    function freshText(f) {
+        if (!f || (!f.titles.length && !f.pts)) return '';
+        return [f.titles.length ? T('🏅 새 칭호: ', '🏅 New title: ') + f.titles.map(t => T(t.ko, t.en)).join(', ') : '', f.pts ? T('🏁 마일스톤 +' + f.pts + 'P', '🏁 Milestone +' + f.pts + 'P') : ''].filter(Boolean).join(' · ');
+    }
+    // 새로 얻은 것: 화면 위 알림(6초, 누르면 닫힘) + 내 정보(칭호 · 포인트)를 새로
+    function toast(msg) {
+        if (!msg) return;
+        let t = document.getElementById('sm-toast');
+        if (!t) {
+            t = document.createElement('div'); t.id = 'sm-toast'; t.className = 'sm-toast'; t.setAttribute('role', 'status'); root.appendChild(t);
+            t.addEventListener('click', () => { t.classList.remove('is-on'); });
+        }
+        t.textContent = msg;
+        t.classList.add('is-on');
+        clearTimeout(t.tm);
+        t.tm = setTimeout(() => t.classList.remove('is-on'), 6000);
+    }
+    async function afterFresh(f) {
+        const A = account();
+        if (!f || !A) return;
+        toast(freshText(f));
+        await A.refresh().catch(() => null);
+        if (shown.terr && terrOpen) drawTerr();
+    }
+
     // 6. 칸 도감: 다녀온 곳이 있는 칸 / 전국 칸(폐점 빼고 판매점이 있는 칸). 시 · 도는 칸 안 판매점의 다수결. 참여하지 않은 회원도 본다
     let cellSido = null;
-    const DEX_BADGES = [10, 50, 100];
+    const DEX_BADGES = [10, 50, 100];   // 칭호 목록을 받으면 마일스톤 "다녀온 칸" 단계로(dexSteps)
+    const dexSteps = () => { const m = titleCat && titleCat.milestones.find(x => x.k === 'c'); return m ? m.steps : DEX_BADGES; };
     function dexBlock() {
         if (!terrCells || !ids || !Object.keys(visits).length) return '';
         if (!cellSido) { cellSido = new Map(); terrCells.forEach((list, k) => cellSido.set(k, (areaKeyOf(list).split(' ')[0]) || '')); }
@@ -1564,7 +1688,7 @@
         const on = sido.filter(si => got.get(si)), off = sido.filter(si => !got.get(si));
         return '<div class="sm-hexdex"><h4 class="sm-terr-h">📖 ' + T('칸 도감', 'Cell collection') + ' <small>' + T('다녀온 곳이 있는 칸', 'cells with a place you visited') + '</small></h4>' +
             '<p class="sm-dex-total"><b>' + fmt(n) + '</b> / ' + T(fmt(all_) + '칸', fmt(all_) + ' cells') + ' <small>' + pct(n / all_) + '</small></p>' + bar(n, all_) +
-            '<p class="sm-dex-badges">' + DEX_BADGES.map(b => '<span class="sm-dex-badge' + (n >= b ? ' is-on' : '') + '" title="' + T(b + '칸 다녀오기', 'Visit ' + b + ' cells') + '">⬡ ' + b +
+            '<p class="sm-dex-badges">' + dexSteps().map(b => '<span class="sm-dex-badge' + (n >= b ? ' is-on' : '') + '" title="' + T(b + '칸 다녀오기', 'Visit ' + b + ' cells') + '">⬡ ' + b +
                 (n >= b ? '' : '<small>' + T((b - n) + '칸 남음', (b - n) + ' to go') + '</small>') + '</span>').join('') + '</p>' +
             (on.length ? '<ul class="sm-dex-sido">' + on.map(row).join('') + '</ul>' : '') +
             (off.length ? '<details class="sm-dex-more"><summary>' + T('나머지 시 · 도 ' + off.length + '곳', off.length + ' more regions') + '</summary><ul class="sm-dex-sido">' + off.map(row).join('') + '</ul></details>' : '') +
@@ -1623,7 +1747,7 @@
     // 랭킹 목록(지금 · 지난 분기 확정). medal: 1~3위에 메달
     function rankList(rows, mine, medal) {
         return '<ol class="sm-terr-rank">' + rows.map((r, k) => '<li' + (mine === k + 1 ? ' class="is-me"' : '') + '><span class="sm-rank">' + (medal && MEDAL[k] ? MEDAL[k] : k + 1) + '</span><span class="sm-tname">' +
-            (r.skin ? swatch(r.skin) : '') + esc(r.nick || T('(탈퇴했거나 별명 없음)', '(no name)')) + '</span><span class="sm-tcnt"><b>' + fmt(r.cells) + '</b>' + T('칸', '') + '<small>' + T(fmt(r.stores) + '곳', fmt(r.stores) + ' visits') + '</small></span></li>').join('') + '</ol>';
+            (r.skin ? swatch(r.skin) : '') + ttBadge(r.tt) + esc(r.nick || T('(탈퇴했거나 별명 없음)', '(no name)')) + '</span><span class="sm-tcnt"><b>' + fmt(r.cells) + '</b>' + T('칸', '') + '<small>' + T(fmt(r.stores) + '곳', fmt(r.stores) + ' visits') + '</small></span></li>').join('') + '</ol>';
     }
     function drawTerr() {
         if (!shown.terr || !terrOpen) return;   // 창을 닫았으면 칸만 새로 그린다(drawTerrLayers)
@@ -1649,7 +1773,8 @@
         const tab = sheet ? terrTab : null;
         const news = joined && (!sheet || tab === 'now') ? newsBlock() : '';   // newsBlock 은 보이면 "봄"으로 적는다 — 보일 때만 부른다
         const todo = joined && terrCells ? todoLists(me) : '';
-        const dex = A && A.session() ? dexBlock() : '';
+        const dex = A && A.session() ? titleDex() + dexBlock() : '';
+        const ms = A && A.session() ? milestoneBlock() : '';
         const rankPart = '<h4 class="sm-terr-h">' + T('Map 랭킹', 'Map ranking') + ' <small>' + T(seasonLabel(s) + ' · ' + seasonEnd(s) + ' 24시에 확정', seasonLabel(s) + ' · final at the end of ' + seasonEnd(s)) + '</small></h4>' +
             (rank.length ? rankList(rank, me && me.rank) : '<p class="sm-small">' + T('아직 칸을 차지한 사람이 없습니다.', 'No one holds a cell yet.') + '</p>') +
             (last && last.rank.length ? '<h4 class="sm-terr-h">🏆 ' + T(seasonLabel(last) + ' 확정 순위', seasonLabel(last) + ' final ranking') + '</h4>' + rankList(last.rank, me && me.lastRank, true) : '');
@@ -1661,6 +1786,7 @@
             '<li>' + T('밤 지도에서 크게 보면 차지한 칸 테두리를 빛이 시계 방향으로 돌고, 칸 면에는 유리에 비친 듯한 45° 빛이 번쩍 지나갑니다.', 'On the night map, zoomed in, a light runs clockwise round held cells and a quick glassy 45° glint flashes across them.') + '</li>' +
             '<li>' + T('칸은 비우지 않습니다. 분기(1 · 4 · 7 · 10월 1일 0시)마다 그때의 Map 랭킹을 확정해 남깁니다.', 'Cells are never cleared. At the start of each quarter the Map ranking at that moment is finalised and kept.') + '</li>' +
             '<li>' + T('확정 순위 보상: 1위 1,000 · 2위 500 · 3위 300 · 4~10위 100포인트(운영자 제외).', 'Quarterly rewards: 1st 1,000 · 2nd 500 · 3rd 300 · 4th–10th 100 points (operators excluded).') + '</li>' +
+            '<li>' + T('마일스톤 · 칭호: 다녀온 판매점 · 칸 · 시·도 · 영토가 단계에 이르면 포인트를, 방문 · 영토 · 칸 모양(왕지렁이 · 벌집 …) · 지역(마포구 전문가 …)으로 칭호를 얻습니다. 칭호는 "도감"에서 골라 별명 앞에 답니다.', 'Milestones and titles: reach steps in retailers, cells, provinces and territory for points, and earn titles for visits, territory, cell shapes (Giant Worm, Honeycomb …) and regions. Pick a title in "Collection" to show it before your nickname.') + '</li>' +
             '<li>' + (gpsCfg() ? T('다녀온 곳은 판매점 50m 안에서 위치로 인증한 곳만 셉니다. 폐점한 곳은 세지 않습니다.', 'Only retailers verified by location (within 50 m) count. Closed retailers do not count.')
                 : T('지금은 "다녀왔어요"를 누른 기록만 셉니다. 위치 인증(판매점 50m 안)은 준비 중입니다. 폐점한 곳은 세지 않습니다.', 'For now a tap on "I\'ve been here" counts. Location check (within 50 m) is coming. Closed retailers do not count.')) + '</li>' +
             '<li>' + T('복권을 살 필요는 없습니다. 어디서 사든 1등 확률은 1/8,145,060으로 같습니다.', 'No purchase needed. Your chance of 1st prize is 1 in 8,145,060 wherever you buy.') + '</li>' +
@@ -1670,7 +1796,7 @@
         if (sheet) {
             // 휴대폰 LottoHex 모드: 아래 판 — 손잡이 + 탭(현황 · 할 일 · 도감 · 랭킹), 고른 탭만
             const join = '<p class="sm-small">' + T('참여하면 여기에 나옵니다. "현황"에서 참여할 수 있습니다.', 'Join LottoHex (in Status) to see this.') + '</p>';
-            const body = tab === 'todo' ? (todo || join)
+            const body = tab === 'todo' ? ms + (todo || join)
                 : tab === 'dex' ? (dex || '<p class="sm-small">' + T('로그인하고 "다녀왔어요"를 표시하면 다녀온 칸을 모아 볼 수 있습니다.', 'Sign in and mark places you have been to collect cells.') + '</p>')
                 : tab === 'rank' ? rankPart
                 : title + cellPart + statusPart + news + hint + rules + leave;
@@ -1681,7 +1807,7 @@
                 '<div class="sm-sheet-body">' + body + msg + '</div>';
         } else {
             terrPanel.innerHTML = '<button type="button" class="sm-close" aria-label="' + T('닫기', 'Close') + '">×</button>' +
-                title + statusPart + cellPart + hint + news + todo + dex + rankPart + rules + leave + msg;
+                title + statusPart + cellPart + hint + news + ms + todo + dex + rankPart + rules + leave + msg;
         }
         terrPanel.hidden = false;
         if (hexAbout && (!sheet || tab === 'now')) { hexAbout.open = false; (terrPanel.querySelector('.sm-sheet-body') || terrPanel).appendChild(hexAbout); }
@@ -1694,6 +1820,9 @@
             drawTerr();
         }));
         bindSkin();
+        terrPanel.querySelectorAll('.sm-ttl-item[data-ttl]').forEach(b => b.addEventListener('click', () => pickTitle(b.classList.contains('is-sel') ? null : b.dataset.ttl)));
+        const tOff = terrPanel.querySelector('.sm-ttl-off');
+        if (tOff) tOff.addEventListener('click', () => pickTitle(null));
         const jb = terrPanel.querySelector('.sm-terr-join');
         if (jb) jb.addEventListener('click', async () => {
             if (!(await member(T('LottoHex는 로그인한 회원이 참여합니다.', 'Sign in to join LottoHex.')))) return;
@@ -2088,8 +2217,10 @@
                 draw();
                 if (verify) {   // 위치로 확인했다는 것과 받은 포인트(같은 곳은 하루 한 번 · 하루 50포인트까지)
                     const n2 = box.querySelector('.sm-visit-note');
-                    if (n2) n2.textContent = r.earned ? T('✓ 위치로 확인했습니다 · +' + r.earned + '포인트', '✓ Verified by location · +' + r.earned + ' points')
-                        : T('✓ 위치로 확인했습니다. 이 판매점은 오늘 포인트를 이미 받았거나, 오늘 받을 수 있는 50포인트를 다 받았습니다.', '✓ Verified by location. No points this time: already earned here today, or the daily 50 is reached.');
+                    if (n2) n2.textContent = (r.earned ? T('✓ 위치로 확인했습니다 · +' + r.earned + '포인트', '✓ Verified by location · +' + r.earned + ' points')
+                        : T('✓ 위치로 확인했습니다. 이 판매점은 오늘 포인트를 이미 받았거나, 오늘 받을 수 있는 50포인트를 다 받았습니다.', '✓ Verified by location. No points this time: already earned here today, or the daily 50 is reached.')) +
+                        (r.fresh ? ' ' + freshText(r.fresh) : '');   // 새 칭호 · 마일스톤(2026-11-09)
+                    if (r.fresh) afterFresh(r.fresh);
                 }
                 refreshTerr();
                 if (shown.mine) { await ensureAll(); mineSource(); drawMine(); }

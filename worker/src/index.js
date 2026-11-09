@@ -33,6 +33,7 @@ import { saleRound, cleanGame, rankOf, kstParts, drawDay } from './lotto.js';
 import { chatStub, checkText } from './chat.js';
 import { shopInfo, sharePage } from './share.js';
 import { SKIN_RE, cellMap, _resetCellsForTests, gpsOn, terrConsent, GEO_CONSENT, GEO_RADIUS, GEO_ACC_MAX, distM, storeGeo } from './territory.js';
+import { catalog as titleCatalog } from './titles.js';
 
 export { Community } from './community.js';
 export { ChatRoom } from './chat.js';
@@ -122,6 +123,8 @@ async function route(request, env, ctx) {
     if (path === '/api/me/visit-color' && method === 'POST') return openVisitColor(request, env);
     if (path === '/api/me/visit-badge' && method === 'POST') return setVisitBadge(request, env);
     if (path === '/api/me/geo' && method === 'POST') return setGeo(request, env);
+    if (path === '/api/me/title' && method === 'POST') return setTitle(request, env);
+    if (path === '/api/titles' && method === 'GET') return json(request, env, titleCatalog(), 200, { 'Cache-Control': 'public, max-age=3600' }, true);
     if (path === '/api/me/comments' && method === 'GET') return myComments(request, env);
     if (path === '/api/me/notes' && method === 'GET') return myNotes(request, env, false);
     if (path === '/api/me/notes/read' && method === 'POST') return myNotes(request, env, true);
@@ -921,13 +924,26 @@ async function saveVisit(request, env) {
     const gps = gpsOn(env);
     if (gps && (again || body.color !== null)) await verifyVisit(env, s, id, body);   // 위치 인증(켜져 있을 때) — 지우기는 그대로
     const cell = s.user.terr ? (await cellMap(siteUrl(env)).catch(() => new Map())).get(id) || null : null;
-    const r = await community(env, 'setVisit', { sub: s.sub, id, color: again || body.color === null ? null : String(body.color).toLowerCase(), max: VISIT_MAX, now: Date.now(), cell, again, gps });
+    const r = await community(env, 'setVisit', { sub: s.sub, id, color: again || body.color === null ? null : String(body.color).toLowerCase(), max: VISIT_MAX, now: Date.now(), cell, again, gps, site: siteUrl(env) });
     if (r.error === 'too_many') throw new HttpError(409, 'too_many_visits', `다녀온 곳은 ${VISIT_MAX}곳까지 저장합니다.`);
     if (r.error === 'not_visited') throw new HttpError(409, 'not_visited', '다녀온 곳으로 표시한 판매점이 아닙니다.');
     if (r.error === 'again_today') throw new HttpError(409, 'again_today', '오늘은 이미 다녀왔다고 표시했습니다. 같은 곳은 하루 한 번입니다.');
     if (r.error === 'daily_limit') throw new HttpError(429, 'daily_limit', `다녀온 곳 표시는 하루 ${r.max}번까지입니다. 내일 다시 해 주세요.`);
     if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
-    return json(request, env, { visits: r.visits, visitAt: r.visitAt, visitColor: r.visitColor, earned: r.earned || 0, score: r.score });
+    return json(request, env, { visits: r.visits, visitAt: r.visitAt, visitColor: r.visitColor, earned: r.earned || 0, score: r.score, fresh: r.fresh || null });
+}
+
+// 칭호 달기 · 떼기(2026-11-09, titles.js). { id: 칭호 번호 } 또는 { id: null }. 얻은 칭호만 단다
+async function setTitle(request, env) {
+    const s = await sessionUser(request, env);
+    await limited(env.REACT_LIMIT, s.hash);
+    const body = await readJson(request);
+    const id = body.id === null ? null : String(body.id || '');
+    if (id !== null && (!id || id.length > 60)) throw new HttpError(400, 'bad_title', '칭호가 이상합니다.');
+    const r = await community(env, 'setTitle', { sub: s.sub, id });
+    if (r.error === 'not_earned') throw new HttpError(409, 'not_earned', '아직 얻지 않은 칭호입니다.');
+    if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
+    return json(request, env, { user: r.user });
 }
 
 // 위치 인증(2026-11-09 사장님 — 위치기반서비스사업 신고). { lat, lng, acc }: "다녀왔어요"를 누른 순간 기기 위치(위도 · 경도 · 오차 m).

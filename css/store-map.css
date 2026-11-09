@@ -549,6 +549,32 @@ body.sm-full #theme-btn { display: none !important; }
 .sm-dex-badge { display: inline-flex; align-items: baseline; gap: 4px; padding: 3px 9px; border: 1px dashed var(--line, #cfd5df); border-radius: 999px; color: var(--faint, #888); font-size: 11.5px; font-weight: bold; }
 .sm-dex-badge small { font-weight: normal; }
 .sm-dex-badge.is-on { border: 1px solid #4b3bb8; background: linear-gradient(135deg, #24135f, #2d3a8f 60%, #0f6170); color: #ffd76a; }
+/* 칭호 · 마일스톤(2026-11-09) — 칭호는 별명 앞 작은 이름표, 도감은 칸 격자, 마일스톤은 진행 막대 */
+.sm-ttl { display: inline-block; margin: 0 4px 0 0; padding: 0 6px; border: 1px solid #4b3bb8; border-radius: 6px; background: linear-gradient(135deg, #24135f, #2d3a8f 60%, #0f6170); color: #ffd76a; font-size: 10.5px; font-weight: bold; line-height: 16px; vertical-align: 1px; white-space: nowrap; }
+.sm-ttldex { margin: 4px 0 14px; }
+.sm-ttl-cur { margin: 4px 0 6px; font-size: 12px; }
+.sm-ttl-off { padding: 1px 8px; border: 1px solid var(--line, #cfd5df); border-radius: 999px; background: none; color: inherit; font-size: 11px; cursor: pointer; }
+.sm-ttl-g { margin: 10px 0 4px; font-size: 12px; }
+.sm-ttl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 5px; }
+.sm-ttl-item { display: flex; flex-direction: column; gap: 1px; min-width: 0; padding: 6px 8px; border: 1px dashed var(--line, #cfd5df); border-radius: 9px; background: none; color: var(--faint, #888); font: inherit; text-align: left; }
+.sm-ttl-item b { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.sm-ttl-item small { font-size: 10.5px; line-height: 1.35; }
+.sm-ttl-item.is-on { border: 1px solid #4b3bb8; background: linear-gradient(135deg, #24135f, #2d3a8f 60%, #0f6170); color: #e8e4ff; cursor: pointer; }
+.sm-ttl-item.is-on b { color: #ffd76a; }
+.sm-ttl-item.is-sel { box-shadow: 0 0 0 2px #ffd76a; }
+.sm-ttl-item.is-hidden b { letter-spacing: 2px; }
+.sm-ttl-next { grid-column: 1 / -1; margin: 4px 0 0; }
+.sm-ms { margin: 4px 0 12px; }
+.sm-ms-list { margin: 0; padding: 0; list-style: none; }
+.sm-ms-list li { margin: 0 0 8px; }
+.sm-ms-list li > p { margin: 0 0 3px; font-size: 12px; }
+.sm-ms-list li > .sm-small { margin: 3px 0 0; }
+.sm-ms-step { color: var(--faint, #888); font-size: 11px; }
+.sm-toast { position: fixed; left: 50%; top: 116px; z-index: 30; box-sizing: border-box; max-width: min(360px, calc(100% - 32px)); padding: 9px 14px; border: 1px solid #4b3bb8; border-radius: 12px;
+    background: linear-gradient(135deg, #24135f, #2d3a8f 60%, #0f6170); box-shadow: 0 8px 24px rgba(0, 0, 0, .35); color: #ffd76a; font-size: 13px; font-weight: bold; text-align: center;
+    opacity: 0; pointer-events: none; transform: translate(-50%, -8px); transition: opacity .25s, transform .25s; }
+.sm-toast.is-on { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); cursor: pointer; }
+@media (min-width: 901px) { .sm-toast { top: 20px; left: calc(50% + 170px); } }
 .sm-dex-sido { margin: 4px 0 0; padding: 0; list-style: none; }
 .sm-dex-sido li { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto auto; align-items: center; gap: 6px; padding: 2px 0; font-size: 11.5px; }
 .sm-dex-sido small { color: var(--faint, #888); }
