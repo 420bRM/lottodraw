@@ -205,7 +205,7 @@
         const N = k => (on ? NIGHT[k] : null);
         for (const l of map.getStyle().layers) {
             const sl = l['source-layer'], id = l.id;
-            if (/^(st|terr)-/.test(id)) continue;   // 판매점 점 · 영역 칸은 제 색 그대로(영역 칸이 땅 색으로 칠해져 밤에 안 보였다 — 2026-11-07)
+            if (/^(st|terr|rail)-/.test(id)) continue;   // 판매점 점 · 영역 칸 · 역은 제 색 그대로(영역 칸이 땅 색으로 칠해져 밤에 안 보였다 — 2026-11-07). 역은 railPaint
             if (id === 'sm-bld') setP(id, 'fill-extrusion-color', N('extr'));
             else if (id === 'sm-bld-line') setP(id, 'line-color', N('edge'));
             else if (l.type === 'background') setP(id, 'background-color', N('bg'));
@@ -214,6 +214,7 @@
             else if (l.type === 'symbol' && l.layout && l.layout['text-field'] && !isShield(l)) { setP(id, 'text-color', N('text')); setP(id, 'text-halo-color', N('halo')); }
         }
         names();
+        railPaint();
         if (map.getLayer('st-top-glow')) map.setLayoutProperty('st-top-glow', 'icon-image', on ? 'sm-star-glow-n' : 'sm-star-glow');
         if (map.getLayer('st-net-glow')) map.setLayoutProperty('st-net-glow', 'icon-image', on ? 'sm-star-glow-red-n' : 'sm-star-glow-red');
         if (map.getLayer('st-net')) map.setPaintProperty('st-net', 'circle-stroke-color', on ? NIGHT.bg : '#fff');
@@ -1604,7 +1605,8 @@
     // 목록은 서버(/api/titles, 숨은 칭호는 얻기 전까지 이름 · 조건 없이)에서, 얻은 것은 내 정보(user.titles · user.ach)에서. 셈은 서버가 한다 — 여기 진행률은 보여 주기만
     let titleCat = null, titleCatP = null;
     function loadTitleCat() {
-        if (!titleCatP) titleCatP = fetch(apiBase() + '/api/titles').then(r => (r.ok ? r.json() : null)).catch(() => null).then(j => { titleCat = j; return j; });
+        if (!titleCatP) titleCatP = fetch(apiBase() + '/api/titles').then(r => (r.ok ? r.json() : null)).catch(() => null)
+            .then(j => { titleCat = j && Array.isArray(j.titles) && Array.isArray(j.milestones) ? j : null; return titleCat; });   // 모양이 다르면 칭호 · 마일스톤 칸을 그리지 않는다
         return titleCatP;
     }
     const ttName = tt => (tt ? T(tt[0], tt[1]) : '');
@@ -2286,19 +2288,46 @@
             }
         };
         // 내 색 바꾸기: 이미 표시한 곳도 모두 그 색(서버가 한 번에 바꾼다)
+        // 누르면 바로 그 색으로 바꿔 보이고(서버 답을 기다리지 않는다 — 2026-11-10 사장님 "한 번에 안 되는 줄 알고 계속 눌렀다"), 서버가 저장하면 그 답으로 맞춘다.
+        // 저장하는 동안 또 누르면 마지막에 누른 색 하나만 이어서 보낸다. 실패하면 원래 색으로 돌린다
+        let colorBusy = false, colorNext = null;
         const saveAll = async color => {
             if (!(await member(T('다녀온 곳 표시는 로그인 회원 기능입니다.', 'Marking visited retailers is for signed-in members.')))) return;
+            const before = { visits: Object.assign({}, visits), color: myVisitColor() };
+            for (const id of Object.keys(visits)) visits[id] = color;
+            if (A.patchUser) A.patchUser({ visits, visitColor: color });
+            paintVisits();
+            draw();
+            if (shown.mine) { mineSource(); drawMine(); }
+            const note = box.querySelector('.sm-visit-note');
+            if (note) { note.classList.remove('is-warn'); note.textContent = T('✓ 색을 바꿨습니다. 저장하는 중…', '✓ Colour changed. Saving…'); }
+            if (colorBusy) { colorNext = color; return; }
+            colorBusy = true;
             try {
-                const r = await account().call('/api/me/visits', { method: 'POST', body: { all: true, color } });
-                visits = r.visits || {};
-                visitAt = r.visitAt || visitAt;
-                if (A.patchUser) A.patchUser({ visits, visitAt, visitColor: r.visitColor || color });
+                let send = color;
+                for (;;) {
+                    const r = await account().call('/api/me/visits', { method: 'POST', body: { all: true, color: send } });
+                    if (colorNext && colorNext !== send) { send = colorNext; colorNext = null; continue; }   // 그 사이 다른 색을 눌렀다
+                    colorNext = null;
+                    visits = r.visits || visits;
+                    visitAt = r.visitAt || visitAt;
+                    if (A.patchUser) A.patchUser({ visits, visitAt, visitColor: r.visitColor || send });
+                    break;
+                }
                 paintVisits();
                 draw();
                 if (shown.mine) { mineSource(); drawMine(); }
+                const n2 = box.querySelector('.sm-visit-note');
+                if (n2) n2.textContent = T('✓ 다녀온 곳 모두 이 색으로 저장했습니다.', '✓ Saved: all your places use this colour.');
             } catch (e) {
-                box.querySelector('.sm-visit-note').textContent = (e && e.message) || T('저장하지 못했습니다.', 'Could not save.');
-            }
+                visits = before.visits; colorNext = null;
+                if (A.patchUser) A.patchUser({ visits, visitColor: before.color });
+                paintVisits();
+                draw();
+                if (shown.mine) { mineSource(); drawMine(); }
+                const n2 = box.querySelector('.sm-visit-note');
+                if (n2) { n2.classList.add('is-warn'); n2.textContent = (e && e.message) || T('저장하지 못했습니다.', 'Could not save.'); }
+            } finally { colorBusy = false; }
         };
         if (A.session()) await loadIds();
         draw();
@@ -2417,6 +2446,7 @@
         let best = 0;
         for (const x of sido ? [c].concat(SIDO_ALIAS[c] || []) : [c]) {
             if (x === t) best = Math.max(best, 3);
+            else if (/역$/.test(x) && x.slice(0, -1) === t) best = Math.max(best, 2.5);   // 역: "강남"도 강남역(지역 이름이 같으면 지역이 먼저)
             else if (stripPlace(x) && stripPlace(x) === stripPlace(t) && sameKind(t, x)) best = Math.max(best, 2.5);
             else if (t.length >= 2 && x.startsWith(t)) best = Math.max(best, 1);
         }
@@ -2424,19 +2454,26 @@
     }
     // 낱말마다 다른 자리에 맞아야 한다. 가장 작은 단위까지 맞으면 더 위로(“청주” → 청주시, “사창동” → 사창동)
     function placeScore(p, toks) {
+        if (!p.syn) return placeScoreC(p.c, p.leaf, toks);
+        let best = 0;   // 역 이름이 여럿(괄호 속 이름)이면 가장 잘 맞는 것으로
+        for (const n of p.syn) best = Math.max(best, placeScoreC([p.c[0], p.c[1], p.c[2], n], p.leaf, toks));
+        return best;
+    }
+    function placeScoreC(c, leafAt, toks) {
         const used = [false, false, false, false];
         let sc = 0, leaf = false;
         for (const t of toks) {
             let bi = -1, bs = 0;
-            for (let k = 0; k < 4; k++) { if (used[k]) continue; const v = placeTok(t, p.c[k], k === 0); if (v > bs) { bs = v; bi = k; } }
+            for (let k = 0; k < 4; k++) { if (used[k]) continue; const v = placeTok(t, c[k], k === 0); if (v > bs) { bs = v; bi = k; } }
             if (bi < 0) return 0;
-            used[bi] = true; sc += bs; if (bi === p.leaf) leaf = true;
+            used[bi] = true; sc += bs; if (bi === leafAt) leaf = true;
         }
         return leaf ? sc + 2 : sc;
     }
     function findPlaces(q, max) {
         if (!places || !places.length) return [];
-        const run = toks => places.map(p => ({ p, s: placeScore(p, toks) })).filter(x => x.s > 0).sort((a, b) => (b.s - a.s) || (a.p.leaf - b.p.leaf));
+        const pool = stationRecs ? places.concat(stationRecs) : places;
+        const run = toks => pool.map(p => ({ p, s: placeScore(p, toks) })).filter(x => x.s > 0).sort((a, b) => (b.s - a.s) || (a.p.leaf - b.p.leaf) || ((a.p.rail ? 1 : 0) - (b.p.rail ? 1 : 0)));
         const toks = q.split(/\s+/).filter(Boolean);
         let hits = run(toks);
         // 띄어 쓰지 않았으면("청주사창동") 두 낱말로 나눠 본다
@@ -2446,6 +2483,41 @@
         }
         const seen = new Set();
         return hits.filter(x => { const k = x.p.sub + ' ' + x.p.name; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, max).map(x => x.p);
+    }
+    // ───── 역(2026-11-10 사장님 — "역 이름 검색도, 역은 지도에 표시돼도 괜찮을 듯") ─────
+    // store-map-stations.json(tools/make-stations.mjs — OpenStreetMap, ODbL): [이름("역" 뗌), 경도, 위도, 0 도시철도 · 1 철도 · 2 둘 다, 시·도, 시, 구, 영어 이름, 괄호 속 이름?].
+    // 괄호 속 이름이 있으면 "김천(구미)역"으로 보이고 "김천구미" · "구미역"(이수역 → 총신대입구(이수)역)으로도 찾는다
+    // 지도를 그린 뒤 받아 줌 12.5부터 점, 13.5부터 이름. 검색창에는 🚉 로(지역 · 판매점과 함께)
+    let stationRecs = null, stationsP = null;
+    const stName = (n, alt) => n + (alt ? '(' + alt + ')' : '') + '역';
+    function loadStations() {
+        if (!stationsP) stationsP = (root.dataset.stations ? fetch(root.dataset.stations).then(r => (r.ok ? r.json() : null)) : Promise.resolve(null)).catch(() => null).then(j => {
+            const rows = j && Array.isArray(j.s) ? j.s : [];
+            stationRecs = rows.map(([n, lng, lat, kind, si0, si, gu, en, alt]) => ({ c: [si0, si, gu, n + '역'], leaf: 3, rail: true, kind, name: stName(n, alt), en: en ? en + ' Stn' : '',
+                syn: alt ? [n + '역', alt + '역', n + alt + '역'] : null, sub: [si0, si, gu].filter(Boolean).join(' '), lng, lat, z: 15 }));
+            railLayer(rows);
+            return stationRecs;
+        });
+        return stationsP;
+    }
+    function railLayer(rows) {
+        if (!map || !rows.length || map.getSource('rail')) return;
+        map.addSource('rail', { type: 'geojson', data: { type: 'FeatureCollection', features: rows.map(([n, lng, lat, kind, , , , en, alt]) => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [lng, lat] },
+            properties: { name: stName(n, alt), 'name:ko': stName(n, alt), 'name:en': en ? en + ' Stn' : stName(n, alt), k: kind } })) } });
+        const before = map.getStyle().layers.map(l => l.id).find(id => /^(st|terr|hx)-/.test(id));   // 판매점 · 칸 밑에
+        map.addLayer({ id: 'rail-dot', type: 'circle', source: 'rail', minzoom: 12.5, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 12.5, 3, 16, 5.5], 'circle-stroke-width': 2 } }, before);
+        map.addLayer({ id: 'rail-name', type: 'symbol', source: 'rail', minzoom: 13.5, layout: { 'text-field': ['coalesce', ['get', en() ? 'name:en' : 'name:ko'], ['get', 'name']], 'text-font': ['Noto Sans Bold'],
+            'text-size': 11, 'text-offset': [0, 0.9], 'text-anchor': 'top', 'text-optional': true, 'text-padding': 4 } }, before);
+        railPaint();
+    }
+    function railPaint() {
+        if (!map || !map.getLayer('rail-dot')) return;
+        const n = isNight();
+        map.setPaintProperty('rail-dot', 'circle-color', n ? '#1b2030' : '#ffffff');
+        map.setPaintProperty('rail-dot', 'circle-stroke-color', n ? '#9ec1ff' : '#2b4a9b');
+        map.setPaintProperty('rail-name', 'text-color', n ? '#bcd3ff' : '#2b4a9b');
+        map.setPaintProperty('rail-name', 'text-halo-color', n ? '#141a23' : '#ffffff');
+        map.setPaintProperty('rail-name', 'text-halo-width', 1.4);
     }
     // 지역으로 옮기면 그 지역의 판매점이 다 보이게(1 · 2등 · 일반 판매점 켜고 흐리게 · TOP 50 만 보기는 끈다) 하고, 다 옮기면 그 근처 판매점 목록(지역 중심에서 가까운 순)
     async function revealAllStores() {
@@ -2485,7 +2557,7 @@
             const raw = box.value.trim(), q = raw.toLowerCase();
             list.textContent = '';
             if (q.length < 2) { list.hidden = true; return; }
-            if (!places) loadPlaces().then(() => { if (box.value.trim() === raw) render(); });
+            if (!places || !stationRecs) Promise.all([loadPlaces(), loadStations()]).then(() => { if (box.value.trim() === raw) render(); });
             const areas = findPlaces(raw, 5);
             const hits = [];
             for (let i = data.rows.length - 1; i >= 0 && hits.length < 20; i--) if (data.rows[i][4].toLowerCase().includes(q)) hits.push(i);   // 1등 많은 곳부터
@@ -2496,7 +2568,7 @@
                 list.innerHTML = '<li class="sm-none">' + (places ? T('찾는 판매점 · 지역이 없습니다.', 'No retailer or area found.') : T('찾는 중…', 'Searching…')) + '</li>';
                 return;
             }
-            areas.forEach(p => item('<b>📍 ' + esc(p.name) + '</b> <span>' + esc(p.sub ? p.sub + ' · ' : '') + T('지역', 'area') + '</span>', () => goPlace(p)).classList.add('sm-found-area'));
+            areas.forEach(p => item('<b>' + (p.rail ? '🚉 ' : '📍 ') + esc(p.rail && en() && p.en ? p.en : p.name) + '</b> <span>' + esc(p.sub ? p.sub + ' · ' : '') + (p.rail ? (p.kind === 0 ? T('지하철역', 'metro') : p.kind === 2 ? T('기차 · 지하철역', 'rail · metro') : T('기차역', 'rail')) : T('지역', 'area')) + '</span>', () => goPlace(p)).classList.add('sm-found-area'));
             hits.forEach(i => {
                 const r = data.rows[i];
                 item('<b>' + esc(r[4]) + '</b> <span>' + esc([data.sido[r[5]], r[6]].filter(Boolean).join(' ')) + ' · ' + T('1등 ', '1st ') + r[2] + ' · ' + T('2등 ', '2nd ') + r[3] + '</span>', () => open(i, true));
@@ -2506,7 +2578,7 @@
                 item('<b>' + esc(r[2]) + '</b> <span>' + esc([all.sido[r[3]], r[4]].filter(Boolean).join(' ')) + ' · ' + T('일반 판매점', 'retailer') + '</span>', () => openAll(i, true));
             });
         };
-        box.addEventListener('focus', () => { loadPlaces(); }, { once: true });
+        box.addEventListener('focus', () => { loadPlaces(); loadStations(); }, { once: true });
         box.addEventListener('input', render);
         // Enter: 맨 위 결과로(지역이 먼저)
         box.addEventListener('keydown', e => {
@@ -2745,7 +2817,10 @@
         // 처음 화면: 서울 전체(2026-10-26 사장님 — 전국은 시도별 표 · 줌아웃으로)
         map.on('load', () => {
             koreanLabels(); whiteModel(); addStores(); nightModel(); nearLabel();
-            map.once('idle', enterFx);   // 그려지면 들어올 때의 전환 화면을 걷는다
+            // 들어올 때의 전환 화면은 그려지면 걷는다 — 빛나는 점이 계속 움직여 'idle' 이 오지 않을 수 있어 잠깐 뒤에도(enterFx 는 한 번만, 최소 1.1초)
+            map.once('idle', enterFx);
+            setTimeout(enterFx, 500);
+            loadStations();   // 역 표시(줌 12.5부터) · 검색
             // ?shop=판매점번호(관리자 페이지의 판매점 댓글 링크 등): 그 판매점 카드를 연다
             const shopQ = new URLSearchParams(location.search).get('shop');
             if (shopQ === '51100000' && data.net) openNet(true);   // 0등(동행복권 인터넷) — TOP 50 구조화 데이터의 주소

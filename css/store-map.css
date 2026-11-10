@@ -506,8 +506,13 @@ body.sm-full #theme-btn { display: none !important; }
     .sm-modes .sm-mode:last-of-type { border-radius: 0 9px 9px 0; }
     .sm-modes .sm-mode[aria-pressed="true"] { position: relative; z-index: 1; }
     .sm-fade { margin: 10px 14px 0; padding: 0; border: 0; background: none; }
-    .sm-tabs { gap: 0; padding: 0 4px; }   /* 탭 일곱 개가 340px 안에(마지막 탭이 잘렸다) */
-    .sm-tab { padding-left: 1px; padding-right: 1px; font-size: 12px; letter-spacing: -.01em; }   /* LottoHex 탭이 길어서(2026-11-08) */
+    /* 탭 줄(2026-11-10 사장님 — "다닥다닥 붙어 있다"): 한 줄에 밀어 넣던 것을 네 칸 격자(두 줄)의 칸막이 단추로. 고른 탭은 흰 칸이 떠오른다 */
+    .sm-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; margin: 12px 12px 0; padding: 3px; border: 0; border-radius: 10px; background: var(--soft, #eef1f6); }
+    .sm-tab { position: relative; min-width: 0; padding: 7px 4px; border: 0; border-radius: 7px; overflow: hidden; color: var(--muted, #667); font-size: 12.5px; letter-spacing: 0; text-overflow: ellipsis; }
+    .sm-tab:hover { color: var(--fg, #222); }
+    .sm-tab[aria-selected="true"] { border: 0; background: var(--surface, #fff); color: var(--brand, #003087); box-shadow: 0 1px 3px rgba(0, 0, 0, .14); }
+    :root[data-theme="dark"] .sm-tabs { background: #1a212c; }
+    :root[data-theme="dark"] .sm-tab[aria-selected="true"] { background: #2b3442; color: #ffb066; box-shadow: none; }
 }
 
 /* ───── LottoHex 할 거리(2026-11-08): 잃은 칸 · 얻은 칸 알림, 지킬 칸 · 노릴 칸, 칸 도감 ───── */
