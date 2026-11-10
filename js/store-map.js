@@ -2563,14 +2563,15 @@
             list.textContent = '';
             if (q.length < 2) { list.hidden = true; return; }
             if (!places || !stationRecs) Promise.all([loadPlaces(), loadStations()]).then(() => { if (box.value.trim() === raw) render(); });
+            if (!all && root.dataset.all) needAll().then(() => { if (all && box.value.trim() === raw) render(); });   // 일반 판매점도 찾는다(층을 꺼 두었어도 — 2026-11-10 사장님 "박희도 로또LAB 이 안 나온다")
             const areas = findPlaces(raw, 5);
             const hits = [];
             for (let i = data.rows.length - 1; i >= 0 && hits.length < 20; i--) if (data.rows[i][4].toLowerCase().includes(q)) hits.push(i);   // 1등 많은 곳부터
-            const more = [];   // 일반 판매점(층을 켰을 때만)
-            if (all && shown.all) for (let i = 0; i < all.rows.length && hits.length + more.length < 20; i++) if (all.rows[i][2].toLowerCase().includes(q)) more.push(i);
+            const more = [];   // 일반 판매점(층이 꺼져 있어도 찾는다 — 고르면 층을 켠다)
+            if (all) for (let i = 0; i < all.rows.length && hits.length + more.length < 20; i++) if (all.rows[i][2].toLowerCase().includes(q)) more.push(i);
             list.hidden = false;
             if (!areas.length && !hits.length && !more.length) {
-                list.innerHTML = '<li class="sm-none">' + (places ? T('찾는 판매점 · 지역이 없습니다.', 'No retailer or area found.') : T('찾는 중…', 'Searching…')) + '</li>';
+                list.innerHTML = '<li class="sm-none">' + (places && (all || !root.dataset.all) ? T('찾는 판매점 · 지역이 없습니다.', 'No retailer or area found.') : T('찾는 중…', 'Searching…')) + '</li>';
                 return;
             }
             areas.forEach(p => item('<b>' + (p.rail ? '🚉 ' : '📍 ') + esc(p.rail && en() && p.en ? p.en : p.name) + '</b> <span>' + esc(p.sub ? p.sub + ' · ' : '') + (p.rail ? (p.kind === 0 ? T('지하철역', 'metro') : p.kind === 2 ? T('기차 · 지하철역', 'rail · metro') : T('기차역', 'rail')) : T('지역', 'area')) + '</span>', () => goPlace(p)).classList.add('sm-found-area'));
@@ -2580,7 +2581,10 @@
             });
             more.forEach(i => {
                 const r = all.rows[i];
-                item('<b>' + esc(r[2]) + '</b> <span>' + esc([all.sido[r[3]], r[4]].filter(Boolean).join(' ')) + ' · ' + T('일반 판매점', 'retailer') + '</span>', () => openAll(i, true));
+                item('<b>' + esc(r[2]) + '</b> <span>' + esc([all.sido[r[3]], r[4]].filter(Boolean).join(' ')) + ' · ' + T('일반 판매점', 'retailer') + '</span>', () => {
+                    if (!shown.all) { shown.all = true; const c = root.querySelector('.sm-chip[data-layer="all"]'); if (c) c.setAttribute('aria-pressed', 'true'); applyLayers(); }   // 지도에 점이 보이게
+                    openAll(i, true);
+                });
             });
         };
         box.addEventListener('focus', () => { loadPlaces(); loadStations(); }, { once: true });
