@@ -2489,38 +2489,77 @@
         const seen = new Set();
         return hits.filter(x => { const k = x.p.sub + ' ' + x.p.name; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, max).map(x => x.p);
     }
-    // ───── 역(2026-11-10 사장님 — "역 이름 검색도, 역은 지도에 표시돼도 괜찮을 듯") ─────
-    // store-map-stations.json(tools/make-stations.mjs — OpenStreetMap, ODbL): [이름("역" 뗌), 경도, 위도, 0 도시철도 · 1 철도 · 2 둘 다, 시·도, 시, 구, 영어 이름, 괄호 속 이름?].
+    // ───── 역(2026-11-10 사장님 — "역 이름 검색도, 역은 지도에 표시돼도 괜찮을 듯" · "지하철은 노선마다 고유 색" · "노선마다 역끼리 선으로") ─────
+    // store-map-stations.json(tools/make-stations.mjs — OpenStreetMap, ODbL): l: 전철 노선 [이름, 영어, 색], s: [이름("역" 뗌), 경도, 위도, 0 도시철도 · 1 철도 · 2 둘 다, 시·도, 시, 구, 영어 이름, 괄호 속 이름?, 노선 번호들?].
     // 괄호 속 이름이 있으면 "김천(구미)역"으로 보이고 "김천구미" · "구미역"(이수역 → 총신대입구(이수)역)으로도 찾는다
-    // 지도를 그린 뒤 받아 줌 12.5부터 점, 13.5부터 이름. 검색창에는 🚉 로(지역 · 판매점과 함께)
-    let stationRecs = null, stationsP = null;
+    // 지도를 그린 뒤 받아 줌 12.5부터 점(한 노선은 그 노선 색 테, 갈아타는 역은 조금 크게 진한 테), 13.5부터 이름. 검색창에는 🚉 + 노선 색 점으로(지역 · 판매점과 함께)
+    // 노선 선(store-map-lines.json — 실제 선로 모양, 노선 색)은 줌 9부터 판매점 · 칸 · 역 밑에
+    let stationRecs = null, stationsP = null, railLines = [];
     const stName = (n, alt) => n + (alt ? '(' + alt + ')' : '') + '역';
+    const RAIL_DEF = { day: '#2b4a9b', night: '#9ec1ff' }, RAIL_X = { day: '#3a4150', night: '#e8ecf2' };   // 노선 없는 기차역 · 갈아타는 역 테
     function loadStations() {
         if (!stationsP) stationsP = (root.dataset.stations ? fetch(root.dataset.stations).then(r => (r.ok ? r.json() : null)) : Promise.resolve(null)).catch(() => null).then(j => {
             const rows = j && Array.isArray(j.s) ? j.s : [];
-            stationRecs = rows.map(([n, lng, lat, kind, si0, si, gu, en, alt]) => ({ c: [si0, si, gu, n + '역'], leaf: 3, rail: true, kind, name: stName(n, alt), en: en ? en + ' Stn' : '',
-                syn: alt ? [n + '역', alt + '역', n + alt + '역'] : null, sub: [si0, si, gu].filter(Boolean).join(' '), lng, lat, z: 15 }));
+            railLines = j && Array.isArray(j.l) ? j.l : [];
+            stationRecs = rows.map(([n, lng, lat, kind, si0, si, gu, en, alt, ls]) => ({ c: [si0, si, gu, n + '역'], leaf: 3, rail: true, kind, name: stName(n, alt), en: en ? en + ' Stn' : '',
+                lines: Array.isArray(ls) ? ls.filter(i => railLines[i]) : [], syn: alt ? [n + '역', alt + '역', n + alt + '역'] : null, sub: [si0, si, gu].filter(Boolean).join(' '), lng, lat, z: 15 }));
             railLayer(rows);
+            loadRailLines();
             return stationRecs;
         });
         return stationsP;
     }
+    // 검색 결과의 노선 표시: 색 점 + 이름(넷까지, 넘으면 +n)
+    function lineChips(ls) {
+        if (!ls || !ls.length) return '';
+        const shown4 = ls.slice(0, 4).map(i => '<i class="sm-ln" style="background:' + esc(railLines[i][2]) + '"></i>' + esc(T(railLines[i][0], railLines[i][1])));
+        return shown4.join(' ') + (ls.length > 4 ? ' +' + (ls.length - 4) : '');
+    }
     function railLayer(rows) {
         if (!map || !rows.length || map.getSource('rail')) return;
-        map.addSource('rail', { type: 'geojson', data: { type: 'FeatureCollection', features: rows.map(([n, lng, lat, kind, , , , en, alt]) => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [lng, lat] },
-            properties: { name: stName(n, alt), 'name:ko': stName(n, alt), 'name:en': en ? en + ' Stn' : stName(n, alt), k: kind } })) } });
+        map.addSource('rail', { type: 'geojson', data: { type: 'FeatureCollection', features: rows.map(([n, lng, lat, kind, , , , en, alt, ls]) => {
+            const L = Array.isArray(ls) ? ls.filter(i => railLines[i]) : [];
+            const props = { name: stName(n, alt), 'name:ko': stName(n, alt), 'name:en': en ? en + ' Stn' : stName(n, alt), k: kind, nl: L.length };
+            if (L.length === 1) props.c = railLines[L[0]][2];
+            return { type: 'Feature', geometry: { type: 'Point', coordinates: [lng, lat] }, properties: props };
+        }) } });
         const before = map.getStyle().layers.map(l => l.id).find(id => /^(st|terr|hx)-/.test(id));   // 판매점 · 칸 밑에
-        map.addLayer({ id: 'rail-dot', type: 'circle', source: 'rail', minzoom: 12.5, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 12.5, 3, 16, 5.5], 'circle-stroke-width': 2 } }, before);
+        const big = ['>', ['get', 'nl'], 1];
+        map.addLayer({ id: 'rail-dot', type: 'circle', source: 'rail', minzoom: 12.5, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 12.5, ['case', big, 4, 3], 16, ['case', big, 7, 5.5]],
+            'circle-stroke-width': ['case', big, 2.4, 2] } }, before);
         map.addLayer({ id: 'rail-name', type: 'symbol', source: 'rail', minzoom: 13.5, layout: { 'text-field': ['coalesce', ['get', en() ? 'name:en' : 'name:ko'], ['get', 'name']], 'text-font': ['Noto Sans Bold'],
             'text-size': 11, 'text-offset': [0, 0.9], 'text-anchor': 'top', 'text-optional': true, 'text-padding': 4 } }, before);
         railPaint();
     }
+    // 노선 선: [노선, x0, y0, dx1, dy1, …](경도 · 위도 × 100000, 둘째 점부터 앞 점과의 차)
+    let railLinesP = null;
+    function loadRailLines() {
+        if (railLinesP || !root.dataset.lines) return;
+        railLinesP = fetch(root.dataset.lines).then(r => (r.ok ? r.json() : null)).catch(() => null).then(j => {
+            if (!j || !Array.isArray(j.g) || !Array.isArray(j.l) || !map || map.getSource('rail-lines')) return;
+            const features = [];
+            for (const g of j.g) {
+                const L = j.l[g[0]];
+                if (!L) continue;
+                const co = [];
+                let x = 0, y = 0;
+                for (let k = 1; k + 1 < g.length; k += 2) { x += g[k]; y += g[k + 1]; co.push([x / 1e5, y / 1e5]); }
+                if (co.length > 1) features.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: co }, properties: { c: L[2] } });
+            }
+            map.addSource('rail-lines', { type: 'geojson', data: { type: 'FeatureCollection', features } });
+            const before = map.getLayer('rail-dot') ? 'rail-dot' : map.getStyle().layers.map(l => l.id).find(id => /^(st|terr|hx)-/.test(id));
+            map.addLayer({ id: 'rail-line', type: 'line', source: 'rail-lines', minzoom: 9, layout: { 'line-cap': 'round', 'line-join': 'round' },
+                paint: { 'line-color': ['get', 'c'], 'line-width': ['interpolate', ['linear'], ['zoom'], 9, 1, 12, 2, 15, 3.5, 18, 6],
+                    'line-opacity': ['interpolate', ['linear'], ['zoom'], 9, 0.45, 12, 0.7, 15, 0.8] } }, before);
+            railPaint();
+        });
+    }
     function railPaint() {
         if (!map || !map.getLayer('rail-dot')) return;
-        const n = isNight();
+        const n = isNight(), m = n ? 'night' : 'day';
         map.setPaintProperty('rail-dot', 'circle-color', n ? '#1b2030' : '#ffffff');
-        map.setPaintProperty('rail-dot', 'circle-stroke-color', n ? '#9ec1ff' : '#2b4a9b');
-        map.setPaintProperty('rail-name', 'text-color', n ? '#bcd3ff' : '#2b4a9b');
+        map.setPaintProperty('rail-dot', 'circle-stroke-color', ['case', ['>', ['get', 'nl'], 1], RAIL_X[m], ['has', 'c'], ['get', 'c'], RAIL_DEF[m]]);
+        map.setPaintProperty('rail-name', 'text-color', n ? '#cfd6e2' : '#2f3746');
         map.setPaintProperty('rail-name', 'text-halo-color', n ? '#141a23' : '#ffffff');
         map.setPaintProperty('rail-name', 'text-halo-width', 1.4);
     }
@@ -2574,7 +2613,8 @@
                 list.innerHTML = '<li class="sm-none">' + (places && (all || !root.dataset.all) ? T('찾는 판매점 · 지역이 없습니다.', 'No retailer or area found.') : T('찾는 중…', 'Searching…')) + '</li>';
                 return;
             }
-            areas.forEach(p => item('<b>' + (p.rail ? '🚉 ' : '📍 ') + esc(p.rail && en() && p.en ? p.en : p.name) + '</b> <span>' + esc(p.sub ? p.sub + ' · ' : '') + (p.rail ? (p.kind === 0 ? T('지하철역', 'metro') : p.kind === 2 ? T('기차 · 지하철역', 'rail · metro') : T('기차역', 'rail')) : T('지역', 'area')) + '</span>', () => goPlace(p)).classList.add('sm-found-area'));
+            areas.forEach(p => item('<b>' + (p.rail ? '🚉 ' : '📍 ') + esc(p.rail && en() && p.en ? p.en : p.name) + '</b> <span>' + esc(p.sub ? p.sub + ' · ' : '') +
+                (p.rail ? (p.lines && p.lines.length ? lineChips(p.lines) : p.kind === 0 ? T('지하철역', 'metro') : p.kind === 2 ? T('기차 · 지하철역', 'rail · metro') : T('기차역', 'rail')) : T('지역', 'area')) + '</span>', () => goPlace(p)).classList.add('sm-found-area'));
             hits.forEach(i => {
                 const r = data.rows[i];
                 item('<b>' + esc(r[4]) + '</b> <span>' + esc([data.sido[r[5]], r[6]].filter(Boolean).join(' ')) + ' · ' + T('1등 ', '1st ') + r[2] + ' · ' + T('2등 ', '2nd ') + r[3] + '</span>', () => open(i, true));
