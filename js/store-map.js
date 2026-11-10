@@ -2454,13 +2454,19 @@
     }
     // 낱말마다 다른 자리에 맞아야 한다. 가장 작은 단위까지 맞으면 더 위로(“청주” → 청주시, “사창동” → 사창동)
     function placeScore(p, toks) {
+        if (!p.syn) return placeScoreC(p.c, p.leaf, toks);
+        let best = 0;   // 역 이름이 여럿(괄호 속 이름)이면 가장 잘 맞는 것으로
+        for (const n of p.syn) best = Math.max(best, placeScoreC([p.c[0], p.c[1], p.c[2], n], p.leaf, toks));
+        return best;
+    }
+    function placeScoreC(c, leafAt, toks) {
         const used = [false, false, false, false];
         let sc = 0, leaf = false;
         for (const t of toks) {
             let bi = -1, bs = 0;
-            for (let k = 0; k < 4; k++) { if (used[k]) continue; const v = placeTok(t, p.c[k], k === 0); if (v > bs) { bs = v; bi = k; } }
+            for (let k = 0; k < 4; k++) { if (used[k]) continue; const v = placeTok(t, c[k], k === 0); if (v > bs) { bs = v; bi = k; } }
             if (bi < 0) return 0;
-            used[bi] = true; sc += bs; if (bi === p.leaf) leaf = true;
+            used[bi] = true; sc += bs; if (bi === leafAt) leaf = true;
         }
         return leaf ? sc + 2 : sc;
     }
@@ -2479,13 +2485,16 @@
         return hits.filter(x => { const k = x.p.sub + ' ' + x.p.name; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, max).map(x => x.p);
     }
     // ───── 역(2026-11-10 사장님 — "역 이름 검색도, 역은 지도에 표시돼도 괜찮을 듯") ─────
-    // store-map-stations.json(tools/make-stations.mjs — OpenStreetMap, ODbL): [이름("역" 뗌), 경도, 위도, 0 도시철도 · 1 철도, 시·도, 시, 구, 영어 이름].
+    // store-map-stations.json(tools/make-stations.mjs — OpenStreetMap, ODbL): [이름("역" 뗌), 경도, 위도, 0 도시철도 · 1 철도 · 2 둘 다, 시·도, 시, 구, 영어 이름, 괄호 속 이름?].
+    // 괄호 속 이름이 있으면 "김천(구미)역"으로 보이고 "김천구미" · "구미역"(이수역 → 총신대입구(이수)역)으로도 찾는다
     // 지도를 그린 뒤 받아 줌 12.5부터 점, 13.5부터 이름. 검색창에는 🚉 로(지역 · 판매점과 함께)
     let stationRecs = null, stationsP = null;
+    const stName = (n, alt) => n + (alt ? '(' + alt + ')' : '') + '역';
     function loadStations() {
         if (!stationsP) stationsP = (root.dataset.stations ? fetch(root.dataset.stations).then(r => (r.ok ? r.json() : null)) : Promise.resolve(null)).catch(() => null).then(j => {
             const rows = j && Array.isArray(j.s) ? j.s : [];
-            stationRecs = rows.map(([n, lng, lat, kind, si0, si, gu, en]) => ({ c: [si0, si, gu, n + '역'], leaf: 3, rail: true, kind, name: n + '역', en: en ? en + ' Stn' : '', sub: [si0, si, gu].filter(Boolean).join(' '), lng, lat, z: 15 }));
+            stationRecs = rows.map(([n, lng, lat, kind, si0, si, gu, en, alt]) => ({ c: [si0, si, gu, n + '역'], leaf: 3, rail: true, kind, name: stName(n, alt), en: en ? en + ' Stn' : '',
+                syn: alt ? [n + '역', alt + '역', n + alt + '역'] : null, sub: [si0, si, gu].filter(Boolean).join(' '), lng, lat, z: 15 }));
             railLayer(rows);
             return stationRecs;
         });
@@ -2493,8 +2502,8 @@
     }
     function railLayer(rows) {
         if (!map || !rows.length || map.getSource('rail')) return;
-        map.addSource('rail', { type: 'geojson', data: { type: 'FeatureCollection', features: rows.map(([n, lng, lat, kind, , , , en]) => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [lng, lat] },
-            properties: { name: n + '역', 'name:ko': n + '역', 'name:en': en ? en + ' Stn' : n + '역', k: kind } })) } });
+        map.addSource('rail', { type: 'geojson', data: { type: 'FeatureCollection', features: rows.map(([n, lng, lat, kind, , , , en, alt]) => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [lng, lat] },
+            properties: { name: stName(n, alt), 'name:ko': stName(n, alt), 'name:en': en ? en + ' Stn' : stName(n, alt), k: kind } })) } });
         const before = map.getStyle().layers.map(l => l.id).find(id => /^(st|terr|hx)-/.test(id));   // 판매점 · 칸 밑에
         map.addLayer({ id: 'rail-dot', type: 'circle', source: 'rail', minzoom: 12.5, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 12.5, 3, 16, 5.5], 'circle-stroke-width': 2 } }, before);
         map.addLayer({ id: 'rail-name', type: 'symbol', source: 'rail', minzoom: 13.5, layout: { 'text-field': ['coalesce', ['get', en() ? 'name:en' : 'name:ko'], ['get', 'name']], 'text-font': ['Noto Sans Bold'],
@@ -2559,7 +2568,7 @@
                 list.innerHTML = '<li class="sm-none">' + (places ? T('찾는 판매점 · 지역이 없습니다.', 'No retailer or area found.') : T('찾는 중…', 'Searching…')) + '</li>';
                 return;
             }
-            areas.forEach(p => item('<b>' + (p.rail ? '🚉 ' : '📍 ') + esc(p.rail && en() && p.en ? p.en : p.name) + '</b> <span>' + esc(p.sub ? p.sub + ' · ' : '') + (p.rail ? (p.kind === 0 ? T('지하철역', 'metro') : T('기차역', 'rail')) : T('지역', 'area')) + '</span>', () => goPlace(p)).classList.add('sm-found-area'));
+            areas.forEach(p => item('<b>' + (p.rail ? '🚉 ' : '📍 ') + esc(p.rail && en() && p.en ? p.en : p.name) + '</b> <span>' + esc(p.sub ? p.sub + ' · ' : '') + (p.rail ? (p.kind === 0 ? T('지하철역', 'metro') : p.kind === 2 ? T('기차 · 지하철역', 'rail · metro') : T('기차역', 'rail')) : T('지역', 'area')) + '</span>', () => goPlace(p)).classList.add('sm-found-area'));
             hits.forEach(i => {
                 const r = data.rows[i];
                 item('<b>' + esc(r[4]) + '</b> <span>' + esc([data.sido[r[5]], r[6]].filter(Boolean).join(' ')) + ' · ' + T('1등 ', '1st ') + r[2] + ' · ' + T('2등 ', '2nd ') + r[3] + '</span>', () => open(i, true));

@@ -1,4 +1,4 @@
-# 한 번만 쓰는 받기 — 지도 역 목록(store-map-stations.json, OpenStreetMap ODbL). 이 환경에서는 Overpass API 에 닿지 않아 여기서 받는다. 머지 전에 지운다
+# 한 번만 쓰는 받기 — 지도 역 목록(store-map-stations.json, OpenStreetMap ODbL). 이 환경에서는 Overpass API 에 닿지 않아 여기서 받는다. 머지 전에 지운다(2차: 괄호 이름 · 둘 다 · 관광 열차 빼기)
 name: fetch-stations
 on:
   push:

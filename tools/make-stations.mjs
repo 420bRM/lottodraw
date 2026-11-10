@@ -3,8 +3,8 @@
 //
 // 원자료: OpenStreetMap(© OpenStreetMap 기여자, ODbL 1.0) — 한국 안의 철도역 · 도시철도역(railway=station|halt).
 // 이 파일(store-map-stations.json)은 OSM 에서 뽑은 자료라 ODbL 1.0 을 따른다(출처 표시는 지도 "시도별 · 안내" 칸).
-// 역마다 이름("역"은 뗌) · 위치 · 종류(0 도시철도 · 1 철도) · 지역(가장 가까운 읍·면·동의 시·도 · 시 · 구 — store-map-places.json) · 영어 이름.
-// 같은 이름이 500m 안에 여럿이면(노선마다 따로 찍힌 점) 하나로 합친다. 역이 생기거나 바뀌었을 때만 다시 돌린다(매주 X):
+// 역마다 이름("역"은 뗌) · 위치 · 종류(0 도시철도 · 1 철도 · 2 둘 다) · 지역(가장 가까운 읍·면·동의 시·도 · 시 · 구 — store-map-places.json) · 영어 이름 · 괄호 속 이름("김천(구미)"의 구미).
+// 같은 이름이 500m 안에 여럿이면(노선마다 따로 찍힌 점) 하나로 합친다. 관광 열차 · 레일바이크 · 차량기지 · 승강장(케이블카 · 모노레일)은 뺀다. 역이 생기거나 바뀌었을 때만 다시 돌린다(매주 X):
 //   node tools/make-stations.mjs                 (Overpass API 에서 받는다 — 이 저장소의 GitHub 워크플로에서 돌렸다)
 //   node tools/make-stations.mjs overpass.json   (받아 둔 Overpass 결과로)
 import fs from 'fs';
@@ -51,32 +51,37 @@ function regionOf(lng, lat) {
     const [s, si, gu] = P.g[best[0]];
     return [S[s], si, gu];
 }
-const base = n => String(n || '').replace(/\s*\(.*?\)\s*/g, '').replace(/역$/, '').trim();
+const base = n => String(n || '').replace(/역$/, '').replace(/\s*\(.*?\)\s*/g, '').replace(/역$/, '').trim();
+const paren = n => { const x = ((String(n || '').match(/\(([^)]+)\)/) || [])[1] || '').replace(/역$/, '').trim(); return /[가-힣]/.test(x) && !/(선|line)$/i.test(x) ? x : ''; };   // "김천(구미)역" → 구미, "총신대입구(이수)역" → 이수
 const baseEn = n => String(n || '').replace(/\s*\(.*?\)\s*/g, '').replace(/\s+(Station|Stn\.?)$/i, '').trim();
 const pts = [];
 for (const e of raw.elements || []) {
     const t = e.tags || {}, lat = e.lat != null ? e.lat : e.center && e.center.lat, lng = e.lon != null ? e.lon : e.center && e.center.lon;
     if (lat == null || lng == null) continue;
     if (/^(disused|abandoned|construction|proposed)/.test(t.railway || '') || t['disused:railway'] || t.disused === 'yes') continue;
-    const name = base(t['name:ko'] || t.name);
-    if (!name || !/[가-힣]/.test(name)) continue;
-    const metro = /^(subway|light_rail|monorail)$/.test(t.station || '') || t.subway === 'yes' || t.light_rail === 'yes';
-    pts.push({ name, en: baseEn(t['name:en']), lat, lng, kind: metro ? 0 : 1 });
+    if (t.usage === 'tourism' || t['railway:preserved'] === 'yes' || t.tourism) continue;   // 관광 열차(바다열차 · 스카이캡슐 …)
+    const full = t['name:ko'] || t.name, name = base(full);
+    if (!name || !/[가-힣]/.test(name) || /(승강장|기지|신호장|조차장|종점|레일바이크|케이블카)$/.test(name)) continue;
+    // 도시철도: 지하철 · 경전철 · 모노레일, 또는 수도권 전철처럼 전철 노선망. 철도: 기차(train) — 서울역 · 수원역처럼 둘 다인 곳은 2
+    const metro = /^(subway|light_rail|monorail)$/.test(t.station || '') || t.subway === 'yes' || t.light_rail === 'yes' || t.monorail === 'yes' || /전철|지하철|도시철도|경전철|metro|subway/i.test(t.network || '');
+    const rail = t.station === 'train' || t.train === 'yes' || !metro;
+    pts.push({ name, alt: paren(full), en: baseEn(t['name:en']), lat, lng, m: metro, r: rail });
 }
 // 같은 이름 500m 안 → 하나로
 const km = (a, b) => Math.hypot((a.lng - b.lng) * 88.2, (a.lat - b.lat) * 111);
 const out = [];
 for (const p of pts) {
     const m = out.find(o => o.name === p.name && km(o, p) < 0.5);
-    if (m) { m.n++; m.lat += (p.lat - m.lat) / m.n; m.lng += (p.lng - m.lng) / m.n; m.kind = Math.min(m.kind, p.kind); if (!m.en && p.en) m.en = p.en; }
+    if (m) { m.n++; m.lat += (p.lat - m.lat) / m.n; m.lng += (p.lng - m.lng) / m.n; m.m = m.m || p.m; m.r = m.r || p.r; if (!m.en && p.en) m.en = p.en; if (!m.alt && p.alt) m.alt = p.alt; }
     else out.push(Object.assign({ n: 1 }, p));
 }
 const r5 = v => Math.round(v * 1e5) / 1e5;
-const rows = out.sort((a, b) => a.name.localeCompare(b.name, 'ko')).map(o => { const rg = regionOf(o.lng, o.lat); return rg ? [o.name, r5(o.lng), r5(o.lat), o.kind].concat(rg, o.en || '') : null; }).filter(Boolean);
+const kindOf = o => (o.m && o.r ? 2 : o.m ? 0 : 1);
+const rows = out.sort((a, b) => a.name.localeCompare(b.name, 'ko')).map(o => { const rg = regionOf(o.lng, o.lat); if (!rg) return null; const row = [o.name, r5(o.lng), r5(o.lat), kindOf(o)].concat(rg, o.en || ''); if (o.alt) row.push(o.alt); return row; }).filter(Boolean);
 const res = {
-    note: '판매점 지도의 역(tools/make-stations.mjs). s: [이름("역" 뗌), 경도, 위도, 0 도시철도 · 1 철도, 시·도, 시, 구, 영어 이름]',
+    note: '판매점 지도의 역(tools/make-stations.mjs). s: [이름("역" 뗌), 경도, 위도, 0 도시철도 · 1 철도 · 2 둘 다, 시·도, 시, 구, 영어 이름, 괄호 속 이름(있을 때만)]',
     src: 'Station names and positions © OpenStreetMap contributors, available under the Open Database License (ODbL 1.0, https://www.openstreetmap.org/copyright). This file is a derived database under ODbL.',
     s: rows,
 };
 fs.writeFileSync(new URL('../store-map-stations.json', import.meta.url), JSON.stringify(res) + '\n');
-console.log(`역 ${rows.length}곳(도시철도 ${rows.filter(r => r[3] === 0).length} · 철도 ${rows.filter(r => r[3] === 1).length}), 원자료 점 ${pts.length}`);
+console.log(`역 ${rows.length}곳(도시철도 ${rows.filter(r => r[3] === 0).length} · 철도 ${rows.filter(r => r[3] === 1).length} · 둘 다 ${rows.filter(r => r[3] === 2).length}), 원자료 점 ${pts.length}`);
