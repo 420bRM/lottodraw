@@ -2493,7 +2493,7 @@
     // store-map-stations.json(tools/make-stations.mjs — OpenStreetMap, ODbL): l: 전철 노선 [이름, 영어, 색], s: [이름("역" 뗌), 경도, 위도, 0 도시철도 · 1 철도 · 2 둘 다, 시·도, 시, 구, 영어 이름, 괄호 속 이름?, 노선 번호들?].
     // 괄호 속 이름이 있으면 "김천(구미)역"으로 보이고 "김천구미" · "구미역"(이수역 → 총신대입구(이수)역)으로도 찾는다
     // 지도를 그린 뒤 받아 줌 12.5부터 점(한 노선은 그 노선 색 테, 갈아타는 역은 조금 크게 진한 테), 13.5부터 이름. 검색창에는 🚉 + 노선 색 점으로(지역 · 판매점과 함께)
-    // 노선 선(store-map-lines.json — 실제 선로 모양, 노선 색)은 줌 9부터 판매점 · 칸 · 역 밑에
+    // 노선 선(store-map-lines.json — 실제 선로 모양, 노선 색)은 줌 11.5부터(줌아웃하면 감춤) 판매점 · 칸 · 역 밑에, 밤에는 옅은 흰 테두리를 깐다
     let stationRecs = null, stationsP = null, railLines = [];
     const stName = (n, alt) => n + (alt ? '(' + alt + ')' : '') + '역';
     const RAIL_DEF = { day: '#2b4a9b', night: '#9ec1ff' }, RAIL_X = { day: '#3a4150', night: '#e8ecf2' };   // 노선 없는 기차역 · 갈아타는 역 테
@@ -2548,9 +2548,14 @@
             }
             map.addSource('rail-lines', { type: 'geojson', data: { type: 'FeatureCollection', features } });
             const before = map.getLayer('rail-dot') ? 'rail-dot' : map.getStyle().layers.map(l => l.id).find(id => /^(st|terr|hx)-/.test(id));
-            map.addLayer({ id: 'rail-line', type: 'line', source: 'rail-lines', minzoom: 9, layout: { 'line-cap': 'round', 'line-join': 'round' },
-                paint: { 'line-color': ['get', 'c'], 'line-width': ['interpolate', ['linear'], ['zoom'], 9, 1, 12, 2, 15, 3.5, 18, 6],
-                    'line-opacity': ['interpolate', ['linear'], ['zoom'], 9, 0.45, 12, 0.7, 15, 0.8] } }, before);
+            // 줌아웃하면 역처럼 감춘다(2026-11-10 사장님 — 축소하면 판매점 점과 겹쳐 복잡) — 11.5부터 서서히, 역 점(12.5)보다 조금 먼저
+            const W = ['interpolate', ['linear'], ['zoom'], 11.5, 1.6, 13, 2.6, 15, 3.5, 18, 6];
+            // 밤에는 밑에 옅은 흰 테두리(사장님이 고른 B안) — 1호선 · 7호선 · 9호선처럼 어두운 노선 색이 밤 바탕에 묻혔다. 노선 색은 그대로
+            map.addLayer({ id: 'rail-line-case', type: 'line', source: 'rail-lines', minzoom: 11.5, layout: { 'line-cap': 'round', 'line-join': 'round', visibility: 'none' },
+                paint: { 'line-color': '#ebf0f8', 'line-width': ['interpolate', ['linear'], ['zoom'], 11.5, 3.4, 13, 4.8, 15, 5.9, 18, 8.6],
+                    'line-opacity': ['interpolate', ['linear'], ['zoom'], 11.5, 0, 12.3, 0.35, 14, 0.55] } }, before);
+            map.addLayer({ id: 'rail-line', type: 'line', source: 'rail-lines', minzoom: 11.5, layout: { 'line-cap': 'round', 'line-join': 'round' },
+                paint: { 'line-color': ['get', 'c'], 'line-width': W } }, before);
             railPaint();
         });
     }
@@ -2562,6 +2567,10 @@
         map.setPaintProperty('rail-name', 'text-color', n ? '#cfd6e2' : '#2f3746');
         map.setPaintProperty('rail-name', 'text-halo-color', n ? '#141a23' : '#ffffff');
         map.setPaintProperty('rail-name', 'text-halo-width', 1.4);
+        if (map.getLayer('rail-line')) {
+            map.setLayoutProperty('rail-line-case', 'visibility', n ? 'visible' : 'none');
+            map.setPaintProperty('rail-line', 'line-opacity', ['interpolate', ['linear'], ['zoom'], 11.5, 0, 12.3, n ? 0.95 : 0.7, 15, n ? 1 : 0.8]);
+        }
     }
     // 지역으로 옮기면 그 지역의 판매점이 다 보이게(1 · 2등 · 일반 판매점 켜고 흐리게 · TOP 50 만 보기는 끈다) 하고, 다 옮기면 그 근처 판매점 목록(지역 중심에서 가까운 순)
     async function revealAllStores() {
