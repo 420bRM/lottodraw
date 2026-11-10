@@ -1076,11 +1076,11 @@
     // 내 영토의 바깥 테두리(내 칸끼리 맞닿은 변은 빼고)를 따라 얇은 벽(칸 안쪽으로 약 15m)을 세운다 — 아래가 밝고 위로 갈수록 옅어진다.
     // fill-extrusion 은 높이에 따라 옅게 할 수 없어 높이를 BEAM_N 토막으로 나눠 위로 갈수록 투명하게. 화면에서의 높이는 멀리서 높고(줌 8 · 200px) 가까이서 낮게(줌 18 · 40px).
     // 3D 모드(지도를 기울였을 때)만 — 똑바로 내려다보면 벽 윗면이 테두리에 겹칠 뿐이라 감춘다. 색은 내 칸 색을 흰빛 쪽으로 밝힌 것.
-    // LottoHex 창의 "내 영토 빛"으로 켜고 끈다(이 기기에 저장, 처음엔 켜짐). 지금은 나에게만 보인다
+    // LottoHex 창의 "내 영토 빛"으로 켜고 끈다(이 기기에 저장, 처음엔 꺼짐). 지금은 나에게만 보인다
     const BEAM_N = 28, BEAM_T = 0.025, BEAM_PX = [[8, 200], [11, 170], [13, 130], [14.5, 95], [16, 65], [18, 40]];
     const beamPx = z => { for (let i = 1; i < BEAM_PX.length; i++) { const [z0, p0] = BEAM_PX[i - 1], [z1, p1] = BEAM_PX[i]; if (z <= z1) return p0 + (p1 - p0) * (z - z0) / (z1 - z0); } return BEAM_PX[BEAM_PX.length - 1][1]; };
-    let beamOn = true;
-    try { beamOn = localStorage.getItem('lottodraw.hexBeam') !== '0'; } catch (e) { /* 저장소 없음 — 켜 둔다 */ }
+    let beamOn = false;
+    try { beamOn = localStorage.getItem('lottodraw.hexBeam') === '1'; } catch (e) { beamOn = false; }   // 처음엔 꺼짐(2026-11-10 사장님) — 켜면 이 기기에 '1'
     const beamIds = Array.from({ length: BEAM_N }, (_, i) => 'terr-beam-' + i);
     // 내 칸 k 의 바깥 변마다 벽 한 장: 변 [a, b] 와 칸 가운데 쪽으로 BEAM_T 만큼 들어간 [b', a'] 사이(이웃 변의 벽과 꼭짓점에서 맞물린다)
     function beamWalls(k, c, mine) {
@@ -2631,7 +2631,7 @@
                 const co = [];
                 let x = 0, y = 0;
                 for (let k = 1; k + 1 < g.length; k += 2) { x += g[k]; y += g[k + 1]; co.push([x / 1e5, y / 1e5]); }
-                if (co.length > 1) features.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: co }, properties: { cd: paleOf(L[2], false), cn: paleOf(L[2], true) } });
+                if (co.length > 1) features.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: co }, properties: { cd: paleOf(L[2], false), cn: paleOf(L[2], true), cdw: paleOf(L[2], false, true), cnw: paleOf(L[2], true, true) } });
             }
             map.addSource('rail-lines', { type: 'geojson', data: { type: 'FeatureCollection', features } });
             const before = map.getLayer('rail-dot') ? 'rail-dot' : map.getStyle().layers.map(l => l.id).find(id => /^(st|terr|hx)-/.test(id));
@@ -2648,29 +2648,39 @@
     }
     // 노선 선은 역 점 색보다 절반 넘게 연하게(2026-11-10 사장님): 바탕색과 섞어 노선 색을 38%(밤 45%)만 남긴다.
     // 투명도로 줄이면 겹친 선로(복선 · 같은 길을 여러 노선이 지남)가 겹친 만큼 진해져서, 미리 섞은 불투명한 색으로 그린다
-    function paleOf(hex, night) {
-        const k = night ? 0.45 : 0.38, bg = night ? [20, 26, 35] : [246, 246, 243];
+    // PC(넓은 화면)는 한 화면에 노선 · 역이 훨씬 많이 보여 더 연하게(같은 날 사장님 — "모바일은 적절, PC 는 정신없다"): 낮 24% · 밤 30%
+    function paleOf(hex, night, wide) {
+        const k = wide ? (night ? 0.3 : 0.24) : (night ? 0.45 : 0.38), bg = night ? [20, 26, 35] : [246, 246, 243];
         const c = [1, 3, 5].map(i => parseInt(String(hex).slice(i, i + 2), 16));
         if (c.some(v => isNaN(v))) return hex;
         return '#' + c.map((v, i) => Math.round(v * k + bg[i] * (1 - k)).toString(16).padStart(2, '0')).join('');
     }
+    // PC 는 역 표시 · 이름도 옅게(icon · text 투명도 — 모바일은 그대로). 창 크기가 PC ↔ 모바일로 바뀌면 다시 칠한다
+    let railWide = null;
     function railPaint() {
         if (!map || !map.getLayer('rail-dot')) return;
-        const n = isNight(), m = n ? 'night' : 'day';
+        const n = isNight(), m = n ? 'night' : 'day', w = isWide();
+        railWide = w;
         map.setPaintProperty('rail-dot', 'circle-color', n ? '#1b2030' : '#ffffff');
         map.setPaintProperty('rail-dot', 'circle-stroke-color', RAIL_DEF[m]);
+        map.setPaintProperty('rail-dot', 'circle-opacity', w ? 0.6 : 1);
+        map.setPaintProperty('rail-dot', 'circle-stroke-opacity', w ? 0.55 : 1);
         for (const id of ['rail-name', 'rail-badge']) {
             if (!map.getLayer(id)) continue;
             map.setPaintProperty(id, 'text-color', n ? '#cfd6e2' : '#2f3746');
             map.setPaintProperty(id, 'text-halo-color', n ? '#141a23' : '#ffffff');
             map.setPaintProperty(id, 'text-halo-width', 1.4);
+            map.setPaintProperty(id, 'text-opacity', w ? 0.6 : 1);
         }
+        if (map.getLayer('rail-badge')) map.setPaintProperty('rail-badge', 'icon-opacity', w ? 0.55 : 1);
         if (map.getLayer('rail-line')) {
             map.setLayoutProperty('rail-line-case', 'visibility', n ? 'visible' : 'none');
-            map.setPaintProperty('rail-line', 'line-color', ['get', n ? 'cn' : 'cd']);
+            map.setPaintProperty('rail-line-case', 'line-opacity', ['interpolate', ['linear'], ['zoom'], 11.5, 0, 12.3, w ? 0.08 : 0.14, 14, w ? 0.12 : 0.2]);
+            map.setPaintProperty('rail-line', 'line-color', ['get', (n ? 'cn' : 'cd') + (w ? 'w' : '')]);
             map.setPaintProperty('rail-line', 'line-opacity', ['interpolate', ['linear'], ['zoom'], 11.5, 0, 12.3, 1]);
         }
     }
+    window.addEventListener('resize', () => { if (railWide !== null && railWide !== isWide()) railPaint(); });
     // 지역으로 옮기면 그 지역의 판매점이 다 보이게(1 · 2등 · 일반 판매점 켜고 흐리게 · TOP 50 만 보기는 끈다) 하고, 다 옮기면 그 근처 판매점 목록(지역 중심에서 가까운 순)
     async function revealAllStores() {
         const chip = k => root.querySelector('.sm-chip[data-layer="' + k + '"]');
