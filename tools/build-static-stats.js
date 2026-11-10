@@ -2543,6 +2543,7 @@ const STORE_MAP_GEO = 'store-map-geo.json';
 const STORE_MAP_PLACES = 'store-map-places.json';
 // 역(2026-11-10): tools/make-stations.mjs 가 OpenStreetMap(ODbL)에서 뽑아 한 번 만든 파일 — 검색창 역 찾기 · 지도 역 표시
 const STORE_MAP_STATIONS = 'store-map-stations.json';
+const STORE_MAP_LINES = 'store-map-lines.json';   // 전철 노선 선(같은 스크립트, 실제 선로 모양 · 노선 색)
 const ISLAND_GU = /^(울릉군|옹진군|신안군|완도군)$/;
 function storeMapGeo(md) {
     const out = {}, r5 = v => Math.round(v * 1e5) / 1e5;
@@ -2858,7 +2859,7 @@ function storeMapPage(md, variant) {
     ${CF_BEACON_MAP}
 </head>
 <body class="sm-full">
-<main class="sm-wrap${hex ? ' is-hex' : ''}" id="sm"${top ? ' data-top="1"' : ''}${hex ? ' data-hex="1"' : ''} data-src="${STORE_MAP_DATA}?v=${fingerprint(STORE_MAP_DATA)}"${md.all ? ` data-all="${STORE_MAP_ALL}?v=${fingerprint(STORE_MAP_ALL)}"` : ''} data-rounds="${STORE_MAP_ROUNDS}?v=${fingerprint(STORE_MAP_ROUNDS)}" data-ids="${STORE_MAP_IDS}?v=${fingerprint(STORE_MAP_IDS)}"${fs.existsSync(path.join(ROOT, STORE_MAP_PLACES)) ? ` data-places="${STORE_MAP_PLACES}?v=${fingerprint(STORE_MAP_PLACES)}"` : ''}${fs.existsSync(path.join(ROOT, STORE_MAP_STATIONS)) ? ` data-stations="${STORE_MAP_STATIONS}?v=${fingerprint(STORE_MAP_STATIONS)}"` : ''}>
+<main class="sm-wrap${hex ? ' is-hex' : ''}" id="sm"${top ? ' data-top="1"' : ''}${hex ? ' data-hex="1"' : ''} data-src="${STORE_MAP_DATA}?v=${fingerprint(STORE_MAP_DATA)}"${md.all ? ` data-all="${STORE_MAP_ALL}?v=${fingerprint(STORE_MAP_ALL)}"` : ''} data-rounds="${STORE_MAP_ROUNDS}?v=${fingerprint(STORE_MAP_ROUNDS)}" data-ids="${STORE_MAP_IDS}?v=${fingerprint(STORE_MAP_IDS)}"${fs.existsSync(path.join(ROOT, STORE_MAP_PLACES)) ? ` data-places="${STORE_MAP_PLACES}?v=${fingerprint(STORE_MAP_PLACES)}"` : ''}${fs.existsSync(path.join(ROOT, STORE_MAP_STATIONS)) ? ` data-stations="${STORE_MAP_STATIONS}?v=${fingerprint(STORE_MAP_STATIONS)}"` : ''}${fs.existsSync(path.join(ROOT, STORE_MAP_LINES)) ? ` data-lines="${STORE_MAP_LINES}?v=${fingerprint(STORE_MAP_LINES)}"` : ''}>
     <div class="sm-map" id="sm-map" role="region" aria-label="판매점 지도" data-i18n-attr="aria-label:sm.mapAria"><p class="sm-loading" data-i18n-en="Loading the map…">지도를 불러오는 중…</p></div>
     <!-- 지도 위 가운데: 지금 화면(○○구) 근처 판매점 목록 열기 -->
     <button type="button" class="sm-near-btn" id="sm-near-btn">⟳ <span data-i18n-en="Retailers around here">이 근처 판매점</span></button>
@@ -2963,8 +2964,8 @@ function storeMapPage(md, variant) {
                 + (md.noCoord ? ` ${fmt(md.noCoord)} retailers without a published location are also left out.` : ''), 'sm-small')}
             ${md.all ? pEn(`"일반 판매점"을 켜면 지금 로또를 파는 전국 판매점 ${fmt(md.all.total)}곳 중 1등 · 2등 기록이 없는 ${fmt(md.all.rows.length)}곳이 회색 점으로 보입니다(출처: 동행복권 판매점 찾기, ${md.all.updated} 기준 · 매달 갱신).`,
                 `"All others" shows the ${fmt(md.all.rows.length)} of ${fmt(md.all.total)} current lotto retailers with no 1st or 2nd prize on record, as grey dots (source: Dong-haeng Lottery retailer search, as of ${md.all.updated}, updated monthly).`, 'sm-small') : ''}
-            ${fs.existsSync(path.join(ROOT, STORE_MAP_STATIONS)) ? pEn(`역 이름 · 위치(검색창 역 찾기 · 지도의 역 표시): © <a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap</a> 기여자, ODbL.`,
-                `Station names and positions (station search and station markers): © <a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap</a> contributors, ODbL.`, 'sm-small') : ''}
+            ${fs.existsSync(path.join(ROOT, STORE_MAP_STATIONS)) ? pEn(`역 이름 · 위치 · 전철 노선과 선로(검색창 역 찾기 · 지도의 역 표시 · 노선 선): © <a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap</a> 기여자, ODbL. 노선 색은 각 운영사 노선도의 색입니다.`,
+                `Station names and positions, metro lines and tracks (station search, station markers and line overlay): © <a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap</a> contributors, ODbL. Line colours follow each operator's route map.`, 'sm-small') : ''}
             ${pEn(`검색창의 지역 찾기(시·도 · 시·군·구 · 읍·면·동)는 통계청 통계지리정보서비스(SGIS)가 공공누리 제1유형으로 개방한 행정동 경계를 가공한 자료(<a href="https://github.com/vuski/admdongkor" rel="noopener">vuski/admdongkor</a>, CC BY 4.0)에서 이름과 위치만 뽑아 씁니다.`,
                 `Area search (province, city/district, neighbourhood) uses names and positions taken from administrative-dong boundaries released by Statistics Korea SGIS under KOGL Type 1, as modified by <a href="https://github.com/vuski/admdongkor" rel="noopener">vuski/admdongkor</a> (CC BY 4.0).`, 'sm-small')}
             ${pEn(`<a href="${LOTTOHEX_FILE}"><b>LottoHex</b></a> — 판매점에 다녀와 위치로 인증하고 육각 칸을 차지하는 땅따먹기 게임(Map 랭킹 · 분기 보상).`,

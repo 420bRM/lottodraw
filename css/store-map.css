@@ -45,6 +45,7 @@ body.sm-full #theme-btn { display: none !important; }
 .sm-found-area b { color: var(--brand, #003087); }
 :root[data-theme="dark"] .sm-found-area b { color: #9ec1ff; }
 .sm-found-area + li:not(.sm-found-area) { margin-top: 3px; padding-top: 3px; border-top: 1px solid var(--line, #e3e3e3); }
+.sm-ln { display: inline-block; width: 8px; height: 8px; margin: 0 3px 1px 2px; border-radius: 50%; vertical-align: middle; }
 .sm-chips { display: flex; flex-wrap: wrap; gap: 3px; pointer-events: none; }
 .sm-chips > * { pointer-events: auto; }
 .sm-chip { display: inline-flex; align-items: center; gap: 3px; padding: 2px 7px; border-radius: 999px; color: var(--muted, #555); font: inherit; font-size: 10.5px; white-space: nowrap; cursor: pointer; }
