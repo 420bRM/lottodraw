@@ -256,6 +256,18 @@ test('채팅: 운영자 계정의 메시지에는 운영자 표시가 붙는다'
     assert.deepEqual([viewer.last('msg').m.nick, viewer.last('msg').m.staff], ['운영자', true]);
 });
 
+test('채팅 알림 한 줄(점령 소식): 별명 · 계정 없이 sys 로 모두에게, 들어온 사람에게도 보이고, 빈 글은 거절', async () => {
+    const { room, join, enter } = setup();
+    const viewer = join();
+    const r = await room.fetch(new Request('https://chat/system', { method: 'POST', body: JSON.stringify({ kind: 'cap', text: '🚩 가나다님이 1번째 블록을 점령했습니다' }) }));
+    assert.equal(r.status, 200);
+    const m = viewer.last('msg').m;
+    assert.deepEqual([m.nick, m.sys, m.text, m.sub], [null, 'cap', '🚩 가나다님이 1번째 블록을 점령했습니다', undefined]);
+    const late = await enter('browser-aaaaaaaaaaaaaaaa');
+    assert.equal(late.last('hello').history.slice(-1)[0].sys, 'cap', '나중에 들어와도 최근 목록에');
+    assert.equal((await room.fetch(new Request('https://chat/system', { method: 'POST', body: JSON.stringify({ kind: 'cap', text: '  ' }) }))).status, 400);
+});
+
 test('채팅 점수(공지하지 않는 규칙): 한 마디 0.1점, 같은 말 반복·한 글자·운영자 제외, 하루 50개까지, 회원에게는 항목 없이 합계만', async () => {
     const { env, room, join } = setup();
     const ws = join();

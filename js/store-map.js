@@ -135,6 +135,7 @@
             },
         }, 'st-w2');
         map.addLayer({ id: 'st-all-name', type: 'symbol', source: 'all', layout: nameLayout(0.6), paint: namePaint() });
+        beamShow(true);   // 빛 벽이 일반 판매점 점 위에 오게
         names();
         paintVisits();
         map.on('click', 'st-all', e => {
@@ -1100,11 +1101,24 @@
     }
     // 북위 37° · 512px 타일에서 1px ≈ 62070 / 2^줌 m — 줌 8~18 정수 줌마다 높이(m)를 정해 잇는다
     const beamH = f => { const ex = ['interpolate', ['linear'], ['zoom']]; for (let z = 8; z <= 18; z++) ex.push(z, Math.round(beamPx(z) * 62070 / Math.pow(2, z) * f * 10) / 10); return ex; };
-    const beamVis = () => !!(shown.terr && map && map.getPitch() >= 15);
-    function beamShow() {
+    // LottoHex 화면에서만(같은 날 사장님 — "일반 지도 볼 때는 빛 안 나와도 돼") · 3D 에서만
+    const beamVis = () => !!(hexMode && shown.terr && map && map.getPitch() >= 15);
+    // 빛 벽 뒤의 판매점 점은 가려지게(같은 날 사장님): 빛 벽을 판매점 · 칸 · 역 점보다 위로 올리고, 글자(이름 · 번호 · 역 표시)만 다시 그 위로.
+    // 땅에 붙은 점은 화면에서 벽보다 아래(앞)에 있으면 벽에 겹치지 않고, 벽 뒤(위쪽)에 있으면 벽에 덮인다. 나중에 더한 점 층이 벽 위에 오면 다시 맞춘다
+    const BEAM_LABEL = /-(name|num)$|^rail-badge$/;
+    function beamOrder() {
+        const ids = map.getStyle().layers.map(l => l.id), b0 = ids.indexOf(beamIds[0]);
+        if (b0 < 0) return;
+        if (!ids.slice(b0 + 1).some(id => !beamIds.includes(id) && /^(st|hx|rail|terr)-/.test(id) && !BEAM_LABEL.test(id))) return;   // 이미 맞다
+        beamIds.forEach(id => map.moveLayer(id));
+        ids.filter(id => BEAM_LABEL.test(id)).forEach(id => map.moveLayer(id));
+    }
+    // force: 층을 새로 더했을 때 — 보이는 중이면 차례를 다시 맞춘다(지도 기울이는 동안에는 바뀔 때만)
+    function beamShow(force) {
         if (!map || !map.getLayer(beamIds[0])) return;
-        const v = beamVis() ? 'visible' : 'none';
-        if (map.getLayoutProperty(beamIds[0], 'visibility') !== v) beamIds.forEach(id => map.setLayoutProperty(id, 'visibility', v));
+        const v = beamVis() ? 'visible' : 'none', was = map.getLayoutProperty(beamIds[0], 'visibility');
+        if (was !== v) beamIds.forEach(id => map.setLayoutProperty(id, 'visibility', v));
+        if (v === 'visible' && (was !== v || force)) beamOrder();
     }
     function beamLayers(below) {
         const A = isNight() ? 0.85 : 0.75;
@@ -1241,7 +1255,7 @@
             });
         }
         TERR_LAYERS.forEach(id => map.setLayoutProperty(id, 'visibility', terrVis(id) ? 'visible' : 'none'));
-        beamShow();
+        beamShow(true);
         map.setFilter('terr-sel', ['==', ['get', 'k'], terrSel || '']);
     }
     function pickCell(k) {
@@ -1272,6 +1286,7 @@
         if (!on) {
             closeTerrPanel();
             TERR_LAYERS.forEach(id => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none'); });
+            beamShow();   // 빛 벽도 감춘다(전에는 판매점 화면으로 돌아가도 남았다)
             if (terrOnly) setTerrOnly(false);
             return;
         }
@@ -1338,6 +1353,7 @@
             'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 8, ['case', v, 1, 0], 13, ['case', v, 2, 1]] } }, 'terr-name');
         map.addLayer({ id: 'hx-name', type: 'symbol', source: 'hexstores', minzoom: 15, layout: Object.assign(nameLayout(0.6), { visibility: 'none' }), paint: Object.assign(namePaint(), { 'text-opacity': 1 }) }, 'terr-name');
         map.on('click', 'hx-dot', e => { const p = e.features && e.features[0] && e.features[0].properties; if (p) (p.t === 'w' ? open : openAll)(Number(p.i), false); });
+        beamShow(true);   // 빛 벽이 이 점들 위에 오게
         map.on('mouseenter', 'hx-dot', () => { map.getCanvas().style.cursor = 'pointer'; });
         map.on('mouseleave', 'hx-dot', () => { map.getCanvas().style.cursor = ''; });
         paintVisits();
@@ -1488,8 +1504,38 @@
             if (!shown.terr) setTerr(true); else { openTerrPanel(); ensureHexLayers(); applyLayers(); }
             requestAnimationFrame(() => setSheet(sheetSnap));
             placeNearBtn();
+            loadFeed(true);   // 소식 띠
         });
     }
+    // ───── LottoHex 소식 띠(2026-11-10 사장님 — "점령하면 '○○○님이 ~번째 블록을 점령했습니다'가 오른쪽에서 왼쪽으로 흐르게, 간단한 공지도, 나중엔 유료 확성기") ─────
+    // /api/territory/feed(30초 캐시)를 LottoHex 화면에서 1분마다. 관리자 공지가 맨 앞(노란 글씨), 점령 소식은 최근 것부터.
+    // 어느 칸 · 지역인지는 넣지 않는다(언제 어디 있었는지 드러나지 않게 — 서버도 별명 · N번째만 준다). 움직임 줄이기면 흐르지 않고 첫 줄만
+    let feedData = null, feedAt = 0, feedSig = '';
+    async function loadFeed(force) {
+        if (!hexMode || (!force && Date.now() - feedAt < 50000)) return;
+        feedAt = Date.now();
+        try { const r = await fetch(apiBase() + '/api/territory/feed'); if (r.ok) feedData = await r.json(); } catch (e) { /* 다음 차례에 */ }
+        drawTicker();
+    }
+    const agoTxt = at => { const m = Math.max(1, Math.round((Date.now() - at) / 60000)); return m < 60 ? T(m + '분 전', m + 'm ago') : T(Math.round(m / 60) + '시간 전', Math.round(m / 60) + 'h ago'); };
+    function drawTicker() {
+        const box = document.getElementById('sm-ticker'), inner = document.getElementById('sm-ticker-in');
+        if (!box || !inner) return;
+        const items = [];
+        if (feedData && feedData.notice && feedData.notice.text) items.push(['is-notice', '📢 ' + feedData.notice.text]);
+        ((feedData && feedData.feed) || []).slice(0, 10).forEach(e => items.push(['', '🚩 ' + T((e.nick ? e.nick + '님이 ' : '누군가 ') + e.n + '번째 블록을 점령했습니다', (e.nick || 'Someone') + ' captured block #' + e.n), agoTxt(e.at)]));
+        box.hidden = !items.length;
+        if (!items.length) { feedSig = ''; return; }
+        const sig = JSON.stringify(items.map(x => x[1]));
+        if (sig === feedSig) return;   // 같은 소식이면 흐름을 끊지 않는다
+        feedSig = sig;
+        inner.innerHTML = items.map(([c, t, ago]) => '<span' + (c ? ' class="' + c + '"' : '') + '>' + esc(t) + (ago ? ' <small>' + esc(ago) + '</small>' : '') + '</span>').join('');
+        const cw = box.clientWidth, tw = inner.scrollWidth;
+        inner.style.setProperty('--cw', cw + 'px');
+        inner.style.setProperty('--dur', Math.max(8, Math.round((cw + tw) / 55)) + 's');   // 1초에 55px 쯤
+        inner.style.animation = 'none'; void inner.offsetWidth; inner.style.animation = '';   // 새 소식은 처음부터
+    }
+    setInterval(() => { if (hexMode && !document.hidden) loadFeed(); }, 60000);
     // 영역만 보기: 판매점 점 · 별 · 이름 · 다녀온 곳을 다 감추고 칸만. 영역이 꺼져 있으면 함께 켠다
     function setTerrOnly(on) {
         terrOnly = on;
@@ -1917,6 +1963,7 @@
             '<li>' + T('주인이 없는 칸은 <b>회색지대</b>로, 지도에 옅은 회색으로 보입니다. 판매점 한 곳만 다녀와도 차지합니다.', 'Cells no one holds are the <b>grey zone</b>, shown in light grey. One visit takes one.') + '</li>' +
             '<li>' + T('같은 수면 그 칸에 더 최근에 다녀온 사람이 차지합니다. 빼앗기면 그 칸 판매점 카드의 "오늘 또 다녀왔어요"로 되찾을 수 있습니다(같은 곳은 하루 한 번).', 'On a tie, whoever visited the cell most recently holds it. Lost it? Use "Visited again today" on a retailer card in that cell (once a day per retailer).') + '</li>' +
             '<li>' + T('칸 모양: 참여자마다 색 두 가지와 무늬(단색 · 줄무늬 · 물방울 · 체크)가 무작위로 정해지고 모두에게 같게 보입니다. 내 칸 모양은 ' + SKIN_COST + '포인트로 바꿀 수 있습니다. 내 칸은 테두리가 조금 굵습니다.', 'Skins: each player gets two colours and a pattern (solid, stripes, dots or checks) at random, and everyone sees the same. You can change yours for ' + SKIN_COST + ' points. Your cells have a slightly thicker edge.') + '</li>' +
+            '<li>' + T('소식 띠: 누가 칸을 새로 차지하면 "○○님이 N번째 블록을 점령했습니다"가 LottoHex 화면 위 띠와 채팅에 나옵니다(어느 칸 · 지역인지는 나오지 않습니다).', 'News ticker: when someone takes a new cell, "X captured block #N" runs along the top of the LottoHex screen and in the chat (which cell or area is never shown).') + '</li>' +
             '<li>' + T('영역 빛 벽: ' + BEAM_COST + '포인트로 사면(한 번 사면 계속) 3D 에서 내 영토 바깥 테두리가 위로 빛나고 모두에게 보입니다. 켜고 끄기는 무료입니다.', 'Light wall: buy it for ' + BEAM_COST + ' points (yours to keep) and your territory edge glows upward in 3D for everyone. Switching it on or off is free.') + '</li>' +
             '<li>' + T('밤 지도에서 크게 보면 차지한 칸 테두리를 빛이 시계 방향으로 돌고, 칸 면에는 유리에 비친 듯한 45° 빛이 번쩍 지나갑니다.', 'On the night map, zoomed in, a light runs clockwise round held cells and a quick glassy 45° glint flashes across them.') + '</li>' +
             '<li>' + T('칸은 비우지 않습니다. 분기(1 · 4 · 7 · 10월 1일 0시)마다 그때의 Map 랭킹을 확정해 남깁니다.', 'Cells are never cleared. At the start of each quarter the Map ranking at that moment is finalised and kept.') + '</li>' +
@@ -2356,6 +2403,7 @@
                         : T('✓ 위치로 확인했습니다. 이 판매점은 오늘 포인트를 이미 받았거나, 오늘 받을 수 있는 50포인트를 다 받았습니다.', '✓ Verified by location. No points this time: already earned here today, or the daily 50 is reached.')) +
                         (r.fresh ? ' ' + freshText(r.fresh) : '');   // 새 칭호 · 마일스톤(2026-11-09)
                     if (r.fresh) afterFresh(r.fresh);
+                    if (r.cap) { toast('🚩 ' + T(r.cap.n + '번째 블록을 점령했습니다!', 'You captured block #' + r.cap.n + '!')); feedAt = 0; loadFeed(true); }   // 점령(2026-11-10) — 띠에도 바로
                 }
                 refreshTerr();
                 if (shown.mine) { await ensureAll(); mineSource(); drawMine(); }

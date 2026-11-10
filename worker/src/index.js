@@ -26,7 +26,7 @@
 
 import { generateKeyPair, importPrivate, importPublic, signKey, verifyKey, parseKey, hex32, publicOnly, keyId, b64urlEncode } from './keys.js';
 import { plansFor, roundEndsAt } from './plans.js';
-import { community, SESSION_DAYS, REACT_TYPES, ITEM_RE, POINTS, COMMENT, TAP_KINDS } from './community.js';
+import { community, SESSION_DAYS, REACT_TYPES, ITEM_RE, POINTS, COMMENT, TAP_KINDS, capText } from './community.js';
 import { verifyGoogleToken } from './google.js';
 import { saleRound, cleanGame, rankOf, kstParts, drawDay } from './lotto.js';
 
@@ -140,6 +140,7 @@ async function route(request, env, ctx) {
     if (path === '/api/territory/leave' && method === 'POST') return territoryLeave(request, env);
     if (path === '/api/territory/skin' && method === 'POST') return territorySkin(request, env);
     if (path === '/api/territory/beam' && method === 'POST') return territoryBeam(request, env);
+    if (path === '/api/territory/feed' && method === 'GET') return territoryFeed(request, env);
     if (path === '/api/chat' && method === 'GET') return chatConnect(request, env);
     if (path === '/api/chat/info' && method === 'GET') return chatInfo(request, env);
     if (path === '/api/reactions' && method === 'POST') return react(request, env);
@@ -943,7 +944,14 @@ async function saveVisit(request, env) {
     if (r.error === 'again_today') throw new HttpError(409, 'again_today', '오늘은 이미 다녀왔다고 표시했습니다. 같은 곳은 하루 한 번입니다.');
     if (r.error === 'daily_limit') throw new HttpError(429, 'daily_limit', `다녀온 곳 표시는 하루 ${r.max}번까지입니다. 내일 다시 해 주세요.`);
     if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
-    return json(request, env, { visits: r.visits, visitAt: r.visitAt, visitColor: r.visitColor, earned: r.earned || 0, score: r.score, fresh: r.fresh || null });
+    if (r.cap && env.CHAT) await chatStub(env).fetch('https://chat/system', { method: 'POST', body: JSON.stringify({ kind: 'cap', text: capText(r.cap) }) }).catch(() => null);   // 점령 소식을 채팅에도
+    return json(request, env, { visits: r.visits, visitAt: r.visitAt, visitColor: r.visitColor, earned: r.earned || 0, score: r.score, fresh: r.fresh || null, cap: r.cap || null });
+}
+
+// LottoHex 소식 띠(2026-11-10): 최근 점령 소식 [{ at, nick, n }] + 관리자 공지 { text, at, until }. 누구나 · 30초 캐시
+async function territoryFeed(request, env) {
+    const r = await community(env, 'hexFeed', { now: Date.now() });
+    return json(request, env, { feed: r.feed || [], notice: r.notice || null }, 200, { 'Cache-Control': 'public, max-age=30' }, true);
 }
 
 // 칭호 달기 · 떼기(2026-11-09, titles.js). { id: 칭호 번호 } 또는 { id: null }. 얻은 칭호만 단다
@@ -1557,6 +1565,15 @@ async function admin(request, env, sub, method, url) {
         const payload = cm[1] === 'delete' ? { id: String(body.id || '').slice(0, 40) } : { sub: String(body.sub || '').slice(0, 64), nick: cleanText(body.nick, 20) };
         const r = await chatStub(env).fetch('https://chat/admin/' + cm[1], { method: 'POST', body: JSON.stringify(payload) });
         return json(request, env, await r.json());
+    }
+    // LottoHex 소식 띠 공지(2026-11-10 사장님 — 흐르는 띠에 간단한 공지): { text(80자까지), hours(1~720, 기본 72) } — text 가 비면 내린다
+    if (sub === '/hex-notice' && method === 'GET') { needLogin(env); return json(request, env, await community(env, 'hexFeed', { now: Date.now() })); }
+    if (sub === '/hex-notice' && method === 'POST') {
+        needLogin(env);
+        const body = await readJson(request);
+        const text = cleanText(body.text, 80);
+        const hours = Math.max(1, Math.min(720, Math.round(Number(body.hours) || 72)));
+        return json(request, env, await community(env, 'hexNotice', { text: text || null, hours, now: Date.now() }));
     }
     // 블로그 댓글 관리: 최근 댓글(누가 썼는지 포함), 지우기. 막기는 채팅 금지와 같다
     if (sub === '/comments' && method === 'GET') {

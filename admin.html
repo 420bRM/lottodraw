@@ -8,7 +8,7 @@
     <link rel="icon" href="/favicon.ico" sizes="32x32">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    <link rel="stylesheet" href="css/site.css?v=835a08e9">
+    <link rel="stylesheet" href="css/site.css?v=215f963c">
 </head>
 <body>
 <!-- 판매자 전용. 관리자 토큰(Worker 의 ADMIN_TOKEN)이 없으면 아무것도 할 수 없다.
@@ -137,6 +137,27 @@
                 </div>
             </section>
 
+            <section class="card" id="hexn-card" aria-labelledby="hexn-t">
+                <h2 class="card-title" id="hexn-t"><span>LottoHex 소식 띠 공지</span><small>LottoHex 화면 위에 흐르는 한 줄 · 점령 소식보다 앞</small></h2>
+                <div class="card-body">
+                    <p class="license-status" id="hexn-now" role="status"></p>
+                    <form class="admin-form" id="hexn-form">
+                        <label>공지 (80자까지) <input type="text" id="hexn-text" maxlength="80" placeholder="예: 이번 주말 LottoHex 이벤트!"></label>
+                        <label>보여 줄 기간
+                            <select id="hexn-hours">
+                                <option value="6">6시간</option>
+                                <option value="24">하루</option>
+                                <option value="72" selected>3일</option>
+                                <option value="168">1주</option>
+                                <option value="720">30일</option>
+                            </select>
+                        </label>
+                        <button type="submit" class="btn">올리기</button>
+                        <button type="button" class="btn btn-secondary" id="hexn-clear">내리기</button>
+                    </form>
+                </div>
+            </section>
+
             <section class="card hook-card" aria-labelledby="hook-t">
                 <h2 class="card-title" id="hook-t"><span>입금 알림 연결 (자동 입금 확인)</span><small>한 번만 설정</small></h2>
                 <div class="card-body">
@@ -239,6 +260,6 @@
 </div>
 
 <script src="js/premium-config.js?v=ca702ca6"></script>
-<script src="js/admin.js?v=bd7063a7"></script>
+<script src="js/admin.js?v=54a1eacb"></script>
 </body>
 </html>

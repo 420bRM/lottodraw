@@ -1901,6 +1901,10 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 .chat-rule { margin: 0; padding: 6px 12px; background: var(--soft, #f3f6fd); color: var(--muted); font-size: 11px; }
 .chat-list { flex: 1; margin: 0; padding: 8px 12px; overflow-y: auto; list-style: none; font-size: 14px; }
 .chat-msg { padding: 4px 0; line-height: 1.45; word-break: break-word; }
+/* 알림 한 줄(2026-11-10 — LottoHex 점령 소식): 보라 바탕 · 진한 글자 */
+.chat-msg.is-sys { margin: 3px 0; padding: 4px 8px; border-radius: 8px; background: rgba(131, 56, 236, .1); color: #6d28d9; font-size: 12.5px; font-weight: bold; }
+:root[data-theme="dark"] .chat-msg.is-sys { background: rgba(167, 139, 250, .14); color: #c4b5fd; }
+.chat-msg.is-sys .chat-time { font-weight: normal; }
 .chat-nick { margin-right: 6px; color: var(--brand); font-weight: bold; }
 .chat-msg.is-mine .chat-nick { color: var(--pink, #d61f69); }
 .chat-time { margin-left: 6px; color: var(--faint, #999); font-size: 11px; }

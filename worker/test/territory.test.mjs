@@ -752,6 +752,55 @@ test('칭호 API: 위치로 인증하면 바로 알림(마일스톤 · 칭호 ·
     assert.ok(got(r).includes('t1'), '칭호는 다시 얻을 수 있다');
 });
 
+test('LottoHex 소식: 위치로 인증해 칸 주인이 되면 띠 · 채팅에 "○○님이 N번째 블록을 점령"(어느 칸 · 지역 · 판매점은 없다) · 이미 내 칸이거나 못 빼앗으면 없다 · 공지는 관리자만', async () => {
+    const env = await fresh();
+    env.GPS_VERIFY = 'on';
+    const posted = [];
+    env.CHAT = { idFromName: n => n, get: () => ({ fetch: async (url, init) => { posted.push([String(url), JSON.parse(init.body)]); return new Response('{"ok":true}'); } }) };
+    const ids = ['11100201', '11100202', '11100203'];
+    site = {
+        cells: { r: 0.6, cells: { '0,0': [ids[0]], '1,0': [ids[1], ids[2]] } },
+        geo: { regions: [['서울', '마포구', '마포구']], stores: { [ids[0]]: [37.5, 127.0, 0], [ids[1]]: [37.51, 127.0, 0], [ids[2]]: [37.5103, 127.0, 0] } },
+    };
+    const a = await member(env, 'f1', '가나다');
+    const b = await member(env, 'f2', '라마바');
+    await terr(env);
+    for (const s of [a, b]) { await geoAgree(env, s); assert.equal((await join(env, s, { agree: true, v: 2 })).status, 200); }
+    const go = (s, i) => visit(env, s, ids[i], near(site.geo.stores[ids[i]][0], 127.0));
+    let r = await go(a, 0);
+    assert.equal(r.status, 200, JSON.stringify(r.data));
+    assert.deepEqual([r.data.cap.nick, r.data.cap.n], ['가나다', 1], '첫 블록');
+    r = await go(a, 1);
+    assert.equal(r.data.cap.n, 2, '두 번째 블록');
+    r = await go(a, 2);
+    assert.equal(r.data.cap, null, '이미 내 칸');
+    r = await go(b, 1);
+    assert.equal(r.data.cap, null, '1 : 2 — 못 빼앗음');
+    r = await go(b, 2);
+    assert.deepEqual([r.data.cap.nick, r.data.cap.n], ['라마바', 1], '2 : 2 면 더 최근 — 빼앗음');
+    const f = await call(env, 'GET', '/api/territory/feed');
+    assert.equal(f.status, 200);
+    assert.equal(f.headers.get('Cache-Control'), 'public, max-age=30');
+    assert.deepEqual(f.data.feed.map(e => [e.nick, e.n]), [['라마바', 1], ['가나다', 2], ['가나다', 1]], '최근 것부터');
+    assert.ok(!/0,0|1,0|1110020|마포|37\.5/.test(JSON.stringify(f.data)), '어느 칸 · 판매점 · 지역인지는 없다');
+    assert.equal(f.data.notice, null);
+    assert.deepEqual(posted.map(p => p[0]), Array(3).fill('https://chat/system'), '채팅에도 세 번');
+    assert.deepEqual(posted.map(p => p[1].kind), ['cap', 'cap', 'cap']);
+    assert.equal(posted[0][1].text, '🚩 가나다님이 1번째 블록을 점령했습니다');
+    // 공지: 관리자만 · 80자 · 시간 지나면 내려감 · 빈 글이면 내림
+    assert.equal((await call(env, 'POST', '/api/admin/hex-notice', { headers: auth(a), body: { text: '안녕' } })).status, 401);
+    const n = await call(env, 'POST', '/api/admin/hex-notice', { headers: asAdmin, body: { text: '이번 주말 LottoHex 2배 이벤트!', hours: 2 } });
+    assert.equal(n.status, 200, JSON.stringify(n.data));
+    assert.equal((await call(env, 'GET', '/api/territory/feed')).data.notice.text, '이번 주말 LottoHex 2배 이벤트!');
+    const realNow2 = Date.now;
+    Date.now = () => realNow2() + 3 * 3600 * 1000;
+    assert.equal((await call(env, 'GET', '/api/territory/feed')).data.notice, null, '2시간 지나면 내려감');
+    Date.now = realNow2;
+    await call(env, 'POST', '/api/admin/hex-notice', { headers: asAdmin, body: { text: '다시' } });
+    assert.equal((await call(env, 'POST', '/api/admin/hex-notice', { headers: asAdmin, body: { text: '' } })).data.notice, null);
+    assert.equal((await call(env, 'GET', '/api/territory/feed')).data.notice, null);
+});
+
 test('칭호: 위치 인증이 꺼져 있으면 셈하지 않는다 · 목록은 누구나', async () => {
     const env = await fresh();
     const a = await member(env, 't3', '손표시');

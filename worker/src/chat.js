@@ -7,7 +7,7 @@
 //   · 운영자는 관리자 페이지에서 메시지를 지우고 회원의 채팅을 막는다.
 //
 // 저장 (이 방의 저장소)
-//   msg:<시각 16자리>-<무작위>  { id, at, nick, text, sub }   — 24시간 뒤 지운다. sub 는 관리자에게만 보인다
+//   msg:<시각 16자리>-<무작위>  { id, at, nick, text, sub, sys? }   — 24시간 뒤 지운다. sub 는 관리자에게만 보인다. sys: 알림(점령 소식 — 별명 · sub 없음)
 //   ban:<구글 계정 번호>        { at, nick }   — 채팅 금지. 블로그 댓글 쓰기도 함께 막는다
 //
 // 접속 수는 사람 수다(2026-10-14): 같은 계정은 한 명, 로그인 전이면 같은 브라우저를 한 명으로 센다. 브라우저는 화면이
@@ -50,7 +50,7 @@ const sha256 = async s => {
     return btoa(String.fromCharCode(...d)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 };
 
-const pub = m => Object.assign({ id: m.id, at: m.at, nick: m.nick, text: m.text }, m.staff ? { staff: true } : {});
+const pub = m => Object.assign({ id: m.id, at: m.at, nick: m.nick, text: m.text }, m.staff ? { staff: true } : {}, m.sys ? { sys: m.sys } : {});   // sys: 알림(점령 소식 'cap') — 별명 없이 다른 색
 
 export class ChatRoom {
     constructor(state, env) {
@@ -85,6 +85,17 @@ export class ChatRoom {
                 if (m.sub === body.sub) { await this.storage.delete('msg:' + m.id); this.broadcast({ t: 'del', id: m.id }); }
             }
             return reply({ ok: true });
+        }
+        // 알림 한 줄(2026-11-10 — LottoHex 점령 소식). Worker 가 위치 인증 뒤에 부른다. 쓰는 사람이 없고 점수도 없다
+        if (url.pathname === '/system' && request.method === 'POST') {
+            const text = String(body.text || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, MAX_LEN);
+            if (!text) return reply({ error: 'empty' }, 400);
+            const now = Date.now(), id = String(now).padStart(16, '0') + '-' + Math.random().toString(36).slice(2, 8);
+            const m = { id, at: now, nick: null, text, sys: /^[a-z]{1,8}$/.test(body.kind || '') ? body.kind : 'note' };
+            await this.storage.put('msg:' + id, m);
+            this.broadcast({ t: 'msg', m: pub(m) });
+            await this.trim();
+            return reply({ ok: true, id });
         }
         if (url.pathname === '/banned') return reply({ banned: !!(await this.storage.get('ban:' + body.sub)) });   // 블로그 댓글도 같은 금지를 따른다
         if (url.pathname === '/admin/unban') {
