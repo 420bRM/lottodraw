@@ -1055,7 +1055,7 @@
     }
     function terrFeatures() {
         const cells = (terr && terr.cells) || {}, mine = new Set((terr && terr.me && terr.me.cells) || []);
-        const polys = [], pts = [], rings = [];
+        const polys = [], pts = [], rings = [], beams = [];
         glintCells = [];
         terrCells.forEach((list, k) => {
             const own = cells[k], me = mine.has(k);
@@ -1066,9 +1066,46 @@
                 pts.push({ type: 'Feature', geometry: { type: 'Point', coordinates: HX.centerOf(k) }, properties: { k, nm: (own[0] || T('(별명 없음)', '(no name)')) + ' · ' + own[1], c } });
                 rings.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: HX.ringOf(k).slice().reverse() }, properties: { k } });   // 시계 방향(빛이 도는 차례)
                 glintCells.push(glintCell(k));
+                if (me) beams.push(beamCell(k, c));
             }
         });
-        return { polys: { type: 'FeatureCollection', features: polys }, pts: { type: 'FeatureCollection', features: pts }, rings: { type: 'FeatureCollection', features: rings } };
+        return { polys: { type: 'FeatureCollection', features: polys }, pts: { type: 'FeatureCollection', features: pts }, rings: { type: 'FeatureCollection', features: rings }, beams: { type: 'FeatureCollection', features: beams } };
+    }
+    // ───── 내 영토 빛기둥(2026-11-10 사장님 — "사용자가 많아지면 내 칸을 구분하기 어렵다. 내 영토는 빛이 위로 쏘아지게, 그라데이션으로") ─────
+    // 내 칸마다 칸 가운데에서 위로 빛기둥(칸 폭의 34%) — 아래가 밝고 위로 갈수록 옅어진다. fill-extrusion 은 높이에 따라 옅게 할 수 없어
+    // 높이를 BEAM_N 토막으로 나눠 토막마다 투명도를 낮춘다. 화면에서의 길이는 멀리서 길고(줌 8 · 200px) 가까이서 짧게(줌 14.5 · 90px — 같은 날 사장님 "가까이서는 짧아야"),
+    // 줌 14.2~15.2 에서 사라진다(가까이서는 칸이 화면을 덮을 만큼 커져 기둥이 화면을 가린다 — 그때는 칸 자체가 잘 보인다).
+    // 3D 모드(지도를 기울였을 때)만 — 똑바로 내려다보면 토막 윗면이 칸 위에 겹쳐 칸을 가린다. 색은 내 칸 색을 흰빛 쪽으로 밝힌 것.
+    // LottoHex 창의 "내 영토 빛기둥"으로 켜고 끈다(이 기기에 저장, 처음엔 켜짐). 지금은 나에게만 보인다
+    const BEAM_N = 14, BEAM_W = 0.34, BEAM_PX = [[8, 200], [11, 170], [13, 130], [14.5, 90], [16, 60], [18, 40]];
+    const beamPx = z => { for (let i = 1; i < BEAM_PX.length; i++) { const [z0, p0] = BEAM_PX[i - 1], [z1, p1] = BEAM_PX[i]; if (z <= z1) return p0 + (p1 - p0) * (z - z0) / (z1 - z0); } return BEAM_PX[BEAM_PX.length - 1][1]; };
+    let beamOn = true;
+    try { beamOn = localStorage.getItem('lottodraw.hexBeam') !== '0'; } catch (e) { /* 저장소 없음 — 켜 둔다 */ }
+    const beamIds = Array.from({ length: BEAM_N }, (_, i) => 'terr-beam-' + i);
+    function beamCell(k, c) {
+        const ctr = HX.centerOf(k), s = BEAM_W;
+        const ring = HX.ringOf(k).map(([x, y]) => [ctr[0] + (x - ctr[0]) * s, ctr[1] + (y - ctr[1]) * s]);
+        const rgb = [1, 3, 5].map(i => parseInt(String(c).slice(i, i + 2), 16) || 200);
+        const bc = '#' + rgb.map(v => Math.round(v + (255 - v) * 0.35).toString(16).padStart(2, '0')).join('');
+        return { type: 'Feature', geometry: { type: 'Polygon', coordinates: [ring] }, properties: { bc } };
+    }
+    // 북위 37° · 512px 타일에서 1px ≈ 62070 / 2^줌 m — 줌 8~18 정수 줌마다 높이(m)를 정해 잇는다
+    const beamH = f => { const ex = ['interpolate', ['linear'], ['zoom']]; for (let z = 8; z <= 18; z++) ex.push(z, Math.round(beamPx(z) * 62070 / Math.pow(2, z) * f * 10) / 10); return ex; };
+    const beamVis = () => !!(beamOn && shown.terr && map && map.getPitch() >= 15);
+    function beamShow() {
+        if (!map || !map.getLayer(beamIds[0])) return;
+        const v = beamVis() ? 'visible' : 'none';
+        if (map.getLayoutProperty(beamIds[0], 'visibility') !== v) beamIds.forEach(id => map.setLayoutProperty(id, 'visibility', v));
+    }
+    function beamLayers(below) {
+        const A = isNight() ? 0.7 : 0.6;
+        beamIds.forEach((id, i) => {
+            map.addLayer({ id, type: 'fill-extrusion', source: 'terr-beam', layout: { visibility: 'none' }, paint: {
+                'fill-extrusion-color': ['get', 'bc'], 'fill-extrusion-base': beamH(i / BEAM_N), 'fill-extrusion-height': beamH((i + 1) / BEAM_N),
+                'fill-extrusion-opacity': ['interpolate', ['linear'], ['zoom'], 14.2, +(A * Math.pow(1 - i / BEAM_N, 1.6)).toFixed(3), 15.2, 0], 'fill-extrusion-vertical-gradient': false } }, below);
+        });
+        map.on('pitch', beamShow);
+        beamShow();
     }
     const TERR_LAYERS = ['terr-fill', 'terr-pat', 'terr-glint', 'terr-line', 'terr-sel', 'terr-glow', 'terr-name'];
     // 회색지대(2026-11-08 사장님): 주인 없는 칸은 옅은 회색. 낮은 밝은 지도라 조금 진하게, 밤은 어두운 지도에서 밝은 회색이 옅게 비치게. 멀리서는 더 옅게
@@ -1164,6 +1201,7 @@
             map.getSource('terr').setData(f.polys);
             map.getSource('terr-pt').setData(f.pts);
             map.getSource('terr-ring').setData(f.rings);
+            if (map.getSource('terr-beam')) map.getSource('terr-beam').setData(f.beams);
         } else {
             map.addSource('terr', { type: 'geojson', data: f.polys });
             map.addSource('terr-pt', { type: 'geojson', data: f.pts });
@@ -1182,6 +1220,8 @@
             map.addLayer({ id: 'terr-glow', type: 'line', source: 'terr-ring', minzoom: 12.5, layout: { 'line-cap': 'round', 'line-join': 'round' },
                 paint: { 'line-width': 5, 'line-blur': 3, 'line-gradient': glowGradient(0) } }, below);
             terrGlowLoop();
+            map.addSource('terr-beam', { type: 'geojson', data: f.beams });
+            beamLayers(below);
             map.addLayer({ id: 'terr-name', type: 'symbol', source: 'terr-pt', minzoom: 11, layout: { 'text-field': ['get', 'nm'], 'text-font': ['Noto Sans Bold'], 'text-size': 12, 'text-max-width': 8, 'text-padding': 4 },
                 paint: { 'text-color': ['get', 'c'], 'text-halo-color': isNight() ? 'rgba(10, 14, 22, .9)' : 'rgba(255, 255, 255, .95)', 'text-halo-width': 1.6 } });
             map.on('click', 'terr-fill', e => {
@@ -1192,6 +1232,7 @@
             });
         }
         TERR_LAYERS.forEach(id => map.setLayoutProperty(id, 'visibility', terrVis(id) ? 'visible' : 'none'));
+        beamShow();
         map.setFilter('terr-sel', ['==', ['get', 'k'], terrSel || '']);
     }
     function pickCell(k) {
@@ -1781,6 +1822,8 @@
     }
     function bindSkin() {
         const me = terr && terr.me;
+        const bm = terrPanel.querySelector('.sm-terr-beam input');
+        if (bm) bm.addEventListener('change', () => { beamOn = bm.checked; try { localStorage.setItem('lottodraw.hexBeam', beamOn ? '1' : '0'); } catch (e) { /* 저장 못 해도 이 화면에서는 따른다 */ } beamShow(); });
         const ed = terrPanel.querySelector('.sm-terr-skin-edit');
         if (ed) ed.addEventListener('click', () => { skinDraft = parseSkin(me.skin); drawTerr(); });
         if (!skinDraft || !terrPanel.querySelector('.sm-skin-edit')) return;
@@ -1823,7 +1866,8 @@
         else status = '<p class="sm-terr-me">' + T('내 칸 <b>' + fmt(me.cells.length) + '</b>' + (me.rank ? ' · <b>' + me.rank + '</b>위' : '') + ' · 다녀온 곳 ' + fmt(me.stores) + '곳',
             'My cells <b>' + fmt(me.cells.length) + '</b>' + (me.rank ? ' · rank <b>' + me.rank + '</b>' : '') + ' · ' + fmt(me.stores) + ' visited') + '</p>' +
             (me.lastRank ? '<p class="sm-terr-me">' + (MEDAL[me.lastRank - 1] || '🏅') + ' ' + T(seasonLabel(terr.last) + ' 확정 ' + me.lastRank + '위', seasonLabel(terr.last) + ' final: #' + me.lastRank) + '</p>' : '') +
-            skinRow(me);
+            skinRow(me) +
+            '<label class="sm-terr-beam"><input type="checkbox"' + (beamOn ? ' checked' : '') + '> ' + T('내 영토 빛기둥', 'Light beam over my cells') + ' <small>' + T('3D에서 · 나에게만 보임', 'in 3D · only you see it') + '</small></label>';
         const rank = (terr && terr.rank) || [];
         const last = terr && terr.last;
         const joined = !!(A && A.session() && me && me.joined), sheet = hexMobile();
