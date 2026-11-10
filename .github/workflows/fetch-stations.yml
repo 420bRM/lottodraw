@@ -1,0 +1,22 @@
+# 한 번만 쓰는 받기 — 지도 역 목록(store-map-stations.json, OpenStreetMap ODbL). 이 환경에서는 Overpass API 에 닿지 않아 여기서 받는다. 머지 전에 지운다
+name: fetch-stations
+on:
+  push:
+    branches: [claude/stations-tabs]
+    paths: [.github/workflows/fetch-stations.yml]
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - name: stations
+        timeout-minutes: 15
+        run: node tools/make-stations.mjs
+      - run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add store-map-stations.json && git commit -m "지도 역 목록(OpenStreetMap)" && git pull --rebase origin claude/stations-tabs && git push origin HEAD:claude/stations-tabs
