@@ -2765,7 +2765,7 @@ function lottohexAboutHtml(md, snap) {
             <ul>
                 ${li('같은 수면 그 칸에 더 최근에 다녀온 사람이 차지합니다. 주인 없는 칸은 회색지대로, 지도에 옅은 회색으로 보입니다.', 'On a tie, whoever visited the cell most recently holds it. Cells no one holds are the grey zone, shown in light grey.')}
                 ${li('칸은 비우지 않습니다. 분기(1 · 4 · 7 · 10월 1일 0시)마다 그때의 Map 랭킹을 확정해 남깁니다.', 'Cells are never cleared. At the start of each quarter the Map ranking is finalised and kept.')}
-                ${li('모두에게 보이는 것은 칸 주인의 별명 · 칸 모양 · 칸별 다녀온 판매점 수와 Map 랭킹뿐입니다. 어느 판매점을 언제 다녀왔는지는 공개하지 않습니다.', 'Only cell holders\' nicknames, cell skins, visit counts per cell and the Map ranking are public. Which retailers you visited, and when, is never shown.')}
+                ${li('모두에게 보이는 것은 칸 주인의 별명 · 칸 모양(빛 벽 포함) · 칸별 다녀온 판매점 수와 Map 랭킹뿐입니다. 어느 판매점을 언제 다녀왔는지는 공개하지 않습니다.', 'Only cell holders\' nicknames, cell skins (including light walls), visit counts per cell and the Map ranking are public. Which retailers you visited, and when, is never shown.')}
                 ${li('폐점한 판매점은 세지 않습니다. 어디서 사든 1등 확률은 1/8,145,060으로 같습니다.', 'Closed retailers do not count. Your chance of 1st prize is 1 in 8,145,060 wherever you buy.')}
             </ul>
             <h2 data-i18n-en="Points">포인트</h2>
@@ -2773,7 +2773,7 @@ function lottohexAboutHtml(md, snap) {
                 ${li(`위치로 인증한 다녀온 곳: 한 번에 ${LH_POINTS.visit}포인트(같은 판매점은 하루 한 번, 하루 ${LH_POINTS.daily}포인트까지)`, `Visits verified by location: ${LH_POINTS.visit} points each (once a day per retailer, up to ${LH_POINTS.daily} a day)`)}
                 ${li(`분기 확정 순위: 1위 ${fmt(p1)} · 2위 ${p2} · 3위 ${p3} · 4~10위 ${p4}포인트(운영자 제외)`, `Quarterly final ranking: 1st ${fmt(p1)} · 2nd ${p2} · 3rd ${p3} · 4th–10th ${p4} points (operators excluded)`)}
                 ${li('마일스톤: 다녀온 판매점 · 다녀온 칸 · 다녀온 시·도 · 최대 영토가 단계에 이를 때마다 10~500포인트(단계마다 한 번)', 'Milestones: 10–500 points each time retailers visited, cells visited, provinces visited or most cells held reaches a new step (once per step)')}
-                ${li('포인트로 칸 모양을 바꾸거나(30) 1일 이용권을 열 수 있습니다(300). 현금으로 바꿀 수 없습니다.', 'Spend points on a new cell skin (30) or a 1-day pass (300). Points cannot be exchanged for cash.')}
+                ${li('포인트로 칸 모양을 바꾸거나(30), 영역 빛 벽을 사거나(300 — 3D 에서 내 영토 테두리가 빛나고 모두에게 보입니다), 1일 이용권을 열 수 있습니다(300). 현금으로 바꿀 수 없습니다.', 'Spend points on a new cell skin (30), the territory light wall (300 — your territory edge glows in 3D for everyone) or a 1-day pass (300). Points cannot be exchanged for cash.')}
             </ul>
             <h2 data-i18n-en="Titles">칭호</h2>
             <ul>

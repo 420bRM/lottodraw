@@ -139,6 +139,7 @@ async function route(request, env, ctx) {
     if (path === '/api/territory/join' && method === 'POST') return territoryJoin(request, env);
     if (path === '/api/territory/leave' && method === 'POST') return territoryLeave(request, env);
     if (path === '/api/territory/skin' && method === 'POST') return territorySkin(request, env);
+    if (path === '/api/territory/beam' && method === 'POST') return territoryBeam(request, env);
     if (path === '/api/chat' && method === 'GET') return chatConnect(request, env);
     if (path === '/api/chat/info' && method === 'GET') return chatInfo(request, env);
     if (path === '/api/reactions' && method === 'POST') return react(request, env);
@@ -830,6 +831,18 @@ async function territorySkin(request, env) {
     if (skin !== null && !SKIN_RE.test(skin)) throw new HttpError(400, 'bad_skin', '칸 모양이 이상합니다.');
     const r = await community(env, 'setTerrSkin', { sub: s.sub, skin });
     if (r.error === 'need_points') throw new HttpError(402, 'need_points', `칸 모양을 바꾸려면 ${r.cost}포인트가 필요합니다. (지금 ${r.avail}포인트)`);
+    if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
+    return json(request, env, { user: r.user, cost: r.cost });
+}
+
+// 영역 빛 벽(2026-11-10 사장님 — 포인트로 팔고 남에게도 보이게). { on: true | false } — 안 샀으면 켤 때 POINTS.terrBeam 포인트로 산다, 산 뒤 켜고 끄기는 무료
+async function territoryBeam(request, env) {
+    const s = await sessionUser(request, env);
+    await limited(env.REACT_LIMIT, s.hash);
+    const body = await readJson(request);
+    const r = await community(env, 'setTerrBeam', { sub: s.sub, on: body.on === true });
+    if (r.error === 'need_points') throw new HttpError(402, 'need_points', `영역 빛 벽은 ${r.cost}포인트입니다. (지금 ${r.avail}포인트)`);
+    if (r.error === 'not_joined') throw new HttpError(409, 'not_joined', 'LottoHex 에 참여한 뒤에 살 수 있습니다.');
     if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
     return json(request, env, { user: r.user, cost: r.cost });
 }

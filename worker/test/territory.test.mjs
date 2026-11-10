@@ -290,6 +290,32 @@ test('영역 참여: 동의 · 별명이 있어야 하고, 칸 주인 · 랭킹�
     assert.equal((await terr(env)).data.full['1,0'][4], def, '무작위로 돌리면 처음 모양');
     assert.equal((await call(env, 'POST', '/api/admin/members/3001/unstaff', { headers: asAdmin })).status, 200);
 
+    // 영역 빛 벽(2026-11-10): 켤 때 안 샀으면 300포인트로 산다(모자라면 402) · 운영자 무료 · 산 뒤 켜고 끄기 무료 · 켜 두면 칸 7번째에 1(모두에게)
+    assert.equal((await call(env, 'POST', '/api/territory/beam', { body: { on: true } })).status, 401);
+    const bpoor = await call(env, 'POST', '/api/territory/beam', { headers: auth(a), body: { on: true } });
+    assert.equal(bpoor.status, 402, '300포인트가 없다');
+    assert.equal(bpoor.data.error, 'need_points');
+    assert.equal((await call(env, 'POST', '/api/territory/beam', { headers: auth(a), body: { on: false } })).data.user.terrBeam, null, '안 산 채로 끄기는 그대로');
+    assert.equal((await terr(env)).data.full['1,0'].length, 4 + 1, '빛 벽 없으면 칸 모양까지만');
+    assert.equal((await call(env, 'POST', '/api/admin/members/3001/staff', { headers: asAdmin })).status, 200);
+    const bm = await call(env, 'POST', '/api/territory/beam', { headers: auth(a), body: { on: true } });
+    assert.equal(bm.status, 200, JSON.stringify(bm.data));
+    assert.equal(bm.data.cost, 0, '운영자는 무료');
+    assert.deepEqual(bm.data.user.terrBeam, { on: true });
+    let full = (await terr(env)).data.full['1,0'];
+    assert.equal(full[5], null, '단 칭호가 없으면 6번째는 null');
+    assert.equal(full[6], 1, '빛 벽 켬 — 로그인 없이 보는 사람에게도');
+    assert.equal((await call(env, 'POST', '/api/admin/members/3001/unstaff', { headers: asAdmin })).status, 200);
+    const off = await call(env, 'POST', '/api/territory/beam', { headers: auth(a), body: { on: false } });
+    assert.equal(off.data.cost, 0);
+    assert.deepEqual(off.data.user.terrBeam, { on: false });
+    assert.equal((await terr(env)).data.full['1,0'].length, 5, '끄면 칸에서 빠진다');
+    const again = await call(env, 'POST', '/api/territory/beam', { headers: auth(a), body: { on: true } });
+    assert.equal(again.status, 200, '산 뒤 다시 켜기는 포인트 없이');
+    assert.equal(again.data.cost, 0);
+    assert.equal((await terr(env)).data.full['1,0'][6], 1);
+    await call(env, 'POST', '/api/territory/beam', { headers: auth(a), body: { on: false } });
+
     // 관리자가 별명을 지우면 칸에도 별명 없이
     assert.equal((await call(env, 'POST', '/api/admin/members/3001/clear-nick', { headers: asAdmin })).status, 200);
     assert.equal((await terr(env)).data.cells['1,0'][0], null);

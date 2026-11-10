@@ -24,6 +24,7 @@
 //                        ttl:   { e: { 칭호 번호: 얻은 시각 }, sel: 단 칭호 } — 칭호(titles.js). 단 칭호는 별명 앞에 모두에게 보인다. 위치 동의를 철회하면 지운다
 //                        terr:  { at, v } — 영역(육각 칸) 참여 동의: 동의한 때와 동의 문구 판(territory.js TERR_CONSENT). 그만두면 지운다
 //                        tskin: '주색,보조색,무늬' — 내 영역 칸 모양(2026-11-07, territory.js SKIN_RE). 없으면 계정마다 무작위. 모두에게 보인다. 바꾸면 POINTS.terrSkin
+//                        tbeam: { at, on } — 영역 빛 벽(2026-11-10 사장님 — 포인트로, 남에게도 보이게). 산 때 · 켜 둠. 사는 데 POINTS.terrBeam, 켜고 끄기는 무료
 //                        rx:    { 항목: 'h' | 'd' | 'hd' } — 내가 누른 좋아요
 //                        sess:  로그인 세션 해시 (최근 5개)
 //                        cm:    내가 쓴 블로그 댓글 키, cmAt: 마지막으로 쓴 시각, cmDay: { day, n } 오늘 쓴 수
@@ -51,7 +52,7 @@
 //   v:<글>               조회수(숫자) — 블로그 글마다 한 줄(누구나 본다). 같은 브라우저의 같은 글은 하루 한 번만 온다(js/views.js). 누가 읽었는지는 없다
 //   vbase                { n: { 글: 수 }, until, at } — 조회수 시작값: 직접 세기 전(until 까지)의 Cloudflare Web Analytics 페이지뷰(tools/seed-views.js).
 //                        보이는 조회수 = v:<글> + 이 값. 관리자가 통째로 갈아 끼운다
-//   tp:<구글 계정 번호>  { nick, skin, tt, at, v: { 판매점 번호: [표시한 시각, 칸] } } — 영역 참여자 색인(2026-11-07, territory.js). tt: 단 칭호 [한, 영]
+//   tp:<구글 계정 번호>  { nick, skin, tt, bm, at, v: { 판매점 번호: [표시한 시각, 칸] } } — 영역 참여자 색인(2026-11-07, territory.js). tt: 단 칭호 [한, 영], bm: 빛 벽 켬(1)
 //                        영역에 참여한 회원만. 칸 주인 · Map 랭킹은 이 줄들로 센다. 그만두거나 탈퇴하면 지운다
 //   ts:<분기>            { id, from, to, at, rank: [{ sub, nick, cells, stores }], paid } — 분기마다 확정한 Map 랭킹(50명, 한 시간 예약 terrFinalize). paid: 10위까지 보상을 다 줬으면 true.
 //                        밖으로는 별명 · 칸 수 · 다녀온 곳 수만. 탈퇴하면 그 회원 줄의 계정 번호 · 별명을 지운다
@@ -74,7 +75,7 @@ const gameKey = n => n.join(',');
 export const REACT_TYPES = ['h', 'd', 'w'];   // ♥ 좋아요, $ 대박 기원, ₩ 원화
 
 // 랭킹 점수. 바꾸려면 여기만 고친다(이용약관 7조 문구도 같이).
-export const POINTS = { attend: 10, react: 2, buyPer100: 10, nickChange: 500, dayPass: 300, visitColor: 30, terrSkin: 30, visit: 10, visitDaily: 50, terrRank: [1000, 500, 300, 100, 100, 100, 100, 100, 100, 100] };   // buyPer100: 이용권 100원마다 몇 점, nickChange: 별명 바꾸기에 쓰는 포인트, dayPass: 1일 이용권을 여는 포인트, visitColor: 다녀온 곳 색 하나를 여는 포인트, terrSkin: 영역 칸 모양 바꾸기 한 번
+export const POINTS = { attend: 10, react: 2, buyPer100: 10, nickChange: 500, dayPass: 300, visitColor: 30, terrSkin: 30, terrBeam: 300, visit: 10, visitDaily: 50, terrRank: [1000, 500, 300, 100, 100, 100, 100, 100, 100, 100] };   // buyPer100: 이용권 100원마다 몇 점, nickChange: 별명 바꾸기에 쓰는 포인트, dayPass: 1일 이용권을 여는 포인트, visitColor: 다녀온 곳 색 하나를 여는 포인트, terrSkin: 영역 칸 모양 바꾸기 한 번, terrBeam: 영역 빛 벽 사기(한 번 사면 계속 — 켜고 끄기는 무료)
 // 채팅 점수 — 공지하지 않는 규칙이라 POINTS(회원에게 내려 보내는 값)와 따로 둔다.
 // per: 메시지 하나에 몇 점, daily: 하루에 점수를 받는 메시지 수 상한(50개 = 5점)
 export const CHAT_POINTS = { per: 0.1, daily: 50 };
@@ -193,6 +194,7 @@ function boardEntry(user) {
     return { nick: user.nick, total: s.total, days: s.days, created: user.createdAt || 0, tt: selTitle(user) };
 }
 const sameTt = (a, b) => JSON.stringify(a || null) === JSON.stringify(b || null);
+const beamOn = user => (user.tbeam && user.tbeam.on ? 1 : 0);   // 영역 빛 벽을 켜 두었나(tp 행 bm)
 const sameEntry = (a, b) => (!a && !b) || !!(a && b && a.nick === b.nick && a.total === b.total && a.days === b.days && a.created === b.created && sameTt(a.tt, b.tt));
 // 점수 높은 순, 같으면 먼저 가입한 순. 계정 번호는 자리를 하나로 정하려고만 쓴다
 const order = (a, b) => (b.total - a.total) || (a.created - b.created) || (a.sub < b.sub ? -1 : a.sub > b.sub ? 1 : 0);
@@ -316,7 +318,8 @@ export class Community {
         if (user.terr) {   // 영역 참여자: 별명 · 칸 모양 · 단 칭호가 바뀌었으면 칸 · 랭킹에도
             const row = await this.terrRow(user.sub);
             const tt = selTitle(user);
-            if (row && (row.nick !== (user.nick || null) || (row.skin || null) !== (user.tskin || null) || !sameTt(row.tt, tt))) await this.terrSet(user.sub, Object.assign({}, row, { nick: user.nick || null, skin: user.tskin || null, tt }));
+            const bm = beamOn(user);
+            if (row && (row.nick !== (user.nick || null) || (row.skin || null) !== (user.tskin || null) || !sameTt(row.tt, tt) || (row.bm || 0) !== bm)) await this.terrSet(user.sub, Object.assign({}, row, { nick: user.nick || null, skin: user.tskin || null, tt, bm }));
         }
     }
 
@@ -576,7 +579,7 @@ const OPS = {
         await this.saveUser(user);
         const nv = {};
         for (const id of Object.keys(user.visits || {})) if (cells && cells[id]) nv[id] = [(user.vt || {})[id] || 0, cells[id]];
-        await this.terrSet(sub, { nick: user.nick, skin: user.tskin || null, tt: selTitle(user), at: user.terr.at, v: nv });
+        await this.terrSet(sub, { nick: user.nick, skin: user.tskin || null, tt: selTitle(user), bm: beamOn(user), at: user.terr.at, v: nv });
         return { ok: true, user: view(user) };
     },
 
@@ -594,6 +597,25 @@ const OPS = {
             user.tskin = skin;
         }
         delete user.tcolor;   // 하루 쓰다 만 "내 화면에만 색"(2026-11-07)
+        await this.saveUser(user);
+        return { ok: true, user: view(user), cost };
+    },
+
+    // 영역 빛 벽(2026-11-10 사장님 — "빛 벽은 포인트로 팔자, 남에게도 보이게"): 안 샀으면 켤 때 POINTS.terrBeam 포인트로 산다(운영자 무료).
+    // 산 뒤에는 켜고 끄기 무료. 켜 두면 내 칸의 바깥 테두리에 빛 벽이 모두에게(3D) 보인다. 영역에 참여한 사람만 산다
+    async setTerrBeam({ sub, on }) {
+        const user = await this.storage.get('u:' + sub);
+        if (!user) return { error: 'no_user' };
+        if (!user.terr) return { error: 'not_joined' };
+        let cost = 0;
+        if (!user.tbeam) {
+            if (!on) return { ok: true, user: view(user), cost };
+            cost = user.staff ? 0 : POINTS.terrBeam;
+            const avail = score(user).avail;
+            if (cost && avail < cost) return { error: 'need_points', cost, avail };
+            user.spent = tenth((user.spent || 0) + cost);
+            user.tbeam = { at: Date.now(), on: true };
+        } else user.tbeam.on = !!on;
         await this.saveUser(user);
         return { ok: true, user: view(user), cost };
     },
@@ -1312,7 +1334,7 @@ function view(user) {
     const trial = user.trial && user.trial.key ? { key: user.trial.key, keyId: user.trial.keyId, expiresAt: user.trial.expiresAt } : null;
     return {
         email: user.email, nick: user.nick || null, createdAt: user.createdAt, trial, score: pubScore(user), staff: !!user.staff, gen: user.gen || null, visits: user.visits || {}, visitAt: user.vt || {}, visitColor: user.vc || null, visitBadge: !!user.vpub, geo: user.geo ? { at: user.geo.at, v: user.geo.v } : null, visitColors: user.vcolors || [], notes: user.ntN || 0,
-        terr: user.terr ? { at: user.terr.at, v: user.terr.v } : null, terrSkin: user.tskin || null,
+        terr: user.terr ? { at: user.terr.at, v: user.terr.v } : null, terrSkin: user.tskin || null, terrBeam: user.tbeam ? { on: !!user.tbeam.on } : null,
         titles: myTitles(user), ach: user.ach || {},
         nickAuto: !!(user.nick && user.nickAuto), nickDue: !user.nick && user.nickDue ? user.nickDue : null,
         pointPass: user.ppass && user.ppass.key ? { key: user.ppass.key, keyId: user.ppass.keyId, expiresAt: user.ppass.expiresAt } : null,

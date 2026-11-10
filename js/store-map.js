@@ -1066,7 +1066,7 @@
                 pts.push({ type: 'Feature', geometry: { type: 'Point', coordinates: HX.centerOf(k) }, properties: { k, nm: (own[0] || T('(별명 없음)', '(no name)')) + ' · ' + own[1], c } });
                 rings.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: HX.ringOf(k).slice().reverse() }, properties: { k } });   // 시계 방향(빛이 도는 차례)
                 glintCells.push(glintCell(k));
-                if (me) beams.push(...beamWalls(k, c, mine));
+                if (own[6] === 1) beams.push(...beamWalls(k, c, ownerKey));   // 빛 벽을 산 사람이 켜 둔 칸(모두에게)
             }
         });
         return { polys: { type: 'FeatureCollection', features: polys }, pts: { type: 'FeatureCollection', features: pts }, rings: { type: 'FeatureCollection', features: rings }, beams: { type: 'FeatureCollection', features: beams } };
@@ -1076,14 +1076,16 @@
     // 내 영토의 바깥 테두리(내 칸끼리 맞닿은 변은 빼고)를 따라 얇은 벽(칸 안쪽으로 약 15m)을 세운다 — 아래가 밝고 위로 갈수록 옅어진다.
     // fill-extrusion 은 높이에 따라 옅게 할 수 없어 높이를 BEAM_N 토막으로 나눠 위로 갈수록 투명하게. 화면에서의 높이는 멀리서 높고(줌 8 · 200px) 가까이서 낮게(줌 18 · 40px).
     // 3D 모드(지도를 기울였을 때)만 — 똑바로 내려다보면 벽 윗면이 테두리에 겹칠 뿐이라 감춘다. 색은 내 칸 색을 흰빛 쪽으로 밝힌 것.
-    // LottoHex 창의 "내 영토 빛"으로 켜고 끈다(이 기기에 저장, 처음엔 꺼짐). 지금은 나에게만 보인다
+    // 같은 날 사장님 — "빛 벽은 포인트로 팔자, 남에게도 보이게": POINTS.terrBeam(300) 포인트로 사면(한 번 사면 계속) 켜고 끌 수 있고, 켜 두면 모두에게 보인다.
+    // 서버가 칸 7번째에 1(빛 벽 켬)을 붙여 준다 — 주인마다(별명 · 칸 모양이 같은 칸끼리) 바깥 테두리에. LottoHex 창에서 사기 · 켜고 끄기
+    const BEAM_COST = 300;   // worker POINTS.terrBeam 과 같게
     const BEAM_N = 28, BEAM_T = 0.025, BEAM_PX = [[8, 200], [11, 170], [13, 130], [14.5, 95], [16, 65], [18, 40]];
     const beamPx = z => { for (let i = 1; i < BEAM_PX.length; i++) { const [z0, p0] = BEAM_PX[i - 1], [z1, p1] = BEAM_PX[i]; if (z <= z1) return p0 + (p1 - p0) * (z - z0) / (z1 - z0); } return BEAM_PX[BEAM_PX.length - 1][1]; };
-    let beamOn = false;
-    try { beamOn = localStorage.getItem('lottodraw.hexBeam') === '1'; } catch (e) { beamOn = false; }   // 처음엔 꺼짐(2026-11-10 사장님) — 켜면 이 기기에 '1'
     const beamIds = Array.from({ length: BEAM_N }, (_, i) => 'terr-beam-' + i);
-    // 내 칸 k 의 바깥 변마다 벽 한 장: 변 [a, b] 와 칸 가운데 쪽으로 BEAM_T 만큼 들어간 [b', a'] 사이(이웃 변의 벽과 꼭짓점에서 맞물린다)
-    function beamWalls(k, c, mine) {
+    // 칸 주인 구별(별명 + 칸 모양) — 같은 주인의 칸끼리 맞닿은 변에는 벽을 세우지 않는다
+    function ownerKey(k) { const o = terr && terr.cells && terr.cells[k]; return o ? (o[0] || '') + '|' + o[4] : null; }
+    // 칸 k 의 바깥 변마다 벽 한 장: 변 [a, b] 와 칸 가운데 쪽으로 BEAM_T 만큼 들어간 [b', a'] 사이(이웃 변의 벽과 꼭짓점에서 맞물린다)
+    function beamWalls(k, c, keyOf) {
         const ctr = HX.centerOf(k), ring = HX.ringOf(k), out = [];
         const rgb = [1, 3, 5].map(i => parseInt(String(c).slice(i, i + 2), 16) || 200);
         const bc = '#' + rgb.map(v => Math.round(v + (255 - v) * 0.35).toString(16).padStart(2, '0')).join('');
@@ -1091,14 +1093,14 @@
         for (let i = 0; i < 6; i++) {
             const a = ring[i], b = ring[i + 1], m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
             const nb = HX.cellOf(ctr[1] + 2 * (m[1] - ctr[1]), ctr[0] + 2 * (m[0] - ctr[0]));   // 이 변 너머 칸
-            if (mine.has(nb)) continue;   // 내 칸끼리 맞닿은 변 — 벽을 세우지 않는다(영토 바깥 테두리만)
+            if (keyOf(nb) === keyOf(k)) continue;   // 같은 주인의 칸끼리 맞닿은 변 — 벽을 세우지 않는다(영토 바깥 테두리만)
             out.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [[a, b, inn(b), inn(a), a]] }, properties: { bc } });
         }
         return out;
     }
     // 북위 37° · 512px 타일에서 1px ≈ 62070 / 2^줌 m — 줌 8~18 정수 줌마다 높이(m)를 정해 잇는다
     const beamH = f => { const ex = ['interpolate', ['linear'], ['zoom']]; for (let z = 8; z <= 18; z++) ex.push(z, Math.round(beamPx(z) * 62070 / Math.pow(2, z) * f * 10) / 10); return ex; };
-    const beamVis = () => !!(beamOn && shown.terr && map && map.getPitch() >= 15);
+    const beamVis = () => !!(shown.terr && map && map.getPitch() >= 15);
     function beamShow() {
         if (!map || !map.getLayer(beamIds[0])) return;
         const v = beamVis() ? 'visible' : 'none';
@@ -1830,7 +1832,9 @@
     function bindSkin() {
         const me = terr && terr.me;
         const bm = terrPanel.querySelector('.sm-terr-beam input');
-        if (bm) bm.addEventListener('change', () => { beamOn = bm.checked; try { localStorage.setItem('lottodraw.hexBeam', beamOn ? '1' : '0'); } catch (e) { /* 저장 못 해도 이 화면에서는 따른다 */ } beamShow(); });
+        if (bm) bm.addEventListener('change', () => saveBeam(bm.checked));
+        const bb = terrPanel.querySelector('.sm-terr-beam-buy');
+        if (bb) bb.addEventListener('click', () => { if (confirm(T(BEAM_COST + '포인트로 영역 빛 벽을 삽니다. 한 번 사면 계속 쓰고, 켜고 끄기는 무료입니다.', 'Buy the territory light wall for ' + BEAM_COST + ' points? It is yours to keep and switching it on or off is free.'))) saveBeam(true); });
         const ed = terrPanel.querySelector('.sm-terr-skin-edit');
         if (ed) ed.addEventListener('click', () => { skinDraft = parseSkin(me.skin); drawTerr(); });
         if (!skinDraft || !terrPanel.querySelector('.sm-skin-edit')) return;
@@ -1845,6 +1849,23 @@
         terrPanel.querySelector('.sm-skin-apply').addEventListener('click', () => saveSkin(skinStr(skinDraft)));
         const rs = terrPanel.querySelector('.sm-skin-reset');
         if (rs) rs.addEventListener('click', () => saveSkin(null));
+    }
+    // 영역 빛 벽 줄: 안 샀으면 "사기(300포인트)", 샀으면 켜고 끄기(모두에게 보임)
+    function beamRow() {
+        const A = account(), u = A && A.me() && A.me().user, tb = u && u.terrBeam;
+        if (!tb) return '<div class="sm-terr-beam"><span class="sm-terr-beam-t">✨ ' + T('영역 빛 벽', 'Territory light wall') + '<small>' + T('3D에서 내 영토 테두리가 빛납니다 · 모두에게 보임', 'Your territory edge glows in 3D · everyone sees it') + '</small></span>' +
+            '<button type="button" class="sm-terr-skin-edit sm-terr-beam-buy">' + T(BEAM_COST + 'P로 사기', 'Buy · ' + BEAM_COST + 'P') + '</button></div>';
+        return '<label class="sm-terr-beam"><input type="checkbox"' + (tb.on ? ' checked' : '') + '> ✨ ' + T('영역 빛 벽 켜기', 'Territory light wall') + ' <small>' + T('3D에서 · 모두에게 보임', 'in 3D · everyone sees it') + '</small></label>';
+    }
+    async function saveBeam(on) {
+        const A = account();
+        try { await A.call('/api/territory/beam', { method: 'POST', body: { on } }); }
+        catch (e) { toast((e && e.message) || T('저장하지 못했습니다.', 'Could not save.')); drawTerr(); return; }   // 체크를 원래대로 돌리려고 다시 그린다 — 알림은 위 토스트로
+        await A.refresh().catch(() => null);
+        await loadTerr();
+        drawTerrLayers();
+        drawTerr();
+        if (on && map && map.getPitch() < 15) toast(T('✨ 빛 벽은 3D 에서 보입니다 — 오른쪽 위 3D 단추', '✨ The light wall shows in 3D — use the 3D button'));
     }
     async function saveSkin(skin) {
         const A = account();
@@ -1874,7 +1895,7 @@
             'My cells <b>' + fmt(me.cells.length) + '</b>' + (me.rank ? ' · rank <b>' + me.rank + '</b>' : '') + ' · ' + fmt(me.stores) + ' visited') + '</p>' +
             (me.lastRank ? '<p class="sm-terr-me">' + (MEDAL[me.lastRank - 1] || '🏅') + ' ' + T(seasonLabel(terr.last) + ' 확정 ' + me.lastRank + '위', seasonLabel(terr.last) + ' final: #' + me.lastRank) + '</p>' : '') +
             skinRow(me) +
-            '<label class="sm-terr-beam"><input type="checkbox"' + (beamOn ? ' checked' : '') + '> ' + T('내 영토 빛', 'Light around my territory') + ' <small>' + T('3D에서 · 나에게만 보임', 'in 3D · only you see it') + '</small></label>';
+            beamRow();
         const rank = (terr && terr.rank) || [];
         const last = terr && terr.last;
         const joined = !!(A && A.session() && me && me.joined), sheet = hexMobile();
@@ -1896,6 +1917,7 @@
             '<li>' + T('주인이 없는 칸은 <b>회색지대</b>로, 지도에 옅은 회색으로 보입니다. 판매점 한 곳만 다녀와도 차지합니다.', 'Cells no one holds are the <b>grey zone</b>, shown in light grey. One visit takes one.') + '</li>' +
             '<li>' + T('같은 수면 그 칸에 더 최근에 다녀온 사람이 차지합니다. 빼앗기면 그 칸 판매점 카드의 "오늘 또 다녀왔어요"로 되찾을 수 있습니다(같은 곳은 하루 한 번).', 'On a tie, whoever visited the cell most recently holds it. Lost it? Use "Visited again today" on a retailer card in that cell (once a day per retailer).') + '</li>' +
             '<li>' + T('칸 모양: 참여자마다 색 두 가지와 무늬(단색 · 줄무늬 · 물방울 · 체크)가 무작위로 정해지고 모두에게 같게 보입니다. 내 칸 모양은 ' + SKIN_COST + '포인트로 바꿀 수 있습니다. 내 칸은 테두리가 조금 굵습니다.', 'Skins: each player gets two colours and a pattern (solid, stripes, dots or checks) at random, and everyone sees the same. You can change yours for ' + SKIN_COST + ' points. Your cells have a slightly thicker edge.') + '</li>' +
+            '<li>' + T('영역 빛 벽: ' + BEAM_COST + '포인트로 사면(한 번 사면 계속) 3D 에서 내 영토 바깥 테두리가 위로 빛나고 모두에게 보입니다. 켜고 끄기는 무료입니다.', 'Light wall: buy it for ' + BEAM_COST + ' points (yours to keep) and your territory edge glows upward in 3D for everyone. Switching it on or off is free.') + '</li>' +
             '<li>' + T('밤 지도에서 크게 보면 차지한 칸 테두리를 빛이 시계 방향으로 돌고, 칸 면에는 유리에 비친 듯한 45° 빛이 번쩍 지나갑니다.', 'On the night map, zoomed in, a light runs clockwise round held cells and a quick glassy 45° glint flashes across them.') + '</li>' +
             '<li>' + T('칸은 비우지 않습니다. 분기(1 · 4 · 7 · 10월 1일 0시)마다 그때의 Map 랭킹을 확정해 남깁니다.', 'Cells are never cleared. At the start of each quarter the Map ranking at that moment is finalised and kept.') + '</li>' +
             '<li>' + T('확정 순위 보상: 1위 1,000 · 2위 500 · 3위 300 · 4~10위 100포인트(운영자 제외).', 'Quarterly rewards: 1st 1,000 · 2nd 500 · 3rd 300 · 4th–10th 100 points (operators excluded).') + '</li>' +
