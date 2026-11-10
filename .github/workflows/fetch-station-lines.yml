@@ -1,0 +1,22 @@
+# 한 번만 쓰는 받기 — 지도 역 · 노선 원자료(OpenStreetMap ODbL)를 tmp-osm/ 에 남긴다. 이 환경에서는 Overpass API 에 닿지 않아 여기서 받는다. 머지 전에 지운다
+name: fetch-station-lines
+on:
+  push:
+    branches: [claude/station-line-colors]
+    paths: [.github/workflows/fetch-station-lines.yml]
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - name: stations + routes
+        timeout-minutes: 30
+        run: node tools/make-stations.mjs --save tmp-osm && ls -la tmp-osm
+      - run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tmp-osm store-map-stations.json && git commit -m "역 · 노선 원자료(OpenStreetMap, 머지 전 지움)" && git pull --rebase origin claude/station-line-colors && git push origin HEAD:claude/station-line-colors
