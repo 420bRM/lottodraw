@@ -2539,6 +2539,8 @@ function storeMapCells(md) {
 // ("수원시 장안구" → "수원시"), 세종은 시·도 이름. 여러 시·도에 같은 이름이 있으면(중구 · 동구 …) 이름에 시·도를 붙인다("대구 중구").
 // 표시: 1 섬(울릉 · 옹진 · 신안 · 완도군), 2 고속도로 휴게소(상호에 "휴게소") — 숨은 칭호
 const STORE_MAP_GEO = 'store-map-geo.json';
+// 검색창 지역 찾기(2026-11-10): tools/make-places.mjs 가 행정동 경계(SGIS · vuski/admdongkor, CC BY 4.0)에서 이름 · 위치만 뽑아 한 번 만든 파일. 매주 다시 만들지 않는다
+const STORE_MAP_PLACES = 'store-map-places.json';
 const ISLAND_GU = /^(울릉군|옹진군|신안군|완도군)$/;
 function storeMapGeo(md) {
     const out = {}, r5 = v => Math.round(v * 1e5) / 1e5;
@@ -2854,7 +2856,7 @@ function storeMapPage(md, variant) {
     ${CF_BEACON_MAP}
 </head>
 <body class="sm-full">
-<main class="sm-wrap${hex ? ' is-hex' : ''}" id="sm"${top ? ' data-top="1"' : ''}${hex ? ' data-hex="1"' : ''} data-src="${STORE_MAP_DATA}?v=${fingerprint(STORE_MAP_DATA)}"${md.all ? ` data-all="${STORE_MAP_ALL}?v=${fingerprint(STORE_MAP_ALL)}"` : ''} data-rounds="${STORE_MAP_ROUNDS}?v=${fingerprint(STORE_MAP_ROUNDS)}" data-ids="${STORE_MAP_IDS}?v=${fingerprint(STORE_MAP_IDS)}">
+<main class="sm-wrap${hex ? ' is-hex' : ''}" id="sm"${top ? ' data-top="1"' : ''}${hex ? ' data-hex="1"' : ''} data-src="${STORE_MAP_DATA}?v=${fingerprint(STORE_MAP_DATA)}"${md.all ? ` data-all="${STORE_MAP_ALL}?v=${fingerprint(STORE_MAP_ALL)}"` : ''} data-rounds="${STORE_MAP_ROUNDS}?v=${fingerprint(STORE_MAP_ROUNDS)}" data-ids="${STORE_MAP_IDS}?v=${fingerprint(STORE_MAP_IDS)}"${fs.existsSync(path.join(ROOT, STORE_MAP_PLACES)) ? ` data-places="${STORE_MAP_PLACES}?v=${fingerprint(STORE_MAP_PLACES)}"` : ''}>
     <div class="sm-map" id="sm-map" role="region" aria-label="판매점 지도" data-i18n-attr="aria-label:sm.mapAria"><p class="sm-loading" data-i18n-en="Loading the map…">지도를 불러오는 중…</p></div>
     <!-- 지도 위 가운데: 지금 화면(○○구) 근처 판매점 목록 열기 -->
     <button type="button" class="sm-near-btn" id="sm-near-btn">⟳ <span data-i18n-en="Retailers around here">이 근처 판매점</span></button>
@@ -2881,7 +2883,7 @@ function storeMapPage(md, variant) {
             <button type="button" class="sm-hexbar-only" data-terr-only aria-pressed="false"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Hide retailers">판매점 감추기</span></button>
         </div>
         <div class="sm-row sm-searchbox">
-            <input type="search" class="sm-search" id="sm-search" placeholder="판매점 이름 찾기" data-i18n-attr="placeholder:sm.search" aria-label="판매점 이름 찾기" autocomplete="off">
+            <input type="search" class="sm-search" id="sm-search" placeholder="판매점 이름 · 지역(예: 청주 사창동)" data-i18n-attr="placeholder:sm.search" aria-label="판매점 이름 · 지역 찾기" autocomplete="off" enterkeyhint="search">
             <ul class="sm-found" id="sm-found" hidden></ul>
         </div>
         <!-- PC(2026-11-08 사장님 — "둥근 단추가 막 나열돼 정리가 안 돼 보인다, 게임인 영역은 비중 있게"): 맨 위 LottoHex 카드(이름은 2026-11-08 "영역" → LottoHex, 부제 없음) → "지도에 보기" 3칸 격자 → 내 기록(한 줄).
@@ -2959,6 +2961,8 @@ function storeMapPage(md, variant) {
                 + (md.noCoord ? ` ${fmt(md.noCoord)} retailers without a published location are also left out.` : ''), 'sm-small')}
             ${md.all ? pEn(`"일반 판매점"을 켜면 지금 로또를 파는 전국 판매점 ${fmt(md.all.total)}곳 중 1등 · 2등 기록이 없는 ${fmt(md.all.rows.length)}곳이 회색 점으로 보입니다(출처: 동행복권 판매점 찾기, ${md.all.updated} 기준 · 매달 갱신).`,
                 `"All others" shows the ${fmt(md.all.rows.length)} of ${fmt(md.all.total)} current lotto retailers with no 1st or 2nd prize on record, as grey dots (source: Dong-haeng Lottery retailer search, as of ${md.all.updated}, updated monthly).`, 'sm-small') : ''}
+            ${pEn(`검색창의 지역 찾기(시·도 · 시·군·구 · 읍·면·동)는 통계청 통계지리정보서비스(SGIS)가 공공누리 제1유형으로 개방한 행정동 경계를 가공한 자료(<a href="https://github.com/vuski/admdongkor" rel="noopener">vuski/admdongkor</a>, CC BY 4.0)에서 이름과 위치만 뽑아 씁니다.`,
+                `Area search (province, city/district, neighbourhood) uses names and positions taken from administrative-dong boundaries released by Statistics Korea SGIS under KOGL Type 1, as modified by <a href="https://github.com/vuski/admdongkor" rel="noopener">vuski/admdongkor</a> (CC BY 4.0).`, 'sm-small')}
             ${pEn(`<a href="${LOTTOHEX_FILE}"><b>LottoHex</b></a> — 판매점에 다녀와 위치로 인증하고 육각 칸을 차지하는 땅따먹기 게임(Map 랭킹 · 분기 보상).`,
                 `<a href="${LOTTOHEX_FILE}"><b>LottoHex</b></a> — a turf game: visit retailers, verify by location and take hexagon cells (Map ranking, quarterly rewards).`)}
             ${pEn(`순위와 "많이 팔린 곳"인지 견주는 방법은 <a href="${STORES_FILE}">1등 판매점 통계</a>에 있습니다. 함께 읽기: <a href="blog/lucky-store-myth.html">로또 명당은 정말 있을까</a>`,

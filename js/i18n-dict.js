@@ -526,7 +526,7 @@ window.I18N_DICT = {
     'mapLink.title': { ko: '로또 판매점 지도', en: 'Lotto retailer map' },
     'mapLink.sub':   { ko: '1등 · 2등이 나온 판매점 1만 곳을 지도 위 버블로. 서울부터 백령도까지, 내가 다녀온 곳도 표시해 보세요.', en: '10,000 retailers that sold 1st and 2nd prizes, as bubbles on the map — from Seoul to Baengnyeong Island. Mark the ones you have visited.' },
     'sm.night':      { ko: '밤 지도', en: 'Night map' },
-    'sm.search':     { ko: '판매점 이름 찾기', en: 'Search retailers' },
+    'sm.search':     { ko: '판매점 이름 · 지역(예: 청주 사창동)', en: 'Retailer or area (e.g. 청주 사창동)' },
     'sm.mapAria':    { ko: '판매점 지도', en: 'Retailer map' },
     'sm.layers':     { ko: '지도에 보기', en: 'On the map' },
     'sm.modes':      { ko: '1등 방식 (로그인 회원)', en: '1st-prize type (members)' },

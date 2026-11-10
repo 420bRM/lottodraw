@@ -41,6 +41,10 @@ body.sm-full #theme-btn { display: none !important; }
 .sm-found button:hover, .sm-found button:focus { background: var(--soft, #f3f6fb); }
 .sm-found span { color: var(--faint, #777); font-size: 11px; }
 .sm-found .sm-none { padding: 6px; color: var(--faint, #777); font-size: 12px; }
+/* 지역 찾기 결과(2026-11-10): 판매점보다 위, 판매점 결과와 줄로 나눈다 */
+.sm-found-area b { color: var(--brand, #003087); }
+:root[data-theme="dark"] .sm-found-area b { color: #9ec1ff; }
+.sm-found-area + li:not(.sm-found-area) { margin-top: 3px; padding-top: 3px; border-top: 1px solid var(--line, #e3e3e3); }
 .sm-chips { display: flex; flex-wrap: wrap; gap: 3px; pointer-events: none; }
 .sm-chips > * { pointer-events: auto; }
 .sm-chip { display: inline-flex; align-items: center; gap: 3px; padding: 2px 7px; border-radius: 999px; color: var(--muted, #555); font: inherit; font-size: 10.5px; white-space: nowrap; cursor: pointer; }

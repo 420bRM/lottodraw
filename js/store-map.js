@@ -616,16 +616,18 @@
             const r = all.rows[x.i];
             return { name: r[2], place: [all.sido[r[3]], r[4]].filter(Boolean).join(' '), w1: 0, w2: 0 };
         };
-        list.forEach(x => { Object.assign(x, info(x)); x.d = myLoc ? distM(myLoc, [x.lng, x.lat]) : 0; });
-        list.sort(myLoc ? (a, b) => a.d - b.d : (a, b) => (b.w1 - a.w1) || (b.w2 - a.w2));
+        const ctr = nearFrom ? nearFrom.c : myLoc;   // 지역 찾기로 왔으면 그 지역 중심, 아니면 내 위치에서 가까운 순
+        list.forEach(x => { Object.assign(x, info(x)); x.d = ctr ? distM(ctr, [x.lng, x.lat]) : 0; });
+        list.sort(ctr ? (a, b) => a.d - b.d : (a, b) => (b.w1 - a.w1) || (b.w2 - a.w2));
+        const head = nearFrom ? nearFrom.name : gu;
         nearPanel.innerHTML = '<button type="button" class="sm-close" aria-label="' + T('닫기', 'Close') + '">×</button>' +
-            '<h3>' + esc(gu ? T(gu + ' 근처 판매점', 'Retailers around ' + gu) : T('이 근처 판매점', 'Retailers around here')) + ' <small>' + fmt(list.length) + T('곳', '') + '</small></h3>' +
+            '<h3>' + esc(head ? T(head + ' 근처 판매점', 'Retailers around ' + head) : T('이 근처 판매점', 'Retailers around here')) + ' <small>' + fmt(list.length) + T('곳', '') + '</small></h3>' +
             (key ? '<p class="sm-near-share"><button type="button" class="sm-share-area">🔗 ' + esc(T(gu + ' 판매점 지도 공유', 'Share the ' + gu + ' map')) + '</button></p>' : '') +
-            '<p class="sm-near-sort">' + (myLoc ? T('내 위치에서 가까운 순', 'Nearest to you first') : T('1등 많은 순', 'Most 1st prizes first')) +
+            '<p class="sm-near-sort">' + (nearFrom ? T(nearFrom.name + ' 중심에서 가까운 순', 'Nearest to the centre of ' + nearFrom.name + ' first') : myLoc ? T('내 위치에서 가까운 순', 'Nearest to you first') : T('1등 많은 순', 'Most 1st prizes first')) +
             ' <button type="button" class="sm-near-me">📍 ' + T('내 위치 기준', 'Use my location') + '</button></p>' +
             (list.length ? '<ol class="sm-near-list">' + list.slice(0, NEAR_MAX).map(x => '<li><button type="button" data-t="' + x.t + '" data-i="' + x.i + '"><span class="sm-tname">' + esc(x.name) +
                 '<small>' + esc(x.place) + '</small></span><span class="sm-tcnt">' + (x.t === 'w' ? '<b>' + x.w1 + '</b>' + T('번 1등', ' × 1st') + '<small>2' + T('등 ', 'nd ') + x.w2 + '</small>' : '<small>' + T('일반 판매점', 'retailer') + '</small>') +
-                (myLoc ? '<small class="sm-dist">' + fmtDist(x.d) + '</small>' : '') + '</span></button></li>').join('') + '</ol>' +
+                (ctr ? '<small class="sm-dist">' + fmtDist(x.d) + '</small>' : '') + '</span></button></li>').join('') + '</ol>' +
                 (list.length > NEAR_MAX ? '<p class="sm-small">' + T('외 ' + fmt(list.length - NEAR_MAX) + '곳 — 지도를 더 확대하면 좁혀집니다.', fmt(list.length - NEAR_MAX) + ' more — zoom in to narrow down.') + '</p>' : '')
                 : '<p class="sm-small">' + T('이 화면에는 판매점이 없습니다. 지도를 옮기거나 줌아웃해 보세요.', 'No retailers on screen. Move or zoom out.') + '</p>') +
             '<p class="sm-small sm-near-note">' + T('위치는 이 기기 안에서만 쓰고 저장하거나 보내지 않습니다.', 'Your location stays on this device.') + '</p>';
@@ -634,8 +636,8 @@
         if (sb) sb.addEventListener('click', () => shareArea(key, sb));
         if (isWide()) setTab('near'); else { card.hidden = true; minePanel.hidden = true; terrPanel.hidden = true; }
         nearPanel.scrollTop = 0;
-        nearPanel.querySelector('.sm-close').addEventListener('click', () => { nearPanel.hidden = true; if (isWide()) setTab('top'); });
-        nearPanel.querySelector('.sm-near-me').addEventListener('click', () => { if (!geo) return; if (myLoc && geoActive()) { openNear(); return; } nearAfterMove = true; geo.trigger(); });   // 이미 받고 있으면 끄지 말고 다시 정렬
+        nearPanel.querySelector('.sm-close').addEventListener('click', () => { nearPanel.hidden = true; nearFrom = null; if (isWide()) setTab('top'); });
+        nearPanel.querySelector('.sm-near-me').addEventListener('click', () => { nearFrom = null; if (!geo) return; if (myLoc && geoActive()) { openNear(); return; } nearAfterMove = true; geo.trigger(); });   // 이미 받고 있으면 끄지 말고 다시 정렬
         nearPanel.querySelectorAll('.sm-near-list button').forEach(b => b.addEventListener('click', () => {
             const i = Number(b.dataset.i);
             if (b.dataset.t === 'w') open(i, true); else openAll(i, true);
@@ -2385,39 +2387,132 @@
         });
     }
 
+    // ───── 지역 찾기(2026-11-10 사장님 — "판매점 이름보다 사는 곳을 찾고 그 근처 판매점을 지도에서 본다. 검색창은 하나로") ─────
+    // 목록(store-map-places.json, tools/make-places.mjs — 통계청 SGIS 행정동 경계를 가공한 vuski/admdongkor, CC BY 4.0)은 검색창을 처음 쓸 때 받는다.
+    // "청주 사창동" · "사창동" · "청주" · "서원구" · "역삼"(역삼1 · 2동) · "청주사창동"(띄어쓰기 없이)처럼 낱말마다 시·도 · 시 · 구 · 동 중 하나에 맞으면 찾는다
+    let places = null, placesP = null;
+    const SIDO_ALIAS = { 서울: ['서울특별시', '서울시'], 부산: ['부산광역시', '부산시'], 대구: ['대구광역시', '대구시'], 인천: ['인천광역시', '인천시'], 광주: ['광주광역시', '광주시'],
+        대전: ['대전광역시', '대전시'], 울산: ['울산광역시', '울산시'], 세종: ['세종특별자치시', '세종시'], 경기: ['경기도'], 강원: ['강원도', '강원특별자치도'], 충북: ['충청북도'], 충남: ['충청남도'],
+        전북: ['전라북도', '전북특별자치도'], 전남: ['전라남도'], 경북: ['경상북도'], 경남: ['경상남도'], 제주: ['제주도', '제주특별자치도'] };
+    function loadPlaces() {
+        if (!placesP) placesP = (root.dataset.places ? fetch(root.dataset.places).then(r => (r.ok ? r.json() : null)) : Promise.resolve(null)).catch(() => null).then(j => { places = j ? buildPlaces(j) : []; return places; });
+        return placesP;
+    }
+    // 자리: { c: [시·도, 시, 구, 동], leaf: 가장 작은 단위의 자리, name, sub, lng, lat, z }
+    function buildPlaces(j) {
+        const S = j.s.map(x => x[0]), out = [];
+        j.s.forEach(([n, lng, lat, z]) => out.push({ c: [n, '', '', ''], leaf: 0, name: n, sub: '', lng, lat, z }));
+        j.c.forEach(([s, si, lng, lat, z]) => out.push({ c: [S[s], si, '', ''], leaf: 1, name: si, sub: S[s], lng, lat, z }));
+        j.g.forEach(([s, si, gu, lng, lat, z]) => out.push({ c: [S[s], si, gu, ''], leaf: gu ? 2 : 1, name: gu || si, sub: [S[s], gu ? si : ''].filter(Boolean).join(' '), lng, lat, z }));
+        j.d.forEach(([g, name, lng, lat, z]) => { const [s, si, gu] = j.g[g]; out.push({ c: [S[s], si, gu, name], leaf: 3, name, sub: [S[s], si, gu].filter(Boolean).join(' '), lng, lat, z }); });
+        return out;
+    }
+    // 끝말(시 · 군 · 구 · 동 · 읍 · 면 · 도, 동 앞 숫자)을 뗀 이름: "청주시" → "청주", "역삼1동" → "역삼", "여의도동" → "여의"
+    const stripPlace = x => x.replace(/\d*(동|읍|면|가|리)$/, '').replace(/(특별자치시|특별자치도|특별시|광역시|시|군|구|도)$/, '');
+    // 끝말을 뗀 이름이 같아도, 찾는 말에 끝말이 있으면 같은 종류끼리만("중구"는 중구, "중1동"은 아니다 · "역삼동"은 역삼1동)
+    const SUFFIX = /(동|읍|면|가|리|시|군|구|도)$/;
+    const sameKind = (t, x) => { const a = t.match(SUFFIX); if (!a) return true; const b = x.replace(/\d+(?=동$)/, '').match(SUFFIX); return !!b && b[1] === a[1]; };
+    function placeTok(t, c, sido) {
+        if (!c) return 0;
+        let best = 0;
+        for (const x of sido ? [c].concat(SIDO_ALIAS[c] || []) : [c]) {
+            if (x === t) best = Math.max(best, 3);
+            else if (stripPlace(x) && stripPlace(x) === stripPlace(t) && sameKind(t, x)) best = Math.max(best, 2.5);
+            else if (t.length >= 2 && x.startsWith(t)) best = Math.max(best, 1);
+        }
+        return best;
+    }
+    // 낱말마다 다른 자리에 맞아야 한다. 가장 작은 단위까지 맞으면 더 위로(“청주” → 청주시, “사창동” → 사창동)
+    function placeScore(p, toks) {
+        const used = [false, false, false, false];
+        let sc = 0, leaf = false;
+        for (const t of toks) {
+            let bi = -1, bs = 0;
+            for (let k = 0; k < 4; k++) { if (used[k]) continue; const v = placeTok(t, p.c[k], k === 0); if (v > bs) { bs = v; bi = k; } }
+            if (bi < 0) return 0;
+            used[bi] = true; sc += bs; if (bi === p.leaf) leaf = true;
+        }
+        return leaf ? sc + 2 : sc;
+    }
+    function findPlaces(q, max) {
+        if (!places || !places.length) return [];
+        const run = toks => places.map(p => ({ p, s: placeScore(p, toks) })).filter(x => x.s > 0).sort((a, b) => (b.s - a.s) || (a.p.leaf - b.p.leaf));
+        const toks = q.split(/\s+/).filter(Boolean);
+        let hits = run(toks);
+        // 띄어 쓰지 않았으면("청주사창동") 두 낱말로 나눠 본다
+        if (!hits.length && toks.length === 1 && toks[0].length >= 4) {
+            const t = toks[0];
+            for (let k = 2; k <= t.length - 2 && !hits.length; k++) hits = run([t.slice(0, k), t.slice(k)]).filter(x => x.s >= 5);
+        }
+        const seen = new Set();
+        return hits.filter(x => { const k = x.p.sub + ' ' + x.p.name; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, max).map(x => x.p);
+    }
+    // 지역으로 옮기면 그 지역의 판매점이 다 보이게(1 · 2등 · 일반 판매점 켜고 흐리게 · TOP 50 만 보기는 끈다) 하고, 다 옮기면 그 근처 판매점 목록(지역 중심에서 가까운 순)
+    async function revealAllStores() {
+        const chip = k => root.querySelector('.sm-chip[data-layer="' + k + '"]');
+        if (shown.top) { const c = chip('top'); if (c) c.click(); }
+        if (fadeT > 0) { const f = document.getElementById('sm-fade'); if (f) f.value = 0; setFade(0); }
+        ['w1', 'w2', 'all'].forEach(k => { if (!shown[k] && (k !== 'all' || root.dataset.all)) { shown[k] = true; const c = chip(k); if (c) c.setAttribute('aria-pressed', 'true'); } });
+        applyLayers();
+        await needAll();
+        applyLayers();
+    }
+    let nearFrom = null;   // 지역 찾기로 옮겼으면 { c: [경도, 위도], name } — 근처 목록을 그 중심에서 가까운 순으로
+    async function goPlace(p) {
+        if (!hexMode) await revealAllStores();
+        nearFrom = hexMode ? null : { c: [p.lng, p.lat], name: p.name };
+        nearAfterMove = !hexMode;   // LottoHex 에서는 칸을 보러 가는 것이라 목록은 열지 않는다
+        areaWant = '';
+        if (!isWide()) { card.hidden = true; nearPanel.hidden = true; }
+        map.flyTo({ center: [p.lng, p.lat], zoom: p.z, pitch: 0, bearing: 0, essential: true,
+            padding: isWide() ? pad() : Object.assign(pad(), { bottom: hexMode ? pad().bottom : Math.round(window.innerHeight * 0.4) + 16 }) });
+    }
+
     function initSearch() {
         const box = document.getElementById('sm-search');
         const list = document.getElementById('sm-found');
-        box.addEventListener('input', () => {
-            const q = box.value.trim().toLowerCase();
+        const item = (html, go) => {
+            const li = document.createElement('li');
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.innerHTML = html;
+            b.addEventListener('click', () => { list.hidden = true; box.blur(); go(); });
+            li.appendChild(b);
+            list.appendChild(li);
+            return li;
+        };
+        const render = () => {
+            const raw = box.value.trim(), q = raw.toLowerCase();
             list.textContent = '';
             if (q.length < 2) { list.hidden = true; return; }
+            if (!places) loadPlaces().then(() => { if (box.value.trim() === raw) render(); });
+            const areas = findPlaces(raw, 5);
             const hits = [];
             for (let i = data.rows.length - 1; i >= 0 && hits.length < 20; i--) if (data.rows[i][4].toLowerCase().includes(q)) hits.push(i);   // 1등 많은 곳부터
             const more = [];   // 일반 판매점(층을 켰을 때만)
             if (all && shown.all) for (let i = 0; i < all.rows.length && hits.length + more.length < 20; i++) if (all.rows[i][2].toLowerCase().includes(q)) more.push(i);
             list.hidden = false;
-            if (!hits.length && !more.length) { list.innerHTML = '<li class="sm-none">' + T('찾는 판매점이 없습니다.', 'No match.') + '</li>'; return; }
+            if (!areas.length && !hits.length && !more.length) {
+                list.innerHTML = '<li class="sm-none">' + (places ? T('찾는 판매점 · 지역이 없습니다.', 'No retailer or area found.') : T('찾는 중…', 'Searching…')) + '</li>';
+                return;
+            }
+            areas.forEach(p => item('<b>📍 ' + esc(p.name) + '</b> <span>' + esc(p.sub ? p.sub + ' · ' : '') + T('지역', 'area') + '</span>', () => goPlace(p)).classList.add('sm-found-area'));
             hits.forEach(i => {
                 const r = data.rows[i];
-                const li = document.createElement('li');
-                const b = document.createElement('button');
-                b.type = 'button';
-                b.innerHTML = '<b>' + esc(r[4]) + '</b> <span>' + esc([data.sido[r[5]], r[6]].filter(Boolean).join(' ')) + ' · ' + T('1등 ', '1st ') + r[2] + ' · ' + T('2등 ', '2nd ') + r[3] + '</span>';
-                b.addEventListener('click', () => { list.hidden = true; box.blur(); open(i, true); });
-                li.appendChild(b);
-                list.appendChild(li);
+                item('<b>' + esc(r[4]) + '</b> <span>' + esc([data.sido[r[5]], r[6]].filter(Boolean).join(' ')) + ' · ' + T('1등 ', '1st ') + r[2] + ' · ' + T('2등 ', '2nd ') + r[3] + '</span>', () => open(i, true));
             });
             more.forEach(i => {
                 const r = all.rows[i];
-                const li = document.createElement('li');
-                const b = document.createElement('button');
-                b.type = 'button';
-                b.innerHTML = '<b>' + esc(r[2]) + '</b> <span>' + esc([all.sido[r[3]], r[4]].filter(Boolean).join(' ')) + ' · ' + T('일반 판매점', 'retailer') + '</span>';
-                b.addEventListener('click', () => { list.hidden = true; box.blur(); openAll(i, true); });
-                li.appendChild(b);
-                list.appendChild(li);
+                item('<b>' + esc(r[2]) + '</b> <span>' + esc([all.sido[r[3]], r[4]].filter(Boolean).join(' ')) + ' · ' + T('일반 판매점', 'retailer') + '</span>', () => openAll(i, true));
             });
+        };
+        box.addEventListener('focus', () => { loadPlaces(); }, { once: true });
+        box.addEventListener('input', render);
+        // Enter: 맨 위 결과로(지역이 먼저)
+        box.addEventListener('keydown', e => {
+            if (e.key !== 'Enter') return;
+            const first = list.querySelector('button');
+            if (first && !list.hidden) { e.preventDefault(); first.click(); }
         });
     }
 
@@ -2602,7 +2697,7 @@
         });
         document.getElementById('sm-night').addEventListener('click', () => { nightByTop = false; nightByHex = false; toggleNight(); });
         side.querySelectorAll('.sm-tab').forEach(b => b.addEventListener('click', () => (b.dataset.tab === 'near' ? openNear() : b.dataset.tab === 'mine' && !shown.mine ? setMine(true) : b.dataset.tab === 'terr' ? (shown.terr ? openTerrPanel() : setMapMode('hex')) : setTab(b.dataset.tab))));
-        nearBtn.addEventListener('click', openNear);
+        nearBtn.addEventListener('click', () => { nearFrom = null; openNear(); });
         placeNearBtn();
         window.addEventListener('resize', placeNearBtn);
         root.querySelectorAll('.sm-mode').forEach(b => b.addEventListener('click', () => toggleMode(b)));
