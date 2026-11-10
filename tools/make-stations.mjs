@@ -7,8 +7,8 @@
 // 같은 이름이 500m 안에 여럿이면(노선마다 따로 찍힌 점) 하나로 합친다. 관광 열차 · 레일바이크 · 차량기지 · 승강장(케이블카 · 모노레일)은 뺀다.
 // 노선 이름 · 색은 아래 LINES(각 운영사 노선도 색)로 정하고, 표에 없는 노선은 OSM 의 colour 를 쓴다. 역이 생기거나 바뀌었을 때만 다시 돌린다(매주 X):
 //   node tools/make-stations.mjs                          (Overpass API 에서 받는다 — 이 저장소의 GitHub 워크플로에서 돌렸다)
-//   node tools/make-stations.mjs --save DIR               (받은 원자료를 DIR/stations.json · DIR/routes.json 으로도 남긴다)
-//   node tools/make-stations.mjs stations.json routes.json (받아 둔 원자료로)
+//   node tools/make-stations.mjs --save DIR               (받은 원자료를 DIR/stations.json · routes.json · tracks.json 으로도 남긴다)
+//   node tools/make-stations.mjs stations.json routes.json tracks.json (받아 둔 원자료로)
 import fs from 'fs';
 
 // 남한을 덮는 네모(북한 · 일본 쪽은 아래에서 가장 가까운 읍·면·동이 멀면 뺀다) — 나라 전체 area 질의는 서버가 자주 504 를 냈다
@@ -16,6 +16,8 @@ const BBOX = '33.0,124.5,38.65,131.0';
 const Q_STATIONS = '[out:json][timeout:180];(node["railway"~"^(station|halt)$"]["name"](' + BBOX + ');way["railway"~"^(station|halt)$"]["name"](' + BBOX + '););out center tags;';
 // 노선: 관계(멤버 목록)와 그 멤버 점(정차 위치 · 승강장 · 역)
 const Q_ROUTES = '[out:json][timeout:300];rel["type"="route"]["route"~"^(subway|light_rail|monorail|train|tram)$"](' + BBOX + ')->.r;.r out body;node(r.r);out body;';
+// 선로 모양: 전철 노선(지하철 · 경전철 · 모노레일, 그리고 색이 있거나 전철 노선망인 기차 노선)의 선로(way) — 노선 색 선을 그린다
+const Q_TRACKS = '[out:json][timeout:300];(rel["type"="route"]["route"~"^(subway|light_rail|monorail|tram)$"](' + BBOX + ');rel["type"="route"]["route"="train"]["colour"](' + BBOX + ');rel["type"="route"]["route"="train"]["network"~"전철|광역"](' + BBOX + '););way(r)["railway"];out geom qt;';
 const MIRRORS = ['https://overpass-api.de/api/interpreter', 'https://overpass.private.coffee/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
 async function fetchOverpass(query) {
     for (let round = 0; round < 3; round++) {
@@ -34,10 +36,16 @@ async function fetchOverpass(query) {
 function trimRoutes(j) {
     const rels = [], nodes = {};
     for (const e of j.elements || []) {
-        if (e.type === 'relation') rels.push({ id: e.id, tags: e.tags || {}, m: (e.members || []).filter(m => m.type === 'node').map(m => [m.ref, m.role || '']) });
+        if (e.type === 'relation') rels.push({ id: e.id, tags: e.tags || {}, m: (e.members || []).filter(m => m.type === 'node').map(m => [m.ref, m.role || '']), w: (e.members || []).filter(m => m.type === 'way' && !/platform/.test(m.role || '')).map(m => m.ref) });
         else if (e.type === 'node') nodes[e.id] = [e.lat, e.lon, (e.tags && (e.tags['name:ko'] || e.tags.name)) || ''];
     }
     return { rels, nodes };
+}
+// 선로: 길 번호 → [[경도, 위도] …](소수 5자리)
+function trimTracks(j) {
+    const ways = {};
+    for (const e of j.elements || []) if (e.type === 'way' && e.geometry) ways[e.id] = e.geometry.map(g => [Math.round(g.lon * 1e5) / 1e5, Math.round(g.lat * 1e5) / 1e5]);
+    return ways;
 }
 // 받아 둔 파일: Overpass JSON({ elements }) 또는 osmium export GeoJSON({ features }) — Geofabrik 남한 자료를 osmium 으로 거른 것
 function fromGeojson(j) {
@@ -52,20 +60,24 @@ function fromGeojson(j) {
 }
 const args = process.argv.slice(2), saveAt = args.indexOf('--save'), saveDir = saveAt >= 0 ? args.splice(saveAt, 2)[1] : null;
 const readJson = f => JSON.parse(fs.readFileSync(f, 'utf8'));
-let raw, routes;
+let raw, routes, tracks;
 if (args[0]) {
     const f = readJson(args[0]);
     raw = f.features ? fromGeojson(f) : f;
     routes = args[1] ? readJson(args[1]) : { rels: [], nodes: {} };
     if (routes.elements) routes = trimRoutes(routes);
+    tracks = args[2] ? readJson(args[2]) : {};
+    if (tracks.elements) tracks = trimTracks(tracks);
 } else {
     raw = await fetchOverpass(Q_STATIONS);
     try { routes = trimRoutes(await fetchOverpass(Q_ROUTES)); } catch (e) { console.log('노선은 받지 못했습니다 — 색 없이', e.message); routes = { rels: [], nodes: {} }; }
+    try { tracks = trimTracks(await fetchOverpass(Q_TRACKS)); } catch (e) { console.log('선로는 받지 못했습니다 — 선 없이', e.message); tracks = {}; }
 }
 if (saveDir) {
     fs.mkdirSync(saveDir, { recursive: true });
     fs.writeFileSync(saveDir + '/stations.json', JSON.stringify(raw));
     fs.writeFileSync(saveDir + '/routes.json', JSON.stringify(routes));
+    fs.writeFileSync(saveDir + '/tracks.json', JSON.stringify(tracks));
 }
 
 // 지역: 가장 가까운 읍·면·동
