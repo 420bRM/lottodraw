@@ -79,6 +79,8 @@ export const POINTS = { attend: 10, react: 2, buyPer100: 10, nickChange: 500, da
 // 채팅 점수 — 공지하지 않는 규칙이라 POINTS(회원에게 내려 보내는 값)와 따로 둔다.
 // per: 메시지 하나에 몇 점, daily: 하루에 점수를 받는 메시지 수 상한(50개 = 5점)
 export const CHAT_POINTS = { per: 0.1, daily: 50 };
+export const HEX_FEED_MAX = 20, HEX_FEED_MS = 24 * 3600 * 1000;   // LottoHex 소식: 최근 20개 · 24시간
+export const capText = e => '🚩 ' + (e.nick ? e.nick + '님이 ' : '누군가 ') + e.n + '번째 블록을 점령했습니다';   // 채팅에 남기는 점령 소식
 // 블로그 댓글 점수 — 역시 공지하지 않는다. 댓글 하나에 1점, 하루 5개(5점)까지, 공백·기호 빼고 10자 이상, 바로 앞 댓글과 같은 말은 빼고.
 // 댓글이 지워지면(본인·관리자) 그 점수도 뺀다.
 export const COMMENT_POINTS = { per: 1, daily: 5, minLen: 10 };
@@ -485,21 +487,48 @@ const OPS = {
         if (Object.keys(vt).length) user.vt = vt; else delete user.vt;
         const earned = gps && stamped ? visitPoint(user, id, today) : 0;   // 위치로 인증한 방문만 포인트(켜져 있을 때 index.js 가 이미 판정했다)
         await this.saveUser(user);
-        let pioneer = false;
+        let pioneer = false, cap = null;
         if (user.terr) {
             const row = (await this.terrRow(sub)) || { nick: user.nick || null, at: user.terr.at, v: {} };
             const nv = Object.assign({}, row.v);
             if (id in v && cell) nv[id] = [vt[id] || 0, cell]; else delete nv[id];
+            // 점령 소식(2026-11-10 사장님): 위치로 새로 인증해서 이 칸 주인이 내가 되었으면 — 셈 앞뒤로 칸 주인을 견준다
+            const watch = !!(gps && stamped && cell && site);
+            const before = watch ? ((await this.terrNow(site)).cells[cell] || {}).sub || null : null;
             await this.terrSet(sub, Object.assign({}, row, { v: nv }));
-            if (gps && stamped && !again && cell && site) {   // 개척자: 이 칸에 다녀온 참여자가 나 하나, 그것도 이번이 처음
+            if (watch) {
                 const t = await this.terrNow(site), c = t.cells[cell], me = t.stat.get(sub);
-                pioneer = !!(c && c.k === 1 && me && me.counts[cell] === 1);
+                if (!again) pioneer = !!(c && c.k === 1 && me && me.counts[cell] === 1);   // 개척자: 이 칸에 다녀온 참여자가 나 하나, 그것도 이번이 처음
+                if (c && c.sub === sub && before !== sub) cap = await OPS.hexCaptured.call(this, user, me ? me.cells : 1, now);   // OPS 안의 함수라 this 로 부른다
             }
         }
         // 마일스톤 · 칭호(2026-11-09): 위치로 새로 인증했을 때 셈한다
         const fresh = gps && stamped ? await this.titleCheck(user, { site, now, pioneer }) : null;
         if (fresh) await this.saveUser(user);
-        return { ok: true, visits: user.visits || {}, visitAt: user.vt || {}, visitColor: user.vc || null, earned, score: pubScore(user), fresh: freshOut(fresh) };
+        return { ok: true, visits: user.visits || {}, visitAt: user.vt || {}, visitColor: user.vc || null, earned, score: pubScore(user), fresh: freshOut(fresh), cap };
+    },
+
+    // ───── LottoHex 소식(2026-11-10 사장님 — 점령하면 채팅 · LottoHex 화면 흐르는 띠에 "○○○님이 N번째 블록을 점령했습니다", 띠에는 공지도) ─────
+    // 위치 걱정: 어느 칸 · 지역인지는 넣지 않는다(언제 어디 있었는지 드러나지 않게) — 별명과 지금 가진 칸 수(N번째)만.
+    // hxf: [{ at, nick, n }] 최근 것부터 HEX_FEED_MAX 개 · HEX_FEED_MS 안의 것, hxn: { text, at, until } 관리자 공지(띠 맨 앞)
+    async hexCaptured(user, n, now) {
+        const ev = { at: now, nick: user.nick || null, n };
+        const feed = ((await this.storage.get('hxf')) || []).filter(e => e.at > now - HEX_FEED_MS);
+        feed.unshift(ev);
+        await this.storage.put('hxf', feed.slice(0, HEX_FEED_MAX));
+        return ev;
+    },
+    async hexFeed({ now }) {
+        now = now || Date.now();
+        const feed = ((await this.storage.get('hxf')) || []).filter(e => e.at > now - HEX_FEED_MS);
+        const n = await this.storage.get('hxn');
+        return { feed, notice: n && n.until > now ? { text: n.text, at: n.at, until: n.until } : null };
+    },
+    async hexNotice({ text, hours, now }) {
+        if (!text) { await this.storage.delete('hxn'); return { ok: true, notice: null }; }
+        const rec = { text, at: now, until: now + hours * 3600000 };
+        await this.storage.put('hxn', rec);
+        return { ok: true, notice: rec };
     },
 
     // ───── 위치 인증(2026-11-09) ─────

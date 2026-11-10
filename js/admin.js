@@ -120,6 +120,7 @@
             loadTaps();
             loadChat();
             loadComments();
+            loadHexNotice();
         } catch (err) {
             token = null;
             store.del(TOKEN_STORE);
@@ -459,10 +460,10 @@
         const body = el('tbody');
         if (!messages.length) body.appendChild(el('tr', {}, [el('td', { colspan: '4', text: '24시간 안에 쓴 메시지가 없습니다.' })]));
         messages.slice().reverse().forEach(m => body.appendChild(el('tr', {}, [
-            el('td', { text: when(m.at) }), el('td', { text: m.nick }), el('td', { className: 'chat-adm-text', text: m.text }),
+            el('td', { text: when(m.at) }), el('td', { text: m.sys ? '(알림)' : m.nick }), el('td', { className: 'chat-adm-text', text: m.text }),
             el('td', { className: 'admin-row-tools' }, [
                 el('button', { type: 'button', className: 'btn btn-secondary btn-mini', text: '지우기', on: { click: () => chatAct('delete', { id: m.id }, `"${m.text}" 을(를) 지웁니까?`) } }),
-                el('button', { type: 'button', className: 'btn btn-secondary btn-mini danger', text: '채팅 금지', on: { click: () => chatAct('ban', { sub: m.sub, nick: m.nick }, `${m.nick} 님의 채팅을 막습니까? 이 사람이 쓴 메시지도 모두 지워집니다.`) } }),
+                m.sys ? null : el('button', { type: 'button', className: 'btn btn-secondary btn-mini danger', text: '채팅 금지', on: { click: () => chatAct('ban', { sub: m.sub, nick: m.nick }, `${m.nick} 님의 채팅을 막습니까? 이 사람이 쓴 메시지도 모두 지워집니다.`) } }),   // 알림(점령 소식)은 쓴 사람이 없다
             ]),
         ])));
         t.appendChild(body);
@@ -485,6 +486,28 @@
             await loadChat();
         } catch (err) {
             say('chat-status', '처리하지 못했습니다: ' + err.message, true);
+        }
+    }
+
+    /* ───── LottoHex 소식 띠 공지(2026-11-10) ───── */
+
+    async function loadHexNotice() {
+        try {
+            const r = await call('/hex-notice');
+            const n = r.notice;
+            say('hexn-now', n ? `지금 공지: "${n.text}" — ${when(n.until)} 까지` : `지금 공지 없음 · 최근 점령 소식 ${(r.feed || []).length}개(24시간)`);
+        } catch (err) {
+            $('hexn-card').hidden = err.status === 503;
+            if (err.status !== 503) say('hexn-now', '불러오지 못했습니다: ' + err.message, true);
+        }
+    }
+    async function saveHexNotice(text) {
+        try {
+            await call('/hex-notice', { method: 'POST', body: { text, hours: Number($('hexn-hours').value) } });
+            if (text) $('hexn-text').value = '';
+            await loadHexNotice();
+        } catch (err) {
+            say('hexn-now', '처리하지 못했습니다: ' + err.message, true);
         }
     }
 
@@ -764,6 +787,8 @@
         $('taps-reload').addEventListener('click', loadTaps);
         $('members-reload').addEventListener('click', loadMembers);
         $('chat-reload').addEventListener('click', loadChat);
+        $('hexn-form').addEventListener('submit', e => { e.preventDefault(); const t = $('hexn-text').value.trim(); if (t) saveHexNotice(t); });
+        $('hexn-clear').addEventListener('click', () => { if (window.confirm('LottoHex 띠 공지를 내립니까?')) saveHexNotice(''); });
         $('comments-reload').addEventListener('click', loadComments);
         $('members-q').addEventListener('input', renderMembers);
         $('backup-download').addEventListener('click', backupDownload);

@@ -622,7 +622,7 @@
         if (attendedToday && !document.getElementById('acct-toast')) toast(tr('acct.attended', '오늘 출석 +{n}점', { n: attendedToday }), { href: root + 'ranking.html', text: tr('acct.goRanking', '랭킹 보기 →') });
         renderReactions();
         // 이 파일이 붙이는 스크립트의 내용 지문(tools/asset-version.js 가 적는다 — 배포 직후 옛 파일을 쥐지 않게)
-        const LOAD_V = { 'chat.js': 'd2e7081c', 'comments.js': '9fb9fe81' };
+        const LOAD_V = { 'chat.js': '9c4a810e', 'comments.js': '9fb9fe81' };
         const vq = name => (LOAD_V[name] ? '?v=' + LOAD_V[name] : '');
         // 실시간 채팅(js/chat.js) — 서버가 켜 두었을 때만, 관리자 페이지는 빼고
         if (chatOn && !/admin\.html$/.test(location.pathname)) document.head.appendChild(el('script', { src: root + 'js/chat.js' + vq('chat.js'), defer: '' }));
