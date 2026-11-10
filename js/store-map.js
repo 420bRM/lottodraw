@@ -2496,13 +2496,14 @@
     // 노선 선(store-map-lines.json — 실제 선로 모양, 노선 색)은 줌 11.5부터(줌아웃하면 감춤) 판매점 · 칸 · 역 밑에, 밤에는 옅은 흰 테두리를 깐다
     let stationRecs = null, stationsP = null, railLines = [];
     const stName = (n, alt) => n + (alt ? '(' + alt + ')' : '') + '역';
-    const RAIL_DEF = { day: '#2b4a9b', night: '#9ec1ff' }, RAIL_X = { day: '#3a4150', night: '#e8ecf2' };   // 노선 없는 기차역 · 갈아타는 역 테
+    const RAIL_DEF = { day: '#2b4a9b', night: '#9ec1ff' };   // 노선 없는 기차역 점 테
+    const groupsOf = ls => (Array.isArray(ls) ? ls.filter(g => Array.isArray(g) && Array.isArray(g[2])).map(g => [g[0], g[1], g[2].filter(i => railLines[i])]).filter(g => g[2].length) : []);
     function loadStations() {
         if (!stationsP) stationsP = (root.dataset.stations ? fetch(root.dataset.stations).then(r => (r.ok ? r.json() : null)) : Promise.resolve(null)).catch(() => null).then(j => {
             const rows = j && Array.isArray(j.s) ? j.s : [];
             railLines = j && Array.isArray(j.l) ? j.l : [];
             stationRecs = rows.map(([n, lng, lat, kind, si0, si, gu, en, alt, ls]) => ({ c: [si0, si, gu, n + '역'], leaf: 3, rail: true, kind, name: stName(n, alt), en: en ? en + ' Stn' : '',
-                lines: Array.isArray(ls) ? ls.filter(i => railLines[i]) : [], syn: alt ? [n + '역', alt + '역', n + alt + '역'] : null, sub: [si0, si, gu].filter(Boolean).join(' '), lng, lat, z: 15 }));
+                lines: [...new Set(groupsOf(ls).flatMap(g => g[2]))].sort((x, y) => x - y), syn: alt ? [n + '역', alt + '역', n + alt + '역'] : null, sub: [si0, si, gu].filter(Boolean).join(' '), lng, lat, z: 15 }));
             railLayer(rows);
             loadRailLines();
             return stationRecs;
@@ -2515,20 +2516,55 @@
         const shown4 = ls.slice(0, 4).map(i => '<i class="sm-ln" style="background:' + esc(railLines[i][2]) + '"></i>' + esc(T(railLines[i][0], railLines[i][1])));
         return shown4.join(' ') + (ls.length > 4 ? ' +' + (ls.length - 4) : '');
     }
+    // 노선 표시(2026-11-10 사장님 — "홍대입구역은 3개 노선이니 네이버 지도처럼 노선마다"): 노선마다 실제 타는 곳(정차 위치)에 노선 색 표시("2" · "공항" · "경의중앙"),
+    // 같은 승강장을 쓰는 노선은 한 표시에 나란히. 그림은 처음 쓸 때 그린다(styleimagemissing — 'rb:노선-노선', 밤 · 낮 같음)
+    function badgeImage(ids) {
+        const k = 2, H = 16, PAD = 4, GAP = 2, O = 1.5;
+        const label = i => (en() ? railLines[i][4] : railLines[i][3]) || railLines[i][0];
+        const cv = document.createElement('canvas'), cx = cv.getContext('2d');
+        const font = '700 ' + (10.5 * k) + 'px "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
+        cx.font = font;
+        const ws = ids.map(i => Math.max(H, Math.ceil(cx.measureText(label(i)).width / k) + PAD * 2));
+        const W = ws.reduce((a, w) => a + w, 0) + GAP * (ids.length - 1) + O * 2, HH = H + O * 2;
+        cv.width = Math.ceil(W * k); cv.height = Math.ceil(HH * k);
+        cx.scale(k, k);
+        let x = O;
+        ids.forEach((i, j) => {
+            const w = ws[j], c = railLines[i][2] || '#666', r = H / 2;
+            const pill = () => { cx.beginPath(); cx.moveTo(x + r, O); cx.lineTo(x + w - r, O); cx.arc(x + w - r, O + r, r, -Math.PI / 2, Math.PI / 2); cx.lineTo(x + r, O + H); cx.arc(x + r, O + r, r, Math.PI / 2, Math.PI * 1.5); cx.closePath(); };
+            pill(); cx.lineWidth = O * 2; cx.strokeStyle = '#ffffff'; cx.stroke();
+            pill(); cx.fillStyle = c; cx.fill();
+            const rgb = [1, 3, 5].map(q => parseInt(c.slice(q, q + 2), 16)), lum = (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255;
+            cx.fillStyle = lum > 0.68 ? '#1f2937' : '#ffffff';   // 밝은 노선 색(9호선 · 의정부 · 우이신설 …)은 진한 글자
+            cx.font = '700 10.5px "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
+            cx.textAlign = 'center'; cx.textBaseline = 'middle';
+            cx.fillText(label(i), x + w / 2, O + H / 2 + 0.5);
+            x += w + GAP;
+        });
+        return cx.getImageData(0, 0, cv.width, cv.height);
+    }
     function railLayer(rows) {
         if (!map || !rows.length || map.getSource('rail')) return;
-        map.addSource('rail', { type: 'geojson', data: { type: 'FeatureCollection', features: rows.map(([n, lng, lat, kind, , , , en, alt, ls]) => {
-            const L = Array.isArray(ls) ? ls.filter(i => railLines[i]) : [];
-            const props = { name: stName(n, alt), 'name:ko': stName(n, alt), 'name:en': en ? en + ' Stn' : stName(n, alt), k: kind, nl: L.length };
-            if (L.length === 1) props.c = railLines[L[0]][2];
-            return { type: 'Feature', geometry: { type: 'Point', coordinates: [lng, lat] }, properties: props };
-        }) } });
+        const plain = [], badges = [];
+        rows.forEach(([n, lng, lat, kind, , , , en0, alt, ls]) => {
+            const nm = { name: stName(n, alt), 'name:ko': stName(n, alt), 'name:en': en0 ? en0 + ' Stn' : stName(n, alt) };
+            const gs = groupsOf(ls);
+            if (!gs.length) plain.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [lng, lat] }, properties: Object.assign({ k: kind }, nm) });
+            else gs.forEach(([x, y, ids]) => badges.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [x, y] }, properties: Object.assign({ b: 'rb:' + ids.join('-') }, nm) }));
+        });
+        map.on('styleimagemissing', e => { if (/^rb:/.test(e.id) && !map.hasImage(e.id)) { try { map.addImage(e.id, badgeImage(e.id.slice(3).split('-').map(Number)), { pixelRatio: 2 }); } catch (er) { /* 그림 실패 — 표시 없이 */ } } });
+        map.addSource('rail', { type: 'geojson', data: { type: 'FeatureCollection', features: plain } });
+        map.addSource('rail-st', { type: 'geojson', data: { type: 'FeatureCollection', features: badges } });
         const before = map.getStyle().layers.map(l => l.id).find(id => /^(st|terr|hx)-/.test(id));   // 판매점 · 칸 밑에
-        const big = ['>', ['get', 'nl'], 1];
-        map.addLayer({ id: 'rail-dot', type: 'circle', source: 'rail', minzoom: 12.5, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 12.5, ['case', big, 4, 3], 16, ['case', big, 7, 5.5]],
-            'circle-stroke-width': ['case', big, 2.4, 2] } }, before);
-        map.addLayer({ id: 'rail-name', type: 'symbol', source: 'rail', minzoom: 13.5, layout: { 'text-field': ['coalesce', ['get', en() ? 'name:en' : 'name:ko'], ['get', 'name']], 'text-font': ['Noto Sans Bold'],
+        const nameF = ['coalesce', ['get', en() ? 'name:en' : 'name:ko'], ['get', 'name']];
+        // 노선 없는 기차역(KTX · 일반 열차만): 예전처럼 흰 점 + 남색 테
+        map.addLayer({ id: 'rail-dot', type: 'circle', source: 'rail', minzoom: 12.5, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 12.5, 3, 16, 5.5], 'circle-stroke-width': 2 } }, before);
+        map.addLayer({ id: 'rail-name', type: 'symbol', source: 'rail', minzoom: 13.5, layout: { 'text-field': nameF, 'text-font': ['Noto Sans Bold'],
             'text-size': 11, 'text-offset': [0, 0.9], 'text-anchor': 'top', 'text-optional': true, 'text-padding': 4 } }, before);
+        // 전철역: 노선 표시 + 이름(13.5부터). 표시는 늘 보이고(겹쳐도), 이름은 겹치면 하나만
+        map.addLayer({ id: 'rail-badge', type: 'symbol', source: 'rail-st', minzoom: 12.5, layout: { 'icon-image': ['get', 'b'], 'icon-size': ['interpolate', ['linear'], ['zoom'], 12.5, 0.72, 15, 1],
+            'icon-allow-overlap': true, 'text-field': ['step', ['zoom'], '', 13.5, nameF], 'text-font': ['Noto Sans Bold'], 'text-size': 11, 'text-anchor': 'top', 'text-offset': [0, 1],
+            'text-optional': true, 'text-padding': 4 } }, before);
         railPaint();
     }
     // 노선 선: [노선, x0, y0, dx1, dy1, …](경도 · 위도 × 100000, 둘째 점부터 앞 점과의 차)
@@ -2571,10 +2607,13 @@
         if (!map || !map.getLayer('rail-dot')) return;
         const n = isNight(), m = n ? 'night' : 'day';
         map.setPaintProperty('rail-dot', 'circle-color', n ? '#1b2030' : '#ffffff');
-        map.setPaintProperty('rail-dot', 'circle-stroke-color', ['case', ['>', ['get', 'nl'], 1], RAIL_X[m], ['has', 'c'], ['get', 'c'], RAIL_DEF[m]]);
-        map.setPaintProperty('rail-name', 'text-color', n ? '#cfd6e2' : '#2f3746');
-        map.setPaintProperty('rail-name', 'text-halo-color', n ? '#141a23' : '#ffffff');
-        map.setPaintProperty('rail-name', 'text-halo-width', 1.4);
+        map.setPaintProperty('rail-dot', 'circle-stroke-color', RAIL_DEF[m]);
+        for (const id of ['rail-name', 'rail-badge']) {
+            if (!map.getLayer(id)) continue;
+            map.setPaintProperty(id, 'text-color', n ? '#cfd6e2' : '#2f3746');
+            map.setPaintProperty(id, 'text-halo-color', n ? '#141a23' : '#ffffff');
+            map.setPaintProperty(id, 'text-halo-width', 1.4);
+        }
         if (map.getLayer('rail-line')) {
             map.setLayoutProperty('rail-line-case', 'visibility', n ? 'visible' : 'none');
             map.setPaintProperty('rail-line', 'line-color', ['get', n ? 'cn' : 'cd']);
