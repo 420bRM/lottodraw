@@ -407,6 +407,9 @@ body.sm-full #theme-btn { display: none !important; }
 .sm-terr-skin .sm-skin { margin: 0; }
 .sm-terr-beam { display: flex; align-items: center; gap: 6px; margin: 8px 0 0; font-size: 12px; cursor: pointer; }
 .sm-terr-beam small { color: var(--muted, #666); font-size: 11px; }
+.sm-terr-beam-t { flex: 1; min-width: 0; }
+.sm-terr-beam-t small { display: block; margin-top: 1px; line-height: 1.35; }
+.sm-terr-beam-buy { flex: none; white-space: nowrap; }
 .sm-terr-skin-edit { margin-left: auto; padding: 3px 10px; border: 1px solid var(--brand, #003087); border-radius: 999px; background: var(--surface, #fff); color: var(--brand, #003087); font: inherit; font-size: 11px; font-weight: bold; cursor: pointer; }
 .sm-skin-edit { margin: 6px 0 0; padding: 8px; border: 1px solid var(--line, #e3e3e3); border-radius: 8px; }
 .sm-skin-h { margin: 4px 0 3px; color: var(--muted, #666); font-size: 11px; font-weight: bold; }

@@ -84,7 +84,7 @@ export function computeTerritory(players, upTo, map) {
             if (!per.has(cell)) per.set(cell, []);
             per.get(cell).push({ sub: p.sub, n: ts.length, t: Math.max(...ts) });   // 그 칸에 가장 최근에 다녀온 때
         }
-        stat.set(p.sub, { sub: p.sub, nick: p.nick || null, skin: p.skin || defaultSkin(p.sub), own: !!p.skin, tt: p.tt || null, at: p.at || 0, stores, cells: 0, counts });
+        stat.set(p.sub, { sub: p.sub, nick: p.nick || null, skin: p.skin || defaultSkin(p.sub), own: !!p.skin, tt: p.tt || null, bm: p.bm ? 1 : 0, at: p.at || 0, stores, cells: 0, counts });
     }
     const cells = {};
     for (const [cell, list] of per) {
@@ -108,7 +108,13 @@ export function seasonRecord(t, season, now) {
 export function publicTerritory(t, season, sub, joined, last) {
     const nickOf = s => (t.stat.get(s) || {}).nick || null;
     const cells = {};
-    for (const [cell, c] of Object.entries(t.cells)) { const st = t.stat.get(c.sub); cells[cell] = [nickOf(c.sub), c.n, c.next, c.k, st.skin].concat(st.tt ? [st.tt] : []); }   // 6번째: 단 칭호 [한, 영]
+    // 6번째: 단 칭호 [한, 영](없으면 빼거나 빛 벽이 있으면 null), 7번째: 빛 벽 켬(1 — 2026-11-10, 있을 때만)
+    for (const [cell, c] of Object.entries(t.cells)) {
+        const st = t.stat.get(c.sub), row = [nickOf(c.sub), c.n, c.next, c.k, st.skin];
+        if (st.tt || st.bm) row.push(st.tt || null);
+        if (st.bm) row.push(1);
+        cells[cell] = row;
+    }
     const out = {
         season: { id: season.id, from: season.from, to: season.to },
         cells,
