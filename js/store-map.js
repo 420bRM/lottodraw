@@ -209,7 +209,12 @@
             if (id === 'sm-bld') setP(id, 'fill-extrusion-color', N('extr'));
             else if (id === 'sm-bld-line') setP(id, 'line-color', N('edge'));
             else if (l.type === 'background') setP(id, 'background-color', N('bg'));
-            else if (l.type === 'fill') setP(id, 'fill-color', N(sl === 'water' ? 'water' : sl === 'park' || sl === 'landcover' ? 'park' : sl === 'building' ? 'bld' : 'land'));
+            else if (l.type === 'fill') {
+                const k = sl === 'water' ? 'water' : sl === 'park' || sl === 'landcover' ? 'park' : sl === 'building' ? 'bld' : 'land';
+                setP(id, 'fill-color', N(k));
+                // 테두리도 — 바탕 지도(positron)의 건물 층은 테두리 색(밝은 회색)이 따로 있어 밤에 건물이 흰 선으로 떴다(2026-11-10 사장님)
+                setP(id, 'fill-outline-color', N(sl === 'building' ? 'edge' : k));
+            }
             else if (l.type === 'line') setP(id, 'line-color', N(sl === 'water' || sl === 'waterway' ? 'water' : sl === 'boundary' ? 'border' : /casing/.test(id) ? 'casing' : /rail|transit/.test(id) ? 'rail' : 'road'));
             else if (l.type === 'symbol' && l.layout && l.layout['text-field'] && !isShield(l)) { setP(id, 'text-color', N('text')); setP(id, 'text-halo-color', N('halo')); }
         }
