@@ -118,49 +118,49 @@ for (const p of pts) {
 const r5 = v => Math.round(v * 1e5) / 1e5;
 
 // ───── 전철 노선(2026-11-10 사장님 — "지하철은 노선마다 고유 색" · "노선마다 역끼리 선으로") ─────
-// 이름 · 색은 각 운영사 노선도의 노선 색(서울교통공사 · 코레일 · 각 도시철도공사, 한국어 위키백과 노선색 틀과 같은 값). OSM 노선 관계를 network · ref · name 으로 맞춘다.
+// [이름, 영어, 색(각 운영사 노선도의 노선 색), 역 표시에 쓰는 짧은 이름, 영어 짧은 이름, OSM 노선 관계 맞추기(network · ref · name)]
 // 표에 없는 노선(관광 열차 · 공항 셔틀 · 운행 중단 · 공사 중 · KTX 같은 간선 열차)은 넣지 않는다
 const cap = t => /수도권 전철/.test(t.network || '');
 const net = (re, ref) => t => re.test(t.network || '') && t.ref === ref;
 const LINES = [
-    ['1호선', 'Line 1', '#0052A4', t => cap(t) && t.ref === '1'],
-    ['2호선', 'Line 2', '#00A84D', t => cap(t) && t.ref === '2'],
-    ['3호선', 'Line 3', '#EF7C1C', t => cap(t) && t.ref === '3'],
-    ['4호선', 'Line 4', '#00A5DE', t => cap(t) && t.ref === '4'],
-    ['5호선', 'Line 5', '#996CAC', t => cap(t) && t.ref === '5'],
-    ['6호선', 'Line 6', '#CD7C2F', t => cap(t) && t.ref === '6'],
-    ['7호선', 'Line 7', '#747F00', t => cap(t) && t.ref === '7'],
-    ['8호선', 'Line 8', '#E6186C', t => cap(t) && t.ref === '8'],
-    ['9호선', 'Line 9', '#BDB092', t => cap(t) && t.ref === '9'],
-    ['수인분당선', 'Suin-Bundang', '#F5A200', t => t.ref === '수인·분당'],
-    ['신분당선', 'Shinbundang', '#D4003B', t => t.ref === '신분당'],
-    ['경의중앙선', 'Gyeongui-Jungang', '#77C4A3', t => t.ref === '경의·중앙'],
-    ['경춘선', 'Gyeongchun', '#0C8E72', t => cap(t) && t.ref === '경춘'],
-    ['공항철도', 'AREX', '#0090D2', t => t.ref === '공항철도' || t.ref === 'AREX'],
-    ['경강선', 'Gyeonggang', '#003DA5', t => cap(t) && t.ref === '경강'],
-    ['서해선', 'Seohae', '#8FC31F', t => (cap(t) && t.ref === '서해') || /^서해선/.test(t.name || '')],
-    ['GTX-A', 'GTX-A', '#9A6292', t => t.ref === 'GTX-A'],
-    ['인천 1호선', 'Incheon Line 1', '#7CA8D5', t => t.ref === '인천1'],
-    ['인천 2호선', 'Incheon Line 2', '#ED8B00', t => t.ref === 'I2'],
-    ['에버라인', 'Everline', '#509F22', t => t.ref === '용인' || /^용인 ?경전철/.test(t.name || '')],
-    ['의정부경전철', 'U Line', '#FDA600', t => t.ref === 'U' || /^의정부 ?경전철/.test(t.name || '')],
-    ['우이신설선', 'Ui LRT', '#B0CE18', t => /^우이신설/.test(t.name || '')],
-    ['신림선', 'Sillim', '#6789CA', t => t.ref === 'Silim' || /신림선/.test(t.name || '')],
-    ['김포골드라인', 'Gimpo Goldline', '#AD8605', t => /김포 ?골드라인/.test((t.ref || '') + (t.name || ''))],
-    ['부산 1호선', 'Busan Line 1', '#F06A00', net(/부산 도시철도/, '1')],
-    ['부산 2호선', 'Busan Line 2', '#81BF48', net(/부산 도시철도/, '2')],
-    ['부산 3호선', 'Busan Line 3', '#BB8C00', net(/부산 도시철도/, '3')],
-    ['부산 4호선', 'Busan Line 4', '#217DCB', net(/부산 도시철도/, '4')],
-    ['부산김해경전철', 'Busan-Gimhae LRT', '#8652A1', t => t.ref === 'BGL'],
-    ['동해선', 'Donghae', '#0054A6', t => t.ref === '동해'],
-    ['대구 1호선', 'Daegu Line 1', '#D93F5C', net(/대구 ?도시철도/, '1')],
-    ['대구 2호선', 'Daegu Line 2', '#00AA80', net(/대구 ?도시철도/, '2')],
-    ['대구 3호선', 'Daegu Line 3', '#FFB100', net(/대구 ?도시철도/, '3')],
-    ['대경선', 'Daegyeong', '#0054A6', t => t.ref === '대경'],
-    ['대전 1호선', 'Daejeon Line 1', '#007448', t => net(/대전 도시철도/, '1')(t) && t.route === 'subway'],
-    ['광주 1호선', 'Gwangju Line 1', '#009088', net(/광주 도시철도/, '1')],
+    ['1호선', 'Line 1', '#0052A4', '1', '1', t => cap(t) && t.ref === '1'],
+    ['2호선', 'Line 2', '#00A84D', '2', '2', t => cap(t) && t.ref === '2'],
+    ['3호선', 'Line 3', '#EF7C1C', '3', '3', t => cap(t) && t.ref === '3'],
+    ['4호선', 'Line 4', '#00A5DE', '4', '4', t => cap(t) && t.ref === '4'],
+    ['5호선', 'Line 5', '#996CAC', '5', '5', t => cap(t) && t.ref === '5'],
+    ['6호선', 'Line 6', '#CD7C2F', '6', '6', t => cap(t) && t.ref === '6'],
+    ['7호선', 'Line 7', '#747F00', '7', '7', t => cap(t) && t.ref === '7'],
+    ['8호선', 'Line 8', '#E6186C', '8', '8', t => cap(t) && t.ref === '8'],
+    ['9호선', 'Line 9', '#BDB092', '9', '9', t => cap(t) && t.ref === '9'],
+    ['수인분당선', 'Suin-Bundang', '#F5A200', '수인분당', 'Suin', t => t.ref === '수인·분당'],
+    ['신분당선', 'Shinbundang', '#D4003B', '신분당', 'Shinbundang', t => t.ref === '신분당'],
+    ['경의중앙선', 'Gyeongui-Jungang', '#77C4A3', '경의중앙', 'Gyeongui', t => t.ref === '경의·중앙'],
+    ['경춘선', 'Gyeongchun', '#0C8E72', '경춘', 'Gyeongchun', t => cap(t) && t.ref === '경춘'],
+    ['공항철도', 'AREX', '#0090D2', '공항', 'AREX', t => t.ref === '공항철도' || t.ref === 'AREX'],
+    ['경강선', 'Gyeonggang', '#003DA5', '경강', 'Gyeonggang', t => cap(t) && t.ref === '경강'],
+    ['서해선', 'Seohae', '#8FC31F', '서해', 'Seohae', t => (cap(t) && t.ref === '서해') || /^서해선/.test(t.name || '')],
+    ['GTX-A', 'GTX-A', '#9A6292', 'GTX-A', 'GTX-A', t => t.ref === 'GTX-A'],
+    ['인천 1호선', 'Incheon Line 1', '#7CA8D5', '인천1', 'I1', t => t.ref === '인천1'],
+    ['인천 2호선', 'Incheon Line 2', '#ED8B00', '인천2', 'I2', t => t.ref === 'I2'],
+    ['에버라인', 'Everline', '#509F22', '에버라인', 'Ever', t => t.ref === '용인' || /^용인 ?경전철/.test(t.name || '')],
+    ['의정부경전철', 'U Line', '#FDA600', '의정부', 'U', t => t.ref === 'U' || /^의정부 ?경전철/.test(t.name || '')],
+    ['우이신설선', 'Ui LRT', '#B0CE18', '우이신설', 'Ui', t => /^우이신설/.test(t.name || '')],
+    ['신림선', 'Sillim', '#6789CA', '신림', 'Sillim', t => t.ref === 'Silim' || /신림선/.test(t.name || '')],
+    ['김포골드라인', 'Gimpo Goldline', '#AD8605', '김포골드', 'Gimpo', t => /김포 ?골드라인/.test((t.ref || '') + (t.name || ''))],
+    ['부산 1호선', 'Busan Line 1', '#F06A00', '1', '1', net(/부산 도시철도/, '1')],
+    ['부산 2호선', 'Busan Line 2', '#81BF48', '2', '2', net(/부산 도시철도/, '2')],
+    ['부산 3호선', 'Busan Line 3', '#BB8C00', '3', '3', net(/부산 도시철도/, '3')],
+    ['부산 4호선', 'Busan Line 4', '#217DCB', '4', '4', net(/부산 도시철도/, '4')],
+    ['부산김해경전철', 'Busan-Gimhae LRT', '#8652A1', '부산김해', 'BGL', t => t.ref === 'BGL'],
+    ['동해선', 'Donghae', '#0054A6', '동해', 'Donghae', t => t.ref === '동해'],
+    ['대구 1호선', 'Daegu Line 1', '#D93F5C', '1', '1', net(/대구 ?도시철도/, '1')],
+    ['대구 2호선', 'Daegu Line 2', '#00AA80', '2', '2', net(/대구 ?도시철도/, '2')],
+    ['대구 3호선', 'Daegu Line 3', '#FFB100', '3', '3', net(/대구 ?도시철도/, '3')],
+    ['대경선', 'Daegyeong', '#0054A6', '대경', 'Daegyeong', t => t.ref === '대경'],
+    ['대전 1호선', 'Daejeon Line 1', '#007448', '1', '1', t => net(/대전 도시철도/, '1')(t) && t.route === 'subway'],
+    ['광주 1호선', 'Gwangju Line 1', '#009088', '1', '1', net(/광주 도시철도/, '1')],
 ];
-const lineOf = t => LINES.findIndex(L => L[3](t));
+const lineOf = t => LINES.findIndex(L => L[5](t));
 const lineRels = LINES.map(() => []);
 const skipped = new Map();
 for (const r of routes.rels) {
@@ -171,16 +171,38 @@ for (const r of routes.rels) {
 if (skipped.size) console.log('노선 표에 없어 뺀 것:', [...skipped.keys()].join(', '));
 // 역마다 지나는 노선: 노선 관계의 정차 점(정차 위치 · 승강장 · 역)이 같은 이름으로 450m 안에 있으면(이름 없는 점은 150m 안 가장 가까운 역)
 const stLines = out.map(() => new Set());
+const stStops = out.map(() => new Map());   // 역 → 노선 → { 정차 위치(stop) 점들, 그 밖의 점들 } — 노선마다 실제 타는 곳에 표시를 두려고
 LINES.forEach((L, li) => {
-    for (const r of lineRels[li]) for (const [ref] of r.m) {
+    const seen = new Set();
+    for (const r of lineRels[li]) for (const [ref, role] of r.m) {
+        if (seen.has(ref)) continue;
+        seen.add(ref);
         const nd = routes.nodes[ref];
         if (!nd) continue;
         const p = { lat: nd[0], lng: nd[1] }, nb = base(nd[2]);
         let bi = -1, bd = Infinity;
         out.forEach((o, i) => { const d = km(o, p); if (d < bd && (nb ? o.name === nb && d < 0.45 : d < 0.15)) { bd = d; bi = i; } });
-        if (bi >= 0) stLines[bi].add(li);
+        if (bi < 0) continue;
+        stLines[bi].add(li);
+        if (!stStops[bi].has(li)) stStops[bi].set(li, { stop: [], other: [] });
+        stStops[bi].get(li)[/^stop/.test(role) ? 'stop' : 'other'].push(p);
     }
 });
+// 역마다 노선별 표시 자리(2026-11-10 사장님 — "홍대입구역은 3개 노선이니 네이버 지도처럼 노선마다 나눠서"): 그 노선의 정차 위치(없으면 승강장 · 역 점) 가운데.
+// 60m 안에 붙은 노선끼리는 한 표시로 묶는다(같은 승강장을 쓰는 노선 — 상봉 경의중앙 · 경춘 등) → [[경도, 위도, [노선 …]], …]
+function stopGroups(i) {
+    const pts = [...stStops[i].entries()].sort((a, b) => a[0] - b[0]).map(([li, g]) => {
+        const use = g.stop.length ? g.stop : g.other;
+        return { li: [li], lat: use.reduce((a, q) => a + q.lat, 0) / use.length, lng: use.reduce((a, q) => a + q.lng, 0) / use.length };
+    });
+    const groups = [];
+    for (const p of pts) {
+        const g = groups.find(q => km(q, p) < 0.06);
+        if (g) { const n = g.li.length; g.lat = (g.lat * n + p.lat) / (n + 1); g.lng = (g.lng * n + p.lng) / (n + 1); g.li.push(p.li[0]); }
+        else groups.push({ li: p.li.slice(), lat: p.lat, lng: p.lng });
+    }
+    return groups.map(g => [r5(g.lng), r5(g.lat), g.li]);
+}
 // 선로: 노선마다 선로(way)를 모아 잇고(끝점이 같으면 한 줄로) 줄인다(더글라스-포커 6m) → store-map-lines.json
 function simplify(pts, tolM) {
     if (pts.length < 3) return pts;
@@ -245,11 +267,11 @@ LINES.forEach((L, li) => {
         geo.push(row); nPts += sp.length;
     }
 });
-const LT = LINES.map(([ko, en, c]) => [ko, en, c]);
+const LT = LINES.map(([ko, en, c, sko, sen]) => [ko, en, c, sko, sen]);
 const SRC = 'Station names, positions and railway lines © OpenStreetMap contributors, available under the Open Database License (ODbL 1.0, https://www.openstreetmap.org/copyright). This file is a derived database under ODbL.';
 if (geo.length) {
     fs.writeFileSync(new URL('../store-map-lines.json', import.meta.url), JSON.stringify({
-        note: '판매점 지도의 전철 노선 선(tools/make-stations.mjs). l: 노선 [이름, 영어, 색], g: [노선, x0, y0, dx1, dy1, …] — 경도 · 위도 × 100000, 둘째 점부터는 앞 점과의 차',
+        note: '판매점 지도의 전철 노선 선(tools/make-stations.mjs). l: 노선 [이름, 영어, 색, 짧은 이름, 영어 짧은 이름], g: [노선, x0, y0, dx1, dy1, …] — 경도 · 위도 × 100000, 둘째 점부터는 앞 점과의 차',
         src: SRC, l: LT, g: geo }) + '\n');
     console.log(`노선 선: ${geo.length}줄 · ${nPts}점`);
 }
@@ -261,15 +283,15 @@ const rows = order.map(i => {
     if (!rg) return null;
     const row = [o.name, r5(o.lng), r5(o.lat), kindOf(o, ls)].concat(rg, o.en || '');
     if (o.alt || ls.size) row.push(o.alt || '');
-    if (ls.size) row.push([...ls].sort((a, b) => a - b));
+    if (ls.size) row.push(stopGroups(i));
     return row;
 }).filter(Boolean);
 const res = {
-    note: '판매점 지도의 역(tools/make-stations.mjs). l: 전철 노선 [이름, 영어, 색], s: [이름("역" 뗌), 경도, 위도, 0 도시철도 · 1 철도 · 2 둘 다, 시·도, 시, 구, 영어 이름, 괄호 속 이름(있을 때만, 노선이 있으면 빈 칸이라도), 지나는 노선(l 의 번호, 있을 때만)]',
+    note: '판매점 지도의 역(tools/make-stations.mjs). l: 전철 노선 [이름, 영어, 색, 짧은 이름, 영어 짧은 이름], s: [이름("역" 뗌), 경도, 위도, 0 도시철도 · 1 철도 · 2 둘 다, 시·도, 시, 구, 영어 이름, 괄호 속 이름(있을 때만, 노선이 있으면 빈 칸이라도), 노선별 표시 자리(있을 때만) [[경도, 위도, [l 의 번호 …]], …] — 같은 승강장을 쓰는 노선은 한 자리]',
     src: SRC,
     l: LT,
     s: rows,
 };
 fs.writeFileSync(new URL('../store-map-stations.json', import.meta.url), JSON.stringify(res) + '\n');
 console.log(`역 ${rows.length}곳(도시철도 ${rows.filter(r => r[3] === 0).length} · 철도 ${rows.filter(r => r[3] === 1).length} · 둘 다 ${rows.filter(r => r[3] === 2).length}, 노선 있는 역 ${rows.filter(r => r[9]).length}), 원자료 점 ${pts.length}`);
-LINES.forEach((L, li) => { const n = rows.filter(r => r[9] && r[9].includes(li)).length; if (!n) console.log('역이 없는 노선:', L[0]); });
+LINES.forEach((L, li) => { const n = rows.filter(r => r[9] && r[9].some(g => g[2].includes(li))).length; if (!n) console.log('역이 없는 노선:', L[0]); });
