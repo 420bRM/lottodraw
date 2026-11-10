@@ -2544,20 +2544,28 @@
                 const co = [];
                 let x = 0, y = 0;
                 for (let k = 1; k + 1 < g.length; k += 2) { x += g[k]; y += g[k + 1]; co.push([x / 1e5, y / 1e5]); }
-                if (co.length > 1) features.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: co }, properties: { c: L[2] } });
+                if (co.length > 1) features.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: co }, properties: { cd: paleOf(L[2], false), cn: paleOf(L[2], true) } });
             }
             map.addSource('rail-lines', { type: 'geojson', data: { type: 'FeatureCollection', features } });
             const before = map.getLayer('rail-dot') ? 'rail-dot' : map.getStyle().layers.map(l => l.id).find(id => /^(st|terr|hx)-/.test(id));
             // 줌아웃하면 역처럼 감춘다(2026-11-10 사장님 — 축소하면 판매점 점과 겹쳐 복잡) — 11.5부터 서서히, 역 점(12.5)보다 조금 먼저
             const W = ['interpolate', ['linear'], ['zoom'], 11.5, 1.6, 13, 2.6, 15, 3.5, 18, 6];
-            // 밤에는 밑에 옅은 흰 테두리(사장님이 고른 B안) — 1호선 · 7호선 · 9호선처럼 어두운 노선 색이 밤 바탕에 묻혔다. 노선 색은 그대로
+            // 밤에는 밑에 옅은 흰 테두리(사장님이 고른 B안) — 1호선 · 7호선 · 9호선처럼 어두운 노선 색이 밤 바탕에 묻혔다. 선이 연해진 만큼 테두리도 옅게
             map.addLayer({ id: 'rail-line-case', type: 'line', source: 'rail-lines', minzoom: 11.5, layout: { 'line-cap': 'round', 'line-join': 'round', visibility: 'none' },
                 paint: { 'line-color': '#ebf0f8', 'line-width': ['interpolate', ['linear'], ['zoom'], 11.5, 3.4, 13, 4.8, 15, 5.9, 18, 8.6],
-                    'line-opacity': ['interpolate', ['linear'], ['zoom'], 11.5, 0, 12.3, 0.35, 14, 0.55] } }, before);
+                    'line-opacity': ['interpolate', ['linear'], ['zoom'], 11.5, 0, 12.3, 0.14, 14, 0.2] } }, before);
             map.addLayer({ id: 'rail-line', type: 'line', source: 'rail-lines', minzoom: 11.5, layout: { 'line-cap': 'round', 'line-join': 'round' },
-                paint: { 'line-color': ['get', 'c'], 'line-width': W } }, before);
+                paint: { 'line-color': ['get', 'cd'], 'line-width': W } }, before);
             railPaint();
         });
+    }
+    // 노선 선은 역 점 색보다 절반 넘게 연하게(2026-11-10 사장님): 바탕색과 섞어 노선 색을 38%(밤 45%)만 남긴다.
+    // 투명도로 줄이면 겹친 선로(복선 · 같은 길을 여러 노선이 지남)가 겹친 만큼 진해져서, 미리 섞은 불투명한 색으로 그린다
+    function paleOf(hex, night) {
+        const k = night ? 0.45 : 0.38, bg = night ? [20, 26, 35] : [246, 246, 243];
+        const c = [1, 3, 5].map(i => parseInt(String(hex).slice(i, i + 2), 16));
+        if (c.some(v => isNaN(v))) return hex;
+        return '#' + c.map((v, i) => Math.round(v * k + bg[i] * (1 - k)).toString(16).padStart(2, '0')).join('');
     }
     function railPaint() {
         if (!map || !map.getLayer('rail-dot')) return;
@@ -2569,7 +2577,8 @@
         map.setPaintProperty('rail-name', 'text-halo-width', 1.4);
         if (map.getLayer('rail-line')) {
             map.setLayoutProperty('rail-line-case', 'visibility', n ? 'visible' : 'none');
-            map.setPaintProperty('rail-line', 'line-opacity', ['interpolate', ['linear'], ['zoom'], 11.5, 0, 12.3, n ? 0.95 : 0.7, 15, n ? 1 : 0.8]);
+            map.setPaintProperty('rail-line', 'line-color', ['get', n ? 'cn' : 'cd']);
+            map.setPaintProperty('rail-line', 'line-opacity', ['interpolate', ['linear'], ['zoom'], 11.5, 0, 12.3, 1]);
         }
     }
     // 지역으로 옮기면 그 지역의 판매점이 다 보이게(1 · 2등 · 일반 판매점 켜고 흐리게 · TOP 50 만 보기는 끈다) 하고, 다 옮기면 그 근처 판매점 목록(지역 중심에서 가까운 순)
