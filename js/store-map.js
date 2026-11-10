@@ -1066,28 +1066,35 @@
                 pts.push({ type: 'Feature', geometry: { type: 'Point', coordinates: HX.centerOf(k) }, properties: { k, nm: (own[0] || T('(별명 없음)', '(no name)')) + ' · ' + own[1], c } });
                 rings.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: HX.ringOf(k).slice().reverse() }, properties: { k } });   // 시계 방향(빛이 도는 차례)
                 glintCells.push(glintCell(k));
-                if (me) beams.push(beamCell(k, c));
+                if (me) beams.push(...beamWalls(k, c, mine));
             }
         });
         return { polys: { type: 'FeatureCollection', features: polys }, pts: { type: 'FeatureCollection', features: pts }, rings: { type: 'FeatureCollection', features: rings }, beams: { type: 'FeatureCollection', features: beams } };
     }
-    // ───── 내 영토 빛기둥(2026-11-10 사장님 — "사용자가 많아지면 내 칸을 구분하기 어렵다. 내 영토는 빛이 위로 쏘아지게, 그라데이션으로") ─────
-    // 내 칸마다 칸 가운데에서 위로 빛기둥(칸 폭의 34%) — 아래가 밝고 위로 갈수록 옅어진다. fill-extrusion 은 높이에 따라 옅게 할 수 없어
-    // 높이를 BEAM_N 토막으로 나눠 토막마다 투명도를 낮춘다. 화면에서의 길이는 멀리서 길고(줌 8 · 200px) 가까이서 짧게(줌 14.5 · 90px — 같은 날 사장님 "가까이서는 짧아야"),
-    // 줌 14.2~15.2 에서 사라진다(가까이서는 칸이 화면을 덮을 만큼 커져 기둥이 화면을 가린다 — 그때는 칸 자체가 잘 보인다).
-    // 3D 모드(지도를 기울였을 때)만 — 똑바로 내려다보면 토막 윗면이 칸 위에 겹쳐 칸을 가린다. 색은 내 칸 색을 흰빛 쪽으로 밝힌 것.
-    // LottoHex 창의 "내 영토 빛기둥"으로 켜고 끈다(이 기기에 저장, 처음엔 켜짐). 지금은 나에게만 보인다
-    const BEAM_N = 14, BEAM_W = 0.34, BEAM_PX = [[8, 200], [11, 170], [13, 130], [14.5, 90], [16, 60], [18, 40]];
+    // ───── 내 영토 빛 벽(2026-11-10 사장님 — "사용자가 많아지면 내 칸을 구분하기 어렵다. 내 영토는 빛이 위로 쏘아지게, 그라데이션으로" →
+    // 같은 날 다시: "빛이 테두리 그대로 위로" · "육각형의 각 변이 수직으로 익스트루드된 것처럼" · "가까이서는 높이가 낮아지게") ─────
+    // 내 영토의 바깥 테두리(내 칸끼리 맞닿은 변은 빼고)를 따라 얇은 벽(칸 안쪽으로 약 15m)을 세운다 — 아래가 밝고 위로 갈수록 옅어진다.
+    // fill-extrusion 은 높이에 따라 옅게 할 수 없어 높이를 BEAM_N 토막으로 나눠 위로 갈수록 투명하게. 화면에서의 높이는 멀리서 높고(줌 8 · 200px) 가까이서 낮게(줌 18 · 40px).
+    // 3D 모드(지도를 기울였을 때)만 — 똑바로 내려다보면 벽 윗면이 테두리에 겹칠 뿐이라 감춘다. 색은 내 칸 색을 흰빛 쪽으로 밝힌 것.
+    // LottoHex 창의 "내 영토 빛"으로 켜고 끈다(이 기기에 저장, 처음엔 켜짐). 지금은 나에게만 보인다
+    const BEAM_N = 28, BEAM_T = 0.025, BEAM_PX = [[8, 200], [11, 170], [13, 130], [14.5, 95], [16, 65], [18, 40]];
     const beamPx = z => { for (let i = 1; i < BEAM_PX.length; i++) { const [z0, p0] = BEAM_PX[i - 1], [z1, p1] = BEAM_PX[i]; if (z <= z1) return p0 + (p1 - p0) * (z - z0) / (z1 - z0); } return BEAM_PX[BEAM_PX.length - 1][1]; };
     let beamOn = true;
     try { beamOn = localStorage.getItem('lottodraw.hexBeam') !== '0'; } catch (e) { /* 저장소 없음 — 켜 둔다 */ }
     const beamIds = Array.from({ length: BEAM_N }, (_, i) => 'terr-beam-' + i);
-    function beamCell(k, c) {
-        const ctr = HX.centerOf(k), s = BEAM_W;
-        const ring = HX.ringOf(k).map(([x, y]) => [ctr[0] + (x - ctr[0]) * s, ctr[1] + (y - ctr[1]) * s]);
+    // 내 칸 k 의 바깥 변마다 벽 한 장: 변 [a, b] 와 칸 가운데 쪽으로 BEAM_T 만큼 들어간 [b', a'] 사이(이웃 변의 벽과 꼭짓점에서 맞물린다)
+    function beamWalls(k, c, mine) {
+        const ctr = HX.centerOf(k), ring = HX.ringOf(k), out = [];
         const rgb = [1, 3, 5].map(i => parseInt(String(c).slice(i, i + 2), 16) || 200);
         const bc = '#' + rgb.map(v => Math.round(v + (255 - v) * 0.35).toString(16).padStart(2, '0')).join('');
-        return { type: 'Feature', geometry: { type: 'Polygon', coordinates: [ring] }, properties: { bc } };
+        const inn = p => [p[0] + (ctr[0] - p[0]) * BEAM_T, p[1] + (ctr[1] - p[1]) * BEAM_T];
+        for (let i = 0; i < 6; i++) {
+            const a = ring[i], b = ring[i + 1], m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+            const nb = HX.cellOf(ctr[1] + 2 * (m[1] - ctr[1]), ctr[0] + 2 * (m[0] - ctr[0]));   // 이 변 너머 칸
+            if (mine.has(nb)) continue;   // 내 칸끼리 맞닿은 변 — 벽을 세우지 않는다(영토 바깥 테두리만)
+            out.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [[a, b, inn(b), inn(a), a]] }, properties: { bc } });
+        }
+        return out;
     }
     // 북위 37° · 512px 타일에서 1px ≈ 62070 / 2^줌 m — 줌 8~18 정수 줌마다 높이(m)를 정해 잇는다
     const beamH = f => { const ex = ['interpolate', ['linear'], ['zoom']]; for (let z = 8; z <= 18; z++) ex.push(z, Math.round(beamPx(z) * 62070 / Math.pow(2, z) * f * 10) / 10); return ex; };
@@ -1098,11 +1105,11 @@
         if (map.getLayoutProperty(beamIds[0], 'visibility') !== v) beamIds.forEach(id => map.setLayoutProperty(id, 'visibility', v));
     }
     function beamLayers(below) {
-        const A = isNight() ? 0.7 : 0.6;
+        const A = isNight() ? 0.85 : 0.75;
         beamIds.forEach((id, i) => {
             map.addLayer({ id, type: 'fill-extrusion', source: 'terr-beam', layout: { visibility: 'none' }, paint: {
                 'fill-extrusion-color': ['get', 'bc'], 'fill-extrusion-base': beamH(i / BEAM_N), 'fill-extrusion-height': beamH((i + 1) / BEAM_N),
-                'fill-extrusion-opacity': ['interpolate', ['linear'], ['zoom'], 14.2, +(A * Math.pow(1 - i / BEAM_N, 1.6)).toFixed(3), 15.2, 0], 'fill-extrusion-vertical-gradient': false } }, below);
+                'fill-extrusion-opacity': +(A * Math.pow(1 - i / BEAM_N, 1.5)).toFixed(3), 'fill-extrusion-vertical-gradient': false } }, below);
         });
         map.on('pitch', beamShow);
         beamShow();
@@ -1867,7 +1874,7 @@
             'My cells <b>' + fmt(me.cells.length) + '</b>' + (me.rank ? ' · rank <b>' + me.rank + '</b>' : '') + ' · ' + fmt(me.stores) + ' visited') + '</p>' +
             (me.lastRank ? '<p class="sm-terr-me">' + (MEDAL[me.lastRank - 1] || '🏅') + ' ' + T(seasonLabel(terr.last) + ' 확정 ' + me.lastRank + '위', seasonLabel(terr.last) + ' final: #' + me.lastRank) + '</p>' : '') +
             skinRow(me) +
-            '<label class="sm-terr-beam"><input type="checkbox"' + (beamOn ? ' checked' : '') + '> ' + T('내 영토 빛기둥', 'Light beam over my cells') + ' <small>' + T('3D에서 · 나에게만 보임', 'in 3D · only you see it') + '</small></label>';
+            '<label class="sm-terr-beam"><input type="checkbox"' + (beamOn ? ' checked' : '') + '> ' + T('내 영토 빛', 'Light around my territory') + ' <small>' + T('3D에서 · 나에게만 보임', 'in 3D · only you see it') + '</small></label>';
         const rank = (terr && terr.rank) || [];
         const last = terr && terr.last;
         const joined = !!(A && A.session() && me && me.joined), sheet = hexMobile();
