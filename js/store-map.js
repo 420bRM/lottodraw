@@ -1550,6 +1550,20 @@
         inner.style.animation = 'none'; void inner.offsetWidth; inner.style.animation = '';   // 새 소식은 처음부터
     }
     setInterval(() => { if (hexMode && !document.hidden) loadFeed(); }, 60000);
+    // 소식 띠 자리: 휴대폰은 위 칸(.sm-top)의 LottoHex 한 줄 밑, PC 는 지도 위 가운데 넓게(2026-11-11 사장님 — "PC 에는 위에 소식 띠 없나?":
+    // 왼쪽 칸 맨 위 구석에 좁게 붙어 안 보였다). 왼쪽 칸은 넘치면 스크롤되는 상자라 PC 에서는 띠를 지도 쪽(#sm)으로 옮긴다
+    function placeTicker() {
+        const t = document.getElementById('sm-ticker'), home = root.querySelector('.sm-hexbar');
+        if (!t || !home) return;
+        const wide = isWide();
+        if (wide === t.classList.contains('is-float')) return;
+        if (wide) root.appendChild(t); else home.after(t);
+        t.classList.toggle('is-float', wide);
+        feedSig = '';
+        drawTicker();   // 폭이 바뀌었으니 흐르는 거리 · 시간을 다시
+    }
+    placeTicker();
+    window.addEventListener('resize', placeTicker);
     // 영역만 보기: 판매점 점 · 별 · 이름 · 다녀온 곳을 다 감추고 칸만. 영역이 꺼져 있으면 함께 켠다
     function setTerrOnly(on) {
         terrOnly = on;
@@ -2366,9 +2380,10 @@
                 (cur ? '<span class="sm-swatch" style="background:' + cur + '"></span>' + T('다녀온 곳', 'Visited') : T('＋ 다녀왔어요', '＋ I\'ve been here')) + '</button>' +
                 (cur ? '<span class="sm-colors">' + PALETTE.map(c => '<button type="button" class="sm-color' + (c === cur ? ' is-on' : '') + (opened(c) ? '' : ' is-locked') + '" data-c="' + c + '" style="background:' + c + '" aria-label="' + c + (opened(c) ? '' : T(' (잠김)', ' (locked)')) + '"></button>').join('') +
                     (canPick ? '<label class="sm-color sm-color-any" title="' + T('다른 색', 'Any colour') + '"><input type="color" value="' + cur + '" aria-label="' + T('다른 색', 'Any colour') + '"></label>' : '') + '</span>' : '') + '</div>' +
-                '<p class="sm-visit-note">' + (cur ? (canPick ? T('다시 누르면 지웁니다. 고른 색은 다녀온 곳 모두에 씁니다.', 'Tap again to remove. The colour applies to all your places.')
-                    : T('다시 누르면 지웁니다. 고른 색은 다녀온 곳 모두에 씁니다. 🔒 색은 하나에 ' + COLOR_COST + '포인트로 열거나 <a href="statistics.html">이용권</a>으로 모두 엽니다.', 'Tap again to remove. Unlock a 🔒 colour for ' + COLOR_COST + ' points, or all of them with a <a href="statistics.html">pass</a>.'))
-                    : gpsCfg() ? T('판매점 50m 안에서 누르면 위치로 확인하고 10포인트를 드립니다(하루 50포인트까지). 나만 보입니다.', 'Tap within 50 m of the retailer to verify by location and earn 10 points (up to 50 a day). Only you can see it.') : T('나만 보입니다.', 'Only you can see it.')) + '</p>' +
+                // 안내는 짧게(2026-11-11 사장님 — 카드 위로 옮기며 "안내문자 간략하게")
+                '<p class="sm-visit-note">' + (cur ? (canPick ? T('다시 누르면 지움 · 색은 모든 곳에 적용', 'Tap again to remove · colour applies to all')
+                    : T('다시 누르면 지움 · 🔒 색은 ' + COLOR_COST + 'P 또는 <a href="statistics.html">이용권</a>', 'Tap again to remove · 🔒 colours: ' + COLOR_COST + 'P or a <a href="statistics.html">pass</a>'))
+                    : gpsCfg() ? T('판매점 50m 안에서 누르면 +10P (하루 50P까지)', 'Within 50 m: +10P (up to 50P a day)') : T('나만 보입니다', 'Only you can see it')) + '</p>' +
                 (cur && inTerr ? '<p class="sm-visit-again-p">' + (today ? '<span class="sm-visit-today">✓ ' + T('오늘 다녀옴', 'Visited today') + '</span>'
                     : '<button type="button" class="sm-visit-again">↻ ' + T('오늘 또 다녀왔어요', 'Visited again today') + '</button>') + '</p>' : '') +
                 '';   // LottoHex 안내 문구는 뺐다(2026-11-08 사장님 — 말이 많다)
