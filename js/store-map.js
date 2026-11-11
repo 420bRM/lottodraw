@@ -3059,6 +3059,12 @@
         placeNearBtn();
         window.addEventListener('resize', placeNearBtn);
         root.querySelectorAll('.sm-mode').forEach(b => b.addEventListener('click', () => toggleMode(b)));
+        // 휴대폰 "시도별 · 안내" 단추(반자동 옆, 2026-11-11): 아래 펼침(#sm-info)을 열고 닫는다. 펼침의 맨 위 줄로도 닫힌다
+        const infoBox = document.getElementById('sm-info'), infoBtn = root.querySelector('.sm-info-btn');
+        if (infoBox && infoBtn) {
+            infoBtn.addEventListener('click', () => { infoBox.open = !infoBox.open; });
+            infoBox.addEventListener('toggle', () => infoBtn.setAttribute('aria-expanded', String(infoBox.open)));
+        }
         const fade = document.getElementById('sm-fade');
         fade.addEventListener('input', () => setFade(Number(fade.value)));
         // 시도별 표의 지역 이름 → 그 지역의 판매점이 다 보이게

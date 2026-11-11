@@ -2905,10 +2905,10 @@ function storeMapPage(md, variant) {
             </div>
             <span class="sm-chips-h" data-i18n-en="On the map">지도에 보기</span>
             <button type="button" class="sm-chip sm-chip-top" data-layer="top" aria-pressed="false" title="TOP 50 판매점만 별로 보기" data-i18n-attr="title:sm.topTitle"><span class="sm-star-ico" aria-hidden="true">✦</span>TOP 50</button>
-            <button type="button" class="sm-chip" data-layer="w1" aria-pressed="true"><span class="sm-dot sm-dot-1"></span><span data-i18n-en="1st prize">1등 나온 곳</span></button>
-            <button type="button" class="sm-chip" data-layer="w2" aria-pressed="true"><span class="sm-dot sm-dot-2"></span><span data-i18n-en="2nd only">2등만 나온 곳</span></button>
+            <button type="button" class="sm-chip" data-layer="w1" aria-pressed="true"><span class="sm-dot sm-dot-1"></span><span data-i18n-en="1st prize">1등 판매점</span></button>
+            <button type="button" class="sm-chip" data-layer="w2" aria-pressed="true"><span class="sm-dot sm-dot-2"></span><span data-i18n-en="2nd prize">2등 판매점</span></button>
             ${md.all ? `<button type="button" class="sm-chip" data-layer="all" aria-pressed="false"><span class="sm-dot sm-dot-a"></span><span data-i18n-en="All others">일반 판매점</span></button>` : ''}
-            <button type="button" class="sm-chip" data-layer="closed" aria-pressed="false"><span class="sm-dot sm-dot-c"></span><span data-i18n-en="Closed">폐점 포함</span></button>
+            <button type="button" class="sm-chip" data-layer="closed" aria-pressed="false"><span class="sm-dot sm-dot-c"></span><span data-i18n-en="Closed">폐점</span></button>
             ${md.fun && md.fun.length ? `<button type="button" class="sm-chip sm-chip-fun sm-fun-toggle" aria-pressed="false" aria-controls="sm-fun"><span aria-hidden="true">🏆</span><span data-i18n-en="Unusual">이색 판매점</span></button>` : ''}
             <button type="button" class="sm-chip sm-chip-mine" id="sm-mine-chip" aria-pressed="false" hidden title="내가 다녀온 곳 · 내 댓글 (로그인 회원)" data-i18n-attr="title:sm.mineTitle">📍 <span data-i18n-en="My places">내 기록</span><small class="sm-mine-sub" data-i18n-en="places I've been · my comments">다녀온 곳 · 내 댓글</small></button>
         </div>
@@ -2949,6 +2949,8 @@ function storeMapPage(md, variant) {
                 <button type="button" class="sm-chip sm-mode" data-mode="A" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Auto">자동</span></button>
                 <button type="button" class="sm-chip sm-mode" data-mode="M" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Manual">수동</span></button>
                 <button type="button" class="sm-chip sm-mode" data-mode="S" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Semi">반자동</span></button>
+                <!-- 휴대폰: "시도별 · 안내"를 반자동 오른쪽에(2026-11-11 사장님). 누르면 아래 #sm-info 를 연다. PC 는 탭 "시도별"이라 감춘다 -->
+                <button type="button" class="sm-chip sm-info-btn" aria-controls="sm-info" aria-expanded="false" data-i18n-en="By province · about">시도별 · 안내</button>
         </div>
         <label class="sm-fade"><span data-i18n-en="Fade low counts">적게 나온 곳 흐리게</span>
             <input type="range" id="sm-fade" min="0" max="100" value="0" aria-describedby="sm-fade-v">
