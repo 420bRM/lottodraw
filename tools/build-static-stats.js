@@ -2410,7 +2410,11 @@ const SIDO_STATS = (() => {
         const recent = [];
         for (let i = S.rounds.length - 1; i >= 0 && recent.length < 15; i--) {
             const r = S.rounds[i];
-            S.d.rounds[r].w1.forEach(([id, how]) => { if (recent.length < 15 && S.shop(id)[1] === ko) recent.push({ r, id, how }); });
+            S.d.rounds[r].w1.forEach(([id, how]) => {
+                if (S.shop(id)[1] !== ko) return;
+                const same = recent.find(o => o.r === r && o.id === id && o.how === how);
+                if (same) same.n++; else if (recent.length < 15) recent.push({ r, id, how, n: 1 });
+            });
         }
         const top1 = shops.filter(x => x.n1).sort((a, b) => (b.n1 - a.n1) || (b.n2 - a.n2) || (a.id < b.id ? -1 : 1));
         const top2 = shops.filter(x => x.n2).sort((a, b) => (b.n2 - a.n2) || (b.n1 - a.n1) || (a.id < b.id ? -1 : 1));
@@ -2428,13 +2432,22 @@ function sidoStoresPage(x, st) {
         const name = esc(sh.name) + (sh.closed ? ` <span class="muted" data-i18n-en="(closed)">(폐점)</span>` : '');
         return onMap(sh) ? `<a href="../${STORE_MAP_FILE}?shop=${sh.id}">${name}</a>` : name;
     };
-    const guName = g => g ? esc(g) : en('시군구 표시 없음', 'not given');
-    const areaLink = g => g && mapReady ? ` <a class="muted" href="../${STORE_MAP_FILE}?area=${encodeURIComponent(ko + ' ' + g).replace(/%20/g, '+')}" data-i18n-en="map">지도</a>` : '';
+    // 시군구가 빈 판매점: 세종은 시군구가 없는 시라 '세종', 다른 시도는 '표시 없음'
+    const guName = g => g ? esc(g) : ko === '세종' ? esc(ko) : en('시군구 표시 없음', 'not given');
+    // 지도의 openArea 는 문을 연 · 좌표 있는 판매점으로 범위를 잡는다 — 그런 곳이 없는 (옛) 시군구엔 링크를 달지 않는다
+    const areaOk = g => mapReady && st.shops.some(sh => (sh.gu || '') === g && !sh.closed && typeof S.shop(sh.id)[4] === 'number');
+    const areaLink = g => areaOk(g) ? ` <a class="muted" href="../${STORE_MAP_FILE}?area=${encodeURIComponent(g ? ko + ' ' + g : ko).replace(/%20/g, '+')}" data-i18n-en="map">지도</a>` : '';
     const how = h => h === 'A' ? en('자동', 'Auto') : h === 'M' ? en('수동', 'Manual') : h === 'S' ? en('반자동', 'Semi-auto') : '—';
-    const natRank = new Map(S.top.map((sh, i) => [sh.id, i + 1]));   // 전국 1등 순위(1등 판매점 통계와 같은 규칙)
+    // 순위: 1등 · 2등 횟수가 모두 같으면 같은 순위(1 · 2 · 2 · 4). 표의 줄 순서는 1등 → 2등 → 번호
+    const compRank = (list, key) => { const m = new Map(); list.forEach((sh, i) => m.set(sh.id, i && key(list[i - 1]) === key(sh) ? m.get(list[i - 1].id) : i + 1)); return m; };
+    const natRank = compRank(S.top, sh => sh.n1 + '/' + sh.n2);   // 전국(1등 판매점 통계의 줄 순서와 같다)
+    const rank1 = compRank(st.top1, sh => sh.n1 + '/' + sh.n2), rank2 = compRank(st.top2, sh => sh.n2 + '/' + sh.n1);
     const byId = new Map(st.shops.map(sh => [sh.id, sh]));
     const TOP1 = 20, TOP2 = 10;
     const best = st.top1[0];
+    const bests = best ? st.top1.filter(sh => sh.n1 === best.n1) : [];   // 1등 횟수가 같은 곳이 여럿일 수 있다
+    const bestKo = bests.length === 1 ? `${best.name}${best.gu ? ' · ' + best.gu : ''} ${best.n1}회`
+        : `${bests.slice(0, 3).map(sh => sh.name).join(' · ')}${bests.length > 3 ? ` 외 ${bests.length - 3}곳` : ''}(각 ${best && best.n1}회)`;
     const share1 = pct(st.v.w1, S.g1), share2 = pct(st.v.w2, S.g2);
     const glance = [
         h2En('한눈에 보기', 'At a glance'),
@@ -2444,20 +2457,21 @@ function sidoStoresPage(x, st) {
             [en(`${ko} 2등 게임`, `2nd-prize games in ${x.en}`), en(`${fmt(st.v.w2)}게임 (전국의 ${share2})`, `${fmt(st.v.w2)} (${share2} of the country)`)],
             [en('1등이 나온 판매점', 'Retailers with a 1st prize'), en(`${fmt(st.with1)}곳`, fmt(st.with1))],
             [en('1등 · 2등이 나온 판매점', 'Retailers with a 1st or 2nd prize'), en(`${fmt(st.shops.length)}곳`, fmt(st.shops.length))],
-        ].concat(best ? [[en('1등이 가장 많이 나온 곳', 'Most 1st prizes'), `${shopName(best)} · ${en(`${best.n1}회`, `${best.n1}`)}`]] : []), 'tier-stat'),
+        ].concat(best ? [[en('1등이 가장 많이 나온 곳', 'Most 1st prizes'), bests.length === 1 ? `${shopName(best)} · ${en(`${best.n1}회`, `${best.n1}`)}`
+            : bests.slice(0, 3).map(shopName).join(' · ') + (bests.length > 3 ? en(` 외 ${bests.length - 3}곳`, ` and ${bests.length - 3} more`) : '') + ` · ${en(`각 ${best.n1}회`, `${best.n1} each`)}`]] : []), 'tier-stat'),
     ];
     const t1 = st.top1.length ? [
         h2En(`${ko} 1등 많이 나온 판매점${st.top1.length > TOP1 ? ` ${TOP1}곳` : ''}`, `${x.en}: retailers with the most 1st prizes`),
         table([['순위', 'Rank'], ['판매점', 'Retailer'], ['시군구', 'City / district'], ['1등', '1st'], ['2등', '2nd'], ['전국 순위', 'National rank']],
-            st.top1.slice(0, TOP1).map((sh, i) => [rank(i + 1), shopName(sh), guName(sh.gu), `<strong>${sh.n1}</strong>`, fmt(sh.n2),
+            st.top1.slice(0, TOP1).map(sh => [rank(rank1.get(sh.id)), shopName(sh), guName(sh.gu), `<strong>${sh.n1}</strong>`, fmt(sh.n2),
                 en(`${fmt(natRank.get(sh.id))}위`, `#${fmt(natRank.get(sh.id))}`)]), 'tier-stat store-top'),
-        pEn(`1등 횟수가 같으면 2등이 많은 곳을 위에 두었습니다. 전국 순위는 <a href="../${STORES_FILE}">1등 판매점 통계</a>와 같은 규칙입니다. 판매점 이름을 누르면 판매점 지도에서 그 판매점의 1 · 2등 회차를 볼 수 있습니다.`,
-            `Ties are broken by 2nd prizes. The national rank uses the same rule as <a href="../${STORES_FILE}">1st-prize retailer statistics</a>. Click a retailer to see its 1st- and 2nd-prize draws on the retailer map.`, 'note'),
+        pEn(`1등 횟수가 같으면 2등이 많은 곳을 위에 두었고, 1 · 2등이 모두 같으면 같은 순위입니다. 전국 순위는 <a href="../${STORES_FILE}">1등 판매점 통계</a>와 같은 규칙입니다. 판매점 이름을 누르면 판매점 지도에서 그 판매점의 1 · 2등 회차를 볼 수 있습니다.`,
+            `Ties are broken by 2nd prizes; retailers level on both share a rank. The national rank uses the same rule as <a href="../${STORES_FILE}">1st-prize retailer statistics</a>. Click a retailer to see its 1st- and 2nd-prize draws on the retailer map.`, 'note'),
     ] : [];
     const t2 = st.top2.length ? [
         h2En(`${ko} 2등 많이 나온 판매점${st.top2.length > TOP2 ? ` ${TOP2}곳` : ''}`, `${x.en}: retailers with the most 2nd prizes`),
         table([['순위', 'Rank'], ['판매점', 'Retailer'], ['시군구', 'City / district'], ['2등', '2nd'], ['1등', '1st']],
-            st.top2.slice(0, TOP2).map((sh, i) => [rank(i + 1), shopName(sh), guName(sh.gu), `<strong>${fmt(sh.n2)}</strong>`, fmt(sh.n1)]), 'tier-stat store-top'),
+            st.top2.slice(0, TOP2).map(sh => [rank(rank2.get(sh.id)), shopName(sh), guName(sh.gu), `<strong>${fmt(sh.n2)}</strong>`, fmt(sh.n1)]), 'tier-stat store-top'),
         pEn(`2등(5개 + 보너스)은 1등보다 6배쯤 자주 나와, 판매점마다 쌓인 수가 더 많습니다.`,
             `2nd prize (five numbers plus the bonus) comes about six times as often as 1st, so counts per retailer run higher.`, 'note'),
     ] : [];
@@ -2471,7 +2485,7 @@ function sidoStoresPage(x, st) {
     const rec = st.recent.length ? [
         h2En(`${ko} 최근 1등 판매점`, `Latest 1st-prize retailers in ${x.en}`),
         table([['회차', 'Draw'], ['판매점', 'Retailer'], ['시군구', 'City / district'], ['방식', 'Method']],
-            st.recent.map(o => { const sh = byId.get(o.id); return [`<a href="../round/${o.r}.html" data-i18n-en="Draw ${o.r}">${o.r}회</a> <span class="muted">${(byRound[o.r] || {}).date || ''}</span>`, shopName(sh), guName(sh.gu), how(o.how)]; }), 'tier-stat'),
+            st.recent.map(o => { const sh = byId.get(o.id); return [`<a href="../round/${o.r}.html" data-i18n-en="Draw ${o.r}">${o.r}회</a> <span class="muted">${(byRound[o.r] || {}).date || ''}</span>`, shopName(sh) + (o.n > 1 ? ` ${en(`${o.n}게임`, `${o.n} games`)}` : ''), guName(sh.gu), how(o.how)]; }), 'tier-stat'),
     ] : [];
     const others = SIDO.filter(o => o.ko !== ko && SIDO_STATS(o.ko));
     const nav = [
@@ -2482,7 +2496,7 @@ function sidoStoresPage(x, st) {
     ];
     const title = `${ko} 로또 1등 판매점 · 1등 많이 나온 곳 순위 (${first}~${last}회)`;
     const desc = `${x.full} 로또 1등 판매점 ${first}~${last}회 기록. 1등 ${fmt(st.v.w1)}게임 · 2등 ${fmt(st.v.w2)}게임, 1등이 나온 판매점 ${fmt(st.with1)}곳.`
-        + (best ? ` 가장 많이 나온 곳은 ${best.name}(${best.gu}) ${best.n1}회.` : '') + ` 시군구별 기록과 최근 1등 판매점.`;
+        + (best ? ` 가장 많이 나온 곳은 ${bestKo}.` : '') + ` 시군구별 기록과 최근 1등 판매점.`;
     return shell({
         file: sidoFile(ko),
         base: '../',
