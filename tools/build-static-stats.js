@@ -3605,6 +3605,48 @@ ${items.map(i => `    <item>
 </rss>
 `;
 }
+// AI 검색이 사이트를 읽는 안내 파일(llmstxt.org 형식). 블로그 글과 최신 회차가 바뀌면 매주 같이 바뀐다(2026-11-11)
+function llmsTxt(posts) {
+    const line = (path, name, note) => `- [${name}](${SITE}${path}): ${note}`;
+    return [
+        '# lottodraw.kr (로또드로우)',
+        '',
+        `> 로또 6/45 전 회차(${RANGE}, ${UPDATED} 추첨까지) 당첨번호와 통계, 번호 생성기, 1등 · 2등 판매점 지도를 한곳에 모은 ${SITE_KIND}입니다. 동행복권 공개 자료로 매주 토요일 추첨 뒤 갱신합니다.`,
+        '',
+        '- 동행복권과 제휴 관계가 없고, 복권 판매점으로 연결되는 링크도 두지 않습니다.',
+        '- 통계는 지난 추첨의 기록이며 당첨 확률을 높여 주지 않습니다. 어떤 조합이든, 어디서 사든 1등 확률은 1/8,145,060으로 같습니다.',
+        '- 한국어가 기본이고, 주소 뒤에 ?lang=en 을 붙이면 같은 페이지의 영어 화면이 열립니다.',
+        '',
+        '## 주요 페이지',
+        '',
+        line('/', '번호 생성기 · 전체 통계', '조건을 골라 번호를 만들고, 전 회차 통계 12종(많이 나온 번호 · 미출수 · 궁합수 등)을 봅니다.'),
+        line('/draws.html', '회차별 당첨번호', '1회부터 최신 회차까지 당첨번호 · 보너스 · 등수별 당첨금. 회차마다 /round/회차.html 페이지가 있습니다.'),
+        line('/statistics-frequency.html', '많이 나온 번호 순위', '번호별 출현 횟수와 표준편차.'),
+        line('/statistics-gap.html', '미출수', '몇 회차째 안 나왔는지 순위.'),
+        line('/statistics-pair.html', '궁합수', '함께 나온 번호 쌍 순위.'),
+        line('/statistics-prize.html', '1등 당첨자 수 통계', '회차별 1등 당첨자 수와 1인당 당첨금 분포.'),
+        line('/statistics-prize-2-3.html', '2등 · 3등 당첨금 통계', '평균 · 최고 · 최저 기록과 연도별 평균.'),
+        line('/statistics-stores.html', '1등 판매점 통계', '판매점별 1등 · 2등 배출 기록.'),
+        line('/store-map.html', '로또 판매점 지도', '1등 · 2등이 나온 판매점을 전국 지도에서 봅니다.'),
+        line(`/${LOTTOHEX_FILE}`, 'LottoHex', '판매점에 다녀와 위치로 인증하고 육각 칸을 차지하는 무료 땅따먹기 게임.'),
+        line('/tax.html', '실수령액 계산기', '당첨금 세금(200만 원 이하 비과세, 3억 원까지 22%, 초과분 33%)과 실수령액.'),
+        line('/probability.html', '로또 확률', '1등부터 5등까지 등수별 확률과 계산 공식.'),
+        line('/top-prize.html', '역대 1등 당첨금 순위', '1인당 1등 당첨금 TOP 50과 2등 TOP 50.'),
+        '',
+        '## 블로그',
+        '',
+        ...posts.map(p => line(p.path, p.title, p.description)),
+        '',
+        '## Optional',
+        '',
+        line('/sitemap.xml', '사이트맵', '검색엔진용 전체 주소 목록.'),
+        line('/rss.xml', 'RSS', '새 회차 당첨번호와 블로그 새 글.'),
+        line('/about.html', '소개', '사이트가 하는 일과 데이터 출처.'),
+        line('/privacy.html', '개인정보 처리방침', '회원 · 위치 정보를 다루는 방법.'),
+        '',
+    ].join('\n');
+}
+
 
 function updateSitemap(blog) {
     const old = read('sitemap.xml');
@@ -3701,6 +3743,7 @@ updateTaxAndTop();
 if (updateAbout()) changed++;
 const urls = updateSitemap(blog.sitemap);
 if (write('rss.xml', rssFeed(blog.feed || []))) changed++;
+if (write('llms.txt', llmsTxt(blog.feed || []))) changed++;
 console.log(`통계 ${STATS.length}쪽${TIER ? ' · 2·3등' : ''}${STORES ? ' · 1등 판매점' : ''} · 중복 · 회차 ${draws.length}쪽 · 전체 조회 · 확률 · 블로그 ${blog.posts}편 · 사이트맵 ${urls}개 (${RANGE}, 갱신일 ${UPDATED})`);
 console.log(`바뀐 생성 페이지: ${changed}쪽`);
 // 손 관리 페이지의 css · js 주소에 내용 지문을 붙인다(배포 직후 옛 파일과 섞이지 않게) — 위에서 index · tax · top · about 을 고친 뒤에

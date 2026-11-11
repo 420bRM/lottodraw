@@ -55,3 +55,25 @@ There is no legal duty to report or announce a win. The operator does not reveal
 The process after a win is more routine than you might expect. There is no need to rush, but be sure to remember the one-year deadline.
 
 > Where and how prizes are paid can change with the operator's policy. Before you go, we recommend checking the Donghaeng Lottery notices and NongHyup Bank's guidance once more.
+
+## Frequently asked questions
+
+### Where do you claim a lotto 1st prize?
+
+In person at the NH NongHyup Bank head office in Jung-gu, Seoul. 2nd and 3rd prizes are paid at NH NongHyup Bank branches nationwide (some small sub-branches excluded), and 4th and 5th prizes at a lottery retailer or a NongHyup Bank branch. A 1st prize bought online is also claimed at the head office.
+
+### What should you bring to claim a 1st prize?
+
+Two things: the original winning ticket and a physical ID. The prize is transferred to a bank account, so also bring the details of an account in your own name. If the barcode and numbers are torn or wet and cannot be read, payment can be refused.
+
+### What is the deadline for claiming a prize?
+
+Within one year of the payment start date (the day after the draw). If the last day falls on a holiday, the deadline moves to the next business day. Prizes not claimed by the deadline go to the Lottery Fund, and prizes earn no interest.
+
+### How long does claiming at the head office take?
+
+If the paperwork is in order, usually an hour or two. In a private room the bank checks that the ticket is genuine and that it is you, and after you fill in the claim form the amount after withholding tax is transferred to your account.
+
+### Do you have to report or announce a 1st-prize win?
+
+There is no legal duty to report or announce it, and the operator does not disclose winners' identities. Who you tell is up to you.

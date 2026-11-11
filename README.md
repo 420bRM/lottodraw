@@ -102,6 +102,7 @@
 - `naver….html`: 네이버 서치어드바이저 소유 확인 파일. **지우면 안 된다**
 - `df151d56acb974ec33c521ed980fa1f2.txt`: IndexNow 열쇠 파일(내용도 같은 값). 네이버·Bing 이 색인 요청이 우리 사이트에서 온 것인지 이 파일로 확인한다. 공개돼도 되는 값이다. **지우거나 바꾸면 색인 요청이 거절된다** (바꾸려면 `tools/indexnow.js` 의 `KEY` 도 같이)
 - `robots.txt` `sitemap.xml`: 검색엔진용 안내 파일
+- `llms.txt`: AI 검색(ChatGPT · Perplexity · Claude 등)이 읽는 사이트 안내(llmstxt.org 형식). `build-static-stats.js` 의 `llmsTxt()` 가 매주 블로그 글 목록과 최신 회차를 넣어 다시 만든다 — 직접 고치지 않는다(2026-11-11)
 - `_config.yml`: GitHub Pages(Jekyll) 설정. 블로그 원고(`content/`)가 `/content/blog/…html` 이라는 중복 페이지로 올라가지 않게 뺀다
 - **방문자 통계(Cloudflare Web Analytics)**: 모든 페이지 `</head>` 바로 앞에 비콘 스크립트 한 줄이 있다. DNS가 "DNS only"(프록시 꺼짐)라 클라우드플레어가 자동으로 넣어주지 않으므로 직접 심은 것이다. 생성 페이지는 `tools/build-static-stats.js`의 `CF_BEACON`에서, 손으로 관리하는 페이지(`index` `about` `contact` `privacy` `terms` `statistics` `tax` `top-prize` `report`)는 각 파일에 직접 들어 있다. **새 페이지를 손으로 만들면 이 줄도 복사해 넣을 것**
 - **css · js 지문(`?v=`)**: 손 관리 페이지(`tools/asset-version.js` 의 `PAGES`)의 `css/…` · `js/…` 주소 끝 `?v=` 는 그 파일 내용의 sha1 앞 8자리다. `js/i18n.js` 가 불러오는 `account.js` · `theme.js` 의 지문은 i18n.js 안 `LOAD_V` 줄에 같은 도구가 적는다(2026-10-27 — 배포 직후 옛 theme.js 가 쥐어져 홈 메뉴 "판매점 지도"가 안 보였다). `node tools/build-static-stats.js` 가 끝에 맞춘다 — **css · js 를 고쳤으면 빌드를 돌려 커밋할 것**(안 돌리면 배포 직후 10분 동안 옛 파일과 섞일 수 있다). 두 작업이 같은 파일을 고쳐 `?v=` 줄이 부딪히면 빌드를 다시 돌리면 된다. 새 손 관리 페이지는 `PAGES` 에 넣는다
@@ -513,6 +514,12 @@ updated: 2026-11-01              ← (선택) 크게 고친 날. 사이트맵·�
   쓰면 생성기가 알맞게 고쳐 단다.
 - **그림** (2026-10-30): 한 줄에 `{{figure 이름}}` — 생성기(`build-static-stats.js` 의 `blogFigures()`)가 넘겨준 그림 HTML 이 그 자리에 들어간다(영문은 그림 안에 있다). 영어 원고에도 같은 자리에 같은 줄. 지금 있는 그림: `store-sales-flow` · `store-sales-range` · `store-sales-check`(글 18). 없는 이름이면 경고하고 비운다. 목록 미리보기에서는 표처럼 뺀다
 - **화면 캡처 그림** (2026-11-09): `img/blog/<파일>.jpg` 를 `build-static-stats.js` 의 `BLOG_SHOTS` 에 이름 · 대체 글 · 설명(한 · 영) · 모양(`is-phone` 휴대폰 화면 전체 / `is-crop` 잘라낸 부분)으로 적으면 같은 `{{figure 이름}}` 로 쓴다. 가로 · 세로는 JPEG 에서 읽고, 영어 대체 글은 `js/i18n-dict.js` 의 `blog.shot.<이름>`. 지금: `lottohex-map` · `lottohex-card` · `lottohex-rank`(글 19, 별명 · 칸은 예시라고 설명에 적음). 다시 찍기: `tools/oneoff/shot-lottohex.mjs`(지도 바탕은 이 환경에서 못 받아 GitHub 워크플로에서 찍었다)
+- **자주 묻는 질문** (2026-11-11): 글 끝에 `## 자주 묻는 질문`(또는 `## 자주 묻는 것`)을 두고, 그 아래 `### 질문?` 과 답 문단을 쓴다.
+  화면에는 작은 제목과 문단으로 그대로 나오고, 생성기가 같은 문장으로 `FAQPage` 구조화 데이터를 단다(물음표로 끝나는 `###` 만, 두 개 이상일 때).
+  답은 그 `###` 아래 문단 · 목록이다. 칸 뒤에 맺음말을 두려면 인용(`>`)으로 쓴다 — 문단으로 쓰면 마지막 답에 붙는다.
+  문답은 그 글에 이미 있는 사실로만 쓰고, 본문 숫자를 고치면 문답도 같이 고친다. 영어 원고에도 같은 자리에 같은 수의 `###` 와 문단을 둔다.
+  지금 넣은 글: 세금 · 1등 수령 · 당첨금 나눔 · 명당 · 확률 · 2등·3등 · LottoHex 7편. 회차 페이지(1,200여 쪽)에는 넣지 않는다 — 같은 문답이 되풀이되면 얇은 중복 페이지로 보일 수 있다.
+  구글은 2023-08 부터 FAQ 리치 결과를 정부 · 보건 사이트에만 보여 주므로 구글 화면은 달라지지 않는다. 효과는 Bing · AI 답변(ChatGPT · Perplexity · Copilot)이 문답을 뽑아 가는 쪽이다.
 - 문구 규칙은 통계 페이지와 같다 — 예측·적중률·추천 번호는 쓰지 않는다([문구 규칙](#문구-규칙)).
 
 ### 영어 원고는 한국어와 블록 수가 같아야 한다

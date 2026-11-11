@@ -62,3 +62,21 @@ Even in draws where a rollover makes the 1st prize larger, this structure barely
 On expected value alone, the lotto is a game where the loss is certain. Many people still buy, probably because 1,000 KRW lets them imagine "what if" for a whole week. The healthiest approach is to treat it as the cost of that daydream and enjoy it within money you can spare. The step-by-step odds for each prize rank are set out in a table on the [lotto odds](/probability.html) page.
 
 > Lotto purchases are limited to 100,000 KRW per draw. If you find it hard to control your buying, you can get free counseling from the Korea Center on Gambling Problems (call 1336 in Korea).
+
+## Frequently asked questions
+
+### What exactly are the odds of winning lotto 1st prize?
+
+1 in 8,145,060. The number of ways to choose 6 of 45 numbers in any order (₄₅C₆) is 8,145,060, and one game is one of them.
+
+### What are the odds of winning anything at all?
+
+About 2.4%, or about once in 42 games. Most of those wins are the 5,000 KRW 5th prize, which comes up about once in 45 games.
+
+### If you buy one game a week, how long until 1st prize?
+
+About 156,000 years on average. Even buying one game a week for 60 adult years (about 3,100 weeks), your chance of ever seeing 1st prize is about 0.04%, or one person in 2,600.
+
+### What is the expected value of a 1,000 KRW game?
+
+About 500 KRW before tax, because the share of sales paid back as prizes is fixed at 50%. Once you add the tax on large prizes, the real expected value is even lower.

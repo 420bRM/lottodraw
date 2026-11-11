@@ -44,3 +44,21 @@ A lucky store does not change the odds, but a reputation as a lucky store does c
 Records of 1st and 2nd prizes by retailer are in [1st-prize retailer statistics](/statistics-stores.html). Comparing each retailer's 2nd-prize count, in place of its unpublished sales, shows that places with more 1st prizes also have more 2nd prizes. You can see how the number of 1st-prize winners is spread across draws in [1st-prize winner statistics](/statistics-prize.html). The time and travel cost of going to a lucky store do not change the odds of winning. Still, if you enjoy the trip, that can be reason enough in itself. It is just better not to mix up the value of that enjoyment with the odds.
 
 > The number of stores is about 8,000, based on 2026 reports. The sales-per-1st-prize comparison uses figures reported by Seoul Shinmun (31 July 2015). Before 2004 one game cost 2,000 KRW, so sales-based figures for older stores cannot be compared directly.
+
+## Frequently asked questions
+
+### Does buying at a lucky store raise your chance of winning?
+
+No. The chance that one game wins 1st prize is 1 in 8,145,060 whichever store you buy from. A store's terminal only records the numbers and has no effect on the draw.
+
+### Why do lucky stores produce so many 1st prizes?
+
+Because they sell a lot. On average one 1st prize comes up for about every 8.1 bn KRW of sales, so a store that sells tens of thousands of games a week and stays open for years is expected to sell several 1st prizes.
+
+### Is a small store with many 1st prizes for its sales a real lucky store?
+
+Most likely it is the luck of a small sample. Even if all of the roughly 8,000 stores sold with the same odds, chance alone would give a few of them several 1st prizes. Remembering only those few and forgetting the thousands that never had one is survivorship bias.
+
+### Where can you see 1st-prize records by retailer?
+
+Records of 1st and 2nd prizes by retailer are in [1st-prize retailer statistics](/statistics-stores.html). Comparing each retailer's 2nd-prize count shows that places with more 1st prizes also have more 2nd prizes.

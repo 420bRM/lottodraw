@@ -65,6 +65,28 @@ The Pension Lottery 720+ 1st prize is paid as 7m KRW a month for 20 years. Tax i
 
 When a ticket bought with pooled money wins, tax is withheld at source **on the basis of the whole prize**, not each person's share. So that each person's share is not mistaken for a gift when you split the money later, it is a good idea to keep proof of the group purchase from before you buy. If one representative receives the full amount and then sends money to the others, gift tax problems can arise, so it is safer to tell the bank it is a joint win when you claim and ask for advice.
 
+## Frequently asked questions
+
+### From what amount is a lotto prize taxed?
+
+Above 2m KRW. Prizes of 2m KRW or less are tax-free, so 4th and 5th prizes, and any 3rd prize of 2m KRW or less, are paid with no tax. The tax-free threshold used to be 50,000 KRW and rose to 2m KRW in 2023.
+
+### If a prize is just over 2m KRW, is only the part above it taxed?
+
+No. The 2m KRW is not a deduction but the threshold that decides whether tax applies at all, so if a prize is even 1 KRW over it, 22% applies to the full amount. A 2.1m KRW 3rd prize loses 462,000 KRW in tax and pays 1,638,000 KRW.
+
+### How much do you take home from a 2.0 bn KRW 1st prize?
+
+About 1.373 bn KRW. The first 300m KRW is taxed at 22% (66m KRW) and the 1.7 bn KRW above it at 33% (561m KRW), so the tax is 627m KRW. For a 1st prize over 300m KRW you can also work it out in one step as 'prize × 33% − 33m KRW'.
+
+### Do you have to file tax separately after claiming?
+
+No. Under tax law, lottery winnings count as "other income" and fall under separate taxation: the tax withheld when the prize is paid settles it. Winnings are not added to your other income, so the tax is the same whether your salary is high or low.
+
+### How is a prize taxed if several people bought the ticket together?
+
+Tax is withheld on the whole prize, not on each person's share. If one representative receives the full amount and then sends money to the others, gift tax problems can arise, so it is safer to keep proof of the group purchase from before you buy and to tell the bank it is a joint win when you claim.
+
 ## Work it out yourself
 
 Use the [after-tax calculator](/tax.html), which shows the tax and take-home amount under the rules above as soon as you enter a prize. It also reflects the threshold where the full amount is taxed once a prize goes even 1 KRW over 2m KRW, and the subtraction of the 1,000 KRW ticket price. What 2nd and 3rd prizes have actually paid, with averages, records and year-by-year averages, is in [2nd and 3rd prize statistics](/statistics-prize-2-3.html).

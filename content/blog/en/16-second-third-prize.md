@@ -75,3 +75,25 @@ Since draw 88 not even the largest 3rd prize has gone over 2m KRW, so under toda
 Averages, records and the year-by-year picture are in [2nd and 3rd prize statistics](/statistics-prize-2-3.html), and the 2nd-prize ranking is in [the Top 50 2nd prizes](/top-prize.html#top50-second).
 
 > Figures come from Donghaeng Lottery's public results for draw 88, when a game started costing 1,000 KRW, through draw 1245 (10 October 2026). Draws 1–87 cost 2,000 KRW a game, so their amounts are on a different footing and are left out of the averages. The shop case in draw 1057 is quoted from press reports at the time.
+
+## Frequently asked questions
+
+### How much is a lotto 2nd prize on average?
+
+From draw 88, when a game started costing 1,000 KRW, through draw 1245, the average 2nd prize per game was 56.95m KRW, or about 44.42m KRW after tax. Nine times out of ten it was between 38m and 79m KRW.
+
+### Is 3rd prize taxed?
+
+Not under today's rules. Prizes of 2m KRW or less are tax-free; 3rd prize averages 1.45m KRW, and even the largest since draw 88, draw 91, was 1,982,242 KRW. Until 2022 anything over 50,000 KRW was taxed at 22% on the whole amount.
+
+### How are 2nd and 3rd prizes set?
+
+Half of ticket sales go into prizes. The fixed 4th and 5th prizes are paid first, and what is left is split 75% to 1st, 12.5% to 2nd and 12.5% to 3rd. Each prize's share divided by its number of winning games gives the prize per game.
+
+### Does a bigger sales total mean a bigger 2nd prize?
+
+Hardly. Bigger sales mean a bigger 2nd-prize pot, but also proportionally more 2nd-prize wins. While sales per draw grew 2.3 times, from 51.9 bn KRW in 2005 to 119.2 bn KRW in 2025, the average 2nd prize per game went from 56.26m to 53.76m KRW.
+
+### Where do you claim 2nd and 3rd prizes?
+
+At any NH NongHyup Bank branch (except some small outlets); bring the winning ticket and your ID. Tax is withheld when you are paid, and one year after the payout start date unclaimed money goes to the Lottery Fund.
