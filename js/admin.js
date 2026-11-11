@@ -118,6 +118,7 @@
             await loadOrders();
             loadMembers();
             loadTaps();
+            loadInflow();
             loadChat();
             loadComments();
             loadHexNotice();
@@ -437,6 +438,61 @@
         ]);
         fill('pay-days', recent.map(d => rowOf(d, byDay.get(d) || {})));
         $('pay-sum').textContent = `최근 7일 결제 페이지 ${(week['pay-view'] || 0).toLocaleString('ko-KR')} · 주문 ${(week['pay-order'] || 0).toLocaleString('ko-KR')} · 입금 ${(week['pay-paid'] || 0).toLocaleString('ko-KR')}`;
+    }
+
+    /* ───── 광고 유입(utm) — 2026-11-11 ───── */
+    // 서버: ad:<한국 날짜> { '매체|종류|캠페인': { l 들어옴, g 가입, h LottoHex 참여, v 첫 위치 인증 } }
+    const INFLOW = [['l', '들어옴'], ['g', '가입'], ['h', 'LottoHex 참여'], ['v', '첫 위치 인증']];
+    let inflowDays = null;
+    async function loadInflow() {
+        try {
+            const r = await call('/inflow');
+            $('inflow-card').hidden = false;
+            inflowDays = r.days || [];
+            renderInflow(inflowDays);
+            say('inflow-status', `${when(Date.now())} 기준`);
+        } catch (err) {
+            $('inflow-card').hidden = err.status === 503;
+            if (err.status !== 503) say('inflow-status', '광고 유입을 불러오지 못했습니다: ' + err.message, true);
+        }
+    }
+    function renderInflow(days) {
+        const n = v => (v || 0).toLocaleString('ko-KR');
+        const pct = (a, b) => (b ? Math.round(a / b * 1000) / 10 + '%' : '—');
+        const label = key => key.split('|').join(' · ');
+        const now = Date.now();
+        const range = Number($('inflow-range').value) || 0;
+        const recent = new Set(Array.from({ length: range }, (_, i) => kstDay(now - i * 86400000)));
+        const pick = range ? days.filter(d => recent.has(d.day)) : days;
+        const add = (to, c) => { INFLOW.forEach(([k]) => { to[k] = (to[k] || 0) + ((c && c[k]) || 0); }); return to; };
+        const by = new Map();
+        pick.forEach(d => Object.keys(d.rows || {}).forEach(key => by.set(key, add(by.get(key) || {}, d.rows[key]))));
+        const total = add({}, null);
+        by.forEach(c => add(total, c));
+        const cells = c => INFLOW.map(([k]) => el('td', { text: n(c[k]) })).concat([el('td', { text: pct(c.g || 0, c.l || 0) })]);
+        const head = first => el('thead', {}, [el('tr', {}, first.concat(INFLOW.map(x => x[1]), ['가입률']).map(h => el('th', { text: h })))]);
+        const t = $('inflow-table');
+        t.textContent = '';
+        t.appendChild(head(['매체 · 종류 · 캠페인']));
+        const body = el('tbody');
+        const keys = [...by.keys()].sort((a, b) => (by.get(b).l || 0) - (by.get(a).l || 0) || (by.get(b).g || 0) - (by.get(a).g || 0) || a.localeCompare(b));
+        if (!keys.length) body.appendChild(el('tr', {}, [el('td', { colspan: String(INFLOW.length + 2), text: '이 기간에 광고 링크로 들어온 기록이 없습니다.' })]));
+        keys.forEach(key => body.appendChild(el('tr', {}, [el('td', { text: label(key) })].concat(cells(by.get(key))))));
+        if (keys.length > 1) body.appendChild(el('tr', {}, [el('th', { text: '합계' })].concat(cells(total))));
+        t.appendChild(body);
+        // 하루씩(최근 30일, 기록이 있는 날 · 캠페인만)
+        const last30 = new Set(Array.from({ length: 30 }, (_, i) => kstDay(now - i * 86400000)));
+        const dt = $('inflow-days');
+        dt.textContent = '';
+        dt.appendChild(head(['날짜', '매체 · 종류 · 캠페인']));
+        const db = el('tbody');
+        days.filter(d => last30.has(d.day)).forEach(d => Object.keys(d.rows || {}).sort().forEach(key =>
+            db.appendChild(el('tr', {}, [el('td', { text: d.day }), el('td', { text: label(key) })].concat(cells(d.rows[key]))))));
+        if (!db.children.length) db.appendChild(el('tr', {}, [el('td', { colspan: String(INFLOW.length + 3), text: '최근 30일 기록이 없습니다.' })]));
+        dt.appendChild(db);
+        const week = add({}, null);
+        days.filter(d => [...Array(7)].some((_, i) => d.day === kstDay(now - i * 86400000))).forEach(d => Object.values(d.rows || {}).forEach(c => add(week, c)));
+        $('inflow-sum').textContent = `최근 7일 들어옴 ${n(week.l)} · 가입 ${n(week.g)} · LottoHex ${n(week.h)}`;
     }
 
     /* ───── 실시간 채팅 관리 ───── */
@@ -783,7 +839,9 @@
             if (t) login(t);
         });
         $('admin-logout').addEventListener('click', logout);
-        $('admin-reload').addEventListener('click', () => { loadOrders(); loadMembers(); loadTaps(); });
+        $('admin-reload').addEventListener('click', () => { loadOrders(); loadMembers(); loadTaps(); loadInflow(); });
+        $('inflow-reload').addEventListener('click', loadInflow);
+        $('inflow-range').addEventListener('change', () => { if (inflowDays) renderInflow(inflowDays); });
         $('taps-reload').addEventListener('click', loadTaps);
         $('members-reload').addEventListener('click', loadMembers);
         $('chat-reload').addEventListener('click', loadChat);

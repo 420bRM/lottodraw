@@ -24,6 +24,8 @@
 //                        ttl:   { e: { 칭호 번호: 얻은 시각 }, sel: 단 칭호 } — 칭호(titles.js). 단 칭호는 별명 앞에 모두에게 보인다. 위치 동의를 철회하면 지운다
 //                        terr:  { at, v } — 영역(육각 칸) 참여 동의: 동의한 때와 동의 문구 판(territory.js TERR_CONSENT). 그만두면 지운다
 //                        tskin: '주색,보조색,무늬' — 내 영역 칸 모양(2026-11-07, territory.js SKIN_RE). 없으면 계정마다 무작위. 모두에게 보인다. 바꾸면 POINTS.terrSkin
+//                        ad:    { s, m, c, at, h, v } — 가입 경로(2026-11-11): utm 링크로 들어온 뒤 30일 안에 같은 브라우저에서 가입했을 때 그 매체 · 종류 · 캠페인 이름과 가입 시각.
+//                               h: LottoHex 에 처음 참여한 때, v: 위치로 처음 인증한 때(광고 집계에 한 번씩만 세려고). 탈퇴하면 계정과 함께 지운다
 //                        tbeam: { at, on } — 영역 빛 벽(2026-11-10 사장님 — 포인트로, 남에게도 보이게). 산 때 · 켜 둠. 사는 데 POINTS.terrBeam, 켜고 끄기는 무료
 //                        rx:    { 항목: 'h' | 'd' | 'hd' } — 내가 누른 좋아요
 //                        sess:  로그인 세션 해시 (최근 5개)
@@ -49,6 +51,8 @@
 //   mday                 { day, n } — 오늘(UTC 날짜, Resend 하루 한도 기준) 보낸 결과 메일 수
 //   mailkey              수신 거부 링크 서명용 비밀값(처음 쓸 때 만든다)
 //   e:<한국 날짜>        { gen-share, gen-print, post-share, post-sns } — 공유 · 출력 단추 하루 횟수(TAP_KINDS). 누가 눌렀는지는 없다
+//   ad:<한국 날짜>       { '매체|종류|캠페인': { l, g, h, v } } — 광고 유입 집계(2026-11-11, 관리자 페이지). l: utm 링크로 들어온 방문(같은 브라우저 · 캠페인은 하루 한 번),
+//                        g: 그 캠페인으로 가입, h: 그 가입자가 LottoHex 참여, v: 그 가입자가 위치로 첫 인증 — 그 일이 일어난 날에 센다. 누가 했는지는 없다. 하루 AD_KEYS_MAX 캠페인까지
 //   v:<글>               조회수(숫자) — 블로그 글마다 한 줄(누구나 본다). 같은 브라우저의 같은 글은 하루 한 번만 온다(js/views.js). 누가 읽었는지는 없다
 //   vbase                { n: { 글: 수 }, until, at } — 조회수 시작값: 직접 세기 전(until 까지)의 Cloudflare Web Analytics 페이지뷰(tools/seed-views.js).
 //                        보이는 조회수 = v:<글> + 이 값. 관리자가 통째로 갈아 끼운다
@@ -148,6 +152,11 @@ export const ITEM_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
 //   shop-share: 판매점 카드 "해당 판매점 공유하기"로 보낼 곳을 고르거나 주소 · 그림을 복사한 것(2026-10-28)
 //   — 공유 주소(/s/번호)를 사람이 열어 지도로 넘어간 것(shop-open)은 서버가 직접 센다(index.js shopShare)
 export const TAP_KINDS = ['gen-share', 'gen-print', 'post-share', 'post-sns', 'pay-view', 'pay-pick', 'shop-share'];
+
+// 광고 유입(utm) 집계(2026-11-11 사장님 — 구글 광고 시험). 매체 · 종류 · 캠페인 이름은 소문자 · 숫자 · _ . - 만, 40자까지(index.js cleanAd 가 다듬는다)
+export const AD_RE = /^[a-z0-9][a-z0-9_.-]{0,39}$/;
+const AD_KEYS_MAX = 100;   // 하루 캠페인 줄 수 한도(아무 이름이나 보내 저장소를 부풀리지 못하게)
+const AD_FIELDS = ['l', 'g', 'h', 'v'];
 
 // 블로그 댓글
 export const COMMENT = { max: 500, gapMs: 15000, daily: 30, list: 200 };   // 글자 수, 다음 댓글까지, 하루 최대, 한 글에 보여 주는 수
@@ -408,11 +417,21 @@ export class Community {
         m[field] = Math.max(0, (m[field] || 0) + by);
         await this.storage.put('meta', m);
     }
+    // 광고 유입 집계 한 칸 올리기(ad:<한국 날짜>). ad: { s, m, c }, f: AD_FIELDS 중 하나
+    async adBump(ad, f, now) {
+        if (!ad || !ad.s || AD_FIELDS.indexOf(f) === -1) return;
+        const k = 'ad:' + kstDay(now), key = [ad.s, ad.m || '-', ad.c || '-'].join('|');
+        const day = (await this.storage.get(k)) || {};
+        if (!day[key]) { if (Object.keys(day).length >= AD_KEYS_MAX) return; day[key] = {}; }
+        day[key][f] = (day[key][f] || 0) + 1;
+        await this.storage.put(k, day);
+    }
 }
 
 const OPS = {
     // 구글 로그인 뒤. 처음이면 계정을 만들고, 무료 체험을 줄 수 있는지 알려 준다(trial: 가입 체험이 켜져 있을 때만).
-    async login({ sub, email, subHash, ref, now, trial }) {
+    // ad: 가입 경로(index.js cleanAd — utm 링크로 들어온 뒤 30일 안). 새 계정일 때만 남기고 그 캠페인의 가입(g)을 센다
+    async login({ sub, email, subHash, ref, now, trial, ad }) {
         let user = await this.storage.get('u:' + sub);
         const isNew = !user;
         if (!user) {
@@ -426,6 +445,7 @@ const OPS = {
                 }
             }
             await this.bump('users', 1);
+            if (ad) { user.ad = { s: ad.s, m: ad.m, c: ad.c, at: now }; await this.adBump(ad, 'g', now); }
         }
         if (!trial) {
             // 체험을 끈 동안: 발급 도중 멈춘 체험은 버리고(받은 키는 그대로), "체험을 받은 계정" 기록은 쓸모가 없어 지운다
@@ -489,6 +509,7 @@ const OPS = {
         if (Object.keys(v).length) user.visits = v; else delete user.visits;
         if (Object.keys(vt).length) user.vt = vt; else delete user.vt;
         const earned = gps && stamped ? visitPoint(user, id, today) : 0;   // 위치로 인증한 방문만 포인트(켜져 있을 때 index.js 가 이미 판정했다)
+        if (gps && stamped && user.ad && !user.ad.v) { user.ad.v = now; await this.adBump(user.ad, 'v', now); }   // 광고로 가입한 회원의 첫 위치 인증
         await this.saveUser(user);
         let pioneer = false, cap = null;
         if (user.terr) {
@@ -610,6 +631,7 @@ const OPS = {
         if (!user.nick) return { error: 'need_nick' };
         const first = !user.terr;
         user.terr = { at: first ? now : user.terr.at, v };
+        if (user.ad && !user.ad.h) { user.ad.h = now; await this.adBump(user.ad, 'h', now); }   // 광고로 가입한 회원의 첫 LottoHex 참여(그만뒀다 다시 들어와도 한 번)
         await this.saveUser(user);
         const nv = {};
         for (const id of Object.keys(user.visits || {})) if (cells && cells[id]) nv[id] = [(user.vt || {})[id] || 0, cells[id]];
@@ -1005,6 +1027,18 @@ const OPS = {
     async taps() {
         const days = [];
         await this.each('e:', (v, k) => { days.push(Object.assign({ day: k.slice(2) }, v)); });
+        return { days: days.reverse() };
+    },
+
+    // 광고 유입: utm 링크로 들어온 방문(index.js /api/arrive — 같은 브라우저 · 캠페인은 하루 한 번만 온다)
+    async adLand({ ad, now }) {
+        await this.adBump(ad, 'l', now || Date.now());
+        return { ok: true };
+    },
+    // 관리자 페이지: 광고 유입 날짜별 집계, 최근 날짜가 먼저 — [{ day, rows: { '매체|종류|캠페인': { l, g, h, v } } }]
+    async adStats() {
+        const days = [];
+        await this.each('ad:', (v, k) => { days.push({ day: k.slice(3), rows: v }); });
         return { days: days.reverse() };
     },
 

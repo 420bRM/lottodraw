@@ -100,6 +100,30 @@
                         스크립트를 돌리는 로봇은 빠집니다. 뒤의 셋은 서버가 셉니다. 주문률 = 주문 ÷ 결제 페이지, 입금률 = 입금 ÷ 주문.</p>
                 </div>
             </section>
+            <section class="card" id="inflow-card" aria-labelledby="inflow-t" hidden>
+                <h2 class="card-title" id="inflow-t"><span>광고 유입 (utm)</span><small id="inflow-sum"></small></h2>
+                <div class="card-body">
+                    <p class="members-tools">
+                        <select id="inflow-range" aria-label="기간">
+                            <option value="1">오늘</option>
+                            <option value="7" selected>최근 7일</option>
+                            <option value="30">최근 30일</option>
+                            <option value="0">전체</option>
+                        </select>
+                        <button type="button" class="btn btn-secondary btn-mini" id="inflow-reload">새로고침</button>
+                    </p>
+                    <p class="license-status" id="inflow-status" role="status"></p>
+                    <div class="table-wrap"><table class="data-table admin-table" id="inflow-table"></table></div>
+                    <details class="members-rx">
+                        <summary>하루씩 (최근 30일)</summary>
+                        <div class="table-wrap"><table class="data-table admin-table" id="inflow-days"></table></div>
+                    </details>
+                    <p class="card-note">2026-11-11부터 셉니다. 주소에 <code>utm_source</code> 가 붙은 링크(구글 광고는 <code>gclid</code> 만 있어도 google · cpc)로 들어온 것을 캠페인별로 셉니다.
+                        들어옴은 같은 브라우저 · 캠페인 하루 한 번(광고 차단기 · 로봇은 빠져 실제보다 조금 적게), 가입은 들어온 뒤 30일 안에 같은 브라우저에서 새로 가입한 것,
+                        LottoHex 참여 · 첫 위치 인증은 그렇게 가입한 회원이 처음 한 날에 셉니다(이미 회원이던 사람은 세지 않습니다). 가입률 = 가입 ÷ 들어옴.
+                        링크는 <code>?utm_source=매체&amp;utm_medium=종류&amp;utm_campaign=캠페인</code> — 영문 소문자 · 숫자 · <code>_ . -</code> 만, 40자까지.</p>
+                </div>
+            </section>
             <section class="card" id="taps-card" aria-labelledby="taps-t" hidden>
                 <h2 class="card-title" id="taps-t"><span>공유 · 출력 집계</span><small id="taps-sum"></small></h2>
                 <div class="card-body">
@@ -260,6 +284,6 @@
 </div>
 
 <script src="js/premium-config.js?v=ca702ca6"></script>
-<script src="js/admin.js?v=54a1eacb"></script>
+<script src="js/admin.js?v=925f8849"></script>
 </body>
 </html>
