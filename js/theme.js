@@ -93,7 +93,11 @@
             a.href = base + 'store-map.html';
             a.textContent = tr('nav.map', '판매점 지도');
             a.dataset.i18n = 'nav.map';
-            bannerEl.appendChild(a);
+            // 두 단추는 한 묶음(.banner-links, 격자 한 칸)에 넣어 좌우 폭을 똑같이 맞춘다(2026-11-11 사장님)
+            const links = document.createElement('div');
+            links.className = 'banner-links';
+            links.appendChild(a);
+            bannerEl.appendChild(links);
             // 그 바로 아래 LottoHex(2026-11-11 사장님 — "여기 로또헥스 버튼도 놓자"). 무엇인지 보이게 작은 "땅따먹기 게임"(지도 모드 단추와 같은 꼴)
             const h = document.createElement('a');
             h.className = 'banner-hex';
@@ -102,7 +106,7 @@
             const sub = h.querySelector('small');
             sub.textContent = tr('nav.hexSub', '땅따먹기 게임');
             sub.dataset.i18n = 'nav.hexSub';
-            bannerEl.appendChild(h);
+            links.appendChild(h);
         }
         // 메뉴 맨 오른쪽 "판매점 지도"(2026-10-27 사장님 — 생성기 제목 아래 단추를 옮김). 메뉴는 1,300쪽에 박혀 있어 여기서 붙인다
         const navUl = document.querySelector('nav.nav ul');
