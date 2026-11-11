@@ -424,7 +424,7 @@ body.sm-full #theme-btn { display: none !important; }
 .sm-terr-any { overflow: hidden; background: conic-gradient(#e63946, #e9c46a, #2a9d8f, #3a86ff, #8338ec, #e63946); }
 .sm-terr-any input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 @media (min-width: 900px) {
-    .sm-side[data-tab="terr"] .sm-terr:not([hidden]) { display: block; }
+    .sm-side[data-tab="terr"] .sm-terr:not([hidden]), .sm-side[data-tab="rank"] .sm-terr:not([hidden]) { display: block; }   /* "랭킹" 탭도 같은 창(랭킹만 — 2026-11-11) */
     .sm-terr-season, .sm-terr-cell p, .sm-terr-consent, .sm-terr-rules { font-size: 12.5px; }
     .sm-terr-rank li { font-size: 13px; }
 }
@@ -739,3 +739,8 @@ html.sm-enter-hex #sm-hexfx .sm-hexfx-ico, html.sm-enter-store #sm-storefx .sm-s
 .sm-ticker:hover .sm-ticker-in, .sm-ticker:active .sm-ticker-in { animation-play-state: paused; }
 @keyframes sm-tick { to { transform: translateX(calc(-100% - var(--cw, 400px))); } }
 @media (prefers-reduced-motion: reduce) { .sm-ticker-in { left: 8px; right: 8px; overflow: hidden; text-overflow: ellipsis; animation: none; } }
+
+/* PC LottoHex 창의 "Map 랭킹 보기"(랭킹은 "랭킹" 탭으로 — 2026-11-11) */
+.sm-terr-torank { margin: 12px 0 4px; }
+.sm-terr-rankbtn { width: 100%; padding: 8px 10px; border: 1px solid var(--line, #ddd); border-radius: 9px; background: var(--soft, #f4f6fa); color: var(--brand, #003087); font: inherit; font-size: 13px; font-weight: bold; cursor: pointer; }
+:root[data-theme="dark"] .sm-terr-rankbtn { background: #1f2733; color: #ffb066; border-color: #2e3846; }

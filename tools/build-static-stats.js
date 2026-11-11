@@ -2921,6 +2921,7 @@ function storeMapPage(md, variant) {
         <button type="button" class="sm-tab" data-tab="info" role="tab" aria-selected="false" data-i18n-en="Regions">시도별</button>
         <button type="button" class="sm-tab" data-tab="mine" role="tab" aria-selected="false" hidden data-i18n-en="Mine">내 기록</button>
         <button type="button" class="sm-tab" data-tab="terr" role="tab" aria-selected="false" hidden>LottoHex</button>
+        <button type="button" class="sm-tab" data-tab="rank" role="tab" aria-selected="false" hidden data-i18n-en="Ranking">랭킹</button>
     </nav>
     <!-- TOP 50 목록 · 판매점 카드(PC 는 탭 내용, 휴대폰은 목록을 감추고 카드만 아래쪽에) -->
     <div class="sm-right">
