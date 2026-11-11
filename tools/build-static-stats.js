@@ -3084,7 +3084,7 @@ function storeMapPage(md, variant) {
     <div class="sm-side" id="sm-side" data-tab="${hex ? 'terr' : 'top'}">
     <div class="sm-top">
         <div class="sm-row">
-            <a class="sm-back" href="index.html" data-i18n-en="← Generator">← 생성기로</a>
+            <a class="sm-back" href="index.html" data-i18n-en="← Generator">← 생성기</a>
             ${hex ? '<h1 class="sm-title" data-i18n-en="LottoHex&lt;span class=&quot;sr-only&quot;&gt; · retailer turf game&lt;/span&gt;">LottoHex<span class="sr-only"> · 판매점 땅따먹기</span></h1>' : '<h1 class="sm-title" data-i18n-en="Lotto retailer map">로또 판매점 지도</h1>'}
             <!-- 휴대폰: 지도 모드(2026-11-08 사장님 — "LottoHex 랑 지도 기능이 한곳에 모여 불편"). 제목 자리에 놓아 줄이 늘지 않게. PC 는 감춘다.
                  LottoHex 아래 작은 "땅따먹기 게임"(2026-11-11 사용자 의견 — 무엇인지 몰라 안 누를 것 같다) -->

@@ -625,6 +625,14 @@ body.sm-full #theme-btn { display: none !important; }
     .sm-mode-name { display: grid; line-height: 1.05; text-align: left; }
     .sm-mode-sub { font-size: 8.5px; font-weight: 600; letter-spacing: -.01em; opacity: .78; }
     .sm-mode-sw a[data-mode-to="hex"] { padding-top: 2px; padding-bottom: 2px; }
+    /* 생성기 · 판매점 · LottoHex 를 사이 빈자리 없이 같은 폭 세 칸으로(2026-11-11 사장님 — "여백 애매하게 남기지 말고 삼등분").
+       첫 줄을 격자로: 세 칸은 1fr 씩(모드 단추 묶음은 display: contents 로 풀어 두 단추가 바로 칸이 된다), 한영 · 밤 · 3D 는 제 폭. 모두 같은 높이 */
+    .has-modes .sm-row:first-child { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto auto auto; column-gap: 0; align-items: stretch; }
+    .has-modes .sm-mode-sw:not([hidden]) { display: contents; }
+    .has-modes .sm-back { display: flex; align-items: center; justify-content: center; min-width: 0; padding: 4px; overflow: hidden; border-radius: 8px 0 0 8px; font-size: 11.5px; white-space: nowrap; }
+    .has-modes .sm-mode-sw a { justify-content: center; min-width: 0; margin-left: -1px; padding-left: 4px; padding-right: 4px; }
+    .has-modes .sm-mode-sw a:first-child { border-radius: 0; }
+    .has-modes .sm-row:first-child > .sm-lang, .has-modes .sm-row:first-child > .sm-night, .has-modes .sm-row:first-child > .sm-3d { display: flex; align-items: center; margin-left: 4px; }
     .sm-mode-sw a.has-new, .sm-hexbar-stat.has-new { position: relative; }
     .sm-mode-sw a.has-new::after, .sm-hexbar-stat.has-new::after { content: ''; position: absolute; top: -3px; right: -3px; width: 8px; height: 8px; border: 1.5px solid var(--surface, #fff); border-radius: 50%; background: #e0283a; }
     .sm-turf { display: none !important; }   /* 판매점 모드 칩 줄에서 LottoHex 칩은 빠진다(모드 단추가 대신) */
