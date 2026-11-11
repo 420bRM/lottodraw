@@ -46,6 +46,43 @@
         del: k => safe(() => sessionStorage.removeItem(k)),
     };
 
+    /* 광고 유입(utm) 집계(2026-11-11 사장님 — 관리자 페이지 "광고 유입").
+     * 주소에 utm_source(구글 광고면 gclid 만 있어도)가 붙어 들어오면 매체 · 종류 · 캠페인 이름만 이 브라우저에 30일 기억하고,
+     * 같은 캠페인은 하루 한 번 "들어옴"을 센다(/api/arrive — 이름 셋 말고는 보내지 않는다). 가입할 때 기억한 캠페인을 같이 보내
+     * 서버가 그 캠페인의 가입 · LottoHex 참여 · 첫 위치 인증을 센다. 주소의 utm 값은 지워 둔다(그 주소를 복사해 퍼뜨려도 광고로 세지 않게) */
+    const AD_STORE = 'lottodraw.inflow';        // { s, m, c, at }
+    const AD_SEEN = 'lottodraw.inflow.seen';    // { day, k: ['매체|종류|캠페인'] } — 오늘 센 캠페인
+    const AD_DAYS = 30;
+    const AD_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'gbraid', 'wbraid'];
+    const adName = v => { v = String(v || '').trim().toLowerCase().replace(/\s+/g, '_').slice(0, 40); return /^[a-z0-9][a-z0-9_.-]*$/.test(v) ? v : ''; };
+    (function adArrive() {
+        const q = safe(() => new URL(location.href), null);
+        if (!q || !AD_KEYS.some(k => q.searchParams.has(k))) return;
+        const p = q.searchParams;
+        let s = adName(p.get('utm_source'));
+        const m = adName(p.get('utm_medium')), c = adName(p.get('utm_campaign'));
+        if (!s && (p.has('gclid') || p.has('gbraid') || p.has('wbraid'))) s = 'google';
+        if (s) {
+            const ad = { s: s, m: m || (s === 'google' && !p.get('utm_source') ? 'cpc' : '-'), c: c || '-', at: Date.now() };
+            local.set(AD_STORE, ad);
+            const day = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10), key = [ad.s, ad.m, ad.c].join('|');
+            const seen = local.get(AD_SEEN);
+            const list = seen && seen.day === day && Array.isArray(seen.k) ? seen.k : [];
+            if (list.indexOf(key) === -1) {
+                local.set(AD_SEEN, { day: day, k: list.concat(key).slice(-20) });
+                safe(() => navigator.sendBeacon && navigator.sendBeacon(api() + '/api/arrive', JSON.stringify({ s: ad.s, m: ad.m, c: ad.c })));
+            }
+        }
+        AD_KEYS.forEach(k => p.delete(k));
+        safe(() => history.replaceState(history.state, '', q.pathname + (p.toString() ? '?' + p.toString() : '') + q.hash));
+    })();
+    // 가입할 때 같이 보낼 캠페인(30일 안에 들어온 것만)
+    const adForSignup = () => {
+        const ad = local.get(AD_STORE);
+        if (!ad || !ad.s || !(Date.now() - (ad.at || 0) < AD_DAYS * 86400000)) return undefined;
+        return { s: ad.s, m: ad.m, c: ad.c };
+    };
+
     function el(tag, props, kids) {
         const n = document.createElement(tag);
         Object.keys(props || {}).forEach(k => {
@@ -240,7 +277,7 @@
 
     async function onCredential(resp, errBox) {
         try {
-            const got = await request('/api/auth/google', { method: 'POST', body: { credential: resp && resp.credential } });
+            const got = await request('/api/auth/google', { method: 'POST', body: { credential: resp && resp.credential, ad: adForSignup() } });
             local.set(SESSION_STORE, { session: got.session, email: got.user.email });
             temp.del(ME_STORE);   // 새로 고친 뒤 내 정보와 내가 누른 좋아요를 다시 받는다
             const added = applyTrial(got.user.trial);

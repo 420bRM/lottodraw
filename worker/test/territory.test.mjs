@@ -816,3 +816,64 @@ test('칭호: 위치 인증이 꺼져 있으면 셈하지 않는다 · 목록은
     assert.ok(cat.data.titles.some(t => t.id === 'worm7' && t.ko === '왕지렁이'));
     assert.match(cat.headers.get('Cache-Control'), /max-age=3600/);
 });
+
+test('광고 유입(utm, 2026-11-11): 들어옴은 우리 사이트 · 이름 규칙 · 로봇 빼고 한국 날짜 줄에, 가입 · LottoHex 참여 · 첫 위치 인증은 그 캠페인으로 새로 가입한 회원만 한 번씩, 관리자만 본다', async () => {
+    const env = await fresh();
+    env.GPS_VERIFY = 'on';
+    const ids = ['11100301', '11100302'];
+    site = { cells: { r: 0.6, cells: { '0,0': [ids[0]], '1,0': [ids[1]] } }, geo: { regions: [['서울', '마포구', '마포구']], stores: { [ids[0]]: [37.5, 127.0, 0], [ids[1]]: [37.51, 127.0, 0] } } };
+    const arrive = (body, origin = ORIGIN, ua) => worker.fetch(new Request('https://api.lottodraw.kr/api/arrive', {
+        method: 'POST', headers: Object.assign({ 'Content-Type': 'text/plain;charset=UTF-8' }, origin ? { Origin: origin } : {}, ua ? { 'User-Agent': ua } : {}), body: JSON.stringify(body),
+    }), env, ctx);
+    const AD = { s: 'Google', m: 'display', c: 'lottohex_test1' };
+    const KEY = 'google|display|lottohex_test1';
+    assert.equal((await arrive(AD)).status, 204, '대문자는 소문자로');
+    assert.equal((await arrive(AD)).status, 204);
+    assert.equal((await arrive({ s: 'naver' })).status, 204, '종류 · 캠페인이 없으면 -');
+    assert.equal((await arrive(AD, ORIGIN, 'Mozilla/5.0 (compatible; Googlebot/2.1)')).status, 204, '로봇은 받기만 하고 세지 않는다');
+    assert.equal((await arrive({ s: '' })).status, 400);
+    assert.equal((await arrive({ s: '<b>x</b>', c: 'a' })).status, 400, '이름 규칙');
+    assert.equal((await arrive(AD, 'https://evil.example')).status, 403, '다른 사이트');
+    assert.equal((await arrive(AD, null)).status, 403, 'Origin 없음');
+
+    // 그 캠페인으로 새로 가입 → 가입(g). 같은 계정이 다시 로그인하며 보내도 다시 세지 않는다. 캠페인 없이 가입한 회원은 어디에도 안 센다
+    const signup = (sub, ad) => call(env, 'POST', '/api/auth/google', { body: { credential: await0(sub), ad } });
+    const await0 = sub => tokens[sub];
+    const tokens = { ad1: await idToken({ sub: 'ad1', email: 'ad1@gmail.com' }), ad3: await idToken({ sub: 'ad3', email: 'ad3@gmail.com' }) };
+    let r = await signup('ad1', AD);
+    assert.equal(r.status, 200);
+    assert.equal(r.data.isNew, true);
+    const a = r.data.session;
+    assert.equal((await signup('ad1', AD)).data.isNew, false);
+    r = await signup('ad3', { s: 'google', c: '광고 시험' });
+    assert.equal(r.status, 200, '캠페인 이름이 틀려도 가입은 된다');
+    assert.deepEqual([env.COMMUNITY._m.get('u:ad3').ad && env.COMMUNITY._m.get('u:ad3').ad.c], ['-'], '틀린 이름은 - 로');
+    const b = await member(env, 'ad2', '보통회원');
+    assert.equal(env.COMMUNITY._m.get('u:ad2').ad, undefined);
+    assert.deepEqual(Object.keys(env.COMMUNITY._m.get('u:ad1').ad).sort(), ['at', 'c', 'm', 's'], '회원 정보에는 캠페인 이름과 가입 시각만');
+
+    // LottoHex 참여(h) · 첫 위치 인증(v): 광고로 가입한 회원만, 한 번씩(그만뒀다 다시 들어와도 · 두 번째 인증도 세지 않는다)
+    assert.equal((await call(env, 'POST', '/api/me/nickname', { headers: auth(a), body: { nickname: '광고손님' } })).status, 200);
+    for (const s of [a, b]) { await geoAgree(env, s); assert.equal((await join(env, s, { agree: true, v: 2 })).status, 200); }
+    assert.equal((await call(env, 'POST', '/api/territory/leave', { headers: auth(a) })).status, 200);
+    assert.equal((await join(env, a, { agree: true, v: 2 })).status, 200);
+    for (const s of [a, b]) for (const id of ids) assert.equal((await visit(env, s, id, near(site.geo.stores[id][0], 127.0))).status, 200);
+
+    const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+    assert.equal((await call(env, 'GET', '/api/admin/inflow')).status, 401);
+    assert.equal((await call(env, 'GET', '/api/admin/inflow', { headers: auth(a) })).status, 401, '회원도 못 본다');
+    const st = await call(env, 'GET', '/api/admin/inflow', { headers: asAdmin });
+    assert.equal(st.status, 200);
+    assert.deepEqual(st.data.days, [{ day: today, rows: { [KEY]: { l: 2, g: 1, h: 1, v: 1 }, 'naver|-|-': { l: 1 }, 'google|-|-': { g: 1 } } }]);
+    assert.ok(!JSON.stringify(st.data).includes('ad1') && !JSON.stringify(env.COMMUNITY._m.get('ad:' + today)).includes('ad1'), '누가 했는지는 집계에 없다');
+
+    // 탈퇴하면 회원 정보의 가입 경로도 같이 지워진다(집계 숫자는 남는다)
+    assert.equal((await call(env, 'POST', '/api/me/delete', { headers: auth(a), body: { confirm: true } })).status, 200);
+    assert.equal(env.COMMUNITY._m.get('u:ad1'), undefined);
+    assert.equal(env.COMMUNITY._m.get('ad:' + today)[KEY].g, 1);
+
+    // 하루 캠페인 줄 수 한도(아무 이름이나 보내 부풀리지 못하게)
+    for (let i = 0; i < 120; i++) await arrive({ s: 'spam' + i });
+    assert.ok(Object.keys(env.COMMUNITY._m.get('ad:' + today)).length <= 100);
+    assert.equal(env.COMMUNITY._m.get('ad:' + today)[KEY].l, 2, '이미 있던 줄은 계속 센다');
+});

@@ -26,7 +26,7 @@
 
 import { generateKeyPair, importPrivate, importPublic, signKey, verifyKey, parseKey, hex32, publicOnly, keyId, b64urlEncode } from './keys.js';
 import { plansFor, roundEndsAt } from './plans.js';
-import { community, SESSION_DAYS, REACT_TYPES, ITEM_RE, POINTS, COMMENT, TAP_KINDS, capText } from './community.js';
+import { community, SESSION_DAYS, REACT_TYPES, ITEM_RE, POINTS, COMMENT, TAP_KINDS, AD_RE, capText } from './community.js';
 import { verifyGoogleToken } from './google.js';
 import { saleRound, cleanGame, rankOf, kstParts, drawDay } from './lotto.js';
 
@@ -148,6 +148,7 @@ async function route(request, env, ctx) {
     if (path === '/api/comments' && method === 'POST') return addComment(request, env, ctx);
     if (path === '/api/comments/delete' && method === 'POST') return deleteComment(request, env);
     if (path === '/api/tap' && method === 'POST') return tap(request, env);
+    if (path === '/api/arrive' && method === 'POST') return adLand(request, env);   // 광고 유입(주소에 'ad' 를 넣으면 광고 차단기가 막는다)
     if (path === '/api/view' && method === 'POST') return view(request, env);
     if (path === '/api/views' && method === 'GET') return getViews(request, env, url);
 
@@ -673,7 +674,7 @@ async function googleLogin(request, env, ctx) {
 
     const now = Date.now();
     const days = signupTrialDays(env);
-    const r = await community(env, 'login', { sub: g.sub, email: g.email, subHash: await sha256('trial:' + g.sub), ref: await memberRef(g.sub), now, trial: days > 0 });
+    const r = await community(env, 'login', { sub: g.sub, email: g.email, subHash: await sha256('trial:' + g.sub), ref: await memberRef(g.sub), now, trial: days > 0, ad: cleanAd(body.ad) });
     let user = r.user;
     let trialNew = false;
     if (r.needTrial) {
@@ -1295,6 +1296,27 @@ async function tap(request, env) {
     return new Response(null, { status: 204, headers: corsHeaders(request, env) });
 }
 
+/* ───── 광고 유입(utm) 집계 (js/account.js, 2026-11-11) ───── */
+
+// /api/arrive: 주소에 utm_source 가 붙은 링크(광고 · 홍보)로 들어오면 브라우저가 sendBeacon(text/plain)으로 {s: 매체, m: 종류, c: 캠페인} 만 보낸다.
+// 같은 브라우저 · 캠페인은 하루 한 번(브라우저가 거른다). 기기 · 회원 · 주소 정보는 받지 않는다. 우리 사이트(Origin)에서 온 것만, 같은 IP 1분 30번까지(TAP_LIMIT)
+// 가입할 때도 브라우저가 기억한 캠페인(30일 안)을 같이 보내고(googleLogin), 가입 · LottoHex 참여 · 첫 위치 인증은 저장소(community.js)가 센다
+function cleanAd(raw) {
+    if (!raw || typeof raw !== 'object') return null;
+    const one = v => { v = String(v == null ? '' : v).trim().toLowerCase().slice(0, 40); return AD_RE.test(v) ? v : ''; };
+    const ad = { s: one(raw.s), m: one(raw.m) || '-', c: one(raw.c) || '-' };
+    return ad.s ? ad : null;
+}
+async function adLand(request, env) {
+    if (!allowedOrigin(request, env)) throw new HttpError(403, 'bad_origin', '허용되지 않은 사이트입니다.');
+    const ad = cleanAd(await readJson(request));
+    if (!ad) throw new HttpError(400, 'bad_ad', '광고 정보가 올바르지 않습니다.');
+    if (!env.COMMUNITY || BOT_UA.test(request.headers.get('User-Agent') || '')) return new Response(null, { status: 204, headers: corsHeaders(request, env) });
+    await limited(env.TAP_LIMIT, 'ad:' + (request.headers.get('CF-Connecting-IP') || 'local'));
+    await community(env, 'adLand', { ad, now: Date.now() });
+    return new Response(null, { status: 204, headers: corsHeaders(request, env) });
+}
+
 /* ───── 판매점 공유 주소 /s/판매점번호 (worker/src/share.js) ───── */
 // 미리보기를 만드는 로봇(카카오톡 · 페이스북 · 슬랙 등)은 세지 않고, 사람이 열어 지도로 넘어간 것만 shop-open 으로 센다
 const PREVIEW_UA = /bot|crawl|spider|scrap|preview|facebookexternalhit|slack|discord|telegram|whatsapp|kakaotalk-scrap|headless/i;
@@ -1503,6 +1525,11 @@ async function admin(request, env, sub, method, url) {
     if (sub === '/taps' && method === 'GET') {
         if (!env.COMMUNITY) throw new HttpError(503, 'no_store', '집계 저장소가 없습니다.');
         return json(request, env, await community(env, 'taps'));
+    }
+    // 광고 유입(utm) 집계 (날짜별 · 캠페인별)
+    if (sub === '/inflow' && method === 'GET') {
+        if (!env.COMMUNITY) throw new HttpError(503, 'no_store', '집계 저장소가 없습니다.');
+        return json(request, env, await community(env, 'adStats'));
     }
     // 블로그 조회수: 글별 직접 센 수와 시작값(GET), 시작값 갈아 끼우기(POST — tools/seed-views.js). 보이는 수 = 직접 센 수 + 시작값
     if (sub === '/views' && method === 'GET') {
