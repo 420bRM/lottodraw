@@ -1274,11 +1274,19 @@
         if (isWide()) setTab('terr'); else { card.hidden = true; nearPanel.hidden = true; minePanel.hidden = true; }
         drawTerr();
     }
+    // PC "랭킹" 탭(2026-11-11 사장님 — "LottoHex 창 맨 아래까지 내려야 랭킹이 보여 불편"): 탭 줄 빈 칸에 랭킹만 따로. 꺼져 있으면 LottoHex 를 켜고 랭킹으로
+    let wantRank = false;
+    function openRank() {
+        if (!shown.terr) { wantRank = true; setMapMode('hex'); return; }
+        terrOpen = true;
+        setTab('rank');
+        drawTerr();
+    }
     // 창만 닫기 — 칸은 지도에 그대로(끄려면 칩을 다시 누른다)
     function closeTerrPanel() {
         terrOpen = false;
         terrPanel.hidden = true;
-        if (isWide() && side.dataset.tab === 'terr') setTab('top');
+        if (isWide() && (side.dataset.tab === 'terr' || side.dataset.tab === 'rank')) setTab('top');
     }
     async function setTerr(on) {
         shown.terr = on;
@@ -1294,7 +1302,7 @@
         terrPanel.hidden = false;
         const loading = '<p class="sm-small">' + T('LottoHex를 불러오는 중…', 'Loading LottoHex…') + '</p>';
         terrPanel.innerHTML = hexMobile() ? '<div class="sm-sheet-head"><span class="sm-sheet-grip" aria-hidden="true"></span></div><div class="sm-sheet-body">' + loading + '</div>' : loading;
-        if (isWide()) setTab('terr'); else { card.hidden = true; nearPanel.hidden = true; minePanel.hidden = true; }
+        if (isWide()) { setTab(wantRank ? 'rank' : 'terr'); wantRank = false; } else { card.hidden = true; nearPanel.hidden = true; minePanel.hidden = true; }
         const A = account();
         await Promise.all([needAll(), loadTerr(), A && A.session() ? loadIds().then(syncVisits) : null, loadTitleCat()]);   // 판매점 번호: 칸 목록의 ✓(다녀온 곳) · 칭호 목록
         if (!shown.terr) return;
@@ -1990,14 +1998,21 @@
             terrPanel.innerHTML = '<div class="sm-sheet-head"><span class="sm-sheet-grip" aria-hidden="true"></span><div class="sm-sheet-tabs" role="tablist">' +
                 tabs.map(([k, n, d]) => '<button type="button" role="tab" data-ttab="' + k + '" aria-selected="' + (k === tab) + '">' + n + dot(d) + '</button>').join('') + '</div></div>' +
                 '<div class="sm-sheet-body">' + body + msg + '</div>';
+        } else if (side.dataset.tab === 'rank') {
+            // PC "랭킹" 탭: 랭킹만(지금 분기 + 지난 분기 확정)
+            terrPanel.innerHTML = '<button type="button" class="sm-close" aria-label="' + T('닫기', 'Close') + '">×</button>' +
+                '<h3><span class="sm-turf-ico" aria-hidden="true"></span> ' + T('LottoHex 랭킹', 'LottoHex ranking') + '</h3>' + rankPart + msg;
         } else {
             terrPanel.innerHTML = '<button type="button" class="sm-close" aria-label="' + T('닫기', 'Close') + '">×</button>' +
-                title + statusPart + cellPart + hint + news + ms + todo + dex + rankPart + rules + leave + msg;
+                title + statusPart + cellPart + hint + news + ms + todo + dex +
+                '<p class="sm-terr-torank"><button type="button" class="sm-terr-rankbtn">🏆 ' + T('Map 랭킹 보기', 'See the Map ranking') + '</button></p>' + rules + leave + msg;   // 랭킹은 "랭킹" 탭에
         }
         terrPanel.hidden = false;
         if (hexAbout && (!sheet || tab === 'now')) { hexAbout.open = false; (terrPanel.querySelector('.sm-sheet-body') || terrPanel).appendChild(hexAbout); }
         const cb = terrPanel.querySelector('.sm-close');
         if (cb) cb.addEventListener('click', closeTerrPanel);
+        const rb = terrPanel.querySelector('.sm-terr-rankbtn');
+        if (rb) rb.addEventListener('click', openRank);
         terrPanel.querySelectorAll('[data-ttab]').forEach(b => b.addEventListener('click', () => {
             if (Date.now() < sheetNoClick) return;   // 판을 끈 뒤 바로 오는 누르기는 무시
             terrTab = b.dataset.ttab;
@@ -2089,6 +2104,8 @@
             if (sw) { sw.hidden = false; root.classList.add('has-modes'); }   // 휴대폰: 제목 자리에 [판매점 | LottoHex]
             const tab = side.querySelector('.sm-tab[data-tab="terr"]');
             if (tab) tab.hidden = false;
+            const rt = side.querySelector('.sm-tab[data-tab="rank"]');
+            if (rt) rt.hidden = false;
             let q = null;
             try { q = new URLSearchParams(location.search).get('mode'); } catch (e) { /* 구형 */ }
             if (root.dataset.hex) setMapMode('hex', true);   // lottohex.html — 전환 화면 없이 LottoHex 로 시작
@@ -3012,7 +3029,7 @@
             set3d(on);
         });
         document.getElementById('sm-night').addEventListener('click', () => { nightByTop = false; nightByHex = false; toggleNight(); });
-        side.querySelectorAll('.sm-tab').forEach(b => b.addEventListener('click', () => (b.dataset.tab === 'near' ? openNear() : b.dataset.tab === 'mine' && !shown.mine ? setMine(true) : b.dataset.tab === 'terr' ? (shown.terr ? openTerrPanel() : setMapMode('hex')) : setTab(b.dataset.tab))));
+        side.querySelectorAll('.sm-tab').forEach(b => b.addEventListener('click', () => (b.dataset.tab === 'near' ? openNear() : b.dataset.tab === 'mine' && !shown.mine ? setMine(true) : b.dataset.tab === 'terr' ? (shown.terr ? openTerrPanel() : setMapMode('hex')) : b.dataset.tab === 'rank' ? openRank() : setTab(b.dataset.tab))));
         nearBtn.addEventListener('click', () => { nearFrom = null; openNear(); });
         placeNearBtn();
         window.addEventListener('resize', placeNearBtn);
