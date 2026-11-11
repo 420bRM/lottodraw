@@ -76,6 +76,8 @@ const prizeOf = {};
 const PRIZE_TABLE_SINCE = '2026-10-10';
 // 회차 페이지에 회차마다 다른 사실 · 메모를 넣은 날 (스팸 정책 점검). 그 전 회차들의 lastmod 를 이 날로 올린다
 const ROUND_FACTS_SINCE = '2026-10-18';
+// 회차 페이지에 '이번 회차 1등 판매점' 표를 넣은 날 (할 일 LX40). 판매점 자료가 있는 회차의 lastmod 를 이 날로 올린다
+const ROUND_STORES_SINCE = '2026-11-09';
 const FIRST_1000_WON = 88;   // 1~87회는 1게임 2,000원, 88회부터 1,000원
 
 const stats = LottoStats.compute(draws, { pairTop: 20, trendTop: 10 });
@@ -217,6 +219,16 @@ const STORES = (() => {
     const netFirst = net ? rounds.find(r => d.rounds[r].w1.some(([id]) => id === '51100000') || d.rounds[r].w2.includes('51100000')) : null;
     const last = rounds[rounds.length - 1];
     return { d, rounds, first: rounds[0], last, g1, g2, method, maxM, sido, all, with1, groups, no1, top, net, netFirst, shop };
+})();
+
+// 회차 페이지용: 회차 → 1등 줄마다 "그 판매점의 몇 번째 1등인가"(그 회차까지 누적, 같은 회차 여러 게임이면 차례로)
+const ROUND_SHOP_NTH = (() => {
+    if (!STORES) return null;
+    const seen = new Map(), out = {};
+    for (const r of STORES.rounds) {
+        out[r] = STORES.d.rounds[r].w1.map(([id]) => { const n = (seen.get(id) || 0) + 1; seen.set(id, n); return n; });
+    }
+    return out;
 })();
 
 // 당첨번호 중복 — 회차와 회차를 통째로 견준다 (페이지는 아래 repeatPage). lotto-data.json 만 쓰므로 늘 만든다
@@ -1493,6 +1505,58 @@ const roundNotes = {};
     });
 })();
 
+/* 회차 페이지의 "이번 회차 1등 판매점" (할 일 LX40 · 판매점 지도 검색 계획 ①)
+ * stores-data.json 에 그 회차가 있을 때만. 판매점 이름은 지도 카드(store-map.html?shop=번호)로 잇는다 —
+ * 좌표가 있는 판매점과 0등(동행복권 인터넷, 51100000)만. 숫자는 기록 그대로 쓰고 예측처럼 읽히는 말은 붙이지 않는다.
+ */
+function roundStores(d, winners) {
+    const rec = STORES && STORES.d.rounds[d.round];
+    if (!rec) return [];
+    const nth = ROUND_SHOP_NTH[d.round];
+    const mapReady = STORE_MAP_READY();
+    const mapHref = id => `../${STORE_MAP_FILE}?shop=${id}`;
+    const onMap = id => mapReady && (id === NET_ID || typeof STORES.shop(id)[4] === 'number');
+    const shopCell = id => {
+        const s = STORES.shop(id);
+        const name = id === NET_ID ? en('동행복권 인터넷 판매', 'Dong-haeng Lottery online')
+            : esc(s[0]) + (s[3] ? ` <span class="muted" data-i18n-en="(closed)">(폐점)</span>` : '');
+        return onMap(id) ? `<a href="${mapHref(id)}">${name}</a>` : name;
+    };
+    const area = id => { const s = STORES.shop(id); return s[1] === '인터넷' ? en('인터넷', 'Online') : esc([s[1], s[2]].filter(Boolean).join(' ')) || '—'; };
+    const how = h => h === 'A' ? en('자동', 'Auto') : h === 'M' ? en('수동', 'Manual') : h === 'S' ? en('반자동', 'Semi-auto') : '—';
+    const ord = n => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th');
+    const out = [h2En(`${d.round}회 1등 판매점`, `1st-prize retailers, draw ${d.round}`)];
+    if (rec.w1.length) {
+        out.push(table([['판매점', 'Retailer'], ['지역', 'Area'], ['방식', 'Method'], ['누적 1등', 'Its 1st prizes']],
+            rec.w1.map(([id, h], i) => [shopCell(id), area(id), how(h),
+                nth[i] === 1 ? en('첫 1등', 'first') : en(`${nth[i]}번째`, ord(nth[i]))]), 'tier-stat round-stores'));
+    } else if (winners === 0) {
+        out.push(pEn('이 회차는 1등이 없어 1등 판매점도 없습니다.', 'Nobody won 1st prize, so there are no 1st-prize retailers for this draw.'));
+    }
+    // 2등: 시도별 게임 수. 판매점 자료의 게임 수가 등수별 당첨금 표(prize-data)와 다르면 "판매점 자료로 확인된"을 붙인다
+    const bySido = new Map();
+    for (const id of rec.w2) { const k = STORES.shop(id)[1] || '기타'; bySido.set(k, (bySido.get(k) || 0) + 1); }
+    const sidoList = [...bySido.entries()].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1));
+    const sidoKo = sidoList.map(([k, v]) => `${k === '기타' ? '주소 없음' : esc(k)} ${v}`).join(' · ');
+    const sidoEn = sidoList.map(([k, v]) => `${k === '인터넷' ? 'online' : k === '기타' ? 'no address' : esc(k)} ${v}`).join(' · ');
+    const n1 = rec.w1.length, n2 = rec.w2.length;
+    const s1 = new Set(rec.w1.map(([id]) => id)).size, s2 = new Set(rec.w2).size;
+    const p = prizeOf[d.round];
+    const part1 = typeof winners === 'number' && winners !== n1, part2 = !!p && p.w2 !== n2;
+    const gamesEn = (n, tier) => n === 1 ? `The only ${tier}-prize game` : `The ${fmt(n)} ${tier}-prize games`;
+    const fromEn = s => `came from ${fmt(s)} retailer${s === 1 ? '' : 's'}`;
+    const ko = (n1 ? `${part1 ? '판매점 자료로 확인된 ' : ''}1등 ${fmt(n1)}게임은 ${fmt(s1)}곳에서 나왔습니다. ` : '')
+        + (n2 ? `${part2 ? '판매점 자료로 확인된 ' : ''}2등 ${fmt(n2)}게임은 ${fmt(s2)}곳에서 나왔습니다(${sidoKo}). ` : '')
+        + (n1 ? `'누적 1등'은 ${STORES.first}회부터 이 회차까지 그 판매점에서 나온 1등 가운데 몇 번째인지입니다. 판매점 이름을 누르면 <a href="../${STORE_MAP_FILE}">로또 판매점 지도</a>에서 그 판매점의 1 · 2등 기록을 볼 수 있고, 판매점별 순위는 <a href="../${STORES_FILE}">1등 판매점 통계</a>에 있습니다.`
+            : `판매점 위치는 <a href="../${STORE_MAP_FILE}">로또 판매점 지도</a>, 판매점별 순위는 <a href="../${STORES_FILE}">1등 판매점 통계</a>에 있습니다.`);
+    const english = (n1 ? `${part1 ? '(Retailer data) ' : ''}${gamesEn(n1, '1st')} ${fromEn(s1)}. ` : '')
+        + (n2 ? `${part2 ? '(Retailer data) ' : ''}${gamesEn(n2, '2nd')} ${fromEn(s2)} (${sidoEn}). ` : '')
+        + (n1 ? `"Its 1st prizes" shows which 1st prize this was for that retailer, counting from draw ${STORES.first} up to this draw. Click a retailer to see its 1st and 2nd prizes on <a href="../${STORE_MAP_FILE}">the lotto retailer map</a>; rankings are in <a href="../${STORES_FILE}">1st-prize retailer statistics</a>.`
+            : `Retailer locations are on <a href="../${STORE_MAP_FILE}">the lotto retailer map</a>; rankings are in <a href="../${STORES_FILE}">1st-prize retailer statistics</a>.`);
+    out.push(pEn(ko, english, 'note'));
+    return out;
+}
+
 function roundPage(d) {
     const nums = d.numbers.slice().sort(asc);
     const odd = nums.filter(n => n % 2).length;
@@ -1629,6 +1693,7 @@ function roundPage(d) {
                 ...factRows,
             ], 'kv-table'),
             ...highlights,
+            ...roundStores(d, winners),
             h2En(`${d.round}회 번호별 출현 기록`, `How often draw ${d.round}'s numbers had appeared`),
             table([['번호', 'Number'],
                 d.round > 1 ? [`1~${d.round}회 출현`, `Appearances in draws 1–${d.round}`] : ['1회 출현', 'Appearances in draw 1'],
@@ -3576,7 +3641,7 @@ function updateSitemap(blog) {
         ],
         (blog || []).map(b => entry(b.path, b.lastmod || kept(b.path), 'monthly', '0.6')),
         // 회차 페이지는 추첨 뒤 바뀌지 않는다. 직전 회차만 "다음 회차" 링크가 한 번 붙는다.
-        draws.map((d, i) => entry(`/round/${d.round}.html`, i <= 1 ? [UPDATED, ROUND_FACTS_SINCE].sort().pop() : [d.date, prizeOf[d.round] ? PRIZE_TABLE_SINCE : '', ROUND_FACTS_SINCE].sort().pop(), i === 0 ? 'weekly' : 'yearly', i < 10 ? '0.8' : '0.5')),
+        draws.map((d, i) => entry(`/round/${d.round}.html`, i <= 1 ? [UPDATED, ROUND_FACTS_SINCE, ROUND_STORES_SINCE].sort().pop() : [d.date, prizeOf[d.round] ? PRIZE_TABLE_SINCE : '', ROUND_FACTS_SINCE, STORES && STORES.d.rounds[d.round] ? ROUND_STORES_SINCE : ''].sort().pop(), i === 0 ? 'weekly' : 'yearly', i < 10 ? '0.8' : '0.5')),
     );
 
     const xml = [

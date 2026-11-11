@@ -1348,6 +1348,7 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 /* 1등 판매점 30곳(statistics-stores.html): 칸 값을 한 줄로 두고 휴대폰에서는 표만 옆으로 민다(TOP 50 표와 같은 방식) */
 .store-top th, .store-top td { white-space: nowrap; }
 .store-top td:nth-child(2) { white-space: normal; min-width: 8em; }   /* 상호는 줄바꿈(휴대폰 — 2026-11-12) */
+.round-stores th:nth-child(n+3), .round-stores td:nth-child(n+3) { white-space: nowrap; }   /* 회차 페이지 1등 판매점 — 방식 · 누적 1등은 한 줄 */
 .tier-stat .sub { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; font-weight: normal; }
 .tier-glance td:first-child, .tier-records td:first-child, .tier-tax td:first-child { font-weight: bold; text-align: left; }
 /* 금액 칸은 "원"만 다음 줄로 떨어지지 않게 한 줄로 (첫 칸 이름표만 줄을 바꾼다) */
