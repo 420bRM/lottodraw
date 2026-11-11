@@ -2872,9 +2872,10 @@ function storeMapPage(md, variant) {
         <div class="sm-row">
             <a class="sm-back" href="index.html" data-i18n-en="← Generator">← 생성기로</a>
             ${hex ? '<h1 class="sm-title" data-i18n-en="LottoHex&lt;span class=&quot;sr-only&quot;&gt; · retailer turf game&lt;/span&gt;">LottoHex<span class="sr-only"> · 판매점 땅따먹기</span></h1>' : '<h1 class="sm-title" data-i18n-en="Lotto retailer map">로또 판매점 지도</h1>'}
-            <!-- 휴대폰: 지도 모드(2026-11-08 사장님 — "LottoHex 랑 지도 기능이 한곳에 모여 불편"). 제목 자리에 놓아 줄이 늘지 않게. PC 는 감춘다 -->
+            <!-- 휴대폰: 지도 모드(2026-11-08 사장님 — "LottoHex 랑 지도 기능이 한곳에 모여 불편"). 제목 자리에 놓아 줄이 늘지 않게. PC 는 감춘다.
+                 LottoHex 아래 작은 "땅따먹기 게임"(2026-11-11 사용자 의견 — 무엇인지 몰라 안 누를 것 같다) -->
             <div class="sm-mode-sw" id="sm-mode-sw" role="group" aria-label="지도 모드" data-i18n-attr="aria-label:sm.modeSw" hidden>
-                <a href="${STORE_MAP_FILE}" role="button" data-mode-to="store" aria-pressed="${!hex}" data-i18n-en="Retailers">판매점</a><a href="${LOTTOHEX_FILE}" role="button" data-mode-to="hex" aria-pressed="${hex}"><span class="sm-turf-ico" aria-hidden="true"></span>LottoHex</a>
+                <a href="${STORE_MAP_FILE}" role="button" data-mode-to="store" aria-pressed="${!hex}" data-i18n-en="Retailers">판매점</a><a href="${LOTTOHEX_FILE}" role="button" data-mode-to="hex" aria-pressed="${hex}"><span class="sm-turf-ico" aria-hidden="true"></span><span class="sm-mode-name">LottoHex<small class="sm-mode-sub" data-i18n-en="turf game">땅따먹기 게임</small></span></a>
             </div>
             <div class="lang-switch sm-lang" role="group" aria-label="Language"><button type="button" data-lang-btn="ko">KO</button><button type="button" data-lang-btn="en">EN</button></div>
             <button type="button" class="sm-night" id="sm-night" aria-pressed="false" title="밤 지도" aria-label="밤 지도" data-i18n-attr="title:sm.night aria-label:sm.night">🌙</button>
@@ -2897,7 +2898,7 @@ function storeMapPage(md, variant) {
             <div class="sm-turf" id="sm-turf" hidden>
                 <button type="button" class="sm-turf-main" id="sm-terr-chip" aria-pressed="false" title="육각 칸 땅따먹기 · Map 랭킹" data-i18n-attr="title:sm.terrTitle">
                     <span class="sm-turf-ico" aria-hidden="true"></span>
-                    <span class="sm-turf-txt"><b><span>LottoHex</span></b><small class="sm-turf-sub" id="sm-turf-stat"></small></span>
+                    <span class="sm-turf-txt"><b><span>LottoHex</span></b><small class="sm-turf-sub" id="sm-turf-stat" data-i18n-en="Retailer turf game">판매점 땅따먹기 게임</small></span>
                     <span class="sm-turf-sw" aria-hidden="true"></span>
                 </button>
                 <button type="button" class="sm-turf-only" id="sm-terr-only" data-terr-only aria-pressed="false" title="판매점 점은 감추고 LottoHex 칸만 보기" data-i18n-attr="title:sm.terrOnlyTitle"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="LottoHex only">LottoHex만 보기</span></button>

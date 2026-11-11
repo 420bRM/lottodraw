@@ -184,11 +184,13 @@ body.sm-full #theme-btn { display: none !important; }
 .sm-pg:disabled { opacity: .35; cursor: default; }
 
 /* 다녀온 곳(로그인 회원): 단추 + 색 고르기 */
-.sm-visit { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line, #e3e3e3); }
+/* 자리: 이름 · 주소 바로 아래(2026-11-11 사용자 의견 — 맨 아래라 못 찾았다). 안 다녀온 곳은 꽉 찬 단추로 눈에 띄게, 채우기 전에도 자리를 잡아 둔다 */
+.sm-visit { margin: 6px 0 8px; }
+.sm-visit:empty { min-height: 30px; }
 .sm-visit-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.sm-visit-btn { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border: 1px solid var(--brand, #003087); border-radius: 999px; background: var(--surface, #fff);
-    color: var(--brand, #003087); font: inherit; font-size: 12px; font-weight: bold; cursor: pointer; }
-.sm-visit-btn.is-on { background: var(--soft, #f3f6fb); }
+.sm-visit-btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; border: 1px solid var(--brand, #003087); border-radius: 999px; background: var(--brand-bg, #003087);
+    color: #fff; font: inherit; font-size: 12.5px; font-weight: bold; box-shadow: 0 1px 4px rgba(0, 48, 135, .25); cursor: pointer; }
+.sm-visit-btn.is-on { background: var(--soft, #f3f6fb); color: var(--brand, #003087); box-shadow: none; }
 .sm-swatch { width: 10px; height: 10px; border-radius: 50%; }
 .sm-colors { display: inline-flex; flex-wrap: wrap; gap: 4px; }
 .sm-color { position: relative; width: 18px; height: 18px; padding: 0; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 0 1px var(--line, #ccc); cursor: pointer; }
@@ -247,8 +249,8 @@ body.sm-full #theme-btn { display: none !important; }
     .sm-pg { width: 22px; height: 18px; font-size: 12px; }
     .sm-why { margin: 4px 0; font-size: 10px; }
     .sm-links a { padding: 3px 8px; font-size: 10.5px; }
-    .sm-visit { margin-top: 5px; padding-top: 5px; }
-    .sm-visit-btn { padding: 3px 8px; font-size: 10.5px; }
+    .sm-visit { margin: 4px 0 6px; }
+    .sm-visit:empty { min-height: 25px; }
     .sm-color { width: 15px; height: 15px; }
     .sm-cmt { margin-top: 5px; padding-top: 5px; }
     .sm-cmt h4 { font-size: 10.5px; }
@@ -491,7 +493,7 @@ body.sm-full #theme-btn { display: none !important; }
     .sm-turf-txt b { display: flex; align-items: center; gap: 7px; font-size: 16px; font-weight: 800; }
     .sm-turf-beta { display: inline-block; padding: 1px 7px; border-radius: 999px; background: rgba(255, 255, 255, .16); color: #ffd76a; font-size: 10px; font-weight: bold; }
     .sm-turf-sub { display: block; overflow: hidden; color: rgba(255, 255, 255, .8); font-size: 11.5px; font-weight: normal; text-overflow: ellipsis; white-space: nowrap; }
-    .sm-turf-sub:empty { display: none; }   /* 부제는 없다(2026-11-08 사장님) — 켠 뒤에만 내 칸 · 순위 */
+    .sm-turf-sub:empty { display: none; }   /* 처음엔 "판매점 땅따먹기 게임"(2026-11-11 사용자 의견), 불러오면 내 칸 · 순위 또는 참여자 수 */
     .sm-turf-sw { display: block; position: relative; width: 38px; height: 22px; border-radius: 999px; background: rgba(255, 255, 255, .22); transition: background .2s; }
     .sm-turf-sw::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .3); transition: transform .2s; }
     .sm-turf-main[aria-pressed="true"] .sm-turf-sw { background: #ffa94d; }
@@ -608,6 +610,10 @@ body.sm-full #theme-btn { display: none !important; }
     .sm-mode-sw a[data-mode-to="store"][aria-pressed="true"] { position: relative; z-index: 1; border-color: var(--brand, #003087); background: var(--brand-bg, #003087); color: #fff; }
     .sm-mode-sw a[data-mode-to="hex"][aria-pressed="true"] { position: relative; z-index: 1; border-color: #4b3bb8; background: linear-gradient(135deg, #24135f, #2d3a8f 60%, #0f6170); color: #fff; }
     .sm-mode-sw .sm-turf-ico, .sm-hexbar .sm-turf-ico { width: 10px; height: 11px; }
+    /* LottoHex 아래 작은 "땅따먹기 게임"(2026-11-11 사용자 의견) — 두 줄이라도 단추 높이는 판매점과 같게(줄을 늘리지 않게 촘촘히) */
+    .sm-mode-name { display: grid; line-height: 1.05; text-align: left; }
+    .sm-mode-sub { font-size: 8.5px; font-weight: 600; letter-spacing: -.01em; opacity: .78; }
+    .sm-mode-sw a[data-mode-to="hex"] { padding-top: 2px; padding-bottom: 2px; }
     .sm-mode-sw a.has-new, .sm-hexbar-stat.has-new { position: relative; }
     .sm-mode-sw a.has-new::after, .sm-hexbar-stat.has-new::after { content: ''; position: absolute; top: -3px; right: -3px; width: 8px; height: 8px; border: 1.5px solid var(--surface, #fff); border-radius: 50%; background: #e0283a; }
     .sm-turf { display: none !important; }   /* 판매점 모드 칩 줄에서 LottoHex 칩은 빠진다(모드 단추가 대신) */

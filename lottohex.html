@@ -23,7 +23,7 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <link rel="stylesheet" href="css/site.css">
     <link rel="stylesheet" href="js/vendor/maplibre-gl.css?v=7e27dfc9">
-    <link rel="stylesheet" href="css/store-map.css?v=ca40b1d9">
+    <link rel="stylesheet" href="css/store-map.css?v=557becc2">
     <script src="js/i18n-dict.js"></script>
     <script src="js/i18n.js"></script>
     <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"LottoHex","alternateName":"로또 판매점 땅따먹기","url":"https://www.lottodraw.kr/lottohex.html","description":"LottoHex는 로또 판매점에 직접 다녀와 위치로 인증하고, 지도 위 육각형 칸을 차지하는 무료 땅따먹기 게임입니다. 칸 안에서 다녀온 판매점이 가장 많은 사람이 주인이 되고, 분기마다 Map 랭킹을 확정해 1~10위에 포인트를 드립니다. 복권을 살 필요는 없습니다.","applicationCategory":"GameApplication","operatingSystem":"Web","inLanguage":["ko","en"],"isAccessibleForFree":true,"offers":{"@type":"Offer","price":0,"priceCurrency":"KRW"},"dateModified":"2026-11-07","publisher":{"@type":"Organization","name":"lottodraw.kr","url":"https://www.lottodraw.kr/"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://www.lottodraw.kr/"},{"@type":"ListItem","position":2,"name":"판매점 지도","item":"https://www.lottodraw.kr/store-map.html"},{"@type":"ListItem","position":3,"name":"LottoHex","item":"https://www.lottodraw.kr/lottohex.html"}]}]}</script>
@@ -44,9 +44,10 @@
         <div class="sm-row">
             <a class="sm-back" href="index.html" data-i18n-en="← Generator">← 생성기로</a>
             <h1 class="sm-title" data-i18n-en="LottoHex&lt;span class=&quot;sr-only&quot;&gt; · retailer turf game&lt;/span&gt;">LottoHex<span class="sr-only"> · 판매점 땅따먹기</span></h1>
-            <!-- 휴대폰: 지도 모드(2026-11-08 사장님 — "LottoHex 랑 지도 기능이 한곳에 모여 불편"). 제목 자리에 놓아 줄이 늘지 않게. PC 는 감춘다 -->
+            <!-- 휴대폰: 지도 모드(2026-11-08 사장님 — "LottoHex 랑 지도 기능이 한곳에 모여 불편"). 제목 자리에 놓아 줄이 늘지 않게. PC 는 감춘다.
+                 LottoHex 아래 작은 "땅따먹기 게임"(2026-11-11 사용자 의견 — 무엇인지 몰라 안 누를 것 같다) -->
             <div class="sm-mode-sw" id="sm-mode-sw" role="group" aria-label="지도 모드" data-i18n-attr="aria-label:sm.modeSw" hidden>
-                <a href="store-map.html" role="button" data-mode-to="store" aria-pressed="false" data-i18n-en="Retailers">판매점</a><a href="lottohex.html" role="button" data-mode-to="hex" aria-pressed="true"><span class="sm-turf-ico" aria-hidden="true"></span>LottoHex</a>
+                <a href="store-map.html" role="button" data-mode-to="store" aria-pressed="false" data-i18n-en="Retailers">판매점</a><a href="lottohex.html" role="button" data-mode-to="hex" aria-pressed="true"><span class="sm-turf-ico" aria-hidden="true"></span><span class="sm-mode-name">LottoHex<small class="sm-mode-sub" data-i18n-en="turf game">땅따먹기 게임</small></span></a>
             </div>
             <div class="lang-switch sm-lang" role="group" aria-label="Language"><button type="button" data-lang-btn="ko">KO</button><button type="button" data-lang-btn="en">EN</button></div>
             <button type="button" class="sm-night" id="sm-night" aria-pressed="false" title="밤 지도" aria-label="밤 지도" data-i18n-attr="title:sm.night aria-label:sm.night">🌙</button>
@@ -69,7 +70,7 @@
             <div class="sm-turf" id="sm-turf" hidden>
                 <button type="button" class="sm-turf-main" id="sm-terr-chip" aria-pressed="false" title="육각 칸 땅따먹기 · Map 랭킹" data-i18n-attr="title:sm.terrTitle">
                     <span class="sm-turf-ico" aria-hidden="true"></span>
-                    <span class="sm-turf-txt"><b><span>LottoHex</span></b><small class="sm-turf-sub" id="sm-turf-stat"></small></span>
+                    <span class="sm-turf-txt"><b><span>LottoHex</span></b><small class="sm-turf-sub" id="sm-turf-stat" data-i18n-en="Retailer turf game">판매점 땅따먹기 게임</small></span>
                     <span class="sm-turf-sw" aria-hidden="true"></span>
                 </button>
                 <button type="button" class="sm-turf-only" id="sm-terr-only" data-terr-only aria-pressed="false" title="판매점 점은 감추고 LottoHex 칸만 보기" data-i18n-attr="title:sm.terrOnlyTitle"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="LottoHex only">LottoHex만 보기</span></button>
@@ -204,6 +205,6 @@
 <script src="js/license.js?v=e4775149"></script>
 <script src="js/vendor/maplibre-gl.js?v=74bdab14"></script>
 <script src="js/hexgrid.js?v=d670c638"></script>
-<script src="js/store-map.js?v=08f7c7e3"></script>
+<script src="js/store-map.js?v=f75bf3c0"></script>
 </body>
 </html>
