@@ -1563,7 +1563,13 @@
         drawTicker();   // 폭이 바뀌었으니 흐르는 거리 · 시간을 다시
     }
     placeTicker();
-    window.addEventListener('resize', placeTicker);
+    // 띠 폭이 화면을 따라 바뀌므로(PC 는 지도 폭 그대로) 창 크기를 바꾸면 다 바꾼 뒤 한 번 흐르는 거리 · 시간을 다시 잰다
+    let tickerTimer = null;
+    window.addEventListener('resize', () => {
+        placeTicker();
+        clearTimeout(tickerTimer);
+        tickerTimer = setTimeout(() => { if (hexMode) { feedSig = ''; drawTicker(); } }, 250);
+    });
     // 영역만 보기: 판매점 점 · 별 · 이름 · 다녀온 곳을 다 감추고 칸만. 영역이 꺼져 있으면 함께 켠다
     function setTerrOnly(on) {
         terrOnly = on;
