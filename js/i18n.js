@@ -15,6 +15,32 @@
  * 언어를 바꾸면 페이지를 다시 읽는다. 차트와 표는 스크립트가 그리므로, 이미
  * 그려진 것을 일일이 다시 칠하는 것보다 한 번 새로 그리는 쪽이 어긋날 여지가 없다.
  */
+
+/* 카카오톡 앱 안 브라우저로 열리면 휴대폰 기본 브라우저(삼성 인터넷 · 크롬 · 사파리)로 다시 연다 (2026-11-10 사장님).
+ *
+ * 카톡으로 공유한 주소를 누르면 카톡 안 브라우저가 열리는데, 구글 로그인이 막히고(구글이 앱 안 브라우저를 거절한다)
+ * 로그인 · 저장값이 일반 브라우저와 따로 놀고, 전체 화면 · 위치 같은 기능도 제약이 있다.
+ * 카카오톡이 받는 kakaotalk://web/openExternal?url= 주소로 넘기면 기본 브라우저가 같은 주소(#까지)로 열린다(안드로이드 · 아이폰).
+ * 이 파일은 모든 페이지가 머리에서 읽으므로(관리자 페이지 빼고) 화면을 그리기 전에 넘어간다.
+ *
+ * - 카카오톡만. 네이버 · 인스타그램 등은 기본 브라우저로 넘길 표준 주소가 없다(크롬을 억지로 고르는 방법뿐).
+ * - 한 탭에서 한 번만(sessionStorage). 넘어가지 못했거나 카톡으로 돌아와 계속 보면 다시 내보내지 않는다.
+ * - 크롬 계열은 머리에서 다른 주소로 넘기기 시작하면 이 페이지 읽기를 멈춘다(본문이 비어 남는다 — 크로미움으로 확인).
+ *   그래서 이 화면이 다시 보일 때(넘어가지 못했거나 카톡으로 돌아왔을 때) 본문이 없으면 한 번 새로 읽는다. 위 기록 때문에 다시 넘기지 않는다.
+ * - 창 안(iframe)에서는 하지 않는다. 미리보기 로봇(kakaotalk-scrap)은 스크립트를 돌리지 않아 상관없다.
+ */
+(function () {
+    try {
+        if (!/KAKAOTALK/i.test(navigator.userAgent) || window.top !== window.self) return;
+        if (sessionStorage.getItem('lottodraw.kakaoOut')) return;
+        sessionStorage.setItem('lottodraw.kakaoOut', '1');
+        location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(location.href);
+        const back = () => { if (!document.hidden && !document.body) location.reload(); };
+        setTimeout(back, 2500);
+        document.addEventListener('visibilitychange', back);
+    } catch (e) { /* 저장소가 막힌 브라우저: 넘기지 않는다(같은 탭에서 되풀이하지 않게) */ }
+})();
+
 (function (global) {
     'use strict';
 
@@ -151,7 +177,7 @@
     // 페이지마다 <script> 를 따로 넣지 않는다. 같은 폴더의 파일을 쓴다(blog/·round/ 에서도 맞는 주소).
     // 주소 끝에 내용 지문(?v=)을 붙인다 — 없으면 배포 직후 10분 동안 브라우저가 쥔 옛 theme.js 가 돌아 새 메뉴 단추가 안 보였다(2026-10-27).
     // 아래 값은 tools/asset-version.js 가 빌드 때 고쳐 쓴다(손으로 고치지 않는다)
-    const LOAD_V = { 'account.js': '709370d9', 'theme.js': '1f1c4fbe' };
+    const LOAD_V = { 'account.js': 'bf89d799', 'theme.js': '0a473530' };
     (function loadAccount() {
         const me = document.currentScript;
         if (!me || !me.src || !document.createElement) return;

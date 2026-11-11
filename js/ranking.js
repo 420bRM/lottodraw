@@ -10,6 +10,7 @@
         return s;
     };
     const $ = id => document.getElementById(id);
+    const lang = () => (window.I18N && window.I18N.lang) || 'ko';
 
     function el(tag, props, kids) {
         const n = document.createElement(tag);
@@ -28,7 +29,7 @@
         if (message) { body.appendChild(el('tr', {}, [el('td', { colspan: '3', text: message })])); return; }
         rows.forEach(r => body.appendChild(el('tr', { className: r.rank <= 3 ? 'top' + r.rank : '' }, [
             el('td', { text: r.rank <= 3 ? ['🥇', '🥈', '🥉'][r.rank - 1] : String(r.rank) }),
-            el('td', { text: r.nick }),
+            el('td', {}, [r.tt ? el('span', { className: 'rank-ttl', text: lang() === 'en' ? r.tt[1] : r.tt[0] }) : null, r.nick]),   // 단 칭호(LottoHex, 2026-11-09)
             el('td', { text: tr('rank.pts', '{n}점', { n: r.points.toLocaleString() }) }),
         ])));
     }

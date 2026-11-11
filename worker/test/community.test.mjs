@@ -126,9 +126,9 @@ test('로그인 설정: 클라이언트 ID 가 없으면 꺼져 있고, 넣으�
     assert.equal((await call(off, 'GET', '/api/config')).data.login, null);
     assert.equal((await login(off)).data.error, 'no_login');
     const on = await fresh();
-    assert.deepEqual((await call(on, 'GET', '/api/config')).data.login, { google: CLIENT_ID, trialDays: 3 });
+    assert.deepEqual((await call(on, 'GET', '/api/config')).data.login, { google: CLIENT_ID, trialDays: 3, gps: false, geoV: 1, terrV: 1 });
     const noTrial = await fresh({ SIGNUP_TRIAL_DAYS: undefined });
-    assert.deepEqual((await call(noTrial, 'GET', '/api/config')).data.login, { google: CLIENT_ID, trialDays: 0 }, '체험을 끄면 0');
+    assert.deepEqual((await call(noTrial, 'GET', '/api/config')).data.login, { google: CLIENT_ID, trialDays: 0, gps: false, geoV: 1, terrV: 1 }, '체험을 끄면 0');
 });
 
 test('가입 체험 끔(실서버 기본): 새 가입은 키 · 주문 · 체험 기록 없이 가입만, 텔레그램에 새 가입 알림, 예전 체험 키는 그대로', async () => {
@@ -544,9 +544,10 @@ test('자동 별명: 예전 회원은 그때부터 3일, 관리자가 별명을 
     // 관리자가 (자동) 별명을 지우면 새로 3일
     const list = (await call(env, 'GET', '/api/admin/members', { headers: asAdmin })).data.members;
     assert.equal(list.find(x => x.sub === 'OLD').nickAuto, true, '관리자 명부에 자동 별명 표시');
+    const before = Date.now();   // 같은 1ms 안에 돌면 T 와 같을 수 있어 '지운 때'로 잰다(예전엔 > T + 3일 이라 가끔 실패)
     assert.equal((await call(env, 'POST', '/api/admin/members/OLD/clear-nick', { headers: asAdmin })).status, 200);
     const due2 = m.get('u:OLD').nickDue;
-    assert.ok(due2 > T + 3 * DAYMS, '지운 때부터 3일');
+    assert.ok(due2 >= before + 3 * DAYMS && due2 <= Date.now() + 3 * DAYMS, '지운 때부터 3일');
     assert.equal(m.get('u:OLD').nickAuto, undefined);
     assert.deepEqual((await op(env, { op: 'autoNicks', now: due2 - 1 })).named, []);
     assert.equal((await op(env, { op: 'autoNicks', now: due2 })).named.length, 1);
@@ -591,7 +592,7 @@ test('랭킹: 출석(하루 한 번)·반응·로그인한 채 산 이용권으�
     let r = (await call(env, 'GET', '/api/ranking')).data;
     assert.deepEqual(r.top, [{ rank: 1, nick: '첫째', points: 10 + 4 + buyPts, days: 1 }], '별명 없는 B 는 공개 목록에 없다');
     assert.equal(r.me, null);
-    assert.deepEqual(r.points, { attend: 10, react: 2, buyPer100: 10, nickChange: 500, dayPass: 300, visitColor: 30, terrSkin: 30 });
+    assert.deepEqual(r.points, { attend: 10, react: 2, buyPer100: 10, nickChange: 500, dayPass: 300, visitColor: 30, terrSkin: 30, terrBeam: 300, visit: 10, visitDaily: 50, terrRank: [1000, 500, 300, 100, 100, 100, 100, 100, 100, 100] });
 
     // 내 순위: 별명이 없어도 알려 준다
     r = (await call(env, 'GET', '/api/ranking', { headers: auth(b.session) })).data;
@@ -599,7 +600,7 @@ test('랭킹: 출석(하루 한 번)·반응·로그인한 채 산 이용권으�
     assert.equal(r.me.total, 10);
     assert.equal(r.me.nick, null);
     const meA = (await call(env, 'GET', '/api/me', { headers: auth(a.session) })).data.user.score;
-    assert.deepEqual(meA, { total: 10 + 4 + buyPts, days: 1, reacts: 2, buy: buyPts, spent: 0, avail: 10 + 4 + buyPts });
+    assert.deepEqual(meA, { total: 10 + 4 + buyPts, days: 1, reacts: 2, buy: buyPts, verified: 0, hex: 0, ms: 0, spent: 0, avail: 10 + 4 + buyPts });
 
     // 환불하면 구매 점수가 빠진다
     await call(env, 'POST', `/api/admin/orders/${ord.order.id}/refund`, { headers: asAdmin });

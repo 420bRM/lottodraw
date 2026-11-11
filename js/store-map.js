@@ -34,7 +34,26 @@
     const T = (ko, eng) => (en() ? eng : ko);
     const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const fmt = n => Number(n).toLocaleString(en() ? 'en-US' : 'ko-KR');
-    const fail = msg => { mapBox.innerHTML = '<p class="sm-loading">' + esc(msg) + '</p>'; };
+    // 다른 페이지(생성기 · 바닥글 띠 · 메뉴 · 블로그)에서 들어왔으면 첫 화면부터 전환 화면이 덮여 있다(생성기가 <head> 에서 html.sm-enter-hex|store 를 단다 —
+    // 2026-11-09 사장님 "생성기에서 맵으로 갈 때도 전환 효과"). 지도가 뜨면 걷는다: 페이지를 연 지 1.1초는 보이고, 늦어도 4초에
+    const enterFx = (() => {
+        const html = document.documentElement;
+        const id = html.classList.contains('sm-enter-hex') ? 'sm-hexfx' : html.classList.contains('sm-enter-store') ? 'sm-storefx' : null;
+        if (!id) return () => {};
+        let done = false;
+        const leave = () => {
+            if (done) return;
+            done = true;
+            const fx = document.getElementById(id);
+            setTimeout(() => {
+                if (fx) fx.classList.add('is-leave');
+                setTimeout(() => { html.classList.remove('sm-enter-hex', 'sm-enter-store'); if (fx) { fx.classList.remove('is-leave'); fx.hidden = true; } }, 450);
+            }, Math.max(0, 1100 - performance.now()));
+        };
+        setTimeout(leave, 4000);
+        return leave;
+    })();
+    const fail = msg => { enterFx(); mapBox.innerHTML = '<p class="sm-loading">' + esc(msg) + '</p>'; };
 
     if (!window.maplibregl) { fail(T('지도 스크립트를 불러오지 못했습니다. 아래 시도별 표를 봐 주세요.', 'Could not load the map. See the table below.')); return; }
     if (maplibregl.supported && !maplibregl.supported()) { fail(T('이 브라우저에서는 지도를 그릴 수 없습니다(WebGL). 아래 시도별 표를 봐 주세요.', 'This browser cannot draw the map (WebGL). See the table below.')); return; }
@@ -45,7 +64,7 @@
     const shown = { top: false, w1: true, w2: true, closed: false, all: false, mine: false, terr: false };   // terr: 영역(육각 칸, 2026-11-07 시험판)   // mine: 내 기록(다녀온 곳만, 2026-10-27)   // top: TOP 50 만 별로 보기(2026-10-27)
     let terrOnly = false;                          // 영역만 보기(2026-11-08) — 영역을 켰을 때만 뜻이 있다
     // 휴대폰 지도 모드(2026-11-08 사장님 — "LottoHex 랑 지도 기능이 한곳에 모여 불편"): 'store' 판매점 · 'hex' LottoHex(아래 판 + 탭)
-    let hexMode = false, terrTab = 'now', sheetSnap = 'half', sheetNoClick = 0, sheetBefore = null;
+    let hexMode = false, terrTab = 'now', sheetSnap = 'peek', sheetNoClick = 0, sheetBefore = null;   // 아래 판은 접힌 채로 시작(2026-11-09 사장님)
     const hexMobile = () => hexMode && !isWide();
     const modes = { A: true, M: true, S: true };   // 1등 방식 체크(로그인 회원)
     let fadeT = 0;                                 // 끌기 막대: 1등 횟수 + 1 이 이 값보다 작으면 흐려진다(0 = 다 보임)
@@ -116,6 +135,7 @@
             },
         }, 'st-w2');
         map.addLayer({ id: 'st-all-name', type: 'symbol', source: 'all', layout: nameLayout(0.6), paint: namePaint() });
+        beamShow(true);   // 빛 벽이 일반 판매점 점 위에 오게
         names();
         paintVisits();
         map.on('click', 'st-all', e => {
@@ -186,15 +206,21 @@
         const N = k => (on ? NIGHT[k] : null);
         for (const l of map.getStyle().layers) {
             const sl = l['source-layer'], id = l.id;
-            if (/^(st|terr)-/.test(id)) continue;   // 판매점 점 · 영역 칸은 제 색 그대로(영역 칸이 땅 색으로 칠해져 밤에 안 보였다 — 2026-11-07)
+            if (/^(st|terr|rail)-/.test(id)) continue;   // 판매점 점 · 영역 칸 · 역은 제 색 그대로(영역 칸이 땅 색으로 칠해져 밤에 안 보였다 — 2026-11-07). 역은 railPaint
             if (id === 'sm-bld') setP(id, 'fill-extrusion-color', N('extr'));
             else if (id === 'sm-bld-line') setP(id, 'line-color', N('edge'));
             else if (l.type === 'background') setP(id, 'background-color', N('bg'));
-            else if (l.type === 'fill') setP(id, 'fill-color', N(sl === 'water' ? 'water' : sl === 'park' || sl === 'landcover' ? 'park' : sl === 'building' ? 'bld' : 'land'));
+            else if (l.type === 'fill') {
+                const k = sl === 'water' ? 'water' : sl === 'park' || sl === 'landcover' ? 'park' : sl === 'building' ? 'bld' : 'land';
+                setP(id, 'fill-color', N(k));
+                // 테두리도 — 바탕 지도(positron)의 건물 층은 테두리 색(밝은 회색)이 따로 있어 밤에 건물이 흰 선으로 떴다(2026-11-10 사장님)
+                setP(id, 'fill-outline-color', N(sl === 'building' ? 'edge' : k));
+            }
             else if (l.type === 'line') setP(id, 'line-color', N(sl === 'water' || sl === 'waterway' ? 'water' : sl === 'boundary' ? 'border' : /casing/.test(id) ? 'casing' : /rail|transit/.test(id) ? 'rail' : 'road'));
             else if (l.type === 'symbol' && l.layout && l.layout['text-field'] && !isShield(l)) { setP(id, 'text-color', N('text')); setP(id, 'text-halo-color', N('halo')); }
         }
         names();
+        railPaint();
         if (map.getLayer('st-top-glow')) map.setLayoutProperty('st-top-glow', 'icon-image', on ? 'sm-star-glow-n' : 'sm-star-glow');
         if (map.getLayer('st-net-glow')) map.setLayoutProperty('st-net-glow', 'icon-image', on ? 'sm-star-glow-red-n' : 'sm-star-glow-red');
         if (map.getLayer('st-net')) map.setPaintProperty('st-net', 'circle-stroke-color', on ? NIGHT.bg : '#fff');
@@ -226,6 +252,39 @@
     new MutationObserver(() => nightModel()).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
     // 북쪽 보기 단추 — "내 위치" 단추 위, 같은 크기. 지도가 돌아간 만큼 바늘도 돈다
+    // 전체화면(2026-11-09 사장님 — 휴대폰은 주소창 · 브라우저 도구가 지도를 많이 가린다). 페이지 전체(아래 판 · 카드 · 창 포함)를 전체화면으로.
+    // 휴대폰 크기에서만 보이고(css), 브라우저가 지원할 때만 단다 — 아이폰 Safari 는 페이지 전체화면을 지원하지 않아 단추가 없다
+    const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement || null;
+    const FS_IN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    const FS_OUT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    class FullControl {
+        onAdd() {
+            this.box = document.createElement('div');
+            this.box.className = 'maplibregl-ctrl maplibregl-ctrl-group sm-full-ctrl';
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'sm-full-btn';
+            const paint = () => {
+                const on = !!fsEl();
+                b.innerHTML = on ? FS_OUT : FS_IN;
+                b.title = on ? T('전체화면 끄기', 'Exit full screen') : T('전체화면으로 보기', 'Full screen');
+                b.setAttribute('aria-label', b.title);
+                b.setAttribute('aria-pressed', String(on));
+            };
+            b.addEventListener('click', () => {
+                const d = document, el = d.documentElement;
+                try {
+                    if (fsEl()) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
+                    else { const r = (el.requestFullscreen || el.webkitRequestFullscreen).call(el, { navigationUI: 'hide' }); if (r && r.catch) r.catch(() => {}); }
+                } catch (e) { /* 막혀 있으면 그대로 */ }
+            });
+            ['fullscreenchange', 'webkitfullscreenchange'].forEach(ev => document.addEventListener(ev, paint));
+            paint();
+            this.box.appendChild(b);
+            return this.box;
+        }
+        onRemove() { this.box.remove(); }
+    }
     class NorthControl {
         onAdd(m) {
             this.box = document.createElement('div');
@@ -498,6 +557,7 @@
     // 지도 위 가운데 "⟳ ○○구 근처 판매점" 단추 → 지금 화면 안 판매점 목록(보이는 칩 · 1등 방식 · 흐리게 막대를 따른다).
     // "내 위치 기준"을 누르면 브라우저 위치로 옮겨 가까운 순 + 거리. 위치는 이 기기 안에서만 쓰고 서버로 보내지 않는다(위치정보법 — README 4-9)
     let myLoc = null, geo = null, nearAfterMove = false;
+    const geoActive = () => !!(geo && geo._watchState && geo._watchState !== 'OFF');   // 내 위치를 받고 있는가(기기 안, 지도를 옮겨도 계속)
     const nearPanel = document.getElementById('sm-near'), nearBtn = document.getElementById('sm-near-btn');
     const NEAR_MAX = 30;
     function distM([lng1, lat1], [lng2, lat2]) {
@@ -563,16 +623,18 @@
             const r = all.rows[x.i];
             return { name: r[2], place: [all.sido[r[3]], r[4]].filter(Boolean).join(' '), w1: 0, w2: 0 };
         };
-        list.forEach(x => { Object.assign(x, info(x)); x.d = myLoc ? distM(myLoc, [x.lng, x.lat]) : 0; });
-        list.sort(myLoc ? (a, b) => a.d - b.d : (a, b) => (b.w1 - a.w1) || (b.w2 - a.w2));
+        const ctr = nearFrom ? nearFrom.c : myLoc;   // 지역 찾기로 왔으면 그 지역 중심, 아니면 내 위치에서 가까운 순
+        list.forEach(x => { Object.assign(x, info(x)); x.d = ctr ? distM(ctr, [x.lng, x.lat]) : 0; });
+        list.sort(ctr ? (a, b) => a.d - b.d : (a, b) => (b.w1 - a.w1) || (b.w2 - a.w2));
+        const head = nearFrom ? nearFrom.name : gu;
         nearPanel.innerHTML = '<button type="button" class="sm-close" aria-label="' + T('닫기', 'Close') + '">×</button>' +
-            '<h3>' + esc(gu ? T(gu + ' 근처 판매점', 'Retailers around ' + gu) : T('이 근처 판매점', 'Retailers around here')) + ' <small>' + fmt(list.length) + T('곳', '') + '</small></h3>' +
+            '<h3>' + esc(head ? T(head + ' 근처 판매점', 'Retailers around ' + head) : T('이 근처 판매점', 'Retailers around here')) + ' <small>' + fmt(list.length) + T('곳', '') + '</small></h3>' +
             (key ? '<p class="sm-near-share"><button type="button" class="sm-share-area">🔗 ' + esc(T(gu + ' 판매점 지도 공유', 'Share the ' + gu + ' map')) + '</button></p>' : '') +
-            '<p class="sm-near-sort">' + (myLoc ? T('내 위치에서 가까운 순', 'Nearest to you first') : T('1등 많은 순', 'Most 1st prizes first')) +
+            '<p class="sm-near-sort">' + (nearFrom ? T(nearFrom.name + ' 중심에서 가까운 순', 'Nearest to the centre of ' + nearFrom.name + ' first') : myLoc ? T('내 위치에서 가까운 순', 'Nearest to you first') : T('1등 많은 순', 'Most 1st prizes first')) +
             ' <button type="button" class="sm-near-me">📍 ' + T('내 위치 기준', 'Use my location') + '</button></p>' +
             (list.length ? '<ol class="sm-near-list">' + list.slice(0, NEAR_MAX).map(x => '<li><button type="button" data-t="' + x.t + '" data-i="' + x.i + '"><span class="sm-tname">' + esc(x.name) +
                 '<small>' + esc(x.place) + '</small></span><span class="sm-tcnt">' + (x.t === 'w' ? '<b>' + x.w1 + '</b>' + T('번 1등', ' × 1st') + '<small>2' + T('등 ', 'nd ') + x.w2 + '</small>' : '<small>' + T('일반 판매점', 'retailer') + '</small>') +
-                (myLoc ? '<small class="sm-dist">' + fmtDist(x.d) + '</small>' : '') + '</span></button></li>').join('') + '</ol>' +
+                (ctr ? '<small class="sm-dist">' + fmtDist(x.d) + '</small>' : '') + '</span></button></li>').join('') + '</ol>' +
                 (list.length > NEAR_MAX ? '<p class="sm-small">' + T('외 ' + fmt(list.length - NEAR_MAX) + '곳 — 지도를 더 확대하면 좁혀집니다.', fmt(list.length - NEAR_MAX) + ' more — zoom in to narrow down.') + '</p>' : '')
                 : '<p class="sm-small">' + T('이 화면에는 판매점이 없습니다. 지도를 옮기거나 줌아웃해 보세요.', 'No retailers on screen. Move or zoom out.') + '</p>') +
             '<p class="sm-small sm-near-note">' + T('위치는 이 기기 안에서만 쓰고 저장하거나 보내지 않습니다.', 'Your location stays on this device.') + '</p>';
@@ -581,8 +643,8 @@
         if (sb) sb.addEventListener('click', () => shareArea(key, sb));
         if (isWide()) setTab('near'); else { card.hidden = true; minePanel.hidden = true; terrPanel.hidden = true; }
         nearPanel.scrollTop = 0;
-        nearPanel.querySelector('.sm-close').addEventListener('click', () => { nearPanel.hidden = true; if (isWide()) setTab('top'); });
-        nearPanel.querySelector('.sm-near-me').addEventListener('click', () => { if (geo) { nearAfterMove = true; geo.trigger(); } });
+        nearPanel.querySelector('.sm-close').addEventListener('click', () => { nearPanel.hidden = true; nearFrom = null; if (isWide()) setTab('top'); });
+        nearPanel.querySelector('.sm-near-me').addEventListener('click', () => { nearFrom = null; if (!geo) return; if (myLoc && geoActive()) { openNear(); return; } nearAfterMove = true; geo.trigger(); });   // 이미 받고 있으면 끄지 말고 다시 정렬
         nearPanel.querySelectorAll('.sm-near-list button').forEach(b => b.addEventListener('click', () => {
             const i = Number(b.dataset.i);
             if (b.dataset.t === 'w') open(i, true); else openAll(i, true);
@@ -594,6 +656,8 @@
 
     const links = (name, place, lat, lng) => '<p class="sm-links"><a href="https://map.kakao.com/link/map/' + encodeURIComponent(name) + ',' + lat + ',' + lng + '" target="_blank" rel="noopener">' + T('카카오맵', 'Kakao Map') + '</a>' +
         '<a href="https://map.naver.com/p/search/' + encodeURIComponent(name + ' ' + place) + '" target="_blank" rel="noopener">' + T('네이버 지도', 'Naver Map') + '</a></p>';
+    // "다녀왔어요" 자리(visitUi 가 채운다). 카드의 이름 · 주소 바로 아래 — 채우기 전에도 자리를 잡아 두어 아래 내용이 밀리지 않게(css .sm-visit:empty)
+    const VISIT_BOX = '<div class="sm-visit" id="sm-visit"></div>';
     function showCard(html, lat, lng, fly) {
         card.dataset.i = '';
         markTop(null);
@@ -634,9 +698,10 @@
         if (fly) reveal('a', i);
         const [lat, lng, name, si, gu] = all.rows[i];
         const place = [all.sido[si] || '', gu].filter(Boolean).join(' ');
-        showCard('<h3>' + esc(name) + '</h3><p class="sm-place">' + esc(place) + '</p>' +
+        // "다녀왔어요"는 이름 · 주소 바로 아래(2026-11-11 사용자 의견 — 맨 아래에 있어 한참 못 찾았다)
+        showCard('<h3>' + esc(name) + '</h3><p class="sm-place">' + esc(place) + '</p>' + VISIT_BOX +
             '<p class="sm-why">' + T(data.first + '회부터 1등 · 2등 기록이 없는 판매점입니다.', 'No 1st or 2nd prize here since draw ' + data.first + '.') + '</p>' + links(name, place, lat, lng) + '<div class="sm-share-shop" id="sm-share-shop"><button type="button" class="sm-share-btn">🔗 ' + T('해당 판매점 공유하기', 'Share this retailer') + '</button></div>' +
-            '<div class="sm-visit" id="sm-visit"></div><div class="sm-cmt" id="sm-cmt"></div>', lat, lng, fly);
+            '<div class="sm-cmt" id="sm-cmt"></div>', lat, lng, fly);
         shareUi('a', i, { name, place, w1: 0, w2: 0, sido: all.sido[si] || '' });
         visitUi('a', i);
         commentsUi('a', i);
@@ -877,10 +942,13 @@
             '<h3>' + T('내 기록', 'My places') + '</h3>' +
             '<div class="sm-rk sm-mine-tabs" role="group">' + tabBtn('v', T('다녀온 곳', 'Visited'), vs.length) + tabBtn('c', T('내 댓글', 'My comments'), cs ? cs.length : null) + '</div>' +
             (unread ? '<p class="sm-mine-new"><a href="mypage.html#my-notes">' + T('새 답글 ' + fmt(unread) + '개 · 마이페이지에서 보기 →', fmt(unread) + ' new repl' + (unread > 1 ? 'ies' : 'y') + ' · see My page →') + '</a></p>' : '') +
-            body + '<p class="sm-small sm-near-note">' + T('나만 보입니다. 위치는 쓰지 않습니다.', 'Only you can see this. No location used.') + '</p>';
+            body + '<p class="sm-small sm-near-note">' + (gpsCfg() ? T('나만 보입니다. 다녀온 곳은 판매점 50m 안에서 위치로 인증한 곳입니다.', 'Only you can see this. Visits are verified by location (within 50 m).') : T('나만 보입니다. 위치는 쓰지 않습니다.', 'Only you can see this. No location used.')) + '</p>' +
+            (gpsCfg() && geoAgreed() ? '<p class="sm-small"><button type="button" class="sm-geo-withdraw">' + T('위치 이용 동의 철회', 'Withdraw location consent') + '</button></p>' : '');
         minePanel.hidden = false;
         if (isWide()) setTab('mine'); else { card.hidden = true; nearPanel.hidden = true; terrPanel.hidden = true; }
         minePanel.querySelector('.sm-close').addEventListener('click', () => setMine(false));
+        const gw = minePanel.querySelector('.sm-geo-withdraw');
+        if (gw) gw.addEventListener('click', geoWithdraw);
         minePanel.querySelectorAll('.sm-mine-tabs button').forEach(b => b.addEventListener('click', () => { mineTab = b.dataset.k; drawMine(); }));
         minePanel.querySelectorAll('.sm-near-list button').forEach(b => b.addEventListener('click', () => (b.dataset.t === 'w' ? open : openAll)(Number(b.dataset.i), true)));
         minePanel.querySelectorAll('.sm-my-cmts button').forEach(b => b.addEventListener('click', () => {
@@ -911,9 +979,13 @@
     // 규칙 · 서버는 worker/src/territory.js — /api/territory(누구나, 지난 분기 확정 순위 last 포함), /join · /leave(로그인).
     // 참여는 동의(TERR_V) 뒤에만: 내가 차지한 칸 · Map 랭킹에 별명이 나온다. 어느 판매점을 다녀왔는지는 서버가 내보내지 않는다.
     // 시험판: "다녀왔어요"를 누른 기록만 센다. 위치(GPS)는 쓰지 않는다(위치기반서비스사업 신고 뒤 50m 인증으로 바꾼다)
-    const TERR_V = 1;   // worker TERR_CONSENT 와 같게. 동의 문구를 크게 바꾸면 둘 다 올린다
+    // LottoHex 동의 판: 서버가 /api/config 로 알려 준다(위치 인증을 켜면 2 — "위치로 인증한 다녀온 곳을 센다", 2026-11-09)
+    const terrV = () => { const A = account(); return (A && A.terrV && A.terrV()) || 1; };
+    const gpsCfg = () => { const A = account(); return (A && A.gps && A.gps()) || null; };   // 위치 인증이 켜져 있으면 { geoV, terrV }
     const HX = window.LottoHex;
     const terrPanel = document.getElementById('sm-terr'), terrChip = document.getElementById('sm-terr-chip'), terrOnlyBtn = document.getElementById('sm-terr-only');
+    // lottohex.html(2026-11-09 — 검색용 전용 주소)의 정적 안내(무엇 · 하는 법 · 규칙 · 포인트 · 이번 주): 창을 새로 그려도 맨 아래에 다시 붙인다(접은 채)
+    const hexAbout = document.getElementById('sm-hexabout');
     let terr = null, terrCells = null, terrSel = null, terrView = 'main', terrLoading = null, visitAt = {};
     let terrOpen = false;   // 영역 창이 열려 있는가 — 창을 닫아도 칸은 지도에 남는다(2026-11-07 사장님)
     // 칸 모양(스킨, 2026-11-07 사장님 — 지렁이 게임처럼 참여자마다 색 · 무늬가 다르게): 서버가 주는 "주색,보조색,무늬"(worker/src/territory.js SKIN_RE).
@@ -981,12 +1053,13 @@
         terrLoading = p;
         try { const r = await p; if (terrLoading === p) terr = r; } catch (e) { if (terrLoading === p) terr = terr || null; }
         if (terrLoading === p) terrLoading = null;
+        if (terr && terr.me && terr.me.fresh) { const f = terr.me.fresh; delete terr.me.fresh; afterFresh(f); }
         hexNews();
         turfStatus();
     }
     function terrFeatures() {
         const cells = (terr && terr.cells) || {}, mine = new Set((terr && terr.me && terr.me.cells) || []);
-        const polys = [], pts = [], rings = [];
+        const polys = [], pts = [], rings = [], beams = [];
         glintCells = [];
         terrCells.forEach((list, k) => {
             const own = cells[k], me = mine.has(k);
@@ -997,9 +1070,68 @@
                 pts.push({ type: 'Feature', geometry: { type: 'Point', coordinates: HX.centerOf(k) }, properties: { k, nm: (own[0] || T('(별명 없음)', '(no name)')) + ' · ' + own[1], c } });
                 rings.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: HX.ringOf(k).slice().reverse() }, properties: { k } });   // 시계 방향(빛이 도는 차례)
                 glintCells.push(glintCell(k));
+                if (own[6] === 1) beams.push(...beamWalls(k, c, ownerKey));   // 빛 벽을 산 사람이 켜 둔 칸(모두에게)
             }
         });
-        return { polys: { type: 'FeatureCollection', features: polys }, pts: { type: 'FeatureCollection', features: pts }, rings: { type: 'FeatureCollection', features: rings } };
+        return { polys: { type: 'FeatureCollection', features: polys }, pts: { type: 'FeatureCollection', features: pts }, rings: { type: 'FeatureCollection', features: rings }, beams: { type: 'FeatureCollection', features: beams } };
+    }
+    // ───── 내 영토 빛 벽(2026-11-10 사장님 — "사용자가 많아지면 내 칸을 구분하기 어렵다. 내 영토는 빛이 위로 쏘아지게, 그라데이션으로" →
+    // 같은 날 다시: "빛이 테두리 그대로 위로" · "육각형의 각 변이 수직으로 익스트루드된 것처럼" · "가까이서는 높이가 낮아지게") ─────
+    // 내 영토의 바깥 테두리(내 칸끼리 맞닿은 변은 빼고)를 따라 얇은 벽(칸 안쪽으로 약 15m)을 세운다 — 아래가 밝고 위로 갈수록 옅어진다.
+    // fill-extrusion 은 높이에 따라 옅게 할 수 없어 높이를 BEAM_N 토막으로 나눠 위로 갈수록 투명하게. 화면에서의 높이는 멀리서 높고(줌 8 · 200px) 가까이서 낮게(줌 18 · 40px).
+    // 3D 모드(지도를 기울였을 때)만 — 똑바로 내려다보면 벽 윗면이 테두리에 겹칠 뿐이라 감춘다. 색은 내 칸 색을 흰빛 쪽으로 밝힌 것.
+    // 같은 날 사장님 — "빛 벽은 포인트로 팔자, 남에게도 보이게": POINTS.terrBeam(300) 포인트로 사면(한 번 사면 계속) 켜고 끌 수 있고, 켜 두면 모두에게 보인다.
+    // 서버가 칸 7번째에 1(빛 벽 켬)을 붙여 준다 — 주인마다(별명 · 칸 모양이 같은 칸끼리) 바깥 테두리에. LottoHex 창에서 사기 · 켜고 끄기
+    const BEAM_COST = 300;   // worker POINTS.terrBeam 과 같게
+    const BEAM_N = 28, BEAM_T = 0.025, BEAM_PX = [[8, 200], [11, 170], [13, 130], [14.5, 95], [16, 65], [18, 40]];
+    const beamPx = z => { for (let i = 1; i < BEAM_PX.length; i++) { const [z0, p0] = BEAM_PX[i - 1], [z1, p1] = BEAM_PX[i]; if (z <= z1) return p0 + (p1 - p0) * (z - z0) / (z1 - z0); } return BEAM_PX[BEAM_PX.length - 1][1]; };
+    const beamIds = Array.from({ length: BEAM_N }, (_, i) => 'terr-beam-' + i);
+    // 칸 주인 구별(별명 + 칸 모양) — 같은 주인의 칸끼리 맞닿은 변에는 벽을 세우지 않는다
+    function ownerKey(k) { const o = terr && terr.cells && terr.cells[k]; return o ? (o[0] || '') + '|' + o[4] : null; }
+    // 칸 k 의 바깥 변마다 벽 한 장: 변 [a, b] 와 칸 가운데 쪽으로 BEAM_T 만큼 들어간 [b', a'] 사이(이웃 변의 벽과 꼭짓점에서 맞물린다)
+    function beamWalls(k, c, keyOf) {
+        const ctr = HX.centerOf(k), ring = HX.ringOf(k), out = [];
+        const rgb = [1, 3, 5].map(i => parseInt(String(c).slice(i, i + 2), 16) || 200);
+        const bc = '#' + rgb.map(v => Math.round(v + (255 - v) * 0.35).toString(16).padStart(2, '0')).join('');
+        const inn = p => [p[0] + (ctr[0] - p[0]) * BEAM_T, p[1] + (ctr[1] - p[1]) * BEAM_T];
+        for (let i = 0; i < 6; i++) {
+            const a = ring[i], b = ring[i + 1], m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+            const nb = HX.cellOf(ctr[1] + 2 * (m[1] - ctr[1]), ctr[0] + 2 * (m[0] - ctr[0]));   // 이 변 너머 칸
+            if (keyOf(nb) === keyOf(k)) continue;   // 같은 주인의 칸끼리 맞닿은 변 — 벽을 세우지 않는다(영토 바깥 테두리만)
+            out.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [[a, b, inn(b), inn(a), a]] }, properties: { bc } });
+        }
+        return out;
+    }
+    // 북위 37° · 512px 타일에서 1px ≈ 62070 / 2^줌 m — 줌 8~18 정수 줌마다 높이(m)를 정해 잇는다
+    const beamH = f => { const ex = ['interpolate', ['linear'], ['zoom']]; for (let z = 8; z <= 18; z++) ex.push(z, Math.round(beamPx(z) * 62070 / Math.pow(2, z) * f * 10) / 10); return ex; };
+    // LottoHex 화면에서만(같은 날 사장님 — "일반 지도 볼 때는 빛 안 나와도 돼") · 3D 에서만
+    const beamVis = () => !!(hexMode && shown.terr && map && map.getPitch() >= 15);
+    // 빛 벽 뒤의 판매점 점은 가려지게(같은 날 사장님): 빛 벽을 판매점 · 칸 · 역 점보다 위로 올리고, 글자(이름 · 번호 · 역 표시)만 다시 그 위로.
+    // 땅에 붙은 점은 화면에서 벽보다 아래(앞)에 있으면 벽에 겹치지 않고, 벽 뒤(위쪽)에 있으면 벽에 덮인다. 나중에 더한 점 층이 벽 위에 오면 다시 맞춘다
+    const BEAM_LABEL = /-(name|num)$|^rail-badge$/;
+    function beamOrder() {
+        const ids = map.getStyle().layers.map(l => l.id), b0 = ids.indexOf(beamIds[0]);
+        if (b0 < 0) return;
+        if (!ids.slice(b0 + 1).some(id => !beamIds.includes(id) && /^(st|hx|rail|terr)-/.test(id) && !BEAM_LABEL.test(id))) return;   // 이미 맞다
+        beamIds.forEach(id => map.moveLayer(id));
+        ids.filter(id => BEAM_LABEL.test(id)).forEach(id => map.moveLayer(id));
+    }
+    // force: 층을 새로 더했을 때 — 보이는 중이면 차례를 다시 맞춘다(지도 기울이는 동안에는 바뀔 때만)
+    function beamShow(force) {
+        if (!map || !map.getLayer(beamIds[0])) return;
+        const v = beamVis() ? 'visible' : 'none', was = map.getLayoutProperty(beamIds[0], 'visibility');
+        if (was !== v) beamIds.forEach(id => map.setLayoutProperty(id, 'visibility', v));
+        if (v === 'visible' && (was !== v || force)) beamOrder();
+    }
+    function beamLayers(below) {
+        const A = isNight() ? 0.85 : 0.75;
+        beamIds.forEach((id, i) => {
+            map.addLayer({ id, type: 'fill-extrusion', source: 'terr-beam', layout: { visibility: 'none' }, paint: {
+                'fill-extrusion-color': ['get', 'bc'], 'fill-extrusion-base': beamH(i / BEAM_N), 'fill-extrusion-height': beamH((i + 1) / BEAM_N),
+                'fill-extrusion-opacity': +(A * Math.pow(1 - i / BEAM_N, 1.5)).toFixed(3), 'fill-extrusion-vertical-gradient': false } }, below);
+        });
+        map.on('pitch', beamShow);
+        beamShow();
     }
     const TERR_LAYERS = ['terr-fill', 'terr-pat', 'terr-glint', 'terr-line', 'terr-sel', 'terr-glow', 'terr-name'];
     // 회색지대(2026-11-08 사장님): 주인 없는 칸은 옅은 회색. 낮은 밝은 지도라 조금 진하게, 밤은 어두운 지도에서 밝은 회색이 옅게 비치게. 멀리서는 더 옅게
@@ -1095,6 +1227,7 @@
             map.getSource('terr').setData(f.polys);
             map.getSource('terr-pt').setData(f.pts);
             map.getSource('terr-ring').setData(f.rings);
+            if (map.getSource('terr-beam')) map.getSource('terr-beam').setData(f.beams);
         } else {
             map.addSource('terr', { type: 'geojson', data: f.polys });
             map.addSource('terr-pt', { type: 'geojson', data: f.pts });
@@ -1113,6 +1246,8 @@
             map.addLayer({ id: 'terr-glow', type: 'line', source: 'terr-ring', minzoom: 12.5, layout: { 'line-cap': 'round', 'line-join': 'round' },
                 paint: { 'line-width': 5, 'line-blur': 3, 'line-gradient': glowGradient(0) } }, below);
             terrGlowLoop();
+            map.addSource('terr-beam', { type: 'geojson', data: f.beams });
+            beamLayers(below);
             map.addLayer({ id: 'terr-name', type: 'symbol', source: 'terr-pt', minzoom: 11, layout: { 'text-field': ['get', 'nm'], 'text-font': ['Noto Sans Bold'], 'text-size': 12, 'text-max-width': 8, 'text-padding': 4 },
                 paint: { 'text-color': ['get', 'c'], 'text-halo-color': isNight() ? 'rgba(10, 14, 22, .9)' : 'rgba(255, 255, 255, .95)', 'text-halo-width': 1.6 } });
             map.on('click', 'terr-fill', e => {
@@ -1123,6 +1258,7 @@
             });
         }
         TERR_LAYERS.forEach(id => map.setLayoutProperty(id, 'visibility', terrVis(id) ? 'visible' : 'none'));
+        beamShow(true);
         map.setFilter('terr-sel', ['==', ['get', 'k'], terrSel || '']);
     }
     function pickCell(k) {
@@ -1141,11 +1277,19 @@
         if (isWide()) setTab('terr'); else { card.hidden = true; nearPanel.hidden = true; minePanel.hidden = true; }
         drawTerr();
     }
+    // PC "랭킹" 탭(2026-11-11 사장님 — "LottoHex 창 맨 아래까지 내려야 랭킹이 보여 불편"): 탭 줄 빈 칸에 랭킹만 따로. 꺼져 있으면 LottoHex 를 켜고 랭킹으로
+    let wantRank = false;
+    function openRank() {
+        if (!shown.terr) { wantRank = true; setMapMode('hex'); return; }
+        terrOpen = true;
+        setTab('rank');
+        drawTerr();
+    }
     // 창만 닫기 — 칸은 지도에 그대로(끄려면 칩을 다시 누른다)
     function closeTerrPanel() {
         terrOpen = false;
         terrPanel.hidden = true;
-        if (isWide() && side.dataset.tab === 'terr') setTab('top');
+        if (isWide() && (side.dataset.tab === 'terr' || side.dataset.tab === 'rank')) setTab('top');
     }
     async function setTerr(on) {
         shown.terr = on;
@@ -1153,6 +1297,7 @@
         if (!on) {
             closeTerrPanel();
             TERR_LAYERS.forEach(id => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none'); });
+            beamShow();   // 빛 벽도 감춘다(전에는 판매점 화면으로 돌아가도 남았다)
             if (terrOnly) setTerrOnly(false);
             return;
         }
@@ -1160,9 +1305,9 @@
         terrPanel.hidden = false;
         const loading = '<p class="sm-small">' + T('LottoHex를 불러오는 중…', 'Loading LottoHex…') + '</p>';
         terrPanel.innerHTML = hexMobile() ? '<div class="sm-sheet-head"><span class="sm-sheet-grip" aria-hidden="true"></span></div><div class="sm-sheet-body">' + loading + '</div>' : loading;
-        if (isWide()) setTab('terr'); else { card.hidden = true; nearPanel.hidden = true; minePanel.hidden = true; }
+        if (isWide()) { setTab(wantRank ? 'rank' : 'terr'); wantRank = false; } else { card.hidden = true; nearPanel.hidden = true; minePanel.hidden = true; }
         const A = account();
-        await Promise.all([needAll(), loadTerr(), A && A.session() ? loadIds().then(syncVisits) : null]);   // 판매점 번호: 칸 목록의 ✓(다녀온 곳)
+        await Promise.all([needAll(), loadTerr(), A && A.session() ? loadIds().then(syncVisits) : null, loadTitleCat()]);   // 판매점 번호: 칸 목록의 ✓(다녀온 곳) · 칭호 목록
         if (!shown.terr) return;
         buildCells();
         drawTerrLayers();
@@ -1170,6 +1315,23 @@
         drawTerr();
         if (hexMobile()) setSheet(sheetSnap);
         if (!flyMine() && map.getZoom() < 10) map.flyTo({ center: map.getCenter(), zoom: 11.5, essential: true });   // 전국을 보고 있으면 칸이 보이는 크기로
+        askJoin();
+    }
+    // LottoHex 에 들어왔을 때 아직 참여 전이면 참여 창을 바로 띄운다(2026-11-09 사장님 — 휴대폰에서 아래 판을 올려야 "참여하기"가 보였다).
+    // 이 페이지에서 한 번, "나중에" · ×를 누르면 하루 동안은 저절로 띄우지 않는다(아래 판 "참여하기"는 그대로). 별명이 없으면 띄우지 않는다(참여하기가 별명 창으로)
+    const HEX_LATER = 'lottodraw.hex.later';
+    let joinAsked = false;
+    function askJoin() {
+        if (joinAsked || !hexMode || !terr || (terr.me && terr.me.joined)) return;
+        const A = account(), u = A && A.session() && A.me() && A.me().user;
+        if (!u || !u.nick) return;
+        let later = 0;
+        try { later = Number(localStorage.getItem(HEX_LATER)) || 0; } catch (e) { /* 이 기기에서만 */ }
+        if (Date.now() - later < 86400000) return;
+        joinAsked = true;
+        const gp = document.getElementById('sm-geo-pop');
+        if (gp) gp.hidden = true;   // 위치 동의는 참여 창에 한 줄로 함께
+        if (hexMobile()) drawConsent(); else { terrView = 'consent'; drawTerr(); }
     }
     // ───── LottoHex 판매점 층(2026-11-08 사장님 — "당첨 수에 따른 버블 크기를 없애고 일반 판매점과 같은 크기, 필터는 다 풀어 모든 판매점이 보이게, 판매점이 빛나게") ─────
     // LottoHex 에서는 원래 판매점 층(st-*: 1등 횟수 크기 · 칩 · 흐리게 막대 · TOP 50 · 1등 방식)을 감추고, 문을 연 모든 판매점(1 · 2등 + 일반, 폐점 빼고 — 칸이 세는 판매점과 같다)을
@@ -1202,6 +1364,7 @@
             'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 8, ['case', v, 1, 0], 13, ['case', v, 2, 1]] } }, 'terr-name');
         map.addLayer({ id: 'hx-name', type: 'symbol', source: 'hexstores', minzoom: 15, layout: Object.assign(nameLayout(0.6), { visibility: 'none' }), paint: Object.assign(namePaint(), { 'text-opacity': 1 }) }, 'terr-name');
         map.on('click', 'hx-dot', e => { const p = e.features && e.features[0] && e.features[0].properties; if (p) (p.t === 'w' ? open : openAll)(Number(p.i), false); });
+        beamShow(true);   // 빛 벽이 이 점들 위에 오게
         map.on('mouseenter', 'hx-dot', () => { map.getCanvas().style.cursor = 'pointer'; });
         map.on('mouseleave', 'hx-dot', () => { map.getCanvas().style.cursor = ''; });
         paintVisits();
@@ -1234,6 +1397,7 @@
     const introT = {};
     function modeIntro(kind, then) {
         const fx = document.getElementById(kind === 'hex' ? 'sm-hexfx' : 'sm-storefx');
+        document.documentElement.classList.remove('sm-enter-hex', 'sm-enter-store');   // 들어올 때의 전환 화면이 아직 덮여 있으면 바로 걷고 이것만
         if (!fx || REDUCED) { then(); return; }
         ['sm-hexfx', 'sm-storefx'].forEach(x => { const el = document.getElementById(x); if (el && el !== fx) { clearTimeout(introT[x]); el.classList.remove('is-play'); el.hidden = true; } });
         clearTimeout(introT[fx.id]);
@@ -1300,14 +1464,36 @@
         window.addEventListener('resize', () => { if (hexMobile()) setSheet(sheetSnap); });
     }
     // 모드 바꾸기. LottoHex 로 가면 판매점 도구(칩 · 검색 · 이 근처 · 이색 · 1등 방식 · 흐리게 · 시도별)는 CSS 가 감추고 칸을 켠다. 판매점으로 오면 칸을 끈다
-    function setMapMode(m) {
+    // 주소 · 제목도 모드를 따른다(2026-11-09): LottoHex 는 lottohex.html, 판매점은 store-map.html(TOP 50 공유 주소는 그대로) — 새로 고쳐도 같은 화면, 링크로 나눌 수 있다
+    function syncModeUrl(on) {
+        try {
+            const p = location.pathname, file = p.slice(p.lastIndexOf('/') + 1);
+            const to = on ? 'lottohex.html' : (file === 'lottohex.html' ? 'store-map.html' : file);
+            const q = new URLSearchParams(location.search);
+            q.delete('mode');
+            const qs = q.toString();
+            if (to !== file || /[?&]mode=/.test(location.search)) history.replaceState(history.state, '', p.slice(0, p.lastIndexOf('/') + 1) + to + (qs ? '?' + qs : '') + location.hash);
+        } catch (e) { /* 구형 · file:// */ }
+        const h1 = root.querySelector('.sm-title');
+        if (h1) {   // 화면에는 "LottoHex"만(PC 칸이 좁다), 설명은 글 속에(검색 · 화면 읽기 프로그램)
+            const sub = t => 'LottoHex<span class="sr-only"> · ' + t + '</span>';
+            h1.innerHTML = on ? T(sub('판매점 땅따먹기'), sub('retailer turf game')) : T('로또 판매점 지도', 'Lotto retailer map');
+            h1.setAttribute('data-i18n-en', on ? sub('retailer turf game') : 'Lotto retailer map');
+            h1.dataset.i18nKoEn = on ? sub('판매점 땅따먹기') : '로또 판매점 지도';   // i18n.js 가 기억한 한국어 원문도 바꾼다(언어를 바꿔도 이 모드 제목)
+        }
+        document.title = on ? T('LottoHex · 로또 판매점 땅따먹기 | lottodraw.kr', 'LottoHex · lotto retailer turf game | lottodraw.kr') : T('로또 판매점 지도 | lottodraw.kr', 'Lotto retailer map | lottodraw.kr');
+    }
+    function setMapMode(m, instant) {
         const on = m === 'hex';
         root.querySelectorAll('[data-mode-to]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.modeTo === m)));
         if (on === hexMode) return;
+        if (!instant) syncModeUrl(on);   // 처음 열 때(lottohex.html)는 주소 · 제목이 이미 맞다
+        const intro = instant ? (k, then) => then() : modeIntro;
         if (!on) {
-            modeIntro('store', () => {
+            intro('store', () => {
                 const cp = document.getElementById('sm-consent-pop');
                 if (cp) cp.hidden = true;
+                terrView = 'main';
                 hexMode = false;
                 root.classList.remove('is-hex');
                 setTerr(false);
@@ -1317,7 +1503,7 @@
             });
             return;
         }
-        modeIntro('hex', () => {
+        intro('hex', () => {
             hexMode = true;
             root.classList.add('is-hex');
             hexNight(true);
@@ -1325,12 +1511,65 @@
             if (root.querySelector('.sm-fun-toggle[aria-pressed="true"]')) setFun(false);
             card.hidden = true; nearPanel.hidden = true;
             terrTab = 'now';
-            sheetSnap = 'half';
+            sheetSnap = 'peek';   // LottoHex 에 들어오면 아래 판은 접힌 채(탭만) — 탭 · 칸 · 위 한 줄을 누르면 반쯤 올라온다(2026-11-09 사장님)
             if (!shown.terr) setTerr(true); else { openTerrPanel(); ensureHexLayers(); applyLayers(); }
             requestAnimationFrame(() => setSheet(sheetSnap));
             placeNearBtn();
+            loadFeed(true);   // 소식 띠
         });
     }
+    // ───── LottoHex 소식 띠(2026-11-10 사장님 — "점령하면 '○○○님이 ~번째 블록을 점령했습니다'가 오른쪽에서 왼쪽으로 흐르게, 간단한 공지도, 나중엔 유료 확성기") ─────
+    // /api/territory/feed(30초 캐시)를 LottoHex 화면에서 1분마다. 관리자 공지가 맨 앞(노란 글씨), 점령 소식은 최근 것부터.
+    // 어느 칸 · 지역인지는 넣지 않는다(언제 어디 있었는지 드러나지 않게 — 서버도 별명 · N번째만 준다). 움직임 줄이기면 흐르지 않고 첫 줄만
+    let feedData = null, feedAt = 0, feedSig = '';
+    async function loadFeed(force) {
+        if (!hexMode || (!force && Date.now() - feedAt < 50000)) return;
+        feedAt = Date.now();
+        try { const r = await fetch(apiBase() + '/api/territory/feed'); if (r.ok) feedData = await r.json(); } catch (e) { /* 다음 차례에 */ }
+        drawTicker();
+    }
+    const agoTxt = at => { const m = Math.max(1, Math.round((Date.now() - at) / 60000)); return m < 60 ? T(m + '분 전', m + 'm ago') : T(Math.round(m / 60) + '시간 전', Math.round(m / 60) + 'h ago'); };
+    function drawTicker() {
+        const box = document.getElementById('sm-ticker'), inner = document.getElementById('sm-ticker-in');
+        if (!box || !inner) return;
+        const items = [];
+        if (feedData && feedData.notice && feedData.notice.text) items.push(['is-notice', '📢 ' + feedData.notice.text]);
+        ((feedData && feedData.feed) || []).slice(0, 10).forEach(e => items.push(e.st
+            ? ['is-steal', '⚔️ ' + T((e.nick ? e.nick + '님이 ' : '누군가 ') + (e.from ? e.from + '님의' : '다른 사람의') + ' 블록을 빼앗았습니다 (' + e.n + '번째 블록)',   // 빼앗음(같은 날 사장님 — "블록 빼앗는 것도 알리자")
+                (e.nick || 'Someone') + ' took a block from ' + (e.from || 'another player') + ' (block #' + e.n + ')'), agoTxt(e.at)]
+            : ['', '🚩 ' + T((e.nick ? e.nick + '님이 ' : '누군가 ') + e.n + '번째 블록을 점령했습니다', (e.nick || 'Someone') + ' captured block #' + e.n), agoTxt(e.at)]));
+        box.hidden = !items.length;
+        if (!items.length) { feedSig = ''; return; }
+        const sig = JSON.stringify(items.map(x => x[1]));
+        if (sig === feedSig) return;   // 같은 소식이면 흐름을 끊지 않는다
+        feedSig = sig;
+        inner.innerHTML = items.map(([c, t, ago]) => '<span' + (c ? ' class="' + c + '"' : '') + '>' + esc(t) + (ago ? ' <small>' + esc(ago) + '</small>' : '') + '</span>').join('');
+        const cw = box.clientWidth, tw = inner.scrollWidth;
+        inner.style.setProperty('--cw', cw + 'px');
+        inner.style.setProperty('--dur', Math.max(8, Math.round((cw + tw) / 55)) + 's');   // 1초에 55px 쯤
+        inner.style.animation = 'none'; void inner.offsetWidth; inner.style.animation = '';   // 새 소식은 처음부터
+    }
+    setInterval(() => { if (hexMode && !document.hidden) loadFeed(); }, 60000);
+    // 소식 띠 자리: 휴대폰은 위 칸(.sm-top)의 LottoHex 한 줄 밑, PC 는 지도 위 가운데 넓게(2026-11-11 사장님 — "PC 에는 위에 소식 띠 없나?":
+    // 왼쪽 칸 맨 위 구석에 좁게 붙어 안 보였다). 왼쪽 칸은 넘치면 스크롤되는 상자라 PC 에서는 띠를 지도 쪽(#sm)으로 옮긴다
+    function placeTicker() {
+        const t = document.getElementById('sm-ticker'), home = root.querySelector('.sm-hexbar');
+        if (!t || !home) return;
+        const wide = isWide();
+        if (wide === t.classList.contains('is-float')) return;
+        if (wide) root.appendChild(t); else home.after(t);
+        t.classList.toggle('is-float', wide);
+        feedSig = '';
+        drawTicker();   // 폭이 바뀌었으니 흐르는 거리 · 시간을 다시
+    }
+    placeTicker();
+    // 띠 폭이 화면을 따라 바뀌므로(PC 는 지도 폭 그대로) 창 크기를 바꾸면 다 바꾼 뒤 한 번 흐르는 거리 · 시간을 다시 잰다
+    let tickerTimer = null;
+    window.addEventListener('resize', () => {
+        placeTicker();
+        clearTimeout(tickerTimer);
+        tickerTimer = setTimeout(() => { if (hexMode) { feedSig = ''; drawTicker(); } }, 250);
+    });
     // 영역만 보기: 판매점 점 · 별 · 이름 · 다녀온 곳을 다 감추고 칸만. 영역이 꺼져 있으면 함께 켠다
     function setTerrOnly(on) {
         terrOnly = on;
@@ -1338,7 +1577,8 @@
         if (on && !shown.terr) setMapMode('hex');
         applyLayers();
     }
-    // LottoHex 카드(PC)의 둘째 줄: 불러온 뒤에만 내 칸 · 순위(참여 전이면 참여자 수). 부제는 두지 않는다(2026-11-08 사장님)
+    // LottoHex 카드(PC)의 둘째 줄: 참여했으면 내 칸 · 순위, 아니면 "판매점 땅따먹기 · 참여 N명"(불러오기 전에는 글에 적어 둔 "판매점 땅따먹기 게임").
+    // 2026-11-11 사용자 의견 — LottoHex 가 땅따먹기 게임인지 몰라 안 누를 것 같다 → 무엇인지 늘 보이게(2026-11-08 "부제 없음"을 바꿈)
     function turfStatus() {
         const el = document.getElementById('sm-turf-stat');
         if (!el || !terr) return;   // 휴대폰 한 줄(.sm-hexbar-txt)도 같은 글
@@ -1346,7 +1586,7 @@
         const n = newsState === 'pending' && terrNews;
         const txt = (me && me.joined
             ? T('내 칸 ' + fmt(me.cells.length) + ' · ' + (me.rank ? me.rank + '위' : '순위 밖'), 'My cells ' + fmt(me.cells.length) + ' · ' + (me.rank ? '#' + me.rank : 'unranked'))
-            : T('참여 ' + fmt(terr.players || 0) + '명 · 칸을 차지해 보세요', fmt(terr.players || 0) + ' players · grab a cell')) +
+            : T('판매점 땅따먹기 · 참여 ' + fmt(terr.players || 0) + '명', 'Retailer turf game · ' + fmt(terr.players || 0) + ' players')) +
             (n ? (n.lost.length ? T(' · 칸 ' + n.lost.length + '개 잃음', ' · lost ' + n.lost.length) : '') + (n.won.length ? T(' · ' + n.won.length + '개 얻음', ' · gained ' + n.won.length) : '') : '');
         el.textContent = txt;
         const hb = root.querySelector('.sm-hexbar-txt');
@@ -1384,7 +1624,7 @@
             : T(' · 같은 수 — 이 칸 판매점에 오늘 또 다녀오면 되찾습니다', ' · tied — visit one again today to take it back');
         const where = list.length ? areaOf(list) : '';
         return '<div class="sm-terr-cell"><h4>' + T('고른 칸', 'This cell') + (where ? ' · ' + esc(where) : '') + ' <small>' + T('판매점 ' + fmt(list.length) + '곳', fmt(list.length) + ' retailers') + '</small></h4>' +
-            '<p>' + (own ? T('주인 ', 'Held by ') + swatch(own[4]) + '<b>' + esc(own[0] || T('(별명 없음)', '(no name)')) + '</b>' +
+            '<p>' + (own ? T('주인 ', 'Held by ') + swatch(own[4]) + ttBadge(own[5]) + '<b>' + esc(own[0] || T('(별명 없음)', '(no name)')) + '</b>' +
                 T(' · ' + own[1] + '곳', ' · ' + own[1]) + (own[2] ? T(' (2위 ' + own[2] + '곳)', ' (runner-up ' + own[2] + ')') : '')
                 : '<span class="sm-skin sm-skin-grey" aria-hidden="true"></span><b>' + T('회색지대', 'Grey zone') + '</b>' + T(' — 아직 주인이 없는 칸입니다. 이 칸 판매점 한 곳만 다녀와도 차지합니다.', ' — no one holds it yet; one visit takes it.')) + '</p>' +
             (me && me.joined ? '<p class="sm-terr-mine">' + T('나: ' + myN + '곳', 'Me: ' + myN) + myLine + '</p>' : '') +
@@ -1496,9 +1736,133 @@
             '<ol class="sm-todo-list">' + n.lost.map(k => cellRow(k, '', 'is-lost', null, '<b class="is-hot">' + T('잃음', 'lost') + '</b>')).join('') + n.won.map(k => cellRow(k, '', 'is-won', (terr.cells[k] || [])[4], '<b class="is-won">' + T('얻음', 'gained') + '</b>')).join('') + '</ol>' +
             '<p class="sm-small">' + T('폐점 · 칸 목록이 바뀌어 빠진 칸도 잃은 칸으로 나옵니다.', 'Cells dropped because a retailer closed also show as lost.') + '</p></div>';
     }
+    // ───── 마일스톤 · 칭호(2026-11-09 사장님 — worker/src/titles.js) ─────
+    // 마일스톤 = "얼마나"(쌓이는 숫자의 단계, 단계마다 포인트, 나만 봄 — "할 일" 탭), 칭호 = "어떻게"(이름 붙은 업적, 칭호 도감에 모으고 하나를 골라 별명 앞에 단다 — "도감" 탭).
+    // 목록은 서버(/api/titles, 숨은 칭호는 얻기 전까지 이름 · 조건 없이)에서, 얻은 것은 내 정보(user.titles · user.ach)에서. 셈은 서버가 한다 — 여기 진행률은 보여 주기만
+    let titleCat = null, titleCatP = null;
+    function loadTitleCat() {
+        if (!titleCatP) titleCatP = fetch(apiBase() + '/api/titles').then(r => (r.ok ? r.json() : null)).catch(() => null)
+            .then(j => { titleCat = j && Array.isArray(j.titles) && Array.isArray(j.milestones) ? j : null; return titleCat; });   // 모양이 다르면 칭호 · 마일스톤 칸을 그리지 않는다
+        return titleCatP;
+    }
+    const ttName = tt => (tt ? T(tt[0], tt[1]) : '');
+    const ttBadge = tt => (tt ? '<span class="sm-ttl">' + esc(ttName(tt)) + '</span>' : '');
+    const TTL_GROUPS = () => [['visit', '🧭 ' + T('방문', 'Visits')], ['terr', '🚩 ' + T('영토', 'Territory')], ['shape', '⬡ ' + T('칸 모양', 'Shapes')], ['area', '📍 ' + T('지역', 'Regions')], ['hidden', '❔ ' + T('숨은 칭호', 'Hidden')]];
+    // 내 다녀온 곳의 셈(진행률용): 판매점 수 · 칸 · 시·도 · 지역(시·군·구 — 서버의 store-map-geo.json 과 같은 규칙: 주소 첫 낱말, 여러 시·도에 있는 이름은 시·도를 붙임)
+    let regionOf = null;
+    function myCounts() {
+        const out = { v: Object.keys(visits).length, c: 0, s: 0, regions: new Map() };
+        if (!ids) return out;
+        const guOf = (si, gu) => String(gu || '').trim().split(/\s+/)[0] || si;
+        if (!regionOf) {
+            const rows = [];
+            data.rows.forEach((r, i) => { if (!r[7] && ids.w[i]) rows.push([ids.w[i], data.sido[r[5]] || '', r[6]]); });
+            if (all && ids.a) all.rows.forEach((r, i) => { if (ids.a[i]) rows.push([ids.a[i], all.sido[r[3]] || '', r[4]]); });
+            const sidoOf = new Map();
+            rows.forEach(([, si, gu]) => { const g = guOf(si, gu); if (!sidoOf.has(g)) sidoOf.set(g, new Set()); sidoOf.get(g).add(si); });
+            regionOf = new Map(rows.map(([id, si, gu]) => { const g = guOf(si, gu); return [id, [si, g === si ? si : sidoOf.get(g).size > 1 ? si + ' ' + g : g]]; }));
+            if (!all) regionOf.partial = true;   // 일반 판매점을 아직 안 받았으면 다시 만든다
+        }
+        const sido = new Set(), cells = new Set(), idCell = new Map();
+        if (terrCells) terrCells.forEach((list, k) => list.forEach(x => { const id = x.t === 'w' ? ids.w[x.i] : ids.a && ids.a[x.i]; if (id) idCell.set(id, k); }));
+        for (const id of Object.keys(visits)) {
+            const rg = regionOf.get(id);
+            if (rg) { sido.add(rg[0]); out.regions.set(rg[1], (out.regions.get(rg[1]) || 0) + 1); }
+            if (idCell.has(id)) cells.add(idCell.get(id));
+        }
+        if (regionOf.partial && all) regionOf = null;
+        out.c = cells.size; out.s = sido.size;
+        return out;
+    }
+    function milestoneBlock() {
+        const A = account(), u = A && A.me() && A.me().user;
+        if (!titleCat || !u || !gpsCfg()) return '';
+        const ach = u.ach || {}, cnt = myCounts(), held = (terr && terr.me && terr.me.cells) ? terr.me.cells.length : 0;
+        const val = { v: cnt.v, c: cnt.c, s: cnt.s, t: held };
+        const unit = m => T(m.u[0], m.u[1]);
+        const rows = titleCat.milestones.map(m => {
+            const done = Math.max(ach[m.k] || 0, m.steps.filter(x => val[m.k] >= x).length);
+            const fin = done >= m.steps.length, next = fin ? m.steps[m.steps.length - 1] : m.steps[done];
+            const pct = Math.min(100, Math.round(val[m.k] / next * 100));
+            return '<li><p><b>' + T(m.ko, m.en) + '</b> <span class="sm-ms-step">' + T(done + ' / ' + m.steps.length + '단계', 'step ' + done + ' / ' + m.steps.length) + '</span></p>' +
+                '<span class="sm-dex-bar"><i style="width:' + (fin ? 100 : Math.max(val[m.k] ? 3 : 0, pct)) + '%"></i></span>' +
+                '<p class="sm-small">' + (fin ? T('모든 단계를 이뤘습니다 🎉', 'All steps done 🎉')
+                    : T('다음 ' + fmt(next) + unit(m) + ' · 지금 ' + fmt(val[m.k]) + unit(m) + ' · <b>+' + m.pts[done] + 'P</b>', 'Next ' + fmt(next) + ' · now ' + fmt(val[m.k]) + ' · <b>+' + m.pts[done] + 'P</b>')) +
+                (m.k === 't' ? T(' (지금 차지한 칸)', ' (cells held now)') : '') + '</p></li>';
+        }).join('');
+        return '<div class="sm-ms"><h4 class="sm-terr-h">🏁 ' + T('마일스톤', 'Milestones') + ' <small>' + T('단계마다 포인트', 'points at each step') + '</small></h4><ul class="sm-ms-list">' + rows + '</ul>' +
+            '<p class="sm-small">' + T('위치로 인증한 다녀온 곳으로 셉니다. 이룬 단계와 받은 포인트는 다녀온 곳을 지워도 그대로입니다.', 'Counted from places verified by location. Steps reached and points earned stay even if you remove a place.') + '</p></div>';
+    }
+    function titleDex() {
+        const A = account(), u = A && A.me() && A.me().user;
+        if (!titleCat || !u || !gpsCfg()) return '';
+        const my = u.titles || { e: [], sel: null }, got = new Map(my.e.map(t => [t.id, t]));
+        const fixed = titleCat.titles, nGot = fixed.filter(t => got.has(t.id)).length;
+        const areaGot = my.e.filter(t => /^[rs]:/.test(t.id));
+        const item = (id, name, cond, cls) => (got.has(id)
+            ? '<button type="button" class="sm-ttl-item is-on' + (my.sel === id ? ' is-sel' : '') + '" data-ttl="' + esc(id) + '" aria-pressed="' + (my.sel === id) + '"><b>' + esc(name) + '</b><small>' + esc(cond) + '</small></button>'
+            : '<div class="sm-ttl-item' + (cls ? ' ' + cls : '') + '"><b>' + esc(name) + '</b><small>' + esc(cond) + '</small></div>');
+        const cond = d => (d ? T(d[0], d[1]) : '');
+        const groups = TTL_GROUPS().map(([g, label]) => {
+            let items = fixed.filter(t => t.g === g).map(t => {
+                const mine = got.get(t.id);
+                if (t.g === 'hidden') return mine ? item(t.id, T(mine.ko, mine.en), cond(mine.d)) : item(t.id, '???', T('조건을 찾아보세요', 'Find the condition'), 'is-hidden');
+                return item(t.id, T(t.ko, t.en), cond(t.d));
+            }).join('');
+            if (g === 'area') {
+                items += areaGot.map(t => item(t.id, T(t.ko, t.en), /^s:/.test(t.id) ? T('그 시·도의 모든 시·군·구에서 인증', 'Every district of the province') : T('같은 시·군·구에서 인증', 'Verified in one district'))).join('');
+                // 다음 지역 칭호까지(가장 가까운 세 곳)
+                const st = titleCat.area.steps, nm = titleCat.area.names;
+                const near = [...myCounts().regions.entries()].map(([r, n]) => { const k = st.findIndex(x => n < x); return k < 0 ? null : { r, n, k, need: st[k] }; }).filter(Boolean)
+                    .sort((a, b) => (a.need - a.n) - (b.need - b.n)).slice(0, 3);
+                if (near.length) items += '<p class="sm-small sm-ttl-next">' + near.map(x => T(esc(x.r) + ' ' + x.n + '/' + x.need + '곳 → ' + esc(x.r) + ' ' + nm[x.k][0], esc(x.r) + ' ' + x.n + '/' + x.need + ' → ' + nm[x.k][1])).join('<br>') + '</p>';
+            }
+            return '<h5 class="sm-ttl-g">' + label + '</h5><div class="sm-ttl-grid">' + items + '</div>';
+        }).join('');
+        const sel = my.sel && got.get(my.sel);
+        return '<div class="sm-ttldex"><h4 class="sm-terr-h">🏅 ' + T('칭호 도감', 'Titles') + ' <small>' + T(nGot + ' / ' + fixed.length + (areaGot.length ? ' · 지역 칭호 ' + areaGot.length : ''), nGot + ' / ' + fixed.length + (areaGot.length ? ' · regional ' + areaGot.length : '')) + '</small></h4>' +
+            '<p class="sm-ttl-cur">' + (sel ? T('단 칭호 ', 'Wearing ') + '<span class="sm-ttl">' + esc(T(sel.ko, sel.en)) + '</span> <button type="button" class="sm-ttl-off">' + T('떼기', 'Remove') + '</button>'
+                : T('얻은 칭호를 누르면 별명 앞에 달립니다(LottoHex 랭킹 · 칸 · 랭킹 페이지).', 'Tap a title you have earned to show it before your nickname.')) + '</p>' +
+            groups + '<p class="sm-terr-msg sm-ttl-msg" role="status"></p></div>';
+    }
+    async function pickTitle(id) {
+        const A = account();
+        try {
+            const r = await A.call('/api/me/title', { method: 'POST', body: { id } });
+            if (A.patchUser && r.user) A.patchUser({ titles: r.user.titles });
+            await loadTerr(); drawTerrLayers(); drawTerr();
+        } catch (e) { const m = terrPanel.querySelector('.sm-ttl-msg'); if (m) m.textContent = (e && e.message) || T('바꾸지 못했습니다.', 'Could not change.'); }
+    }
+    // 새로 얻은 칭호 · 마일스톤 알림(인증 · LottoHex 를 열 때 서버가 알려 준다)
+    function freshText(f) {
+        if (!f || (!f.titles.length && !f.pts)) return '';
+        return [f.titles.length ? T('🏅 새 칭호: ', '🏅 New title: ') + f.titles.map(t => T(t.ko, t.en)).join(', ') : '', f.pts ? T('🏁 마일스톤 +' + f.pts + 'P', '🏁 Milestone +' + f.pts + 'P') : ''].filter(Boolean).join(' · ');
+    }
+    // 새로 얻은 것: 화면 위 알림(6초, 누르면 닫힘) + 내 정보(칭호 · 포인트)를 새로
+    function toast(msg) {
+        if (!msg) return;
+        let t = document.getElementById('sm-toast');
+        if (!t) {
+            t = document.createElement('div'); t.id = 'sm-toast'; t.className = 'sm-toast'; t.setAttribute('role', 'status'); root.appendChild(t);
+            t.addEventListener('click', () => { t.classList.remove('is-on'); });
+        }
+        t.textContent = msg;
+        t.classList.add('is-on');
+        clearTimeout(t.tm);
+        t.tm = setTimeout(() => t.classList.remove('is-on'), 6000);
+    }
+    async function afterFresh(f) {
+        const A = account();
+        if (!f || !A) return;
+        toast(freshText(f));
+        await A.refresh().catch(() => null);
+        if (shown.terr && terrOpen) drawTerr();
+    }
+
     // 6. 칸 도감: 다녀온 곳이 있는 칸 / 전국 칸(폐점 빼고 판매점이 있는 칸). 시 · 도는 칸 안 판매점의 다수결. 참여하지 않은 회원도 본다
     let cellSido = null;
-    const DEX_BADGES = [10, 50, 100];
+    const DEX_BADGES = [10, 50, 100];   // 칭호 목록을 받으면 마일스톤 "다녀온 칸" 단계로(dexSteps)
+    const dexSteps = () => { const m = titleCat && titleCat.milestones.find(x => x.k === 'c'); return m ? m.steps : DEX_BADGES; };
     function dexBlock() {
         if (!terrCells || !ids || !Object.keys(visits).length) return '';
         if (!cellSido) { cellSido = new Map(); terrCells.forEach((list, k) => cellSido.set(k, (areaKeyOf(list).split(' ')[0]) || '')); }
@@ -1517,7 +1881,7 @@
         const on = sido.filter(si => got.get(si)), off = sido.filter(si => !got.get(si));
         return '<div class="sm-hexdex"><h4 class="sm-terr-h">📖 ' + T('칸 도감', 'Cell collection') + ' <small>' + T('다녀온 곳이 있는 칸', 'cells with a place you visited') + '</small></h4>' +
             '<p class="sm-dex-total"><b>' + fmt(n) + '</b> / ' + T(fmt(all_) + '칸', fmt(all_) + ' cells') + ' <small>' + pct(n / all_) + '</small></p>' + bar(n, all_) +
-            '<p class="sm-dex-badges">' + DEX_BADGES.map(b => '<span class="sm-dex-badge' + (n >= b ? ' is-on' : '') + '" title="' + T(b + '칸 다녀오기', 'Visit ' + b + ' cells') + '">⬡ ' + b +
+            '<p class="sm-dex-badges">' + dexSteps().map(b => '<span class="sm-dex-badge' + (n >= b ? ' is-on' : '') + '" title="' + T(b + '칸 다녀오기', 'Visit ' + b + ' cells') + '">⬡ ' + b +
                 (n >= b ? '' : '<small>' + T((b - n) + '칸 남음', (b - n) + ' to go') + '</small>') + '</span>').join('') + '</p>' +
             (on.length ? '<ul class="sm-dex-sido">' + on.map(row).join('') + '</ul>' : '') +
             (off.length ? '<details class="sm-dex-more"><summary>' + T('나머지 시 · 도 ' + off.length + '곳', off.length + ' more regions') + '</summary><ul class="sm-dex-sido">' + off.map(row).join('') + '</ul></details>' : '') +
@@ -1548,6 +1912,10 @@
     }
     function bindSkin() {
         const me = terr && terr.me;
+        const bm = terrPanel.querySelector('.sm-terr-beam input');
+        if (bm) bm.addEventListener('change', () => saveBeam(bm.checked));
+        const bb = terrPanel.querySelector('.sm-terr-beam-buy');
+        if (bb) bb.addEventListener('click', () => { if (confirm(T(BEAM_COST + '포인트로 영역 빛 벽을 삽니다. 한 번 사면 계속 쓰고, 켜고 끄기는 무료입니다.', 'Buy the territory light wall for ' + BEAM_COST + ' points? It is yours to keep and switching it on or off is free.'))) saveBeam(true); });
         const ed = terrPanel.querySelector('.sm-terr-skin-edit');
         if (ed) ed.addEventListener('click', () => { skinDraft = parseSkin(me.skin); drawTerr(); });
         if (!skinDraft || !terrPanel.querySelector('.sm-skin-edit')) return;
@@ -1563,6 +1931,23 @@
         const rs = terrPanel.querySelector('.sm-skin-reset');
         if (rs) rs.addEventListener('click', () => saveSkin(null));
     }
+    // 영역 빛 벽 줄: 안 샀으면 "사기(300포인트)", 샀으면 켜고 끄기(모두에게 보임)
+    function beamRow() {
+        const A = account(), u = A && A.me() && A.me().user, tb = u && u.terrBeam;
+        if (!tb) return '<div class="sm-terr-beam"><span class="sm-terr-beam-t">✨ ' + T('영역 빛 벽', 'Territory light wall') + '<small>' + T('3D에서 내 영토 테두리가 빛납니다 · 모두에게 보임', 'Your territory edge glows in 3D · everyone sees it') + '</small></span>' +
+            '<button type="button" class="sm-terr-skin-edit sm-terr-beam-buy">' + T(BEAM_COST + 'P로 사기', 'Buy · ' + BEAM_COST + 'P') + '</button></div>';
+        return '<label class="sm-terr-beam"><input type="checkbox"' + (tb.on ? ' checked' : '') + '> ✨ ' + T('영역 빛 벽 켜기', 'Territory light wall') + ' <small>' + T('3D에서 · 모두에게 보임', 'in 3D · everyone sees it') + '</small></label>';
+    }
+    async function saveBeam(on) {
+        const A = account();
+        try { await A.call('/api/territory/beam', { method: 'POST', body: { on } }); }
+        catch (e) { toast((e && e.message) || T('저장하지 못했습니다.', 'Could not save.')); drawTerr(); return; }   // 체크를 원래대로 돌리려고 다시 그린다 — 알림은 위 토스트로
+        await A.refresh().catch(() => null);
+        await loadTerr();
+        drawTerrLayers();
+        drawTerr();
+        if (on && map && map.getPitch() < 15) toast(T('✨ 빛 벽은 3D 에서 보입니다 — 오른쪽 위 3D 단추', '✨ The light wall shows in 3D — use the 3D button'));
+    }
     async function saveSkin(skin) {
         const A = account();
         try { await A.call('/api/territory/skin', { method: 'POST', body: { skin } }); }
@@ -1576,7 +1961,7 @@
     // 랭킹 목록(지금 · 지난 분기 확정). medal: 1~3위에 메달
     function rankList(rows, mine, medal) {
         return '<ol class="sm-terr-rank">' + rows.map((r, k) => '<li' + (mine === k + 1 ? ' class="is-me"' : '') + '><span class="sm-rank">' + (medal && MEDAL[k] ? MEDAL[k] : k + 1) + '</span><span class="sm-tname">' +
-            (r.skin ? swatch(r.skin) : '') + esc(r.nick || T('(탈퇴했거나 별명 없음)', '(no name)')) + '</span><span class="sm-tcnt"><b>' + fmt(r.cells) + '</b>' + T('칸', '') + '<small>' + T(fmt(r.stores) + '곳', fmt(r.stores) + ' visits') + '</small></span></li>').join('') + '</ol>';
+            (r.skin ? swatch(r.skin) : '') + ttBadge(r.tt) + esc(r.nick || T('(탈퇴했거나 별명 없음)', '(no name)')) + '</span><span class="sm-tcnt"><b>' + fmt(r.cells) + '</b>' + T('칸', '') + '<small>' + T(fmt(r.stores) + '곳', fmt(r.stores) + ' visits') + '</small></span></li>').join('') + '</ol>';
     }
     function drawTerr() {
         if (!shown.terr || !terrOpen) return;   // 창을 닫았으면 칸만 새로 그린다(drawTerrLayers)
@@ -1590,11 +1975,12 @@
         else status = '<p class="sm-terr-me">' + T('내 칸 <b>' + fmt(me.cells.length) + '</b>' + (me.rank ? ' · <b>' + me.rank + '</b>위' : '') + ' · 다녀온 곳 ' + fmt(me.stores) + '곳',
             'My cells <b>' + fmt(me.cells.length) + '</b>' + (me.rank ? ' · rank <b>' + me.rank + '</b>' : '') + ' · ' + fmt(me.stores) + ' visited') + '</p>' +
             (me.lastRank ? '<p class="sm-terr-me">' + (MEDAL[me.lastRank - 1] || '🏅') + ' ' + T(seasonLabel(terr.last) + ' 확정 ' + me.lastRank + '위', seasonLabel(terr.last) + ' final: #' + me.lastRank) + '</p>' : '') +
-            skinRow(me);
+            skinRow(me) +
+            beamRow();
         const rank = (terr && terr.rank) || [];
         const last = terr && terr.last;
         const joined = !!(A && A.session() && me && me.joined), sheet = hexMobile();
-        const title = '<h3><span class="sm-turf-ico" aria-hidden="true"></span> LottoHex <small class="sm-terr-beta">' + T('시험판', 'beta') + '</small></h3>' +
+        const title = '<h3><span class="sm-turf-ico" aria-hidden="true"></span> LottoHex</h3>' +   // 시험판 표시는 없앴다(2026-11-09 사장님)
             '<p class="sm-terr-season">' + (terr ? T('참여 ' + fmt(terr.players) + '명 · ', fmt(terr.players) + ' players · ') : '') + T('칸은 계속 이어지고, 분기마다 랭킹만 확정합니다', 'Cells carry on; the ranking is finalised each quarter') + '</p>' +
             (terr ? '' : '<p class="sm-small is-warn">' + T('LottoHex를 불러오지 못했습니다. 잠시 뒤 다시 켜 주세요.', 'Could not load LottoHex. Try again later.') + '</p>');
         const statusPart = '<div class="sm-terr-status">' + status + '</div>';
@@ -1602,7 +1988,8 @@
         const tab = sheet ? terrTab : null;
         const news = joined && (!sheet || tab === 'now') ? newsBlock() : '';   // newsBlock 은 보이면 "봄"으로 적는다 — 보일 때만 부른다
         const todo = joined && terrCells ? todoLists(me) : '';
-        const dex = A && A.session() ? dexBlock() : '';
+        const dex = A && A.session() ? titleDex() + dexBlock() : '';
+        const ms = A && A.session() ? milestoneBlock() : '';
         const rankPart = '<h4 class="sm-terr-h">' + T('Map 랭킹', 'Map ranking') + ' <small>' + T(seasonLabel(s) + ' · ' + seasonEnd(s) + ' 24시에 확정', seasonLabel(s) + ' · final at the end of ' + seasonEnd(s)) + '</small></h4>' +
             (rank.length ? rankList(rank, me && me.rank) : '<p class="sm-small">' + T('아직 칸을 차지한 사람이 없습니다.', 'No one holds a cell yet.') + '</p>') +
             (last && last.rank.length ? '<h4 class="sm-terr-h">🏆 ' + T(seasonLabel(last) + ' 확정 순위', seasonLabel(last) + ' final ranking') + '</h4>' + rankList(last.rank, me && me.lastRank, true) : '');
@@ -1611,9 +1998,14 @@
             '<li>' + T('주인이 없는 칸은 <b>회색지대</b>로, 지도에 옅은 회색으로 보입니다. 판매점 한 곳만 다녀와도 차지합니다.', 'Cells no one holds are the <b>grey zone</b>, shown in light grey. One visit takes one.') + '</li>' +
             '<li>' + T('같은 수면 그 칸에 더 최근에 다녀온 사람이 차지합니다. 빼앗기면 그 칸 판매점 카드의 "오늘 또 다녀왔어요"로 되찾을 수 있습니다(같은 곳은 하루 한 번).', 'On a tie, whoever visited the cell most recently holds it. Lost it? Use "Visited again today" on a retailer card in that cell (once a day per retailer).') + '</li>' +
             '<li>' + T('칸 모양: 참여자마다 색 두 가지와 무늬(단색 · 줄무늬 · 물방울 · 체크)가 무작위로 정해지고 모두에게 같게 보입니다. 내 칸 모양은 ' + SKIN_COST + '포인트로 바꿀 수 있습니다. 내 칸은 테두리가 조금 굵습니다.', 'Skins: each player gets two colours and a pattern (solid, stripes, dots or checks) at random, and everyone sees the same. You can change yours for ' + SKIN_COST + ' points. Your cells have a slightly thicker edge.') + '</li>' +
+            '<li>' + T('소식 띠: 누가 칸을 새로 차지하면 "○○님이 N번째 블록을 점령했습니다", 남의 칸을 빼앗으면 "○○님이 △△님의 블록을 빼앗았습니다"가 LottoHex 화면 위 띠와 채팅에 나옵니다(어느 칸 · 지역인지는 나오지 않습니다).', 'News ticker: when someone takes a new cell, "X captured block #N" (or "X took a block from Y") runs along the top of the LottoHex screen and in the chat (which cell or area is never shown).') + '</li>' +
+            '<li>' + T('영역 빛 벽: ' + BEAM_COST + '포인트로 사면(한 번 사면 계속) 3D 에서 내 영토 바깥 테두리가 위로 빛나고 모두에게 보입니다. 켜고 끄기는 무료입니다.', 'Light wall: buy it for ' + BEAM_COST + ' points (yours to keep) and your territory edge glows upward in 3D for everyone. Switching it on or off is free.') + '</li>' +
             '<li>' + T('밤 지도에서 크게 보면 차지한 칸 테두리를 빛이 시계 방향으로 돌고, 칸 면에는 유리에 비친 듯한 45° 빛이 번쩍 지나갑니다.', 'On the night map, zoomed in, a light runs clockwise round held cells and a quick glassy 45° glint flashes across them.') + '</li>' +
             '<li>' + T('칸은 비우지 않습니다. 분기(1 · 4 · 7 · 10월 1일 0시)마다 그때의 Map 랭킹을 확정해 남깁니다.', 'Cells are never cleared. At the start of each quarter the Map ranking at that moment is finalised and kept.') + '</li>' +
-            '<li>' + T('시험판: 지금은 "다녀왔어요"를 누른 기록만 셉니다. 위치 인증(판매점 50m 안)은 준비 중입니다. 폐점한 곳은 세지 않습니다.', 'Beta: for now a tap on "I\'ve been here" counts. Location check (within 50 m) is coming. Closed retailers do not count.') + '</li>' +
+            '<li>' + T('확정 순위 보상: 1위 1,000 · 2위 500 · 3위 300 · 4~10위 100포인트(운영자 제외).', 'Quarterly rewards: 1st 1,000 · 2nd 500 · 3rd 300 · 4th–10th 100 points (operators excluded).') + '</li>' +
+            '<li>' + T('마일스톤 · 칭호: 다녀온 판매점 · 칸 · 시·도 · 영토가 단계에 이르면 포인트를, 방문 · 영토 · 칸 모양(왕지렁이 · 벌집 …) · 지역(마포구 전문가 …)으로 칭호를 얻습니다. 칭호는 "도감"에서 골라 별명 앞에 답니다.', 'Milestones and titles: reach steps in retailers, cells, provinces and territory for points, and earn titles for visits, territory, cell shapes (Giant Worm, Honeycomb …) and regions. Pick a title in "Collection" to show it before your nickname.') + '</li>' +
+            '<li>' + (gpsCfg() ? T('다녀온 곳은 판매점 50m 안에서 위치로 인증한 곳만 셉니다. 폐점한 곳은 세지 않습니다.', 'Only retailers verified by location (within 50 m) count. Closed retailers do not count.')
+                : T('지금은 "다녀왔어요"를 누른 기록만 셉니다. 위치 인증(판매점 50m 안)은 준비 중입니다. 폐점한 곳은 세지 않습니다.', 'For now a tap on "I\'ve been here" counts. Location check (within 50 m) is coming. Closed retailers do not count.')) + '</li>' +
             '<li>' + T('복권을 살 필요는 없습니다. 어디서 사든 1등 확률은 1/8,145,060으로 같습니다.', 'No purchase needed. Your chance of 1st prize is 1 in 8,145,060 wherever you buy.') + '</li>' +
             '</ul></details>';
         const leave = me && me.joined ? '<p class="sm-terr-leave-p"><button type="button" class="sm-terr-leave">' + T('LottoHex 그만두기', 'Leave LottoHex') + '</button></p>' : '';
@@ -1621,7 +2013,7 @@
         if (sheet) {
             // 휴대폰 LottoHex 모드: 아래 판 — 손잡이 + 탭(현황 · 할 일 · 도감 · 랭킹), 고른 탭만
             const join = '<p class="sm-small">' + T('참여하면 여기에 나옵니다. "현황"에서 참여할 수 있습니다.', 'Join LottoHex (in Status) to see this.') + '</p>';
-            const body = tab === 'todo' ? (todo || join)
+            const body = tab === 'todo' ? ms + (todo || join)
                 : tab === 'dex' ? (dex || '<p class="sm-small">' + T('로그인하고 "다녀왔어요"를 표시하면 다녀온 칸을 모아 볼 수 있습니다.', 'Sign in and mark places you have been to collect cells.') + '</p>')
                 : tab === 'rank' ? rankPart
                 : title + cellPart + statusPart + news + hint + rules + leave;
@@ -1630,13 +2022,21 @@
             terrPanel.innerHTML = '<div class="sm-sheet-head"><span class="sm-sheet-grip" aria-hidden="true"></span><div class="sm-sheet-tabs" role="tablist">' +
                 tabs.map(([k, n, d]) => '<button type="button" role="tab" data-ttab="' + k + '" aria-selected="' + (k === tab) + '">' + n + dot(d) + '</button>').join('') + '</div></div>' +
                 '<div class="sm-sheet-body">' + body + msg + '</div>';
+        } else if (side.dataset.tab === 'rank') {
+            // PC "랭킹" 탭: 랭킹만(지금 분기 + 지난 분기 확정)
+            terrPanel.innerHTML = '<button type="button" class="sm-close" aria-label="' + T('닫기', 'Close') + '">×</button>' +
+                '<h3><span class="sm-turf-ico" aria-hidden="true"></span> ' + T('LottoHex 랭킹', 'LottoHex ranking') + '</h3>' + rankPart + msg;
         } else {
             terrPanel.innerHTML = '<button type="button" class="sm-close" aria-label="' + T('닫기', 'Close') + '">×</button>' +
-                title + statusPart + cellPart + hint + news + todo + dex + rankPart + rules + leave + msg;
+                title + statusPart + cellPart + hint + news + ms + todo + dex +
+                '<p class="sm-terr-torank"><button type="button" class="sm-terr-rankbtn">🏆 ' + T('Map 랭킹 보기', 'See the Map ranking') + '</button></p>' + rules + leave + msg;   // 랭킹은 "랭킹" 탭에
         }
         terrPanel.hidden = false;
+        if (hexAbout && (!sheet || tab === 'now')) { hexAbout.open = false; (terrPanel.querySelector('.sm-sheet-body') || terrPanel).appendChild(hexAbout); }
         const cb = terrPanel.querySelector('.sm-close');
         if (cb) cb.addEventListener('click', closeTerrPanel);
+        const rb = terrPanel.querySelector('.sm-terr-rankbtn');
+        if (rb) rb.addEventListener('click', openRank);
         terrPanel.querySelectorAll('[data-ttab]').forEach(b => b.addEventListener('click', () => {
             if (Date.now() < sheetNoClick) return;   // 판을 끈 뒤 바로 오는 누르기는 무시
             terrTab = b.dataset.ttab;
@@ -1644,6 +2044,9 @@
             drawTerr();
         }));
         bindSkin();
+        terrPanel.querySelectorAll('.sm-ttl-item[data-ttl]').forEach(b => b.addEventListener('click', () => pickTitle(b.classList.contains('is-sel') ? null : b.dataset.ttl)));
+        const tOff = terrPanel.querySelector('.sm-ttl-off');
+        if (tOff) tOff.addEventListener('click', () => pickTitle(null));
         const jb = terrPanel.querySelector('.sm-terr-join');
         if (jb) jb.addEventListener('click', async () => {
             if (!(await member(T('LottoHex는 로그인한 회원이 참여합니다.', 'Sign in to join LottoHex.')))) return;
@@ -1665,40 +2068,42 @@
         const nk = terrPanel.querySelector('.sm-news-ok');
         if (nk) nk.addEventListener('click', () => { terrNews = null; drawTerr(); });
     }
-    // 참여 동의(2026-11-07 사장님 — "이 기능을 쓰려면 먼저 동의"). 서버는 동의 문구 판(TERR_V)과 동의한 때를 적는다
+    // 참여 동의(2026-11-07 사장님 — "이 기능을 쓰려면 먼저 동의"). 서버는 동의 문구 판(TERR_V)과 동의한 때를 적는다.
+    // 2026-11-09 사장님 — 안내 문단 없이 동의 한 줄 + 이용약관 링크(칸 · 별명 공개 같은 내용은 이용약관 8번 · 처리방침 4번에). 위치 동의가 아직이면
+    // 위치 줄을 따로 한 줄 더(두 동의는 따로 받는다), 둘 다 체크해야 참여 — 위치로 인증한 곳만 세니 위치 동의 없이는 칸을 가질 수 없다
     function drawConsent() {
-        const A = account(), u = A.me() && A.me().user;
+        const A = account(), g = gpsCfg(), needGeo = !!g && !geoAgreed();
         const html = '<button type="button" class="sm-close" aria-label="' + T('닫기', 'Close') + '">×</button>' +
-            '<h3>' + T('LottoHex 참여 안내', 'Joining LottoHex') + ' <small class="sm-terr-beta">' + T('시험판', 'beta') + '</small></h3>' +
-            '<ol class="sm-terr-consent">' +
-            '<li>' + T('참여하면 내가 "다녀온 곳"으로 표시한 판매점을 칸(육각형)마다 세어 칸 주인을 정합니다. 참여 전에 표시한 곳도 셉니다.', 'Your marked places are counted per hexagon cell, including those marked before joining.') + '</li>' +
-            '<li><b>' + T('내가 차지한 칸과 Map 랭킹 · 분기 확정 순위에 내 별명(' + esc(u && u.nick || '') + ')이 누구에게나 보입니다.', 'Your nickname (' + esc(u && u.nick || '') + ') is shown to everyone on the cells you hold, in the Map ranking and in the quarterly final rankings.') + '</b> ' +
-                T('별명과 칸 위치로 내가 자주 다니는 동네를 짐작할 수 있습니다. 어느 판매점을 다녀왔는지는 보이지 않고, 칸마다 다녀온 판매점 수만 보입니다.', 'Others could guess the area you often visit. Which retailers you visited is never shown — only the count per cell.') + '</li>' +
-            '</ol>' +   // 3 · 4 · 5번(위치 안 씀 · 살 필요 없음 · 그만두기)은 뺐다(2026-11-08 사장님 — 너무 조심스럽다, 곧 GPS). 19세는 아래 체크에
-            '<label class="sm-terr-agree"><input type="checkbox"> ' + T('위 내용을 읽었고 동의합니다 (만 19세 이상)', 'I have read and agree (19 or older)') + '</label>' +
-            '<p class="sm-terr-btns"><button type="button" class="sm-terr-ok" disabled>' + T('동의하고 참여', 'Agree and join') + '</button> <button type="button" class="sm-terr-cancel">' + T('취소', 'Cancel') + '</button></p>' +
-            '<p class="sm-small"><a href="privacy.html">' + T('개인정보 처리방침', 'Privacy policy') + '</a></p>' +
+            '<h3>' + T('LottoHex 참여', 'Join LottoHex') + '</h3>' +   // 시험판 표시 없이(2026-11-09 사장님)
+            '<label class="sm-terr-agree"><input type="checkbox"> ' + T('LottoHex 참여에 동의합니다. (만 19세 이상)', 'I agree to join LottoHex. (19 or older)') + '</label>' +
+            (needGeo ? geoAgreeLine(false) : '') +
+            '<p class="sm-terr-btns"><button type="button" class="sm-terr-ok" disabled>' + T('참여', 'Join') + '</button> <button type="button" class="sm-terr-cancel">' + T('나중에', 'Later') + '</button></p>' +
+            termsLine() +
             '<p class="sm-terr-msg" role="status"></p>';
         // 휴대폰 LottoHex 모드는 화면 가운데 중간 크기 창(2026-11-08 사장님 — "대문짝만하다, 지도가 보이게"). PC 는 왼쪽 칸 그대로
         let pop = null, el = terrPanel;
         if (hexMobile()) {
             pop = document.getElementById('sm-consent-pop');
             if (!pop) { pop = document.createElement('div'); pop.id = 'sm-consent-pop'; pop.className = 'sm-consent-pop'; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-modal', 'true'); root.appendChild(pop); }
-            pop.setAttribute('aria-label', T('LottoHex 참여 안내', 'Joining LottoHex'));
+            pop.setAttribute('aria-label', T('LottoHex 참여', 'Join LottoHex'));
             el = pop;
         }
         el.innerHTML = html;
         el.hidden = false;
         el.scrollTop = 0;
-        const box = el.querySelector('.sm-terr-agree input'), ok = el.querySelector('.sm-terr-ok');
-        box.addEventListener('change', () => { ok.disabled = !box.checked; });
-        const back = () => { terrView = 'main'; if (pop) pop.hidden = true; else drawTerr(); };
+        const ok = el.querySelector('.sm-terr-ok');
+        agreeBoxes(el, ok);
+        const back = () => { terrView = 'main'; if (pop) pop.hidden = true; else drawTerr(); try { localStorage.setItem(HEX_LATER, String(Date.now())); } catch (e) { /* 이 기기에서만 */ } };
         el.querySelector('.sm-close').addEventListener('click', back);
         el.querySelector('.sm-terr-cancel').addEventListener('click', back);
         ok.addEventListener('click', async () => {
             ok.disabled = true;
             try {
-                await A.call('/api/territory/join', { method: 'POST', body: { agree: true, v: TERR_V } });
+                if (needGeo) {
+                    const r = await A.call('/api/me/geo', { method: 'POST', body: { agree: true, v: g.geoV } });
+                    if (A.patchUser) A.patchUser({ geo: r.user.geo });
+                }
+                await A.call('/api/territory/join', { method: 'POST', body: { agree: true, v: terrV() } });
                 await A.refresh().catch(() => null);
                 terrView = 'main';
                 if (pop) pop.hidden = true;
@@ -1706,7 +2111,7 @@
                 drawTerrLayers();
                 drawTerr();
                 terrPanel.scrollTop = 0;
-                flyMine();
+                if (!flyMine() && needGeo) geoStart();   // 칸이 아직 없으면 내 위치로(위치를 막 켰을 때)
             } catch (e) {
                 ok.disabled = false;
                 el.querySelector('.sm-terr-msg').textContent = (e && e.message) || T('참여하지 못했습니다.', 'Could not join.');
@@ -1723,14 +2128,17 @@
             if (sw) { sw.hidden = false; root.classList.add('has-modes'); }   // 휴대폰: 제목 자리에 [판매점 | LottoHex]
             const tab = side.querySelector('.sm-tab[data-tab="terr"]');
             if (tab) tab.hidden = false;
+            const rt = side.querySelector('.sm-tab[data-tab="rank"]');
+            if (rt) rt.hidden = false;
             let q = null;
             try { q = new URLSearchParams(location.search).get('mode'); } catch (e) { /* 구형 */ }
-            if (q === 'hex') setMapMode('hex');   // store-map.html?mode=hex — LottoHex 로 바로(나중에 게임 입구)
+            if (root.dataset.hex) setMapMode('hex', true);   // lottohex.html — 전환 화면 없이 LottoHex 로 시작
+            else if (q === 'hex') setMapMode('hex');   // 옛 주소 store-map.html?mode=hex — LottoHex 로 바로(주소는 lottohex.html 로 바뀐다)
             else if (joinedNow() && !terr) loadTerr();   // 참여자는 들어올 때 한 번 받아 잃은 칸 · 얻은 칸을 견준다(빨간 점)
         });
         terrChip.addEventListener('click', () => setMapMode(shown.terr ? 'store' : 'hex'));   // PC 카드도 모드를 바꾼다(LottoHex 판매점 층 · 전환 화면)
         root.querySelectorAll('[data-terr-only]').forEach(b => b.addEventListener('click', () => setTerrOnly(!terrOnly)));
-        root.querySelectorAll('[data-mode-to]').forEach(b => b.addEventListener('click', () => setMapMode(b.dataset.modeTo)));
+        root.querySelectorAll('[data-mode-to]').forEach(b => b.addEventListener('click', e => { e.preventDefault(); setMapMode(b.dataset.modeTo); }));   // 링크(검색 로봇용)지만 페이지는 그대로 두고 화면만 바꾼다
         const hs = document.getElementById('sm-hexbar-stat');
         if (hs) hs.addEventListener('click', () => { terrTab = 'now'; setSheet(sheetSnap === 'peek' ? 'half' : sheetSnap); if (shown.terr) openTerrPanel(); });
         initSheetDrag();
@@ -1865,6 +2273,98 @@
     }
     window.addEventListener('lottodraw:account', () => { if (cmtRefresh) cmtRefresh(); });
 
+    // ───── 위치 인증(2026-11-09 사장님 — 위치기반서비스사업 신고) ─────
+    // 서버 스위치(GPS_VERIFY)가 켜져 있으면: 로그인 회원에게 지도를 열 때 위치 이용 동의를 묻고(나중에를 누르면 3일 뒤 다시), 동의했으면 내 위치를 켠 채로 시작.
+    // "다녀왔어요" · "또 다녀왔어요"를 누르면 그 순간 위치를 한 번 받아 서버로 보내고, 서버가 판매점 50m 안인지 판정한다(좌표는 서버가 저장하지 않는다)
+    const GEO_LATER = 'lottodraw.geo.later';
+    const geoAgreed = () => { const A = account(), u = A && A.me() && A.me().user, g = gpsCfg(); return !!(g && u && u.geo && u.geo.v === g.geoV); };
+    // 동의 창의 줄 · 약관 링크(위치 동의 창과 LottoHex 참여 창이 같이 쓴다)
+    const geoAgreeLine = age => '<label class="sm-terr-agree"><input type="checkbox"> ' + T('위치정보 서비스 이용에 동의합니다.' + (age ? ' (만 14세 이상)' : ''), 'I agree to the location-based service.' + (age ? ' (14 or older)' : '')) + '</label>';   // LottoHex 창에서는 위 줄이 19세
+    const termsLine = () => '<p class="sm-small"><a href="terms.html#location">' + T('이용약관', 'Terms of Use') + '</a></p>';   // 링크만(2026-11-09 사장님)
+    // 체크가 모두 되어야 단추가 눌린다
+    function agreeBoxes(el, ok) {
+        const boxes = [...el.querySelectorAll('.sm-terr-agree input')];
+        boxes.forEach(b => b.addEventListener('change', () => { ok.disabled = !boxes.every(x => x.checked); }));
+    }
+    function geoStart() {
+        if (!geo || geoActive()) return;
+        try { geo.trigger(); } catch (e) { /* 지도 준비 전 */ }
+    }
+    function geoPop(then) {
+        const A = account(), g = gpsCfg();
+        if (!g) return;
+        let pop = document.getElementById('sm-geo-pop');
+        if (!pop) { pop = document.createElement('div'); pop.id = 'sm-geo-pop'; pop.className = 'sm-consent-pop sm-geo-pop'; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-modal', 'true'); root.appendChild(pop); }
+        // 동의 창은 한 줄만(2026-11-09 사장님 — "이런저런 얘기 없이 '위치정보 서비스 이용에 동의합니다' 정도만, 자세한 건 이용약관 링크"). 받는 정보 · 보관 · 철회는 이용약관 8번 · 처리방침 5번
+        pop.setAttribute('aria-label', T('위치 이용 동의', 'Location consent'));
+        pop.innerHTML = '<button type="button" class="sm-close" aria-label="' + T('닫기', 'Close') + '">×</button>' +
+            '<h3>📍 ' + T('위치 이용 동의', 'Location consent') + '</h3>' +
+            geoAgreeLine(true) +
+            '<p class="sm-terr-btns"><button type="button" class="sm-terr-ok" disabled>' + T('동의하고 위치 켜기', 'Agree and turn on') + '</button> <button type="button" class="sm-terr-cancel">' + T('나중에', 'Later') + '</button></p>' +
+            termsLine() +
+            '<p class="sm-terr-msg" role="status"></p>';
+        pop.hidden = false;
+        const ok = pop.querySelector('.sm-terr-ok');
+        agreeBoxes(pop, ok);
+        const later = () => { pop.hidden = true; try { localStorage.setItem(GEO_LATER, String(Date.now())); } catch (e) { /* 이 기기에서만 */ } };
+        pop.querySelector('.sm-close').addEventListener('click', later);
+        pop.querySelector('.sm-terr-cancel').addEventListener('click', later);
+        ok.addEventListener('click', async () => {
+            ok.disabled = true;
+            try {
+                const r = await A.call('/api/me/geo', { method: 'POST', body: { agree: true, v: g.geoV } });
+                if (A.patchUser) A.patchUser({ geo: r.user.geo });
+                pop.hidden = true;
+                geoStart();
+                if (then) then();
+            } catch (e) {
+                ok.disabled = false;
+                pop.querySelector('.sm-terr-msg').textContent = (e && e.message) || T('저장하지 못했습니다.', 'Could not save.');
+            }
+        });
+    }
+    // 지도를 열 때: 동의했으면 내 위치를 켠 채로, 아직이면 묻는다(공유 링크로 판매점 · 지역을 열었으면 지도를 옮기지 않게 위치는 켜지 않는다)
+    async function initGeo() {
+        const A = account();
+        if (!A || !A.ready) return;
+        await A.ready;
+        if (!gpsCfg() || !A.session() || !A.me()) return;
+        let deep = false;
+        try { const q = new URLSearchParams(location.search); deep = !!(q.get('shop') || q.get('area')) || /map=/.test(location.hash); } catch (e) { /* 구형 */ }
+        if (geoAgreed()) { if (!deep) geoStart(); return; }
+        if (hexMode && !joinedNow()) return;   // LottoHex 참여 창이 위치 동의 줄을 함께 묻는다
+        let later = 0;
+        try { later = Number(localStorage.getItem(GEO_LATER)) || 0; } catch (e) { /* 이 기기에서만 */ }
+        if (Date.now() - later < 3 * 86400000) return;   // "나중에"를 누르면 3일 동안 묻지 않는다
+        geoPop(() => { if (!deep) geoStart(); });
+    }
+    // "다녀왔어요"를 누른 순간 위치 한 번(오차 · 실패를 사람이 읽을 말로)
+    function geoOnce() {
+        return new Promise((resolve, reject) => {
+            if (!navigator.geolocation) { reject(new Error(T('이 브라우저는 위치를 지원하지 않습니다.', 'This browser cannot share location.'))); return; }
+            navigator.geolocation.getCurrentPosition(
+                p => resolve({ lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy }),
+                e => reject(new Error(e && e.code === 1 ? T('브라우저의 위치 권한을 허용해 주세요(주소창 옆 설정).', 'Allow location for this site in your browser settings.')
+                    : T('위치를 받지 못했습니다. 잠시 뒤 다시 눌러 주세요.', 'Could not get your location. Try again.'))),
+                { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 });   // 누른 순간의 새 위치(직전 위치를 다시 쓰지 않는다)
+        });
+    }
+    // 철회: 앞으로 위치를 받지 않고, 위치로 인증한 다녀온 곳 · LottoHex 집계를 지운다
+    async function geoWithdraw() {
+        const A = account();
+        if (!window.confirm(T('위치 이용 동의를 철회합니까? 위치로 인증한 다녀온 곳이 모두 지워지고 LottoHex 집계에서도 빠집니다.', 'Withdraw consent? All verified visits are deleted and removed from LottoHex.'))) return;
+        try {
+            const r = await A.call('/api/me/geo', { method: 'POST', body: { agree: false } });
+            visits = {}; visitAt = {};
+            if (A.patchUser) A.patchUser({ geo: null, visits, visitAt });
+            paintVisits();
+            for (let n = 0; n < 2 && geoActive(); n++) { try { geo.trigger(); } catch (e) { break; } }   // 내 위치도 끈다(지도를 옮긴 상태면 두 번)
+            if (shown.mine) { mineSource(); drawMine(); }
+            refreshTerr();
+            return r;
+        } catch (e) { window.alert((e && e.message) || T('철회하지 못했습니다.', 'Could not withdraw.')); }
+    }
+
     async function visitUi(k, i) {
         const box = document.getElementById('sm-visit');
         const A = account();
@@ -1886,9 +2386,10 @@
                 (cur ? '<span class="sm-swatch" style="background:' + cur + '"></span>' + T('다녀온 곳', 'Visited') : T('＋ 다녀왔어요', '＋ I\'ve been here')) + '</button>' +
                 (cur ? '<span class="sm-colors">' + PALETTE.map(c => '<button type="button" class="sm-color' + (c === cur ? ' is-on' : '') + (opened(c) ? '' : ' is-locked') + '" data-c="' + c + '" style="background:' + c + '" aria-label="' + c + (opened(c) ? '' : T(' (잠김)', ' (locked)')) + '"></button>').join('') +
                     (canPick ? '<label class="sm-color sm-color-any" title="' + T('다른 색', 'Any colour') + '"><input type="color" value="' + cur + '" aria-label="' + T('다른 색', 'Any colour') + '"></label>' : '') + '</span>' : '') + '</div>' +
-                '<p class="sm-visit-note">' + (cur ? (canPick ? T('다시 누르면 지웁니다. 고른 색은 다녀온 곳 모두에 씁니다.', 'Tap again to remove. The colour applies to all your places.')
-                    : T('다시 누르면 지웁니다. 고른 색은 다녀온 곳 모두에 씁니다. 🔒 색은 하나에 ' + COLOR_COST + '포인트로 열거나 <a href="statistics.html">이용권</a>으로 모두 엽니다.', 'Tap again to remove. Unlock a 🔒 colour for ' + COLOR_COST + ' points, or all of them with a <a href="statistics.html">pass</a>.'))
-                    : T('나만 보입니다.', 'Only you can see it.')) + '</p>' +
+                // 안내는 짧게(2026-11-11 사장님 — 카드 위로 옮기며 "안내문자 간략하게")
+                '<p class="sm-visit-note">' + (cur ? (canPick ? T('다시 누르면 지움 · 색은 모든 곳에 적용', 'Tap again to remove · colour applies to all')
+                    : T('다시 누르면 지움 · 🔒 색은 ' + COLOR_COST + 'P 또는 <a href="statistics.html">이용권</a>', 'Tap again to remove · 🔒 colours: ' + COLOR_COST + 'P or a <a href="statistics.html">pass</a>'))
+                    : gpsCfg() ? T('판매점 50m 안에서 누르면 +10P (하루 50P까지)', 'Within 50 m: +10P (up to 50P a day)') : T('나만 보입니다', 'Only you can see it')) + '</p>' +
                 (cur && inTerr ? '<p class="sm-visit-again-p">' + (today ? '<span class="sm-visit-today">✓ ' + T('오늘 다녀옴', 'Visited today') + '</span>'
                     : '<button type="button" class="sm-visit-again">↻ ' + T('오늘 또 다녀왔어요', 'Visited again today') + '</button>') + '</p>' : '') +
                 '';   // LottoHex 안내 문구는 뺐다(2026-11-08 사장님 — 말이 많다)
@@ -1925,34 +2426,83 @@
             if (!(await loadIds())) return;
             const id = ids[k] && ids[k][i];
             if (!id) return;
+            const verify = !!gpsCfg() && (again || color);   // 위치 인증: 새로 표시 · 또 다녀왔어요(지우기는 그대로)
+            if (verify && !geoAgreed()) { geoPop(() => save(color, again)); return; }
+            const note = box.querySelector('.sm-visit-note');
             try {
-                const r = await account().call('/api/me/visits', { method: 'POST', body: again ? { id, again: true } : { id, color } });
+                let at = {};
+                if (verify) {
+                    if (note) { note.classList.remove('is-warn'); note.textContent = T('위치 확인 중…', 'Checking your location…'); }
+                    at = await geoOnce();
+                }
+                const r = await account().call('/api/me/visits', { method: 'POST', body: Object.assign(again ? { id, again: true } : { id, color }, at) });
+                at = null;   // 좌표는 보낸 뒤 버린다
                 visits = r.visits || {};
                 visitAt = r.visitAt || visitAt;
-                if (A.patchUser) A.patchUser(Object.assign({ visits, visitAt }, r.visitColor ? { visitColor: r.visitColor } : {}));   // 이 탭에 저장해 둔 내 정보도 — 다시 열어도 빠지지 않게
+                if (A.patchUser) A.patchUser(Object.assign({ visits, visitAt }, r.visitColor ? { visitColor: r.visitColor } : {}, r.score ? { score: r.score } : {}));   // 이 탭에 저장해 둔 내 정보도 — 다시 열어도 빠지지 않게
                 paintVisits();
                 draw();
+                if (verify) {   // 위치로 확인했다는 것과 받은 포인트(같은 곳은 하루 한 번 · 하루 50포인트까지)
+                    const n2 = box.querySelector('.sm-visit-note');
+                    if (n2) n2.textContent = (r.earned ? T('✓ 위치로 확인했습니다 · +' + r.earned + '포인트', '✓ Verified by location · +' + r.earned + ' points')
+                        : T('✓ 위치로 확인했습니다. 이 판매점은 오늘 포인트를 이미 받았거나, 오늘 받을 수 있는 50포인트를 다 받았습니다.', '✓ Verified by location. No points this time: already earned here today, or the daily 50 is reached.')) +
+                        (r.fresh ? ' ' + freshText(r.fresh) : '');   // 새 칭호 · 마일스톤(2026-11-09)
+                    if (r.fresh) afterFresh(r.fresh);
+                    if (r.cap) {   // 점령(2026-11-10) — 띠에도 바로
+                        toast(r.cap.st ? '⚔️ ' + T((r.cap.from ? r.cap.from + '님의' : '다른 사람의') + ' 블록을 빼앗았습니다! (' + r.cap.n + '번째 블록)', 'You took a block from ' + (r.cap.from || 'another player') + '! (block #' + r.cap.n + ')')
+                            : '🚩 ' + T(r.cap.n + '번째 블록을 점령했습니다!', 'You captured block #' + r.cap.n + '!'));
+                        feedAt = 0; loadFeed(true);
+                    }
+                }
                 refreshTerr();
                 if (shown.mine) { await ensureAll(); mineSource(); drawMine(); }
                 if (cmtRefresh) cmtRefresh();   // 내 댓글의 "다녀옴" 표시를 바로 바꾼다
             } catch (e) {
-                box.querySelector('.sm-visit-note').textContent = (e && e.message) || T('저장하지 못했습니다.', 'Could not save.');
+                const n = box.querySelector('.sm-visit-note');
+                if (n) { n.classList.add('is-warn'); n.textContent = (e && e.message) || T('저장하지 못했습니다.', 'Could not save.'); }
             }
         };
         // 내 색 바꾸기: 이미 표시한 곳도 모두 그 색(서버가 한 번에 바꾼다)
+        // 누르면 바로 그 색으로 바꿔 보이고(서버 답을 기다리지 않는다 — 2026-11-10 사장님 "한 번에 안 되는 줄 알고 계속 눌렀다"), 서버가 저장하면 그 답으로 맞춘다.
+        // 저장하는 동안 또 누르면 마지막에 누른 색 하나만 이어서 보낸다. 실패하면 원래 색으로 돌린다
+        let colorBusy = false, colorNext = null;
         const saveAll = async color => {
             if (!(await member(T('다녀온 곳 표시는 로그인 회원 기능입니다.', 'Marking visited retailers is for signed-in members.')))) return;
+            const before = { visits: Object.assign({}, visits), color: myVisitColor() };
+            for (const id of Object.keys(visits)) visits[id] = color;
+            if (A.patchUser) A.patchUser({ visits, visitColor: color });
+            paintVisits();
+            draw();
+            if (shown.mine) { mineSource(); drawMine(); }
+            const note = box.querySelector('.sm-visit-note');
+            if (note) { note.classList.remove('is-warn'); note.textContent = T('✓ 색을 바꿨습니다. 저장하는 중…', '✓ Colour changed. Saving…'); }
+            if (colorBusy) { colorNext = color; return; }
+            colorBusy = true;
             try {
-                const r = await account().call('/api/me/visits', { method: 'POST', body: { all: true, color } });
-                visits = r.visits || {};
-                visitAt = r.visitAt || visitAt;
-                if (A.patchUser) A.patchUser({ visits, visitAt, visitColor: r.visitColor || color });
+                let send = color;
+                for (;;) {
+                    const r = await account().call('/api/me/visits', { method: 'POST', body: { all: true, color: send } });
+                    if (colorNext && colorNext !== send) { send = colorNext; colorNext = null; continue; }   // 그 사이 다른 색을 눌렀다
+                    colorNext = null;
+                    visits = r.visits || visits;
+                    visitAt = r.visitAt || visitAt;
+                    if (A.patchUser) A.patchUser({ visits, visitAt, visitColor: r.visitColor || send });
+                    break;
+                }
                 paintVisits();
                 draw();
                 if (shown.mine) { mineSource(); drawMine(); }
+                const n2 = box.querySelector('.sm-visit-note');
+                if (n2) n2.textContent = T('✓ 다녀온 곳 모두 이 색으로 저장했습니다.', '✓ Saved: all your places use this colour.');
             } catch (e) {
-                box.querySelector('.sm-visit-note').textContent = (e && e.message) || T('저장하지 못했습니다.', 'Could not save.');
-            }
+                visits = before.visits; colorNext = null;
+                if (A.patchUser) A.patchUser({ visits, visitColor: before.color });
+                paintVisits();
+                draw();
+                if (shown.mine) { mineSource(); drawMine(); }
+                const n2 = box.querySelector('.sm-visit-note');
+                if (n2) { n2.classList.add('is-warn'); n2.textContent = (e && e.message) || T('저장하지 못했습니다.', 'Could not save.'); }
+            } finally { colorBusy = false; }
         };
         if (A.session()) await loadIds();
         draw();
@@ -2022,12 +2572,12 @@
         const place = [data.sido[si] || '', gu].filter(Boolean).join(' ');
         const how = [a ? T('자동 ', 'auto ') + a : '', m ? T('수동 ', 'manual ') + m : '', s ? T('반자동 ', 'semi-auto ') + s : ''].filter(Boolean).join(' · ');
         showCard('<h3>' + esc(name) + (closed ? ' <span class="sm-closed">' + T('폐점', 'closed') + '</span>' : '') + '</h3>' +
-            '<p class="sm-place">' + esc(place) + '</p>' +
+            '<p class="sm-place">' + esc(place) + '</p>' + VISIT_BOX +
             '<p class="sm-counts"><span><b>' + fmt(w1) + '</b>' + T('번 1등', ' × 1st') + (how ? ' <small>(' + esc(how) + ')</small>' : '') + '</span>' +
             '<span><b>' + fmt(w2) + '</b>' + T('번 2등', ' × 2nd') + '</span></p>' +
             '<div class="sm-rounds" id="sm-rounds"><p class="sm-small">' + T('당첨 회차 불러오는 중…', 'Loading draws…') + '</p></div>' +
             '<p class="sm-why">' + T('1등 · 2등이 많을수록 많이 팔린 곳일 가능성이 큽니다.', 'More 1st and 2nd prizes most likely means more tickets sold.') + '</p>' +   // 확률 문장은 카드에서 뺐다(2026-11-08 사장님 — 말이 많다). 공유 · LottoHex 규칙 · 안내에는 남는다
-            links(name, place, lat, lng) + '<div class="sm-share-shop" id="sm-share-shop"><button type="button" class="sm-share-btn">🔗 ' + T('해당 판매점 공유하기', 'Share this retailer') + '</button></div>' + '<div class="sm-visit" id="sm-visit"></div><div class="sm-cmt" id="sm-cmt"></div>', lat, lng, fly);
+            links(name, place, lat, lng) + '<div class="sm-share-shop" id="sm-share-shop"><button type="button" class="sm-share-btn">🔗 ' + T('해당 판매점 공유하기', 'Share this retailer') + '</button></div>' + '<div class="sm-cmt" id="sm-cmt"></div>', lat, lng, fly);
         card.dataset.i = String(i);
         shareUi('w', i, { name, place, w1, w2, sido: data.sido[si] || '' });
         visitUi('w', i);
@@ -2041,39 +2591,286 @@
         });
     }
 
+    // ───── 지역 찾기(2026-11-10 사장님 — "판매점 이름보다 사는 곳을 찾고 그 근처 판매점을 지도에서 본다. 검색창은 하나로") ─────
+    // 목록(store-map-places.json, tools/make-places.mjs — 통계청 SGIS 행정동 경계를 가공한 vuski/admdongkor, CC BY 4.0)은 검색창을 처음 쓸 때 받는다.
+    // "청주 사창동" · "사창동" · "청주" · "서원구" · "역삼"(역삼1 · 2동) · "청주사창동"(띄어쓰기 없이)처럼 낱말마다 시·도 · 시 · 구 · 동 중 하나에 맞으면 찾는다
+    let places = null, placesP = null;
+    const SIDO_ALIAS = { 서울: ['서울특별시', '서울시'], 부산: ['부산광역시', '부산시'], 대구: ['대구광역시', '대구시'], 인천: ['인천광역시', '인천시'], 광주: ['광주광역시', '광주시'],
+        대전: ['대전광역시', '대전시'], 울산: ['울산광역시', '울산시'], 세종: ['세종특별자치시', '세종시'], 경기: ['경기도'], 강원: ['강원도', '강원특별자치도'], 충북: ['충청북도'], 충남: ['충청남도'],
+        전북: ['전라북도', '전북특별자치도'], 전남: ['전라남도'], 경북: ['경상북도'], 경남: ['경상남도'], 제주: ['제주도', '제주특별자치도'] };
+    function loadPlaces() {
+        if (!placesP) placesP = (root.dataset.places ? fetch(root.dataset.places).then(r => (r.ok ? r.json() : null)) : Promise.resolve(null)).catch(() => null).then(j => { places = j ? buildPlaces(j) : []; return places; });
+        return placesP;
+    }
+    // 자리: { c: [시·도, 시, 구, 동], leaf: 가장 작은 단위의 자리, name, sub, lng, lat, z }
+    function buildPlaces(j) {
+        const S = j.s.map(x => x[0]), out = [];
+        j.s.forEach(([n, lng, lat, z]) => out.push({ c: [n, '', '', ''], leaf: 0, name: n, sub: '', lng, lat, z }));
+        j.c.forEach(([s, si, lng, lat, z]) => out.push({ c: [S[s], si, '', ''], leaf: 1, name: si, sub: S[s], lng, lat, z }));
+        j.g.forEach(([s, si, gu, lng, lat, z]) => out.push({ c: [S[s], si, gu, ''], leaf: gu ? 2 : 1, name: gu || si, sub: [S[s], gu ? si : ''].filter(Boolean).join(' '), lng, lat, z }));
+        j.d.forEach(([g, name, lng, lat, z]) => { const [s, si, gu] = j.g[g]; out.push({ c: [S[s], si, gu, name], leaf: 3, name, sub: [S[s], si, gu].filter(Boolean).join(' '), lng, lat, z }); });
+        return out;
+    }
+    // 끝말(시 · 군 · 구 · 동 · 읍 · 면 · 도, 동 앞 숫자)을 뗀 이름: "청주시" → "청주", "역삼1동" → "역삼", "여의도동" → "여의"
+    const stripPlace = x => x.replace(/\d*(동|읍|면|가|리)$/, '').replace(/(특별자치시|특별자치도|특별시|광역시|시|군|구|도)$/, '');
+    // 끝말을 뗀 이름이 같아도, 찾는 말에 끝말이 있으면 같은 종류끼리만("중구"는 중구, "중1동"은 아니다 · "역삼동"은 역삼1동)
+    const SUFFIX = /(동|읍|면|가|리|시|군|구|도)$/;
+    const sameKind = (t, x) => { const a = t.match(SUFFIX); if (!a) return true; const b = x.replace(/\d+(?=동$)/, '').match(SUFFIX); return !!b && b[1] === a[1]; };
+    function placeTok(t, c, sido) {
+        if (!c) return 0;
+        let best = 0;
+        for (const x of sido ? [c].concat(SIDO_ALIAS[c] || []) : [c]) {
+            if (x === t) best = Math.max(best, 3);
+            else if (/역$/.test(x) && x.slice(0, -1) === t) best = Math.max(best, 2.5);   // 역: "강남"도 강남역(지역 이름이 같으면 지역이 먼저)
+            else if (stripPlace(x) && stripPlace(x) === stripPlace(t) && sameKind(t, x)) best = Math.max(best, 2.5);
+            else if (t.length >= 2 && x.startsWith(t)) best = Math.max(best, 1);
+        }
+        return best;
+    }
+    // 낱말마다 다른 자리에 맞아야 한다. 가장 작은 단위까지 맞으면 더 위로(“청주” → 청주시, “사창동” → 사창동)
+    function placeScore(p, toks) {
+        if (!p.syn) return placeScoreC(p.c, p.leaf, toks);
+        let best = 0;   // 역 이름이 여럿(괄호 속 이름)이면 가장 잘 맞는 것으로
+        for (const n of p.syn) best = Math.max(best, placeScoreC([p.c[0], p.c[1], p.c[2], n], p.leaf, toks));
+        return best;
+    }
+    function placeScoreC(c, leafAt, toks) {
+        const used = [false, false, false, false];
+        let sc = 0, leaf = false;
+        for (const t of toks) {
+            let bi = -1, bs = 0;
+            for (let k = 0; k < 4; k++) { if (used[k]) continue; const v = placeTok(t, c[k], k === 0); if (v > bs) { bs = v; bi = k; } }
+            if (bi < 0) return 0;
+            used[bi] = true; sc += bs; if (bi === leafAt) leaf = true;
+        }
+        return leaf ? sc + 2 : sc;
+    }
+    function findPlaces(q, max) {
+        if (!places || !places.length) return [];
+        const pool = stationRecs ? places.concat(stationRecs) : places;
+        const run = toks => pool.map(p => ({ p, s: placeScore(p, toks) })).filter(x => x.s > 0).sort((a, b) => (b.s - a.s) || (a.p.leaf - b.p.leaf) || ((a.p.rail ? 1 : 0) - (b.p.rail ? 1 : 0)));
+        const toks = q.split(/\s+/).filter(Boolean);
+        let hits = run(toks);
+        // 띄어 쓰지 않았으면("청주사창동") 두 낱말로 나눠 본다
+        if (!hits.length && toks.length === 1 && toks[0].length >= 4) {
+            const t = toks[0];
+            for (let k = 2; k <= t.length - 2 && !hits.length; k++) hits = run([t.slice(0, k), t.slice(k)]).filter(x => x.s >= 5);
+        }
+        const seen = new Set();
+        return hits.filter(x => { const k = x.p.sub + ' ' + x.p.name; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, max).map(x => x.p);
+    }
+    // ───── 역(2026-11-10 사장님 — "역 이름 검색도, 역은 지도에 표시돼도 괜찮을 듯" · "지하철은 노선마다 고유 색" · "노선마다 역끼리 선으로") ─────
+    // store-map-stations.json(tools/make-stations.mjs — OpenStreetMap, ODbL): l: 전철 노선 [이름, 영어, 색], s: [이름("역" 뗌), 경도, 위도, 0 도시철도 · 1 철도 · 2 둘 다, 시·도, 시, 구, 영어 이름, 괄호 속 이름?, 노선 번호들?].
+    // 괄호 속 이름이 있으면 "김천(구미)역"으로 보이고 "김천구미" · "구미역"(이수역 → 총신대입구(이수)역)으로도 찾는다
+    // 지도를 그린 뒤 받아 줌 12.5부터 점(한 노선은 그 노선 색 테, 갈아타는 역은 조금 크게 진한 테), 13.5부터 이름. 검색창에는 🚉 + 노선 색 점으로(지역 · 판매점과 함께)
+    // 노선 선(store-map-lines.json — 실제 선로 모양, 노선 색)은 줌 11.5부터(줌아웃하면 감춤) 판매점 · 칸 · 역 밑에, 밤에는 옅은 흰 테두리를 깐다
+    let stationRecs = null, stationsP = null, railLines = [];
+    const stName = (n, alt) => n + (alt ? '(' + alt + ')' : '') + '역';
+    const RAIL_DEF = { day: '#2b4a9b', night: '#9ec1ff' };   // 노선 없는 기차역 점 테
+    const groupsOf = ls => (Array.isArray(ls) ? ls.filter(g => Array.isArray(g) && Array.isArray(g[2])).map(g => [g[0], g[1], g[2].filter(i => railLines[i])]).filter(g => g[2].length) : []);
+    function loadStations() {
+        if (!stationsP) stationsP = (root.dataset.stations ? fetch(root.dataset.stations).then(r => (r.ok ? r.json() : null)) : Promise.resolve(null)).catch(() => null).then(j => {
+            const rows = j && Array.isArray(j.s) ? j.s : [];
+            railLines = j && Array.isArray(j.l) ? j.l : [];
+            stationRecs = rows.map(([n, lng, lat, kind, si0, si, gu, en, alt, ls]) => ({ c: [si0, si, gu, n + '역'], leaf: 3, rail: true, kind, name: stName(n, alt), en: en ? en + ' Stn' : '',
+                lines: [...new Set(groupsOf(ls).flatMap(g => g[2]))].sort((x, y) => x - y), syn: alt ? [n + '역', alt + '역', n + alt + '역'] : null, sub: [si0, si, gu].filter(Boolean).join(' '), lng, lat, z: 15 }));
+            railLayer(rows);
+            loadRailLines();
+            return stationRecs;
+        });
+        return stationsP;
+    }
+    // 검색 결과의 노선 표시: 색 점 + 이름(넷까지, 넘으면 +n)
+    function lineChips(ls) {
+        if (!ls || !ls.length) return '';
+        const shown4 = ls.slice(0, 4).map(i => '<i class="sm-ln" style="background:' + esc(railLines[i][2]) + '"></i>' + esc(T(railLines[i][0], railLines[i][1])));
+        return shown4.join(' ') + (ls.length > 4 ? ' +' + (ls.length - 4) : '');
+    }
+    // 노선 표시(2026-11-10 사장님 — "홍대입구역은 3개 노선이니 네이버 지도처럼 노선마다"): 노선마다 실제 타는 곳(정차 위치)에 노선 색 표시("2" · "공항" · "경의중앙"),
+    // 같은 승강장을 쓰는 노선은 한 표시에 나란히. 그림은 처음 쓸 때 그린다(styleimagemissing — 'rb:노선-노선', 밤 · 낮 같음)
+    function badgeImage(ids) {
+        const k = 2, H = 16, PAD = 4, GAP = 2, O = 1.5;
+        const label = i => (en() ? railLines[i][4] : railLines[i][3]) || railLines[i][0];
+        const cv = document.createElement('canvas'), cx = cv.getContext('2d');
+        const font = '700 ' + (10.5 * k) + 'px "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
+        cx.font = font;
+        const ws = ids.map(i => Math.max(H, Math.ceil(cx.measureText(label(i)).width / k) + PAD * 2));
+        const W = ws.reduce((a, w) => a + w, 0) + GAP * (ids.length - 1) + O * 2, HH = H + O * 2;
+        cv.width = Math.ceil(W * k); cv.height = Math.ceil(HH * k);
+        cx.scale(k, k);
+        let x = O;
+        ids.forEach((i, j) => {
+            const w = ws[j], c = railLines[i][2] || '#666', r = H / 2;
+            const pill = () => { cx.beginPath(); cx.moveTo(x + r, O); cx.lineTo(x + w - r, O); cx.arc(x + w - r, O + r, r, -Math.PI / 2, Math.PI / 2); cx.lineTo(x + r, O + H); cx.arc(x + r, O + r, r, Math.PI / 2, Math.PI * 1.5); cx.closePath(); };
+            pill(); cx.lineWidth = O * 2; cx.strokeStyle = '#ffffff'; cx.stroke();
+            pill(); cx.fillStyle = c; cx.fill();
+            const rgb = [1, 3, 5].map(q => parseInt(c.slice(q, q + 2), 16)), lum = (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255;
+            cx.fillStyle = lum > 0.68 ? '#1f2937' : '#ffffff';   // 밝은 노선 색(9호선 · 의정부 · 우이신설 …)은 진한 글자
+            cx.font = '700 10.5px "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
+            cx.textAlign = 'center'; cx.textBaseline = 'middle';
+            cx.fillText(label(i), x + w / 2, O + H / 2 + 0.5);
+            x += w + GAP;
+        });
+        return cx.getImageData(0, 0, cv.width, cv.height);
+    }
+    function railLayer(rows) {
+        if (!map || !rows.length || map.getSource('rail')) return;
+        const plain = [], badges = [];
+        rows.forEach(([n, lng, lat, kind, , , , en0, alt, ls]) => {
+            const nm = { name: stName(n, alt), 'name:ko': stName(n, alt), 'name:en': en0 ? en0 + ' Stn' : stName(n, alt) };
+            const gs = groupsOf(ls);
+            if (!gs.length) plain.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [lng, lat] }, properties: Object.assign({ k: kind }, nm) });
+            else gs.forEach(([x, y, ids]) => badges.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [x, y] }, properties: Object.assign({ b: 'rb:' + ids.join('-') }, nm) }));
+        });
+        map.on('styleimagemissing', e => { if (/^rb:/.test(e.id) && !map.hasImage(e.id)) { try { map.addImage(e.id, badgeImage(e.id.slice(3).split('-').map(Number)), { pixelRatio: 2 }); } catch (er) { /* 그림 실패 — 표시 없이 */ } } });
+        map.addSource('rail', { type: 'geojson', data: { type: 'FeatureCollection', features: plain } });
+        map.addSource('rail-st', { type: 'geojson', data: { type: 'FeatureCollection', features: badges } });
+        const before = map.getStyle().layers.map(l => l.id).find(id => /^(st|terr|hx)-/.test(id));   // 판매점 · 칸 밑에
+        const nameF = ['coalesce', ['get', en() ? 'name:en' : 'name:ko'], ['get', 'name']];
+        // 노선 없는 기차역(KTX · 일반 열차만): 예전처럼 흰 점 + 남색 테
+        map.addLayer({ id: 'rail-dot', type: 'circle', source: 'rail', minzoom: 12.5, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 12.5, 3, 16, 5.5], 'circle-stroke-width': 2 } }, before);
+        map.addLayer({ id: 'rail-name', type: 'symbol', source: 'rail', minzoom: 13.5, layout: { 'text-field': nameF, 'text-font': ['Noto Sans Bold'],
+            'text-size': 11, 'text-offset': [0, 0.9], 'text-anchor': 'top', 'text-optional': true, 'text-padding': 4 } }, before);
+        // 전철역: 노선 표시 + 이름(13.5부터). 표시는 늘 보이고(겹쳐도), 이름은 겹치면 하나만
+        map.addLayer({ id: 'rail-badge', type: 'symbol', source: 'rail-st', minzoom: 12.5, layout: { 'icon-image': ['get', 'b'], 'icon-size': ['interpolate', ['linear'], ['zoom'], 12.5, 0.72, 15, 1],
+            'icon-allow-overlap': true, 'text-field': ['step', ['zoom'], '', 13.5, nameF], 'text-font': ['Noto Sans Bold'], 'text-size': 11, 'text-anchor': 'top', 'text-offset': [0, 1],
+            'text-optional': true, 'text-padding': 4 } }, before);
+        railPaint();
+    }
+    // 노선 선: [노선, x0, y0, dx1, dy1, …](경도 · 위도 × 100000, 둘째 점부터 앞 점과의 차)
+    let railLinesP = null;
+    function loadRailLines() {
+        if (railLinesP || !root.dataset.lines) return;
+        railLinesP = fetch(root.dataset.lines).then(r => (r.ok ? r.json() : null)).catch(() => null).then(j => {
+            if (!j || !Array.isArray(j.g) || !Array.isArray(j.l) || !map || map.getSource('rail-lines')) return;
+            const features = [];
+            for (const g of j.g) {
+                const L = j.l[g[0]];
+                if (!L) continue;
+                const co = [];
+                let x = 0, y = 0;
+                for (let k = 1; k + 1 < g.length; k += 2) { x += g[k]; y += g[k + 1]; co.push([x / 1e5, y / 1e5]); }
+                if (co.length > 1) features.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: co }, properties: { cd: paleOf(L[2], false), cn: paleOf(L[2], true), cdw: paleOf(L[2], false, true), cnw: paleOf(L[2], true, true) } });
+            }
+            map.addSource('rail-lines', { type: 'geojson', data: { type: 'FeatureCollection', features } });
+            const before = map.getLayer('rail-dot') ? 'rail-dot' : map.getStyle().layers.map(l => l.id).find(id => /^(st|terr|hx)-/.test(id));
+            // 줌아웃하면 역처럼 감춘다(2026-11-10 사장님 — 축소하면 판매점 점과 겹쳐 복잡) — 11.5부터 서서히, 역 점(12.5)보다 조금 먼저
+            const W = ['interpolate', ['linear'], ['zoom'], 11.5, 1.6, 13, 2.6, 15, 3.5, 18, 6];
+            // 밤에는 밑에 옅은 흰 테두리(사장님이 고른 B안) — 1호선 · 7호선 · 9호선처럼 어두운 노선 색이 밤 바탕에 묻혔다. 선이 연해진 만큼 테두리도 옅게
+            map.addLayer({ id: 'rail-line-case', type: 'line', source: 'rail-lines', minzoom: 11.5, layout: { 'line-cap': 'round', 'line-join': 'round', visibility: 'none' },
+                paint: { 'line-color': '#ebf0f8', 'line-width': ['interpolate', ['linear'], ['zoom'], 11.5, 3.4, 13, 4.8, 15, 5.9, 18, 8.6],
+                    'line-opacity': ['interpolate', ['linear'], ['zoom'], 11.5, 0, 12.3, 0.14, 14, 0.2] } }, before);
+            map.addLayer({ id: 'rail-line', type: 'line', source: 'rail-lines', minzoom: 11.5, layout: { 'line-cap': 'round', 'line-join': 'round' },
+                paint: { 'line-color': ['get', 'cd'], 'line-width': W } }, before);
+            railPaint();
+        });
+    }
+    // 노선 선은 역 점 색보다 절반 넘게 연하게(2026-11-10 사장님): 바탕색과 섞어 노선 색을 38%(밤 45%)만 남긴다.
+    // 투명도로 줄이면 겹친 선로(복선 · 같은 길을 여러 노선이 지남)가 겹친 만큼 진해져서, 미리 섞은 불투명한 색으로 그린다
+    // PC(넓은 화면)는 한 화면에 노선 · 역이 훨씬 많이 보여 더 연하게(같은 날 사장님 — "모바일은 적절, PC 는 정신없다"): 낮 24% · 밤 30%
+    function paleOf(hex, night, wide) {
+        const k = wide ? (night ? 0.3 : 0.24) : (night ? 0.45 : 0.38), bg = night ? [20, 26, 35] : [246, 246, 243];
+        const c = [1, 3, 5].map(i => parseInt(String(hex).slice(i, i + 2), 16));
+        if (c.some(v => isNaN(v))) return hex;
+        return '#' + c.map((v, i) => Math.round(v * k + bg[i] * (1 - k)).toString(16).padStart(2, '0')).join('');
+    }
+    // PC 는 역 표시 · 이름도 옅게(icon · text 투명도 — 모바일은 그대로). 창 크기가 PC ↔ 모바일로 바뀌면 다시 칠한다
+    let railWide = null;
+    function railPaint() {
+        if (!map || !map.getLayer('rail-dot')) return;
+        const n = isNight(), m = n ? 'night' : 'day', w = isWide();
+        railWide = w;
+        map.setPaintProperty('rail-dot', 'circle-color', n ? '#1b2030' : '#ffffff');
+        map.setPaintProperty('rail-dot', 'circle-stroke-color', RAIL_DEF[m]);
+        map.setPaintProperty('rail-dot', 'circle-opacity', w ? 0.6 : 1);
+        map.setPaintProperty('rail-dot', 'circle-stroke-opacity', w ? 0.55 : 1);
+        for (const id of ['rail-name', 'rail-badge']) {
+            if (!map.getLayer(id)) continue;
+            map.setPaintProperty(id, 'text-color', n ? '#cfd6e2' : '#2f3746');
+            map.setPaintProperty(id, 'text-halo-color', n ? '#141a23' : '#ffffff');
+            map.setPaintProperty(id, 'text-halo-width', 1.4);
+            map.setPaintProperty(id, 'text-opacity', w ? 0.6 : 1);
+        }
+        if (map.getLayer('rail-badge')) map.setPaintProperty('rail-badge', 'icon-opacity', w ? 0.55 : 1);
+        if (map.getLayer('rail-line')) {
+            map.setLayoutProperty('rail-line-case', 'visibility', n ? 'visible' : 'none');
+            map.setPaintProperty('rail-line-case', 'line-opacity', ['interpolate', ['linear'], ['zoom'], 11.5, 0, 12.3, w ? 0.08 : 0.14, 14, w ? 0.12 : 0.2]);
+            map.setPaintProperty('rail-line', 'line-color', ['get', (n ? 'cn' : 'cd') + (w ? 'w' : '')]);
+            map.setPaintProperty('rail-line', 'line-opacity', ['interpolate', ['linear'], ['zoom'], 11.5, 0, 12.3, 1]);
+        }
+    }
+    window.addEventListener('resize', () => { if (railWide !== null && railWide !== isWide()) railPaint(); });
+    // 지역으로 옮기면 그 지역의 판매점이 다 보이게(1 · 2등 · 일반 판매점 켜고 흐리게 · TOP 50 만 보기는 끈다) 하고, 다 옮기면 그 근처 판매점 목록(지역 중심에서 가까운 순)
+    async function revealAllStores() {
+        const chip = k => root.querySelector('.sm-chip[data-layer="' + k + '"]');
+        if (shown.top) { const c = chip('top'); if (c) c.click(); }
+        if (fadeT > 0) { const f = document.getElementById('sm-fade'); if (f) f.value = 0; setFade(0); }
+        ['w1', 'w2', 'all'].forEach(k => { if (!shown[k] && (k !== 'all' || root.dataset.all)) { shown[k] = true; const c = chip(k); if (c) c.setAttribute('aria-pressed', 'true'); } });
+        applyLayers();
+        await needAll();
+        applyLayers();
+    }
+    let nearFrom = null;   // 지역 찾기로 옮겼으면 { c: [경도, 위도], name } — 근처 목록을 그 중심에서 가까운 순으로
+    async function goPlace(p) {
+        if (!hexMode) await revealAllStores();
+        nearFrom = hexMode ? null : { c: [p.lng, p.lat], name: p.name };
+        nearAfterMove = !hexMode;   // LottoHex 에서는 칸을 보러 가는 것이라 목록은 열지 않는다
+        areaWant = '';
+        if (!isWide()) { card.hidden = true; nearPanel.hidden = true; }
+        map.flyTo({ center: [p.lng, p.lat], zoom: p.z, pitch: 0, bearing: 0, essential: true,
+            padding: isWide() ? pad() : Object.assign(pad(), { bottom: hexMode ? pad().bottom : Math.round(window.innerHeight * 0.4) + 16 }) });
+    }
+
     function initSearch() {
         const box = document.getElementById('sm-search');
         const list = document.getElementById('sm-found');
-        box.addEventListener('input', () => {
-            const q = box.value.trim().toLowerCase();
+        const item = (html, go) => {
+            const li = document.createElement('li');
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.innerHTML = html;
+            b.addEventListener('click', () => { list.hidden = true; box.blur(); go(); });
+            li.appendChild(b);
+            list.appendChild(li);
+            return li;
+        };
+        const render = () => {
+            const raw = box.value.trim(), q = raw.toLowerCase();
             list.textContent = '';
             if (q.length < 2) { list.hidden = true; return; }
+            if (!places || !stationRecs) Promise.all([loadPlaces(), loadStations()]).then(() => { if (box.value.trim() === raw) render(); });
+            if (!all && root.dataset.all) needAll().then(() => { if (all && box.value.trim() === raw) render(); });   // 일반 판매점도 찾는다(층을 꺼 두었어도 — 2026-11-10 사장님 "박희도 로또LAB 이 안 나온다")
+            const areas = findPlaces(raw, 5);
             const hits = [];
             for (let i = data.rows.length - 1; i >= 0 && hits.length < 20; i--) if (data.rows[i][4].toLowerCase().includes(q)) hits.push(i);   // 1등 많은 곳부터
-            const more = [];   // 일반 판매점(층을 켰을 때만)
-            if (all && shown.all) for (let i = 0; i < all.rows.length && hits.length + more.length < 20; i++) if (all.rows[i][2].toLowerCase().includes(q)) more.push(i);
+            const more = [];   // 일반 판매점(층이 꺼져 있어도 찾는다 — 고르면 층을 켠다)
+            if (all) for (let i = 0; i < all.rows.length && hits.length + more.length < 20; i++) if (all.rows[i][2].toLowerCase().includes(q)) more.push(i);
             list.hidden = false;
-            if (!hits.length && !more.length) { list.innerHTML = '<li class="sm-none">' + T('찾는 판매점이 없습니다.', 'No match.') + '</li>'; return; }
+            if (!areas.length && !hits.length && !more.length) {
+                list.innerHTML = '<li class="sm-none">' + (places && (all || !root.dataset.all) ? T('찾는 판매점 · 지역이 없습니다.', 'No retailer or area found.') : T('찾는 중…', 'Searching…')) + '</li>';
+                return;
+            }
+            areas.forEach(p => item('<b>' + (p.rail ? '🚉 ' : '📍 ') + esc(p.rail && en() && p.en ? p.en : p.name) + '</b> <span>' + esc(p.sub ? p.sub + ' · ' : '') +
+                (p.rail ? (p.lines && p.lines.length ? lineChips(p.lines) : p.kind === 0 ? T('지하철역', 'metro') : p.kind === 2 ? T('기차 · 지하철역', 'rail · metro') : T('기차역', 'rail')) : T('지역', 'area')) + '</span>', () => goPlace(p)).classList.add('sm-found-area'));
             hits.forEach(i => {
                 const r = data.rows[i];
-                const li = document.createElement('li');
-                const b = document.createElement('button');
-                b.type = 'button';
-                b.innerHTML = '<b>' + esc(r[4]) + '</b> <span>' + esc([data.sido[r[5]], r[6]].filter(Boolean).join(' ')) + ' · ' + T('1등 ', '1st ') + r[2] + ' · ' + T('2등 ', '2nd ') + r[3] + '</span>';
-                b.addEventListener('click', () => { list.hidden = true; box.blur(); open(i, true); });
-                li.appendChild(b);
-                list.appendChild(li);
+                item('<b>' + esc(r[4]) + '</b> <span>' + esc([data.sido[r[5]], r[6]].filter(Boolean).join(' ')) + ' · ' + T('1등 ', '1st ') + r[2] + ' · ' + T('2등 ', '2nd ') + r[3] + '</span>', () => open(i, true));
             });
             more.forEach(i => {
                 const r = all.rows[i];
-                const li = document.createElement('li');
-                const b = document.createElement('button');
-                b.type = 'button';
-                b.innerHTML = '<b>' + esc(r[2]) + '</b> <span>' + esc([all.sido[r[3]], r[4]].filter(Boolean).join(' ')) + ' · ' + T('일반 판매점', 'retailer') + '</span>';
-                b.addEventListener('click', () => { list.hidden = true; box.blur(); openAll(i, true); });
-                li.appendChild(b);
-                list.appendChild(li);
+                item('<b>' + esc(r[2]) + '</b> <span>' + esc([all.sido[r[3]], r[4]].filter(Boolean).join(' ')) + ' · ' + T('일반 판매점', 'retailer') + '</span>', () => {
+                    if (!shown.all) { shown.all = true; const c = root.querySelector('.sm-chip[data-layer="all"]'); if (c) c.setAttribute('aria-pressed', 'true'); applyLayers(); }   // 지도에 점이 보이게
+                    openAll(i, true);
+                });
             });
+        };
+        box.addEventListener('focus', () => { loadPlaces(); loadStations(); }, { once: true });
+        box.addEventListener('input', render);
+        // Enter: 맨 위 결과로(지역이 먼저)
+        box.addEventListener('keydown', e => {
+            if (e.key !== 'Enter') return;
+            const first = list.querySelector('button');
+            if (first && !list.hidden) { e.preventDefault(); first.click(); }
         });
     }
 
@@ -2257,11 +3054,17 @@
             set3d(on);
         });
         document.getElementById('sm-night').addEventListener('click', () => { nightByTop = false; nightByHex = false; toggleNight(); });
-        side.querySelectorAll('.sm-tab').forEach(b => b.addEventListener('click', () => (b.dataset.tab === 'near' ? openNear() : b.dataset.tab === 'mine' && !shown.mine ? setMine(true) : b.dataset.tab === 'terr' ? (shown.terr ? openTerrPanel() : setMapMode('hex')) : setTab(b.dataset.tab))));
-        nearBtn.addEventListener('click', openNear);
+        side.querySelectorAll('.sm-tab').forEach(b => b.addEventListener('click', () => (b.dataset.tab === 'near' ? openNear() : b.dataset.tab === 'mine' && !shown.mine ? setMine(true) : b.dataset.tab === 'terr' ? (shown.terr ? openTerrPanel() : setMapMode('hex')) : b.dataset.tab === 'rank' ? openRank() : setTab(b.dataset.tab))));
+        nearBtn.addEventListener('click', () => { nearFrom = null; openNear(); });
         placeNearBtn();
         window.addEventListener('resize', placeNearBtn);
         root.querySelectorAll('.sm-mode').forEach(b => b.addEventListener('click', () => toggleMode(b)));
+        // 휴대폰 "시도별 · 안내" 단추(반자동 옆, 2026-11-11): 아래 펼침(#sm-info)을 열고 닫는다. 펼침의 맨 위 줄로도 닫힌다
+        const infoBox = document.getElementById('sm-info'), infoBtn = root.querySelector('.sm-info-btn');
+        if (infoBox && infoBtn) {
+            infoBtn.addEventListener('click', () => { infoBox.open = !infoBox.open; });
+            infoBox.addEventListener('toggle', () => infoBtn.setAttribute('aria-expanded', String(infoBox.open)));
+        }
         const fade = document.getElementById('sm-fade');
         fade.addEventListener('input', () => setFade(Number(fade.value)));
         // 시도별 표의 지역 이름 → 그 지역의 판매점이 다 보이게
@@ -2296,14 +3099,20 @@
         map.addControl(new ScaleBar(), 'bottom-right');
         map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
         // 내 위치: 브라우저 위치 기능(휴대폰 GPS, PC 는 와이파이 · IP 로 어림). 이 기기 안에서만 쓰고 서버로 보내지 않는다(위치정보법 — README 4-9)
-        geo = new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: false }, trackUserLocation: false });
+        // 내 위치: 켜면 기기 안에서 계속 받아 지도에 표시(서버로 보내지 않는다). 위치 이용에 동의한 회원은 지도를 열 때 켜진 채로(2026-11-09 사장님)
+        geo = new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: true }, trackUserLocation: true });
         map.addControl(geo, 'bottom-right');
         geo.on('geolocate', e => { myLoc = [e.coords.longitude, e.coords.latitude]; if (!nearPanel.hidden) nearAfterMove = true; });
         geo.on('error', () => { if (!nearPanel.hidden) { const n = nearPanel.querySelector('.sm-near-note'); if (n) n.textContent = T('위치를 받지 못했습니다(브라우저 위치 권한을 확인해 주세요).', 'Could not get your location (check the browser permission).'); } });
         map.addControl(new NorthControl(), 'bottom-right');
+        if (document.fullscreenEnabled || document.webkitFullscreenEnabled) map.addControl(new FullControl(), 'bottom-right');   // 맨 위(휴대폰만 보인다)
         // 처음 화면: 서울 전체(2026-10-26 사장님 — 전국은 시도별 표 · 줌아웃으로)
         map.on('load', () => {
             koreanLabels(); whiteModel(); addStores(); nightModel(); nearLabel();
+            // 들어올 때의 전환 화면은 그려지면 걷는다 — 빛나는 점이 계속 움직여 'idle' 이 오지 않을 수 있어 잠깐 뒤에도(enterFx 는 한 번만, 최소 1.1초)
+            map.once('idle', enterFx);
+            setTimeout(enterFx, 500);
+            loadStations();   // 역 표시(줌 12.5부터) · 검색
             // ?shop=판매점번호(관리자 페이지의 판매점 댓글 링크 등): 그 판매점 카드를 연다
             const shopQ = new URLSearchParams(location.search).get('shop');
             if (shopQ === '51100000' && data.net) openNet(true);   // 0등(동행복권 인터넷) — TOP 50 구조화 데이터의 주소
@@ -2324,14 +3133,13 @@
             const areaQ = (new URLSearchParams(location.search).get('area') || '').trim().slice(0, 40);
             const byArea = !!areaQ && !shopQ && openArea(areaQ);
             // store-map-top50.html(공유용 주소): TOP 50 별로 연다
-            if (root.dataset.top) { const c = root.querySelector('.sm-chip-top'); if (c && !shown.top) c.click(); } renderTop(); initVisits(); initMine(); initTerr(); initFun();
+            if (root.dataset.top) { const c = root.querySelector('.sm-chip-top'); if (c && !shown.top) c.click(); } renderTop(); initVisits(); initMine(); initTerr(); initFun(); initGeo();
             // PC: 이태원로 · 서빙고로 같은 길 이름이 보이는 크기(2026-10-26 사장님) — 용산 둘레.
-            // 휴대폰: 남한 전체가 한 화면에 + "적게 나온 곳 흐리게"를 "1등 10회 이상"으로(2026-10-27 사장님 — 많이 나온 곳만 한눈에)
+            // 휴대폰: 서울(2026-11-11 사장님 — 예전엔 남한 전체였다. 캡처대로 여의도가 왼쪽 끝 · 한강이 가운데 아래, 축척 2km, 화면 폭 412px 기준
+            // 가운데 126.985 · 37.534, 줌 10.8). 폭이 다르면 같은 넓이가 보이게 줌만 폭에 맞춘다. "적게 나온 곳 흐리게"는 0(모두 — 같은 날 사장님, 예전엔 1등 10회 이상)
             if (byArea) { /* 지역 공유 링크는 그 지역 화면 그대로, 흐리게 막대도 0 */ }
             else if (!fromLink && isWide()) map.jumpTo({ center: [126.985, 37.538], zoom: 12.9, padding: pad() });
-            // 휴대폰: 사장님 캡처(10-30, 화면 폭 462px)대로 — 가운데 127.82 · 36.87, 줌 5.96(남한이 화면 가운데쯤, 위는 도구 줄 · 북녘 일부). 폭이 다르면 줌만 폭에 맞춘다
-            else if (!fromLink) map.jumpTo({ center: [127.82, 36.87], zoom: 5.96 + Math.log2(Math.max(300, mapBox.clientWidth) / 462) });
-            if (!isWide() && !byArea && !shopQ && !fromLink) { const f = document.getElementById('sm-fade'); f.value = 57; setFade(57); }   // 링크로 온 화면(#map= · ?shop= · ?area=)은 흐리게 없이   // 57 → 1등 10회 이상(setFade 의 셈)
+            else if (!fromLink) map.jumpTo({ center: [126.985, 37.534], zoom: 10.8 + Math.log2(Math.max(300, mapBox.clientWidth) / 412) });
             if (fromLink && map.getPitch() > 5) { const d3 = document.getElementById('sm-3d'); d3.setAttribute('aria-pressed', 'true'); d3.textContent = '2D'; }   // 기울어진 화면 링크
         });
         // 지도 출처(ⓘ)는 접힌 채로 시작(2026-10-27 사장님 — 휴대폰에서 펼쳐진 채 도착했다). MapLibre 는 좁은 화면에서 처음에 펼쳐 두고

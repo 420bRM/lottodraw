@@ -26,13 +26,14 @@
 
 import { generateKeyPair, importPrivate, importPublic, signKey, verifyKey, parseKey, hex32, publicOnly, keyId, b64urlEncode } from './keys.js';
 import { plansFor, roundEndsAt } from './plans.js';
-import { community, SESSION_DAYS, REACT_TYPES, ITEM_RE, POINTS, COMMENT, TAP_KINDS } from './community.js';
+import { community, SESSION_DAYS, REACT_TYPES, ITEM_RE, POINTS, COMMENT, TAP_KINDS, AD_RE, capText } from './community.js';
 import { verifyGoogleToken } from './google.js';
 import { saleRound, cleanGame, rankOf, kstParts, drawDay } from './lotto.js';
 
 import { chatStub, checkText } from './chat.js';
 import { shopInfo, sharePage } from './share.js';
-import { TERR_CONSENT, SKIN_RE, cellMap, _resetCellsForTests } from './territory.js';
+import { SKIN_RE, cellMap, _resetCellsForTests, gpsOn, terrConsent, GEO_CONSENT, GEO_RADIUS, GEO_ACC_MAX, distM, storeGeo } from './territory.js';
+import { catalog as titleCatalog } from './titles.js';
 
 export { Community } from './community.js';
 export { ChatRoom } from './chat.js';
@@ -62,9 +63,16 @@ export default {
         ctx.waitUntil(resultMail(env, Date.now()).catch(err => console.error('result mail', err)));
         if (loginReady(env)) ctx.waitUntil(community(env, 'autoNicks', { now: Date.now() }).catch(err => console.error('auto nick', err)));
         // 영역: 분기가 끝나면 그때의 Map 랭킹을 확정해 남긴다(이미 했으면 그냥 지나간다, territory.js)
+        if (loginReady(env)) ctx.waitUntil(community(env, 'geoHousekeep', { now: Date.now(), gps: gpsOn(env) }).catch(err => console.error('geo housekeep', err)));   // 위치 인증: 켜는 날 한 번 손 표시 지우기 · 확인자료 6개월 지난 것 지우기
         if (loginReady(env)) ctx.waitUntil(community(env, 'terrFinalize', { now: Date.now(), site: siteUrl(env) }).catch(err => console.error('territory finalize', err)));
     },
     async fetch(request, env, ctx) {
+        // HTTPS 만(2026-11-09 — 위치기반서비스 신고: "사이트와 서버 사이 모든 통신 HTTPS"). http 로 오면 GET 은 https 로 돌려보내고 나머지는 거절
+        const u = new URL(request.url);
+        if (u.protocol === 'http:' && !/^(localhost|127\.0\.0\.1)$/.test(u.hostname)) {
+            if (request.method === 'GET' || request.method === 'HEAD') { u.protocol = 'https:'; return Response.redirect(u.toString(), 308); }
+            return new Response(JSON.stringify({ error: 'https_only', message: 'HTTPS 로만 받습니다.' }), { status: 403, headers: { 'Content-Type': 'application/json; charset=utf-8' } });
+        }
         try {
             return await route(request, env, ctx || { waitUntil() {} });
         } catch (err) {
@@ -113,6 +121,10 @@ async function route(request, env, ctx) {
     if (path === '/api/me/generator' && method === 'POST') return saveGenerator(request, env);
     if (path === '/api/me/visits' && method === 'POST') return saveVisit(request, env);
     if (path === '/api/me/visit-color' && method === 'POST') return openVisitColor(request, env);
+    if (path === '/api/me/visit-badge' && method === 'POST') return setVisitBadge(request, env);
+    if (path === '/api/me/geo' && method === 'POST') return setGeo(request, env);
+    if (path === '/api/me/title' && method === 'POST') return setTitle(request, env);
+    if (path === '/api/titles' && method === 'GET') return json(request, env, titleCatalog(), 200, { 'Cache-Control': 'public, max-age=3600' }, true);
     if (path === '/api/me/comments' && method === 'GET') return myComments(request, env);
     if (path === '/api/me/notes' && method === 'GET') return myNotes(request, env, false);
     if (path === '/api/me/notes/read' && method === 'POST') return myNotes(request, env, true);
@@ -127,6 +139,8 @@ async function route(request, env, ctx) {
     if (path === '/api/territory/join' && method === 'POST') return territoryJoin(request, env);
     if (path === '/api/territory/leave' && method === 'POST') return territoryLeave(request, env);
     if (path === '/api/territory/skin' && method === 'POST') return territorySkin(request, env);
+    if (path === '/api/territory/beam' && method === 'POST') return territoryBeam(request, env);
+    if (path === '/api/territory/feed' && method === 'GET') return territoryFeed(request, env);
     if (path === '/api/chat' && method === 'GET') return chatConnect(request, env);
     if (path === '/api/chat/info' && method === 'GET') return chatInfo(request, env);
     if (path === '/api/reactions' && method === 'POST') return react(request, env);
@@ -134,6 +148,7 @@ async function route(request, env, ctx) {
     if (path === '/api/comments' && method === 'POST') return addComment(request, env, ctx);
     if (path === '/api/comments/delete' && method === 'POST') return deleteComment(request, env);
     if (path === '/api/tap' && method === 'POST') return tap(request, env);
+    if (path === '/api/arrive' && method === 'POST') return adLand(request, env);   // 광고 유입(주소에 'ad' 를 넣으면 광고 차단기가 막는다)
     if (path === '/api/view' && method === 'POST') return view(request, env);
     if (path === '/api/views' && method === 'GET') return getViews(request, env, url);
 
@@ -186,7 +201,8 @@ async function getConfig(request, env) {
         // 입금 알림 연결이 살아 있으면 계좌이체도 몇 분 안에 저절로 열린다. 화면 안내 문구가 이걸 따른다.
         autoConfirm: await hookAlive(env),
         // 구글 로그인(가입하면 무료 체험 + 좋아요). 클라이언트 ID 를 넣기 전에는 화면에 로그인 단추가 없다.
-        login: loginReady(env) ? { google: env.GOOGLE_CLIENT_ID, trialDays: signupTrialDays(env) } : null,
+        login: loginReady(env) ? { google: env.GOOGLE_CLIENT_ID, trialDays: signupTrialDays(env),
+            gps: gpsOn(env), geoV: GEO_CONSENT, terrV: terrConsent(env) } : null,   // 위치 인증 스위치(GPS_VERIFY) · 위치 동의 판 · LottoHex 동의 판
         chat: chatReady(env),
     }, 200, { 'Cache-Control': 'public, max-age=60' }, true);
 }
@@ -658,7 +674,7 @@ async function googleLogin(request, env, ctx) {
 
     const now = Date.now();
     const days = signupTrialDays(env);
-    const r = await community(env, 'login', { sub: g.sub, email: g.email, subHash: await sha256('trial:' + g.sub), ref: await memberRef(g.sub), now, trial: days > 0 });
+    const r = await community(env, 'login', { sub: g.sub, email: g.email, subHash: await sha256('trial:' + g.sub), ref: await memberRef(g.sub), now, trial: days > 0, ad: cleanAd(body.ad) });
     let user = r.user;
     let trialNew = false;
     if (r.needTrial) {
@@ -787,7 +803,7 @@ async function getTerritory(request, env) {
         const got = await community(env, 'sessionGet', { hash: await sha256('sess:' + bearer(request)), now: Date.now() }).catch(() => ({}));
         sub = got.sub || null;
     }
-    const r = await community(env, 'territory', { sub, now: Date.now(), site: siteUrl(env) });
+    const r = await community(env, 'territory', { sub, now: Date.now(), site: siteUrl(env), gps: gpsOn(env) });
     return json(request, env, r, 200, sub ? {} : { 'Cache-Control': 'public, max-age=60' }, !sub);
 }
 
@@ -796,12 +812,12 @@ async function territoryJoin(request, env) {
     const s = await sessionUser(request, env);
     await limited(env.REACT_LIMIT, s.hash);
     const body = await readJson(request);
-    if (body.agree !== true || body.v !== TERR_CONSENT) throw new HttpError(400, 'need_consent', '참여 안내를 읽고 동의해 주세요.');
+    if (body.agree !== true || body.v !== terrConsent(env)) throw new HttpError(400, 'need_consent', '참여 안내를 읽고 동의해 주세요.');
     if (!s.user.nick) throw new HttpError(409, 'need_nick', 'LottoHex에는 별명으로 나옵니다. 별명을 먼저 정해 주세요.');
     const map = await cellMap(siteUrl(env)).catch(() => { throw new HttpError(503, 'cells_unavailable', '칸 자료를 불러오지 못했습니다. 잠시 뒤 다시 해 주세요.'); });
     const cells = {};
     for (const id of Object.keys(s.user.visits || {})) { const c = map.get(id); if (c) cells[id] = c; }
-    const r = await community(env, 'terrJoin', { sub: s.sub, now: Date.now(), v: TERR_CONSENT, cells });
+    const r = await community(env, 'terrJoin', { sub: s.sub, now: Date.now(), v: terrConsent(env), cells });
     if (r.error === 'need_nick') throw new HttpError(409, 'need_nick', 'LottoHex에는 별명으로 나옵니다. 별명을 먼저 정해 주세요.');
     if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
     return json(request, env, { user: r.user });
@@ -817,6 +833,18 @@ async function territorySkin(request, env) {
     if (skin !== null && !SKIN_RE.test(skin)) throw new HttpError(400, 'bad_skin', '칸 모양이 이상합니다.');
     const r = await community(env, 'setTerrSkin', { sub: s.sub, skin });
     if (r.error === 'need_points') throw new HttpError(402, 'need_points', `칸 모양을 바꾸려면 ${r.cost}포인트가 필요합니다. (지금 ${r.avail}포인트)`);
+    if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
+    return json(request, env, { user: r.user, cost: r.cost });
+}
+
+// 영역 빛 벽(2026-11-10 사장님 — 포인트로 팔고 남에게도 보이게). { on: true | false } — 안 샀으면 켤 때 POINTS.terrBeam 포인트로 산다, 산 뒤 켜고 끄기는 무료
+async function territoryBeam(request, env) {
+    const s = await sessionUser(request, env);
+    await limited(env.REACT_LIMIT, s.hash);
+    const body = await readJson(request);
+    const r = await community(env, 'setTerrBeam', { sub: s.sub, on: body.on === true });
+    if (r.error === 'need_points') throw new HttpError(402, 'need_points', `영역 빛 벽은 ${r.cost}포인트입니다. (지금 ${r.avail}포인트)`);
+    if (r.error === 'not_joined') throw new HttpError(409, 'not_joined', 'LottoHex 에 참여한 뒤에 살 수 있습니다.');
     if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
     return json(request, env, { user: r.user, cost: r.cost });
 }
@@ -908,14 +936,78 @@ async function saveVisit(request, env) {
     if (!/^\d{8}$/.test(id)) throw new HttpError(400, 'bad_visit', '판매점 번호가 이상합니다.');
     const again = body.again === true;
     if (!again && body.color !== null && !/^#[0-9a-fA-F]{6}$/.test(String(body.color || ''))) throw new HttpError(400, 'bad_visit', '색이 이상합니다.');
+    const gps = gpsOn(env);
+    if (gps && (again || body.color !== null)) await verifyVisit(env, s, id, body);   // 위치 인증(켜져 있을 때) — 지우기는 그대로
     const cell = s.user.terr ? (await cellMap(siteUrl(env)).catch(() => new Map())).get(id) || null : null;
-    const r = await community(env, 'setVisit', { sub: s.sub, id, color: again || body.color === null ? null : String(body.color).toLowerCase(), max: VISIT_MAX, now: Date.now(), cell, again });
+    const r = await community(env, 'setVisit', { sub: s.sub, id, color: again || body.color === null ? null : String(body.color).toLowerCase(), max: VISIT_MAX, now: Date.now(), cell, again, gps, site: siteUrl(env) });
     if (r.error === 'too_many') throw new HttpError(409, 'too_many_visits', `다녀온 곳은 ${VISIT_MAX}곳까지 저장합니다.`);
     if (r.error === 'not_visited') throw new HttpError(409, 'not_visited', '다녀온 곳으로 표시한 판매점이 아닙니다.');
     if (r.error === 'again_today') throw new HttpError(409, 'again_today', '오늘은 이미 다녀왔다고 표시했습니다. 같은 곳은 하루 한 번입니다.');
     if (r.error === 'daily_limit') throw new HttpError(429, 'daily_limit', `다녀온 곳 표시는 하루 ${r.max}번까지입니다. 내일 다시 해 주세요.`);
     if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
-    return json(request, env, { visits: r.visits, visitAt: r.visitAt, visitColor: r.visitColor });
+    if (r.cap && env.CHAT) await chatStub(env).fetch('https://chat/system', { method: 'POST', body: JSON.stringify({ kind: 'cap', text: capText(r.cap) }) }).catch(() => null);   // 점령 소식을 채팅에도
+    return json(request, env, { visits: r.visits, visitAt: r.visitAt, visitColor: r.visitColor, earned: r.earned || 0, score: r.score, fresh: r.fresh || null, cap: r.cap || null });
+}
+
+// LottoHex 소식 띠(2026-11-10): 최근 점령 소식 [{ at, nick, n }] + 관리자 공지 { text, at, until }. 누구나 · 30초 캐시
+async function territoryFeed(request, env) {
+    const r = await community(env, 'hexFeed', { now: Date.now() });
+    return json(request, env, { feed: r.feed || [], notice: r.notice || null }, 200, { 'Cache-Control': 'public, max-age=30' }, true);
+}
+
+// 칭호 달기 · 떼기(2026-11-09, titles.js). { id: 칭호 번호 } 또는 { id: null }. 얻은 칭호만 단다
+async function setTitle(request, env) {
+    const s = await sessionUser(request, env);
+    await limited(env.REACT_LIMIT, s.hash);
+    const body = await readJson(request);
+    const id = body.id === null ? null : String(body.id || '');
+    if (id !== null && (!id || id.length > 60)) throw new HttpError(400, 'bad_title', '칭호가 이상합니다.');
+    const r = await community(env, 'setTitle', { sub: s.sub, id });
+    if (r.error === 'not_earned') throw new HttpError(409, 'not_earned', '아직 얻지 않은 칭호입니다.');
+    if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
+    return json(request, env, { user: r.user });
+}
+
+// 위치 인증(2026-11-09 사장님 — 위치기반서비스사업 신고). { lat, lng, acc }: "다녀왔어요"를 누른 순간 기기 위치(위도 · 경도 · 오차 m).
+// 판매점(공개된 사업장 좌표)에서 GEO_RADIUS(50m) 안이면 통과. 오차가 GEO_ACC_MAX(100m)를 넘으면 판정하지 않는다.
+// 좌표는 이 함수 안에서만 쓰고 버린다 — 저장 · 로그에 남기지 않는다. 확인자료(gl:)에는 누가(계정 해시) · 언제 · 어느 판매점 · 결과만
+async function verifyVisit(env, s, id, body) {
+    const g = s.user.geo;
+    if (!g || g.v !== GEO_CONSENT) throw new HttpError(409, 'need_geo', '위치 이용에 동의해야 다녀온 곳을 인증할 수 있습니다.');
+    const lat = Number(body.lat), lng = Number(body.lng), acc = Number(body.acc);
+    if (![lat, lng, acc].every(Number.isFinite) || Math.abs(lat) > 90 || Math.abs(lng) > 180 || acc < 0) throw new HttpError(400, 'bad_location', '위치 값이 이상합니다.');
+    const tried = await community(env, 'geoTry', { sub: s.sub, now: Date.now() });
+    if (tried.error === 'too_many_tries') throw new HttpError(429, 'too_many_tries', `위치 확인은 하루 ${tried.max}번까지입니다. 내일 다시 해 주세요.`);
+    let why = null, dist = 0;
+    if (acc > GEO_ACC_MAX) why = 'inaccurate';
+    else {
+        const geo = await storeGeo(siteUrl(env)).catch(() => { throw new HttpError(503, 'geo_unavailable', '판매점 위치 자료를 불러오지 못했습니다. 잠시 뒤 다시 해 주세요.'); });
+        const p = geo.get(id);
+        if (!p) why = 'no_store';
+        else { dist = distM(lat, lng, p[0], p[1]); if (dist > GEO_RADIUS) why = 'too_far'; }
+    }
+    // 여기까지 — 좌표(lat, lng, acc)는 더 쓰지 않는다
+    await community(env, 'geoLog', { u: (await sha256('geo:' + s.sub)).slice(0, 16), t: Date.now(), id, ok: !why, why });
+    if (why === 'inaccurate') throw new HttpError(422, 'gps_inaccurate', `위치 오차가 커서(약 ${Math.round(acc)}m) 확인하지 못했습니다. 밖이나 창가에서 다시 눌러 주세요.`);
+    if (why === 'no_store') throw new HttpError(404, 'no_store', '문을 연 판매점이 아니어서 인증할 수 없습니다.');
+    if (why === 'too_far') throw new HttpError(422, 'too_far', `판매점에서 약 ${Math.round(dist)}m 떨어져 있습니다. 판매점 ${GEO_RADIUS}m 안에서 다시 눌러 주세요.`);
+}
+
+// 위치 이용 동의(2026-11-09). { agree: true, v }: 동의(동의 시각 · 안내문 판을 남긴다). { agree: false }: 철회 —
+// 앞으로 위치를 받지 않고, 위치로 인증한 다녀온 곳과 LottoHex 집계를 지운다
+async function setGeo(request, env) {
+    const s = await sessionUser(request, env);
+    await limited(env.REACT_LIMIT, s.hash);
+    const body = await readJson(request);
+    let r;
+    if (body.agree === true) {
+        if (body.v !== GEO_CONSENT) throw new HttpError(400, 'need_consent', '위치 이용 안내를 읽고 동의해 주세요.');
+        r = await community(env, 'geoConsent', { sub: s.sub, now: Date.now(), v: GEO_CONSENT });
+    } else if (body.agree === false) {
+        r = await community(env, 'geoWithdraw', { sub: s.sub });
+    } else throw new HttpError(400, 'need_consent', '동의 · 철회 값이 이상합니다.');
+    if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
+    return json(request, env, { user: r.user });
 }
 
 // 다녀온 곳 색 열기(2026-10-26): 첫 색(빨강)은 누구나, 나머지 7색은 이용권이 있으면 화면에서 바로, 없으면 하나에 POINTS.visitColor 포인트.
@@ -931,6 +1023,18 @@ async function openVisitColor(request, env) {
     if (r.error === 'need_points') throw new HttpError(402, 'need_points', `색 하나를 열려면 ${r.cost}포인트가 필요합니다. (지금 ${r.avail}포인트)`);
     if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
     return json(request, env, { user: r.user, cost: r.cost });
+}
+
+// 판매점 댓글의 "✓ 실방문자" 표시(2026-11-09 사장님 — 마이페이지에서 켜고 끄기, 기본은 꺼짐). { on: true | false }
+// 켜면 내가 다녀온 곳으로 표시한 판매점에 단 내 댓글에 표시가 붙어 다른 사람에게 보인다(어느 판매점을 다녀왔는지가 드러난다)
+async function setVisitBadge(request, env) {
+    const s = await sessionUser(request, env);
+    await limited(env.REACT_LIMIT, s.hash);
+    const body = await readJson(request);
+    if (typeof body.on !== 'boolean') throw new HttpError(400, 'bad_badge', '켜기 · 끄기 값이 이상합니다.');
+    const r = await community(env, 'setVisitBadge', { sub: s.sub, on: body.on });
+    if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
+    return json(request, env, { user: r.user });
 }
 
 /* ───── 내 번호 (마이페이지 · 홈 생성기 "내 번호에 저장") ───── */
@@ -1192,6 +1296,27 @@ async function tap(request, env) {
     return new Response(null, { status: 204, headers: corsHeaders(request, env) });
 }
 
+/* ───── 광고 유입(utm) 집계 (js/account.js, 2026-11-11) ───── */
+
+// /api/arrive: 주소에 utm_source 가 붙은 링크(광고 · 홍보)로 들어오면 브라우저가 sendBeacon(text/plain)으로 {s: 매체, m: 종류, c: 캠페인} 만 보낸다.
+// 같은 브라우저 · 캠페인은 하루 한 번(브라우저가 거른다). 기기 · 회원 · 주소 정보는 받지 않는다. 우리 사이트(Origin)에서 온 것만, 같은 IP 1분 30번까지(TAP_LIMIT)
+// 가입할 때도 브라우저가 기억한 캠페인(30일 안)을 같이 보내고(googleLogin), 가입 · LottoHex 참여 · 첫 위치 인증은 저장소(community.js)가 센다
+function cleanAd(raw) {
+    if (!raw || typeof raw !== 'object') return null;
+    const one = v => { v = String(v == null ? '' : v).trim().toLowerCase().slice(0, 40); return AD_RE.test(v) ? v : ''; };
+    const ad = { s: one(raw.s), m: one(raw.m) || '-', c: one(raw.c) || '-' };
+    return ad.s ? ad : null;
+}
+async function adLand(request, env) {
+    if (!allowedOrigin(request, env)) throw new HttpError(403, 'bad_origin', '허용되지 않은 사이트입니다.');
+    const ad = cleanAd(await readJson(request));
+    if (!ad) throw new HttpError(400, 'bad_ad', '광고 정보가 올바르지 않습니다.');
+    if (!env.COMMUNITY || BOT_UA.test(request.headers.get('User-Agent') || '')) return new Response(null, { status: 204, headers: corsHeaders(request, env) });
+    await limited(env.TAP_LIMIT, 'ad:' + (request.headers.get('CF-Connecting-IP') || 'local'));
+    await community(env, 'adLand', { ad, now: Date.now() });
+    return new Response(null, { status: 204, headers: corsHeaders(request, env) });
+}
+
 /* ───── 판매점 공유 주소 /s/판매점번호 (worker/src/share.js) ───── */
 // 미리보기를 만드는 로봇(카카오톡 · 페이스북 · 슬랙 등)은 세지 않고, 사람이 열어 지도로 넘어간 것만 shop-open 으로 센다
 const PREVIEW_UA = /bot|crawl|spider|scrap|preview|facebookexternalhit|slack|discord|telegram|whatsapp|kakaotalk-scrap|headless/i;
@@ -1401,6 +1526,11 @@ async function admin(request, env, sub, method, url) {
         if (!env.COMMUNITY) throw new HttpError(503, 'no_store', '집계 저장소가 없습니다.');
         return json(request, env, await community(env, 'taps'));
     }
+    // 광고 유입(utm) 집계 (날짜별 · 캠페인별)
+    if (sub === '/inflow' && method === 'GET') {
+        if (!env.COMMUNITY) throw new HttpError(503, 'no_store', '집계 저장소가 없습니다.');
+        return json(request, env, await community(env, 'adStats'));
+    }
     // 블로그 조회수: 글별 직접 센 수와 시작값(GET), 시작값 갈아 끼우기(POST — tools/seed-views.js). 보이는 수 = 직접 센 수 + 시작값
     if (sub === '/views' && method === 'GET') {
         if (!env.COMMUNITY) throw new HttpError(503, 'no_store', '집계 저장소가 없습니다.');
@@ -1462,6 +1592,15 @@ async function admin(request, env, sub, method, url) {
         const payload = cm[1] === 'delete' ? { id: String(body.id || '').slice(0, 40) } : { sub: String(body.sub || '').slice(0, 64), nick: cleanText(body.nick, 20) };
         const r = await chatStub(env).fetch('https://chat/admin/' + cm[1], { method: 'POST', body: JSON.stringify(payload) });
         return json(request, env, await r.json());
+    }
+    // LottoHex 소식 띠 공지(2026-11-10 사장님 — 흐르는 띠에 간단한 공지): { text(80자까지), hours(1~720, 기본 72) } — text 가 비면 내린다
+    if (sub === '/hex-notice' && method === 'GET') { needLogin(env); return json(request, env, await community(env, 'hexFeed', { now: Date.now() })); }
+    if (sub === '/hex-notice' && method === 'POST') {
+        needLogin(env);
+        const body = await readJson(request);
+        const text = cleanText(body.text, 80);
+        const hours = Math.max(1, Math.min(720, Math.round(Number(body.hours) || 72)));
+        return json(request, env, await community(env, 'hexNotice', { text: text || null, hours, now: Date.now() }));
     }
     // 블로그 댓글 관리: 최근 댓글(누가 썼는지 포함), 지우기. 막기는 채팅 금지와 같다
     if (sub === '/comments' && method === 'GET') {
@@ -1876,7 +2015,7 @@ function json(request, env, data, status, extra, open) {
     return new Response(JSON.stringify(data), {
         status: status || 200,
         headers: Object.assign(
-            { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' },
+            { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Strict-Transport-Security': 'max-age=31536000' },
             corsHeaders(request, env, false, open),
             extra || {}),
     });

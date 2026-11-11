@@ -674,6 +674,26 @@ html.home { scroll-behavior: smooth; }
 @media (min-width: 1100px) {
     .nav .nav-map { position: absolute; top: 50%; right: max(20px, calc((100% - 1440px) / 2 + 20px)); margin: 0; transform: translateY(-50%); }
 }
+/* 휴대폰(600px 밑): 머리글 오른쪽 위(LOTTODRAW.KR 줄)로 옮긴다(2026-11-09 사장님) — 메뉴 끝의 것은 감춘다 */
+/* 두 단추(판매점 지도 · LottoHex)는 .banner-links 한 묶음 — 넓은 화면에서는 통째로 감춘다(메뉴에 판매점 지도가 있다) */
+.banner-links { display: none; }
+@media (max-width: 599px) {
+    .banner { position: relative; }
+    /* 격자 한 칸: 두 단추가 더 넓은 쪽 폭으로 똑같이(2026-11-11 사장님 — "좌우 폭 맞춰 줘") */
+    .banner-links { position: absolute; top: 12px; right: 16px; display: grid; gap: 6px; }
+    .banner-map, .banner-hex { box-sizing: border-box; min-height: 32px; justify-content: center; }   /* 높이도 같게(LottoHex 는 두 줄) */
+    .banner-map { display: inline-flex; align-items: center; padding: 4px 11px; border: 1px solid var(--brand); border-radius: 999px;
+        background: var(--surface, #fff); color: var(--brand); font-size: 13px; font-weight: bold; line-height: 1.4; text-decoration: none; white-space: nowrap; }
+    .banner-map::before { content: ""; width: 7px; height: 7px; margin-right: 13px; border-radius: 50%; background: #f07a1a; box-shadow: 8px 0 0 #3b6fd8; }
+    /* 그 아래 LottoHex(2026-11-11 사장님): 지도 모드 단추처럼 어두운 보라 · 육각형 + 작은 "땅따먹기 게임" — 머리글 소개 줄과 겹치지 않게 폭은 좁게 */
+    .banner-hex { display: inline-flex; align-items: center; gap: 6px; padding: 3px 11px 3px 9px; border: 1px solid #4b3bb8; border-radius: 999px;
+        background: linear-gradient(135deg, #24135f, #2d3a8f 60%, #0f6170); color: #fff; font-size: 12.5px; font-weight: bold; text-decoration: none; white-space: nowrap; box-shadow: 0 1px 5px rgba(36, 19, 95, .3); }
+    .banner-hex-ico { flex: none; width: 11px; height: 12px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: linear-gradient(160deg, #ffd76a, #ff6fae 55%, #8f7bff); }
+    .banner-hex-txt { display: grid; line-height: 1.1; text-align: left; }
+    .banner-hex-txt small { font-size: 8.5px; font-weight: 600; opacity: .8; }
+    .banner .brand { max-width: calc(100% - 128px); word-break: keep-all; }   /* 소개 문구가 길게 보이는 글꼴(아이폰 등)에서도 두 단추 밑으로 들어가지 않게 그 앞에서 줄을 바꾼다 */
+    .nav .nav-map { display: none; }
+}
 /* 왼쪽 위 "＋ 내 번호" — 방금 만든 번호를 이번 회차 내 번호에 저장(로그인). 사용법 보기와 같은 모양 */
 .tour-btn.mynum-btn { right: auto; left: 10px; }
 .tour-btn.mynum-btn:disabled { color: var(--muted); cursor: default; }
@@ -1744,6 +1764,7 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 .rank-me { margin: 0 0 14px; padding: 10px 14px; border: 2px solid var(--brand); border-radius: 10px; background: var(--soft, #f3f6fd); }
 .rank-me-line { margin: 0; }
 .rank-table { width: 100%; }
+.rank-ttl { display: inline-block; margin: 0 5px 0 0; padding: 0 6px; border: 1px solid #4b3bb8; border-radius: 6px; background: linear-gradient(135deg, #24135f, #2d3a8f 60%, #0f6170); color: #ffd76a; font-size: 11px; font-weight: bold; line-height: 17px; vertical-align: 1px; white-space: nowrap; }   /* LottoHex 칭호(2026-11-09) */
 .rank-table tr.top1 td { font-weight: bold; background: var(--hl, #fff8e1); }
 
 /* ───── 내 번호 성적표 (report.html, js/report.js) ───── */
@@ -1845,7 +1866,31 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 @media (max-width: 599px) {
     :root[data-theme="dark"] .map-band { background: linear-gradient(180deg, #141a23 0%, rgba(20, 26, 35, .92) 48%, rgba(20, 26, 35, .25) 100%), url(../img/map-banner-night-m.jpg) center bottom / cover no-repeat, #141a23; }
 }
-@media print { .map-fab, .map-band { display: none !important; } }
+/* LottoHex 가는 띠(js/theme.js, 2026-11-09): 지도 띠 바로 아래. 낮 · 밤 모두 LottoHex 화면처럼 어두운 남보라, 배경은 실제 밤 지도 위 육각 칸(img/hex-banner*.jpg) */
+.map-band.has-next { margin-bottom: 14px; }
+.hex-band { display: flex; align-items: center; gap: 24px; box-sizing: border-box; width: calc(min(1440px, 100%) - 40px); min-height: 146px; margin: 0 auto 110px; padding: 22px 28px;
+    border: 1px solid #2f2b5c; border-radius: 12px; color: #dfe5ee; text-decoration: none; box-shadow: 0 2px 10px rgba(0, 0, 0, .18);
+    background: linear-gradient(90deg, #12152a 0%, rgba(18, 21, 42, .96) 30%, rgba(18, 21, 42, .55) 52%, rgba(18, 21, 42, 0) 78%),
+        url(../img/hex-banner.jpg) right center / cover no-repeat, #12152a; }
+.hex-band:hover { border-color: #8f7bff; box-shadow: 0 4px 18px rgba(143, 123, 255, .3); }
+.hex-band-txt { flex: 0 1 560px; min-width: 0; }
+.hex-band-legend { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; color: #b9b3e6; font-size: 12px; font-weight: bold; }
+.hex-band-legend i { color: #ff6fae; font-style: normal; }
+.hex-band-txt b { display: flex; align-items: center; gap: 8px; color: #ffd76a; font-size: 22px; letter-spacing: -.01em; }
+.hex-band-ico { display: inline-block; flex: none; width: 19px; height: 21px; background: linear-gradient(135deg, #8f7bff, #ff6fae 60%, #ffd76a); clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
+.hex-band-txt small { display: block; margin-top: 6px; color: #c9cde0; font-size: 13.5px; line-height: 1.6; }
+.hex-band-go { flex: none; margin-left: auto; padding: 9px 16px; border-radius: 9px; background: linear-gradient(135deg, #8f7bff, #ff6fae); color: #fff; font-size: 14px; font-weight: bold; box-shadow: 0 2px 8px rgba(0, 0, 0, .25); }
+.hex-band:hover .hex-band-go { background: linear-gradient(135deg, #a493ff, #ff86bb); }
+@media (max-width: 599px) {
+    .map-band.has-next { margin-bottom: 12px; }
+    .hex-band { flex-direction: column; align-items: flex-start; gap: 12px; width: calc(100% - 24px); min-height: 0; margin: 0 12px 110px; padding: 18px 18px 16px;
+        background: linear-gradient(180deg, #12152a 0%, rgba(18, 21, 42, .9) 50%, rgba(18, 21, 42, .3) 100%), url(../img/hex-banner-m.jpg) center bottom / cover no-repeat, #12152a; }
+    .hex-band-txt { flex: none; }
+    .hex-band-txt b { font-size: 18px; }
+    .hex-band-txt small { font-size: 12.5px; }
+    .hex-band-go { margin-left: 0; }
+}
+@media print { .map-fab, .map-band, .hex-band { display: none !important; } }
 
 /* ───── 실시간 채팅 (js/chat.js) ───── */
 .chat-fab {
@@ -1868,6 +1913,10 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 .chat-rule { margin: 0; padding: 6px 12px; background: var(--soft, #f3f6fd); color: var(--muted); font-size: 11px; }
 .chat-list { flex: 1; margin: 0; padding: 8px 12px; overflow-y: auto; list-style: none; font-size: 14px; }
 .chat-msg { padding: 4px 0; line-height: 1.45; word-break: break-word; }
+/* 알림 한 줄(2026-11-10 — LottoHex 점령 소식): 보라 바탕 · 진한 글자 */
+.chat-msg.is-sys { margin: 3px 0; padding: 4px 8px; border-radius: 8px; background: rgba(131, 56, 236, .1); color: #6d28d9; font-size: 12.5px; font-weight: bold; }
+:root[data-theme="dark"] .chat-msg.is-sys { background: rgba(167, 139, 250, .14); color: #c4b5fd; }
+.chat-msg.is-sys .chat-time { font-weight: normal; }
 .chat-nick { margin-right: 6px; color: var(--brand); font-weight: bold; }
 .chat-msg.is-mine .chat-nick { color: var(--pink, #d61f69); }
 .chat-time { margin-left: 6px; color: var(--faint, #999); font-size: 11px; }
@@ -2042,3 +2091,10 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
     :root[data-theme="dark"] .acct-toast { border: 1px solid var(--line-strong); }
     :root[data-theme="dark"] img:not([src$=".svg"]) { filter: brightness(.92); }
 }
+
+/* ───── 블로그 화면 사진 (2026-11-09, 글 19 LottoHex) — 휴대폰 화면은 폭을 줄여 가운데 ───── */
+.blog-shot { margin: 18px auto; text-align: center; }
+.blog-shot img { display: block; width: 100%; height: auto; margin: 0 auto; border: 1px solid var(--line, #e3e3e3); border-radius: 14px; background: #121620; }
+.blog-shot.is-phone { max-width: 300px; }
+.blog-shot.is-crop { max-width: 390px; }
+.blog-shot figcaption { margin-top: 6px; color: var(--muted, #666); font-size: 12.5px; line-height: 1.5; }

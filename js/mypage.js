@@ -358,6 +358,26 @@
                 A && A.openNick ? btn(user.nick ? (user.nickAuto ? tr('my.nickChangeFree', '무료로 바꾸기') : tr('my.nickChange', '바꾸기')) : tr('my.nickSet', '정하기'), () => A.openNick(!user.nick)) : null),
             row(tr('my.email', '이메일'), user.email || ''),
             row(tr('my.joined', '가입일'), ymd(user.createdAt)),
+            // 위치 이용 동의(2026-11-09 — 서버의 위치 인증이 켜져 있을 때만): 동의한 날 + 철회 단추. 철회하면 위치로 인증한 다녀온 곳을 지운다
+            A && A.gps && A.gps() ? row(tr('my.geo', '위치 이용 동의'), user.geo ? tr('my.geoOn', '동의함 · {date}', { date: ymd(user.geo.at) }) : tr('my.geoOff', '동의 안 함 — 판매점 지도에서 "다녀왔어요"를 누르면 안내가 나옵니다'),
+                user.geo ? btn(tr('my.geoWithdraw', '철회'), async e => {
+                    if (!window.confirm(tr('my.geoConfirm', '위치 이용 동의를 철회합니까? 위치로 인증한 다녀온 곳이 모두 지워지고 LottoHex 집계에서도 빠집니다.'))) return;
+                    e.target.disabled = true;
+                    try { const r = await A.call('/api/me/geo', { method: 'POST', body: { agree: false } }); if (A.patchUser) A.patchUser({ geo: null, visits: {}, visitAt: {} }); showProfile(Object.assign({}, user, { geo: null }, r && r.user ? { visits: r.user.visits } : {})); }
+                    catch (err) { e.target.disabled = false; window.alert((err && err.message) || tr('my.saveFail', '저장하지 못했습니다.')); }
+                }, 'my-danger') : null) : null,
+            // LottoHex 칭호(2026-11-09): 단 칭호와 얻은 수. 고르기는 LottoHex 도감 탭에서
+            A && A.gps && A.gps() && user.titles && user.titles.e.length ? row(tr('my.title', '칭호'),
+                (user.titles.sel ? (() => { const t = user.titles.e.find(x => x.id === user.titles.sel); return t ? ((window.I18N && window.I18N.lang) === 'en' ? t.en : t.ko) + ' · ' : ''; })() : tr('my.titleNone', '달지 않음 · ')) +
+                    tr('my.titleN', '얻은 칭호 {n}개', { n: num(user.titles.e.length) }),
+                el('a', { className: 'btn btn-secondary btn-mini', href: 'lottohex.html', text: tr('my.titleGo', '칭호 도감') })) : null,
+            // 판매점 댓글의 "✓ 실방문자"(2026-11-09 사장님 — 마이페이지에서 켜고 끄기, 기본은 꺼짐). 켜면 다녀온 판매점에 단 내 댓글에 표시가 붙는다
+            row(tr('my.vbadge', '실방문자 표시'), user.visitBadge ? tr('my.vbadgeOn', '켜짐 — 다녀온 판매점에 단 내 댓글에 "✓ 실방문자"가 보입니다') : tr('my.vbadgeOff', '꺼짐'),
+                A ? btn(user.visitBadge ? tr('my.vbadgeTurnOff', '끄기') : tr('my.vbadgeTurnOn', '켜기'), async e => {
+                    e.target.disabled = true;
+                    try { const r = await A.call('/api/me/visit-badge', { method: 'POST', body: { on: !user.visitBadge } }); if (A.patchUser) A.patchUser({ visitBadge: r.user.visitBadge }); showProfile(Object.assign({}, user, { visitBadge: r.user.visitBadge })); }
+                    catch (err) { e.target.disabled = false; window.alert((err && err.message) || tr('my.saveFail', '저장하지 못했습니다.')); }
+                }) : null),
             user.staff ? row(tr('my.role', '구분'), tr('my.staff', '운영자 계정')) : null,
         ]);
     }
@@ -376,6 +396,9 @@
             row(tr('my.days', '출석'), tr('my.daysN', '{n}일', { n: num(sc.days) })),
             row(tr('my.reacts', '남긴 반응'), tr('my.reactsN', '♥ {h} · $ {d} · ₩ {w}', counts)),
             row(tr('my.buy', '이용권 점수'), tr('my.ptsN', '{n}점', { n: num(sc.buy) })),
+            sc.verified ? row(tr('my.verified', '다녀온 곳 인증'), tr('my.verifiedN', '{n}번 · {p}점', { n: num(sc.verified), p: num(sc.verified * 10) })) : null,
+            sc.hex ? row(tr('my.hex', 'LottoHex 보상'), tr('my.ptsN', '{n}점', { n: num(sc.hex) })) : null,
+            sc.ms ? row(tr('my.ms', '마일스톤'), tr('my.ptsN', '{n}점', { n: num(sc.ms) })) : null,   // 2026-11-09 — 단계마다 한 번
             sc.spent ? row(tr('my.spent', '쓴 포인트'), tr('my.ptsN', '{n}점', { n: num(sc.spent) })) : null,
             el('div', { className: 'my-actions' }, [el('a', { className: 'btn btn-secondary btn-mini', href: 'ranking.html', text: tr('my.goRanking', '랭킹 보기') })]),
         ]);

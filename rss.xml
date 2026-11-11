@@ -5,8 +5,15 @@
     <link>https://www.lottodraw.kr/</link>
     <description>매주 로또 당첨번호와 회차별 당첨금, 통계와 확률 이야기. 어디서 사든 1등 확률은 1/8,145,060으로 같습니다.</description>
     <language>ko</language>
-    <lastBuildDate>Fri, 30 Oct 2026 03:00:00 GMT</lastBuildDate>
+    <lastBuildDate>Mon, 09 Nov 2026 03:00:00 GMT</lastBuildDate>
     <atom:link href="https://www.lottodraw.kr/rss.xml" rel="self" type="application/rss+xml"/>
+    <item>
+        <title>LottoHex 하는 법 — 로또 판매점 지도 위 육각 칸 땅따먹기</title>
+        <link>https://www.lottodraw.kr/blog/lottohex-how-to-play.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/blog/lottohex-how-to-play.html</guid>
+        <pubDate>Mon, 09 Nov 2026 03:00:00 GMT</pubDate>
+        <description>판매점 지도에서 하는 무료 땅따먹기 게임 LottoHex. 판매점에 다녀와 위치로 인증하면 육각형 칸을 차지하고, 분기마다 Map 랭킹을 확정해 포인트를 드립니다. 참여 방법 · 규칙 · 포인트 · 위치 정보 처리까지 한 번에 정리했습니다.</description>
+    </item>
     <item>
         <title>로또 1등 판매점은 얼마 벌까? — 판매액과 수수료 수입 역산</title>
         <link>https://www.lottodraw.kr/blog/lotto-store-revenue.html</link>

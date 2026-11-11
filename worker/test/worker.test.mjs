@@ -159,9 +159,12 @@ test('키 메일: 이메일을 적은 주문은 발급 즉시 키를 메일로, 
     try {
         const env = makeEnv({ DEPOSIT_HOOK_SECRET: 'hook-secret-0123456789', RESEND_API_KEY: 're_test', MAIL_FROM: 'lottodraw.kr <key@lottodraw.kr>', TELEGRAM_BOT_TOKEN: 'bot-test', TELEGRAM_CHAT_ID: '1' });
         await setupKey(env);
+        // 입금자명을 주문마다 다르게 — 앞 주문이 입금되면 그 금액이 다시 나올 수 있어(끝자리 1~99원), 알림 글이 같으면 중복 알림으로 걸러진다
+        const names = { '10.3.0.1': '홍길동', '10.3.0.2': '김철수', '10.3.0.3': '이영희' };
         const pay = async (contact, ip) => {
-            const { order, token } = (await call(env, 'POST', '/api/orders', { body: { plan: 'day', method: 'bank', name: '홍길동', contact, agree: true }, headers: { 'CF-Connecting-IP': ip } })).data;
-            await call(env, 'POST', '/api/hooks/deposit', { raw: `입금 ${order.amount}원 홍길동`, headers: { 'Content-Type': 'text/plain', Authorization: 'Bearer hook-secret-0123456789' } });
+            const name = names[ip] || '박민수';
+            const { order, token } = (await call(env, 'POST', '/api/orders', { body: { plan: 'day', method: 'bank', name, contact, agree: true }, headers: { 'CF-Connecting-IP': ip } })).data;
+            await call(env, 'POST', '/api/hooks/deposit', { raw: `입금 ${order.amount}원 ${name}`, headers: { 'Content-Type': 'text/plain', Authorization: 'Bearer hook-secret-0123456789' } });
             return (await call(env, 'GET', `/api/orders/${order.id}?token=${token}`)).data.order;
         };
         // 이메일을 적었으면 키를 메일로

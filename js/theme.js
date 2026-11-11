@@ -6,6 +6,7 @@
  * - 색은 css/site.css 의 변수로만 바뀐다(:root[data-theme="dark"]).
  * - 판매점 지도 가는 길도 여기서 붙인다(2026-10-26 사장님): 휴대폰은 낮/밤 단추 바로 위 동그란 "MAP" 단추,
  *   모든 화면은 바닥글 아래 큰 띠(다른 사이트 광고 띠처럼). 지도 페이지(store-map.html) 자신에는 붙이지 않는다.
+ *   그 아래에 LottoHex 띠도 하나 더(2026-11-09 사장님).
  */
 (function () {
     'use strict';
@@ -72,6 +73,40 @@
             band.querySelector('small').textContent = tr('mapLink.sub', '1등 · 2등이 나온 판매점 1만 곳을 지도 위 버블로. 서울부터 백령도까지, 내가 다녀온 곳도 표시해 보세요.');
             band.querySelector('.map-band-go').textContent = tr('mapLink.go', '지도 열기 →');
             foot.insertAdjacentElement('afterend', band);
+            // LottoHex 가는 띠(2026-11-09 사장님 — "로또헥스도 지도처럼 바로가기 배너"): 지도 띠 바로 아래. 배경은 실제 밤 지도 위 육각 칸(img/hex-banner*.jpg),
+            // 낮 · 밤 모드 모두 LottoHex 화면처럼 어두운 색 — css/site.css
+            const hex = document.createElement('a');
+            hex.className = 'hex-band';
+            hex.href = base + 'lottohex.html';
+            hex.innerHTML = '<span class="hex-band-txt"><span class="hex-band-legend"><i>⬡</i><span></span></span><b><span class="hex-band-ico" aria-hidden="true"></span>LottoHex</b><small></small></span><span class="hex-band-go"></span>';
+            hex.querySelector('.hex-band-legend span').textContent = tr('hexLink.legend', '육각 칸 땅따먹기 · 칭호 도감 · 분기 랭킹');
+            hex.querySelector('small').textContent = tr('hexLink.sub', '판매점에 다녀와 위치로 인증하면 육각 칸을 차지합니다. 칭호를 모으고 분기 랭킹에 도전해 보세요.');
+            hex.querySelector('.hex-band-go').textContent = tr('hexLink.go', 'LottoHex 열기 →');
+            band.classList.add('has-next');
+            band.insertAdjacentElement('afterend', hex);
+        }
+        // 휴대폰(600px 밑): "판매점 지도"는 메뉴 끝 대신 머리글 오른쪽 위(2026-11-09 사장님). 넓은 화면은 아래 메뉴 그대로 — css/site.css
+        const bannerEl = document.querySelector('header.banner');
+        if (bannerEl && !bannerEl.querySelector('.banner-map')) {
+            const a = document.createElement('a');
+            a.className = 'banner-map';
+            a.href = base + 'store-map.html';
+            a.textContent = tr('nav.map', '판매점 지도');
+            a.dataset.i18n = 'nav.map';
+            // 두 단추는 한 묶음(.banner-links, 격자 한 칸)에 넣어 좌우 폭을 똑같이 맞춘다(2026-11-11 사장님)
+            const links = document.createElement('div');
+            links.className = 'banner-links';
+            links.appendChild(a);
+            bannerEl.appendChild(links);
+            // 그 바로 아래 LottoHex(2026-11-11 사장님 — "여기 로또헥스 버튼도 놓자"). 무엇인지 보이게 작은 "땅따먹기 게임"(지도 모드 단추와 같은 꼴)
+            const h = document.createElement('a');
+            h.className = 'banner-hex';
+            h.href = base + 'lottohex.html';
+            h.innerHTML = '<span class="banner-hex-ico" aria-hidden="true"></span><span class="banner-hex-txt">LottoHex<small></small></span>';
+            const sub = h.querySelector('small');
+            sub.textContent = tr('nav.hexSub', '땅따먹기 게임');
+            sub.dataset.i18n = 'nav.hexSub';
+            links.appendChild(h);
         }
         // 메뉴 맨 오른쪽 "판매점 지도"(2026-10-27 사장님 — 생성기 제목 아래 단추를 옮김). 메뉴는 1,300쪽에 박혀 있어 여기서 붙인다
         const navUl = document.querySelector('nav.nav ul');

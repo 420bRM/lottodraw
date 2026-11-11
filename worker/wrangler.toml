@@ -13,6 +13,9 @@ routes = [
 [vars]
 SITE_URL = "https://www.lottodraw.kr"
 ALLOWED_ORIGINS = "https://www.lottodraw.kr,https://lottodraw.kr"
+# 위치 인증(2026-11-09 — 위치기반서비스사업 신고): "on" 이면 "다녀왔어요"는 판매점 50m 안에서 위치로 확인한 것만 받고, 켠 날 한 번 손 표시 · LottoHex 집계를 지운다.
+# 켜기 전에 개인정보 처리방침 · 이용약관의 위치 조항을 함께 게시한다
+GPS_VERIFY = "on"   # 2026-11-09 켬(처리방침 5번 · 약관 8번 게시와 함께)
 
 # 주문·서명 키·환불 목록 저장소. id 를 비워 두면 첫 배포 때 wrangler 가 알아서 만든다.
 [[kv_namespaces]]
@@ -95,6 +98,9 @@ new_sqlite_classes = ["ChatRoom"]
 
 [observability]
 enabled = true
+# 요청마다 남는 기록(invocation logs: 요청 주소 · 요청 정보)은 끈다 — 오류(console.error)만 남긴다(2026-11-09, 위치기반서비스 신고: 좌표 · 위치가 로그에 남지 않게)
+[observability.logs]
+invocation_logs = false
 
 # 한 시간마다 지킴이: 입금 알림 연결(휴대폰)이 끊기면 판매자에게 알린다
 [triggers]

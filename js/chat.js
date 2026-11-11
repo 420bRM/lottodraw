@@ -102,6 +102,15 @@
 
     function addMsg(m) {
         if (list.querySelector('[data-id="' + CSS.escape(m.id) + '"]')) return;
+        if (m.sys) {   // 알림(2026-11-10 — LottoHex 점령 소식): 별명 없이 다른 색 한 줄
+            list.appendChild(el('li', { className: 'chat-msg is-sys is-sys-' + m.sys, 'data-id': m.id }, [
+                el('span', { className: 'chat-text', text: m.text }),
+                el('time', { className: 'chat-time', text: fmt(m.at) }),
+            ]));
+            while (list.children.length > 200) list.removeChild(list.firstChild);
+            list.scrollTop = list.scrollHeight;
+            return;
+        }
         const mine = m.nick && m.nick === myNick();
         list.appendChild(el('li', { className: 'chat-msg' + (mine ? ' is-mine' : ''), 'data-id': m.id }, [
             el('span', { className: 'chat-nick' + (m.staff ? ' is-staff' : ''), text: m.nick }),

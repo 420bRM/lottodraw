@@ -8,9 +8,24 @@
 //   - 칸은 비우지 않는다. 분기(한국 시간 1/1 · 4/1 · 7/1 · 10/1)가 끝나면 그때의 Map 랭킹만 확정해 남긴다(ts:<분기>, finalizeSeason)
 //   - 시험판: 지금은 "다녀왔어요"를 누른 기록만 센다. 위치기반서비스사업 신고 뒤 GPS 인증(판매점 50m 안)만 세게 바꾼다
 //   - Map 랭킹: 차지한 칸 수 → 같으면 다녀온 곳 수 → 같으면 먼저 참여한 순
-// 공개되는 것(참여 동의 문구 · 개인정보 처리방침과 맞출 것): 칸 주인의 별명 · 그 칸에서 다녀온 판매점 수, 랭킹 · 확정 순위의 별명 · 칸 수 · 다녀온 곳 수.
+// 공개되는 것(참여 동의 문구 · 개인정보 처리방침과 맞출 것): 칸 주인의 별명 · 단 칭호 · 그 칸에서 다녀온 판매점 수, 랭킹 · 확정 순위의 별명 · 칸 수 · 다녀온 곳 수(랭킹은 단 칭호도).
 // 누가 어느 판매점을 언제 다녀왔는지는 내보내지 않는다
 
+// ───── 위치 인증(2026-11-09 사장님 — 위치기반서비스사업 신고) ─────
+// GPS_VERIFY = "on"(wrangler.toml [vars])이면 "다녀왔어요"는 판매점 50m 안에서 위치로 확인한 것만 받는다. 꺼져 있으면 지금처럼 누르기만(시험판).
+// 좌표는 판정에만 쓰고 저장 · 기록하지 않는다. 남기는 것: 인증한 판매점 번호와 시각(다녀온 곳), 확인자료(누가 · 언제 · 어느 판매점 · 결과, 좌표 없음, 6개월)
+export const gpsOn = env => String((env && env.GPS_VERIFY) || '').toLowerCase() === 'on';
+export const GEO_CONSENT = 1;     // 위치 이용 동의 문구 판(js/store-map.js 동의 창). 문구를 크게 바꾸면 올려서 다시 동의받는다
+export const GEO_RADIUS = 50;     // 판매점에서 이 거리(m) 안이면 인증
+export const GEO_ACC_MAX = 100;   // 위치 오차가 이보다 크면 판정하지 않는다(다시 시도 안내)
+export const GEO_TRIES = 100;     // 하루(한국 날짜) 위치 판정 시도 횟수 — 좌표 없이 횟수만 센다
+export const GEO_LOG_DAYS = 183;  // 확인자료 보관(약 6개월) 뒤 한 시간 예약이 지운다
+export function distM(lat1, lng1, lat2, lng2) {   // 두 점 사이 거리(m, 대원거리)
+    const R = 6371000, d = Math.PI / 180, x = Math.sin((lat2 - lat1) * d / 2), y = Math.sin((lng2 - lng1) * d / 2);
+    return 2 * R * Math.asin(Math.sqrt(x * x + Math.cos(lat1 * d) * Math.cos(lat2 * d) * y * y));
+}
+export const TERR_CONSENT_GPS = 2;   // LottoHex 동의 판(GPS 를 켜면 — "위치로 인증한 다녀온 곳을 센다"). 켜는 날 모두 다시 동의받는다
+export const terrConsent = env => (gpsOn(env) ? TERR_CONSENT_GPS : TERR_CONSENT);
 export const TERR_CONSENT = 1;   // 동의 문구 판. 문구를 크게 바꾸면 올려서 다시 동의를 받는다(js/store-map.js 의 TERR_V 와 같게)
 export const TERR_RANK = 50;     // 랭킹에 보여 주는 수
 export const TERR_HALL = 10;     // 지난 분기 확정 순위에 보여 주는 수
@@ -69,7 +84,7 @@ export function computeTerritory(players, upTo, map) {
             if (!per.has(cell)) per.set(cell, []);
             per.get(cell).push({ sub: p.sub, n: ts.length, t: Math.max(...ts) });   // 그 칸에 가장 최근에 다녀온 때
         }
-        stat.set(p.sub, { sub: p.sub, nick: p.nick || null, skin: p.skin || defaultSkin(p.sub), own: !!p.skin, at: p.at || 0, stores, cells: 0, counts });
+        stat.set(p.sub, { sub: p.sub, nick: p.nick || null, skin: p.skin || defaultSkin(p.sub), own: !!p.skin, tt: p.tt || null, bm: p.bm ? 1 : 0, at: p.at || 0, stores, cells: 0, counts });
     }
     const cells = {};
     for (const [cell, list] of per) {
@@ -93,11 +108,17 @@ export function seasonRecord(t, season, now) {
 export function publicTerritory(t, season, sub, joined, last) {
     const nickOf = s => (t.stat.get(s) || {}).nick || null;
     const cells = {};
-    for (const [cell, c] of Object.entries(t.cells)) cells[cell] = [nickOf(c.sub), c.n, c.next, c.k, t.stat.get(c.sub).skin];
+    // 6번째: 단 칭호 [한, 영](없으면 빼거나 빛 벽이 있으면 null), 7번째: 빛 벽 켬(1 — 2026-11-10, 있을 때만)
+    for (const [cell, c] of Object.entries(t.cells)) {
+        const st = t.stat.get(c.sub), row = [nickOf(c.sub), c.n, c.next, c.k, st.skin];
+        if (st.tt || st.bm) row.push(st.tt || null);
+        if (st.bm) row.push(1);
+        cells[cell] = row;
+    }
     const out = {
         season: { id: season.id, from: season.from, to: season.to },
         cells,
-        rank: t.rank.slice(0, TERR_RANK).map(s => ({ nick: s.nick, skin: s.skin, cells: s.cells, stores: s.stores })),
+        rank: t.rank.slice(0, TERR_RANK).map(s => ({ nick: s.nick, skin: s.skin, cells: s.cells, stores: s.stores, tt: s.tt || null })),
         players: t.stat.size,
         last: last ? { id: last.id, from: last.from, to: last.to, rank: last.rank.slice(0, TERR_HALL).map(r => ({ nick: r.nick, skin: r.skin || null, cells: r.cells, stores: r.stores })) } : null,
     };
@@ -112,10 +133,24 @@ export function publicTerritory(t, season, sub, joined, last) {
     return out;
 }
 
+// 사이트의 판매점 좌표(store-map-geo.json — 공개된 사업장 위치, 폐점 제외) → 판매점 번호 → [위도, 경도, 지역 번호, 표시]. 한 시간 들고 있는다.
+// regions: [[시·도, 시·군·구, 칭호 이름]] — 칭호(titles.js)가 지역을 센다
+let geoCache = null;   // { at, map, regions }
+async function loadGeo(site) {
+    if (geoCache && Date.now() - geoCache.at < 3600 * 1000) return geoCache;
+    const r = await fetch(site + '/store-map-geo.json', { cf: { cacheTtl: 3600 } });
+    if (!r.ok) throw new Error('store-map-geo.json ' + r.status);
+    const j = await r.json();
+    geoCache = { at: Date.now(), map: new Map(Object.entries(j.stores || {})), regions: Array.isArray(j.regions) ? j.regions : [] };
+    return geoCache;
+}
+export async function storeGeo(site) { return (await loadGeo(site)).map; }
+export async function storeGeoFull(site) { const g = await loadGeo(site); return { map: g.map, regions: g.regions }; }
+
 // 사이트의 칸 목록(store-map-cells.json) → 판매점 번호 → 칸. 한 시간 들고 있는다
 const TTL = 3600 * 1000;
 let cellCache = null;   // { at, map }
-export function _resetCellsForTests() { cellCache = null; }
+export function _resetCellsForTests() { cellCache = null; geoCache = null; }
 export async function cellMap(site) {
     if (cellCache && Date.now() - cellCache.at < TTL) return cellCache.map;
     const r = await fetch(site + '/store-map-cells.json', { cf: { cacheTtl: 3600 } });

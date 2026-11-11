@@ -256,6 +256,18 @@ test('채팅: 운영자 계정의 메시지에는 운영자 표시가 붙는다'
     assert.deepEqual([viewer.last('msg').m.nick, viewer.last('msg').m.staff], ['운영자', true]);
 });
 
+test('채팅 알림 한 줄(점령 소식): 별명 · 계정 없이 sys 로 모두에게, 들어온 사람에게도 보이고, 빈 글은 거절', async () => {
+    const { room, join, enter } = setup();
+    const viewer = join();
+    const r = await room.fetch(new Request('https://chat/system', { method: 'POST', body: JSON.stringify({ kind: 'cap', text: '🚩 가나다님이 1번째 블록을 점령했습니다' }) }));
+    assert.equal(r.status, 200);
+    const m = viewer.last('msg').m;
+    assert.deepEqual([m.nick, m.sys, m.text, m.sub], [null, 'cap', '🚩 가나다님이 1번째 블록을 점령했습니다', undefined]);
+    const late = await enter('browser-aaaaaaaaaaaaaaaa');
+    assert.equal(late.last('hello').history.slice(-1)[0].sys, 'cap', '나중에 들어와도 최근 목록에');
+    assert.equal((await room.fetch(new Request('https://chat/system', { method: 'POST', body: JSON.stringify({ kind: 'cap', text: '  ' }) }))).status, 400);
+});
+
 test('채팅 점수(공지하지 않는 규칙): 한 마디 0.1점, 같은 말 반복·한 글자·운영자 제외, 하루 50개까지, 회원에게는 항목 없이 합계만', async () => {
     const { env, room, join } = setup();
     const ws = join();
@@ -371,7 +383,25 @@ test('판매점 댓글: 글 이름 shop-판매점번호 로 같은 댓글 길을
     await call(env, 'POST', '/api/me/visits', { body: { id: '11100016', color: '#e63946' }, headers: auth(sA) });
     assert.equal((await call(env, 'GET', '/api/comments?post=shop-11100004')).data.comments[0].visited, undefined);
     await call(env, 'POST', '/api/me/visits', { body: { id: '11100004', color: '#e63946' }, headers: auth(sA) });
+    // 실방문자 표시는 회원이 켠 경우에만(2026-11-09 — 기본은 꺼짐)
+    assert.equal((await call(env, 'GET', '/api/comments?post=shop-11100004')).data.comments[0].visited, undefined, '켜기 전에는 표시 없음');
+    assert.equal((await call(env, 'POST', '/api/me/visit-badge', { body: { on: 'yes' }, headers: auth(sA) })).status, 400);
+    const on = await call(env, 'POST', '/api/me/visit-badge', { body: { on: true }, headers: auth(sA) });
+    assert.equal(on.data.user.visitBadge, true);
     assert.equal((await call(env, 'GET', '/api/comments?post=shop-11100004')).data.comments[0].visited, true);
+    await call(env, 'POST', '/api/me/visit-badge', { body: { on: false }, headers: auth(sA) });
+    assert.equal((await call(env, 'GET', '/api/comments?post=shop-11100004')).data.comments[0].visited, undefined, '끄면 다시 사라진다');
+});
+
+test('HTTPS 만: http 로 오면 GET 은 https 로 돌려보내고 나머지는 거절, 응답에 HSTS', async () => {
+    const { env } = setup();
+    const g = await worker.fetch(new Request('http://api.lottodraw.kr/api/config'), env, { waitUntil() {} });
+    assert.equal(g.status, 308);
+    assert.equal(g.headers.get('Location'), 'https://api.lottodraw.kr/api/config');
+    const p = await worker.fetch(new Request('http://api.lottodraw.kr/api/me/visits', { method: 'POST', body: '{}' }), env, { waitUntil() {} });
+    assert.equal(p.status, 403);
+    const ok = await worker.fetch(new Request('https://api.lottodraw.kr/api/config'), env, { waitUntil() {} });
+    assert.equal(ok.headers.get('Strict-Transport-Security'), 'max-age=31536000');
 });
 
 test('댓글 관리: 관리자는 누가 썼는지 보고 지우며, 채팅 금지한 계정은 댓글도 막히고, 탈퇴하면 댓글이 지워진다', async () => {

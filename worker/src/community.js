@@ -18,8 +18,15 @@
 //                        visits: { 판매점 번호: '#rrggbb' } — 판매점 지도에서 회원이 직접 표시한 "다녀온 곳"과 색(1,000곳까지). 본인에게만 보인다
 //                        vt:    { 판매점 번호: 시각 } — 다녀온 곳을 표시한(또는 "또 다녀왔어요"를 누른) 마지막 때(2026-11-07부터. 그 전 것은 없다). 표시를 지우면 같이 지운다
 //                        vday:  { day, n } — 오늘(한국 날짜) 다녀온 때를 새로 적은 횟수(territory.js VISIT_DAILY 까지)
+//                        vp:    { n, day, ids } — 위치로 인증해 받은 포인트 횟수 · 그날 받은 판매점(같은 곳 하루 한 번, POINTS.visitDaily 까지, 2026-11-09)
+//                        trw:   { pts, s: { 분기: 점수 } } — LottoHex 분기 확정 순위 보상(POINTS.terrRank)
+//                        ach:   { v, c, s, t } — 마일스톤마다 이른 단계 수(titles.js MILESTONES, 2026-11-09). 포인트는 이 값으로 셈한다. 위치 동의를 철회해도 남긴다
+//                        ttl:   { e: { 칭호 번호: 얻은 시각 }, sel: 단 칭호 } — 칭호(titles.js). 단 칭호는 별명 앞에 모두에게 보인다. 위치 동의를 철회하면 지운다
 //                        terr:  { at, v } — 영역(육각 칸) 참여 동의: 동의한 때와 동의 문구 판(territory.js TERR_CONSENT). 그만두면 지운다
 //                        tskin: '주색,보조색,무늬' — 내 영역 칸 모양(2026-11-07, territory.js SKIN_RE). 없으면 계정마다 무작위. 모두에게 보인다. 바꾸면 POINTS.terrSkin
+//                        ad:    { s, m, c, at, h, v } — 가입 경로(2026-11-11): utm 링크로 들어온 뒤 30일 안에 같은 브라우저에서 가입했을 때 그 매체 · 종류 · 캠페인 이름과 가입 시각.
+//                               h: LottoHex 에 처음 참여한 때, v: 위치로 처음 인증한 때(광고 집계에 한 번씩만 세려고). 탈퇴하면 계정과 함께 지운다
+//                        tbeam: { at, on } — 영역 빛 벽(2026-11-10 사장님 — 포인트로, 남에게도 보이게). 산 때 · 켜 둠. 사는 데 POINTS.terrBeam, 켜고 끄기는 무료
 //                        rx:    { 항목: 'h' | 'd' | 'hd' } — 내가 누른 좋아요
 //                        sess:  로그인 세션 해시 (최근 5개)
 //                        cm:    내가 쓴 블로그 댓글 키, cmAt: 마지막으로 쓴 시각, cmDay: { day, n } 오늘 쓴 수
@@ -34,7 +41,7 @@
 //   nickq                자동 별명 대기열 판(1) — 없으면 처음 한 번 u: 를 훑어, 이 기능 전에 가입해 별명이 없는 회원을 그때부터 3일로 넣는다
 //   m:<회원 참조값>      계정 번호      — 주문에 남기는 되돌릴 수 없는 참조값(sha256) → 계정. 탈퇴하면 지운다
 //   c:<글>:<시각 16자리>-<무작위>  { id, at, sub, nick, text, staff } — 블로그 댓글. 계정은 cm(이 키들의 목록)으로 찾아 탈퇴 때 지운다
-//   b:<구글 계정 번호>   { nick, total, days, created } — 랭킹 색인. 별명이 있고 운영자가 아닌 회원만. u: 를 저장할 때 같이 맞춘다(saveUser)
+//   b:<구글 계정 번호>   { nick, total, days, created, tt } — 랭킹 색인(tt: 단 칭호 [한, 영]). 별명이 있고 운영자가 아닌 회원만. u: 를 저장할 때 같이 맞춘다(saveUser)
 //   board                랭킹 색인 판(BOARD_VERSION) — 없으면 처음 랭킹을 볼 때 u: 를 한 번 훑어 b: 를 채운다
 //   k:<구글 계정 번호>   { g: [{ id, r, n, s, at }] } — 내 번호(산 번호). r 회차, n 번호 6개, s 'm' 직접 입력 · 'g' 생성기에서 저장.
 //                        본인에게만 보인다. 등수는 저장하지 않는다 — 보는 쪽(마이페이지)이 lotto-data.json 으로 그때그때 맞춘다
@@ -44,18 +51,21 @@
 //   mday                 { day, n } — 오늘(UTC 날짜, Resend 하루 한도 기준) 보낸 결과 메일 수
 //   mailkey              수신 거부 링크 서명용 비밀값(처음 쓸 때 만든다)
 //   e:<한국 날짜>        { gen-share, gen-print, post-share, post-sns } — 공유 · 출력 단추 하루 횟수(TAP_KINDS). 누가 눌렀는지는 없다
+//   ad:<한국 날짜>       { '매체|종류|캠페인': { l, g, h, v } } — 광고 유입 집계(2026-11-11, 관리자 페이지). l: utm 링크로 들어온 방문(같은 브라우저 · 캠페인은 하루 한 번),
+//                        g: 그 캠페인으로 가입, h: 그 가입자가 LottoHex 참여, v: 그 가입자가 위치로 첫 인증 — 그 일이 일어난 날에 센다. 누가 했는지는 없다. 하루 AD_KEYS_MAX 캠페인까지
 //   v:<글>               조회수(숫자) — 블로그 글마다 한 줄(누구나 본다). 같은 브라우저의 같은 글은 하루 한 번만 온다(js/views.js). 누가 읽었는지는 없다
 //   vbase                { n: { 글: 수 }, until, at } — 조회수 시작값: 직접 세기 전(until 까지)의 Cloudflare Web Analytics 페이지뷰(tools/seed-views.js).
 //                        보이는 조회수 = v:<글> + 이 값. 관리자가 통째로 갈아 끼운다
-//   tp:<구글 계정 번호>  { nick, skin, at, v: { 판매점 번호: [표시한 시각, 칸] } } — 영역 참여자 색인(2026-11-07 시험판, territory.js).
+//   tp:<구글 계정 번호>  { nick, skin, tt, bm, at, v: { 판매점 번호: [표시한 시각, 칸] } } — 영역 참여자 색인(2026-11-07, territory.js). tt: 단 칭호 [한, 영], bm: 빛 벽 켬(1)
 //                        영역에 참여한 회원만. 칸 주인 · Map 랭킹은 이 줄들로 센다. 그만두거나 탈퇴하면 지운다
-//   ts:<분기>            { id, from, to, at, rank: [{ sub, nick, cells, stores }] } — 분기마다 확정한 Map 랭킹(50명, 한 시간 예약 terrFinalize).
+//   ts:<분기>            { id, from, to, at, rank: [{ sub, nick, cells, stores }], paid } — 분기마다 확정한 Map 랭킹(50명, 한 시간 예약 terrFinalize). paid: 10위까지 보상을 다 줬으면 true.
 //                        밖으로는 별명 · 칸 수 · 다녀온 곳 수만. 탈퇴하면 그 회원 줄의 계정 번호 · 별명을 지운다
 //   meta                 { users, trials, subs }
 //
 // 이름·사진은 받지 않는다. 이메일은 "로그인한 계정" 표시, 문의 응대, 회원이 켠 "추첨 결과 메일"에만 쓴다.
 
-import { seasonOf, prevSeason, computeTerritory, publicTerritory, seasonRecord, cellMap, FIRST_SEASON, VISIT_DAILY, kstDay as kstDate } from './territory.js';
+import { seasonOf, prevSeason, computeTerritory, publicTerritory, seasonRecord, cellMap, storeGeoFull, FIRST_SEASON, VISIT_DAILY, kstDay as kstDate, GEO_TRIES, GEO_LOG_DAYS } from './territory.js';
+import { milestonePoints, evaluate, myTitles, selTitle, titleName } from './titles.js';
 
 export const SESSION_DAYS = 30;
 const TRIAL_MEMORY_DAYS = 365;
@@ -69,10 +79,15 @@ const gameKey = n => n.join(',');
 export const REACT_TYPES = ['h', 'd', 'w'];   // ♥ 좋아요, $ 대박 기원, ₩ 원화
 
 // 랭킹 점수. 바꾸려면 여기만 고친다(이용약관 7조 문구도 같이).
-export const POINTS = { attend: 10, react: 2, buyPer100: 10, nickChange: 500, dayPass: 300, visitColor: 30, terrSkin: 30 };   // buyPer100: 이용권 100원마다 몇 점, nickChange: 별명 바꾸기에 쓰는 포인트, dayPass: 1일 이용권을 여는 포인트, visitColor: 다녀온 곳 색 하나를 여는 포인트, terrSkin: 영역 칸 모양 바꾸기 한 번
+export const POINTS = { attend: 10, react: 2, buyPer100: 10, nickChange: 500, dayPass: 300, visitColor: 30, terrSkin: 30, terrBeam: 300, visit: 10, visitDaily: 50, terrRank: [1000, 500, 300, 100, 100, 100, 100, 100, 100, 100] };   // buyPer100: 이용권 100원마다 몇 점, nickChange: 별명 바꾸기에 쓰는 포인트, dayPass: 1일 이용권을 여는 포인트, visitColor: 다녀온 곳 색 하나를 여는 포인트, terrSkin: 영역 칸 모양 바꾸기 한 번, terrBeam: 영역 빛 벽 사기(한 번 사면 계속 — 켜고 끄기는 무료)
 // 채팅 점수 — 공지하지 않는 규칙이라 POINTS(회원에게 내려 보내는 값)와 따로 둔다.
 // per: 메시지 하나에 몇 점, daily: 하루에 점수를 받는 메시지 수 상한(50개 = 5점)
 export const CHAT_POINTS = { per: 0.1, daily: 50 };
+export const HEX_FEED_MAX = 20, HEX_FEED_MS = 24 * 3600 * 1000;   // LottoHex 소식: 최근 20개 · 24시간
+// 채팅에 남기는 점령 소식 — 빈 칸: "🚩 ○○님이 N번째 블록을 점령했습니다", 빼앗음: "⚔️ ○○님이 △△님의 블록을 빼앗았습니다 (N번째 블록)"
+export const capText = e => (e.st
+    ? '⚔️ ' + (e.nick ? e.nick + '님이 ' : '누군가 ') + (e.from ? e.from + '님의' : '다른 사람의') + ' 블록을 빼앗았습니다 (' + e.n + '번째 블록)'
+    : '🚩 ' + (e.nick ? e.nick + '님이 ' : '누군가 ') + e.n + '번째 블록을 점령했습니다');
 // 블로그 댓글 점수 — 역시 공지하지 않는다. 댓글 하나에 1점, 하루 5개(5점)까지, 공백·기호 빼고 10자 이상, 바로 앞 댓글과 같은 말은 빼고.
 // 댓글이 지워지면(본인·관리자) 그 점수도 뺀다.
 export const COMMENT_POINTS = { per: 1, daily: 5, minLen: 10 };
@@ -95,9 +110,23 @@ export function score(user) {
     const buy = Math.floor((user.buy || 0) * POINTS.buyPer100 / 100);
     const chats = (user.chat && user.chat.n) || 0;
     const comments = (user.cmPt && user.cmPt.n) || 0;
-    const total = tenth(days * POINTS.attend + reacts * POINTS.react + buy + chats * CHAT_POINTS.per + comments * COMMENT_POINTS.per);
+    const verified = (user.vp && user.vp.n) || 0;          // 위치로 인증한 다녀온 곳(2026-11-09) — 한 번에 POINTS.visit
+    const hex = (user.trw && user.trw.pts) || 0;            // LottoHex 분기 확정 순위 보상(POINTS.terrRank) 합계
+    const ms = milestonePoints(user.ach);                     // 마일스톤 단계 보상(titles.js, 2026-11-09)
+    const total = tenth(days * POINTS.attend + reacts * POINTS.react + buy + chats * CHAT_POINTS.per + comments * COMMENT_POINTS.per + verified * POINTS.visit + hex + ms);
     const spent = user.spent || 0;
-    return { total, days, reacts, buy, chats, comments, spent, avail: tenth(total - spent) };
+    return { total, days, reacts, buy, chats, comments, verified, hex, ms, spent, avail: tenth(total - spent) };
+}
+
+// 다녀온 곳 인증 포인트(2026-11-09 사장님): 위치로 인증한 방문 한 번에 POINTS.visit, 같은 판매점은 하루 한 번, 하루 POINTS.visitDaily 까지.
+// user.vp = { n: 지금까지 받은 횟수, day: 한국 날짜, ids: [그날 받은 판매점 번호] } — 지웠다 다시 표시해도 같은 날 같은 곳은 한 번. 받은 포인트를 돌려준다
+function visitPoint(user, id, day) {
+    const p = user.vp && user.vp.day === day ? user.vp : { n: (user.vp && user.vp.n) || 0, day, ids: [] };
+    user.vp = p;
+    if (p.ids.includes(id) || (p.ids.length + 1) * POINTS.visit > POINTS.visitDaily) return 0;
+    p.ids.push(id);
+    p.n += 1;
+    return POINTS.visit;
 }
 
 // 회원에게 보이는 점수: 채팅·댓글 점수는 공지하지 않는 규칙이라 항목(chats·comments)을 빼고 합계에만 넣는다. 관리자 명부는 score() 그대로.
@@ -123,6 +152,11 @@ export const ITEM_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
 //   shop-share: 판매점 카드 "해당 판매점 공유하기"로 보낼 곳을 고르거나 주소 · 그림을 복사한 것(2026-10-28)
 //   — 공유 주소(/s/번호)를 사람이 열어 지도로 넘어간 것(shop-open)은 서버가 직접 센다(index.js shopShare)
 export const TAP_KINDS = ['gen-share', 'gen-print', 'post-share', 'post-sns', 'pay-view', 'pay-pick', 'shop-share'];
+
+// 광고 유입(utm) 집계(2026-11-11 사장님 — 구글 광고 시험). 매체 · 종류 · 캠페인 이름은 소문자 · 숫자 · _ . - 만, 40자까지(index.js cleanAd 가 다듬는다)
+export const AD_RE = /^[a-z0-9][a-z0-9_.-]{0,39}$/;
+const AD_KEYS_MAX = 100;   // 하루 캠페인 줄 수 한도(아무 이름이나 보내 저장소를 부풀리지 못하게)
+const AD_FIELDS = ['l', 'g', 'h', 'v'];
 
 // 블로그 댓글
 export const COMMENT = { max: 500, gapMs: 15000, daily: 30, list: 200 };   // 글자 수, 다음 댓글까지, 하루 최대, 한 글에 보여 주는 수
@@ -171,9 +205,11 @@ const BACKUP_KEY_MAX = 512;
 function boardEntry(user) {
     if (!user.nick || user.staff) return null;
     const s = score(user);
-    return { nick: user.nick, total: s.total, days: s.days, created: user.createdAt || 0 };
+    return { nick: user.nick, total: s.total, days: s.days, created: user.createdAt || 0, tt: selTitle(user) };
 }
-const sameEntry = (a, b) => (!a && !b) || !!(a && b && a.nick === b.nick && a.total === b.total && a.days === b.days && a.created === b.created);
+const sameTt = (a, b) => JSON.stringify(a || null) === JSON.stringify(b || null);
+const beamOn = user => (user.tbeam && user.tbeam.on ? 1 : 0);   // 영역 빛 벽을 켜 두었나(tp 행 bm)
+const sameEntry = (a, b) => (!a && !b) || !!(a && b && a.nick === b.nick && a.total === b.total && a.days === b.days && a.created === b.created && sameTt(a.tt, b.tt));
 // 점수 높은 순, 같으면 먼저 가입한 순. 계정 번호는 자리를 하나로 정하려고만 쓴다
 const order = (a, b) => (b.total - a.total) || (a.created - b.created) || (a.sub < b.sub ? -1 : a.sub > b.sub ? 1 : 0);
 function seat(list, x) {   // 줄에서 x 의 자리(이진 탐색)
@@ -223,6 +259,45 @@ export class Community {
     async terrRow(sub) {
         return this.tp ? this.tp.get(sub) || null : (await this.storage.get('tp:' + sub)) || null;
     }
+    // 지금 칸 주인 셈(칸 목록이 바뀌었거나 참여자 줄이 바뀌었으면 다시)
+    async terrNow(site) {
+        const map = site ? await cellMap(site).catch(() => null) : null;
+        if (!this.terrCache || this.terrCacheMap !== map) { this.terrCache = computeTerritory(await this.terrList(), 0, map); this.terrCacheMap = map; }
+        return this.terrCache;
+    }
+    // 마일스톤 · 칭호 셈(titles.js). 위치 인증이 켜져 있고 위치 이용에 동의한 회원만. user 를 고치고(저장은 부른 쪽) 새로 얻은 것을 돌려준다.
+    // 사이트 자료(칸 목록 · 판매점 지역)를 못 받으면 이번엔 건너뛴다(다음 인증 · 다음에 LottoHex 를 열 때 다시 셈한다)
+    async titleCheck(user, { site, now, pioneer }) {
+        if (!site || !user || !user.geo) return null;
+        let cm, g;
+        try { [cm, g] = await Promise.all([cellMap(site), storeGeoFull(site)]); } catch (e) { return null; }
+        let held = null;
+        if (user.terr && (await this.terrRow(user.sub))) {
+            const t = await this.terrNow(site);
+            held = Object.keys(t.cells).filter(c => t.cells[c].sub === user.sub);
+        }
+        const r = evaluate(user, { cellOf: cm, geo: g.map, regions: g.regions, held, pioneer: !!pioneer, now });
+        return r.titles.length || r.pts ? r : null;
+    }
+
+    // 위치 인증을 켠 날 한 번(2026-11-09 사장님 — "손으로 방문 표시한 기록은 모두 삭제, GPS 기반으로 시작"):
+    // 모든 회원의 다녀온 곳 · 표시 시각 · 하루 횟수와 LottoHex 참여(동의 1판) · 칸 집계를 지운다 → 모든 칸이 회색지대, 랭킹 새로.
+    // 남기는 것: 내 색 · 연 색 · 칸 모양 · 포인트 · 실방문자 설정 · 위치 동의. 끝나면 gpsStart(시각)를 적어 다시 돌지 않는다
+    async gpsStartOnce(now) {
+        if (this.gpsStarted) return;
+        if (await this.storage.get('gpsStart')) { this.gpsStarted = true; return; }
+        await this.each('u:', async (u, k) => {
+            if (!u || !(u.visits || u.vt || u.vday || u.terr)) return;
+            delete u.visits; delete u.vt; delete u.vday; delete u.terr;
+            await this.storage.put(k, u);
+        });
+        const tp = [];
+        await this.each('tp:', async (row, k) => { tp.push(k); });
+        for (let i = 0; i < tp.length; i += 128) await this.storage.delete(tp.slice(i, i + 128));
+        this.tp = null; this.terrCache = null;
+        await this.storage.put('gpsStart', now || Date.now());
+        this.gpsStarted = true;
+    }
 
     async baseViews() {
         if (!this.viewBase) this.viewBase = (await this.storage.get('vbase')) || { n: {} };
@@ -254,9 +329,11 @@ export class Community {
     async saveUser(user) {
         await this.storage.put('u:' + user.sub, user);
         await this.syncBoard(user.sub, boardEntry(user));
-        if (user.terr) {   // 영역 참여자: 별명 · 칸 모양이 바뀌었으면 칸 · 랭킹에도
+        if (user.terr) {   // 영역 참여자: 별명 · 칸 모양 · 단 칭호가 바뀌었으면 칸 · 랭킹에도
             const row = await this.terrRow(user.sub);
-            if (row && (row.nick !== (user.nick || null) || (row.skin || null) !== (user.tskin || null))) await this.terrSet(user.sub, Object.assign({}, row, { nick: user.nick || null, skin: user.tskin || null }));
+            const tt = selTitle(user);
+            const bm = beamOn(user);
+            if (row && (row.nick !== (user.nick || null) || (row.skin || null) !== (user.tskin || null) || !sameTt(row.tt, tt) || (row.bm || 0) !== bm)) await this.terrSet(user.sub, Object.assign({}, row, { nick: user.nick || null, skin: user.tskin || null, tt, bm }));
         }
     }
 
@@ -340,11 +417,21 @@ export class Community {
         m[field] = Math.max(0, (m[field] || 0) + by);
         await this.storage.put('meta', m);
     }
+    // 광고 유입 집계 한 칸 올리기(ad:<한국 날짜>). ad: { s, m, c }, f: AD_FIELDS 중 하나
+    async adBump(ad, f, now) {
+        if (!ad || !ad.s || AD_FIELDS.indexOf(f) === -1) return;
+        const k = 'ad:' + kstDay(now), key = [ad.s, ad.m || '-', ad.c || '-'].join('|');
+        const day = (await this.storage.get(k)) || {};
+        if (!day[key]) { if (Object.keys(day).length >= AD_KEYS_MAX) return; day[key] = {}; }
+        day[key][f] = (day[key][f] || 0) + 1;
+        await this.storage.put(k, day);
+    }
 }
 
 const OPS = {
     // 구글 로그인 뒤. 처음이면 계정을 만들고, 무료 체험을 줄 수 있는지 알려 준다(trial: 가입 체험이 켜져 있을 때만).
-    async login({ sub, email, subHash, ref, now, trial }) {
+    // ad: 가입 경로(index.js cleanAd — utm 링크로 들어온 뒤 30일 안). 새 계정일 때만 남기고 그 캠페인의 가입(g)을 센다
+    async login({ sub, email, subHash, ref, now, trial, ad }) {
         let user = await this.storage.get('u:' + sub);
         const isNew = !user;
         if (!user) {
@@ -358,6 +445,7 @@ const OPS = {
                 }
             }
             await this.bump('users', 1);
+            if (ad) { user.ad = { s: ad.s, m: ad.m, c: ad.c, at: now }; await this.adBump(ad, 'g', now); }
         }
         if (!trial) {
             // 체험을 끈 동안: 발급 도중 멈춘 체험은 버리고(받은 키는 그대로), "체험을 받은 계정" 기록은 쓸모가 없어 지운다
@@ -391,18 +479,21 @@ const OPS = {
     // 새로 표시한 때는 vt 에 적는다(색만 바꾸면 그대로). again: 이미 표시한 곳을 "또 다녀왔어요" — 때만 새로(같은 곳은 하루 한 번).
     // 때를 새로 적는 것(새로 표시 · 또 다녀왔어요)은 하루 VISIT_DAILY 번까지 — 영역에서 같은 수면 최근에 다녀온 사람이 이기므로 누르기 되풀이를 막는다.
     // 영역 참여자면 참여자 색인(tp:)도 같이: cell 은 Worker 가 store-map-cells.json 에서 찾아 넘긴다(폐점 · 모르는 곳은 null — 칸에 안 센다)
-    async setVisit({ sub, id, color, max, now, cell, again }) {
+    async setVisit({ sub, id, color, max, now, cell, again, gps, site }) {
+        if (gps) await this.gpsStartOnce(now);   // 켠 날 첫 인증보다 먼저 손 표시를 지운다(같은 객체 안이라 차례가 지켜진다)
         const user = await this.storage.get('u:' + sub);
         if (!user) return { error: 'no_user' };
         const v = user.visits || {}, vt = user.vt || {};
         now = now || Date.now();
         const today = kstDate(now);
+        let stamped = false;
         const stamp = () => {
             const d = user.vday && user.vday.day === today ? user.vday : { day: today, n: 0 };
             if (d.n >= VISIT_DAILY) return false;
             d.n += 1;
             user.vday = d;
             vt[id] = now;
+            stamped = true;
             return true;
         };
         if (again) {
@@ -417,14 +508,110 @@ const OPS = {
         } else { delete v[id]; delete vt[id]; }
         if (Object.keys(v).length) user.visits = v; else delete user.visits;
         if (Object.keys(vt).length) user.vt = vt; else delete user.vt;
+        const earned = gps && stamped ? visitPoint(user, id, today) : 0;   // 위치로 인증한 방문만 포인트(켜져 있을 때 index.js 가 이미 판정했다)
+        if (gps && stamped && user.ad && !user.ad.v) { user.ad.v = now; await this.adBump(user.ad, 'v', now); }   // 광고로 가입한 회원의 첫 위치 인증
         await this.saveUser(user);
+        let pioneer = false, cap = null;
         if (user.terr) {
             const row = (await this.terrRow(sub)) || { nick: user.nick || null, at: user.terr.at, v: {} };
             const nv = Object.assign({}, row.v);
             if (id in v && cell) nv[id] = [vt[id] || 0, cell]; else delete nv[id];
+            // 점령 소식(2026-11-10 사장님): 위치로 새로 인증해서 이 칸 주인이 내가 되었으면 — 셈 앞뒤로 칸 주인을 견준다
+            const watch = !!(gps && stamped && cell && site);
+            let before = null, beforeNick = null;
+            if (watch) { const tb = await this.terrNow(site), bc = tb.cells[cell]; if (bc) { before = bc.sub; beforeNick = (tb.stat.get(bc.sub) || {}).nick || null; } }
             await this.terrSet(sub, Object.assign({}, row, { v: nv }));
+            if (watch) {
+                const t = await this.terrNow(site), c = t.cells[cell], me = t.stat.get(sub);
+                if (!again) pioneer = !!(c && c.k === 1 && me && me.counts[cell] === 1);   // 개척자: 이 칸에 다녀온 참여자가 나 하나, 그것도 이번이 처음
+                if (c && c.sub === sub && before !== sub) cap = await OPS.hexCaptured.call(this, user, me ? me.cells : 1, now, before ? { from: beforeNick } : null);   // OPS 안의 함수라 this 로 부른다. 남의 칸이었으면 빼앗음
+            }
         }
-        return { ok: true, visits: user.visits || {}, visitAt: user.vt || {}, visitColor: user.vc || null };
+        // 마일스톤 · 칭호(2026-11-09): 위치로 새로 인증했을 때 셈한다
+        const fresh = gps && stamped ? await this.titleCheck(user, { site, now, pioneer }) : null;
+        if (fresh) await this.saveUser(user);
+        return { ok: true, visits: user.visits || {}, visitAt: user.vt || {}, visitColor: user.vc || null, earned, score: pubScore(user), fresh: freshOut(fresh), cap };
+    },
+
+    // ───── LottoHex 소식(2026-11-10 사장님 — 점령하면 채팅 · LottoHex 화면 흐르는 띠에 "○○○님이 N번째 블록을 점령했습니다", 띠에는 공지도) ─────
+    // 위치 걱정: 어느 칸 · 지역인지는 넣지 않는다(언제 어디 있었는지 드러나지 않게) — 별명과 지금 가진 칸 수(N번째)만.
+    // hxf: [{ at, nick, n, st?, from? }] 최근 것부터(st: 남의 칸을 빼앗음, from: 빼앗긴 사람 별명) HEX_FEED_MAX 개 · HEX_FEED_MS 안의 것, hxn: { text, at, until } 관리자 공지(띠 맨 앞)
+    // steal: 남의 칸을 빼앗았으면 { from: 빼앗긴 사람 별명(없으면 null) } — 소식에 st: 1, from(2026-11-10 사장님 "블록 빼앗는 것도 알리자")
+    async hexCaptured(user, n, now, steal) {
+        const ev = Object.assign({ at: now, nick: user.nick || null, n }, steal ? { st: 1, from: steal.from || null } : {});
+        const feed = ((await this.storage.get('hxf')) || []).filter(e => e.at > now - HEX_FEED_MS);
+        feed.unshift(ev);
+        await this.storage.put('hxf', feed.slice(0, HEX_FEED_MAX));
+        return ev;
+    },
+    async hexFeed({ now }) {
+        now = now || Date.now();
+        const feed = ((await this.storage.get('hxf')) || []).filter(e => e.at > now - HEX_FEED_MS);
+        const n = await this.storage.get('hxn');
+        return { feed, notice: n && n.until > now ? { text: n.text, at: n.at, until: n.until } : null };
+    },
+    async hexNotice({ text, hours, now }) {
+        if (!text) { await this.storage.delete('hxn'); return { ok: true, notice: null }; }
+        const rec = { text, at: now, until: now + hours * 3600000 };
+        await this.storage.put('hxn', rec);
+        return { ok: true, notice: rec };
+    },
+
+    // ───── 위치 인증(2026-11-09) ─────
+    // 위치 이용 동의: 동의 시각과 안내문 판
+    async geoConsent({ sub, now, v }) {
+        const user = await this.storage.get('u:' + sub);
+        if (!user) return { error: 'no_user' };
+        user.geo = { at: now, v };
+        await this.saveUser(user);
+        return { ok: true, user: view(user) };
+    },
+    // 철회: 동의 기록을 지우고, 위치로 인증한 다녀온 곳 · 표시 시각과 LottoHex 칸 집계를 지운다(참여는 남는다)
+    async geoWithdraw({ sub }) {
+        const user = await this.storage.get('u:' + sub);
+        if (!user) return { error: 'no_user' };
+        delete user.geo; delete user.visits; delete user.vt;
+        delete user.ttl;   // 칭호도 위치로 인증한 기록에서 나온 것이라 지운다. 마일스톤 단계(ach)는 받은 포인트 장부라 남긴다
+        await this.saveUser(user);
+        const row = await this.terrRow(sub);
+        if (row) await this.terrSet(sub, Object.assign({}, row, { v: {} }));
+        return { ok: true, user: view(user) };
+    },
+    // 하루 위치 판정 시도 횟수(좌표 없이 횟수만). 넘으면 판정하지 않는다
+    async geoTry({ sub, now }) {
+        const user = await this.storage.get('u:' + sub);
+        if (!user) return { error: 'no_user' };
+        const today = kstDate(now);
+        const g = user.gtry && user.gtry.day === today ? user.gtry : { day: today, n: 0 };
+        if (g.n >= GEO_TRIES) return { error: 'too_many_tries', max: GEO_TRIES };
+        g.n += 1;
+        user.gtry = g;
+        await this.storage.put('u:' + sub, user);
+        return { ok: true };
+    },
+    // 위치정보 이용 · 제공사실 확인자료: 누가(계정 해시 u) · 언제(t) · 어느 판매점(id) · 결과(ok, why). 좌표는 없다. 키는 날짜순(gl:YYYY-MM-DD:…)
+    async geoLog({ u, t, id, ok, why }) {
+        await this.storage.put('gl:' + kstDate(t) + ':' + t.toString(36) + ':' + Math.random().toString(36).slice(2, 8), { u, t, id, ok: !!ok, why: why || null });
+        return { ok: true };
+    },
+    // 한 시간 예약: 켜져 있으면 켠 날 한 번 손 표시 지우기, 확인자료는 GEO_LOG_DAYS(약 6개월) 지난 날짜 것부터 지운다(한 번에 500개)
+    async geoHousekeep({ now, gps }) {
+        if (gps) await this.gpsStartOnce(now);
+        const cut = 'gl:' + kstDate(now - GEO_LOG_DAYS * 86400000) + ':';
+        const old = [];
+        const page = await this.storage.list({ prefix: 'gl:', limit: 500 });
+        for (const k of page.keys()) { if (k >= cut) break; old.push(k); }
+        for (let i = 0; i < old.length; i += 128) await this.storage.delete(old.slice(i, i + 128));
+        return { ok: true, pruned: old.length };
+    },
+
+    // "✓ 실방문자" 표시 켜기 · 끄기(2026-11-09 사장님 — 기본은 꺼짐, 회원이 켠 경우에만 판매점 댓글에 표시)
+    async setVisitBadge({ sub, on }) {
+        const user = await this.storage.get('u:' + sub);
+        if (!user) return { error: 'no_user' };
+        if (on) user.vpub = true; else delete user.vpub;
+        await this.saveUser(user);
+        return { ok: true, user: view(user) };
     },
 
     // 내 색 바꾸기(2026-11-08 사장님 — "방문한 곳 색은 고른 하나만"): user.vc 를 바꾸고 이미 표시한 곳도 모두 그 색으로. 다녀온 때(vt)는 그대로
@@ -444,10 +631,11 @@ const OPS = {
         if (!user.nick) return { error: 'need_nick' };
         const first = !user.terr;
         user.terr = { at: first ? now : user.terr.at, v };
+        if (user.ad && !user.ad.h) { user.ad.h = now; await this.adBump(user.ad, 'h', now); }   // 광고로 가입한 회원의 첫 LottoHex 참여(그만뒀다 다시 들어와도 한 번)
         await this.saveUser(user);
         const nv = {};
         for (const id of Object.keys(user.visits || {})) if (cells && cells[id]) nv[id] = [(user.vt || {})[id] || 0, cells[id]];
-        await this.terrSet(sub, { nick: user.nick, skin: user.tskin || null, at: user.terr.at, v: nv });
+        await this.terrSet(sub, { nick: user.nick, skin: user.tskin || null, tt: selTitle(user), bm: beamOn(user), at: user.terr.at, v: nv });
         return { ok: true, user: view(user) };
     },
 
@@ -469,6 +657,25 @@ const OPS = {
         return { ok: true, user: view(user), cost };
     },
 
+    // 영역 빛 벽(2026-11-10 사장님 — "빛 벽은 포인트로 팔자, 남에게도 보이게"): 안 샀으면 켤 때 POINTS.terrBeam 포인트로 산다(운영자 무료).
+    // 산 뒤에는 켜고 끄기 무료. 켜 두면 내 칸의 바깥 테두리에 빛 벽이 모두에게(3D) 보인다. 영역에 참여한 사람만 산다
+    async setTerrBeam({ sub, on }) {
+        const user = await this.storage.get('u:' + sub);
+        if (!user) return { error: 'no_user' };
+        if (!user.terr) return { error: 'not_joined' };
+        let cost = 0;
+        if (!user.tbeam) {
+            if (!on) return { ok: true, user: view(user), cost };
+            cost = user.staff ? 0 : POINTS.terrBeam;
+            const avail = score(user).avail;
+            if (cost && avail < cost) return { error: 'need_points', cost, avail };
+            user.spent = tenth((user.spent || 0) + cost);
+            user.tbeam = { at: Date.now(), on: true };
+        } else user.tbeam.on = !!on;
+        await this.saveUser(user);
+        return { ok: true, user: view(user), cost };
+    },
+
     // 영역 그만두기: 동의 기록과 참여자 색인을 지운다. 차지한 칸은 바로 다음 사람에게 간다. 다녀온 곳은 그대로
     async terrLeave({ sub }) {
         const user = await this.storage.get('u:' + sub);
@@ -481,24 +688,66 @@ const OPS = {
 
     // 칸 주인 · Map 랭킹(누구나). sub 가 있으면 내 칸 · 순위도. 지난 분기 확정 순위도 함께
     // site: 칸 목록(store-map-cells.json)을 읽을 사이트 주소 — 지금 칸 목록으로 센다(computeTerritory). 칸 목록이 바뀌면(한 시간마다 다시 읽음) 다시 센다
-    async territory({ sub, now, site }) {
+    async territory({ sub, now, site, gps }) {
+        if (gps) await this.gpsStartOnce(now);
         const season = seasonOf(now || Date.now());
-        const map = site ? await cellMap(site).catch(() => null) : null;
-        if (!this.terrCache || this.terrCacheMap !== map) { this.terrCache = computeTerritory(await this.terrList(), 0, map); this.terrCacheMap = map; }
+        // 로그인한 회원이 열면 마일스톤 · 칭호를 셈한다(다른 사람이 그만둬 칸을 얻었을 때 · 이 기능 전에 인증한 곳도)
+        let fresh = null;
+        if (sub && gps) {
+            const user = await this.storage.get('u:' + sub);
+            fresh = user ? await this.titleCheck(user, { site, now }) : null;
+            if (fresh) await this.saveUser(user);
+        }
+        const t = await this.terrNow(site);
         const joined = sub ? !!(await this.terrRow(sub)) : false;
-        return publicTerritory(this.terrCache, season, sub, joined, await this.terrLastRec(season));
+        const out = publicTerritory(t, season, sub, joined, await this.terrLastRec(season));
+        if (out.me && fresh) out.me.fresh = freshOut(fresh);
+        return out;
+    },
+
+    // 칭호 달기 · 떼기(id 가 null). 얻은 칭호만
+    async setTitle({ sub, id }) {
+        const user = await this.storage.get('u:' + sub);
+        if (!user) return { error: 'no_user' };
+        if (id === null) { if (user.ttl) delete user.ttl.sel; }
+        else {
+            if (!(user.ttl && user.ttl.e && user.ttl.e[id])) return { error: 'not_earned' };
+            user.ttl.sel = id;
+        }
+        await this.saveUser(user);
+        return { ok: true, user: view(user) };
     },
 
     // 한 시간 예약: 지난 분기를 아직 확정하지 않았으면 그 분기 끝 때(t < to)의 랭킹을 ts:<분기> 로 남긴다. 칸은 그대로 둔다
     async terrFinalize({ now, site }) {
         const prev = prevSeason(seasonOf(now));
         if (prev.id < FIRST_SEASON) return { skipped: prev.id };
-        if (await this.storage.get('ts:' + prev.id)) return { done: false, id: prev.id };
-        const map = site ? await cellMap(site).catch(() => null) : null;
-        const rec = seasonRecord(computeTerritory(await this.terrList(), prev.to, map), prev, now);
+        let rec = await this.storage.get('ts:' + prev.id);
+        if (rec && rec.paid) return { done: false, id: prev.id };
+        if (!rec) {
+            const map = site ? await cellMap(site).catch(() => null) : null;
+            rec = seasonRecord(computeTerritory(await this.terrList(), prev.to, map), prev, now);
+            await this.storage.put('ts:' + prev.id, rec);
+            this.terrLast = null;
+        }
+        // 확정 순위 보상(2026-11-09 사장님): 1위 1,000 · 2위 500 · 3위 300 · 4~10위 100(POINTS.terrRank). 운영자 · 탈퇴한 회원은 건너뛴다.
+        // 회원마다 user.trw.s[분기] 를 남겨 두 번 주지 않고, 다 주면 rec.paid — 중간에 끊겨도 다음 예약이 이어서 준다
+        let paid = 0;
+        for (let i = 0; i < Math.min(rec.rank.length, POINTS.terrRank.length); i++) {
+            const r = rec.rank[i];
+            const user = r.sub && await this.storage.get('u:' + r.sub);
+            if (!user || user.staff) continue;
+            const trw = user.trw || { pts: 0, s: {} };
+            if (trw.s[prev.id] != null) continue;
+            trw.s[prev.id] = POINTS.terrRank[i];
+            trw.pts += POINTS.terrRank[i];
+            user.trw = trw;
+            await this.saveUser(user);
+            paid++;
+        }
+        rec.paid = true;
         await this.storage.put('ts:' + prev.id, rec);
-        this.terrLast = null;
-        return { done: true, id: prev.id, ranked: rec.rank.length };
+        return { done: true, id: prev.id, ranked: rec.rank.length, paid };
     },
 
     // 다녀온 곳 색 하나를 포인트로 연다(2026-10-26). 한 번 연 색은 계속 쓴다(user.vcolors). 이미 열었으면 포인트를 쓰지 않는다
@@ -649,7 +898,7 @@ const OPS = {
     // 메모리의 랭킹 줄로 센다 — 회원이 몇 명이든 읽는 것은 내 기록 한 줄뿐이다.
     async ranking({ sub, limit }) {
         const list = await this.boardList();
-        const top = list.slice(0, limit || 50).map(x => ({ rank: above(list, x.total) + 1, nick: x.nick, points: x.total, days: x.days }));
+        const top = list.slice(0, limit || 50).map(x => Object.assign({ rank: above(list, x.total) + 1, nick: x.nick, points: x.total, days: x.days }, x.tt ? { tt: x.tt } : {}));   // tt: 단 칭호 [한, 영](있을 때만)
         let me = null;
         const user = sub && await this.storage.get('u:' + sub);
         if (user && !user.staff) {   // 운영자는 순위에서 뺀다
@@ -778,6 +1027,18 @@ const OPS = {
     async taps() {
         const days = [];
         await this.each('e:', (v, k) => { days.push(Object.assign({ day: k.slice(2) }, v)); });
+        return { days: days.reverse() };
+    },
+
+    // 광고 유입: utm 링크로 들어온 방문(index.js /api/arrive — 같은 브라우저 · 캠페인은 하루 한 번만 온다)
+    async adLand({ ad, now }) {
+        await this.adBump(ad, 'l', now || Date.now());
+        return { ok: true };
+    },
+    // 관리자 페이지: 광고 유입 날짜별 집계, 최근 날짜가 먼저 — [{ day, rows: { '매체|종류|캠페인': { l, g, h, v } } }]
+    async adStats() {
+        const days = [];
+        await this.each('ad:', (v, k) => { days.push({ day: k.slice(3), rows: v }); });
         return { days: days.reverse() };
     },
 
@@ -939,11 +1200,11 @@ const OPS = {
             for (const w of who) await this.note(w, { at: now, post, id, to: c.to, nick: user.nick, text: text.slice(0, 80) });
         }
         const shop = /^shop-(\d{8})$/.exec(post);
-        return { comment: Object.assign(pubComment(c, sub), shop && user.visits && user.visits[shop[1]] ? { visited: true } : {}) };
+        return { comment: Object.assign(pubComment(c, sub), shop && user.vpub && user.visits && user.visits[shop[1]] ? { visited: true } : {}) };
     },
 
     // 한 글의 댓글(오래된 것부터, 최근 200개). sub 가 있으면 내 댓글에 mine 표시.
-    // 판매점 댓글(shop-번호)은 쓴 사람이 지금 그 판매점을 "다녀온 곳"으로 표시해 두었으면 visited(2026-10-27 사장님 — 다녀온 사람과 구분)
+    // 판매점 댓글(shop-번호)은 쓴 사람이 지금 그 판매점을 "다녀온 곳"으로 표시해 두었고 실방문자 표시를 켰으면 visited(2026-10-27 사장님 — 다녀온 사람과 구분, 2026-11-09 켠 사람만)
     async commentList({ post, sub }) {
         const rows = await this.storage.list({ prefix: 'c:' + post + ':', reverse: true, limit: COMMENT.list });
         const list = [...rows.values()].reverse();
@@ -952,7 +1213,7 @@ const OPS = {
         if (shop) {
             for (const who of new Set(list.map(c => c.sub))) {
                 const u = await this.storage.get('u:' + who);
-                if (u && u.visits && u.visits[shop[1]]) been.add(who);
+                if (u && u.vpub && u.visits && u.visits[shop[1]]) been.add(who);   // 회원이 마이페이지에서 켠 경우에만(2026-11-09)
             }
         }
         return { comments: list.map(c => Object.assign(pubComment(c, sub), been.has(c.sub) ? { visited: true } : {})) };
@@ -1132,11 +1393,17 @@ Object.assign(OPS, NUM_OPS);
 
 const b64url = bytes => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
+// 새로 얻은 칭호 · 마일스톤(화면 알림용)
+function freshOut(f) {
+    if (!f) return null;
+    return { titles: f.titles.map(id => { const n = titleName(id) || [id, id]; return { id, ko: n[0], en: n[1] }; }), pts: f.pts, steps: f.steps };
+}
 function view(user) {
     const trial = user.trial && user.trial.key ? { key: user.trial.key, keyId: user.trial.keyId, expiresAt: user.trial.expiresAt } : null;
     return {
-        email: user.email, nick: user.nick || null, createdAt: user.createdAt, trial, score: pubScore(user), staff: !!user.staff, gen: user.gen || null, visits: user.visits || {}, visitAt: user.vt || {}, visitColor: user.vc || null, visitColors: user.vcolors || [], notes: user.ntN || 0,
-        terr: user.terr ? { at: user.terr.at, v: user.terr.v } : null, terrSkin: user.tskin || null,
+        email: user.email, nick: user.nick || null, createdAt: user.createdAt, trial, score: pubScore(user), staff: !!user.staff, gen: user.gen || null, visits: user.visits || {}, visitAt: user.vt || {}, visitColor: user.vc || null, visitBadge: !!user.vpub, geo: user.geo ? { at: user.geo.at, v: user.geo.v } : null, visitColors: user.vcolors || [], notes: user.ntN || 0,
+        terr: user.terr ? { at: user.terr.at, v: user.terr.v } : null, terrSkin: user.tskin || null, terrBeam: user.tbeam ? { on: !!user.tbeam.on } : null,
+        titles: myTitles(user), ach: user.ach || {},
         nickAuto: !!(user.nick && user.nickAuto), nickDue: !user.nick && user.nickDue ? user.nickDue : null,
         pointPass: user.ppass && user.ppass.key ? { key: user.ppass.key, keyId: user.ppass.keyId, expiresAt: user.ppass.expiresAt } : null,
     };
