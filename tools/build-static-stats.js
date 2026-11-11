@@ -370,11 +370,11 @@ function shell(o) {
     <meta property="og:type" content="article">
     <meta property="og:url" content="${SITE}/${o.file}">
     <meta property="og:site_name" content="lottodraw.kr">
-    <meta property="og:image" content="${OG_IMAGE}">
+    <meta property="og:image" content="${o.ogImage || OG_IMAGE}">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="${esc(title)}">
     <meta name="twitter:description" content="${esc(o.desc)}">
-    <meta name="twitter:image" content="${OG_IMAGE}">
+    <meta name="twitter:image" content="${o.ogImage || OG_IMAGE}">
     <meta name="google-adsense-account" content="ca-pub-9372871176021283">
     <link rel="icon" href="/favicon.ico" sizes="32x32">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -2319,8 +2319,10 @@ function storesPage() {
         h2En('지역별 1등 · 2등', '1st and 2nd prizes by area'),
         pEn(`지역마다 1등 비율과 2등 비율을 나란히 놓았습니다. 두 비율이 비슷하면, 1등이 많은 지역은 그만큼 많이 팔린 지역이라는 뜻입니다.`,
             `Each area's share of 1st prizes sits next to its share of 2nd prizes. Where the two shares are close, an area with many 1st prizes is simply one that sells more.`),
+        pEn(`지역 이름을 누르면 그 시도의 1등 판매점 순위 · 시군구별 기록 · 최근 1등 판매점을 볼 수 있습니다.`,
+            `Click an area for its own retailer rankings, city and district counts and latest 1st-prize retailers.`, 'note'),
         table([['지역', 'Area'], ['1등', '1st'], ['1등 비율', '1st share'], ['2등', '2nd'], ['2등 비율', '2nd share']],
-            sidoRows.map(([k, v]) => [k === '인터넷' ? en('인터넷', 'Online') : k === '기타' ? en('주소 없음', 'No address') : esc(k), fmt(v.w1), pct(v.w1, S.g1), fmt(v.w2), pct(v.w2, S.g2)]), 'tier-stat'),
+            sidoRows.map(([k, v]) => [k === '인터넷' ? en('인터넷', 'Online') : k === '기타' ? en('주소 없음', 'No address') : SIDO_BY[k] ? `<a href="${sidoFile(k)}">${esc(k)}</a>` : esc(k), fmt(v.w1), pct(v.w1, S.g1), fmt(v.w2), pct(v.w2, S.g2)]), 'tier-stat'),
     ];
 
     const m = S.method;
@@ -2372,6 +2374,139 @@ function storesPage() {
             h2En('다른 로또 통계', 'Other statistics'),
             relatedLinks(STORES_FILE),
         ]),
+    });
+}
+
+/* ───── 시도별 1등 판매점 (2026-11-12, 할 일 LX42 — 사장님 10/29 "만들자") ─────
+ * stores/<slug>.html 17쪽. 예: "서울 로또 1등 판매점". stores-data.json 으로 매주 생성기가 다시 만든다.
+ * 1등 · 2등 많이 나온 판매점, 시군구별, 최근 1등 판매점. 판매점은 지도 카드(store-map.html?shop=번호), 시군구는 지역 지도(?area=시도+시군구)로 잇는다.
+ * 문구: 기록을 그대로 적는다. 예측처럼 읽히는 말은 쓰지 않는다(상호에 든 말은 자료라 그대로).
+ */
+const SIDO = [
+    ['서울', '서울특별시', 'seoul', 'Seoul'], ['부산', '부산광역시', 'busan', 'Busan'], ['대구', '대구광역시', 'daegu', 'Daegu'],
+    ['인천', '인천광역시', 'incheon', 'Incheon'], ['광주', '광주광역시', 'gwangju', 'Gwangju'], ['대전', '대전광역시', 'daejeon', 'Daejeon'],
+    ['울산', '울산광역시', 'ulsan', 'Ulsan'], ['세종', '세종특별자치시', 'sejong', 'Sejong'], ['경기', '경기도', 'gyeonggi', 'Gyeonggi'],
+    ['강원', '강원특별자치도', 'gangwon', 'Gangwon'], ['충북', '충청북도', 'chungbuk', 'North Chungcheong'], ['충남', '충청남도', 'chungnam', 'South Chungcheong'],
+    ['전북', '전북특별자치도', 'jeonbuk', 'Jeonbuk'], ['전남', '전라남도', 'jeonnam', 'South Jeolla'], ['경북', '경상북도', 'gyeongbuk', 'North Gyeongsang'],
+    ['경남', '경상남도', 'gyeongnam', 'South Gyeongsang'], ['제주', '제주특별자치도', 'jeju', 'Jeju'],
+].map(([ko, full, slug, enName]) => ({ ko, full, slug, en: enName }));
+const SIDO_BY = Object.fromEntries(SIDO.map(x => [x.ko, x]));
+const sidoFile = ko => `stores/${SIDO_BY[ko].slug}.html`;
+const SIDO_STATS = (() => {
+    const cache = {};
+    return ko => {
+        if (!STORES) return null;
+        if (ko in cache) return cache[ko];
+        const S = STORES;
+        const shops = S.all.filter(x => x.sido === ko);
+        const v = S.sido.get(ko);
+        if (!v || !shops.length) return (cache[ko] = null);
+        const gu = new Map();
+        for (const x of shops) {
+            const k = x.gu || '';
+            if (!gu.has(k)) gu.set(k, { gu: k, w1: 0, w2: 0, shops1: 0 });
+            const g = gu.get(k); g.w1 += x.n1; g.w2 += x.n2; if (x.n1) g.shops1++;
+        }
+        const recent = [];
+        for (let i = S.rounds.length - 1; i >= 0 && recent.length < 15; i--) {
+            const r = S.rounds[i];
+            S.d.rounds[r].w1.forEach(([id, how]) => { if (recent.length < 15 && S.shop(id)[1] === ko) recent.push({ r, id, how }); });
+        }
+        const top1 = shops.filter(x => x.n1).sort((a, b) => (b.n1 - a.n1) || (b.n2 - a.n2) || (a.id < b.id ? -1 : 1));
+        const top2 = shops.filter(x => x.n2).sort((a, b) => (b.n2 - a.n2) || (b.n1 - a.n1) || (a.id < b.id ? -1 : 1));
+        return (cache[ko] = { v, shops, with1: top1.length, top1, top2, gu: [...gu.values()].sort((a, b) => (b.w1 - a.w1) || (b.w2 - a.w2) || (a.gu < b.gu ? -1 : 1)), recent });
+    };
+})();
+
+function sidoStoresPage(x, st) {
+    const S = STORES;
+    const { first, last } = S;
+    const ko = x.ko;
+    const mapReady = STORE_MAP_READY();
+    const onMap = sh => mapReady && typeof S.shop(sh.id)[4] === 'number';
+    const shopName = sh => {
+        const name = esc(sh.name) + (sh.closed ? ` <span class="muted" data-i18n-en="(closed)">(폐점)</span>` : '');
+        return onMap(sh) ? `<a href="../${STORE_MAP_FILE}?shop=${sh.id}">${name}</a>` : name;
+    };
+    const guName = g => g ? esc(g) : en('시군구 표시 없음', 'not given');
+    const areaLink = g => g && mapReady ? ` <a class="muted" href="../${STORE_MAP_FILE}?area=${encodeURIComponent(ko + ' ' + g).replace(/%20/g, '+')}" data-i18n-en="map">지도</a>` : '';
+    const how = h => h === 'A' ? en('자동', 'Auto') : h === 'M' ? en('수동', 'Manual') : h === 'S' ? en('반자동', 'Semi-auto') : '—';
+    const natRank = new Map(S.top.map((sh, i) => [sh.id, i + 1]));   // 전국 1등 순위(1등 판매점 통계와 같은 규칙)
+    const byId = new Map(st.shops.map(sh => [sh.id, sh]));
+    const TOP1 = 20, TOP2 = 10;
+    const best = st.top1[0];
+    const share1 = pct(st.v.w1, S.g1), share2 = pct(st.v.w2, S.g2);
+    const glance = [
+        h2En('한눈에 보기', 'At a glance'),
+        table([['항목', 'Measure'], ['값', 'Value']], [
+            [en('집계 회차', 'Draws covered'), en(`${first}~${last}회`, `${first}–${last}`)],
+            [en(`${ko} 1등 게임`, `1st-prize games in ${x.en}`), en(`${fmt(st.v.w1)}게임 (전국의 ${share1})`, `${fmt(st.v.w1)} (${share1} of the country)`)],
+            [en(`${ko} 2등 게임`, `2nd-prize games in ${x.en}`), en(`${fmt(st.v.w2)}게임 (전국의 ${share2})`, `${fmt(st.v.w2)} (${share2} of the country)`)],
+            [en('1등이 나온 판매점', 'Retailers with a 1st prize'), en(`${fmt(st.with1)}곳`, fmt(st.with1))],
+            [en('1등 · 2등이 나온 판매점', 'Retailers with a 1st or 2nd prize'), en(`${fmt(st.shops.length)}곳`, fmt(st.shops.length))],
+        ].concat(best ? [[en('1등이 가장 많이 나온 곳', 'Most 1st prizes'), `${shopName(best)} · ${en(`${best.n1}회`, `${best.n1}`)}`]] : []), 'tier-stat'),
+    ];
+    const t1 = st.top1.length ? [
+        h2En(`${ko} 1등 많이 나온 판매점${st.top1.length > TOP1 ? ` ${TOP1}곳` : ''}`, `${x.en}: retailers with the most 1st prizes`),
+        table([['순위', 'Rank'], ['판매점', 'Retailer'], ['시군구', 'City / district'], ['1등', '1st'], ['2등', '2nd'], ['전국 순위', 'National rank']],
+            st.top1.slice(0, TOP1).map((sh, i) => [rank(i + 1), shopName(sh), guName(sh.gu), `<strong>${sh.n1}</strong>`, fmt(sh.n2),
+                en(`${fmt(natRank.get(sh.id))}위`, `#${fmt(natRank.get(sh.id))}`)]), 'tier-stat store-top'),
+        pEn(`1등 횟수가 같으면 2등이 많은 곳을 위에 두었습니다. 전국 순위는 <a href="../${STORES_FILE}">1등 판매점 통계</a>와 같은 규칙입니다. 판매점 이름을 누르면 판매점 지도에서 그 판매점의 1 · 2등 회차를 볼 수 있습니다.`,
+            `Ties are broken by 2nd prizes. The national rank uses the same rule as <a href="../${STORES_FILE}">1st-prize retailer statistics</a>. Click a retailer to see its 1st- and 2nd-prize draws on the retailer map.`, 'note'),
+    ] : [];
+    const t2 = st.top2.length ? [
+        h2En(`${ko} 2등 많이 나온 판매점${st.top2.length > TOP2 ? ` ${TOP2}곳` : ''}`, `${x.en}: retailers with the most 2nd prizes`),
+        table([['순위', 'Rank'], ['판매점', 'Retailer'], ['시군구', 'City / district'], ['2등', '2nd'], ['1등', '1st']],
+            st.top2.slice(0, TOP2).map((sh, i) => [rank(i + 1), shopName(sh), guName(sh.gu), `<strong>${fmt(sh.n2)}</strong>`, fmt(sh.n1)]), 'tier-stat store-top'),
+        pEn(`2등(5개 + 보너스)은 1등보다 6배쯤 자주 나와, 판매점마다 쌓인 수가 더 많습니다.`,
+            `2nd prize (five numbers plus the bonus) comes about six times as often as 1st, so counts per retailer run higher.`, 'note'),
+    ] : [];
+    const guT = [
+        h2En(`${ko} 시군구별 1등 · 2등`, `${x.en} by city and district`),
+        table([['시군구', 'City / district'], ['1등', '1st'], ['1등 나온 판매점', 'Retailers with a 1st'], ['2등', '2nd']],
+            st.gu.map(g => [guName(g.gu) + areaLink(g.gu), `<strong>${fmt(g.w1)}</strong>`, en(`${fmt(g.shops1)}곳`, fmt(g.shops1)), fmt(g.w2)]), 'tier-stat'),
+        mapReady ? pEn(`'지도'를 누르면 그 시군구의 1 · 2등 판매점이 한 화면에 들어오게 판매점 지도가 열립니다.`,
+            `"map" opens the retailer map fitted to that city or district's 1st- and 2nd-prize retailers.`, 'note') : '',
+    ].filter(Boolean);
+    const rec = st.recent.length ? [
+        h2En(`${ko} 최근 1등 판매점`, `Latest 1st-prize retailers in ${x.en}`),
+        table([['회차', 'Draw'], ['판매점', 'Retailer'], ['시군구', 'City / district'], ['방식', 'Method']],
+            st.recent.map(o => { const sh = byId.get(o.id); return [`<a href="../round/${o.r}.html" data-i18n-en="Draw ${o.r}">${o.r}회</a> <span class="muted">${(byRound[o.r] || {}).date || ''}</span>`, shopName(sh), guName(sh.gu), how(o.how)]; }), 'tier-stat'),
+    ] : [];
+    const others = SIDO.filter(o => o.ko !== ko && SIDO_STATS(o.ko));
+    const nav = [
+        h2En('다른 시도의 1등 판매점', '1st-prize retailers in other areas'),
+        '<p class="sido-links">' + others.map(o => `<a href="${o.slug}.html" data-i18n-en="${esc(o.en)}">${esc(o.ko)}</a>`).join(' · ') + '</p>',
+        pEn(`함께 보기: <a href="../${STORES_FILE}">전국 1등 판매점 통계</a> · <a href="../${STORE_MAP_FILE}">로또 판매점 지도</a> · <a href="../draws.html">회차별 당첨번호</a>`,
+            `See also: <a href="../${STORES_FILE}">nationwide 1st-prize retailer statistics</a> · <a href="../${STORE_MAP_FILE}">lotto retailer map</a> · <a href="../draws.html">all winning numbers</a>`),
+    ];
+    const title = `${ko} 로또 1등 판매점 · 1등 많이 나온 곳 순위 (${first}~${last}회)`;
+    const desc = `${x.full} 로또 1등 판매점 ${first}~${last}회 기록. 1등 ${fmt(st.v.w1)}게임 · 2등 ${fmt(st.v.w2)}게임, 1등이 나온 판매점 ${fmt(st.with1)}곳.`
+        + (best ? ` 가장 많이 나온 곳은 ${best.name}(${best.gu}) ${best.n1}회.` : '') + ` 시군구별 기록과 최근 1등 판매점.`;
+    return shell({
+        file: sidoFile(ko),
+        base: '../',
+        ogImage: `${SITE}/img/share/sido-${x.slug}.jpg`,
+        crumbs: [['index.html#sec-stats', '로또 통계', null, 'Lotto statistics'], [STORES_FILE, '1등 판매점', null, '1st-prize retailers'], [null, ko, null, x.en]],
+        title,
+        h1: `${ko} 로또 1등 판매점`, h1En: `Lotto 1st-Prize Retailers in ${x.en}`,
+        desc,
+        scope: en(`${first}~${last}회 기준 · 매주 추첨 후 자동 갱신 (마지막 갱신 ${UPDATED}) · 출처: 동행복권 당첨 판매점 조회`, `Draws ${first}–${last} · updated automatically after each draw (last update ${UPDATED}) · source: Dong-haeng Lottery winning-retailer search`),
+        lead: en(`${x.full}에서 1등 · 2등이 나온 판매점 기록입니다. ${first}회부터 ${ko}에서 1등은 <strong>${fmt(st.v.w1)}게임</strong>, 2등은 ${fmt(st.v.w2)}게임 나왔고, 1등이 나온 판매점은 ${fmt(st.with1)}곳입니다.`,
+            `Retailers in ${x.en} that sold 1st- and 2nd-prize tickets. Since draw ${first}, ${x.en} has had <strong>${fmt(st.v.w1)}</strong> 1st-prize and ${fmt(st.v.w2)} 2nd-prize games, from ${fmt(st.with1)} retailers with a 1st prize.`),
+        ld: [{
+            '@type': 'Dataset',
+            name: title,
+            description: desc,
+            url: `${SITE}/${sidoFile(ko)}`,
+            isAccessibleForFree: true,
+            dateModified: UPDATED,
+            spatialCoverage: x.full,
+            creator: { '@type': 'Organization', name: 'lottodraw.kr', url: SITE + '/' },
+            keywords: [`${ko} 로또 1등 판매점`, `${x.full} 로또 판매점`, `${ko} 로또 판매점 순위`],
+        }],
+        body: [].concat(best && onMap(best) ? [`<p><a class="btn" href="../${STORE_MAP_FILE}?shop=${best.id}" data-i18n-en="See on the map">판매점 지도에서 보기</a></p>`] : [],
+            glance, t1, t2, guT, rec, nav),
     });
 }
 
@@ -3410,6 +3545,7 @@ function updateSitemap(blog) {
         STATS.map(p => entry('/' + p.file, UPDATED, 'weekly', '0.8')),
         TIER ? [entry('/' + TIER_FILE, UPDATED, 'weekly', '0.8')] : [],
         STORES ? [entry('/' + STORES_FILE, UPDATED, 'weekly', '0.8')] : [],
+        STORES ? SIDO.filter(x => SIDO_STATS(x.ko)).map(x => entry('/' + sidoFile(x.ko), UPDATED, 'weekly', '0.7')) : [],
         STORE_MAP_READY() ? [entry('/' + STORE_MAP_FILE, UPDATED, 'weekly', '0.8'), entry('/' + LOTTOHEX_FILE, (lottohexSnap() || {}).at || UPDATED, 'weekly', '0.7')] : [],
         [entry('/' + REPEAT_FILE, [UPDATED, REPEAT_SINCE].sort().pop(), 'weekly', '0.8')],
         [
@@ -3454,6 +3590,7 @@ if (write('draws.html', drawsPage())) changed++;
 if (write('probability.html', probabilityPage())) changed++;
 if (TIER && write(TIER_FILE, prizeTierPage())) changed++;
 if (STORES && write(STORES_FILE, storesPage())) changed++;
+if (STORES) SIDO.forEach(x => { const st = SIDO_STATS(x.ko); if (st && write(sidoFile(x.ko), sidoStoresPage(x, st))) changed++; });
 // 판매점 지도: 좌표가 있는 판매점이 충분할 때만(좌표를 받기 전의 자료면 만들지 않는다). 자료 파일을 먼저 써야 페이지의 지문(?v=)이 맞다
 const STORE_MAP = STORES ? storeMapData() : null;
 if (STORE_MAP_READY()) {
