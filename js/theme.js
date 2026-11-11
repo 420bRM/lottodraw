@@ -94,6 +94,15 @@
             a.textContent = tr('nav.map', '판매점 지도');
             a.dataset.i18n = 'nav.map';
             bannerEl.appendChild(a);
+            // 그 바로 아래 LottoHex(2026-11-11 사장님 — "여기 로또헥스 버튼도 놓자"). 무엇인지 보이게 작은 "땅따먹기 게임"(지도 모드 단추와 같은 꼴)
+            const h = document.createElement('a');
+            h.className = 'banner-hex';
+            h.href = base + 'lottohex.html';
+            h.innerHTML = '<span class="banner-hex-ico" aria-hidden="true"></span><span class="banner-hex-txt">LottoHex<small></small></span>';
+            const sub = h.querySelector('small');
+            sub.textContent = tr('nav.hexSub', '땅따먹기 게임');
+            sub.dataset.i18n = 'nav.hexSub';
+            bannerEl.appendChild(h);
         }
         // 메뉴 맨 오른쪽 "판매점 지도"(2026-10-27 사장님 — 생성기 제목 아래 단추를 옮김). 메뉴는 1,300쪽에 박혀 있어 여기서 붙인다
         const navUl = document.querySelector('nav.nav ul');
