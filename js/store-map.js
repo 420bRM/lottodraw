@@ -656,6 +656,8 @@
 
     const links = (name, place, lat, lng) => '<p class="sm-links"><a href="https://map.kakao.com/link/map/' + encodeURIComponent(name) + ',' + lat + ',' + lng + '" target="_blank" rel="noopener">' + T('카카오맵', 'Kakao Map') + '</a>' +
         '<a href="https://map.naver.com/p/search/' + encodeURIComponent(name + ' ' + place) + '" target="_blank" rel="noopener">' + T('네이버 지도', 'Naver Map') + '</a></p>';
+    // "다녀왔어요" 자리(visitUi 가 채운다). 카드의 이름 · 주소 바로 아래 — 채우기 전에도 자리를 잡아 두어 아래 내용이 밀리지 않게(css .sm-visit:empty)
+    const VISIT_BOX = '<div class="sm-visit" id="sm-visit"></div>';
     function showCard(html, lat, lng, fly) {
         card.dataset.i = '';
         markTop(null);
@@ -696,9 +698,10 @@
         if (fly) reveal('a', i);
         const [lat, lng, name, si, gu] = all.rows[i];
         const place = [all.sido[si] || '', gu].filter(Boolean).join(' ');
-        showCard('<h3>' + esc(name) + '</h3><p class="sm-place">' + esc(place) + '</p>' +
+        // "다녀왔어요"는 이름 · 주소 바로 아래(2026-11-11 사용자 의견 — 맨 아래에 있어 한참 못 찾았다)
+        showCard('<h3>' + esc(name) + '</h3><p class="sm-place">' + esc(place) + '</p>' + VISIT_BOX +
             '<p class="sm-why">' + T(data.first + '회부터 1등 · 2등 기록이 없는 판매점입니다.', 'No 1st or 2nd prize here since draw ' + data.first + '.') + '</p>' + links(name, place, lat, lng) + '<div class="sm-share-shop" id="sm-share-shop"><button type="button" class="sm-share-btn">🔗 ' + T('해당 판매점 공유하기', 'Share this retailer') + '</button></div>' +
-            '<div class="sm-visit" id="sm-visit"></div><div class="sm-cmt" id="sm-cmt"></div>', lat, lng, fly);
+            '<div class="sm-cmt" id="sm-cmt"></div>', lat, lng, fly);
         shareUi('a', i, { name, place, w1: 0, w2: 0, sido: all.sido[si] || '' });
         visitUi('a', i);
         commentsUi('a', i);
@@ -1554,7 +1557,8 @@
         if (on && !shown.terr) setMapMode('hex');
         applyLayers();
     }
-    // LottoHex 카드(PC)의 둘째 줄: 불러온 뒤에만 내 칸 · 순위(참여 전이면 참여자 수). 부제는 두지 않는다(2026-11-08 사장님)
+    // LottoHex 카드(PC)의 둘째 줄: 참여했으면 내 칸 · 순위, 아니면 "판매점 땅따먹기 · 참여 N명"(불러오기 전에는 글에 적어 둔 "판매점 땅따먹기 게임").
+    // 2026-11-11 사용자 의견 — LottoHex 가 땅따먹기 게임인지 몰라 안 누를 것 같다 → 무엇인지 늘 보이게(2026-11-08 "부제 없음"을 바꿈)
     function turfStatus() {
         const el = document.getElementById('sm-turf-stat');
         if (!el || !terr) return;   // 휴대폰 한 줄(.sm-hexbar-txt)도 같은 글
@@ -1562,7 +1566,7 @@
         const n = newsState === 'pending' && terrNews;
         const txt = (me && me.joined
             ? T('내 칸 ' + fmt(me.cells.length) + ' · ' + (me.rank ? me.rank + '위' : '순위 밖'), 'My cells ' + fmt(me.cells.length) + ' · ' + (me.rank ? '#' + me.rank : 'unranked'))
-            : T('참여 ' + fmt(terr.players || 0) + '명 · 칸을 차지해 보세요', fmt(terr.players || 0) + ' players · grab a cell')) +
+            : T('판매점 땅따먹기 · 참여 ' + fmt(terr.players || 0) + '명', 'Retailer turf game · ' + fmt(terr.players || 0) + ' players')) +
             (n ? (n.lost.length ? T(' · 칸 ' + n.lost.length + '개 잃음', ' · lost ' + n.lost.length) : '') + (n.won.length ? T(' · ' + n.won.length + '개 얻음', ' · gained ' + n.won.length) : '') : '');
         el.textContent = txt;
         const hb = root.querySelector('.sm-hexbar-txt');
@@ -2547,12 +2551,12 @@
         const place = [data.sido[si] || '', gu].filter(Boolean).join(' ');
         const how = [a ? T('자동 ', 'auto ') + a : '', m ? T('수동 ', 'manual ') + m : '', s ? T('반자동 ', 'semi-auto ') + s : ''].filter(Boolean).join(' · ');
         showCard('<h3>' + esc(name) + (closed ? ' <span class="sm-closed">' + T('폐점', 'closed') + '</span>' : '') + '</h3>' +
-            '<p class="sm-place">' + esc(place) + '</p>' +
+            '<p class="sm-place">' + esc(place) + '</p>' + VISIT_BOX +
             '<p class="sm-counts"><span><b>' + fmt(w1) + '</b>' + T('번 1등', ' × 1st') + (how ? ' <small>(' + esc(how) + ')</small>' : '') + '</span>' +
             '<span><b>' + fmt(w2) + '</b>' + T('번 2등', ' × 2nd') + '</span></p>' +
             '<div class="sm-rounds" id="sm-rounds"><p class="sm-small">' + T('당첨 회차 불러오는 중…', 'Loading draws…') + '</p></div>' +
             '<p class="sm-why">' + T('1등 · 2등이 많을수록 많이 팔린 곳일 가능성이 큽니다.', 'More 1st and 2nd prizes most likely means more tickets sold.') + '</p>' +   // 확률 문장은 카드에서 뺐다(2026-11-08 사장님 — 말이 많다). 공유 · LottoHex 규칙 · 안내에는 남는다
-            links(name, place, lat, lng) + '<div class="sm-share-shop" id="sm-share-shop"><button type="button" class="sm-share-btn">🔗 ' + T('해당 판매점 공유하기', 'Share this retailer') + '</button></div>' + '<div class="sm-visit" id="sm-visit"></div><div class="sm-cmt" id="sm-cmt"></div>', lat, lng, fly);
+            links(name, place, lat, lng) + '<div class="sm-share-shop" id="sm-share-shop"><button type="button" class="sm-share-btn">🔗 ' + T('해당 판매점 공유하기', 'Share this retailer') + '</button></div>' + '<div class="sm-cmt" id="sm-cmt"></div>', lat, lng, fly);
         card.dataset.i = String(i);
         shareUi('w', i, { name, place, w1, w2, sido: data.sido[si] || '' });
         visitUi('w', i);
