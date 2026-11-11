@@ -113,22 +113,34 @@ a { color: var(--link, #0066cc); }
 }
 .sticker:hover { background: var(--brand-dark); }
 .sticker b { font-weight: bold; }
-/* 휴대폰: 한 줄에 [회차 … 최근 5개월 통계], 다음 줄에 [로그인 · 랭킹 … 언어]. "최근 5개월 통계"와 언어 단추는 오른쪽 끝.
-   자리가 모자라면 겹치지 않고 다음 줄로 넘어간다(언어 단추는 오른쪽에 붙은 채로) */
+/* 휴대폰: 한 줄에 [회차], 다음 줄에 [로그인 · 랭킹 … 최근 5개월 통계 · 언어](2026-11-11 사장님 — "5개월 통계는 한글/영어 단추 옆에").
+   "최근 5개월 통계"와 언어 단추는 붙어서 오른쪽 끝. 자리가 모자라면 겹치지 않고 다음 줄로 넘어간다 */
 @media (max-width: 599px) {
-    .banner-right { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; width: 100%; }
-    .banner-right .latest-callout { flex: 1 1 auto; min-width: 0; }
-    .banner-right .sticker, .banner-right .lang-switch { margin-left: auto; }
-    .banner-right .acct-head { flex-wrap: wrap; max-width: 100%; }
+    .banner-right { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 8px; width: 100%; }
+    .banner-right .latest-callout { flex: 1 1 100%; min-width: 0; order: 0; }
+    .banner-right .acct-head { order: 1; flex: 1 1 auto; flex-wrap: wrap; max-width: 100%; }   /* 남는 폭을 차지해 5개월 통계 · 언어를 오른쪽 끝에 붙인다 */
+    .banner-right .sticker { order: 2; margin-left: auto; padding: 6px 10px; font-size: 13.5px; }
+    .banner-right .lang-switch { order: 3; }
+    .banner-right .lang-switch button { padding: 5px 8px; }
+    .banner-right .acct-btn, .banner-right .acct-rank { padding: 5px 8px; }
+}
+@media (max-width: 399px) {   /* 로그인 단추 · 5개월 통계 · 언어가 한 줄에 들어가게 조금씩 줄인다 */
+    .banner-right { gap: 8px 6px; }
+    .banner-right .sticker { padding: 6px 8px; font-size: 12.5px; }
+    .banner-right .acct-btn, .banner-right .acct-rank { padding: 5px 7px; font-size: 12px; }
+    .banner-right .lang-switch { font-size: 12px; }
+    .banner-right .lang-switch button { padding: 5px 7px; }
 }
 @media (max-width: 379px) {
+    .banner-right { gap: 8px 5px; }
     .banner-right .latest-callout { font-size: 14px; letter-spacing: -0.02em; }
-    .banner-right .sticker { padding: 6px 10px; font-size: 13px; }
-    .banner-right .acct-btn, .banner-right .acct-rank { padding: 5px 8px; font-size: 12px; }
+    .banner-right .sticker { padding: 6px 6px; }
+    .banner-right .acct-btn, .banner-right .acct-rank { padding: 5px 6px; }
+    .banner-right .lang-switch button { padding: 5px 6px; }
 }
 @media (max-width: 339px) {
     .banner-right .latest-callout { font-size: 12.5px; letter-spacing: -0.03em; }
-    .banner-right .sticker { padding: 6px 8px; font-size: 12px; }
+    .banner-right .sticker { padding: 6px 7px; font-size: 12px; }
 }
 
 /* ───── 내비게이션 ───── */
@@ -137,15 +149,16 @@ a { color: var(--link, #0066cc); }
 .nav li { margin: 4px 14px; }
 .nav a { display: block; padding: 4px 0; color: var(--fg, #000); font-weight: bold; text-decoration: none; }
 .nav a:hover, .nav a[aria-current="page"] { color: var(--brand); }
-/* 휴대폰: 메뉴 7개가 두 줄 안에 들어가게 (항목은 줄이지 않는다) */
+/* 휴대폰: 메뉴 7개를 4 + 3 으로 두 줄 다 꽉 차게(2026-11-11 사장님 — 5 + 2 로 둘째 줄이 가운데 둘만 남아 어색했다).
+   첫 줄 4칸 · 둘째 줄 3칸이 저마다 같은 폭(12칸 격자: 3칸씩 · 4칸씩). 항목은 줄이지 않는다. 판매점 지도(.nav-map, 8번째)는 휴대폰에서 감춘다 */
 @media (max-width: 599px) {
-    .nav ul { padding: 4px 4px; gap: 0 2px; }
-    .nav li { margin: 1px 6px; }
-    .nav a { padding: 5px 0; font-size: 14px; letter-spacing: -0.03em; white-space: nowrap; }
+    .nav ul { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 2px 4px; padding: 6px 8px; }
+    .nav li { grid-column: span 4; margin: 0; min-width: 0; }
+    .nav li:nth-child(-n+4) { grid-column: span 3; }
+    .nav a { padding: 6px 0; overflow: hidden; font-size: 14px; letter-spacing: -0.03em; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
 }
-@media (max-width: 359px) {
-    .nav li { margin: 1px 4px; }
-    .nav a { font-size: 13px; }
+@media (max-width: 389px) {
+    .nav a { font-size: 13px; letter-spacing: -0.04em; }
 }
 
 /* ───── 2단 레이아웃: 좌 생성기 / 우 통계 ───── */
