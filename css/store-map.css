@@ -64,7 +64,18 @@ body.sm-full #theme-btn { display: none !important; }
 .sm-pcnote { margin: 0; padding: 0 2px; color: var(--muted, #555); font-size: 8px; text-shadow: 0 0 3px var(--surface, #fff), 0 0 6px var(--surface, #fff); }
 
 /* ───── 왼쪽 아래: 1등 방식 체크 · 끌기 막대 ("시도별 · 안내" 위) ───── */
-.sm-bl { position: absolute; left: 6px; bottom: calc(36px + env(safe-area-inset-bottom)); z-index: 3; display: grid; gap: 4px; justify-items: start; pointer-events: none; }
+/* 휴대폰 왼쪽 아래 묶음(이색 판매점 · 1등 방식 + 시도별 · 안내 · 흐리게 막대). "시도별 · 안내"를 반자동 옆으로 옮겨(2026-11-11 사장님) 그 줄만큼 아래로 — 맨 아래 6px */
+.sm-bl { position: absolute; left: 6px; bottom: calc(6px + env(safe-area-inset-bottom)); z-index: 3; display: grid; gap: 4px; justify-items: start; pointer-events: none; }
+.sm-info-btn { display: none; }
+@media (max-width: 899px) {
+    .sm-info-btn { display: inline-flex; margin-left: 2px; color: var(--fg, #333); font-weight: bold; }
+    .sm-info:not([open]) summary { display: none; }   /* 닫혀 있을 땐 단추가 대신. 열면 맨 위 줄(누르면 닫힘)로 보인다 */
+    /* 칩 한 줄(TOP 50 · 1등 · 2등 · 일반 · 폐점 · 내 기록 — 같은 날 사장님). 모자라는 좁은 화면은 줄을 바꾸지 않고 옆으로 밀어 본다 */
+    .sm-chips:not(.sm-modes) { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; pointer-events: auto; margin: -3px -6px -6px; padding: 3px 6px 6px; }   /* 넘침 상자가 칩 그림자를 자르지 않게 둘레를 넓혀 둔다 */
+    .sm-chips:not(.sm-modes)::-webkit-scrollbar { display: none; }
+    .sm-chips:not(.sm-modes) { gap: 2px; }
+    .sm-chips:not(.sm-modes) > .sm-chip { flex: none; padding-right: 5px; padding-left: 5px; letter-spacing: -.02em; }
+}
 .sm-bl > * { pointer-events: auto; }
 .sm-modes { align-items: center; }
 .sm-modes-label { padding: 0 2px; color: var(--muted, #555); font-size: 10.5px; font-weight: bold; text-shadow: 0 0 3px var(--surface, #fff), 0 0 6px var(--surface, #fff); }
