@@ -3129,12 +3129,11 @@
             // store-map-top50.html(공유용 주소): TOP 50 별로 연다
             if (root.dataset.top) { const c = root.querySelector('.sm-chip-top'); if (c && !shown.top) c.click(); } renderTop(); initVisits(); initMine(); initTerr(); initFun(); initGeo();
             // PC: 이태원로 · 서빙고로 같은 길 이름이 보이는 크기(2026-10-26 사장님) — 용산 둘레.
-            // 휴대폰: 남한 전체가 한 화면에 + "적게 나온 곳 흐리게"를 "1등 10회 이상"으로(2026-10-27 사장님 — 많이 나온 곳만 한눈에)
+            // 휴대폰: 서울(2026-11-11 사장님 — 예전엔 남한 전체였다. 캡처대로 여의도가 왼쪽 끝 · 한강이 가운데 아래, 축척 2km, 화면 폭 412px 기준
+            // 가운데 126.985 · 37.534, 줌 10.8). 폭이 다르면 같은 넓이가 보이게 줌만 폭에 맞춘다. "적게 나온 곳 흐리게"는 0(모두 — 같은 날 사장님, 예전엔 1등 10회 이상)
             if (byArea) { /* 지역 공유 링크는 그 지역 화면 그대로, 흐리게 막대도 0 */ }
             else if (!fromLink && isWide()) map.jumpTo({ center: [126.985, 37.538], zoom: 12.9, padding: pad() });
-            // 휴대폰: 사장님 캡처(10-30, 화면 폭 462px)대로 — 가운데 127.82 · 36.87, 줌 5.96(남한이 화면 가운데쯤, 위는 도구 줄 · 북녘 일부). 폭이 다르면 줌만 폭에 맞춘다
-            else if (!fromLink) map.jumpTo({ center: [127.82, 36.87], zoom: 5.96 + Math.log2(Math.max(300, mapBox.clientWidth) / 462) });
-            if (!isWide() && !byArea && !shopQ && !fromLink) { const f = document.getElementById('sm-fade'); f.value = 57; setFade(57); }   // 링크로 온 화면(#map= · ?shop= · ?area=)은 흐리게 없이   // 57 → 1등 10회 이상(setFade 의 셈)
+            else if (!fromLink) map.jumpTo({ center: [126.985, 37.534], zoom: 10.8 + Math.log2(Math.max(300, mapBox.clientWidth) / 412) });
             if (fromLink && map.getPitch() > 5) { const d3 = document.getElementById('sm-3d'); d3.setAttribute('aria-pressed', 'true'); d3.textContent = '2D'; }   // 기울어진 화면 링크
         });
         // 지도 출처(ⓘ)는 접힌 채로 시작(2026-10-27 사장님 — 휴대폰에서 펼쳐진 채 도착했다). MapLibre 는 좁은 화면에서 처음에 펼쳐 두고

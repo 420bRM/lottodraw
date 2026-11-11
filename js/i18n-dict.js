@@ -441,6 +441,7 @@ window.I18N_DICT = {
     'gen.sub':       { en: 'Filters out combinations that match 16 unusual patterns' },
     'mapLink.ln':    { ko: 'TOP 50 판매점 · 1등이 가장 많이 나온 50곳', en: 'Top 50 · the 50 retailers with the most 1st prizes' },
     'nav.map':       { ko: '판매점 지도', en: 'Retailer map' },   // 메뉴 맨 오른쪽(js/theme.js 가 붙인다, 2026-10-27)
+    'nav.hexSub':    { ko: '땅따먹기 게임', en: 'turf game' },   // 휴대폰 머리글 LottoHex 단추의 작은 줄(js/theme.js, 2026-11-11)
     'gen.thisPick':  { en: 'This pick' },
     'gen.resultIdle': { en: 'Press the button and the numbers appear above.' },
     'gen.go':        { en: 'Generate' },
