@@ -61,6 +61,7 @@ export default {
     async scheduled(event, env, ctx) {
         ctx.waitUntil(watchdog(env));
         ctx.waitUntil(resultMail(env, Date.now()).catch(err => console.error('result mail', err)));
+        ctx.waitUntil(hexMail(env, Date.now()).catch(err => console.error('hex mail', err)));   // LottoHex 칸 알림 메일(하루 한 번 저녁)
         if (loginReady(env)) ctx.waitUntil(community(env, 'autoNicks', { now: Date.now() }).catch(err => console.error('auto nick', err)));
         // 영역: 분기가 끝나면 그때의 Map 랭킹을 확정해 남긴다(이미 했으면 그냥 지나간다, territory.js)
         if (loginReady(env)) ctx.waitUntil(community(env, 'geoHousekeep', { now: Date.now(), gps: gpsOn(env) }).catch(err => console.error('geo housekeep', err)));   // 위치 인증: 켜는 날 한 번 손 표시 지우기 · 확인자료 6개월 지난 것 지우기
@@ -132,6 +133,7 @@ async function route(request, env, ctx) {
     if (path === '/api/me/numbers' && method === 'POST') return addNumbers(request, env);
     if (path === '/api/me/numbers/delete' && method === 'POST') return deleteNumbers(request, env);
     if (path === '/api/me/mail' && method === 'POST') return setMail(request, env);
+    if (path === '/api/me/hex-mail' && method === 'POST') return setHexMail(request, env);
     if (path === '/api/mail/unsubscribe' && (method === 'GET' || method === 'POST')) return unsubscribe(request, env, url);
     if (path === '/api/reactions' && method === 'GET') return getReactions(request, env, url);
     if (path === '/api/ranking' && method === 'GET') return getRanking(request, env);
@@ -1099,11 +1101,94 @@ async function setMail(request, env) {
     return json(request, env, { mail: r.mail });
 }
 
+// LottoHex 칸 알림 메일 켜기 · 끄기(2026-11-12 — 처음부터 켜짐). 마이페이지 · LottoHex 창의 스위치
+async function setHexMail(request, env) {
+    const s = await sessionUser(request, env);
+    await limited(env.REACT_LIMIT, s.hash);
+    const body = await readJson(request);
+    if (typeof body.on !== 'boolean') throw new HttpError(400, 'bad_mail', '켜기 · 끄기를 골라 주세요.');
+    const r = await community(env, 'setHexMail', { sub: s.sub, on: body.on });
+    if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
+    return json(request, env, { hexMail: r.user.hexMail, user: r.user });
+}
+
+/* ───── LottoHex 칸 알림 메일(2026-11-12 사장님 — 내 칸을 빼앗기면 메일로, 하루 한 번 묶어서) ─────
+ * 한 시간 예약에서 부른다. 한국 시각 저녁 8시 ~ 10시 사이 하루 한 번(hxd), 그날 칸을 잃은 참여자 중 알림을 켠 사람에게만.
+ * 처음부터 켜져 있고(user.hxm === false 면 끔), 메일마다 "알림 끄기"(k=hex 서명 따로) · 마이페이지 · LottoHex 창 스위치로 끈다.
+ * 칸 위치 · 빼앗긴 시각은 넣지 않는다(빼앗은 사람이 언제 어디 있었는지 드러나지 않게). Resend 하루 한도는 결과 메일과 함께 센다(mday) */
+const HEX_MAIL = { fromHour: 20, toHour: 22, daily: 60, resendDay: 95 };
+const kstDate = now => new Date(now + 9 * 3600e3).toISOString().slice(0, 10);
+function hexFrom(env) {
+    const raw = String(env.WEEKLY_MAIL_FROM || env.MAIL_FROM || '');
+    const addr = (raw.match(/<([^>]+)>/) || [, raw])[1].trim();
+    return '로또드로우 LottoHex <' + addr + '>';
+}
+function hexMailText(env, it, unsubUrl) {
+    const site = siteUrl(env);
+    const by = it.by.length ? it.by.map(n => n + '님').join(', ') + (it.byMore ? ` 외 ${it.byMore}명` : '') : '';
+    return [
+        `${it.nick ? it.nick + '님, ' : ''}오늘 LottoHex 칸 ${it.lost}개를 빼앗겼습니다.`,
+        ...(by ? [`지금 그 칸 주인: ${by}`] : []),
+        `지금 내 칸 ${it.cells}개` + (it.rank ? ` · Map 랭킹 ${it.rank}위` : ''),
+        '',
+        '빼앗긴 칸의 판매점에 다시 다녀와 위치로 인증하면 되찾을 수 있습니다(같은 곳은 하루 한 번).',
+        `LottoHex 열기: ${site}/lottohex.html?utm_source=mail&utm_medium=email&utm_campaign=hex_lost`,
+        '',
+        '이 메일은 LottoHex 에 참여한 회원에게, 칸을 빼앗긴 날 저녁에 한 번 보냅니다.',
+        `알림 끄기: ${unsubUrl}`,
+        '마이페이지 · LottoHex 창에서도 끄고 켤 수 있습니다.',
+        '문의: contact@lottodraw.kr',
+    ].join('\n');
+}
+async function hexMail(env, now) {
+    if (!mailReady(env) || !loginReady(env)) return { skipped: 'off' };
+    const { hour } = kstParts(now);
+    if (hour < HEX_MAIL.fromHour || hour >= HEX_MAIL.toHour) return { skipped: 'window' };
+    const day = kstDate(now), utc = utcDay(now);
+    const d = await community(env, 'hexDigest', { site: siteUrl(env), day });
+    if (d.done) return { skipped: 'done' };
+    const status = await community(env, 'mailStatus', { round: 0, day: utc });
+    const budget = Math.max(0, Math.min(HEX_MAIL.daily, HEX_MAIL.resendDay - status.today));
+    const items = d.items.slice(0, budget);
+    if (items.length) {
+        const api = String(env.API_ORIGIN || 'https://api.lottodraw.kr').replace(/\/+$/, '');
+        const from = hexFrom(env);
+        const emails = items.map(it => {
+            const unsubUrl = `${api}/api/mail/unsubscribe?r=${encodeURIComponent(it.ref)}&t=${encodeURIComponent(it.token)}&k=hex`;
+            return {
+                from, to: [it.email], reply_to: 'contact@lottodraw.kr',
+                subject: `LottoHex: 오늘 칸 ${it.lost}개를 빼앗겼습니다`,
+                text: hexMailText(env, it, unsubUrl),
+                headers: { 'List-Unsubscribe': `<${unsubUrl}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
+            };
+        });
+        let ok = false, why = '';
+        try {
+            const res = await fetch('https://api.resend.com/emails/batch', {
+                method: 'POST',
+                headers: { Authorization: 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json', 'Idempotency-Key': `hex-${day}` },
+                body: JSON.stringify(emails),
+            });
+            ok = res.ok;
+            if (!ok) why = `HTTP ${res.status}`;
+        } catch (e) { why = '메일 서버 연결 실패'; }
+        if (!ok) {   // 지난번 칸은 그대로 둔다 — 다음 시간(10시 전) 또는 다음 날 그날 것까지 함께
+            if (hour === HEX_MAIL.toHour - 1) await notify(env, `LottoHex 칸 알림 메일을 보내지 못했습니다 (${why}). 내일 저녁에 이틀 치를 함께 보냅니다.`);
+            return { failed: why };
+        }
+    }
+    await community(env, 'hexDigestCommit', { day, snap: d.snap, sent: items.length, now, utc });
+    if (items.length) await notify(env, `LottoHex 칸 알림 메일 ${items.length}통` + (d.items.length > items.length ? ` (하루 한도로 ${d.items.length - items.length}명은 못 보냄)` : ''));
+    return { sent: items.length, skippedByBudget: d.items.length - items.length };
+}
+
 // 메일의 수신 거부 링크. GET 은 확인 단추가 있는 쪽(메일 보안 검사기가 링크를 미리 열어도 꺼지지 않게),
 // POST(단추 · 메일 앱의 "구독 취소" — List-Unsubscribe-Post)는 바로 끈다
 async function unsubscribe(request, env, url) {
     const ref = String(url.searchParams.get('r') || '').slice(0, 64);
     const token = String(url.searchParams.get('t') || '').slice(0, 64);
+    const hex = url.searchParams.get('k') === 'hex';   // LottoHex 칸 알림 메일(2026-11-12)
+    const what = hex ? 'LottoHex 칸 알림 메일' : '추첨 결과 메일';
     const page = (title, msg, form) => new Response(`<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${title} | lottodraw.kr</title>
 <style>body{font:16px/1.6 system-ui,sans-serif;max-width:32rem;margin:3rem auto;padding:0 16px;color:#1f2a44;background:#fff}h1{font-size:1.3rem}button{font:inherit;padding:.6rem 1.2rem;border:0;border-radius:6px;background:#1f2a44;color:#fff;cursor:pointer}a{color:#2456c8}</style></head>
 <body><h1>${title}</h1><p>${msg}</p>${form || ''}<p><a href="${siteUrl(env)}/mypage.html">마이페이지</a>에서 언제든 다시 켤 수 있습니다.</p></body></html>`,
@@ -1112,12 +1197,12 @@ async function unsubscribe(request, env, url) {
         return page('링크를 확인해 주세요', '수신 거부 링크가 올바르지 않습니다. 마이페이지에서 메일을 끌 수 있습니다.');
     }
     if (request.method === 'GET') {
-        return page('추첨 결과 메일 수신 거부', '아래 단추를 누르면 이 메일을 더 보내지 않습니다.',
-            `<form method="post" action="?r=${encodeURIComponent(ref)}&amp;t=${encodeURIComponent(token)}"><button type="submit">수신 거부</button></form>`);
+        return page(what + ' 수신 거부', '아래 단추를 누르면 이 메일을 더 보내지 않습니다.',
+            `<form method="post" action="?r=${encodeURIComponent(ref)}&amp;t=${encodeURIComponent(token)}${hex ? '&amp;k=hex' : ''}"><button type="submit">수신 거부</button></form>`);
     }
-    const r = await community(env, 'mailUnsub', { ref, token });
+    const r = await community(env, 'mailUnsub', { ref, token, kind: hex ? 'hex' : null });
     if (r.error) return page('링크를 확인해 주세요', '수신 거부 링크가 올바르지 않습니다. 마이페이지에서 메일을 끌 수 있습니다.');
-    return page('수신 거부되었습니다', '추첨 결과 메일을 더 보내지 않습니다.');
+    return page('수신 거부되었습니다', what + '을 더 보내지 않습니다.' + (hex ? ' LottoHex 창에서도 다시 켤 수 있습니다.' : ''));
 }
 
 const weeklyDaily = env => { const n = Math.floor(Number(env.WEEKLY_MAIL_DAILY)); return n > 0 ? Math.min(n, 5000) : WEEKLY.daily; };
@@ -1834,6 +1919,7 @@ let cachedSigner = null;
 
 export function _resetForTests() { cachedSigner = null; _resetCellsForTests(); }
 export const _resultMailForTests = resultMail;
+export const _hexMailForTests = hexMail;
 
 async function signer(env, fresh) {
     if (cachedSigner) return cachedSigner;
