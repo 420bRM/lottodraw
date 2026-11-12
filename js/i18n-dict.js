@@ -1160,7 +1160,7 @@ window.I18N_DICT = {
     'acct.goRanking': { ko: '랭킹 보기 →', en: 'See ranking →' },
     'acct.score':     { ko: '내 점수 {n}점 · 랭킹 보기 →', en: 'My score: {n} · See ranking →' },
     'rank.h1':        { ko: '회원 랭킹', en: 'Member ranking' },
-    'rank.lead':      { ko: '출석하고, 카드에 반응을 남기고, 이용권을 쓰면 점수가 쌓입니다. <b>LottoHex 점수</b>(다녀온 곳 인증 · 분기 순위 보상 · 마일스톤)도 이 랭킹 점수에 함께 들어갑니다. 별명이 있는 회원만 순위에 오르며, 가입하고 3일 안에 별명을 정하지 않으면 자동으로 붙습니다.',
+    'rank.lead':      { ko: '출석하고, 카드에 반응을 남기고, 이용권을 쓰면 점수가 쌓입니다. <b>LottoHex 점수</b>(다녀온 곳 인증 · 분기 순위 보상 · 마일스톤)도 이 랭킹 점수에 함께 들어갑니다. 별명이 있는 회원만 순위에 오르며, 가입하고 3일 안에 별명을 정하지 않으면 자동으로 별명이 붙습니다.',
                         en: 'Check in, leave reactions on cards and use a pass to build up points. <b>LottoHex points</b> (verified visits, quarterly ranking rewards and milestones) are included in this score too. Only members with a nickname appear in the ranking; one is given automatically if you do not choose one within 3 days of signing up.' },
     'rank.col.rank':  { ko: '순위', en: 'Rank' },
     'rank.col.nick':  { ko: '별명', en: 'Nickname' },
