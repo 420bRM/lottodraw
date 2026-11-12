@@ -124,7 +124,7 @@
         if (loadingAll || !root.dataset.all) return;
         loadingAll = true;
         try { all = await (await fetch(root.dataset.all)).json(); } catch (e) { loadingAll = false; return; }
-        map.addSource('all', { type: 'geojson', data: { type: 'FeatureCollection', features: all.rows.map((r, i) => ({ type: 'Feature', id: i, geometry: { type: 'Point', coordinates: [r[1], r[0]] }, properties: { i, nm: r[2] } })) } });
+        map.addSource('all', { type: 'geojson', maxzoom: 12, data: { type: 'FeatureCollection', features: all.rows.map((r, i) => ({ type: 'Feature', id: i, geometry: { type: 'Point', coordinates: [r[1], r[0]] }, properties: { i, nm: r[2] } })) } });
         map.addLayer({
             id: 'st-all', type: 'circle', source: 'all',
             layout: { visibility: shown.all ? 'visible' : 'none' },
@@ -407,7 +407,7 @@
     }
 
     function addStores() {
-        map.addSource('stores', { type: 'geojson', data: geojson() });
+        map.addSource('stores', { type: 'geojson', data: geojson(), maxzoom: 12 });   // 점 자료는 줌 12 조각을 크게 키워 쓴다 — 줌인할 때마다 조각을 새로 자르지 않게(2026-11-12)
         const radius = ['interpolate', ['linear'], ['zoom'],
             5, ['+', 1.6, ['*', 0.45, ['sqrt', ['get', 'wt']]]],
             10, ['+', 3, ['*', 0.9, ['sqrt', ['get', 'wt']]]],
@@ -527,14 +527,16 @@
     }
 
     // 테두리 빛 밝기: 0.35 ~ 1 을 2.8초에 한 번 오간다. 1초에 15번만 바꾸고, 탭이 뒤에 있으면 쉰다(배터리)
-    function glowOpacity(a) { return ['*', netGlow(a), fadeF()]; }
+    // 숫자 하나로만 바꾼다(2026-11-12 — 사장님 "PC 에서 줌인하면 판매점 표시가 많이 느리다"): 전에는 판매점마다 다른 흐리기(fadeF)를 곱한 식이라
+    // MapLibre 가 바꿀 때마다 판매점 소스(stores) 전체를 다시 읽고 다시 그렸다(가만히 있어도 3초에 37번). 다 흐려진 곳은 filterFor 가 이미 거른다
+    function glowOpacity(a) { return netGlow(a); }
     // 0등은 1등이 늘 끌기 막대 끝보다 많아 흐려질 일이 없다 — 상수로 둬야 매 프레임 바꿔도 소스를 다시 읽지 않는다
     function netGlow(a) { return Math.min(1, a * (isNight() ? 1.15 : 1)); }
     function glowLoop() {
         let last = 0;
         const tick = now => {
             requestAnimationFrame(tick);
-            if (document.hidden || now - last < 66 || !map.getLayer('st-top-glow')) return;
+            if (document.hidden || now - last < 66 || !map.getLayer('st-top-glow') || map.getLayoutProperty('st-top-glow', 'visibility') === 'none') return;   // TOP 50 별이 안 보일 땐 쉰다
             last = now;
             const v = 0.675 + 0.325 * Math.sin(now / 2800 * 2 * Math.PI);
             map.setPaintProperty('st-top-glow', 'icon-opacity', glowOpacity(v));
