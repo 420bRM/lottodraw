@@ -20,6 +20,7 @@
 //                        vday:  { day, n } — 오늘(한국 날짜) 다녀온 때를 새로 적은 횟수(territory.js VISIT_DAILY 까지)
 //                        vp:    { n, day, ids } — 위치로 인증해 받은 포인트 횟수 · 그날 받은 판매점(같은 곳 하루 한 번, POINTS.visitDaily 까지, 2026-11-09)
 //                        trw:   { pts, s: { 분기: 점수 } } — LottoHex 분기 확정 순위 보상(POINTS.terrRank)
+//                        thp:   { pts, day, n } — LottoHex 점령 점수(2026-11-12, POINTS.terrHold): 받은 합 · 마지막으로 받은 한국 날짜 · 그날 센 칸 수
 //                        ach:   { v, c, s, t } — 마일스톤마다 이른 단계 수(titles.js MILESTONES, 2026-11-09). 포인트는 이 값으로 셈한다. 위치 동의를 철회해도 남긴다
 //                        ttl:   { e: { 칭호 번호: 얻은 시각 }, sel: 단 칭호 } — 칭호(titles.js). 단 칭호는 별명 앞에 모두에게 보인다. 위치 동의를 철회하면 지운다
 //                        terr:  { at, v } — 영역(육각 칸) 참여 동의: 동의한 때와 동의 문구 판(territory.js TERR_CONSENT). 그만두면 지운다
@@ -64,6 +65,7 @@
 //   hs:<구글 계정 번호>  { cells: [칸], at } — LottoHex 칸 알림 메일(2026-11-12): 지난번 하루 묶음 때 이 참여자가 가졌던 칸. 다음 묶음 때 지금 칸과 견줘 잃은 칸을 센다.
 //                        그만두거나 탈퇴하면 지운다. 백업에서는 뺀다(옛 기록을 되살리면 잃지 않은 칸을 잃었다고 보낸다)
 //   hxd                  { day, at, sent } — 칸 알림 메일을 보낸 마지막 날(한국 날짜). 하루 한 번만
+//   thd                  { day, at, paid, pts } — 점령 점수를 준 마지막 날(한국 날짜, terrHoldPay). 하루 한 번만
 //   meta                 { users, trials, subs }
 //
 // 이름·사진은 받지 않는다. 이메일은 "로그인한 계정" 표시, 문의 응대, 회원이 켠 "추첨 결과 메일"에만 쓴다.
@@ -83,7 +85,7 @@ const gameKey = n => n.join(',');
 export const REACT_TYPES = ['h', 'd', 'w'];   // ♥ 좋아요, $ 대박 기원, ₩ 원화
 
 // 랭킹 점수. 바꾸려면 여기만 고친다(이용약관 7조 문구도 같이).
-export const POINTS = { attend: 10, react: 2, buyPer100: 10, nickChange: 500, dayPass: 300, visitColor: 30, terrSkin: 30, terrBeam: 300, visit: 10, visitDaily: 50, terrRank: [1000, 500, 300, 100, 100, 100, 100, 100, 100, 100] };   // buyPer100: 이용권 100원마다 몇 점, nickChange: 별명 바꾸기에 쓰는 포인트, dayPass: 1일 이용권을 여는 포인트, visitColor: 다녀온 곳 색 하나를 여는 포인트, terrSkin: 영역 칸 모양 바꾸기 한 번, terrBeam: 영역 빛 벽 사기(한 번 사면 계속 — 켜고 끄기는 무료)
+export const POINTS = { attend: 10, react: 2, buyPer100: 10, nickChange: 500, dayPass: 300, visitColor: 30, terrSkin: 30, terrBeam: 300, visit: 10, visitDaily: 50, terrRank: [1000, 500, 300, 100, 100, 100, 100, 100, 100, 100], terrHold: 0.1 };   // buyPer100: 이용권 100원마다 몇 점, nickChange: 별명 바꾸기에 쓰는 포인트, dayPass: 1일 이용권을 여는 포인트, visitColor: 다녀온 곳 색 하나를 여는 포인트, terrSkin: 영역 칸 모양 바꾸기 한 번, terrBeam: 영역 빛 벽 사기(한 번 사면 계속 — 켜고 끄기는 무료), terrHold: LottoHex 점령 점수 — 지금 차지한 칸 하나에 하루 몇 점(terrHoldPay)
 // 채팅 점수 — 공지하지 않는 규칙이라 POINTS(회원에게 내려 보내는 값)와 따로 둔다.
 // per: 메시지 하나에 몇 점, daily: 하루에 점수를 받는 메시지 수 상한(50개 = 5점)
 export const CHAT_POINTS = { per: 0.1, daily: 50 };
@@ -117,9 +119,10 @@ export function score(user) {
     const verified = (user.vp && user.vp.n) || 0;          // 위치로 인증한 다녀온 곳(2026-11-09) — 한 번에 POINTS.visit
     const hex = (user.trw && user.trw.pts) || 0;            // LottoHex 분기 확정 순위 보상(POINTS.terrRank) 합계
     const ms = milestonePoints(user.ach);                     // 마일스톤 단계 보상(titles.js, 2026-11-09)
-    const total = tenth(days * POINTS.attend + reacts * POINTS.react + buy + chats * CHAT_POINTS.per + comments * COMMENT_POINTS.per + verified * POINTS.visit + hex + ms);
+    const hold = (user.thp && user.thp.pts) || 0;             // LottoHex 점령 점수(2026-11-12) — 차지한 칸 하나에 하루 POINTS.terrHold(terrHoldPay)
+    const total = tenth(days * POINTS.attend + reacts * POINTS.react + buy + chats * CHAT_POINTS.per + comments * COMMENT_POINTS.per + verified * POINTS.visit + hex + ms + hold);
     const spent = user.spent || 0;
-    return { total, days, reacts, buy, chats, comments, verified, hex, ms, spent, avail: tenth(total - spent) };
+    return { total, days, reacts, buy, chats, comments, verified, hex, ms, hold, spent, avail: tenth(total - spent) };
 }
 
 // 다녀온 곳 인증 포인트(2026-11-09 사장님): 위치로 인증한 방문 한 번에 POINTS.visit, 같은 판매점은 하루 한 번, 하루 POINTS.visitDaily 까지.
@@ -132,6 +135,10 @@ function visitPoint(user, id, day) {
     p.n += 1;
     return POINTS.visit;
 }
+
+// 점령 점수 한 칸 몫(terrHoldPay). 지금은 모든 칸이 같다(POINTS.terrHold).
+// 나중에(참여가 늘면 — 사장님 2026-11-12 "경쟁이 심한 땅일수록 차등") c.k(그 칸에 다녀온 참여자 수) · c.next(2등과의 차이)로 칸마다 다르게 주려면 여기만 고친다
+export const holdPts = c => POINTS.terrHold;
 
 // 회원에게 보이는 점수: 채팅·댓글 점수는 공지하지 않는 규칙이라 항목(chats·comments)을 빼고 합계에만 넣는다. 관리자 명부는 score() 그대로.
 const pubScore = user => hideSecret(score(user));
@@ -759,6 +766,34 @@ const OPS = {
         rec.paid = true;
         await this.storage.put('ts:' + prev.id, rec);
         return { done: true, id: prev.id, ranked: rec.rank.length, paid };
+    },
+
+    // 점령 점수(2026-11-12 사장님 — "육각형 한 칸에 하루 0.1점"): 한 시간 예약이 한국 날짜가 바뀐 뒤 처음 돌 때(0시 17분쯤) 한 번,
+    // 그때 차지하고 있는 칸 하나에 holdPts 점을 칸 주인에게 준다. 운영자 · 탈퇴한 회원은 건너뛴다.
+    // user.thp = { pts: 지금까지 받은 합, day: 마지막으로 받은 한국 날짜, n: 그날 센 칸 수 } — day 로 같은 날 두 번 주지 않는다(중간에 끊겨 다시 돌아도).
+    // 다 주면 thd = { day, at, paid: 받은 회원 수, pts: 준 점수 합 }
+    async terrHoldPay({ now, site }) {
+        const day = kstDay(now);
+        const mark = await this.storage.get('thd');
+        if (mark && mark.day === day) return { done: false, day };
+        const t = await this.terrNow(site);
+        const by = new Map();   // 계정 → [칸 수, 점수]
+        for (const c of Object.values(t.cells)) {
+            const x = by.get(c.sub) || [0, 0];
+            x[0] += 1; x[1] += holdPts(c);
+            by.set(c.sub, x);
+        }
+        let paid = 0, pts = 0;
+        for (const [sub, [n, p]] of by) {
+            const user = await this.storage.get('u:' + sub);
+            if (!user || user.staff || (user.thp && user.thp.day === day)) continue;
+            const add = tenth(p);
+            user.thp = { pts: tenth(((user.thp && user.thp.pts) || 0) + add), day, n };
+            await this.saveUser(user);
+            paid++; pts += add;
+        }
+        await this.storage.put('thd', { day, at: now, paid, pts: tenth(pts) });
+        return { done: true, day, paid, pts: tenth(pts) };
     },
 
     // 다녀온 곳 색 하나를 포인트로 연다(2026-10-26). 한 번 연 색은 계속 쓴다(user.vcolors). 이미 열었으면 포인트를 쓰지 않는다

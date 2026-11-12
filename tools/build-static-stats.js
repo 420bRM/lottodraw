@@ -2985,6 +2985,7 @@ function lottohexAboutHtml(md, snap) {
             <h2 data-i18n-en="Points">포인트</h2>
             <ul>
                 ${li(`위치로 인증한 다녀온 곳: 한 번에 ${LH_POINTS.visit}포인트(같은 판매점은 하루 한 번, 하루 ${LH_POINTS.daily}포인트까지)`, `Visits verified by location: ${LH_POINTS.visit} points each (once a day per retailer, up to ${LH_POINTS.daily} a day)`)}
+                ${li('점령 점수: 지금 차지한 칸 하나에 하루 0.1포인트(매일 0시 무렵 그때 차지한 칸으로 셉니다, 운영자 제외)', 'Cell points: 0.1 points a day for each cell you hold (counted just after midnight each day from the cells held then; operators excluded)')}
                 ${li(`분기 확정 순위: 1위 ${fmt(p1)} · 2위 ${p2} · 3위 ${p3} · 4~10위 ${p4}포인트(운영자 제외)`, `Quarterly final ranking: 1st ${fmt(p1)} · 2nd ${p2} · 3rd ${p3} · 4th–10th ${p4} points (operators excluded)`)}
                 ${li('마일스톤: 다녀온 판매점 · 다녀온 칸 · 다녀온 시·도 · 최대 영토가 단계에 이를 때마다 10~500포인트(단계마다 한 번)', 'Milestones: 10–500 points each time retailers visited, cells visited, provinces visited or most cells held reaches a new step (once per step)')}
                 ${li('포인트로 칸 모양을 바꾸거나(30), 영역 빛 벽을 사거나(300 — 3D 에서 내 영토 테두리가 빛나고 모두에게 보입니다), 1일 이용권을 열 수 있습니다(300). 현금으로 바꿀 수 없습니다.', 'Spend points on a new cell skin (30), the territory light wall (300 — your territory edge glows in 3D for everyone) or a 1-day pass (300). Points cannot be exchanged for cash.')}

@@ -34,6 +34,7 @@ Whoever has visited the most retailers in a cell holds it. On a tie, whoever vis
 ## Points and the quarterly ranking
 
 - Visits verified by location: 10 points each. Once a day per retailer, up to 50 points a day.
+- Cell points: 0.1 points a day for each cell you hold, counted just after midnight each day from the cells held then (operators excluded).
 - Cells are never cleared. At the start of each quarter (1 January, April, July and October) the Map ranking at that moment is finalised and kept.
 - Quarterly rewards: 1st 1,000 · 2nd 500 · 3rd 300 · 4th–10th 100 points (operators excluded).
 - Spend points on a new cell skin (30) or a 1-day pass (300). Points cannot be exchanged for cash.

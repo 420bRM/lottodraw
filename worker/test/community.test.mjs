@@ -592,7 +592,7 @@ test('랭킹: 출석(하루 한 번)·반응·로그인한 채 산 이용권으�
     let r = (await call(env, 'GET', '/api/ranking')).data;
     assert.deepEqual(r.top, [{ rank: 1, nick: '첫째', points: 10 + 4 + buyPts, days: 1 }], '별명 없는 B 는 공개 목록에 없다');
     assert.equal(r.me, null);
-    assert.deepEqual(r.points, { attend: 10, react: 2, buyPer100: 10, nickChange: 500, dayPass: 300, visitColor: 30, terrSkin: 30, terrBeam: 300, visit: 10, visitDaily: 50, terrRank: [1000, 500, 300, 100, 100, 100, 100, 100, 100, 100] });
+    assert.deepEqual(r.points, { attend: 10, react: 2, buyPer100: 10, nickChange: 500, dayPass: 300, visitColor: 30, terrSkin: 30, terrBeam: 300, visit: 10, visitDaily: 50, terrRank: [1000, 500, 300, 100, 100, 100, 100, 100, 100, 100], terrHold: 0.1 });
 
     // 내 순위: 별명이 없어도 알려 준다
     r = (await call(env, 'GET', '/api/ranking', { headers: auth(b.session) })).data;
@@ -600,7 +600,7 @@ test('랭킹: 출석(하루 한 번)·반응·로그인한 채 산 이용권으�
     assert.equal(r.me.total, 10);
     assert.equal(r.me.nick, null);
     const meA = (await call(env, 'GET', '/api/me', { headers: auth(a.session) })).data.user.score;
-    assert.deepEqual(meA, { total: 10 + 4 + buyPts, days: 1, reacts: 2, buy: buyPts, verified: 0, hex: 0, ms: 0, spent: 0, avail: 10 + 4 + buyPts });
+    assert.deepEqual(meA, { total: 10 + 4 + buyPts, days: 1, reacts: 2, buy: buyPts, verified: 0, hex: 0, ms: 0, hold: 0, spent: 0, avail: 10 + 4 + buyPts });
 
     // 환불하면 구매 점수가 빠진다
     await call(env, 'POST', `/api/admin/orders/${ord.order.id}/refund`, { headers: asAdmin });

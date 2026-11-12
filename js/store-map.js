@@ -1085,6 +1085,8 @@
     // 같은 날 사장님 — "빛 벽은 포인트로 팔자, 남에게도 보이게": POINTS.terrBeam(300) 포인트로 사면(한 번 사면 계속) 켜고 끌 수 있고, 켜 두면 모두에게 보인다.
     // 서버가 칸 7번째에 1(빛 벽 켬)을 붙여 준다 — 주인마다(별명 · 칸 모양이 같은 칸끼리) 바깥 테두리에. LottoHex 창에서 사기 · 켜고 끄기
     const BEAM_COST = 300;   // worker POINTS.terrBeam 과 같게
+    const HOLD_PER = 0.1;    // 점령 점수: 차지한 칸 하나에 하루 몇 점 — worker POINTS.terrHold 과 같게(2026-11-12). 칸마다 차등을 두면(worker holdPts) 여기 셈도 바꿀 것
+    const holdDaily = n => Math.round(n * HOLD_PER * 10) / 10;
     const BEAM_N = 28, BEAM_T = 0.025, BEAM_PX = [[8, 200], [11, 170], [13, 130], [14.5, 95], [16, 65], [18, 40]];
     const beamPx = z => { for (let i = 1; i < BEAM_PX.length; i++) { const [z0, p0] = BEAM_PX[i - 1], [z1, p1] = BEAM_PX[i]; if (z <= z1) return p0 + (p1 - p0) * (z - z0) / (z1 - z0); } return BEAM_PX[BEAM_PX.length - 1][1]; };
     const beamIds = Array.from({ length: BEAM_N }, (_, i) => 'terr-beam-' + i);
@@ -1990,8 +1992,8 @@
         let status;
         if (!A || !A.session()) status = '<button type="button" class="sm-terr-join">' + T('로그인하고 참여하기', 'Sign in to join') + '</button>';
         else if (!(me && me.joined)) status = '<button type="button" class="sm-terr-join">' + T('참여하기', 'Join') + '</button> <span class="sm-small">' + T('동의한 뒤에만 셉니다', 'Counts only after you agree') + '</span>';
-        else status = '<p class="sm-terr-me">' + T('내 칸 <b>' + fmt(me.cells.length) + '</b>' + (me.rank ? ' · <b>' + me.rank + '</b>위' : '') + ' · 다녀온 곳 ' + fmt(me.stores) + '곳',
-            'My cells <b>' + fmt(me.cells.length) + '</b>' + (me.rank ? ' · rank <b>' + me.rank + '</b>' : '') + ' · ' + fmt(me.stores) + ' visited') + '</p>' +
+        else status = '<p class="sm-terr-me">' + T('내 칸 <b>' + fmt(me.cells.length) + '</b>' + (me.rank ? ' · <b>' + me.rank + '</b>위' : '') + ' · 다녀온 곳 ' + fmt(me.stores) + '곳' + (me.cells.length ? ' · 점령 하루 +' + holdDaily(me.cells.length) + '점' : ''),
+            'My cells <b>' + fmt(me.cells.length) + '</b>' + (me.rank ? ' · rank <b>' + me.rank + '</b>' : '') + ' · ' + fmt(me.stores) + ' visited' + (me.cells.length ? ' · +' + holdDaily(me.cells.length) + ' a day' : '')) + '</p>' +
             (me.lastRank ? '<p class="sm-terr-me">' + (MEDAL[me.lastRank - 1] || '🏅') + ' ' + T(seasonLabel(terr.last) + ' 확정 ' + me.lastRank + '위', seasonLabel(terr.last) + ' final: #' + me.lastRank) + '</p>' : '') +
             skinRow(me) +
             beamRow() +
@@ -2021,6 +2023,7 @@
             '<li>' + T('영역 빛 벽: ' + BEAM_COST + '포인트로 사면(한 번 사면 계속) 3D 에서 내 영토 바깥 테두리가 위로 빛나고 모두에게 보입니다. 켜고 끄기는 무료입니다.', 'Light wall: buy it for ' + BEAM_COST + ' points (yours to keep) and your territory edge glows upward in 3D for everyone. Switching it on or off is free.') + '</li>' +
             '<li>' + T('밤 지도에서 크게 보면 차지한 칸 테두리를 빛이 시계 방향으로 돌고, 칸 면에는 유리에 비친 듯한 45° 빛이 번쩍 지나갑니다.', 'On the night map, zoomed in, a light runs clockwise round held cells and a quick glassy 45° glint flashes across them.') + '</li>' +
             '<li>' + T('칸은 비우지 않습니다. 분기(1 · 4 · 7 · 10월 1일 0시)마다 그때의 Map 랭킹을 확정해 남깁니다.', 'Cells are never cleared. At the start of each quarter the Map ranking at that moment is finalised and kept.') + '</li>' +
+            '<li>' + T('점령 점수: 지금 차지한 칸 하나에 하루 0.1포인트(매일 0시 무렵 그때 차지한 칸으로 셉니다, 운영자 제외). 회원 랭킹 점수에도 들어갑니다.', 'Cell points: 0.1 points a day for each cell you hold (counted just after midnight each day from the cells held then; operators excluded). It also counts toward the member ranking.') + '</li>' +
             '<li>' + T('확정 순위 보상: 1위 1,000 · 2위 500 · 3위 300 · 4~10위 100포인트(운영자 제외).', 'Quarterly rewards: 1st 1,000 · 2nd 500 · 3rd 300 · 4th–10th 100 points (operators excluded).') + '</li>' +
             '<li>' + T('마일스톤 · 칭호: 다녀온 판매점 · 칸 · 시·도 · 영토가 단계에 이르면 포인트를, 방문 · 영토 · 칸 모양(왕지렁이 · 벌집 …) · 지역(마포구 전문가 …)으로 칭호를 얻습니다. 칭호는 "도감"에서 골라 별명 앞에 답니다.', 'Milestones and titles: reach steps in retailers, cells, provinces and territory for points, and earn titles for visits, territory, cell shapes (Giant Worm, Honeycomb …) and regions. Pick a title in "Collection" to show it before your nickname.') + '</li>' +
             '<li>' + (gpsCfg() ? T('다녀온 곳은 판매점 50m 안에서 위치로 인증한 곳만 셉니다. 폐점한 곳은 세지 않습니다.', 'Only retailers verified by location (within 50 m) count. Closed retailers do not count.')
