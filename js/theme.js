@@ -117,6 +117,15 @@
             li.firstChild.href = base + 'store-map.html';
             li.firstChild.textContent = tr('nav.map', '판매점 지도');
             li.firstChild.dataset.i18n = 'nav.map';   // 언어를 바꾸면 i18n.js 가 다시 쓴다
+            // 그 왼쪽에 LottoHex(2026-11-12 사장님 — PC 메뉴 줄 "판매점 지도" 옆). 휴대폰은 머리글 오른쪽 위 묶음(.banner-links)에 있어 여기 것은 감춘다
+            const hx = document.createElement('a');
+            hx.className = 'nav-hex';
+            hx.href = base + 'lottohex.html';
+            hx.innerHTML = '<span class="nav-hex-ico" aria-hidden="true"></span><b>LottoHex</b><small></small>';
+            const hs = hx.querySelector('small');
+            hs.textContent = tr('nav.hexSub', '땅따먹기 게임');
+            hs.dataset.i18n = 'nav.hexSub';
+            li.insertBefore(hx, li.firstChild);
             navUl.appendChild(li);
         }
     }

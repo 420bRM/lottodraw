@@ -293,7 +293,27 @@
             el('p', { className: 'my-muted', text: tr('my.mailNote', '당첨 여부는 복권 실물과 동행복권에서 한 번 더 확인해 주세요. 메일마다 수신 거부 링크가 있고, 여기서도 언제든 끌 수 있습니다. 광고는 넣지 않습니다.') }),
             // Gmail 은 처음 몇 통을 '프로모션' 탭에 넣기도 한다(2026-11-01 — 1247회). 한 번 옮기면 그다음부터 기본 탭
             el('p', { className: 'my-muted', text: tr('my.mailGmail', 'Gmail에서는 프로모션 탭에 들어갈 수 있습니다. 한 번 기본 탭으로 옮기면(끌어 놓거나 "기본으로 이동") 다음부터 기본 탭으로 옵니다.') }),
-        ]);
+        ].concat(hexMailPart(me && me.user)));
+    }
+    // LottoHex 칸 알림 메일(2026-11-12 사장님 — 처음부터 켜짐, 하루 한 번 묶음): 같은 메일 칸 아래에 켜기 · 끄기
+    function hexMailPart(user) {
+        if (!user) return [];
+        const on = user.hexMail !== false;
+        const toggle = btn(on ? tr('my.mailOff', '메일 끄기') : tr('my.mailOn', '메일 받기'), async () => {
+            toggle.disabled = true;
+            try {
+                await A().call('/api/me/hex-mail', { method: 'POST', body: { on: !on } });
+                await A().refresh().catch(() => null);
+            } catch (e) { window.alert(e.status && e.message ? e.message : tr('my.mailFail', '바꾸지 못했습니다. 잠시 뒤 다시 시도해 주세요.')); }
+            showMail();
+        });
+        if (!on) toggle.classList.remove('btn-secondary');
+        return [
+            el('h3', { className: 'my-sub', text: tr('my.hexMailH', 'LottoHex 칸 알림 메일') }),
+            el('p', { text: tr('my.hexMailLead', 'LottoHex에 참여하면, 내 칸을 빼앗긴 날 저녁에 한 번 몇 칸을 빼앗겼는지 메일로 알려 드립니다. 처음부터 켜져 있고, 메일의 "알림 끄기"로도 끌 수 있습니다.') }),
+            row(tr('my.mailState', '상태'), on ? tr('my.mailIsOn', '받는 중') : tr('my.mailIsOff', '받지 않음')),
+            el('div', { className: 'my-actions' }, [toggle]),
+        ];
     }
 
     /* ───── 답글 알림 · 내 댓글 (2026-10-27) ─────
@@ -398,6 +418,7 @@
             row(tr('my.buy', '이용권 점수'), tr('my.ptsN', '{n}점', { n: num(sc.buy) })),
             sc.verified ? row(tr('my.verified', '다녀온 곳 인증'), tr('my.verifiedN', '{n}번 · {p}점', { n: num(sc.verified), p: num(sc.verified * 10) })) : null,
             sc.hex ? row(tr('my.hex', 'LottoHex 보상'), tr('my.ptsN', '{n}점', { n: num(sc.hex) })) : null,
+            sc.hold ? row(tr('my.hold', 'LottoHex 점령'), tr('my.ptsN', '{n}점', { n: num(sc.hold) })) : null,   // 2026-11-12 — 차지한 칸 하나에 하루 0.1
             sc.ms ? row(tr('my.ms', '마일스톤'), tr('my.ptsN', '{n}점', { n: num(sc.ms) })) : null,   // 2026-11-09 — 단계마다 한 번
             sc.spent ? row(tr('my.spent', '쓴 포인트'), tr('my.ptsN', '{n}점', { n: num(sc.spent) })) : null,
             el('div', { className: 'my-actions' }, [el('a', { className: 'btn btn-secondary btn-mini', href: 'ranking.html', text: tr('my.goRanking', '랭킹 보기') })]),

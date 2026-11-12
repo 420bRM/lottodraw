@@ -20,12 +20,14 @@
 //                        vday:  { day, n } — 오늘(한국 날짜) 다녀온 때를 새로 적은 횟수(territory.js VISIT_DAILY 까지)
 //                        vp:    { n, day, ids } — 위치로 인증해 받은 포인트 횟수 · 그날 받은 판매점(같은 곳 하루 한 번, POINTS.visitDaily 까지, 2026-11-09)
 //                        trw:   { pts, s: { 분기: 점수 } } — LottoHex 분기 확정 순위 보상(POINTS.terrRank)
+//                        thp:   { pts, day, n } — LottoHex 점령 점수(2026-11-12, POINTS.terrHold): 받은 합 · 마지막으로 받은 한국 날짜 · 그날 센 칸 수
 //                        ach:   { v, c, s, t } — 마일스톤마다 이른 단계 수(titles.js MILESTONES, 2026-11-09). 포인트는 이 값으로 셈한다. 위치 동의를 철회해도 남긴다
 //                        ttl:   { e: { 칭호 번호: 얻은 시각 }, sel: 단 칭호 } — 칭호(titles.js). 단 칭호는 별명 앞에 모두에게 보인다. 위치 동의를 철회하면 지운다
 //                        terr:  { at, v } — 영역(육각 칸) 참여 동의: 동의한 때와 동의 문구 판(territory.js TERR_CONSENT). 그만두면 지운다
 //                        tskin: '주색,보조색,무늬' — 내 영역 칸 모양(2026-11-07, territory.js SKIN_RE). 없으면 계정마다 무작위. 모두에게 보인다. 바꾸면 POINTS.terrSkin
 //                        ad:    { s, m, c, at, h, v } — 가입 경로(2026-11-11): utm 링크로 들어온 뒤 30일 안에 같은 브라우저에서 가입했을 때 그 매체 · 종류 · 캠페인 이름과 가입 시각.
 //                               h: LottoHex 에 처음 참여한 때, v: 위치로 처음 인증한 때(광고 집계에 한 번씩만 세려고). 탈퇴하면 계정과 함께 지운다
+//                        hxm:   false — LottoHex 칸 알림 메일을 끔(2026-11-12. 없으면 켬 — 처음부터 켜 둔다)
 //                        tbeam: { at, on } — 영역 빛 벽(2026-11-10 사장님 — 포인트로, 남에게도 보이게). 산 때 · 켜 둠. 사는 데 POINTS.terrBeam, 켜고 끄기는 무료
 //                        rx:    { 항목: 'h' | 'd' | 'hd' } — 내가 누른 좋아요
 //                        sess:  로그인 세션 해시 (최근 5개)
@@ -60,6 +62,10 @@
 //                        영역에 참여한 회원만. 칸 주인 · Map 랭킹은 이 줄들로 센다. 그만두거나 탈퇴하면 지운다
 //   ts:<분기>            { id, from, to, at, rank: [{ sub, nick, cells, stores }], paid } — 분기마다 확정한 Map 랭킹(50명, 한 시간 예약 terrFinalize). paid: 10위까지 보상을 다 줬으면 true.
 //                        밖으로는 별명 · 칸 수 · 다녀온 곳 수만. 탈퇴하면 그 회원 줄의 계정 번호 · 별명을 지운다
+//   hs:<구글 계정 번호>  { cells: [칸], at } — LottoHex 칸 알림 메일(2026-11-12): 지난번 하루 묶음 때 이 참여자가 가졌던 칸. 다음 묶음 때 지금 칸과 견줘 잃은 칸을 센다.
+//                        그만두거나 탈퇴하면 지운다. 백업에서는 뺀다(옛 기록을 되살리면 잃지 않은 칸을 잃었다고 보낸다)
+//   hxd                  { day, at, sent } — 칸 알림 메일을 보낸 마지막 날(한국 날짜). 하루 한 번만
+//   thd                  { day, at, paid, pts } — 점령 점수를 준 마지막 날(한국 날짜, terrHoldPay). 하루 한 번만
 //   meta                 { users, trials, subs }
 //
 // 이름·사진은 받지 않는다. 이메일은 "로그인한 계정" 표시, 문의 응대, 회원이 켠 "추첨 결과 메일"에만 쓴다.
@@ -79,7 +85,7 @@ const gameKey = n => n.join(',');
 export const REACT_TYPES = ['h', 'd', 'w'];   // ♥ 좋아요, $ 대박 기원, ₩ 원화
 
 // 랭킹 점수. 바꾸려면 여기만 고친다(이용약관 7조 문구도 같이).
-export const POINTS = { attend: 10, react: 2, buyPer100: 10, nickChange: 500, dayPass: 300, visitColor: 30, terrSkin: 30, terrBeam: 300, visit: 10, visitDaily: 50, terrRank: [1000, 500, 300, 100, 100, 100, 100, 100, 100, 100] };   // buyPer100: 이용권 100원마다 몇 점, nickChange: 별명 바꾸기에 쓰는 포인트, dayPass: 1일 이용권을 여는 포인트, visitColor: 다녀온 곳 색 하나를 여는 포인트, terrSkin: 영역 칸 모양 바꾸기 한 번, terrBeam: 영역 빛 벽 사기(한 번 사면 계속 — 켜고 끄기는 무료)
+export const POINTS = { attend: 10, react: 2, buyPer100: 10, nickChange: 500, dayPass: 300, visitColor: 30, terrSkin: 30, terrBeam: 300, visit: 10, visitDaily: 50, terrRank: [1000, 500, 300, 100, 100, 100, 100, 100, 100, 100], terrHold: 0.1 };   // buyPer100: 이용권 100원마다 몇 점, nickChange: 별명 바꾸기에 쓰는 포인트, dayPass: 1일 이용권을 여는 포인트, visitColor: 다녀온 곳 색 하나를 여는 포인트, terrSkin: 영역 칸 모양 바꾸기 한 번, terrBeam: 영역 빛 벽 사기(한 번 사면 계속 — 켜고 끄기는 무료), terrHold: LottoHex 점령 점수 — 지금 차지한 칸 하나에 하루 몇 점(terrHoldPay)
 // 채팅 점수 — 공지하지 않는 규칙이라 POINTS(회원에게 내려 보내는 값)와 따로 둔다.
 // per: 메시지 하나에 몇 점, daily: 하루에 점수를 받는 메시지 수 상한(50개 = 5점)
 export const CHAT_POINTS = { per: 0.1, daily: 50 };
@@ -113,9 +119,10 @@ export function score(user) {
     const verified = (user.vp && user.vp.n) || 0;          // 위치로 인증한 다녀온 곳(2026-11-09) — 한 번에 POINTS.visit
     const hex = (user.trw && user.trw.pts) || 0;            // LottoHex 분기 확정 순위 보상(POINTS.terrRank) 합계
     const ms = milestonePoints(user.ach);                     // 마일스톤 단계 보상(titles.js, 2026-11-09)
-    const total = tenth(days * POINTS.attend + reacts * POINTS.react + buy + chats * CHAT_POINTS.per + comments * COMMENT_POINTS.per + verified * POINTS.visit + hex + ms);
+    const hold = (user.thp && user.thp.pts) || 0;             // LottoHex 점령 점수(2026-11-12) — 차지한 칸 하나에 하루 POINTS.terrHold(terrHoldPay)
+    const total = tenth(days * POINTS.attend + reacts * POINTS.react + buy + chats * CHAT_POINTS.per + comments * COMMENT_POINTS.per + verified * POINTS.visit + hex + ms + hold);
     const spent = user.spent || 0;
-    return { total, days, reacts, buy, chats, comments, verified, hex, ms, spent, avail: tenth(total - spent) };
+    return { total, days, reacts, buy, chats, comments, verified, hex, ms, hold, spent, avail: tenth(total - spent) };
 }
 
 // 다녀온 곳 인증 포인트(2026-11-09 사장님): 위치로 인증한 방문 한 번에 POINTS.visit, 같은 판매점은 하루 한 번, 하루 POINTS.visitDaily 까지.
@@ -128,6 +135,10 @@ function visitPoint(user, id, day) {
     p.n += 1;
     return POINTS.visit;
 }
+
+// 점령 점수 한 칸 몫(terrHoldPay). 지금은 모든 칸이 같다(POINTS.terrHold).
+// 나중에(참여가 늘면 — 사장님 2026-11-12 "경쟁이 심한 땅일수록 차등") c.k(그 칸에 다녀온 참여자 수) · c.next(2등과의 차이)로 칸마다 다르게 주려면 여기만 고친다
+export const holdPts = c => POINTS.terrHold;
 
 // 회원에게 보이는 점수: 채팅·댓글 점수는 공지하지 않는 규칙이라 항목(chats·comments)을 빼고 합계에만 넣는다. 관리자 명부는 score() 그대로.
 const pubScore = user => hideSecret(score(user));
@@ -199,7 +210,7 @@ const PAGE = 1000;
 // 로그인 세션(s:)은 뺀다 — 30일이면 사라지고, 되살린 뒤에는 다시 로그인하면 된다. 채팅은 다른 저장소(chat.js)라 처음부터 들어 있지 않다.
 // 메일 발송 기록(mr: · mw: · mday)도 뺀다 — 회원 자료가 아니고, 옛 기록을 되살리면 이미 보낸 결과 메일을 또 보낸다.
 // 되살릴 때 파일에 이런 줄이 있으면 건너뛴다.
-export const BACKUP_SKIP = /^(s:|mr:|mw:|mday$)/;
+export const BACKUP_SKIP = /^(s:|mr:|mw:|mday$|hs:|hxd$)/;
 const BACKUP_KEY_MAX = 512;
 
 function boardEntry(user) {
@@ -370,6 +381,12 @@ export class Community {
     }
 
     // prefix 로 시작하는 줄을 PAGE 개씩 끊어 읽는다(한 번에 다 올리지 않게)
+    // 여러 줄 읽기(Durable Object 는 한 번에 128 키까지)
+    async getMany(keys) {
+        const out = new Map();
+        for (let i = 0; i < keys.length; i += 128) (await this.storage.get(keys.slice(i, i + 128))).forEach((v, k) => out.set(k, v));
+        return out;
+    }
     async each(prefix, fn) {
         let after = null;
         for (;;) {
@@ -683,6 +700,7 @@ const OPS = {
         delete user.terr;
         await this.saveUser(user);
         await this.terrSet(sub, null);
+        await this.storage.delete('hs:' + sub);   // 칸 알림 메일의 지난번 칸
         return { ok: true, user: view(user) };
     },
 
@@ -748,6 +766,34 @@ const OPS = {
         rec.paid = true;
         await this.storage.put('ts:' + prev.id, rec);
         return { done: true, id: prev.id, ranked: rec.rank.length, paid };
+    },
+
+    // 점령 점수(2026-11-12 사장님 — "육각형 한 칸에 하루 0.1점"): 한 시간 예약이 한국 날짜가 바뀐 뒤 처음 돌 때(0시 17분쯤) 한 번,
+    // 그때 차지하고 있는 칸 하나에 holdPts 점을 칸 주인에게 준다. 운영자 · 탈퇴한 회원은 건너뛴다.
+    // user.thp = { pts: 지금까지 받은 합, day: 마지막으로 받은 한국 날짜, n: 그날 센 칸 수 } — day 로 같은 날 두 번 주지 않는다(중간에 끊겨 다시 돌아도).
+    // 다 주면 thd = { day, at, paid: 받은 회원 수, pts: 준 점수 합 }
+    async terrHoldPay({ now, site }) {
+        const day = kstDay(now);
+        const mark = await this.storage.get('thd');
+        if (mark && mark.day === day) return { done: false, day };
+        const t = await this.terrNow(site);
+        const by = new Map();   // 계정 → [칸 수, 점수]
+        for (const c of Object.values(t.cells)) {
+            const x = by.get(c.sub) || [0, 0];
+            x[0] += 1; x[1] += holdPts(c);
+            by.set(c.sub, x);
+        }
+        let paid = 0, pts = 0;
+        for (const [sub, [n, p]] of by) {
+            const user = await this.storage.get('u:' + sub);
+            if (!user || user.staff || (user.thp && user.thp.day === day)) continue;
+            const add = tenth(p);
+            user.thp = { pts: tenth(((user.thp && user.thp.pts) || 0) + add), day, n };
+            await this.saveUser(user);
+            paid++; pts += add;
+        }
+        await this.storage.put('thd', { day, at: now, paid, pts: tenth(pts) });
+        return { done: true, day, paid, pts: tenth(pts) };
     },
 
     // 다녀온 곳 색 하나를 포인트로 연다(2026-10-26). 한 번 연 색은 계속 쓴다(user.vcolors). 이미 열었으면 포인트를 쓰지 않는다
@@ -939,6 +985,7 @@ const OPS = {
         await this.storage.delete('k:' + sub);   // 내 번호
         await this.storage.delete('nt:' + sub);  // 답글 알림
         if (user.terr || (await this.terrRow(sub))) await this.terrSet(sub, null);   // 영역 참여자 색인
+        await this.storage.delete('hs:' + sub);   // 칸 알림 메일의 지난번 칸
         await this.each('ts:', async (rec, k) => {   // 분기 확정 순위: 그 회원 줄의 계정 번호 · 별명을 지운다(순위 자리는 남긴다)
             if (!rec.rank.some(r => r.sub === sub)) return;
             rec.rank = rec.rank.map(r => (r.sub === sub ? { nick: null, cells: r.cells, stores: r.stores } : r));
@@ -1323,7 +1370,15 @@ const NUM_OPS = {
     },
 
     // 수신 거부 링크(로그인 없이). 참조값 + 서명이 맞으면 끈다. 이미 꺼져 있어도 ok
-    async mailUnsub({ ref, token }) {
+    // kind 'hex': LottoHex 칸 알림 메일의 "알림 끄기"(서명이 따로 — 결과 메일 링크로는 칸 알림을 못 끄고, 그 반대도)
+    async mailUnsub({ ref, token, kind }) {
+        if (kind === 'hex') {
+            if (!ref || !token || token !== await this.unsubToken('hex:' + ref)) return { error: 'bad_token' };
+            const hsub = await this.storage.get('m:' + ref);
+            const u = hsub ? await this.storage.get('u:' + hsub) : null;
+            if (u && u.hxm !== false) { u.hxm = false; await this.saveUser(u); }
+            return { ok: true };
+        }
         if (!ref || !token || token !== await this.unsubToken(ref)) return { error: 'bad_token' };
         const sub = await this.storage.get('m:' + ref);
         if (sub && await this.storage.delete('ms:' + sub)) await this.bump('subs', -1);
@@ -1383,6 +1438,58 @@ const NUM_OPS = {
         return { state: st };
     },
 
+    // ───── LottoHex 칸 알림 메일(2026-11-12 사장님 — "처음부터 켜 두고, 메일마다 알림 끄기, 마이페이지 · LottoHex 창 스위치, 하루 한 번 묶어서") ─────
+    async setHexMail({ sub, on }) {
+        const user = await this.storage.get('u:' + sub);
+        if (!user) return { error: 'no_user' };
+        if (on) delete user.hxm; else user.hxm = false;
+        await this.saveUser(user);
+        return { ok: true, user: view(user) };
+    },
+    // 하루 한 번(index.js hexMail): 참여자마다 지난번 칸(hs:)과 지금 칸을 견줘 잃은 칸이 있고 알림이 켜져 있으면 보낼 줄을 만든다.
+    // 메일에는 잃은 칸 수 · 지금 그 칸 주인 별명(소식 띠에 이미 공개) · 지금 칸 수 · 순위만 — 어느 칸 · 언제는 넣지 않는다(위치가 드러나지 않게).
+    // 지난번 칸이 없는 참여자(처음 · 새로 참여)는 이번엔 적기만 한다. snap 은 보낸 뒤 hexDigestCommit 이 적는다(못 보내면 다음에 그날 것까지 함께)
+    async hexDigest({ site, day }) {
+        const st = await this.storage.get('hxd');
+        if (st && st.day === day) return { done: true, items: [], snap: {} };
+        const t = await this.terrNow(site);
+        const held = new Map();
+        for (const [c, w] of Object.entries(t.cells)) { if (!held.has(w.sub)) held.set(w.sub, []); held.get(w.sub).push(c); }
+        const rankOf = new Map(t.rank.map((r, i) => [r.sub, i + 1]));
+        const subs = (await this.terrList()).map(p => p.sub);
+        const prevs = await this.getMany(subs.map(s => 'hs:' + s));
+        const users = await this.getMany(subs.map(s => 'u:' + s));
+        const items = [], snap = {};
+        for (const sub of subs) {
+            const cur = held.get(sub) || [];
+            snap[sub] = cur;
+            const prev = prevs.get('hs:' + sub), u = users.get('u:' + sub);
+            if (!prev || !u || !u.email || !u.ref || u.hxm === false) continue;
+            const have = new Set(cur);
+            const lost = prev.cells.filter(c => !have.has(c));
+            if (!lost.length) continue;
+            const by = [...new Set(lost.map(c => t.cells[c] && t.cells[c].sub).filter(x => x && x !== sub).map(x => (t.stat.get(x) || {}).nick).filter(Boolean))];
+            items.push({ sub, email: u.email, ref: u.ref, token: await this.unsubToken('hex:' + u.ref), nick: u.nick || null,
+                lost: lost.length, by: by.slice(0, 3), byMore: Math.max(0, by.length - 3), cells: cur.length, rank: rankOf.get(sub) || null });
+        }
+        return { done: false, items, snap };
+    },
+    async hexDigestCommit({ day, snap, sent, now, utc }) {
+        const keep = new Set(Object.keys(snap || {}));
+        for (const [sub, cells] of Object.entries(snap || {})) await this.storage.put('hs:' + sub, { cells, at: now });   // 한 요청 안의 쓰기는 Durable Object 가 모아서 쓴다
+        const stale = [];
+        await this.each('hs:', (v, k) => { if (!keep.has(k.slice(3))) stale.push(k); });   // 그 사이 그만둔 참여자
+        for (let i = 0; i < stale.length; i += 128) await this.storage.delete(stale.slice(i, i + 128));
+        await this.storage.put('hxd', { day, at: now, sent: sent || 0 });
+        if (sent) {
+            const d = (await this.storage.get('mday')) || { day: '', n: 0 };
+            if (d.day !== utc) { d.day = utc; d.n = 0; }
+            d.n += sent;
+            await this.storage.put('mday', d);
+        }
+        return { ok: true };
+    },
+
     async mailStatus({ round, day }) {
         const st = (await this.storage.get('mr:' + round)) || null;
         const d = (await this.storage.get('mday')) || { day: '', n: 0 };
@@ -1402,7 +1509,7 @@ function view(user) {
     const trial = user.trial && user.trial.key ? { key: user.trial.key, keyId: user.trial.keyId, expiresAt: user.trial.expiresAt } : null;
     return {
         email: user.email, nick: user.nick || null, createdAt: user.createdAt, trial, score: pubScore(user), staff: !!user.staff, gen: user.gen || null, visits: user.visits || {}, visitAt: user.vt || {}, visitColor: user.vc || null, visitBadge: !!user.vpub, geo: user.geo ? { at: user.geo.at, v: user.geo.v } : null, visitColors: user.vcolors || [], notes: user.ntN || 0,
-        terr: user.terr ? { at: user.terr.at, v: user.terr.v } : null, terrSkin: user.tskin || null, terrBeam: user.tbeam ? { on: !!user.tbeam.on } : null,
+        terr: user.terr ? { at: user.terr.at, v: user.terr.v } : null, terrSkin: user.tskin || null, terrBeam: user.tbeam ? { on: !!user.tbeam.on } : null, hexMail: user.hxm !== false,
         titles: myTitles(user), ach: user.ach || {},
         nickAuto: !!(user.nick && user.nickAuto), nickDue: !user.nick && user.nickDue ? user.nickDue : null,
         pointPass: user.ppass && user.ppass.key ? { key: user.ppass.key, keyId: user.ppass.keyId, expiresAt: user.ppass.expiresAt } : null,

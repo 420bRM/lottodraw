@@ -34,7 +34,10 @@
         ])));
     }
 
-    function showMe(me) {
+    // LottoHex 몫(2026-11-12 사장님 — "랭킹 설명에 로또헥스 점수 포함이라고"): 위치 인증한 다녀온 곳 + 점령 점수 + 분기 순위 보상 + 마일스톤 — worker score() 의 verified · hold · hex · ms
+    const hexPts = (me, p) => Math.round(((me.verified || 0) * ((p && p.visit) || 10) + (me.hold || 0) + (me.hex || 0) + (me.ms || 0)) * 10) / 10;
+
+    function showMe(me, p) {
         const box = $('rank-me');
         box.textContent = '';
         if (!me) return;
@@ -42,7 +45,7 @@
         box.appendChild(el('p', { className: 'rank-me-line' }, [
             el('b', { text: me.nick ? tr('rank.meNamed', '{nick} 님은 {rank}위', { nick: me.nick, rank: me.rank }) : tr('rank.meUnnamed', '별명을 정하면 {rank}위로 올라갑니다', { rank: me.rank }) }),
             ' ',
-            el('span', { text: tr('rank.meScore', '{total}점 (출석 {days}일 · 반응 {reacts}개 · 이용권 {buy}점) · 쓸 수 있는 포인트 {avail}', Object.assign({ avail: me.total }, me)) }),
+            el('span', { text: tr('rank.meScore', '{total}점 (출석 {days}일 · 반응 {reacts}개 · 이용권 {buy}점 · LottoHex {hexPts}점) · 쓸 수 있는 포인트 {avail}', Object.assign({ avail: me.total, hexPts: hexPts(me, p) }, me)) }),
         ]));
     }
 
@@ -63,7 +66,7 @@
                 rules[2].textContent = tr('rank.r3x', '이용권: 로그인한 채 산 이용권 금액 100원마다 +{n}점 (환불하면 빠집니다)', { n: p.buyPer100 });
             }
             fill(data.top || [], (data.top || []).length ? '' : tr('rank.empty', '아직 순위에 오른 회원이 없습니다. 첫 번째가 되어 보세요!'));
-            showMe(data.me);
+            showMe(data.me, data.points);
         } catch (e) {
             fill([], tr('rank.fail', '랭킹을 불러오지 못했습니다. 잠시 뒤 다시 시도해 주세요.'));
         }

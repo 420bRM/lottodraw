@@ -124,7 +124,7 @@
         if (loadingAll || !root.dataset.all) return;
         loadingAll = true;
         try { all = await (await fetch(root.dataset.all)).json(); } catch (e) { loadingAll = false; return; }
-        map.addSource('all', { type: 'geojson', data: { type: 'FeatureCollection', features: all.rows.map((r, i) => ({ type: 'Feature', id: i, geometry: { type: 'Point', coordinates: [r[1], r[0]] }, properties: { i, nm: r[2] } })) } });
+        map.addSource('all', { type: 'geojson', maxzoom: 12, data: { type: 'FeatureCollection', features: all.rows.map((r, i) => ({ type: 'Feature', id: i, geometry: { type: 'Point', coordinates: [r[1], r[0]] }, properties: { i, nm: r[2] } })) } });
         map.addLayer({
             id: 'st-all', type: 'circle', source: 'all',
             layout: { visibility: shown.all ? 'visible' : 'none' },
@@ -407,7 +407,7 @@
     }
 
     function addStores() {
-        map.addSource('stores', { type: 'geojson', data: geojson() });
+        map.addSource('stores', { type: 'geojson', data: geojson(), maxzoom: 12 });   // 점 자료는 줌 12 조각을 크게 키워 쓴다 — 줌인할 때마다 조각을 새로 자르지 않게(2026-11-12)
         const radius = ['interpolate', ['linear'], ['zoom'],
             5, ['+', 1.6, ['*', 0.45, ['sqrt', ['get', 'wt']]]],
             10, ['+', 3, ['*', 0.9, ['sqrt', ['get', 'wt']]]],
@@ -527,14 +527,16 @@
     }
 
     // 테두리 빛 밝기: 0.35 ~ 1 을 2.8초에 한 번 오간다. 1초에 15번만 바꾸고, 탭이 뒤에 있으면 쉰다(배터리)
-    function glowOpacity(a) { return ['*', netGlow(a), fadeF()]; }
+    // 숫자 하나로만 바꾼다(2026-11-12 — 사장님 "PC 에서 줌인하면 판매점 표시가 많이 느리다"): 전에는 판매점마다 다른 흐리기(fadeF)를 곱한 식이라
+    // MapLibre 가 바꿀 때마다 판매점 소스(stores) 전체를 다시 읽고 다시 그렸다(가만히 있어도 3초에 37번). 다 흐려진 곳은 filterFor 가 이미 거른다
+    function glowOpacity(a) { return netGlow(a); }
     // 0등은 1등이 늘 끌기 막대 끝보다 많아 흐려질 일이 없다 — 상수로 둬야 매 프레임 바꿔도 소스를 다시 읽지 않는다
     function netGlow(a) { return Math.min(1, a * (isNight() ? 1.15 : 1)); }
     function glowLoop() {
         let last = 0;
         const tick = now => {
             requestAnimationFrame(tick);
-            if (document.hidden || now - last < 66 || !map.getLayer('st-top-glow')) return;
+            if (document.hidden || now - last < 66 || !map.getLayer('st-top-glow') || map.getLayoutProperty('st-top-glow', 'visibility') === 'none') return;   // TOP 50 별이 안 보일 땐 쉰다
             last = now;
             const v = 0.675 + 0.325 * Math.sin(now / 2800 * 2 * Math.PI);
             map.setPaintProperty('st-top-glow', 'icon-opacity', glowOpacity(v));
@@ -1083,6 +1085,8 @@
     // 같은 날 사장님 — "빛 벽은 포인트로 팔자, 남에게도 보이게": POINTS.terrBeam(300) 포인트로 사면(한 번 사면 계속) 켜고 끌 수 있고, 켜 두면 모두에게 보인다.
     // 서버가 칸 7번째에 1(빛 벽 켬)을 붙여 준다 — 주인마다(별명 · 칸 모양이 같은 칸끼리) 바깥 테두리에. LottoHex 창에서 사기 · 켜고 끄기
     const BEAM_COST = 300;   // worker POINTS.terrBeam 과 같게
+    const HOLD_PER = 0.1;    // 점령 점수: 차지한 칸 하나에 하루 몇 점 — worker POINTS.terrHold 과 같게(2026-11-12). 칸마다 차등을 두면(worker holdPts) 여기 셈도 바꿀 것
+    const holdDaily = n => Math.round(n * HOLD_PER * 10) / 10;
     const BEAM_N = 28, BEAM_T = 0.025, BEAM_PX = [[8, 200], [11, 170], [13, 130], [14.5, 95], [16, 65], [18, 40]];
     const beamPx = z => { for (let i = 1; i < BEAM_PX.length; i++) { const [z0, p0] = BEAM_PX[i - 1], [z1, p1] = BEAM_PX[i]; if (z <= z1) return p0 + (p1 - p0) * (z - z0) / (z1 - z0); } return BEAM_PX[BEAM_PX.length - 1][1]; };
     const beamIds = Array.from({ length: BEAM_N }, (_, i) => 'terr-beam-' + i);
@@ -1912,8 +1916,10 @@
     }
     function bindSkin() {
         const me = terr && terr.me;
-        const bm = terrPanel.querySelector('.sm-terr-beam input');
+        const bm = terrPanel.querySelector('.sm-terr-beam:not(.sm-terr-hexmail) input');
         if (bm) bm.addEventListener('change', () => saveBeam(bm.checked));
+        const hm = terrPanel.querySelector('.sm-terr-hexmail input');
+        if (hm) hm.addEventListener('change', () => saveHexMail(hm.checked));
         const bb = terrPanel.querySelector('.sm-terr-beam-buy');
         if (bb) bb.addEventListener('click', () => { if (confirm(T(BEAM_COST + '포인트로 영역 빛 벽을 삽니다. 한 번 사면 계속 쓰고, 켜고 끄기는 무료입니다.', 'Buy the territory light wall for ' + BEAM_COST + ' points? It is yours to keep and switching it on or off is free.'))) saveBeam(true); });
         const ed = terrPanel.querySelector('.sm-terr-skin-edit');
@@ -1937,6 +1943,20 @@
         if (!tb) return '<div class="sm-terr-beam"><span class="sm-terr-beam-t">✨ ' + T('영역 빛 벽', 'Territory light wall') + '<small>' + T('3D에서 내 영토 테두리가 빛납니다 · 모두에게 보임', 'Your territory edge glows in 3D · everyone sees it') + '</small></span>' +
             '<button type="button" class="sm-terr-skin-edit sm-terr-beam-buy">' + T(BEAM_COST + 'P로 사기', 'Buy · ' + BEAM_COST + 'P') + '</button></div>';
         return '<label class="sm-terr-beam"><input type="checkbox"' + (tb.on ? ' checked' : '') + '> ✨ ' + T('영역 빛 벽 켜기', 'Territory light wall') + ' <small>' + T('3D에서 · 모두에게 보임', 'in 3D · everyone sees it') + '</small></label>';
+    }
+    // 칸 알림 메일(2026-11-12 사장님 — 처음부터 켜짐, 하루 한 번 묶음, LottoHex 창 · 마이페이지 · 메일의 알림 끄기)
+    function hexMailRow() {
+        const A = account(), u = A && A.me() && A.me().user;
+        if (!u) return '';
+        return '<label class="sm-terr-beam sm-terr-hexmail"><input type="checkbox"' + (u.hexMail !== false ? ' checked' : '') + '> ✉️ ' +
+            T('칸을 빼앗기면 메일 알림', 'Email me when my cells are taken') + ' <small>' + T('하루 한 번 저녁', 'once a day, evening') + '</small></label>';
+    }
+    async function saveHexMail(on) {
+        const A = account();
+        try { await A.call('/api/me/hex-mail', { method: 'POST', body: { on } }); }
+        catch (e) { toast((e && e.message) || T('저장하지 못했습니다.', 'Could not save.')); drawTerr(); return; }
+        await A.refresh().catch(() => null);
+        toast(on ? T('✉️ 칸을 빼앗긴 날 저녁에 메일로 알려 드립니다', '✉️ We will email you on evenings when your cells are taken') : T('칸 알림 메일을 껐습니다', 'Cell alert emails are off'));
     }
     async function saveBeam(on) {
         const A = account();
@@ -1972,11 +1992,12 @@
         let status;
         if (!A || !A.session()) status = '<button type="button" class="sm-terr-join">' + T('로그인하고 참여하기', 'Sign in to join') + '</button>';
         else if (!(me && me.joined)) status = '<button type="button" class="sm-terr-join">' + T('참여하기', 'Join') + '</button> <span class="sm-small">' + T('동의한 뒤에만 셉니다', 'Counts only after you agree') + '</span>';
-        else status = '<p class="sm-terr-me">' + T('내 칸 <b>' + fmt(me.cells.length) + '</b>' + (me.rank ? ' · <b>' + me.rank + '</b>위' : '') + ' · 다녀온 곳 ' + fmt(me.stores) + '곳',
-            'My cells <b>' + fmt(me.cells.length) + '</b>' + (me.rank ? ' · rank <b>' + me.rank + '</b>' : '') + ' · ' + fmt(me.stores) + ' visited') + '</p>' +
+        else status = '<p class="sm-terr-me">' + T('내 칸 <b>' + fmt(me.cells.length) + '</b>' + (me.rank ? ' · <b>' + me.rank + '</b>위' : '') + ' · 다녀온 곳 ' + fmt(me.stores) + '곳' + (me.cells.length ? ' · 점령 하루 +' + holdDaily(me.cells.length) + '점' : ''),
+            'My cells <b>' + fmt(me.cells.length) + '</b>' + (me.rank ? ' · rank <b>' + me.rank + '</b>' : '') + ' · ' + fmt(me.stores) + ' visited' + (me.cells.length ? ' · +' + holdDaily(me.cells.length) + ' a day' : '')) + '</p>' +
             (me.lastRank ? '<p class="sm-terr-me">' + (MEDAL[me.lastRank - 1] || '🏅') + ' ' + T(seasonLabel(terr.last) + ' 확정 ' + me.lastRank + '위', seasonLabel(terr.last) + ' final: #' + me.lastRank) + '</p>' : '') +
             skinRow(me) +
-            beamRow();
+            beamRow() +
+            hexMailRow();
         const rank = (terr && terr.rank) || [];
         const last = terr && terr.last;
         const joined = !!(A && A.session() && me && me.joined), sheet = hexMobile();
@@ -2002,6 +2023,7 @@
             '<li>' + T('영역 빛 벽: ' + BEAM_COST + '포인트로 사면(한 번 사면 계속) 3D 에서 내 영토 바깥 테두리가 위로 빛나고 모두에게 보입니다. 켜고 끄기는 무료입니다.', 'Light wall: buy it for ' + BEAM_COST + ' points (yours to keep) and your territory edge glows upward in 3D for everyone. Switching it on or off is free.') + '</li>' +
             '<li>' + T('밤 지도에서 크게 보면 차지한 칸 테두리를 빛이 시계 방향으로 돌고, 칸 면에는 유리에 비친 듯한 45° 빛이 번쩍 지나갑니다.', 'On the night map, zoomed in, a light runs clockwise round held cells and a quick glassy 45° glint flashes across them.') + '</li>' +
             '<li>' + T('칸은 비우지 않습니다. 분기(1 · 4 · 7 · 10월 1일 0시)마다 그때의 Map 랭킹을 확정해 남깁니다.', 'Cells are never cleared. At the start of each quarter the Map ranking at that moment is finalised and kept.') + '</li>' +
+            '<li>' + T('점령 점수: 지금 차지한 칸 하나에 하루 0.1포인트(매일 0시 무렵 그때 차지한 칸으로 셉니다, 운영자 제외). 회원 랭킹 점수에도 들어갑니다.', 'Cell points: 0.1 points a day for each cell you hold (counted just after midnight each day from the cells held then; operators excluded). It also counts toward the member ranking.') + '</li>' +
             '<li>' + T('확정 순위 보상: 1위 1,000 · 2위 500 · 3위 300 · 4~10위 100포인트(운영자 제외).', 'Quarterly rewards: 1st 1,000 · 2nd 500 · 3rd 300 · 4th–10th 100 points (operators excluded).') + '</li>' +
             '<li>' + T('마일스톤 · 칭호: 다녀온 판매점 · 칸 · 시·도 · 영토가 단계에 이르면 포인트를, 방문 · 영토 · 칸 모양(왕지렁이 · 벌집 …) · 지역(마포구 전문가 …)으로 칭호를 얻습니다. 칭호는 "도감"에서 골라 별명 앞에 답니다.', 'Milestones and titles: reach steps in retailers, cells, provinces and territory for points, and earn titles for visits, territory, cell shapes (Giant Worm, Honeycomb …) and regions. Pick a title in "Collection" to show it before your nickname.') + '</li>' +
             '<li>' + (gpsCfg() ? T('다녀온 곳은 판매점 50m 안에서 위치로 인증한 곳만 셉니다. 폐점한 곳은 세지 않습니다.', 'Only retailers verified by location (within 50 m) count. Closed retailers do not count.')

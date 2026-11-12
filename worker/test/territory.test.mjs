@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import worker, { _resetForTests, Community } from '../src/index.js';
+import worker, { _resetForTests, _hexMailForTests as hexMail, Community } from '../src/index.js';
 import { community } from '../src/community.js';
 import { _resetGoogleForTests } from '../src/google.js';
 import { b64urlEncode } from '../src/keys.js';
@@ -619,6 +619,53 @@ test('LottoHex 분기 보상: 확정 순위 1위 1,000 · 2위 500 … 운영자
     } finally { Date.now = realNow; }
 });
 
+test('LottoHex 점령 점수(2026-11-12): 한국 날짜가 바뀐 뒤 처음 한 번, 차지한 칸 하나에 0.1점 · 운영자 빼고 · 같은 날 두 번 주지 않는다(중간에 끊겨도) · 점수 · 랭킹에 들어간다', async () => {
+    let now = kstTime(2026, 12, 10, 22, 0);
+    Date.now = () => now;
+    try {
+        const env = await fresh();
+        const m = env.COMMUNITY._m;
+        const a = await member(env, '5101', '칸부자');
+        const b = await member(env, '5102', '칸하나');
+        const c = await member(env, '5103', '운영');
+        for (const s of [a, b, c]) assert.equal((await join(env, s)).status, 200);
+        await visit(env, a, '11100001');
+        await visit(env, a, '11100004');   // 칸부자: 0,0 · 1,0
+        await visit(env, b, '11100005');   // 칸하나: 2,0
+        now += 60 * 1000;
+        await visit(env, c, '11100006');   // 운영: 2,0 에 1곳(같은 수, 1분 더 최근) — 칸하나에게서 빼앗는다
+        const key = nick => [...m.keys()].find(k => k.startsWith('u:') && m.get(k).nick === nick);
+        const st = m.get(key('운영')); st.staff = true; m.set(key('운영'), st);
+        env.COMMUNITY.restart();
+        const pay = () => env.COMMUNITY.get().fetch('https://community/', { method: 'POST', body: JSON.stringify({ op: 'terrHoldPay', now }) }).then(r => r.json());
+        const hold = nick => (m.get(key(nick)).thp || { pts: 0 }).pts;
+        now = kstTime(2026, 12, 11, 0, 17);
+        const p1 = await pay();
+        assert.deepEqual([p1.done, p1.day, p1.paid, p1.pts], [true, '2026-12-11', 1, 0.2]);
+        assert.deepEqual([hold('칸부자'), hold('칸하나'), hold('운영')], [0.2, 0, 0], '칸 2개 = 0.2 · 칸을 빼앗긴 사람 0 · 운영자 0');
+        assert.equal(m.get(key('칸부자')).thp.n, 2);
+        // 같은 날 다시 돌아도(끝까지 줬든 중간에 끊겼든) 두 번 주지 않는다
+        now = kstTime(2026, 12, 11, 1, 17);
+        assert.equal((await pay()).done, false);
+        m.delete('thd'); env.COMMUNITY.restart();
+        assert.equal((await pay()).paid, 0);
+        assert.equal(hold('칸부자'), 0.2);
+        // 다음 날 · 그다음 날: 0.1 이 쌓여도 소수 첫째 자리로
+        assert.equal((await visit(env, b, '11100005', { again: true })).status, 200);   // 칸하나가 다음 날 또 다녀와 2,0 을 되찾는다(1곳씩, 더 최근)
+        now = kstTime(2026, 12, 12, 0, 17);
+        await pay();
+        now = kstTime(2026, 12, 13, 0, 17);
+        await pay();
+        assert.deepEqual([hold('칸부자'), hold('칸하나'), hold('운영')], [0.6, 0.2, 0]);
+        const sc = (await call(env, 'GET', '/api/me', { headers: auth(a) })).data.user.score;
+        assert.equal(sc.hold, 0.6);
+        assert.ok(sc.total >= 0.6 && sc.avail >= 0.6, '점수 · 쓸 수 있는 포인트에 들어간다');
+        const rk = (await call(env, 'GET', '/api/ranking', { headers: auth(a) })).data;
+        assert.equal(rk.me.hold, 0.6);
+        assert.equal(rk.points.terrHold, 0.1);
+    } finally { Date.now = realNow; }
+});
+
 /* ───── 마일스톤 · 칭호(2026-11-09 — src/titles.js) ───── */
 
 const line = (n, q0 = 0, r0 = 0) => Array.from({ length: n }, (_, i) => (q0 + i) + ',' + r0);
@@ -876,4 +923,71 @@ test('광고 유입(utm, 2026-11-11): 들어옴은 우리 사이트 · 이름 �
     for (let i = 0; i < 120; i++) await arrive({ s: 'spam' + i });
     assert.ok(Object.keys(env.COMMUNITY._m.get('ad:' + today)).length <= 100);
     assert.equal(env.COMMUNITY._m.get('ad:' + today)[KEY].l, 2, '이미 있던 줄은 계속 센다');
+});
+
+test('LottoHex 칸 알림 메일(2026-11-12): 처음엔 지난번 칸만 적고, 다음 날 저녁 칸을 잃은 참여자에게 하루 한 번 — 처음부터 켜짐 · 알림 끄기 링크 · 스위치, 칸 위치는 안 넣음', async () => {
+    const env = await fresh();
+    env.GPS_VERIFY = 'on';
+    env.RESEND_API_KEY = 're_test';
+    env.MAIL_FROM = 'lottodraw.kr <key@lottodraw.kr>';
+    const sent = [];
+    const base = globalThis.fetch;
+    globalThis.fetch = async (url, init) => {
+        if (String(url) === 'https://api.resend.com/emails/batch') { sent.push(...JSON.parse(init.body)); return new Response('{"data":[]}'); }
+        return base(url, init);
+    };
+    try {
+        const ids = ['11100401', '11100402'];
+        site = { cells: { r: 0.6, cells: { '0,0': [ids[0]], '1,0': [ids[1]] } }, geo: { regions: [['서울', '마포구', '마포구']], stores: { [ids[0]]: [37.5, 127.0, 0], [ids[1]]: [37.51, 127.0, 0] } } };
+        const a = await member(env, 'm1', '가나다');
+        const b = await member(env, 'm2', '라마바');
+        await terr(env);   // 위치 인증을 켠 날 한 번 지우기(gpsStartOnce)를 참여 전에 끝낸다
+        for (const s of [a, b]) { await geoAgree(env, s); assert.equal((await join(env, s, { agree: true, v: 2 })).status, 200); }
+        const me = async s => (await call(env, 'GET', '/api/me', { headers: auth(s) })).data.user;
+        assert.equal((await me(a)).hexMail, true, '처음부터 켜짐');
+        assert.equal((await visit(env, a, ids[0], near(37.5, 127.0))).status, 200);
+        assert.equal((await visit(env, a, ids[1], near(37.51, 127.0))).status, 200);
+        const day1 = kstTime(2026, 11, 20, 20, 17), day2 = kstTime(2026, 11, 21, 20, 17);
+        assert.equal((await hexMail(env, kstTime(2026, 11, 20, 19, 17))).skipped, 'window', '저녁 8시 전에는 안 보냄');
+        let r = await hexMail(env, day1);
+        assert.equal(r.sent, 0, '첫날은 지난번 칸이 없어 적기만');
+        assert.deepEqual(env.COMMUNITY._m.get('hs:m1').cells.sort(), ['0,0', '1,0']);
+        assert.equal((await hexMail(env, day1 + 3600e3)).skipped, 'done', '하루 한 번');
+
+        // 라마바가 0,0 을 빼앗는다(같은 수 · 더 최근)
+        assert.equal((await visit(env, b, ids[0], near(37.5, 127.0))).status, 200);
+        r = await hexMail(env, day2);
+        assert.equal(r.sent, 1);
+        assert.equal(sent.length, 1);
+        const m = sent[0];
+        assert.deepEqual(m.to, ['m1@gmail.com']);
+        assert.equal(m.subject, 'LottoHex: 오늘 칸 1개를 빼앗겼습니다');
+        assert.match(m.text, /가나다님, 오늘 LottoHex 칸 1개를 빼앗겼습니다/);
+        assert.match(m.text, /지금 그 칸 주인: 라마바님/);
+        assert.match(m.text, /지금 내 칸 1개 · Map 랭킹 \d위/);
+        assert.ok(!/0,0|1,0|1110040|마포|37\.5/.test(m.text), '어느 칸 · 판매점 · 지역은 없다');
+        assert.match(m.headers['List-Unsubscribe'], /k=hex/);
+        assert.equal(env.COMMUNITY._m.get('mday').n, 1, 'Resend 하루 한도에 함께 센다');
+
+        // 알림 끄기 링크: GET 은 확인 단추, POST 로 끔. 결과 메일 서명으로는 못 끈다
+        const link = new URL(m.headers['List-Unsubscribe'].slice(1, -1));
+        const get = await worker.fetch(new Request(link.toString()), env, ctx);
+        assert.match(await get.text(), /LottoHex 칸 알림 메일 수신 거부/);
+        const wrong = new URL(link); wrong.searchParams.delete('k');
+        await worker.fetch(new Request(wrong.toString(), { method: 'POST' }), env, ctx);
+        assert.equal((await me(a)).hexMail, true, '다른 메일 서명으로는 안 꺼짐');
+        await worker.fetch(new Request(link.toString(), { method: 'POST' }), env, ctx);
+        assert.equal((await me(a)).hexMail, false, '알림 끄기');
+
+        // 꺼 두면 잃어도 안 보냄 · 스위치로 다시 켬
+        assert.equal((await visit(env, b, ids[1], near(37.51, 127.0))).status, 200);
+        r = await hexMail(env, kstTime(2026, 11, 22, 20, 17));
+        assert.equal(r.sent, 0);
+        assert.equal((await call(env, 'POST', '/api/me/hex-mail', { headers: auth(a), body: { on: true } })).data.hexMail, true);
+        assert.equal((await call(env, 'POST', '/api/me/hex-mail', { body: { on: false } })).status, 401);
+
+        // 그만두거나 탈퇴하면 지난번 칸을 지운다
+        assert.equal((await call(env, 'POST', '/api/territory/leave', { headers: auth(b) })).status, 200);
+        assert.equal(env.COMMUNITY._m.get('hs:m2'), undefined);
+    } finally { globalThis.fetch = base; }
 });

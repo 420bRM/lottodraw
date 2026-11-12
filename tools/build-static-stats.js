@@ -325,10 +325,10 @@ function rankList(rows, label) {
 
 /* ───── 공통 틀 ───── */
 
+// 메뉴 6개(2026-11-12 사장님 — 머리글에 "최근 5개월 통계" 단추가 있어 메뉴의 "5개월 통계"는 뺐다. 바닥글에는 남긴다)
 const NAV = [
     ['index.html', '생성기 · 통계', 'nav.index'],
     ['draws.html', '당첨번호', 'nav.draws'],
-    ['statistics.html', '5개월 통계', 'nav.statistics'],
     ['top-prize.html', 'TOP 50 당첨금', 'nav.topPrize'],
     ['tax.html', '실수령액 계산', 'nav.tax'],
     ['blog/index.html', '블로그', 'nav.blog'],
@@ -2966,7 +2966,7 @@ function lottohexAboutHtml(md, snap) {
             <summary data-i18n-en="About LottoHex · this week">LottoHex 안내 · 이번 주</summary>
             <div class="sm-hexabout-body">
             <h2 data-i18n-en="What is LottoHex?">LottoHex란?</h2>
-            ${pEn('LottoHex는 로또 판매점 지도 위 육각형 칸(가운데서 꼭짓점까지 0.6km, 걸어서 15분쯤)을 차지하는 무료 땅따먹기 게임입니다. 판매점에 직접 가서 판매점 카드의 "다녀왔어요"를 누르면 위치로 확인하고(판매점 50m 안), 칸 안에서 다녀온 판매점이 가장 많은 사람이 그 칸의 주인이 됩니다. 복권을 살 필요는 없습니다.',
+            ${pEn('LottoHex(로또헥스)는 로또 판매점 지도 위 육각형 칸(가운데서 꼭짓점까지 0.6km, 걸어서 15분쯤)을 차지하는 무료 땅따먹기 게임입니다. 판매점에 직접 가서 판매점 카드의 "다녀왔어요"를 누르면 위치로 확인하고(판매점 50m 안), 칸 안에서 다녀온 판매점이 가장 많은 사람이 그 칸의 주인이 됩니다. 복권을 살 필요는 없습니다.',
                 'LottoHex is a free turf game on the lotto retailer map: the map is split into hexagon cells (0.6 km centre to corner, about a 15-minute walk across). Go to a retailer and tap "I\'ve been here" on its card; your location is checked (within 50 m), and whoever has visited the most retailers in a cell holds it. No purchase needed.')}
             <h2 data-i18n-en="How to play">하는 법</h2>
             <ol>
@@ -2985,6 +2985,7 @@ function lottohexAboutHtml(md, snap) {
             <h2 data-i18n-en="Points">포인트</h2>
             <ul>
                 ${li(`위치로 인증한 다녀온 곳: 한 번에 ${LH_POINTS.visit}포인트(같은 판매점은 하루 한 번, 하루 ${LH_POINTS.daily}포인트까지)`, `Visits verified by location: ${LH_POINTS.visit} points each (once a day per retailer, up to ${LH_POINTS.daily} a day)`)}
+                ${li('점령 점수: 지금 차지한 칸 하나에 하루 0.1포인트(매일 0시 무렵 그때 차지한 칸으로 셉니다, 운영자 제외)', 'Cell points: 0.1 points a day for each cell you hold (counted just after midnight each day from the cells held then; operators excluded)')}
                 ${li(`분기 확정 순위: 1위 ${fmt(p1)} · 2위 ${p2} · 3위 ${p3} · 4~10위 ${p4}포인트(운영자 제외)`, `Quarterly final ranking: 1st ${fmt(p1)} · 2nd ${p2} · 3rd ${p3} · 4th–10th ${p4} points (operators excluded)`)}
                 ${li('마일스톤: 다녀온 판매점 · 다녀온 칸 · 다녀온 시·도 · 최대 영토가 단계에 이를 때마다 10~500포인트(단계마다 한 번)', 'Milestones: 10–500 points each time retailers visited, cells visited, provinces visited or most cells held reaches a new step (once per step)')}
                 ${li('포인트로 칸 모양을 바꾸거나(30), 영역 빛 벽을 사거나(300 — 3D 에서 내 영토 테두리가 빛나고 모두에게 보입니다), 1일 이용권을 열 수 있습니다(300). 현금으로 바꿀 수 없습니다.', 'Spend points on a new cell skin (30), the territory light wall (300 — your territory edge glows in 3D for everyone) or a 1-day pass (300). Points cannot be exchanged for cash.')}
@@ -3008,10 +3009,10 @@ function storeMapPage(md, variant) {
     const sidoRows = [...S.sido.entries()].filter(([k]) => k !== '기타').sort((a, b) => b[1].w1 - a[1].w1);
     const net = S.net;
     const snap = hex ? lottohexSnap() : null;
-    const title = hex ? 'LottoHex · 로또 판매점 땅따먹기 — 육각 칸 차지 · Map 랭킹 | lottodraw.kr'
+    const title = hex ? 'LottoHex(로또헥스) · 로또 판매점 땅따먹기 — 육각 칸 차지 · Map 랭킹 | lottodraw.kr'
         : top ? `로또 판매점 TOP 50 지도 · 1등이 가장 많이 나온 50곳 (${first}~${last}회) | lottodraw.kr`
         : `로또 판매점 지도 · 1등 · 2등 나온 곳 전국 지도 (${first}~${last}회) | lottodraw.kr`;
-    const desc = hex ? 'LottoHex는 로또 판매점에 직접 다녀와 위치로 인증하고, 지도 위 육각형 칸을 차지하는 무료 땅따먹기 게임입니다. 칸 안에서 다녀온 판매점이 가장 많은 사람이 주인이 되고, 분기마다 Map 랭킹을 확정해 1~10위에 포인트를 드립니다. 복권을 살 필요는 없습니다.'
+    const desc = hex ? 'LottoHex(로또헥스)는 로또 판매점에 직접 다녀와 위치로 인증하고, 지도 위 육각형 칸을 차지하는 무료 땅따먹기 게임입니다. 칸 안에서 다녀온 판매점이 가장 많은 사람이 주인이 되고, 분기마다 Map 랭킹을 확정해 1~10위에 포인트를 드립니다. 복권을 살 필요는 없습니다.'
         : top ? `로또 1등이 가장 많이 나온 판매점 50곳을 지도 위 별로 봅니다(${first}~${last}회, 매주 갱신). 많이 팔린 곳일 가능성이 클 뿐, 어디서 사든 당첨 확률은 같습니다.`
         : `로또 1등 · 2등이 나온 판매점 ${fmt(md.rows.length)}곳을 전국 지도(3D · 2D)에서 봅니다(${first}~${last}회, 매주 갱신). 점이 클수록 1등 · 2등이 많이 나온 곳 — 많이 팔린 곳일 가능성이 큽니다. 어디서 사든 당첨 확률은 같습니다.`;
     const v = f => `${f}?v=${fingerprint(f)}`;
@@ -3023,7 +3024,7 @@ function storeMapPage(md, variant) {
     const pageFile = hex ? LOTTOHEX_FILE : STORE_MAP_FILE;   // canonical: LottoHex 는 자기 자신, TOP 50 공유 주소는 판매점 지도
     const ld = hex ? { '@context': 'https://schema.org', '@graph': [
         // 게임 성격을 알리는 용도(2026-11-09). 평점 · 리뷰는 실제 자료가 없어 넣지 않는다
-        { '@type': 'WebApplication', name: 'LottoHex', alternateName: '로또 판매점 땅따먹기', url: `${SITE}/${LOTTOHEX_FILE}`, description: desc,
+        { '@type': 'WebApplication', name: 'LottoHex', alternateName: ['로또헥스', '로또 판매점 땅따먹기'], url: `${SITE}/${LOTTOHEX_FILE}`, description: desc,
             applicationCategory: 'GameApplication', operatingSystem: 'Web', inLanguage: ['ko', 'en'], isAccessibleForFree: true,
             offers: { '@type': 'Offer', price: 0, priceCurrency: 'KRW' }, dateModified: (snap && snap.at) || UPDATED,
             publisher: { '@type': 'Organization', name: 'lottodraw.kr', url: SITE + '/' } },
@@ -3084,7 +3085,7 @@ function storeMapPage(md, variant) {
     <div class="sm-side" id="sm-side" data-tab="${hex ? 'terr' : 'top'}">
     <div class="sm-top">
         <div class="sm-row">
-            <a class="sm-back" href="index.html" data-i18n-en="← Generator">← 생성기로</a>
+            <a class="sm-back" href="index.html" data-i18n-en="← Generator">← 생성기</a>
             ${hex ? '<h1 class="sm-title" data-i18n-en="LottoHex&lt;span class=&quot;sr-only&quot;&gt; · retailer turf game&lt;/span&gt;">LottoHex<span class="sr-only"> · 판매점 땅따먹기</span></h1>' : '<h1 class="sm-title" data-i18n-en="Lotto retailer map">로또 판매점 지도</h1>'}
             <!-- 휴대폰: 지도 모드(2026-11-08 사장님 — "LottoHex 랑 지도 기능이 한곳에 모여 불편"). 제목 자리에 놓아 줄이 늘지 않게. PC 는 감춘다.
                  LottoHex 아래 작은 "땅따먹기 게임"(2026-11-11 사용자 의견 — 무엇인지 몰라 안 누를 것 같다) -->

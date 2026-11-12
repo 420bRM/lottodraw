@@ -34,7 +34,7 @@
 - [궁합수는 진짜 있을까 — 990개 쌍과 다중 비교의 함정](https://www.lottodraw.kr/blog/pair-numbers-multiple-comparisons.html): 함께 자주 나온 번호 쌍은 의미가 있을까요. 생일 문제와 텍사스 명사수의 오류로 '많이 찾으면 반드시 무언가 나온다'는 원리를 설명합니다.
 - [연속 번호는 정말 드물까 — 무작위는 생각보다 뭉쳐 있다](https://www.lottodraw.kr/blog/consecutive-numbers-clustering-illusion.html): 당첨 번호의 절반 이상에 연번이 들어 있습니다. 2차 대전 런던 폭격 지도와 음악 셔플 기능의 일화로, 사람이 무작위를 어떻게 오해하는지 살펴봅니다.
 - [로또 2등·3등 당첨금은 얼마일까 — 평균 5,695만 원과 145만 원의 계산법](https://www.lottodraw.kr/blog/second-third-prize.html): 2등과 3등 당첨금이 정해지는 방식, 1,158회 실제 기록으로 본 평균·최고·최저, 2등이 664게임 몰린 회차, 판매액이 늘어도 금액이 그대로인 이유, 세금과 받는 곳까지.
-- [LottoHex 하는 법 — 로또 판매점 지도 위 육각 칸 땅따먹기](https://www.lottodraw.kr/blog/lottohex-how-to-play.html): 판매점 지도에서 하는 무료 땅따먹기 게임 LottoHex. 판매점에 다녀와 위치로 인증하면 육각형 칸을 차지하고, 분기마다 Map 랭킹을 확정해 포인트를 드립니다. 참여 방법 · 규칙 · 포인트 · 위치 정보 처리까지 한 번에 정리했습니다.
+- [LottoHex(로또헥스) 하는 법 — 로또 판매점 지도 위 육각 칸 땅따먹기](https://www.lottodraw.kr/blog/lottohex-how-to-play.html): 판매점 지도에서 하는 무료 땅따먹기 게임 LottoHex(로또헥스). 판매점에 다녀와 위치로 인증하면 육각형 칸을 차지하고, 분기마다 Map 랭킹을 확정해 포인트를 드립니다. 참여 방법 · 규칙 · 포인트 · 위치 정보 처리까지 한 번에 정리했습니다.
 - [로또 세금 완전 정리 — 등수별 실수령액 실제 계산](https://www.lottodraw.kr/blog/lotto-tax-guide.html): 200만 원 비과세 기준, 22%와 33% 구간, 3등이 갑자기 세금을 내는 경우까지 실제 숫자로 계산합니다.
 - [1등에 당첨되면 실제로 어떻게 수령하나](https://www.lottodraw.kr/blog/how-to-claim-first-prize.html): 지급처, 준비물, 기한, 세금 공제까지. 당첨 확인부터 통장에 돈이 들어오기까지의 실제 절차를 정리했습니다.
 - [AC값 제대로 이해하기 — 숫자 사이의 '차이'가 말해 주는 것](https://www.lottodraw.kr/blog/ac-value-explained.html): AC값의 정의부터 815만 조합 전체의 실제 분포, 전파망원경 배치에 쓰이는 골롬 자와의 관계까지. AC값으로 할 수 있는 일과 없는 일을 나눠 봅니다.
