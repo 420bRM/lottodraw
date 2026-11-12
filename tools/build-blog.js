@@ -19,8 +19,13 @@
 //     ---
 //   content/blog/en/NN-slug.md     영어. 파일 이름이 같고, 머리말은 title 과 description 만
 //
-// 본문 문법: ## 소제목, 문단(줄을 바꾸면 <br>), - 목록, 1. 목록, > 인용, | 표 |,
+// 본문 문법: ## 소제목, ### 작은 제목, 문단(줄을 바꾸면 <br>), - 목록, 1. 목록, > 인용, | 표 |,
 // **굵게**, `코드`, [링크](/tax.html). 링크는 사이트 뿌리 기준으로 쓰면 알아서 고쳐 단다.
+// 자주 묻는 질문: '## 자주 묻는 질문'(또는 '## 자주 묻는 것') 아래에 '### 질문?' 과 그 밑 문단을 두면
+// 화면에는 그대로 나오고(질문 앞 Q. · 답 첫 문단 앞 A. 는 css 가 붙인다 — 원고와 구조화 데이터에는 쓰지 않는다),
+// 같은 문장으로 FAQPage 구조화 데이터를 단다(물음표로 끝나는 ### 만, 두 개 이상일 때).
+// 답은 그 ### 아래 문단 · 목록이다(다음 ### 이나 ## 앞까지). 인용(>)은 답에 넣지 않는다 — 칸 뒤 맺음말은 인용으로 쓴다.
+// 구글은 2023-08 부터 FAQ 리치 결과를 정부 · 보건 사이트에만 보여 준다. 효과는 Bing · AI 답변이 문답을 뽑아 가는 쪽이다(2026-11-11).
 // 그림: 한 줄에 {{figure 이름}} — build-static-stats.js 가 넘겨준 그림(ctx.figures[이름], 영문은 그림 안에 들어 있다)을
 // 그 자리에 넣는다. 영어 원고에도 같은 자리에 같은 줄을 쓴다.
 //
@@ -125,7 +130,7 @@ function parseBlocks(md) {
         const line = lines[i];
         if (!line.trim()) { i++; continue; }
         if (isHead(line)) {
-            blocks.push({ type: 'h2', text: line.replace(/^#+\s+/, '').trim() });
+            blocks.push({ type: /^###/.test(line) ? 'h3' : 'h2', text: line.replace(/^#+\s+/, '').trim() });
             i++;
         } else if (isFigure(line)) {
             blocks.push({ type: 'figure', name: line.trim().match(FIGURE)[1] });
@@ -189,14 +194,17 @@ const tr = html => (html === undefined ? '' : ` data-i18n-en="${esc(html)}"`);
 
 /* ───── 블록 그리기 ───── */
 
-// e 는 같은 자리의 영문 블록 (없으면 undefined)
-function renderBlock(b, e, id) {
+// e 는 같은 자리의 영문 블록 (없으면 undefined). cls 는 '자주 묻는 질문' 칸의 faq-q · faq-a (화면에서 Q. · A. 를 붙인다)
+function renderBlock(b, e, id, cls) {
+    const c = cls ? ` class="${cls}"` : '';
     const pick = f => (e ? f(e) : undefined);
     switch (b.type) {
     case 'h2':
         return `<h2 id="${id}"${tr(pick(x => inline(x.text)))}>${inline(b.text)}</h2>`;
+    case 'h3':
+        return `<h3${c}${tr(pick(x => inline(x.text)))}>${inline(b.text)}</h3>`;
     case 'p':
-        return `<p${tr(pick(x => lines(x.lines)))}>${lines(b.lines)}</p>`;
+        return `<p${c}${tr(pick(x => lines(x.lines)))}>${lines(b.lines)}</p>`;
     case 'quote':
         return `<blockquote><p${tr(pick(x => lines(x.lines)))}>${lines(b.lines)}</p></blockquote>`;
     case 'ul':
@@ -219,6 +227,7 @@ function renderBlock(b, e, id) {
 function plainBlock(b) {
     switch (b.type) {
     case 'h2': return `<h2>${unlink(inline(b.text))}</h2>`;
+    case 'h3': return `<h3>${unlink(inline(b.text))}</h3>`;
     case 'p': return `<p>${unlink(lines(b.lines))}</p>`;
     case 'quote': return `<blockquote><p>${unlink(lines(b.lines))}</p></blockquote>`;
     case 'ul':
@@ -240,6 +249,37 @@ function preview(post) {
         chars += textOf(html).length;
     }
     return { ko: ko.join(''), en: post.en ? en.join('') : undefined };
+}
+
+// '## 자주 묻는 질문' 칸의 '### 질문?' 과 답 → FAQPage. 화면 글과 같은 문장(태그만 벗김). 없거나 하나뿐이면 null
+const FAQ_HEAD = /^자주 묻는 (질문|것)$/;
+const plainText = s => textOf(inline(s)).replace(/\s+/g, ' ').trim();
+function faqOf(blocks) {
+    const at = blocks.findIndex(b => b.type === 'h2' && FAQ_HEAD.test(plainText(b.text)));
+    if (at === -1) return null;
+    const qa = [];
+    let cur = null;
+    for (const b of blocks.slice(at + 1)) {
+        if (b.type === 'h2') break;
+        if (b.type === 'h3') {
+            const q = plainText(b.text);
+            cur = /[?？]$/.test(q) ? { q, a: [] } : null;
+            if (cur) qa.push(cur);
+        } else if (cur && b.type === 'p') {
+            cur.a.push(b.lines.map(plainText).join(' '));
+        } else if (cur && (b.type === 'ul' || b.type === 'ol')) {
+            cur.a.push(b.items.map(plainText).join(' '));
+        } else {
+            cur = null;   // 인용 · 표 · 그림이 나오면 그 답은 거기서 끝
+        }
+    }
+    const items = qa.filter(x => x.a.length);
+    if (items.length < 2) return null;
+    return {
+        '@type': 'FAQPage',
+        inLanguage: 'ko-KR',
+        mainEntity: items.map(x => ({ '@type': 'Question', name: x.q, acceptedAnswer: { '@type': 'Answer', text: x.a.join(' ') } })),
+    };
 }
 
 /* ───── 페이지 ───── */
@@ -312,6 +352,7 @@ module.exports = function buildBlog(ctx) {
             updated: m.updated || m.date || '',
             category: cat,
             blocks: doc.blocks,
+            faq: faqOf(doc.blocks),
         };
     });
 
@@ -329,10 +370,18 @@ module.exports = function buildBlog(ctx) {
     /* 글마다 본문을 그린다 */
     posts.forEach(p => {
         let h = 0;
+        let inFaq = false;     // '## 자주 묻는 질문' 칸 안인가
+        let afterQ = false;    // 바로 앞이 그 칸의 질문(###)인가 — 답 첫 문단에만 A. 를 단다
         p.heads = [];
         p.body = p.blocks.map((b, i) => {
             const e = p.en && p.en.blocks[i];
-            if (b.type !== 'h2') return renderBlock(b, e);
+            if (b.type !== 'h2') {
+                const cls = inFaq && b.type === 'h3' ? 'faq-q' : inFaq && afterQ && b.type === 'p' ? 'faq-a' : '';
+                afterQ = inFaq && b.type === 'h3';
+                return renderBlock(b, e, undefined, cls);
+            }
+            inFaq = FAQ_HEAD.test(plainText(b.text));
+            afterQ = false;
             const id = `s${++h}`;
             p.heads.push({ id, ko: inline(b.text), en: e && inline(e.text) });
             return renderBlock(b, e, id);
@@ -397,7 +446,7 @@ module.exports = function buildBlog(ctx) {
                 image: OG_IMAGE,
                 author: { '@type': 'Organization', name: 'lottodraw.kr', url: SITE + '/' },
                 publisher: { '@type': 'Organization', name: 'lottodraw.kr', url: SITE + '/' },
-            }],
+            }].concat(p.faq ? [p.faq] : []),
             body: [toc, p.body, share, related, postNav],
             scripts: ['js/share.js', 'js/views.js'],
         }));

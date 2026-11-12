@@ -53,3 +53,25 @@ The simplest way is **automatic selection**. Automatic numbers are chosen at ran
 This site's [number generator](/index.html#sec-generator) has **16 special patterns** you can tick to filter out. They include "six consecutive numbers", "all numbers within 1–31" (birthday numbers), combinations made only of one multiple such as "all multiples of 3", "all numbers in the same ten", and extreme sums. Any combination that matches a ticked pattern is thrown out and drawn again, and you can follow this in the "Attempt log" under the Generate button. To be clear, this filter does not raise your chance of winning. The only thing it can change is how many people you would share with at the same odds.
 
 > The number of 1st-prize winners and the prize per winner, and the number and amount of 2nd-prize wins, come from this site's draw data (public data from Donghaeng Lottery); the shop case and the manual/automatic split are quoted from press reports at the time. You can see how the number of 1st-prize winners is spread across draws in [First-prize winner statistics](/statistics-prize.html), and 2nd and 3rd prizes in [2nd and 3rd prize statistics](/statistics-prize-2-3.html).
+
+## Frequently asked questions
+
+### Does the chance of 1st prize depend on the numbers you pick?
+
+No. Whatever six numbers you pick, the chance of 1st prize is the same 1 in 8,145,060. What differs is the money you receive if you win, because the total set aside for 1st prize is divided by the number of winners.
+
+### Have there been draws with dozens of 1st-prize winners?
+
+Yes. Draw 1019 (11 June 2022) had 50 1st-prize winners, who each got about 438.6m KRW, and draw 1128 (13 July 2024) had 63, who each got about 419.9m KRW. The cause was not the draw but people's choices piling up on the same numbers.
+
+### Why is picking only birthday numbers a disadvantage?
+
+Many people use the month (1–12) and day (1–31), so choices crowd into numbers 31 or lower. The odds are the same, but a combination with all six numbers 31 or lower is more likely to have co-winners, which can shrink your share if you win.
+
+### Does buying the same numbers on several tickets raise your chance?
+
+No. The chance is the same as with one ticket; only your share if you win gets bigger. If you win 1st prize with 10 tickets of the same numbers and there is one other winner, you take 10/11 of the 1st-prize total.
+
+### How can you pick numbers that are less likely to be shared?
+
+Nothing raises your odds; you can only lower the chance of sharing. The simplest way is automatic selection. If you pick yourself, mix in two or three numbers of 32 or higher and scatter them so no pattern shows. Of the 50 1st-prize winners in draw 1019, only 6 used automatic selection.

@@ -49,9 +49,20 @@ Others see only cell holders' nicknames, cell skins, visit counts per cell and t
 
 ## Common questions
 
-- Can I tap at home? No. You must be within 50 m of the retailer.
-- It says the accuracy is too low. We do not judge when the error exceeds 100 m. Go outdoors, turn on location (GPS) and try again a moment later.
-- Do I have to buy a ticket? No. Just drop in at the retailer.
-- Do closed retailers count? No. Only retailers open now count.
+### Can I tap at home?
 
-Check first whether the cells in your neighbourhood are grey. If they are in the grey zone, one retailer is enough to hold your first cell. [Open LottoHex](/lottohex.html)
+No. You must be within 50 m of the retailer.
+
+### What if it says the accuracy is too low?
+
+We do not judge when the error exceeds 100 m. Go outdoors, turn on location (GPS) and try again a moment later.
+
+### Do I have to buy a ticket?
+
+No. Just drop in at the retailer.
+
+### Do closed retailers count?
+
+No. Only retailers open now count.
+
+> Check first whether the cells in your neighbourhood are grey. If they are in the grey zone, one retailer is enough to hold your first cell. [Open LottoHex](/lottohex.html)
