@@ -2966,7 +2966,7 @@ function lottohexAboutHtml(md, snap) {
             <summary data-i18n-en="About LottoHex · this week">LottoHex 안내 · 이번 주</summary>
             <div class="sm-hexabout-body">
             <h2 data-i18n-en="What is LottoHex?">LottoHex란?</h2>
-            ${pEn('LottoHex는 로또 판매점 지도 위 육각형 칸(가운데서 꼭짓점까지 0.6km, 걸어서 15분쯤)을 차지하는 무료 땅따먹기 게임입니다. 판매점에 직접 가서 판매점 카드의 "다녀왔어요"를 누르면 위치로 확인하고(판매점 50m 안), 칸 안에서 다녀온 판매점이 가장 많은 사람이 그 칸의 주인이 됩니다. 복권을 살 필요는 없습니다.',
+            ${pEn('LottoHex(로또헥스)는 로또 판매점 지도 위 육각형 칸(가운데서 꼭짓점까지 0.6km, 걸어서 15분쯤)을 차지하는 무료 땅따먹기 게임입니다. 판매점에 직접 가서 판매점 카드의 "다녀왔어요"를 누르면 위치로 확인하고(판매점 50m 안), 칸 안에서 다녀온 판매점이 가장 많은 사람이 그 칸의 주인이 됩니다. 복권을 살 필요는 없습니다.',
                 'LottoHex is a free turf game on the lotto retailer map: the map is split into hexagon cells (0.6 km centre to corner, about a 15-minute walk across). Go to a retailer and tap "I\'ve been here" on its card; your location is checked (within 50 m), and whoever has visited the most retailers in a cell holds it. No purchase needed.')}
             <h2 data-i18n-en="How to play">하는 법</h2>
             <ol>
@@ -3008,10 +3008,10 @@ function storeMapPage(md, variant) {
     const sidoRows = [...S.sido.entries()].filter(([k]) => k !== '기타').sort((a, b) => b[1].w1 - a[1].w1);
     const net = S.net;
     const snap = hex ? lottohexSnap() : null;
-    const title = hex ? 'LottoHex · 로또 판매점 땅따먹기 — 육각 칸 차지 · Map 랭킹 | lottodraw.kr'
+    const title = hex ? 'LottoHex(로또헥스) · 로또 판매점 땅따먹기 — 육각 칸 차지 · Map 랭킹 | lottodraw.kr'
         : top ? `로또 판매점 TOP 50 지도 · 1등이 가장 많이 나온 50곳 (${first}~${last}회) | lottodraw.kr`
         : `로또 판매점 지도 · 1등 · 2등 나온 곳 전국 지도 (${first}~${last}회) | lottodraw.kr`;
-    const desc = hex ? 'LottoHex는 로또 판매점에 직접 다녀와 위치로 인증하고, 지도 위 육각형 칸을 차지하는 무료 땅따먹기 게임입니다. 칸 안에서 다녀온 판매점이 가장 많은 사람이 주인이 되고, 분기마다 Map 랭킹을 확정해 1~10위에 포인트를 드립니다. 복권을 살 필요는 없습니다.'
+    const desc = hex ? 'LottoHex(로또헥스)는 로또 판매점에 직접 다녀와 위치로 인증하고, 지도 위 육각형 칸을 차지하는 무료 땅따먹기 게임입니다. 칸 안에서 다녀온 판매점이 가장 많은 사람이 주인이 되고, 분기마다 Map 랭킹을 확정해 1~10위에 포인트를 드립니다. 복권을 살 필요는 없습니다.'
         : top ? `로또 1등이 가장 많이 나온 판매점 50곳을 지도 위 별로 봅니다(${first}~${last}회, 매주 갱신). 많이 팔린 곳일 가능성이 클 뿐, 어디서 사든 당첨 확률은 같습니다.`
         : `로또 1등 · 2등이 나온 판매점 ${fmt(md.rows.length)}곳을 전국 지도(3D · 2D)에서 봅니다(${first}~${last}회, 매주 갱신). 점이 클수록 1등 · 2등이 많이 나온 곳 — 많이 팔린 곳일 가능성이 큽니다. 어디서 사든 당첨 확률은 같습니다.`;
     const v = f => `${f}?v=${fingerprint(f)}`;
@@ -3023,7 +3023,7 @@ function storeMapPage(md, variant) {
     const pageFile = hex ? LOTTOHEX_FILE : STORE_MAP_FILE;   // canonical: LottoHex 는 자기 자신, TOP 50 공유 주소는 판매점 지도
     const ld = hex ? { '@context': 'https://schema.org', '@graph': [
         // 게임 성격을 알리는 용도(2026-11-09). 평점 · 리뷰는 실제 자료가 없어 넣지 않는다
-        { '@type': 'WebApplication', name: 'LottoHex', alternateName: '로또 판매점 땅따먹기', url: `${SITE}/${LOTTOHEX_FILE}`, description: desc,
+        { '@type': 'WebApplication', name: 'LottoHex', alternateName: ['로또헥스', '로또 판매점 땅따먹기'], url: `${SITE}/${LOTTOHEX_FILE}`, description: desc,
             applicationCategory: 'GameApplication', operatingSystem: 'Web', inLanguage: ['ko', 'en'], isAccessibleForFree: true,
             offers: { '@type': 'Offer', price: 0, priceCurrency: 'KRW' }, dateModified: (snap && snap.at) || UPDATED,
             publisher: { '@type': 'Organization', name: 'lottodraw.kr', url: SITE + '/' } },
