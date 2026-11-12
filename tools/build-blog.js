@@ -22,7 +22,8 @@
 // 본문 문법: ## 소제목, ### 작은 제목, 문단(줄을 바꾸면 <br>), - 목록, 1. 목록, > 인용, | 표 |,
 // **굵게**, `코드`, [링크](/tax.html). 링크는 사이트 뿌리 기준으로 쓰면 알아서 고쳐 단다.
 // 자주 묻는 질문: '## 자주 묻는 질문'(또는 '## 자주 묻는 것') 아래에 '### 질문?' 과 그 밑 문단을 두면
-// 화면에는 그대로 나오고, 같은 문장으로 FAQPage 구조화 데이터를 단다(물음표로 끝나는 ### 만, 두 개 이상일 때).
+// 화면에는 그대로 나오고(질문 앞 Q. · 답 첫 문단 앞 A. 는 css 가 붙인다 — 원고와 구조화 데이터에는 쓰지 않는다),
+// 같은 문장으로 FAQPage 구조화 데이터를 단다(물음표로 끝나는 ### 만, 두 개 이상일 때).
 // 답은 그 ### 아래 문단 · 목록이다(다음 ### 이나 ## 앞까지). 인용(>)은 답에 넣지 않는다 — 칸 뒤 맺음말은 인용으로 쓴다.
 // 구글은 2023-08 부터 FAQ 리치 결과를 정부 · 보건 사이트에만 보여 준다. 효과는 Bing · AI 답변이 문답을 뽑아 가는 쪽이다(2026-11-11).
 // 그림: 한 줄에 {{figure 이름}} — build-static-stats.js 가 넘겨준 그림(ctx.figures[이름], 영문은 그림 안에 들어 있다)을
@@ -193,16 +194,17 @@ const tr = html => (html === undefined ? '' : ` data-i18n-en="${esc(html)}"`);
 
 /* ───── 블록 그리기 ───── */
 
-// e 는 같은 자리의 영문 블록 (없으면 undefined)
-function renderBlock(b, e, id) {
+// e 는 같은 자리의 영문 블록 (없으면 undefined). cls 는 '자주 묻는 질문' 칸의 faq-q · faq-a (화면에서 Q. · A. 를 붙인다)
+function renderBlock(b, e, id, cls) {
+    const c = cls ? ` class="${cls}"` : '';
     const pick = f => (e ? f(e) : undefined);
     switch (b.type) {
     case 'h2':
         return `<h2 id="${id}"${tr(pick(x => inline(x.text)))}>${inline(b.text)}</h2>`;
     case 'h3':
-        return `<h3${tr(pick(x => inline(x.text)))}>${inline(b.text)}</h3>`;
+        return `<h3${c}${tr(pick(x => inline(x.text)))}>${inline(b.text)}</h3>`;
     case 'p':
-        return `<p${tr(pick(x => lines(x.lines)))}>${lines(b.lines)}</p>`;
+        return `<p${c}${tr(pick(x => lines(x.lines)))}>${lines(b.lines)}</p>`;
     case 'quote':
         return `<blockquote><p${tr(pick(x => lines(x.lines)))}>${lines(b.lines)}</p></blockquote>`;
     case 'ul':
@@ -368,10 +370,18 @@ module.exports = function buildBlog(ctx) {
     /* 글마다 본문을 그린다 */
     posts.forEach(p => {
         let h = 0;
+        let inFaq = false;     // '## 자주 묻는 질문' 칸 안인가
+        let afterQ = false;    // 바로 앞이 그 칸의 질문(###)인가 — 답 첫 문단에만 A. 를 단다
         p.heads = [];
         p.body = p.blocks.map((b, i) => {
             const e = p.en && p.en.blocks[i];
-            if (b.type !== 'h2') return renderBlock(b, e);
+            if (b.type !== 'h2') {
+                const cls = inFaq && b.type === 'h3' ? 'faq-q' : inFaq && afterQ && b.type === 'p' ? 'faq-a' : '';
+                afterQ = inFaq && b.type === 'h3';
+                return renderBlock(b, e, undefined, cls);
+            }
+            inFaq = FAQ_HEAD.test(plainText(b.text));
+            afterQ = false;
             const id = `s${++h}`;
             p.heads.push({ id, ko: inline(b.text), en: e && inline(e.text) });
             return renderBlock(b, e, id);

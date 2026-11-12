@@ -1607,6 +1607,11 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 .blog-post blockquote p { margin: 0; }
 .blog-post .table-scroll { margin: 12px 0; }
 .blog-post code { padding: 1px 4px; border-radius: 3px; background: var(--soft-2, #f0f0f0); font-size: 90%; }
+/* 블로그 '자주 묻는 질문': 질문 앞 Q.(파랑) · 답 첫 문단 앞 A.(회색). 글자는 화면에만 — 원고와 구조화 데이터에는 없다(2026-11-12).
+   '/ ""' 는 화면 낭독기가 Q. · A. 를 읽지 않게 하는 대체 글(지원하지 않는 브라우저는 앞줄을 쓴다) */
+.blog-post .faq-q::before, .blog-post .faq-a::before { content: "Q."; content: "Q." / ""; display: inline-block; min-width: 1.6em; font-weight: bold; }
+.blog-post .faq-q::before { color: var(--brand); }
+.blog-post .faq-a::before { content: "A."; content: "A." / ""; color: var(--muted); }
 .blog-post .related { margin: 28px 0 0; padding: 14px 16px; border: 1px solid var(--line-soft, #e3e8f2); border-radius: 8px; }
 .blog-post .related h2 { margin: 0 0 8px; font-size: 16px; }
 .blog-post .related ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
