@@ -619,6 +619,53 @@ test('LottoHex 분기 보상: 확정 순위 1위 1,000 · 2위 500 … 운영자
     } finally { Date.now = realNow; }
 });
 
+test('LottoHex 점령 점수(2026-11-12): 한국 날짜가 바뀐 뒤 처음 한 번, 차지한 칸 하나에 0.1점 · 운영자 빼고 · 같은 날 두 번 주지 않는다(중간에 끊겨도) · 점수 · 랭킹에 들어간다', async () => {
+    let now = kstTime(2026, 12, 10, 22, 0);
+    Date.now = () => now;
+    try {
+        const env = await fresh();
+        const m = env.COMMUNITY._m;
+        const a = await member(env, '5101', '칸부자');
+        const b = await member(env, '5102', '칸하나');
+        const c = await member(env, '5103', '운영');
+        for (const s of [a, b, c]) assert.equal((await join(env, s)).status, 200);
+        await visit(env, a, '11100001');
+        await visit(env, a, '11100004');   // 칸부자: 0,0 · 1,0
+        await visit(env, b, '11100005');   // 칸하나: 2,0
+        now += 60 * 1000;
+        await visit(env, c, '11100006');   // 운영: 2,0 에 1곳(같은 수, 1분 더 최근) — 칸하나에게서 빼앗는다
+        const key = nick => [...m.keys()].find(k => k.startsWith('u:') && m.get(k).nick === nick);
+        const st = m.get(key('운영')); st.staff = true; m.set(key('운영'), st);
+        env.COMMUNITY.restart();
+        const pay = () => env.COMMUNITY.get().fetch('https://community/', { method: 'POST', body: JSON.stringify({ op: 'terrHoldPay', now }) }).then(r => r.json());
+        const hold = nick => (m.get(key(nick)).thp || { pts: 0 }).pts;
+        now = kstTime(2026, 12, 11, 0, 17);
+        const p1 = await pay();
+        assert.deepEqual([p1.done, p1.day, p1.paid, p1.pts], [true, '2026-12-11', 1, 0.2]);
+        assert.deepEqual([hold('칸부자'), hold('칸하나'), hold('운영')], [0.2, 0, 0], '칸 2개 = 0.2 · 칸을 빼앗긴 사람 0 · 운영자 0');
+        assert.equal(m.get(key('칸부자')).thp.n, 2);
+        // 같은 날 다시 돌아도(끝까지 줬든 중간에 끊겼든) 두 번 주지 않는다
+        now = kstTime(2026, 12, 11, 1, 17);
+        assert.equal((await pay()).done, false);
+        m.delete('thd'); env.COMMUNITY.restart();
+        assert.equal((await pay()).paid, 0);
+        assert.equal(hold('칸부자'), 0.2);
+        // 다음 날 · 그다음 날: 0.1 이 쌓여도 소수 첫째 자리로
+        assert.equal((await visit(env, b, '11100005', { again: true })).status, 200);   // 칸하나가 다음 날 또 다녀와 2,0 을 되찾는다(1곳씩, 더 최근)
+        now = kstTime(2026, 12, 12, 0, 17);
+        await pay();
+        now = kstTime(2026, 12, 13, 0, 17);
+        await pay();
+        assert.deepEqual([hold('칸부자'), hold('칸하나'), hold('운영')], [0.6, 0.2, 0]);
+        const sc = (await call(env, 'GET', '/api/me', { headers: auth(a) })).data.user.score;
+        assert.equal(sc.hold, 0.6);
+        assert.ok(sc.total >= 0.6 && sc.avail >= 0.6, '점수 · 쓸 수 있는 포인트에 들어간다');
+        const rk = (await call(env, 'GET', '/api/ranking', { headers: auth(a) })).data;
+        assert.equal(rk.me.hold, 0.6);
+        assert.equal(rk.points.terrHold, 0.1);
+    } finally { Date.now = realNow; }
+});
+
 /* ───── 마일스톤 · 칭호(2026-11-09 — src/titles.js) ───── */
 
 const line = (n, q0 = 0, r0 = 0) => Array.from({ length: n }, (_, i) => (q0 + i) + ',' + r0);

@@ -34,8 +34,8 @@
         ])));
     }
 
-    // LottoHex 몫(2026-11-12 사장님 — "랭킹 설명에 로또헥스 점수 포함이라고"): 위치 인증한 다녀온 곳 + 분기 순위 보상 + 마일스톤 — worker score() 의 verified · hex · ms
-    const hexPts = (me, p) => (me.verified || 0) * ((p && p.visit) || 10) + (me.hex || 0) + (me.ms || 0);
+    // LottoHex 몫(2026-11-12 사장님 — "랭킹 설명에 로또헥스 점수 포함이라고"): 위치 인증한 다녀온 곳 + 점령 점수 + 분기 순위 보상 + 마일스톤 — worker score() 의 verified · hold · hex · ms
+    const hexPts = (me, p) => Math.round(((me.verified || 0) * ((p && p.visit) || 10) + (me.hold || 0) + (me.hex || 0) + (me.ms || 0)) * 10) / 10;
 
     function showMe(me, p) {
         const box = $('rank-me');

@@ -418,6 +418,7 @@
             row(tr('my.buy', '이용권 점수'), tr('my.ptsN', '{n}점', { n: num(sc.buy) })),
             sc.verified ? row(tr('my.verified', '다녀온 곳 인증'), tr('my.verifiedN', '{n}번 · {p}점', { n: num(sc.verified), p: num(sc.verified * 10) })) : null,
             sc.hex ? row(tr('my.hex', 'LottoHex 보상'), tr('my.ptsN', '{n}점', { n: num(sc.hex) })) : null,
+            sc.hold ? row(tr('my.hold', 'LottoHex 점령'), tr('my.ptsN', '{n}점', { n: num(sc.hold) })) : null,   // 2026-11-12 — 차지한 칸 하나에 하루 0.1
             sc.ms ? row(tr('my.ms', '마일스톤'), tr('my.ptsN', '{n}점', { n: num(sc.ms) })) : null,   // 2026-11-09 — 단계마다 한 번
             sc.spent ? row(tr('my.spent', '쓴 포인트'), tr('my.ptsN', '{n}점', { n: num(sc.spent) })) : null,
             el('div', { className: 'my-actions' }, [el('a', { className: 'btn btn-secondary btn-mini', href: 'ranking.html', text: tr('my.goRanking', '랭킹 보기') })]),

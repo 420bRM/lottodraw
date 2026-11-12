@@ -66,6 +66,7 @@ export default {
         // 영역: 분기가 끝나면 그때의 Map 랭킹을 확정해 남긴다(이미 했으면 그냥 지나간다, territory.js)
         if (loginReady(env)) ctx.waitUntil(community(env, 'geoHousekeep', { now: Date.now(), gps: gpsOn(env) }).catch(err => console.error('geo housekeep', err)));   // 위치 인증: 켜는 날 한 번 손 표시 지우기 · 확인자료 6개월 지난 것 지우기
         if (loginReady(env)) ctx.waitUntil(community(env, 'terrFinalize', { now: Date.now(), site: siteUrl(env) }).catch(err => console.error('territory finalize', err)));
+        if (loginReady(env)) ctx.waitUntil(community(env, 'terrHoldPay', { now: Date.now(), site: siteUrl(env) }).catch(err => console.error('territory hold', err)));   // 점령 점수: 한국 날짜가 바뀐 뒤 처음 한 번
     },
     async fetch(request, env, ctx) {
         // HTTPS 만(2026-11-09 — 위치기반서비스 신고: "사이트와 서버 사이 모든 통신 HTTPS"). http 로 오면 GET 은 https 로 돌려보내고 나머지는 거절

@@ -27,7 +27,7 @@ lottodraw.kr 광고 집행 전용 세션이 이 파일 하나로 이어 받도�
 - 도착 페이지: <https://www.lottodraw.kr/lottohex.html> (LottoHex 전용), 판매점 지도 <https://www.lottodraw.kr/store-map.html>
 - 설명 글: <https://www.lottodraw.kr/blog/lottohex-how-to-play.html>
 - 규칙(광고 문구가 사실과 맞아야 한다 — `worker/src/community.js` 의 `POINTS`):
-  - 현장 인증 **10P**(같은 곳 하루 1번, 하루 최대 50P) · 분기 Map 랭킹 보상(1위 1,000P · 2위 500P · 3위 300P · 4–10위 100P)
+  - 현장 인증 **10P**(같은 곳 하루 1번, 하루 최대 50P) · 점령 점수(차지한 칸 하나에 하루 0.1P) · 분기 Map 랭킹 보상(1위 1,000P · 2위 500P · 3위 300P · 4–10위 100P)
   - 칸을 모으면 칭호(마일스톤), 영역 빛 벽 300P, 칸 모양 바꾸기 30P
   - 점령 · 빼앗기 소식은 닉네임 · N번째 블록만 공개(어느 칸인지는 비공개)
 - 1등 · 2등 판매점 지도, 전철역 · 지역 검색도 있다(판매점 지도 쪽 광고를 할 때 쓸 거리).
