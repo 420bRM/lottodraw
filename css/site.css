@@ -149,16 +149,12 @@ a { color: var(--link, #0066cc); }
 .nav li { margin: 4px 14px; }
 .nav a { display: block; padding: 4px 0; color: var(--fg, #000); font-weight: bold; text-decoration: none; }
 .nav a:hover, .nav a[aria-current="page"] { color: var(--brand); }
-/* 휴대폰: 메뉴 7개를 4 + 3 으로 두 줄 다 꽉 차게(2026-11-11 사장님 — 5 + 2 로 둘째 줄이 가운데 둘만 남아 어색했다).
-   첫 줄 4칸 · 둘째 줄 3칸이 저마다 같은 폭(12칸 격자: 3칸씩 · 4칸씩). 항목은 줄이지 않는다. 판매점 지도(.nav-map, 8번째)는 휴대폰에서 감춘다 */
+/* 휴대폰: 메뉴 6개를 3 + 3 같은 폭 칸으로(2026-11-11 4 + 3 → 11-12 "5개월 통계"를 메뉴에서 빼 6개 — 사장님).
+   판매점 지도 · LottoHex(.nav-map, 7번째)는 휴대폰에서 감춘다(머리글 오른쪽 위에 있다) */
 @media (max-width: 599px) {
-    .nav ul { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 2px 4px; padding: 6px 8px; }
-    .nav li { grid-column: span 4; margin: 0; min-width: 0; }
-    .nav li:nth-child(-n+4) { grid-column: span 3; }
+    .nav ul { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px 4px; padding: 6px 8px; }
+    .nav li { margin: 0; min-width: 0; }
     .nav a { padding: 6px 0; overflow: hidden; font-size: 14px; letter-spacing: -0.03em; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
-}
-@media (max-width: 389px) {
-    .nav a { font-size: 13px; letter-spacing: -0.04em; }
 }
 
 /* ───── 2단 레이아웃: 좌 생성기 / 우 통계 ───── */
@@ -681,11 +677,23 @@ html.home { scroll-behavior: smooth; }
 .tour-btn:hover { border-color: var(--brand); }
 /* 메뉴 맨 오른쪽 "판매점 지도"(js/theme.js 가 붙인다 — 2026-10-27 사장님, 생성기 제목 아래 단추에서 옮김). 넓은 화면은 메뉴 줄 오른쪽 끝, 좁으면 메뉴 끝에 */
 .nav { position: relative; }
+.nav .nav-map { display: flex; align-items: center; gap: 8px; }
 .nav .nav-map a { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border: 1px solid var(--brand); border-radius: 999px; color: var(--brand); }
-.nav .nav-map a::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #f07a1a; box-shadow: 9px 0 0 #3b6fd8; margin-right: 9px; }
-.nav .nav-map a:hover { background: var(--brand-bg, #003087); color: #fff; }
-@media (min-width: 1100px) {
+.nav .nav-map a:not(.nav-hex)::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #f07a1a; box-shadow: 9px 0 0 #3b6fd8; margin-right: 9px; }
+.nav .nav-map a:not(.nav-hex):hover { background: var(--brand-bg, #003087); color: #fff; }
+/* "판매점 지도" 왼쪽 LottoHex(2026-11-12 사장님): 지도 모드 단추처럼 어두운 보라 · 육각형 · 작은 "땅따먹기 게임" — 한 줄 */
+.nav .nav-map a.nav-hex { border-color: #4b3bb8; background: linear-gradient(135deg, #24135f, #2d3a8f 60%, #0f6170); color: #fff; box-shadow: 0 1px 5px rgba(36, 19, 95, .25); }
+.nav .nav-map a.nav-hex:hover { filter: brightness(1.15); }
+.nav .nav-map a.nav-hex b { font-weight: bold; }
+.nav .nav-map a.nav-hex small { color: rgba(255, 255, 255, .78); font-size: 11px; font-weight: 600; }
+.nav-hex-ico { flex: none; width: 11px; height: 12px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: linear-gradient(160deg, #ffd76a, #ff6fae 55%, #8f7bff); }
+/* 넓은 화면: 판매점 지도 · LottoHex 묶음을 메뉴 줄 오른쪽 끝에 띄운다. LottoHex 가 붙어 묶음이 넓어져(2026-11-12) 1100 → 1200px 부터,
+   가운데 메뉴와 닿지 않게 1340px 밑에서는 LottoHex 의 작은 "땅따먹기 게임"을 감춘다. 그보다 좁으면 메뉴 다음 줄 가운데 */
+@media (min-width: 1200px) {
     .nav .nav-map { position: absolute; top: 50%; right: max(20px, calc((100% - 1440px) / 2 + 20px)); margin: 0; transform: translateY(-50%); }
+}
+@media (min-width: 1200px) and (max-width: 1339px) {
+    .nav .nav-map a.nav-hex small { display: none; }
 }
 /* 휴대폰(600px 밑): 머리글 오른쪽 위(LOTTODRAW.KR 줄)로 옮긴다(2026-11-09 사장님) — 메뉴 끝의 것은 감춘다 */
 /* 두 단추(판매점 지도 · LottoHex)는 .banner-links 한 묶음 — 넓은 화면에서는 통째로 감춘다(메뉴에 판매점 지도가 있다) */

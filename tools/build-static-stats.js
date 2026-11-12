@@ -325,10 +325,10 @@ function rankList(rows, label) {
 
 /* ───── 공통 틀 ───── */
 
+// 메뉴 6개(2026-11-12 사장님 — 머리글에 "최근 5개월 통계" 단추가 있어 메뉴의 "5개월 통계"는 뺐다. 바닥글에는 남긴다)
 const NAV = [
     ['index.html', '생성기 · 통계', 'nav.index'],
     ['draws.html', '당첨번호', 'nav.draws'],
-    ['statistics.html', '5개월 통계', 'nav.statistics'],
     ['top-prize.html', 'TOP 50 당첨금', 'nav.topPrize'],
     ['tax.html', '실수령액 계산', 'nav.tax'],
     ['blog/index.html', '블로그', 'nav.blog'],
