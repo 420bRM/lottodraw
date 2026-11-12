@@ -1914,8 +1914,10 @@
     }
     function bindSkin() {
         const me = terr && terr.me;
-        const bm = terrPanel.querySelector('.sm-terr-beam input');
+        const bm = terrPanel.querySelector('.sm-terr-beam:not(.sm-terr-hexmail) input');
         if (bm) bm.addEventListener('change', () => saveBeam(bm.checked));
+        const hm = terrPanel.querySelector('.sm-terr-hexmail input');
+        if (hm) hm.addEventListener('change', () => saveHexMail(hm.checked));
         const bb = terrPanel.querySelector('.sm-terr-beam-buy');
         if (bb) bb.addEventListener('click', () => { if (confirm(T(BEAM_COST + '포인트로 영역 빛 벽을 삽니다. 한 번 사면 계속 쓰고, 켜고 끄기는 무료입니다.', 'Buy the territory light wall for ' + BEAM_COST + ' points? It is yours to keep and switching it on or off is free.'))) saveBeam(true); });
         const ed = terrPanel.querySelector('.sm-terr-skin-edit');
@@ -1939,6 +1941,20 @@
         if (!tb) return '<div class="sm-terr-beam"><span class="sm-terr-beam-t">✨ ' + T('영역 빛 벽', 'Territory light wall') + '<small>' + T('3D에서 내 영토 테두리가 빛납니다 · 모두에게 보임', 'Your territory edge glows in 3D · everyone sees it') + '</small></span>' +
             '<button type="button" class="sm-terr-skin-edit sm-terr-beam-buy">' + T(BEAM_COST + 'P로 사기', 'Buy · ' + BEAM_COST + 'P') + '</button></div>';
         return '<label class="sm-terr-beam"><input type="checkbox"' + (tb.on ? ' checked' : '') + '> ✨ ' + T('영역 빛 벽 켜기', 'Territory light wall') + ' <small>' + T('3D에서 · 모두에게 보임', 'in 3D · everyone sees it') + '</small></label>';
+    }
+    // 칸 알림 메일(2026-11-12 사장님 — 처음부터 켜짐, 하루 한 번 묶음, LottoHex 창 · 마이페이지 · 메일의 알림 끄기)
+    function hexMailRow() {
+        const A = account(), u = A && A.me() && A.me().user;
+        if (!u) return '';
+        return '<label class="sm-terr-beam sm-terr-hexmail"><input type="checkbox"' + (u.hexMail !== false ? ' checked' : '') + '> ✉️ ' +
+            T('칸을 빼앗기면 메일 알림', 'Email me when my cells are taken') + ' <small>' + T('하루 한 번 저녁', 'once a day, evening') + '</small></label>';
+    }
+    async function saveHexMail(on) {
+        const A = account();
+        try { await A.call('/api/me/hex-mail', { method: 'POST', body: { on } }); }
+        catch (e) { toast((e && e.message) || T('저장하지 못했습니다.', 'Could not save.')); drawTerr(); return; }
+        await A.refresh().catch(() => null);
+        toast(on ? T('✉️ 칸을 빼앗긴 날 저녁에 메일로 알려 드립니다', '✉️ We will email you on evenings when your cells are taken') : T('칸 알림 메일을 껐습니다', 'Cell alert emails are off'));
     }
     async function saveBeam(on) {
         const A = account();
@@ -1978,7 +1994,8 @@
             'My cells <b>' + fmt(me.cells.length) + '</b>' + (me.rank ? ' · rank <b>' + me.rank + '</b>' : '') + ' · ' + fmt(me.stores) + ' visited') + '</p>' +
             (me.lastRank ? '<p class="sm-terr-me">' + (MEDAL[me.lastRank - 1] || '🏅') + ' ' + T(seasonLabel(terr.last) + ' 확정 ' + me.lastRank + '위', seasonLabel(terr.last) + ' final: #' + me.lastRank) + '</p>' : '') +
             skinRow(me) +
-            beamRow();
+            beamRow() +
+            hexMailRow();
         const rank = (terr && terr.rank) || [];
         const last = terr && terr.last;
         const joined = !!(A && A.session() && me && me.joined), sheet = hexMobile();
