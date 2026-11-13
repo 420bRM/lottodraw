@@ -2024,8 +2024,8 @@
             '<li>' + T('밤 지도에서 크게 보면 차지한 블록 테두리를 빛이 시계 방향으로 돌고, 블록 면에는 유리에 비친 듯한 45° 빛이 번쩍 지나갑니다.', 'On the night map, zoomed in, a light runs clockwise round held blocks and a quick glassy 45° glint flashes across them.') + '</li>' +
             '<li>' + T('블록은 비우지 않습니다. 분기(1 · 4 · 7 · 10월 1일 0시)마다 그때의 Map 랭킹을 확정해 남깁니다.', 'Blocks are never cleared. At the start of each quarter the Map ranking at that moment is finalised and kept.') + '</li>' +
             '<li>' + T('점령 포인트: 지금 차지한 블록 하나에 하루 0.1P(매일 0시 무렵 그때 차지한 블록으로 셉니다, 운영자 제외). 회원 랭킹 점수에도 들어갑니다.', 'Block points: 0.1 pts a day for each block you hold (counted just after midnight each day from the blocks held then; operators excluded). They also count toward the member ranking.') + '</li>' +
-            '<li>' + T('확정 순위 보상: 1위 1,000P · 2위 500P · 3위 300P · 4~10위 100P(운영자 제외).', 'Quarterly rewards: 1st 1,000 · 2nd 500 · 3rd 300 · 4th–10th 100 points (operators excluded).') + '</li>' +
-            '<li>' + T('마일스톤: 다녀온 판매점 · 블록 · 시·도 수와 차지한 블록 수가 단계에 이를 때마다 포인트를 받습니다. 칭호: 조건을 채우면 얻고(왕지렁이 · 벌집 · 마포구 전문가 …), "도감" 탭에서 하나를 골라 별명 앞에 답니다.', 'Milestones and titles: reach steps in retailers, cells, provinces and territory for points, and earn titles for visits, territory, cell shapes (Giant Worm, Honeycomb …) and regions. Pick a title in "Collection" to show it before your nickname.') + '</li>' +
+            '<li>' + T('확정 순위 보상: 1위 1,000P · 2위 500P · 3위 300P · 4~10위 100P(운영자 제외).', 'Quarterly rewards: 1st 1,000 · 2nd 500 · 3rd 300 · 4th–10th 100 pts (operators excluded).') + '</li>' +
+            '<li>' + T('마일스톤: 다녀온 판매점 · 블록 · 시·도 수와 차지한 블록 수가 단계에 이를 때마다 포인트를 받습니다. 칭호: 조건을 채우면 얻고(왕지렁이 · 벌집 · 마포구 전문가 …), "도감" 탭에서 하나를 골라 별명 앞에 답니다.', 'Milestones: earn points each time the retailers, blocks and provinces you have visited, or the blocks you hold, reach a new step. Titles: earn them by meeting their conditions (Giant Worm, Honeycomb, district Expert …) and pick one in the "Collection" tab to show before your nickname.') + '</li>' +
             '<li>' + (gpsCfg() ? T('다녀온 곳은 판매점 50m 안에서 위치로 인증한 곳만 셉니다. 폐점한 곳은 세지 않습니다.', 'Only retailers verified by location (within 50 m) count. Closed retailers do not count.')
                 : T('지금은 "다녀왔어요"를 누른 기록만 셉니다. 위치 인증(판매점 50m 안)은 준비 중입니다. 폐점한 곳은 세지 않습니다.', 'For now a tap on "I\'ve been here" counts. Location check (within 50 m) is coming. Closed retailers do not count.')) + '</li>' +
             '<li>' + T('복권을 살 필요는 없습니다. 어디서 사든 1등 확률은 1/8,145,060으로 같습니다.', 'No purchase needed. Your chance of 1st prize is 1 in 8,145,060 wherever you buy.') + '</li>' +
@@ -2036,7 +2036,7 @@
             // 휴대폰 LottoHex 모드: 아래 판 — 손잡이 + 탭(현황 · 할 일 · 도감 · 랭킹), 고른 탭만
             const join = '<p class="sm-small">' + T('참여하면 여기에 나옵니다. "현황"에서 참여할 수 있습니다.', 'Join LottoHex (in Status) to see this.') + '</p>';
             const body = tab === 'todo' ? ms + (todo || join)
-                : tab === 'dex' ? (dex || '<p class="sm-small">' + T('로그인하고 판매점 카드의 "다녀왔어요"를 누르면 다녀온 블록이 여기에 모입니다.', 'Sign in and mark places you have been to collect cells.') + '</p>')
+                : tab === 'dex' ? (dex || '<p class="sm-small">' + T('로그인하고 판매점 카드의 "다녀왔어요"를 누르면 다녀온 블록이 여기에 모입니다.', 'Sign in and mark places you have been to collect blocks.') + '</p>')
                 : tab === 'rank' ? rankPart
                 : title + cellPart + statusPart + news + hint + rules + leave;
             const dot = on => (on ? '<i class="sm-tab-dot" aria-hidden="true"></i>' : '');
@@ -2080,7 +2080,7 @@
         });
         const lb = terrPanel.querySelector('.sm-terr-leave');
         if (lb) lb.addEventListener('click', async () => {
-            if (!window.confirm(T('LottoHex를 그만두시겠습니까? 차지한 블록을 모두 잃고 랭킹에서도 바로 빠집니다. 다녀온 곳 기록은 남습니다.', 'Leave LottoHex? Your cells and ranking go at once. Your visited list stays.'))) return;
+            if (!window.confirm(T('LottoHex를 그만두시겠습니까? 차지한 블록을 모두 잃고 랭킹에서도 바로 빠집니다. 다녀온 곳 기록은 남습니다.', 'Leave LottoHex? You lose all your blocks and leave the ranking at once. Your visited places stay.'))) return;
             try { await A.call('/api/territory/leave', { method: 'POST', body: {} }); await A.refresh().catch(() => null); await loadTerr(); drawTerrLayers(); drawTerr(); }
             catch (e) { terrPanel.querySelector('.sm-terr-msg').textContent = e.message || T('그만두지 못했습니다.', 'Could not leave.'); }
         });
@@ -2302,7 +2302,7 @@
     const geoAgreed = () => { const A = account(), u = A && A.me() && A.me().user, g = gpsCfg(); return !!(g && u && u.geo && u.geo.v === g.geoV); };
     // 동의 창의 줄 · 약관 링크(위치 동의 창과 LottoHex 참여 창이 같이 쓴다)
     const geoAgreeLine = age => '<label class="sm-terr-agree"><input type="checkbox"> ' + T('위치정보 서비스 이용에 동의합니다.' + (age ? ' (만 14세 이상)' : ''), 'I agree to the location-based service.' + (age ? ' (14 or older)' : '')) + '</label>';   // LottoHex 창에서는 위 줄이 19세
-    const termsLine = () => '<p class="sm-small"><a href="terms.html#location">' + T('이용약관', 'Terms of Use') + '</a></p>';   // 링크만(2026-11-09 사장님)
+    const termsLine = () => '<p class="sm-small"><a href="terms.html#location">' + T('이용약관', 'Terms of Service') + '</a></p>';   // 링크만(2026-11-09 사장님)
     // 체크가 모두 되어야 단추가 눌린다
     function agreeBoxes(el, ok) {
         const boxes = [...el.querySelectorAll('.sm-terr-agree input')];
@@ -2411,7 +2411,7 @@
                 // 안내는 짧게(2026-11-11 사장님 — 카드 위로 옮기며 "안내문자 간략하게")
                 '<p class="sm-visit-note">' + (cur ? (canPick ? T('다시 누르면 지움 · 색은 모든 곳에 적용', 'Tap again to remove · colour applies to all')
                     : T('다시 누르면 지움 · 🔒 색은 ' + COLOR_COST + 'P 또는 <a href="statistics.html">이용권</a>', 'Tap again to remove · 🔒 colours: ' + COLOR_COST + 'P or a <a href="statistics.html">pass</a>'))
-                    : gpsCfg() ? T('판매점 50m 안에서 누르면 +10P (하루 50P까지)', 'Within 50 m: +10P (up to 50P a day)') : T('나만 보입니다', 'Only you can see it')) + '</p>' +
+                    : gpsCfg() ? T('판매점 50m 안에서 누르면 +10P (하루 50P까지)', 'Within 50 m: +10 pts (up to 50 pts a day)') : T('나만 보입니다', 'Only you can see it')) + '</p>' +
                 (cur && inTerr ? '<p class="sm-visit-again-p">' + (today ? '<span class="sm-visit-today">✓ ' + T('오늘 다녀옴', 'Visited today') + '</span>'
                     : '<button type="button" class="sm-visit-again">↻ ' + T('오늘 또 다녀왔어요', 'Visited again today') + '</button>') + '</p>' : '') +
                 '';   // LottoHex 안내 문구는 뺐다(2026-11-08 사장님 — 말이 많다)

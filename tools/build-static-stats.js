@@ -3631,7 +3631,7 @@ function llmsTxt(posts) {
         line('/statistics-prize-2-3.html', '2등 · 3등 당첨금 통계', '평균 · 최고 · 최저 기록과 연도별 평균.'),
         line('/statistics-stores.html', '1등 판매점 통계', '판매점별 1등 · 2등 배출 기록.'),
         line('/store-map.html', '로또 판매점 지도', '1등 · 2등이 나온 판매점을 전국 지도에서 봅니다.'),
-        line(`/${LOTTOHEX_FILE}`, 'LottoHex', '판매점에 다녀와 위치로 인증하고 육각 칸을 차지하는 무료 땅따먹기 게임.'),
+        line(`/${LOTTOHEX_FILE}`, 'LottoHex', '판매점에 다녀와 위치로 인증하고 육각 블록을 차지하는 무료 땅따먹기 게임.'),
         line('/tax.html', '실수령액 계산기', '당첨금 세금(200만 원 이하 비과세, 3억 원까지 22%, 초과분 33%)과 실수령액.'),
         line('/probability.html', '로또 확률', '1등부터 5등까지 등수별 확률과 계산 공식.'),
         line('/top-prize.html', '역대 1등 당첨금 순위', '1인당 1등 당첨금 TOP 50과 2등 TOP 50.'),
