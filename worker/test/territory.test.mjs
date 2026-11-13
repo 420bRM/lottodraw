@@ -961,10 +961,10 @@ test('LottoHex 칸 알림 메일(2026-11-12): 처음엔 지난번 칸만 적고,
         assert.equal(sent.length, 1);
         const m = sent[0];
         assert.deepEqual(m.to, ['m1@gmail.com']);
-        assert.equal(m.subject, 'LottoHex: 오늘 칸 1개를 빼앗겼습니다');
-        assert.match(m.text, /가나다님, 오늘 LottoHex 칸 1개를 빼앗겼습니다/);
-        assert.match(m.text, /지금 그 칸 주인: 라마바님/);
-        assert.match(m.text, /지금 내 칸 1개 · Map 랭킹 \d위/);
+        assert.equal(m.subject, 'LottoHex: 오늘 블록 1개를 빼앗겼습니다');
+        assert.match(m.text, /가나다님, 오늘 LottoHex 블록 1개를 빼앗겼습니다/);
+        assert.match(m.text, /지금 그 블록 주인: 라마바님/);
+        assert.match(m.text, /지금 내 블록 1개 · Map 랭킹 \d위/);
         assert.ok(!/0,0|1,0|1110040|마포|37\.5/.test(m.text), '어느 칸 · 판매점 · 지역은 없다');
         assert.match(m.headers['List-Unsubscribe'], /k=hex/);
         assert.equal(env.COMMUNITY._m.get('mday').n, 1, 'Resend 하루 한도에 함께 센다');
