@@ -21,17 +21,21 @@ const grab = (start, end) => {
     return html.slice(i, j);
 };
 const box = {};
-vm.runInNewContext(grab('    function isPrime(n) {', '    // checkedPatternIds 는')
+vm.runInNewContext(grab('    const PATTERN_COUNT = ', '    function setPatterns(')
+    + grab('    function isPrime(n) {', '    // checkedPatternIds 는')
     + grab('    const SQUARES = [', '    function checkInvalidPattern(')
     + grab('    function acOf(sorted) {', '    function paintAc() {')
-    + 'this.patternHit = patternHit; this.acOf = acOf;', box);
-const ALL_IDS = Array.from({ length: 16 }, (_, i) => i + 1);
+    + 'this.patternHit = patternHit; this.acOf = acOf; this.patsOf = patsOf; this.PATTERN_COUNT = PATTERN_COUNT; this.DEFAULT_PATTERNS = DEFAULT_PATTERNS;', box);
+const ALL_IDS = Array.from({ length: box.PATTERN_COUNT }, (_, i) => i + 1);
+const ALL_MASK = 2 ** box.PATTERN_COUNT - 1;
 const maskByPage = s => ALL_IDS.reduce((m, id) => (box.patternHit(s, new Set([id])) ? m | (1 << (id - 1)) : m), 0);
 const runOf = s => { let run = 1, best = 1; for (let i = 1; i < 6; i++) { if (s[i] === s[i - 1] + 1) { run++; best = Math.max(best, run); } else run = 1; } return best; };
 
 // 1) 조합 하나 판정: 무작위 20만 개 + 경계에 걸리는 조합들
 const edge = [[1, 2, 3, 4, 5, 6], [40, 41, 42, 43, 44, 45], [2, 3, 5, 7, 11, 13], [1, 4, 9, 16, 25, 36], [3, 6, 9, 12, 15, 18], [31, 33, 35, 37, 39, 41],
-    [10, 11, 13, 15, 17, 19], [1, 2, 3, 4, 5, 34], [4, 8, 12, 16, 20, 24], [5, 10, 15, 20, 25, 30], [1, 2, 4, 8, 16, 32], [20, 30, 31, 40, 44, 45]];
+    [10, 11, 13, 15, 17, 19], [1, 2, 3, 4, 5, 34], [4, 8, 12, 16, 20, 24], [5, 10, 15, 20, 25, 30], [1, 2, 4, 8, 16, 32], [20, 30, 31, 40, 44, 45],
+    [3, 10, 20, 26, 36, 43], [1, 5, 11, 15, 21, 25], [1, 2, 3, 5, 8, 13], [1, 3, 6, 10, 15, 21], [16, 18, 20, 22, 24, 26], [1, 2, 3, 4, 5, 6],
+    [30, 31, 32, 35, 36, 37], [40, 41, 42, 43, 44, 45], [1, 2, 3, 4, 5, 54 - 54 + 7], [36, 37, 38, 39, 40, 17]].map(a => a.sort((x, y) => x - y));
 let bad = 0, n = 0;
 const rnd = () => { const a = []; while (a.length < 6) { const x = 1 + Math.floor(Math.random() * 45); if (!a.includes(x)) a.push(x); } return a.sort((x, y) => x - y); };
 for (const s of edge.concat(Array.from({ length: 200000 }, rnd))) {
@@ -39,20 +43,28 @@ for (const s of edge.concat(Array.from({ length: 200000 }, rnd))) {
     n++;
     if (c.mask !== maskByPage(s) || c.ac !== box.acOf(s) || c.run !== runOf(s)) { if (bad++ < 3) console.log('    다름:', s.join(','), c, maskByPage(s), box.acOf(s)); }
 }
-check(`조합 ${n.toLocaleString()}개: 패턴 16개 · AC값 · 가장 긴 연속이 홈 생성기와 같다`, bad === 0, bad + '개 다름');
+check(`조합 ${n.toLocaleString()}개: 패턴 ${box.PATTERN_COUNT}개 · AC값 · 가장 긴 연속이 홈 생성기와 같다`, bad === 0, bad + '개 다름');
 
 // 2) 전수: 홈 "보렐의 법칙" 카드 · AC값 통계 페이지 · 연속번호 통계와 같은 수
 const t0 = Date.now();
 const h = CS.scan({});
 check('전체 8,145,060개', h.total === 8145060, h.total);
-check('16개 패턴을 모두 켜면 6,583,366개 남는다(보렐 카드)', CS.count(h, { pat: 0xFFFF }).ok === 6583366);
+// 2026-11-13 개편: 특수 패턴 12개(기본) 27,597개 · 20개 모두 357,760개가 빠진다
+const SPECIAL_MASK = box.DEFAULT_PATTERNS.reduce((m, id) => m | (1 << (id - 1)), 0);
+check('기본(특수 패턴 12개)이면 27,597개 빠진다', CS.count(h, { pat: SPECIAL_MASK }).ok === 8145060 - 27597, 8145060 - CS.count(h, { pat: SPECIAL_MASK }).ok);
+check('20개 모두 켜면 357,760개 빠진다', CS.count(h, { pat: ALL_MASK }).ok === 8145060 - 357760, 8145060 - CS.count(h, { pat: ALL_MASK }).ok);
+const ONE = [1600, 180, 3003, 5005, 462, 84, 11350, 1540, 4480, 28, 84, 1, 5005, 5005, 5005, 715, 100947, 74613, 78525, 78525];
+check('패턴 하나씩 거르는 수', ONE.every((v, i) => 8145060 - CS.count(h, { pat: 1 << i }).ok === v), ONE.map((v, i) => 8145060 - CS.count(h, { pat: 1 << i }).ok).join(','));
+// 개편 전(16개 번호)으로 저장된 회원 설정 옮기기
+check('예전 기본값(1·2·3·5·6·7·9·10·11·12·15·16)을 새 번호로', JSON.stringify(box.patsOf({ pat: [1, 2, 3, 5, 6, 7, 9, 10, 11, 12, 15, 16] }).sort((a, b) => a - b)) === JSON.stringify([1, 3, 4, 5, 6, 7, 13, 16, 17, 18]));
+check('예전 합계 두 구간은 양극단 둘로 · 새 판(pv 2)은 그대로', JSON.stringify(box.patsOf({ pat: [13] }).sort()) === '[19,20]' && JSON.stringify(box.patsOf({ pat: [20], pv: 2 })) === '[20]');
 const AC_COMBOS = [180, 858, 7873, 26292, 103461, 239998, 823318, 1148170, 2675680, 1609174, 1510056];   // tools/build-static-stats.js
 check('AC값 1~10 별 조합 수(AC값 통계 페이지)', AC_COMBOS.every((v, ac) => !ac || CS.count(h, { acMin: ac, acExact: true }).ok === v));
 const RUNS = [3838380, 3848260, 425620, 31200, 1560, 40];
 check('가장 긴 연속 1~6 별 조합 수', RUNS.every((v, i) => CS.count(h, { run: i + 1 }).ok === v));
 check('3개 연속 + AC값 10 은 0개(화면이 막대 하나를 맞춘다)', CS.count(h, { run: 3, acMin: 10 }).ok === 0);
 check('2개 연속 + AC값 10 은 있다', CS.count(h, { run: 2, acMin: 10 }).ok === 881464);
-check('빠진 수를 조건별로 나눠 세면 합이 맞다', (() => { const r = CS.count(h, { pat: 0xFFFF, acMin: 8, run: 2 }); return r.ok + r.pat + r.ac + r.run + r.band === r.total; })());
+check('빠진 수를 조건별로 나눠 세면 합이 맞다', (() => { const r = CS.count(h, { pat: ALL_MASK, acMin: 8, run: 2 }); return r.ok + r.pat + r.ac + r.run + r.band === r.total; })());
 console.log(`    (전수 한 번 ${Date.now() - t0}ms)`);
 
 // 3) 고정수 · 제외수: 홈 생성기의 판정으로 직접 센 것과 같다
@@ -66,17 +78,17 @@ for (let a = 0; a < free.length; a++) for (let b = a + 1; b < free.length; b++) 
 }
 const hi = CS.scan({ include: inc, exclude: exc });
 check(`고정수 3·10·20 · 제외수 1·2·45: 전체 ${directTotal.toLocaleString()}개`, hi.total === directTotal, hi.total);
-check('같은 조건(패턴 16개 · AC 7 이상 · 2개 연속)의 남은 수가 직접 센 것과 같다', CS.count(hi, { pat: 0xFFFF, acMin: 7, run: 2 }).ok === direct, CS.count(hi, { pat: 0xFFFF, acMin: 7, run: 2 }).ok + ' vs ' + direct);
+check('같은 조건(패턴 20개 · AC 7 이상 · 2개 연속)의 남은 수가 직접 센 것과 같다', CS.count(hi, { pat: ALL_MASK, acMin: 7, run: 2 }).ok === direct, CS.count(hi, { pat: ALL_MASK, acMin: 7, run: 2 }).ok + ' vs ' + direct);
 
 // 4) 정확 표집: 뽑힌 조합이 조건을 지키고, 지난 당첨 조합은 빼고, 겹치지 않는다
 const past = { '1,2,3,4,5,6': 9999 };
-const sm = CS.sample({ include: [7], exclude: [], cond: { pat: 0xFFFF, acMin: 9, acExact: true, run: 3 }, past, k: 5 });
+const sm = CS.sample({ include: [7], exclude: [], cond: { pat: ALL_MASK, acMin: 9, acExact: true, run: 3 }, past, k: 5 });
 check('표집: 5개 · 모두 조건에 맞고 고정수를 품는다', sm.picks.length === 5 && sm.picks.every(s => {
     const c = CS.classify(s, null, null);
-    return s.includes(7) && !CS.failOf(c.mask, c.ac, c.run, c.band, { pat: 0xFFFF, acMin: 9, acExact: true, run: 3 });
+    return s.includes(7) && !CS.failOf(c.mask, c.ac, c.run, c.band, { pat: ALL_MASK, acMin: 9, acExact: true, run: 3 });
 }));
 check('표집: 서로 다른 조합', new Set(sm.picks.map(s => s.join(','))).size === 5);
-check('표집: 센 수가 표로 센 수와 같다', sm.ok === CS.count(CS.scan({ include: [7] }), { pat: 0xFFFF, acMin: 9, acExact: true, run: 3 }).ok);
+check('표집: 센 수가 표로 센 수와 같다', sm.ok === CS.count(CS.scan({ include: [7] }), { pat: ALL_MASK, acMin: 9, acExact: true, run: 3 }).ok);
 
 // 5) 선호도 모델: 실제 데이터로 앞뒤가 맞는지
 const { fitPopularity } = require(path.join(__dirname, 'popularity.js'));

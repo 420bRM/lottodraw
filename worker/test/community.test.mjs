@@ -245,6 +245,13 @@ test('번호 생성기 설정: 로그인한 회원만 저장 · 다듬어 저장
     const runOdd = await call(env, 'POST', '/api/me/generator', { headers: auth(s), body: { gen: { run: 4, pop: 9 } } });
     assert.equal(runOdd.data.user.gen.run, 0, '연속번호는 2 · 3 만');
     assert.equal(runOdd.data.user.gen.pop, 3, '나눠 가질 사람 줄이기는 0~3');
+    // 패턴 번호: pv 2(2026-11-13 개편)면 1~20, 없으면 예전 1~16
+    const pv2 = await call(env, 'POST', '/api/me/generator', { headers: auth(s), body: { gen: { pat: [20, 17, 21, 1], pv: 2 } } });
+    assert.deepEqual(pv2.data.user.gen.pat, [1, 17, 20]);
+    assert.equal(pv2.data.user.gen.pv, 2);
+    const pv1 = await call(env, 'POST', '/api/me/generator', { headers: auth(s), body: { gen: { pat: [20, 16, 1] } } });
+    assert.deepEqual(pv1.data.user.gen.pat, [1, 16], '판 표시가 없으면 예전 16개 번호');
+    assert.ok(!('pv' in pv1.data.user.gen));
     // 지우기
     const cleared = await call(env, 'POST', '/api/me/generator', { headers: auth(s), body: { gen: null } });
     assert.equal(cleared.data.user.gen, null);

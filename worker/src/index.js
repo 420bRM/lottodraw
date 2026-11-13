@@ -896,7 +896,7 @@ async function setNickname(request, env) {
 }
 
 // 번호 생성기 설정(로그인 회원). 고정수 6개까지 · 제외수 · 켠 패턴 번호(1~16) · 직전 당첨 조합 제외 칸(0~10, 화면의 끌기 막대 위치)
-// · 연속번호(0 끔 · 2 · 3 — 가장 긴 연속이 그 개수인 조합만) · 나눠 가질 사람 줄이기(0 끔 · 1~3 = 덜 팔리는 50 · 20 · 5%, 2026-11-13).
+// · 연속번호(0 끔 · 2 · 3 — 가장 긴 연속이 그 개수인 조합만) · 남들이 덜 사는 번호로 뽑기(0 끔 · 2 = 덜 팔리는 20%, 2026-11-13) · 패턴 번호 판(pv).
 // 받은 값을 그대로 믿지 않고 다듬어 저장한다. { gen: null } 이면 지운다
 const GEN_RECENT_MAX = 10;
 function cleanGen(raw) {
@@ -904,13 +904,15 @@ function cleanGen(raw) {
     const nums = (a, max) => (Array.isArray(a) ? [...new Set(a.map(Number).filter(n => Number.isInteger(n) && n >= 1 && n <= 45))].sort((x, y) => x - y).slice(0, max) : []);
     const inc = nums(raw.inc, 6);
     const exc = nums(raw.exc, 45).filter(n => !inc.includes(n));
-    const pat = Array.isArray(raw.pat) ? [...new Set(raw.pat.map(Number).filter(n => Number.isInteger(n) && n >= 1 && n <= 16))].sort((x, y) => x - y) : [];
+    // 패턴 번호: 2026-11-13 개편으로 1~20(pv: 2). pv 가 없으면 예전 16개 번호 — 화면(index.html PAT_OLD)이 새 번호로 옮겨 읽는다
+    const pv = raw.pv === 2 ? 2 : 0;
+    const pat = Array.isArray(raw.pat) ? [...new Set(raw.pat.map(Number).filter(n => Number.isInteger(n) && n >= 1 && n <= (pv ? 20 : 16)))].sort((x, y) => x - y) : [];
     const recent = Math.max(0, Math.min(GEN_RECENT_MAX, Math.floor(Number(raw.recent) || 0)));
     const ac = Math.max(0, Math.min(10, Math.floor(Number(raw.ac) || 0)));   // AC값 조건: 이 값 이상(0 = 끔)
     const acExact = raw.acExact === true && ac > 0;                          // true 면 "이 값만": AC값이 딱 ac 인 조합만(2026-10-18)
     const run = [2, 3].includes(Number(raw.run)) ? Number(raw.run) : 0;
     const pop = Math.max(0, Math.min(3, Math.floor(Number(raw.pop) || 0)));
-    return { inc, exc, pat, recent, ac, acExact, run, pop, at: Date.now() };
+    return Object.assign({ inc, exc, pat }, pv ? { pv } : {}, { recent, ac, acExact, run, pop, at: Date.now() });
 }
 async function saveGenerator(request, env) {
     const s = await sessionUser(request, env);
