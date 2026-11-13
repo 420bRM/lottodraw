@@ -2816,8 +2816,8 @@ function popularPage() {
         ], 'tier-stat'),
         pEn(`${fmt(TOTAL)}개 조합 모두에 다음 회차(${P.forRound}회) 기준 인기 점수를 매겨 덜 팔리는 쪽부터 잘랐습니다. 받는 몫은 최근 52회 평균 판매량(1등 기대 ${f1(fp.lambda)}명)으로 셈한 어림값입니다.`,
             `Every one of the ${fmt(TOTAL)} combinations was scored for the next draw (${P.forRound}) and cut from the least bought end. The share is an estimate based on average sales over the last 52 draws (${f1(fp.lambda)} expected 1st-prize winners).`, 'note'),
-        pEn('<a href="index.html#gen-pop">홈 번호 생성기</a>에서 로그인하면 <strong>나눠 가질 사람 줄이기</strong>로 덜 팔리는 조합 안에서만 무작위로 뽑을 수 있고, 만든 번호마다 1등 공동 당첨자 지수가 함께 나옵니다. <a href="mypage.html">마이페이지 내 번호</a>에도 회차별로 나옵니다.',
-            'Sign in on the <a href="index.html#gen-pop">home page generator</a> to draw at random only from less-bought combinations with <strong>Share less</strong>, and to see a co-winner index for every line you make. It also appears for each draw in <a href="mypage.html">My numbers</a>.'),
+        pEn(`이용권이 있으면 <a href="index.html#gen-share">홈 번호 생성기의 생성 이력</a>에서 번호마다 <strong>1등 예상 당첨금(세전)</strong>을 보고, <strong>남들이 덜 사는 번호로 뽑기</strong>로 덜 팔리는 20% 조합 안에서만 무작위로 뽑을 수 있습니다. 예상 당첨금은 최근 52회 평균 1등 총액(약 ${Math.round(P.firstPrize.pool / 1e8)}억 원)을 함께 당첨될 사람 수의 어림값으로 나눈 값입니다. <a href="mypage.html">마이페이지 내 번호</a>에도 회차별로 나옵니다.`,
+            `With a pass, the <a href="index.html#gen-share">history on the home page generator</a> shows an <strong>estimated 1st prize (pre-tax)</strong> for every line, and <strong>Draw numbers others buy less</strong> draws only from the least bought 20% of sets. The estimate divides the average 1st-prize total of the last 52 draws (about ${(P.firstPrize.pool / 1e9).toFixed(1)}bn KRW) by the estimated number of people you would share it with. It also appears for each draw in <a href="mypage.html">My numbers</a>.`),
     ];
 
     const method = [
@@ -2885,7 +2885,7 @@ function popularityJson() {
             mostDrawn10: { pct: r5(P.hotEffect.pct), se: r5(P.hotEffect.se), note: '그때까지 가장 많이 나온 번호 10개 중 하나당' },
         },
         checks: { tier4: r5(P.check.tier4), oddEven: r5(P.check.halves), eras: r5(P.check.eras) },
-        firstPrize: { a: r5(P.firstPrize.a), c: r5(P.firstPrize.c), seC: r5(P.firstPrize.seC), lambda: r5(P.firstPrize.lambda),
+        firstPrize: { a: r5(P.firstPrize.a), c: r5(P.firstPrize.c), seC: r5(P.firstPrize.seC), lambda: r5(P.firstPrize.lambda), pool: Math.round(P.firstPrize.pool),
             quintiles: P.firstPrize.quintiles.map(x => ({ draws: x.rounds, first: r5(x.first), second: r5(x.second) })) },
         // 홈 생성기 · 마이페이지가 쓰는 다음 회차 기준 값: 번호별 무게(β + 지난주 · 많이 나온 번호 효과), 덜 팔리는 50 · 20 · 5% 경계, 점수 백분위(0~100%)
         generator: {

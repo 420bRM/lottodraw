@@ -83,7 +83,7 @@ body.sm-full #theme-btn { display: none !important; }
 .sm-mode[aria-pressed="true"] .sm-check { border-color: #f07a1a; background: #f07a1a url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.2 5 8.6 9.5 3.6' fill='none' stroke='%23fff' stroke-width='1.8'/%3E%3C/svg%3E") center / 100% no-repeat; }
 .sm-fade { display: flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 7px; font-size: 10.5px; }
 .sm-fade input { width: 96px; margin: 0; }   /* 모양(눈금 · ◆ 손잡이 · 주황)은 css/site.css 끌기 막대 */
-.sm-fade output { min-width: 56px; color: var(--brand, #003087); font-weight: bold; }
+.sm-fade output { min-width: 56px; color: var(--brand, #003087); font-weight: bold; white-space: nowrap; }
 
 /* 이색 판매점: 단추 · 목록(왼쪽 아래 위로 펼침) · 지도 위 별 */
 .sm-fun-btn { padding: 3px 9px; border: 1px solid #e9c46a; border-radius: 999px; background: #fff8e6; color: #8a5a00; box-shadow: 0 1px 5px rgba(0, 0, 0, .12); font: inherit; font-size: 10.5px; font-weight: bold; cursor: pointer; }
@@ -525,6 +525,9 @@ body.sm-full #theme-btn { display: none !important; }
     .sm-modes .sm-mode:last-of-type { border-radius: 0 9px 9px 0; }
     .sm-modes .sm-mode[aria-pressed="true"] { position: relative; z-index: 1; }
     .sm-fade { margin: 10px 14px 0; padding: 0; border: 0; background: none; }
+    /* PC 왼쪽 판: 막대가 남는 폭을 쓰고 글자는 한 줄(2026-11-13 — "1등 5회 이상"이 두 줄로 꺾였다). 글자 칸은 가장 긴 "1등 31회 이상" 폭으로 고정해 값이 바뀌어도 막대가 움직이지 않게 */
+    .sm-fade input { flex: 1 1 auto; width: auto; min-width: 0; }
+    .sm-fade output { flex: none; min-width: 84px; }
     /* 탭 줄(2026-11-10 사장님 — "다닥다닥 붙어 있다"): 한 줄에 밀어 넣던 것을 네 칸 격자(두 줄)의 칸막이 단추로. 고른 탭은 흰 칸이 떠오른다 */
     .sm-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; margin: 12px 12px 0; padding: 3px; border: 0; border-radius: 10px; background: var(--soft, #eef1f6); }
     .sm-tab { position: relative; min-width: 0; padding: 7px 4px; border: 0; border-radius: 7px; overflow: hidden; color: var(--muted, #667); font-size: 12.5px; letter-spacing: 0; text-overflow: ellipsis; }
