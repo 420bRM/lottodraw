@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>회원 랭킹 | lottodraw.kr</title>
-    <meta name="description" content="lottodraw.kr 회원 랭킹 — 출석, 반응, 이용권으로 쌓은 점수 순위.">
+    <meta name="description" content="lottodraw.kr 회원 랭킹 — 출석, 반응, 이용권, LottoHex로 모은 포인트 순위.">
     <meta name="robots" content="noindex">
     <link rel="canonical" href="https://www.lottodraw.kr/ranking.html">
     <meta name="google-adsense-account" content="ca-pub-9372871176021283">
@@ -12,9 +12,9 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <link rel="stylesheet" href="css/site.css?v=2bfbe279">
-    <script src="js/i18n-dict.js?v=8c7ec3aa"></script>
+    <script src="js/i18n-dict.js?v=201b0dd0"></script>
     <script src="js/premium-config.js?v=ca702ca6"></script>
-    <script src="js/i18n.js?v=f54b4058"></script>
+    <script src="js/i18n.js?v=9f8daef6"></script>
     <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "91c08d8a39d944e69c10024f2314b955"}'></script><!-- End Cloudflare Web Analytics -->
 </head>
 <body>
@@ -46,28 +46,28 @@
 
         <main class="prose rank-page">
         <h1 data-i18n="rank.h1">회원 랭킹</h1>
-        <p class="stat-lead" data-i18n-html="rank.lead">출석하고, 카드에 반응을 남기고, 이용권을 쓰면 점수가 쌓입니다. <b>LottoHex 점수</b>(다녀온 곳 인증 · 점령 점수 · 분기 순위 보상 · 마일스톤)도 이 랭킹 점수에 함께 들어갑니다. 별명이 있는 회원만 순위에 오르며, 가입하고 3일 안에 별명을 정하지 않으면 자동으로 별명이 붙습니다.</p>
+        <p class="stat-lead" data-i18n-html="rank.lead">출석하고, 카드에 반응을 남기고, 이용권을 사면 포인트가 쌓입니다. <b>LottoHex 포인트</b>(다녀온 곳 인증 · 점령 포인트 · 분기 순위 보상 · 마일스톤)도 함께 쌓입니다. 랭킹은 모은 포인트 순이며, 포인트를 써도 모은 포인트는 줄지 않습니다. 별명이 있는 회원만 순위에 오르며, 가입하고 3일 안에 별명을 정하지 않으면 자동으로 별명이 붙습니다.</p>
 
         <div class="rank-me" id="rank-me" hidden></div>
 
         <div class="table-wrap">
             <table class="data-table rank-table" id="rank-table">
-                <thead><tr><th data-i18n="rank.col.rank">순위</th><th data-i18n="rank.col.nick">별명</th><th data-i18n="rank.col.points">점수</th></tr></thead>
+                <thead><tr><th data-i18n="rank.col.rank">순위</th><th data-i18n="rank.col.nick">별명</th><th data-i18n="rank.col.points">포인트</th></tr></thead>
                 <tbody><tr><td colspan="3" data-i18n="rank.loading">불러오는 중…</td></tr></tbody>
             </table>
         </div>
 
-        <h2 data-i18n="rank.how">점수는 이렇게 쌓입니다</h2>
+        <h2 data-i18n="rank.how">포인트는 이렇게 쌓입니다</h2>
         <ul id="rank-rules">
-            <li data-i18n="rank.r1">출석: 하루 한 번, 로그인한 채 사이트에 들어오면 +10점</li>
-            <li data-i18n="rank.r2">반응: 카드에 남긴 ♥ · $ · ₩ 하나마다 +2점 (취소하면 빠집니다)</li>
-            <li data-i18n="rank.r3">이용권: 로그인한 채 산 이용권 금액 100원마다 +10점 (환불하면 빠집니다)</li>
-            <li data-i18n="rank.r4">다녀온 곳(판매점 지도 · LottoHex): 판매점 50m 안에서 위치로 인증하면 +10점 (같은 판매점은 하루 한 번, 하루 50점까지)</li>
-            <li data-i18n="rank.r7">LottoHex 점령: 지금 차지한 칸 하나에 하루 +0.1점 (매일 0시 무렵 그때 차지한 칸으로 셈)</li>
-            <li data-i18n="rank.r5">LottoHex 분기 순위: 분기 확정 순위 1위 +1,000점 · 2위 +500점 · 3위 +300점 · 4~10위 +100점</li>
-            <li data-i18n="rank.r6">LottoHex 마일스톤: 다녀온 판매점 · 다녀온 칸 · 다녀온 시·도 · 최대 영토 단계마다 +10~500점 (단계마다 한 번)</li>
+            <li data-i18n="rank.r1">출석: 하루 한 번, 로그인한 채 사이트에 들어오면 +10P</li>
+            <li data-i18n="rank.r2">반응: 카드에 남긴 ♥ · $ · ₩ 하나마다 +2P (취소하면 빠집니다)</li>
+            <li data-i18n="rank.r3">이용권: 로그인한 채 산 이용권 금액 100원마다 +10P (환불하면 빠집니다)</li>
+            <li data-i18n="rank.r4">다녀온 곳(판매점 지도 · LottoHex): 판매점 50m 안에서 위치로 인증하면 +10P (같은 판매점은 하루 한 번, 하루 50P까지)</li>
+            <li data-i18n="rank.r7">LottoHex 점령: 지금 차지한 블록 하나에 하루 +0.1P (매일 0시 무렵 차지하고 있는 블록으로 셉니다)</li>
+            <li data-i18n="rank.r5">LottoHex 분기 순위: 분기 확정 순위 1위 +1,000P · 2위 +500P · 3위 +300P · 4~10위 +100P</li>
+            <li data-i18n="rank.r6">LottoHex 마일스톤: 다녀온 판매점 · 다녀온 블록 · 다녀온 시·도 · 최대 영토 수가 단계에 이를 때마다 +10~500P (단계마다 한 번)</li>
         </ul>
-        <p class="note" data-i18n="rank.note">점수는 순위 표시용입니다. 현금이나 상품으로 바꿀 수 없고, 당첨과도 관계가 없습니다.</p>
+        <p class="note" data-i18n="rank.note">포인트는 랭킹과 이 사이트 안에서만 쓰입니다. 현금이나 상품으로 바꿀 수 없고, 당첨과도 관계가 없습니다.</p>
     </main>
 
     <footer class="footer">
@@ -86,7 +86,7 @@
 </div>
 
 <script src="js/site-header.js?v=338f7a07"></script>
-<script src="js/ranking.js?v=87efd1c4"></script>
+<script src="js/ranking.js?v=417a9e93"></script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9372871176021283" crossorigin="anonymous"></script>
 <script src="js/draw-countdown.js?v=08472ba7" defer></script>
 </body>

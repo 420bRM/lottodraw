@@ -194,7 +194,7 @@
                 // 0·6~9 는 4개뿐이다. 횟수를 그대로 그리면 1~5 가 잘 나오는 것처럼 보인다.
                 const candidates = (digit >= 1 && digit <= 5) ? 5 : 4;
                 return {
-                    label: digit + '로 끝',
+                    label: '끝수 ' + digit,
                     labelEn: 'ends in ' + digit,
                     digit: digit,
                     candidates: candidates,

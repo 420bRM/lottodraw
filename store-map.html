@@ -68,12 +68,12 @@
              휴대폰은 지금처럼 한 줄로 흐르는 칩(LottoHex 카드도 칩 하나 + 켜면 "LottoHex만 보기") -->
         <div class="sm-chips" role="group" aria-label="지도에 보기" data-i18n-attr="aria-label:sm.layers">
             <div class="sm-turf" id="sm-turf" hidden>
-                <button type="button" class="sm-turf-main" id="sm-terr-chip" aria-pressed="false" title="육각 칸 땅따먹기 · Map 랭킹" data-i18n-attr="title:sm.terrTitle">
+                <button type="button" class="sm-turf-main" id="sm-terr-chip" aria-pressed="false" title="육각 블록 땅따먹기 · Map 랭킹" data-i18n-attr="title:sm.terrTitle">
                     <span class="sm-turf-ico" aria-hidden="true"></span>
                     <span class="sm-turf-txt"><b><span>LottoHex</span></b><small class="sm-turf-sub" id="sm-turf-stat" data-i18n-en="Retailer turf game">판매점 땅따먹기 게임</small></span>
                     <span class="sm-turf-sw" aria-hidden="true"></span>
                 </button>
-                <button type="button" class="sm-turf-only" id="sm-terr-only" data-terr-only aria-pressed="false" title="판매점 점은 감추고 LottoHex 칸만 보기" data-i18n-attr="title:sm.terrOnlyTitle"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="LottoHex only">LottoHex만 보기</span></button>
+                <button type="button" class="sm-turf-only" id="sm-terr-only" data-terr-only aria-pressed="false" title="판매점 점은 감추고 LottoHex 블록만 보기" data-i18n-attr="title:sm.terrOnlyTitle"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="LottoHex only">LottoHex만 보기</span></button>
             </div>
             <span class="sm-chips-h" data-i18n-en="On the map">지도에 보기</span>
             <button type="button" class="sm-chip sm-chip-top" data-layer="top" aria-pressed="false" title="TOP 50 판매점만 별로 보기" data-i18n-attr="title:sm.topTitle"><span class="sm-star-ico" aria-hidden="true">✦</span>TOP 50</button>
@@ -84,7 +84,7 @@
             <button type="button" class="sm-chip sm-chip-fun sm-fun-toggle" aria-pressed="false" aria-controls="sm-fun"><span aria-hidden="true">🏆</span><span data-i18n-en="Unusual">이색 판매점</span></button>
             <button type="button" class="sm-chip sm-chip-mine" id="sm-mine-chip" aria-pressed="false" hidden title="내가 다녀온 곳 · 내 댓글 (로그인 회원)" data-i18n-attr="title:sm.mineTitle">📍 <span data-i18n-en="My places">내 기록</span><small class="sm-mine-sub" data-i18n-en="places I've been · my comments">다녀온 곳 · 내 댓글</small></button>
         </div>
-        <p class="sm-pcnote" data-i18n-en="On a PC you can see the Top 50 as a list.">PC에서 보면 TOP 50을 목록으로 볼 수 있습니다.</p>
+        <p class="sm-pcnote" data-i18n-en="On a PC you can see the Top 50 as a list.">PC에서는 TOP 50을 목록으로 볼 수 있습니다.</p>
     </div>
     <nav class="sm-tabs" role="tablist" aria-label="판매점 지도 탭">
         <button type="button" class="sm-tab" data-tab="top" role="tab" aria-selected="true">TOP 50</button>
@@ -114,13 +114,13 @@
         <div class="sm-fun" id="sm-fun" hidden>
             <h2 data-i18n-en="Unusual retailers">이색 판매점</h2>
             <ol><li><button type="button" class="sm-fun-item" data-k="0"><span class="sm-fun-ico" aria-hidden="true">⬇️</span><span><b data-i18n-en="Southernmost">가장 남쪽 판매점</b><span class="sm-fun-name">까투리 모슬포점 <small>제주 서귀포시</small></span><small data-i18n-en="33.22°N · 1 × 2nd">북위 33.22° · 2등 1번</small></span></button></li><li><button type="button" class="sm-fun-item" data-k="1"><span class="sm-fun-ico" aria-hidden="true">⬆️</span><span><b data-i18n-en="Northernmost">가장 북쪽 판매점</b><span class="sm-fun-name">최북단복권판매점 <small>강원 고성군</small></span><small data-i18n-en="38.50°N · no 1st or 2nd prize yet">북위 38.50° · 1등 · 2등 기록 없음</small></span></button></li><li><button type="button" class="sm-fun-item" data-k="2"><span class="sm-fun-ico" aria-hidden="true">⬅️</span><span><b data-i18n-en="Westernmost">가장 서쪽 판매점</b><span class="sm-fun-name">백령로또 <small>인천 옹진군</small></span><small data-i18n-en="124.72°E · 1 × 1st · 3 × 2nd">동경 124.72° · 1등 1번 · 2등 3번</small></span></button></li><li><button type="button" class="sm-fun-item" data-k="3"><span class="sm-fun-ico" aria-hidden="true">➡️</span><span><b data-i18n-en="Easternmost">가장 동쪽 판매점</b><span class="sm-fun-name">다줄래상회 <small>경북 울릉군</small></span><small data-i18n-en="130.91°E · 4 × 2nd">동경 130.91° · 2등 4번</small></span></button></li><li><button type="button" class="sm-fun-item" data-k="4"><span class="sm-fun-ico" aria-hidden="true">🏝️</span><span><b data-i18n-en="Most remote">가장 외딴 판매점</b><span class="sm-fun-name">백령로또 <small>인천 옹진군</small></span><small data-i18n-en="151 km to the next retailer · 1 × 1st · 3 × 2nd">가장 가까운 판매점까지 151km · 1등 1번 · 2등 3번</small></span></button></li><li><button type="button" class="sm-fun-item" data-k="5"><span class="sm-fun-ico" aria-hidden="true">👯</span><span><b data-i18n-en="Closest 1st-prize pair">1등 판매점끼리 가장 가까운 곳</b><span class="sm-fun-name">우리식품 · 광나루복권방 <small>서울 광진구</small></span><small data-i18n-en="우리식품 ↔ 광나루복권방, 28 m apart · both sold a 1st prize">우리식품 ↔ 광나루복권방, 28m 거리 · 두 곳 다 1등이 나왔습니다</small></span></button></li><li><button type="button" class="sm-fun-item" data-k="6"><span class="sm-fun-ico" aria-hidden="true">🏙️</span><span><b data-i18n-en="Densest spot">판매점이 가장 몰린 곳</b><span class="sm-fun-name">농협앞 가판점 <small>경기 성남시</small></span><small data-i18n-en="18 retailers within 500 m">이 판매점 둘레 500m 안에 판매점 18곳</small></span></button></li><li><button type="button" class="sm-fun-item" data-k="7"><span class="sm-fun-ico" aria-hidden="true">🛣️</span><span><b data-i18n-en="Top highway rest stop">1등이 가장 많이 나온 휴게소</b><span class="sm-fun-name">목화휴게소 <small>경남 사천시</small></span><small data-i18n-en="22 × 1st · 126 × 2nd · among 16 rest-stop retailers">1등 22번 · 2등 126번 · 휴게소 판매점 16곳 중</small></span></button></li><li><button type="button" class="sm-fun-item" data-k="8"><span class="sm-fun-ico" aria-hidden="true">⛴️</span><span><b data-i18n-en="1st prize on an island">섬에서 1등이 나온 판매점</b><span class="sm-fun-name">도깨비방망이 <small>전남 완도군</small></span><small data-i18n-en="6 × 1st · 15 × 2nd">전남 완도군 · 1등 6번 · 2등 15번</small></span></button></li></ol>
-            <p class="sm-small" data-i18n-en="Open retailers only, from Dong-haeng Lottery data. More in the blog post.">문을 연 판매점 기준(동행복권 자료). <a href="blog/lotto-store-extremes.html">블로그 글로 보기</a></p>
+            <p class="sm-small" data-i18n-en="Open retailers only, from Donghaeng Lottery data. More in the blog post.">문을 연 판매점 기준(동행복권 자료). <a href="blog/lotto-store-extremes.html">블로그 글로 보기</a></p>
         </div>
         <div class="sm-chips sm-modes" role="group" aria-label="1등 방식 (로그인 회원)" data-i18n-attr="aria-label:sm.modes">
                 <span class="sm-modes-label" data-i18n-en="1st-prize type">1등 방식</span>
                 <button type="button" class="sm-chip sm-mode" data-mode="A" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Auto">자동</span></button>
                 <button type="button" class="sm-chip sm-mode" data-mode="M" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Manual">수동</span></button>
-                <button type="button" class="sm-chip sm-mode" data-mode="S" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Semi">반자동</span></button>
+                <button type="button" class="sm-chip sm-mode" data-mode="S" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Semi-auto">반자동</span></button>
                 <!-- 휴대폰: "시도별 · 안내"를 반자동 오른쪽에(2026-11-11 사장님). 누르면 아래 #sm-info 를 연다. PC 는 탭 "시도별"이라 감춘다 -->
                 <button type="button" class="sm-chip sm-info-btn" aria-controls="sm-info" aria-expanded="false" data-i18n-en="By province · about">시도별 · 안내</button>
         </div>
@@ -131,7 +131,7 @@
     <details class="sm-info" id="sm-info">
         <summary data-i18n-en="By province · about">시도별 · 안내</summary>
         <div class="sm-info-body">
-            <p class="sm-small" data-i18n-en="1st- and 2nd-prize retailers, draws 262–1249, updated after each draw (last update 2026-11-07). Source: Dong-haeng Lottery winning-retailer search.">262~1249회 1등 · 2등 판매점 · 매주 추첨 후 자동 갱신 (마지막 갱신 2026-11-07) · 출처: 동행복권 당첨 판매점 조회</p>
+            <p class="sm-small" data-i18n-en="1st- and 2nd-prize retailers, draws 262–1249, updated after each draw (last update 2026-11-07). Source: Donghaeng Lottery winning-retailer search.">262~1249회 1등 · 2등 판매점 · 매주 추첨 후 자동 갱신 (마지막 갱신 2026-11-07) · 출처: 동행복권 당첨 판매점 조회</p>
             <p data-i18n-en="Tap an area name to move the map there. Where the 1st- and 2nd-prize shares are close, an area with many 1st prizes is simply one that sells more.">지역 이름을 누르면 지도가 그 지역으로 갑니다. 1등 비율과 2등 비율이 비슷하면, 1등이 많은 지역은 그만큼 많이 팔린 지역이라는 뜻입니다.</p>
             <div class="table-scroll">
 <table class="data-table tier-stat sm-sido">
@@ -158,11 +158,11 @@
 </tbody>
 </table>
 </div>
-            <p class="sm-small" data-i18n-en="Dot size is 2nd prizes + 1st prizes × 6 (a 1st prize is six times rarer). Sales per retailer are not published, so this only gauges how much was sold; it says nothing about where the next 1st prize will come from. Dong-haeng Lottery's online sales (134 1st-prize games) are not one location, so they are pinned in red as &quot;#0&quot; at the company office (tickets are not sold there). 1 retailers without a published location are also left out.">점 크기는 2등 횟수 + 1등 횟수 × 6입니다(1등은 2등보다 6배 드물다). 판매점별 판매량은 공개되지 않아 팔린 양을 짐작하는 값이며, 앞으로 1등이 나올 곳을 뜻하지 않습니다. 동행복권 인터넷 판매(1등 134게임)는 한 곳에 있는 판매점이 아니어서 동행복권 본사 자리에 붉은 "0등"으로 따로 찍었습니다(그곳에서 복권을 팔지는 않습니다). 위치가 공개되지 않은 1곳도 빠졌습니다.</p>
-            <p class="sm-small" data-i18n-en="&quot;All others&quot; shows the 2,323 of 9,131 current lotto retailers with no 1st or 2nd prize on record, as grey dots (source: Dong-haeng Lottery retailer search, as of 2026-11-02, updated monthly).">"일반 판매점"을 켜면 지금 로또를 파는 전국 판매점 9,131곳 중 1등 · 2등 기록이 없는 2,323곳이 회색 점으로 보입니다(출처: 동행복권 판매점 찾기, 2026-11-02 기준 · 매달 갱신).</p>
+            <p class="sm-small" data-i18n-en="Dot size is 2nd prizes + 1st prizes × 6 (a 1st prize is six times rarer). Sales per retailer are not published, so this only gauges how much was sold; it says nothing about where the next 1st prize will come from. Donghaeng Lottery's online sales (134 1st-prize games) are not one location, so they are pinned in red as &quot;#0&quot; at the company office (tickets are not sold there). 1 retailer without a published location is also left out.">점 크기는 2등 횟수 + 1등 횟수 × 6입니다(1등은 2등보다 6배 드뭅니다). 판매점별 판매량은 공개되지 않아 팔린 양을 짐작하는 값이며, 앞으로 1등이 나올 곳을 뜻하지 않습니다. 동행복권 인터넷 판매(1등 134게임)는 한 곳에 있는 판매점이 아니어서 동행복권 본사 자리에 붉은 "0등"으로 따로 찍었습니다(그곳에서 복권을 팔지는 않습니다). 위치가 공개되지 않은 1곳도 빠졌습니다.</p>
+            <p class="sm-small" data-i18n-en="&quot;All others&quot; shows the 2,323 of 9,131 current lotto retailers with no 1st or 2nd prize on record, as grey dots (source: Donghaeng Lottery retailer search, as of 2026-11-02, updated monthly).">"일반 판매점"을 켜면 지금 로또를 파는 전국 판매점 9,131곳 중 1등 · 2등 기록이 없는 2,323곳이 회색 점으로 보입니다(출처: 동행복권 판매점 찾기, 2026-11-02 기준 · 매달 갱신).</p>
             <p class="sm-small" data-i18n-en="Station names and positions, metro lines and tracks (station search, station markers and line overlay): © &lt;a href=&quot;https://www.openstreetmap.org/copyright&quot; rel=&quot;noopener&quot;&gt;OpenStreetMap&lt;/a&gt; contributors, ODbL. Line colours follow each operator's route map.">역 이름 · 위치 · 전철 노선과 선로(검색창 역 찾기 · 지도의 역 표시 · 노선 선): © <a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap</a> 기여자, ODbL. 노선 색은 각 운영사 노선도의 색입니다.</p>
             <p class="sm-small" data-i18n-en="Area search (province, city/district, neighbourhood) uses names and positions taken from administrative-dong boundaries released by Statistics Korea SGIS under KOGL Type 1, as modified by &lt;a href=&quot;https://github.com/vuski/admdongkor&quot; rel=&quot;noopener&quot;&gt;vuski/admdongkor&lt;/a&gt; (CC BY 4.0).">검색창의 지역 찾기(시·도 · 시·군·구 · 읍·면·동)는 통계청 통계지리정보서비스(SGIS)가 공공누리 제1유형으로 개방한 행정동 경계를 가공한 자료(<a href="https://github.com/vuski/admdongkor" rel="noopener">vuski/admdongkor</a>, CC BY 4.0)에서 이름과 위치만 뽑아 씁니다.</p>
-            <p data-i18n-en="&lt;a href=&quot;lottohex.html&quot;&gt;&lt;b&gt;LottoHex&lt;/b&gt;&lt;/a&gt; — a turf game: visit retailers, verify by location and take hexagon cells (Map ranking, quarterly rewards)."><a href="lottohex.html"><b>LottoHex</b></a> — 판매점에 다녀와 위치로 인증하고 육각 칸을 차지하는 땅따먹기 게임(Map 랭킹 · 분기 보상).</p>
+            <p data-i18n-en="&lt;a href=&quot;lottohex.html&quot;&gt;&lt;b&gt;LottoHex&lt;/b&gt;&lt;/a&gt; — a turf game: visit retailers, verify by location and take hexagon blocks (Map ranking, quarterly rewards)."><a href="lottohex.html"><b>LottoHex</b></a> — 판매점에 다녀와 위치로 인증하고 육각 블록을 차지하는 땅따먹기 게임(Map 랭킹 · 분기 보상).</p>
             <p data-i18n-en="Rankings and how we check whether a place simply sells a lot are in &lt;a href=&quot;statistics-stores.html&quot;&gt;1st-prize retailer statistics&lt;/a&gt;. Read next: &lt;a href=&quot;blog/lucky-store-myth.html&quot;&gt;are there really lucky lottery stores?&lt;/a&gt;">순위와 "많이 팔린 곳"인지 견주는 방법은 <a href="statistics-stores.html">1등 판매점 통계</a>에 있습니다. 함께 읽기: <a href="blog/lucky-store-myth.html">로또 명당은 정말 있을까</a></p>
             <p class="sm-small">지도: <a href="https://maplibre.org/" rel="noopener">MapLibre</a> · <a href="https://openfreemap.org/" rel="noopener">OpenFreeMap</a> · © <a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap</a> 기여자 · <a href="privacy.html" data-i18n="footer.privacy">개인정보 처리방침</a></p>
         </div>
@@ -173,6 +173,6 @@
 <script src="js/license.js?v=e4775149"></script>
 <script src="js/vendor/maplibre-gl.js?v=74bdab14"></script>
 <script src="js/hexgrid.js?v=d670c638"></script>
-<script src="js/store-map.js?v=c4a422e0"></script>
+<script src="js/store-map.js?v=0d59479c"></script>
 </body>
 </html>

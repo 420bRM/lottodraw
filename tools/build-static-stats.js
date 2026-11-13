@@ -631,7 +631,7 @@ const ABOUT = {};
         desc: `로또 역대 ${RANGE} 가장 많이 나온 번호·숫자 순위와 1~45번 번호별 출현 횟수. 제일 많이 나온 번호는 ${numsText(e.top)} ${e.max}회, 가장 적게 나온 번호는 ${numsText(e.bottom)} ${e.min}회.`,
         fact: `1위 ${numsText(e.top)} ${e.max}회 · 최소 ${numsText(e.bottom)} ${e.min}회`,
         factEn: `top ${e.top.map(r => r.number).join('·')} ${e.max}× · lowest ${e.bottom.map(r => r.number).join('·')} ${e.min}×`,
-        lead: `역대 ${RANGE} 동안 제일 많이 나온 번호는 <strong>${numsText(e.top)}(${e.max}회)</strong>, 가장 적게 나온 번호는 <strong>${numsText(e.bottom)}(${e.min}회)</strong>입니다. 한 회차에 6개를 뽑으므로 번호 하나의 기대 출현은 ${f1(EXP_NUM)}회입니다.`,
+        lead: `역대 ${RANGE} 동안 제일 많이 나온 번호는 <strong>${numsText(e.top)}(${e.max}회)</strong>, 가장 적게 나온 번호는 <strong>${numsText(e.bottom)}(${e.min}회)</strong>입니다. 한 회차에 6개를 뽑으므로 번호 하나의 기대 출현 횟수는 ${f1(EXP_NUM)}회입니다.`,
         leadEn: `Across draws 1–${N}, the number drawn most often is <strong>${e.top.map(r => r.number).join('·')} (${e.max} times)</strong> and the one drawn least often is <strong>${e.bottom.map(r => r.number).join('·')} (${e.min} times)</strong>. Six numbers are drawn each time, so a single number is expected to appear ${f1(EXP_NUM)} times.`,
         body: [
             h2En('많이 나온 번호·숫자 순위 Top 10', 'Top 10 most frequent numbers'),
@@ -642,7 +642,7 @@ const ABOUT = {};
             distBlock,
             h2En('1~45번 번호별 출현 횟수', 'Appearances for every number, 1 to 45'),
             numberTable(stats.frequency, EXP_NUM, SD_NUM),
-            pEn(`표준편차는 약 ${f1(SD_NUM)}회입니다. 1위 번호는 기대보다 ${f1(e.max - EXP_NUM)}회(+${f1((e.max - EXP_NUM) / SD_NUM)} 표준편차), 최소 번호는 ${f1(EXP_NUM - e.min)}회(-${f1((EXP_NUM - e.min) / SD_NUM)} 표준편차) 벗어나 있습니다. 번호 45개를 한꺼번에 보면 공평한 추첨에서도 양 끝이 이 정도로 벌어집니다.`,
+            pEn(`표준편차는 약 ${f1(SD_NUM)}회입니다. 가장 많이 나온 번호는 기대보다 ${f1(e.max - EXP_NUM)}회(+${f1((e.max - EXP_NUM) / SD_NUM)} 표준편차), 가장 적게 나온 번호는 ${f1(EXP_NUM - e.min)}회(-${f1((EXP_NUM - e.min) / SD_NUM)} 표준편차) 벗어나 있습니다. 번호 45개를 한꺼번에 보면 공평한 추첨에서도 양 끝이 이 정도로 벌어집니다.`,
                 `The standard deviation is about ${f1(SD_NUM)}. The top number sits ${f1(e.max - EXP_NUM)} above expectation (+${f1((e.max - EXP_NUM) / SD_NUM)} SD) and the lowest sits ${f1(EXP_NUM - e.min)} below it (−${f1((EXP_NUM - e.min) / SD_NUM)} SD). Looking at all 45 numbers together, a perfectly fair draw spreads its extremes about this far apart.`),
         ],
     });
@@ -658,7 +658,7 @@ const ABOUT = {};
         desc: `로또 보너스 번호의 의미(2등 판정)와 역대 ${RANGE} 보너스 번호별 출현 횟수. 가장 많이 나온 보너스 번호는 ${numsText(e.top)} ${e.max}회.`,
         fact: `최다 ${numsText(e.top)} ${e.max}회 · 최소 ${numsText(e.bottom)} ${e.min}회`,
         factEn: `most ${e.top.map(r => r.number).join('·')} ${e.max}× · fewest ${e.bottom.map(r => r.number).join('·')} ${e.min}×`,
-        lead: `보너스 번호는 당첨번호 6개를 뽑은 뒤 하나 더 뽑는 번호입니다. 한 회차에 하나뿐이라 번호 하나의 기대 출현은 ${f1(EXP_BONUS)}회이고, 역대 가장 많이 나온 보너스 번호는 <strong>${numsText(e.top)}(${e.max}회)</strong>입니다.`,
+        lead: `보너스 번호는 당첨번호 6개를 뽑은 뒤 하나 더 뽑는 번호입니다. 한 회차에 하나뿐이라 번호 하나의 기대 출현 횟수는 ${f1(EXP_BONUS)}회이고, 역대 가장 많이 나온 보너스 번호는 <strong>${numsText(e.top)}(${e.max}회)</strong>입니다.`,
         leadEn: `The bonus ball is drawn after the six winning numbers. Only one is drawn each time, so a given number is expected to appear ${f1(EXP_BONUS)} times; the most frequent bonus ball so far is <strong>${e.top.map(r => r.number).join('·')} (${e.max} times)</strong>.`,
         body: [
             h2En('보너스 번호는 언제 쓰이나', 'When the bonus ball matters'),
@@ -693,7 +693,7 @@ const ABOUT = {};
         desc: `로또 ${RANGE} 당첨번호 6개의 홀수·짝수 비율을 이론 확률과 나란히 분석했습니다. 가장 많은 형태는 ${top.label}(${pct(top.count, N)}).`,
         fact: `최다 ${top.label} ${pct(top.count, N)}`,
         factEn: `most common ${top.labelEn || top.label} ${pct(top.count, N)}`,
-        lead: `${RANGE} 중 가장 많이 나온 형태는 <strong>${esc(top.label)}</strong>로 ${fmt(top.count)}회(${pct(top.count, N)})입니다. 1~45에는 홀수 23개, 짝수 22개가 있어 이론상으로도 홀3 짝3이 가장 흔합니다.`,
+        lead: `${RANGE} 중 가장 많이 나온 형태는 <strong>${esc(top.label)}</strong>(${fmt(top.count)}회, ${pct(top.count, N)})입니다. 1~45에는 홀수 23개, 짝수 22개가 있어 이론상으로도 홀3 짝3이 가장 흔합니다.`,
         leadEn: `The most common shape across draws 1–${N} is <strong>${esc(top.labelEn || top.label)}</strong>, seen ${fmt(top.count)} times (${pct(top.count, N)}). Of the numbers 1–45, 23 are odd and 22 are even, so three odd and three even is also the most likely shape in theory.`,
         body: [
             table([['형태', 'Shape'], ['나온 횟수', 'Draws'], ['비율', 'Share'], ['이론 확률', 'Theoretical']], rows),
@@ -717,7 +717,7 @@ const ABOUT = {};
         desc: `로또 ${RANGE} 당첨번호의 낮은 번호(1~22)와 높은 번호(23~45) 비율을 이론 확률과 함께 정리했습니다. 최다 형태 ${top.label}.`,
         fact: `최다 ${top.label} ${pct(top.count, N)}`,
         factEn: `most common ${top.labelEn || top.label} ${pct(top.count, N)}`,
-        lead: `1~22를 저번호, 23~45를 고번호로 나눴습니다. ${RANGE} 중 가장 많은 형태는 <strong>${esc(top.label)}</strong>로 ${fmt(top.count)}회(${pct(top.count, N)})입니다.`,
+        lead: `1~22를 저번호, 23~45를 고번호로 나눴습니다. ${RANGE} 중 가장 많은 형태는 <strong>${esc(top.label)}</strong>(${fmt(top.count)}회, ${pct(top.count, N)})입니다.`,
         leadEn: `Numbers 1–22 count as low and 23–45 as high. The most common shape across draws 1–${N} is <strong>${esc(top.labelEn || top.label)}</strong>, seen ${fmt(top.count)} times (${pct(top.count, N)}).`,
         body: [
             table([['형태', 'Shape'], ['나온 횟수', 'Draws'], ['비율', 'Share'], ['이론 확률', 'Theoretical']], rows),
@@ -780,7 +780,7 @@ const ABOUT = {};
             [en(`합계 ${lo2}~${hi2} (평균 ±2σ)`, `Sum ${lo2}–${hi2} (±2σ)`), pct(theory(lo2, hi2), 1),
                 en(`${pct(in2, N)} · ${fmt(in2)}회`, `${pct(in2, N)} · ${fmt(in2)} draws`)],
         ], 'kv-table'),
-        pEn(`당첨번호의 약 3분의 2는 합계가 <strong>${lo1}~${hi1}</strong> 사이였고, ${lo2}보다 작거나 ${hi2}보다 큰 합계는 ${fmt(N - in2)}회(${pct(N - in2, N)})뿐이었습니다. 다만 합계가 가운데인 조합은 그만큼 <em>개수가 많을</em> 뿐, 조합 하나하나의 1등 확률은 모두 같습니다.`,
+        pEn(`전체 회차의 약 3분의 2는 합계가 <strong>${lo1}~${hi1}</strong> 사이였고, ${lo2}보다 작거나 ${hi2}보다 큰 합계는 ${fmt(N - in2)}회(${pct(N - in2, N)})뿐이었습니다. 다만 합계가 가운데인 조합은 그만큼 <em>개수가 많을</em> 뿐, 조합 하나하나의 1등 확률은 모두 같습니다.`,
             `About two thirds of all draws summed to between <strong>${lo1} and ${hi1}</strong>, and only ${fmt(N - in2)} draws (${pct(N - in2, N)}) fell below ${lo2} or above ${hi2}. Note that a middling sum is common only because <em>more combinations</em> add up to it — each individual combination still has exactly the same chance.`),
     ].join('\n');
 
@@ -837,11 +837,11 @@ const ABOUT = {};
     STATS.push({
         file: 'statistics-trend.html', anchor: 'stat-trend', short: `최근 ${t.window}회 많이·적게`, shortEn: `Hot and cold, last ${t.window} draws`,
         title: `로또 최근 ${t.window}회 많이 나온 번호 · 적게 나온 번호`,
-        h1: `로또 최근 ${t.window}회 많이 나온 번호와 적게 나온 번호`,
+        h1: `로또 최근 ${t.window}회 많이 나온 번호와 적게 나온 번호`, h1En: `Most and Least Frequent Lotto Numbers in the Last ${t.window} Draws`,
         desc: `로또 최근 ${t.window}회(${stats.latestRound - t.window + 1}~${stats.latestRound}회) 동안 많이 나온 번호와 적게 나온 번호 Top 10. 최다 ${t.hot[0].number}번 ${t.hot[0].recent}회.`,
         fact: `최다 ${t.hot[0].number}번 ${t.hot[0].recent}회 · 최소 ${t.cold[0].number}번 ${t.cold[0].recent}회`,
         factEn: `most ${t.hot[0].number} (${t.hot[0].recent}×) · fewest ${t.cold[0].number} (${t.cold[0].recent}×)`,
-        lead: `${stats.latestRound - t.window + 1}~${stats.latestRound}회 ${t.window}회 동안 가장 많이 나온 번호는 <strong>${t.hot[0].number}번(${t.hot[0].recent}회)</strong>, 가장 적게 나온 번호는 <strong>${t.cold[0].number}번(${t.cold[0].recent}회)</strong>입니다. ${t.window}회 동안 한 번호의 기대 출현은 ${f1(t.window * 6 / 45)}회입니다.`,
+        lead: `최근 ${t.window}회(${stats.latestRound - t.window + 1}~${stats.latestRound}회) 동안 가장 많이 나온 번호는 <strong>${t.hot[0].number}번(${t.hot[0].recent}회)</strong>, 가장 적게 나온 번호는 <strong>${t.cold[0].number}번(${t.cold[0].recent}회)</strong>입니다. ${t.window}회 동안 한 번호의 기대 출현 횟수는 ${f1(t.window * 6 / 45)}회입니다.`,
         leadEn: `Over draws ${stats.latestRound - t.window + 1}\u2013${stats.latestRound} (${t.window} draws), the most frequent number is <strong>${t.hot[0].number} (${t.hot[0].recent} times)</strong> and the least frequent is <strong>${t.cold[0].number} (${t.cold[0].recent} times)</strong>. Over ${t.window} draws a number is expected to appear ${f1(t.window * 6 / 45)} times.`,
         body: [
             h2En('많이 나온 번호', 'Most frequent numbers'),
@@ -864,7 +864,7 @@ const ABOUT = {};
         desc: `로또 ${RANGE} 한 회차에 같이 나온 번호 쌍, 궁합수 순위 Top ${p.length}. 1위 ${p[0].a}·${p[0].b}번 ${p[0].count}회.`,
         fact: `1위 ${p[0].a}·${p[0].b}번 ${p[0].count}회`,
         factEn: `top pair ${p[0].a}\u00b7${p[0].b}, ${p[0].count}×`,
-        lead: `궁합수는 한 회차에 자주 같이 나온 번호 쌍입니다. ${RANGE} 동안 가장 자주 같이 나온 쌍은 <strong>${p[0].a}번과 ${p[0].b}번(${p[0].count}회)</strong>입니다. 특정 두 번호가 한 회차에 함께 나올 기대 횟수는 ${f1(PAIR_EXP)}회입니다.`,
+        lead: `궁합수는 한 회차에 자주 같이 나온 번호 쌍입니다. ${RANGE} 동안 가장 자주 같이 나온 쌍은 <strong>${p[0].a}번과 ${p[0].b}번(${p[0].count}회)</strong>입니다. 특정 두 번호가 ${RANGE} 동안 같은 회차에 함께 나올 기대 횟수는 ${f1(PAIR_EXP)}회입니다.`,
         leadEn: `These are the pairs of numbers that have come up together most often. Across draws 1–${N} the most frequent pair is <strong>${p[0].a} and ${p[0].b} (${p[0].count} times)</strong>. Any given pair is expected to appear together ${f1(PAIR_EXP)} times.`,
         body: [
             table([['순위', 'Rank'], ['번호 쌍', 'Pair'], ['함께 나온 횟수', 'Times together']], rows),
@@ -892,7 +892,7 @@ const ABOUT = {};
         desc: `로또 ${stats.latestRound}회 기준 장기미출수, 가장 오래 안 나온 번호 순위입니다. 1위 ${g[0].number}번은 ${g[0].gap}회차째 나오지 않았습니다.`,
         fact: `1위 ${g[0].number}번 · ${g[0].gap}회차째 미출현`,
         factEn: `${g[0].number} \u2014 absent for ${g[0].gap} draws`,
-        lead: `미출수는 최근에 나오지 않은 번호이고, 그 기간이 길수록 장기미출수라고 부릅니다. ${stats.latestRound}회 기준으로 가장 오래 안 나온 번호는 <strong>${g[0].number}번</strong>으로, ${g[0].gap}회차째 나오지 않았습니다.`,
+        lead: `미출수는 최근에 나오지 않은 번호이고, 그 기간이 긴 번호를 장기미출수라고 부릅니다. ${stats.latestRound}회 기준으로 가장 오래 안 나온 번호는 <strong>${g[0].number}번</strong>으로, ${g[0].gap}회차째 나오지 않았습니다.`,
         leadEn: `These are the numbers that have not come up recently. As of draw ${stats.latestRound}, the longest absence belongs to <strong>${g[0].number}</strong>, which has not appeared for ${g[0].gap} draws.`,
         body: [
             table([['순위', 'Rank'], ['번호', 'Number'], ['안 나온 기간', 'Absent for'], ['마지막으로 나온 회차', 'Last seen in draw']], rows),
@@ -1003,7 +1003,7 @@ function acCalculator() {
         for (var i = 0; i < 6; i++) for (var j = i + 1; j < 6; j++) diffs[uniq[j] - uniq[i]] = true;
         var ac = Object.keys(diffs).length - 5;
         var joined = uniq.join(', ');
-        out.textContent = EN ? ('AC value of ' + joined + ' is ' + ac + '.') : (joined + ' 의 AC값은 ' + ac + '입니다.');
+        out.textContent = EN ? ('AC value of ' + joined + ' is ' + ac + '.') : (joined + '의 AC값은 ' + ac + '입니다.');
         draw(uniq, '');
     }
     document.getElementById('ac-btn').addEventListener('click', run);
@@ -1322,7 +1322,7 @@ const AC_ONE_PAIR = 2141646;
         desc: `로또 AC값(산술적 복잡도) 계산 방법과 계산기, 역대 ${RANGE} AC값 분포. 가장 많은 값은 ${top.label}(${pct(top.count, N)}).`,
         fact: `최다 ${top.label} ${pct(top.count, N)}`,
         factEn: `most common ${top.label} ${pct(top.count, N)}`,
-        lead: `AC값은 번호 6개를 두 개씩 뺀 차이 15개 중 서로 다른 값의 개수에서 5를 뺀 값입니다. 0~10 사이이고, 높을수록 번호가 고르게 흩어진 조합입니다. ${RANGE} 중 가장 많은 값은 <strong>${esc(top.label)}</strong>(${pct(top.count, N)})입니다.`,
+        lead: `AC값은 번호 6개에서 두 개씩 짝지은 15쌍의 차이 가운데 서로 다른 값이 몇 개인지 세어 5를 뺀 값입니다. 0~10 사이이고, 높을수록 번호가 고르게 흩어진 조합입니다. ${RANGE} 중 가장 많은 값은 <strong>${esc(top.label)}</strong>(${pct(top.count, N)})입니다.`,
         leadEn: `The AC value counts the distinct differences among the 15 pairs formed from six numbers, minus 5. It runs from 0 to 10, and the higher it is, the more spread out the numbers are. Across draws 1–${N} the most common value is <strong>${esc(top.label)}</strong> (${pct(top.count, N)}).`,
         body: [
             h2En('AC값 계산기', 'AC value calculator'),
@@ -1407,7 +1407,7 @@ const AC_ONE_PAIR = 2141646;
         desc: `로또 ${RANGE} 끝수(끝자리) 0~9별 출현 횟수와 번호당 평균, 끝수합 분포(평균 ${f1(avg)}). 번호당 평균이 가장 높은 끝수는 ${best.digit}.`,
         fact: `끝수합 평균 ${f1(avg)} · 끝수 ${best.digit} 최다`,
         factEn: `last-digit sum averages ${f1(avg)} · digit ${best.digit} most frequent`,
-        lead: `끝수는 번호의 일의 자리입니다. 끝자리 1~5에는 번호가 5개(예: 1·11·21·31·41), 0과 6~9에는 4개씩 있어서 <strong>번호 1개당 평균</strong>으로 비교합니다. ${RANGE} 기준으로 번호당 평균이 가장 높은 끝수는 <strong>${best.digit}</strong>(${f1(best.per)}회)입니다.`,
+        lead: `끝수는 번호의 일의 자리입니다. 끝수 1~5에는 번호가 5개(예: 1·11·21·31·41), 0과 6~9에는 4개씩 있어서 <strong>번호 1개당 평균</strong>으로 비교합니다. ${RANGE} 기준으로 번호당 평균이 가장 높은 끝수는 <strong>${best.digit}</strong>(${f1(best.per)}회)입니다.`,
         leadEn: `The last digit is the ones place of a number. Digits 1\u20135 have five numbers each (1\u00b711\u00b721\u00b731\u00b741), while 0 and 6\u20139 have four, so the comparison is made <strong>per number</strong>. Across draws 1–${N} the highest average belongs to digit <strong>${best.digit}</strong> (${f1(best.per)} times).`,
         body: [
             h2En('끝수별 출현 횟수', 'Appearances by last digit'),
@@ -1415,7 +1415,7 @@ const AC_ONE_PAIR = 2141646;
             pEn('총 횟수만 보면 끝수 1~5가 늘 많아 보입니다. 해당하는 번호가 하나 더 있기 때문이지 더 잘 나와서가 아닙니다.',
                 'Raw totals always make digits 1–5 look busier. That is because one more number ends in each of them, not because they come up more readily.'),
             h2En('끝수합 분포', 'Distribution of the last-digit sum'),
-            pEn(`끝수합은 당첨번호 6개의 끝자리를 모두 더한 값입니다. 예를 들어 7·13·16·23·24·43의 끝수합은 7+3+6+3+4+3 = 26입니다. ${RANGE} 평균은 <strong>${f1(avg)}</strong>, 가장 많은 구간은 <strong>${topBin}</strong>입니다.`,
+            pEn(`끝수합은 당첨번호 6개의 끝수를 모두 더한 값입니다. 예를 들어 7·13·16·23·24·43의 끝수합은 7+3+6+3+4+3 = 26입니다. ${RANGE} 평균은 <strong>${f1(avg)}</strong>, 가장 많은 구간은 <strong>${topBin}</strong>입니다.`,
                 `The last-digit sum adds the ones place of all six numbers. For 7·13·16·23·24·43 that is 7+3+6+3+4+3 = 26. Across draws 1–${N} the average is <strong>${f1(avg)}</strong>, and the most common band is <strong>${topBin}</strong>.`),
             table([['끝수합', 'Sum of last digits'], ['나온 횟수', 'Draws'], ['비율', 'Share']], counted.map(c => [labEn(c), times(fmt(c.count)), pct(c.count, N)])),
         ],
@@ -1518,7 +1518,7 @@ function roundStores(d, winners) {
     const onMap = id => mapReady && (id === NET_ID || typeof STORES.shop(id)[4] === 'number');
     const shopCell = id => {
         const s = STORES.shop(id);
-        const name = id === NET_ID ? en('동행복권 인터넷 판매', 'Dong-haeng Lottery online')
+        const name = id === NET_ID ? en('동행복권 인터넷 판매', 'Donghaeng Lottery online')
             : esc(s[0]) + (s[3] ? ` <span class="muted" data-i18n-en="(closed)">(폐점)</span>` : '');
         return onMap(id) ? `<a href="${mapHref(id)}">${name}</a>` : name;
     };
@@ -1547,7 +1547,7 @@ function roundStores(d, winners) {
     const fromEn = s => `came from ${fmt(s)} retailer${s === 1 ? '' : 's'}`;
     const ko = (n1 ? `${part1 ? '판매점 자료로 확인된 ' : ''}1등 ${fmt(n1)}게임은 ${fmt(s1)}곳에서 나왔습니다. ` : '')
         + (n2 ? `${part2 ? '판매점 자료로 확인된 ' : ''}2등 ${fmt(n2)}게임은 ${fmt(s2)}곳에서 나왔습니다(${sidoKo}). ` : '')
-        + (n1 ? `'누적 1등'은 ${STORES.first}회부터 이 회차까지 그 판매점에서 나온 1등 가운데 몇 번째인지입니다. 판매점 이름을 누르면 <a href="../${STORE_MAP_FILE}">로또 판매점 지도</a>에서 그 판매점의 1 · 2등 기록을 볼 수 있고, 판매점별 순위는 <a href="../${STORES_FILE}">1등 판매점 통계</a>에 있습니다.`
+        + (n1 ? `'누적 1등'은 그 판매점에서 ${STORES.first}회부터 이 회차까지 나온 1등 가운데 이번이 몇 번째인지를 뜻합니다. 판매점 이름을 누르면 <a href="../${STORE_MAP_FILE}">로또 판매점 지도</a>에서 그 판매점의 1 · 2등 기록을 볼 수 있고, 판매점별 순위는 <a href="../${STORES_FILE}">1등 판매점 통계</a>에 있습니다.`
             : `판매점 위치는 <a href="../${STORE_MAP_FILE}">로또 판매점 지도</a>, 판매점별 순위는 <a href="../${STORES_FILE}">1등 판매점 통계</a>에 있습니다.`);
     const english = (n1 ? `${part1 ? '(Retailer data) ' : ''}${gamesEn(n1, '1st')} ${fromEn(s1)}. ` : '')
         + (n2 ? `${part2 ? '(Retailer data) ' : ''}${gamesEn(n2, '2nd')} ${fromEn(s2)} (${sidoEn}). ` : '')
@@ -1619,7 +1619,7 @@ function roundPage(d) {
     }
     if (f.rank) {
         factRows.push([en('1인당 1등 당첨금 순위 (당시)', 'Jackpot per winner, rank at the time'),
-            en(`${fmt(f.ranked)}회 중 ${fmt(f.rank)}위`, `#${fmt(f.rank)} of ${fmt(f.ranked)}`)]);
+            en(`1등이 나온 ${fmt(f.ranked)}회 중 ${fmt(f.rank)}위`, `#${fmt(f.rank)} of ${fmt(f.ranked)}`)]);
     }
     const gapRows = nums.map(n => {
         const g = f.gaps.find(x => x.n === n);
@@ -1636,17 +1636,17 @@ function roundPage(d) {
     }
     const items = [];
     if (winners > 0 && f.rolloverBefore) {
-        items.push([`이 회차 1등 당첨금에는 직전 ${f.rolloverBefore}회 연속 이월된 금액이 더해졌습니다(${roundLink(prev.round)}).`,
+        items.push([`이 회차 1등 당첨금에는 ${f.rolloverBefore === 1 ? '직전 회차에서' : `직전 ${f.rolloverBefore}회 연속`} 이월된 금액이 더해졌습니다(${roundLink(prev.round)}).`,
             `This draw's jackpot included money rolled over from ${f.rolloverBefore === 1 ? 'the previous draw' : `the previous ${f.rolloverBefore} draws`} (<a href="${prev.round}.html">draw ${prev.round}</a>).`]);
     }
     if (winners === 0 && f.rolloverBefore) {
         items.push([`직전 회차에 이어 ${f.rolloverBefore + 1}회 연속 이월입니다.`, `That made ${f.rolloverBefore + 1} rollovers in a row.`]);
     }
-    if (f.records.includes('winners')) items.push([`1등 당첨자 ${winners}명은 이 회차 당시까지 가장 많은 수였습니다.`, `${winners} first-prize winners was the most of any draw up to then.`]);
-    if (f.records.includes('high')) items.push([`1인당 1등 당첨금 ${won(amount)}은 이 회차 당시까지 가장 큰 금액이었습니다.`, `${wonEn(amount)} per winner was the largest jackpot share up to then.`]);
-    if (f.records.includes('low')) items.push([`1인당 1등 당첨금 ${won(amount)}은 이 회차 당시까지 가장 적은 금액이었습니다.`, `${wonEn(amount)} per winner was the smallest jackpot share up to then.`]);
-    if (f.records.includes('second')) items.push([`2등 ${fmt(p.w2)}게임은 이 회차 당시까지 가장 많은 수였습니다.`, `${fmt(p.w2)} second-prize games was the most of any draw up to then.`]);
-    if (f.records.includes('sales')) items.push([`총 판매액 ${won(p.sales)}은 이 회차 당시까지 가장 많았습니다.`, `Sales of ${wonEn(p.sales)} were the highest of any draw up to then.`]);
+    if (f.records.includes('winners')) items.push([`1등 당첨자 ${winners}명은 그때까지의 회차 가운데 가장 많았습니다.`, `${winners} first-prize winners was the most of any draw up to then.`]);
+    if (f.records.includes('high')) items.push([`1인당 1등 당첨금 ${won(amount)}은 그때까지의 회차 가운데 가장 큰 금액이었습니다.`, `${wonEn(amount)} per winner was the largest jackpot share up to then.`]);
+    if (f.records.includes('low')) items.push([`1인당 1등 당첨금 ${won(amount)}은 그때까지의 회차 가운데 가장 적은 금액이었습니다.`, `${wonEn(amount)} per winner was the smallest jackpot share up to then.`]);
+    if (f.records.includes('second')) items.push([`2등 ${fmt(p.w2)}게임은 그때까지의 회차 가운데 가장 많았습니다.`, `${fmt(p.w2)} second-prize games was the most of any draw up to then.`]);
+    if (f.records.includes('sales')) items.push([`총 판매액 ${won(p.sales)}은 그때까지의 회차 가운데 가장 많았습니다.`, `Sales of ${wonEn(p.sales)} were the highest of any draw up to then.`]);
     if (f.best && f.best.count >= 5) {
         // 5개가 같고 그 회차의 남은 번호가 이 회차 보너스면, 그 회차 번호로 이 회차를 샀을 때 2등이다
         const left = byRound[f.best.round].numbers.find(n => !d.numbers.includes(n));
@@ -1654,7 +1654,7 @@ function roundPage(d) {
         items.push([(f.best.count === 6
             ? `당첨번호 6개가 모두 ${roundLink(f.best.round)} 당첨번호와 같습니다.`
             : `당첨번호 6개 중 ${f.best.count}개(${f.best.nums.join(', ')})가 ${roundLink(f.best.round)} 당첨번호와 같습니다.`)
-            + (second ? ` ${f.best.round}회의 남은 번호 하나(${left})가 이 회차 보너스 번호여서, ${f.best.round}회 번호를 이 회차에 그대로 샀다면 2등입니다.` : '')
+            + (second ? ` ${f.best.round}회의 남은 번호 하나(${left})가 이 회차 보너스 번호여서, ${f.best.round}회 번호를 이 회차에 그대로 샀다면 2등이었습니다.` : '')
             + ` 회차끼리 번호가 겹친 기록은 <a href="../${REPEAT_FILE}">당첨번호 중복</a>에 있습니다.`,
             (f.best.count === 6
                 ? `All six numbers match <a href="${f.best.round}.html">draw ${f.best.round}</a>.`
@@ -1687,8 +1687,9 @@ function roundPage(d) {
                 [en('저고 (1~22 / 23~45)', 'Low / high (1–22 / 23–45)'), en(`저${low} 고${6 - low}`, `${low} low / ${6 - low} high`)],
                 [en('번호 합계', 'Sum of numbers'), String(sum)],
                 [en('연속번호', 'Consecutive runs'), runs.length ? runs.map(g => g.join('·')).join(', ') : en('없음', 'none')],
-                [en('AC값', 'AC value'), String(acValue(nums))],
-                [en('끝수합', 'Sum of last digits'), String(tailSum(nums))],
+                // AC값 · 끝수합은 설명 없이 쓰면 낯선 말이라 뜻을 푼 통계 페이지로 잇는다(2026-11-13 문장 검수). 링크는 언어 전환 span 바깥이라 영어 화면에도 남는다
+                [`<a href="../statistics-ac.html">${en('AC값', 'AC value')}</a>`, String(acValue(nums))],
+                [`<a href="../statistics-tail.html">${en('끝수합', 'Sum of last digits')}</a>`, String(tailSum(nums))],
                 [en('번호대', 'By band'), bands],
                 ...factRows,
             ], 'kv-table'),
@@ -1790,7 +1791,7 @@ function probabilityPage() {
         body: [
             h2En('등수별 당첨 확률', 'Odds by prize tier'),
             table([['등수', 'Tier'], ['조건', 'Condition'], ['해당 조합 수', 'Combinations'], ['확률', 'Odds'], ['백분율', 'Percent']], rows),
-            pEn(`한 게임으로 5등 이상 무엇이든 당첨될 확률은 약 1 / ${f1(TOTAL / any)} 입니다.`,
+            pEn(`한 게임으로 5등 이상 어느 등수든 당첨될 확률은 약 1/${f1(TOTAL / any)}입니다.`,
                 `The chance that a single game wins anything at all (fifth prize or better) is about 1 in ${f1(TOTAL / any)}.`),
             h2En('계산 방법', 'How these are calculated'),
             '<ul>',
@@ -1801,7 +1802,7 @@ function probabilityPage() {
             `<li data-i18n-en="${esc('<strong>5th prize</strong>: three winning numbers × three of the remaining 39 = 20 × 9,139 = 182,780')}"><strong>5등</strong>: 당첨번호 중 3개 × 나머지 39개 중 3개 = 20 × 9,139 = 182,780가지</li>`,
             '</ul>',
             h2En('얼마나 드문 일일까', 'How rare is it, really'),
-            pEn(`매주 한 게임씩 산다면 1등 조합 수만큼 사는 데 ${fmt(TOTAL)}주, 약 ${fmt(years)}년이 걸립니다.`,
+            pEn(`매주 한 게임씩 사서 모든 조합을 한 번씩 다 사려면 ${fmt(TOTAL)}주, 약 ${fmt(years)}년이 걸립니다.`,
                 `Buying one game a week, covering every combination would take ${fmt(TOTAL)} weeks — roughly ${fmt(years)} years.`),
             // 회차에 따라 바뀌지 않는 숫자만 쓴다 (이 페이지는 매주 바뀌지 않는다)
             pEn(`조합이 이렇게 많아서 같은 당첨번호가 두 번 나오는 일도 드뭅니다. 다만 생일 문제처럼 회차가 쌓일수록 가능성이 빠르게 커져, 약 ${fmt(REPEAT.half)}회가 되면 6개가 모두 같은 두 회차가 한 번이라도 나왔을 확률이 50%를 넘습니다. 지금까지의 기록은 <a href="${REPEAT_FILE}">당첨번호 중복</a>에 있습니다.`,
@@ -1886,10 +1887,10 @@ function prizeTierPage() {
     const close = ratioAll > 0.9 && ratioAll < 1.1;
     const over = now.filter(p => p.sales > 0).sort((a, b) => b.w2 / expected(b) - a.w2 / expected(a) || a.round - b.round).slice(0, 5);
     const crowd = [
-        h2En('2등이 예상보다 많이 나온 회차', 'Draws with far more 2nd-prize winners than expected'),
-        pEn(`2등이 될 확률은 1게임에 ${fmt(Math.round(TOTAL / 6))}분의 1이라, 그 회차에 팔린 게임 수(판매액 ÷ 1,000원)에 곱하면 2등이 몇 게임 나올지 어림할 수 있습니다. 88회 이후 전체로는 실제 2등 게임 수가 이 어림의 ${ratioAll.toFixed(2)}배${close ? '로 거의 맞았습니다' : '였습니다'}. 그런데 아래 회차들은 어림보다 몇 배나 많이 나와 1게임당 금액이 크게 줄었습니다.`,
+        h2En('2등이 기대보다 많이 나온 회차', 'Draws with far more 2nd-prize winners than expected'),
+        pEn(`2등이 될 확률은 1게임에 ${fmt(Math.round(TOTAL / 6))}분의 1이므로, 이 확률을 그 회차에 팔린 게임 수(판매액 ÷ 1,000원)에 곱하면 2등이 몇 게임쯤 나올지(기대 게임 수) 어림할 수 있습니다. 88회 이후 전체로는 실제 2등 게임 수가 이 기대 게임 수의 ${ratioAll.toFixed(2)}배${close ? '로 거의 맞았습니다' : '였습니다'}. 그런데 아래 회차들은 기대보다 몇 배나 많이 나와 1게임당 금액이 크게 줄었습니다.`,
             `The chance of 2nd prize is 1 in ${fmt(Math.round(TOTAL / 6))} per game, so multiplying it by the games sold in a draw (sales ÷ 1,000 KRW) gives a rough estimate of how many 2nd-prize wins to expect. Across all draws since 88, the actual number came to ${ratioAll.toFixed(2)} times that estimate${close ? ' — close to spot on' : ''}. In the draws below, though, there were several times as many, and each game's share shrank accordingly.`),
-        table([['회차', 'Draw'], ['예상 2등 게임', 'Expected 2nd-prize games'], ['실제', 'Actual'], ['2등 1게임당', '2nd prize per game']],
+        table([['회차', 'Draw'], ['기대 2등 게임', 'Expected 2nd-prize games'], ['실제', 'Actual'], ['2등 1게임당', '2nd prize per game']],
             over.map(p => [
                 roundCell(p.round),
                 en(`${f1(expected(p))}게임`, f1(expected(p))),
@@ -1916,7 +1917,7 @@ function prizeTierPage() {
         const sA = mean(A.map(p => p.sales));
         const sB = mean(B.map(p => p.sales));
         const steady = avg2(B) / avg2(A) > 0.85 && avg2(B) / avg2(A) < 1.15;
-        yearly.push(pEn(`회차당 판매액은 ${yA}년 ${eok(sA)}에서 ${yB}년 ${eok(sB)}으로 ${f1(sB / sA)}배가 됐지만, 2등 1게임 금액은 ${wonAbout(avg2(A))}에서 ${wonAbout(avg2(B))}으로 ${steady ? '거의 그대로입니다. 판매액이 늘면 2등 총액도 늘지만, 2등에 당첨되는 게임도 같은 비율로 늘기 때문입니다' : '바뀌었습니다'}(회차당 2등 게임 평균 ${f1(mean(A.map(p => p.w2)))} → ${f1(mean(B.map(p => p.w2)))}).`,
+        yearly.push(pEn(`회차당 판매액은 ${yA}년 ${eok(sA)}에서 ${yB}년 ${eok(sB)}으로 ${f1(sB / sA)}배가 됐지만, 2등 1게임 금액은 ${wonAbout(avg2(A))}에서 ${wonAbout(avg2(B))}으로 ${steady ? '거의 변하지 않았습니다. 판매액이 늘면 2등 총액도 늘지만, 2등에 당첨되는 게임도 같은 비율로 늘기 때문입니다' : '바뀌었습니다'}(회차당 2등 게임 평균 ${f1(mean(A.map(p => p.w2)))} → ${f1(mean(B.map(p => p.w2)))}).`,
             `Sales per draw grew ${f1(sB / sA)}-fold, from ${eokEn(sA)} in ${yA} to ${eokEn(sB)} in ${yB}, yet 2nd prize per game ${steady ? 'barely moved' : 'went'} from ${wonAboutEn(avg2(A))} to ${wonAboutEn(avg2(B))}${steady ? '. Bigger sales mean a bigger 2nd-prize pot, but also proportionally more winning games' : ''} (2nd-prize games per draw: ${f1(mean(A.map(p => p.w2)))} → ${f1(mean(B.map(p => p.w2)))}).`));
     }
     yearly.push(table([['연도', 'Year'], ['2등 평균', '2nd prize (avg)'], ['3등 평균', '3rd prize (avg)'], ['회차당 판매액', 'Sales per draw']],
@@ -1955,7 +1956,7 @@ function prizeTierPage() {
         over2m.length
             ? pEn(`3등은 대개 200만 원 이하라 세금이 없지만, 88회 이후 ${over2m.length}개 회차는 200만 원을 넘었습니다. 지금 세법이면 그런 회차는 전액에 22%가 붙습니다.`,
                 `3rd prize is usually 2m KRW or less and tax-free, but in ${over2m.length} draw${over2m.length > 1 ? 's' : ''} since 88 it went over 2m KRW. Under today's rules the full amount would then be taxed at 22%.`)
-            : pEn(`3등은 88회 이후 가장 많았던 ${link(T.max3.round)}도 ${wonExact(T.max3.a3)}이라 200만 원을 넘은 적이 없습니다. 2023년부터 200만 원 이하는 비과세라, 3등은 세금 없이 그대로 받습니다. 2022년까지는 5만 원만 넘어도 당첨금 전체에 22%를 매겨 3등도 세금을 냈습니다.`,
+            : pEn(`3등은 88회 이후 가장 컸던 ${link(T.max3.round)}도 ${wonExact(T.max3.a3)}이라 200만 원을 넘은 적이 없습니다. 2023년부터 200만 원 이하는 비과세라, 3등은 세금 없이 그대로 받습니다. 2022년까지는 5만 원만 넘어도 당첨금 전체에 22%를 매겨 3등도 세금을 냈습니다.`,
                 `Since draw 88, even the largest 3rd prize, ${linkEn(T.max3.round)} at ${wonExactEn(T.max3.a3)}, stayed below 2m KRW. Prizes up to 2m KRW have been tax-free since 2023, so 3rd prize is paid in full. Until 2022 anything over 50,000 KRW was taxed at 22% on the whole amount, so 3rd prize was taxed too.`),
         pEn('금액을 넣어 직접 계산하려면 <a href="tax.html">실수령액 계산기</a>를 쓰세요.', 'To work out any amount yourself, use <a href="tax.html">the after-tax calculator</a>.'),
     ];
@@ -2011,12 +2012,12 @@ function blogFigures() {
 // 블로그 화면 사진(img/blog/*.jpg, 2026-11-09 — 글 19 "LottoHex 하는 법"). 사진은 tools/oneoff/shot-lottohex.mjs 로 찍었다(지도는 실제, 별명 · 칸은 예시).
 // 파일이 없으면 그 그림은 빠진다(빌드가 경고하고 자리를 비운다)
 const BLOG_SHOTS = {
-    'lottohex-map': ['lottohex-map.jpg', 'LottoHex 밤 지도 — 서울 종로 둘레 육각 칸을 참여자들이 나눠 가진 모습', 'LottoHex night map — hexagon cells around Jongno, Seoul held by players',
-        'LottoHex 화면(휴대폰). 칸마다 주인의 별명과 다녀온 판매점 수, 색 없는 칸은 회색지대입니다. 별명과 칸은 설명을 위한 예시입니다.', 'LottoHex on a phone. Each cell shows its holder and the number of retailers visited; uncoloured cells are the grey zone. Nicknames and cells are examples.', 'is-phone'],
-    'lottohex-card': ['lottohex-card.jpg', '판매점 카드 — 다녀왔어요를 누르고 위치로 확인된 모습(+10포인트)', 'Retailer card — a visit verified by location (+10 points)',
-        '판매점 50m 안에서 "다녀왔어요"를 누르면 위치로 확인하고 10포인트를 드립니다(화면 예시).', 'Tap "I\'ve been here" within 50 m of the retailer: your location is checked and you earn 10 points (example screen).', 'is-crop'],
-    'lottohex-rank': ['lottohex-rank.jpg', 'Map 랭킹 — 차지한 칸 수와 다녀온 판매점 수', 'Map ranking — cells held and retailers visited',
-        'Map 랭킹은 차지한 칸 수 순서입니다. 분기가 끝나면 확정해 1~10위에 포인트를 드립니다(별명은 예시).', 'The Map ranking is ordered by cells held. At the end of each quarter it is finalised and the top 10 earn points (nicknames are examples).', 'is-crop'],
+    'lottohex-map': ['lottohex-map.jpg', 'LottoHex 밤 지도 — 서울 종로 둘레 육각 블록을 참여자들이 나눠 가진 모습', 'LottoHex night map — hexagon blocks around Jongno, Seoul held by players',
+        'LottoHex 화면(휴대폰). 블록마다 주인의 별명과 다녀온 판매점 수, 색 없는 블록은 회색지대입니다. 별명과 블록은 설명을 위한 예시입니다.', 'LottoHex on a phone. Each block shows its holder and the number of retailers visited; uncoloured blocks are the grey zone. Nicknames and blocks are examples.', 'is-phone'],
+    'lottohex-card': ['lottohex-card.jpg', '판매점 카드 — 다녀왔어요를 누르고 위치로 확인된 모습(+10P)', 'Retailer card — a visit verified by location (+10 pts)',
+        '판매점 50m 안에서 "다녀왔어요"를 누르면 위치로 확인하고 10P를 드립니다(화면 예시).', 'Tap "I\'ve been here" within 50 m of the retailer: your location is checked and you earn 10 pts (example screen).', 'is-crop'],
+    'lottohex-rank': ['lottohex-rank.jpg', 'Map 랭킹 — 차지한 블록 수와 다녀온 판매점 수', 'Map ranking — blocks held and retailers visited',
+        'Map 랭킹은 차지한 블록 수 순서입니다. 분기가 끝나면 확정해 1~10위에 포인트를 드립니다(별명은 예시).', 'The Map ranking is ordered by blocks held. At the end of each quarter it is finalised and the top 10 earn points (nicknames are examples).', 'is-crop'],
 };
 function blogShots() {
     const out = {};
@@ -2065,7 +2066,7 @@ function salesFlow(E) {
         step(2, en('그대로 나누기', 'Divide straight through'), salesOne(naive),
             en(`${t.x}번 × ${per}억 ÷ ${ssYears(E)}년`, `${t.x} × ₩${(E.perHit / 1e9).toFixed(2)}B ÷ ${ssYears(E)} yrs`)),
         step(3, en('운의 몫 덜기', 'Take out the luck'), salesOne(t.mid),
-            en('전국 판매점 분포에서 출발해 고친 가운데 값', 'middle value, starting from the national distribution')),
+            en('전국 판매점 분포에서 출발해 고친 중앙값', 'middle value, starting from the national distribution')),
         step(4, en('95% 범위', '95% range'), salesRange(t.lo, t.hi),
             en('실제 판매량이 여기 있을 가능성 95%', 'a 95% chance actual sales lie here'), true),
         '</ol>',
@@ -2117,7 +2118,7 @@ function salesRangeChart(E) {
         '<figcaption>',
         '<div class="dist-legend">',
         `<span><i class="key-ss-bar"></i>${en('95% 범위', '95% range')}</span>`,
-        `<span><i class="key-ss-mid"></i>${en('가운데 값', 'middle value')}</span>`,
+        `<span><i class="key-ss-mid"></i>${en('중앙값', 'median')}</span>`,
         `<span><i class="key-ss-naive"></i>${en('그대로 나눈 값', 'straight division')}</span>`,
         `<span><i class="key-ss-band"></i>${en('전국 판매점 80% (하위 · 상위 10% 뺌)', '80% of retailers (bottom and top 10% left out)')}</span>`,
         `<span><i class="key-ss-avg"></i>${en('전국 평균', 'national average')}</span>`,
@@ -2142,7 +2143,7 @@ function salesBellChart(E) {
             `<span><i class="key-ss-curve"></i>${en('1 · 2등 수별 판매액 분포', 'sales distribution by prize count')}</span>`,
             `<span><i class="key-ss-prior"></i>${en('전국 판매점 분포', 'all retailers')}</span>`,
             `<span><i class="key-ss-95"></i>${en('95% 범위 (곡선을 고르면)', '95% range (pick a curve)')}</span>`,
-            `<span><i class="key-ss-line"></i>${en('가운데 값 (곡선을 고르면)', 'middle value (pick a curve)')}</span>`,
+            `<span><i class="key-ss-line"></i>${en('중앙값 (곡선을 고르면)', 'median (pick a curve)')}</span>`,
             '</div>'].join(''),
         `<p class="ss-note">${en(`모든 곡선이 같은 바닥(0%)에서 시작해 양 끝이 0으로 내려옵니다. 곡선마다 넓이(모두 더한 확률)는 같아서, 1 · 2등이 많아 판매액을 좁게 알수록 꼭대기가 높아집니다.`,
             `Every curve starts from the same floor (0%) and falls back to 0 at both ends. Each curve has the same area (total probability), so the more prizes and the more narrowly sales are known, the higher the peak.`)}</p>`,
@@ -2341,8 +2342,8 @@ function storesPage() {
             [en('2등 당첨 게임', '2nd-prize games'), en(`${fmt(S.g2)}게임 (1등의 ${f1(ratio)}배)`, `${fmt(S.g2)} (${f1(ratio)}× the 1st-prize games)`)],
             [en('1등이 가장 많이 나온 곳', 'Most 1st prizes'), en(`${esc(top1.name)} · ${top1.n1}회`, `${esc(top1.name)} · ${top1.n1}`)],
         ], 'tier-stat'),
-        pEn(`동행복권은 ${first}회(${draws.find(x => x.round === first).date.slice(0, 7).replace('-', '년 ')}월)부터 회차마다 1등 · 2등이 나온 판매점을 공개합니다. 그 앞 회차는 판매점 자료가 없어 셈에서 빠집니다. 1등 한 게임이 한 줄이라, 한 판매점에서 같은 회차에 1등이 여러 게임 나오면 그만큼 셉니다.`,
-            `Dong-haeng Lottery has published the retailers behind every 1st and 2nd prize since draw ${first}; earlier draws have no retailer data and are left out. Each winning game counts once, so a retailer that sold several 1st-prize games in one draw is counted that many times.`, 'note'),
+        pEn(`동행복권은 ${first}회(${draws.find(x => x.round === first).date.slice(0, 7).replace('-', '년 ')}월)부터 회차마다 1등 · 2등이 나온 판매점을 공개합니다. 그 앞 회차는 판매점 자료가 없어 셈에서 빠집니다. 1등은 게임 단위로 세므로, 한 판매점에서 같은 회차에 1등이 여러 게임 나오면 그 수만큼 셉니다.`,
+            `Donghaeng Lottery has published the retailers behind every 1st and 2nd prize since draw ${first}; earlier draws have no retailer data and are left out. Each winning game counts once, so a retailer that sold several 1st-prize games in one draw is counted that many times.`, 'note'),
     ];
 
     const message = [
@@ -2362,7 +2363,7 @@ function storesPage() {
         pEn(`반대로 2등이 10번 넘게 나왔는데 1등은 한 번도 없는 판매점도 ${fmt(big2no1)}곳 있습니다. 많이 팔아도 1등은 운에 따라 0번일 수 있습니다. "1등 ○회 배출" 현수막은 1등이 나온 곳만 보여 주고, 같은 만큼 팔고도 1등이 없는 곳은 보여 주지 않습니다(생존자 편향).`,
             `On the other hand, ${fmt(big2no1)} retailers have had more than ten 2nd prizes but never a 1st. Even with high sales, 1st prize can come zero times by chance. A "1st prize ○ times" banner shows only the places where it happened, not those that sold as much and got none (survivorship bias).`),
         S.net ? pEn(`1등이 가장 많이 나온 "판매점"은 동행복권 인터넷 판매입니다(${S.netFirst}회부터, 1등 ${S.net.n1}게임 · 2등 ${fmt(S.net.n2)}게임). 전국에서 한 창구로 가장 많이 팔리니 1등도 가장 많이 나옵니다. 판매량이 1등 횟수를 정한다는 것을 가장 뚜렷하게 보여 주는 예입니다.`,
-            `The "retailer" with the most 1st prizes is Dong-haeng Lottery's own online sales (from draw ${S.netFirst}: ${S.net.n1} 1st-prize and ${fmt(S.net.n2)} 2nd-prize games). It is the single outlet that sells the most nationwide, so it produces the most 1st prizes — the clearest example of sales deciding the count.`) : '',
+            `The "retailer" with the most 1st prizes is Donghaeng Lottery's own online sales (from draw ${S.netFirst}: ${S.net.n1} 1st-prize and ${fmt(S.net.n2)} 2nd-prize games). It is the single outlet that sells the most nationwide, so it produces the most 1st prizes — the clearest example of sales deciding the count.`) : '',
         pEn(`판매량이 공개되지 않으므로 이 페이지는 "어디가 효율이 좋은가"를 가리지 않습니다. 2등 횟수도 운이 섞인 숫자라 판매량을 그대로 재지는 못합니다. 어느 판매점에서 사도 당첨 확률은 같습니다.`
             + (REVENUE_POST ? ` 1 · 2등 수로 판매점별 판매액과 수수료를 오차범위와 함께 거꾸로 셈해 본 글: <a href="blog/${REVENUE_POST}.html">로또 1등 판매점은 얼마 벌까?</a>` : ''),
             `Because sales are not published, this page does not rank retailers by "efficiency". 2nd-prize counts are themselves partly luck and only approximate sales. Your odds are the same wherever you buy.`
@@ -2407,7 +2408,7 @@ function storesPage() {
         h2En(`${last}회 1등 판매점`, `1st-prize retailers, draw ${last}`),
         table([['판매점', 'Retailer'], ['지역', 'Area'], ['방식', 'Method']],
             rec.w1.map(([id, how]) => { const s = S.shop(id); const x = { name: s[0], sido: s[1], gu: s[2], closed: !!s[3] }; return [shopName(x), where(x), how === 'A' ? en('자동', 'Auto') : how === 'M' ? en('수동', 'Manual') : how === 'S' ? en('반자동', 'Semi-auto') : '—']; }), 'tier-stat'),
-        pEn(`${last}회 2등은 ${fmt(rec.w2.length)}게임이 나왔습니다. 그 회차의 당첨번호와 등수별 당첨금은 <a href="round/${last}.html">${last}회 당첨번호</a>에 있습니다.`,
+        pEn(`${last}회에는 2등이 ${fmt(rec.w2.length)}게임 나왔습니다. 그 회차의 당첨번호와 등수별 당첨금은 <a href="round/${last}.html">${last}회 당첨번호</a>에 있습니다.`,
             `${fmt(rec.w2.length)} games won 2nd prize in draw ${last}. The winning numbers and prizes by tier are on <a href="round/${last}.html">draw ${last}</a>.`),
     ];
 
@@ -2419,9 +2420,9 @@ function storesPage() {
         title,
         h1: '로또 1등 판매점 통계', h1En: 'Lotto 1st-Prize Retailer Statistics',
         desc,
-        scope: en(`${first}~${last}회 기준 · 매주 추첨 후 자동 갱신 (마지막 갱신 ${UPDATED}) · 출처: 동행복권 당첨 판매점 조회`, `Draws ${first}–${last} · updated automatically after each draw (last update ${UPDATED}) · source: Dong-haeng Lottery winning-retailer search`),
+        scope: en(`${first}~${last}회 기준 · 매주 추첨 후 자동 갱신 (마지막 갱신 ${UPDATED}) · 출처: 동행복권 당첨 판매점 조회`, `Draws ${first}–${last} · updated automatically after each draw (last update ${UPDATED}) · source: Donghaeng Lottery winning-retailer search`),
         lead: en(`동행복권이 공개하는 회차별 1등 · 2등 판매점 기록을 모았습니다. 결론부터 말하면, <strong>1등이 자주 나온 곳은 많이 팔린 곳일 가능성이 큽니다.</strong> 판매점별 판매량은 공개되지 않아, 같은 판매점의 2등 횟수로 그 판매량을 가늠했습니다.`,
-            `This page collects the 1st- and 2nd-prize retailers Dong-haeng Lottery publishes for each draw. In short: <strong>retailers with many 1st prizes most likely just sell a lot.</strong> Sales per retailer are not published, so we gauge them with each retailer's 2nd-prize count.`),
+            `This page collects the 1st- and 2nd-prize retailers Donghaeng Lottery publishes for each draw. In short: <strong>retailers with many 1st prizes most likely just sell a lot.</strong> Sales per retailer are not published, so we gauge them with each retailer's 2nd-prize count.`),
         ld: [{
             '@type': 'Dataset',
             name: title,
@@ -2570,7 +2571,7 @@ function sidoStoresPage(x, st) {
         title,
         h1: `${ko} 로또 1등 판매점`, h1En: `Lotto 1st-Prize Retailers in ${x.en}`,
         desc,
-        scope: en(`${first}~${last}회 기준 · 매주 추첨 후 자동 갱신 (마지막 갱신 ${UPDATED}) · 출처: 동행복권 당첨 판매점 조회`, `Draws ${first}–${last} · updated automatically after each draw (last update ${UPDATED}) · source: Dong-haeng Lottery winning-retailer search`),
+        scope: en(`${first}~${last}회 기준 · 매주 추첨 후 자동 갱신 (마지막 갱신 ${UPDATED}) · 출처: 동행복권 당첨 판매점 조회`, `Draws ${first}–${last} · updated automatically after each draw (last update ${UPDATED}) · source: Donghaeng Lottery winning-retailer search`),
         lead: en(`${x.full}에서 1등 · 2등이 나온 판매점 기록입니다. ${first}회부터 ${ko}에서 1등은 <strong>${fmt(st.v.w1)}게임</strong>, 2등은 ${fmt(st.v.w2)}게임 나왔고, 1등이 나온 판매점은 ${fmt(st.with1)}곳입니다.`,
             `Retailers in ${x.en} that sold 1st- and 2nd-prize tickets. Since draw ${first}, ${x.en} has had <strong>${fmt(st.v.w1)}</strong> 1st-prize and ${fmt(st.v.w2)} 2nd-prize games, from ${fmt(st.with1)} retailers with a 1st prize.`),
         ld: [{
@@ -2675,7 +2676,7 @@ function repeatPage() {
                 c.k === 6 ? en('없음', 'none') : `<span class="row-balls">${c.onlyA[0]} → ${c.onlyB[0]}</span>`]), 'tier-stat'),
         ...R.second.map(s => {
             const x = s.to.bonus;
-            return pEn(`${ko(s.from)} 당첨번호 6개 가운데 5개는 ${ko(s.to)} 당첨번호와 같고, 남은 하나(${x})는 ${ko(s.to)} 보너스 번호입니다. ${ko(s.from)} 번호를 ${ko(s.to)}에 그대로 샀다면 <strong>2등</strong>입니다.`,
+            return pEn(`${ko(s.from)} 당첨번호 6개 가운데 5개는 ${ko(s.to)} 당첨번호와 같고, 남은 하나(${x})는 ${ko(s.to)} 보너스 번호입니다. ${ko(s.from)} 번호를 ${ko(s.to)}에 그대로 샀다면 <strong>2등</strong>이었습니다.`,
                 `Five of ${enL(s.from)}'s six numbers match ${enL(s.to)}, and the sixth (${x}) is ${enL(s.to)}'s bonus ball, so replaying ${enL(s.from)}'s numbers in ${enL(s.to)} would have won <strong>2nd prize</strong>.`);
         }),
         pEn(`가장 최근은 ${ko(newest.b)}(${newest.b.date})로, ${ko(newest.a)}와 겹친 번호는 ${newest.same.join(', ')}입니다.`
@@ -2921,7 +2922,7 @@ function lhSeason(id) {
     const m = /^(\d{4})Q([1-4])$/.exec(id || '');
     if (!m) return { ko: id || '', en: id || '', endKo: '', endEn: '' };
     const q = +m[2], endM = q * 3, endD = [31, 30, 30, 31][q - 1];
-    return { ko: `${m[1]}년 ${q}분기`, en: `Q${q} ${m[1]}`, endKo: `${endM}월 ${endD}일 24시`, endEn: `the end of ${['March', 'June', 'September', 'December'][q - 1]} ${endD}` };
+    return { ko: `${m[1]}년 ${q}분기`, en: `Q${q} ${m[1]}`, endKo: `${endM}월 ${endD}일 24시`, endEn: `midnight, ${endD} ${['March', 'June', 'September', 'December'][q - 1]} (KST)` };
 }
 // 칸(차지된 것) → 시도: 그 칸 판매점들의 시도 중 가장 많은 것
 function lhSidoCounts(md, keys) {
@@ -2941,7 +2942,7 @@ function lhSidoCounts(md, keys) {
 }
 function lhRankList(rank) {
     return '<ol class="sm-terr-rank sm-hexabout-rank">' + rank.map((r, i) => `<li><span class="sm-rk-n">${i + 1}</span><span class="sm-rk-nick">${esc(r.nick || '(탈퇴한 회원)')}</span>` +
-        `<span class="sm-rk-v" data-i18n-en="${r.cells} cells · ${r.stores} retailers">칸 ${fmt(r.cells)} · ${fmt(r.stores)}곳</span></li>`).join('') + '</ol>';
+        `<span class="sm-rk-v" data-i18n-en="${fmt(r.cells)} block${r.cells === 1 ? '' : 's'} · ${fmt(r.stores)} retailer${r.stores === 1 ? '' : 's'}">블록 ${fmt(r.cells)} · ${fmt(r.stores)}곳</span></li>`).join('') + '</ol>';
 }
 function lottohexAboutHtml(md, snap) {
     let total = 0;
@@ -2953,47 +2954,47 @@ function lottohexAboutHtml(md, snap) {
         const s = lhSeason(snap.season && snap.season.id), held = (snap.cells || []).length;
         const sido = lhSidoCounts(md, snap.cells || []).slice(0, 5);
         week = `<h2 data-i18n-en="${esc(`LottoHex this week (as of ${snap.at})`)}">이번 주 LottoHex (${esc(snap.at)} 기준)</h2>` +
-            pEn(`참여 ${fmt(snap.players)}명 · 차지된 칸 ${fmt(held)}개` + (total ? ` / 전체 ${fmt(total)}칸 · 회색지대 ${fmt(Math.max(0, total - held))}칸` : '') + '.',
-                `${fmt(snap.players)} players · ${fmt(held)} cells held` + (total ? ` of ${fmt(total)} · ${fmt(Math.max(0, total - held))} in the grey zone` : '') + '.') +
-            (sido.length ? pEn('칸이 많이 차지된 지역: ' + sido.map(([k, v]) => `${esc(k)} ${fmt(v)}칸`).join(' · ') + '.',
-                'Regions with the most cells held: ' + sido.map(([k, v]) => `${esc(k)} ${fmt(v)}`).join(' · ') + '.') : '') +
+            pEn(`참여 ${fmt(snap.players)}명 · 차지된 블록 ${fmt(held)}개` + (total ? ` / 전체 ${fmt(total)}블록 · 회색지대 ${fmt(Math.max(0, total - held))}블록` : '') + '.',
+                `${fmt(snap.players)} players · ${fmt(held)} blocks held` + (total ? ` of ${fmt(total)} · ${fmt(Math.max(0, total - held))} in the grey zone` : '') + '.') +
+            (sido.length ? pEn('블록이 많이 차지된 지역: ' + sido.map(([k, v]) => `${esc(k)} ${fmt(v)}블록`).join(' · ') + '.',
+                'Regions with the most blocks held: ' + sido.map(([k, v]) => `${esc(k)} ${fmt(v)}`).join(' · ') + '.') : '') +
             `<h3 data-i18n-en="${esc(`Map ranking · ${s.en} · final at ${s.endEn}`)}">Map 랭킹 · ${s.ko} · ${s.endKo}에 확정</h3>` +
             (snap.rank && snap.rank.length ? lhRankList(snap.rank)
-                : pEn('아직 칸을 차지한 사람이 없습니다. 판매점 한 곳만 다녀와도 회색지대의 칸을 차지합니다.', 'No one holds a cell yet. A single verified visit takes a grey-zone cell.')) +
+                : pEn('아직 블록을 차지한 사람이 없습니다. 판매점 한 곳만 다녀와도 회색지대의 블록을 차지합니다.', 'No one holds a block yet. A single verified visit takes a grey-zone block.')) +
             (snap.last && snap.last.rank && snap.last.rank.length ? `<h3 data-i18n-en="${esc(lhSeason(snap.last.id).en + ' final ranking')}">${lhSeason(snap.last.id).ko} 확정 순위</h3>` + lhRankList(snap.last.rank) : '');
     }
     return `<details class="sm-hexabout" id="sm-hexabout" open>
             <summary data-i18n-en="About LottoHex · this week">LottoHex 안내 · 이번 주</summary>
             <div class="sm-hexabout-body">
             <h2 data-i18n-en="What is LottoHex?">LottoHex란?</h2>
-            ${pEn('LottoHex(로또헥스)는 로또 판매점 지도 위 육각형 칸(가운데서 꼭짓점까지 0.6km, 걸어서 15분쯤)을 차지하는 무료 땅따먹기 게임입니다. 판매점에 직접 가서 판매점 카드의 "다녀왔어요"를 누르면 위치로 확인하고(판매점 50m 안), 칸 안에서 다녀온 판매점이 가장 많은 사람이 그 칸의 주인이 됩니다. 복권을 살 필요는 없습니다.',
-                'LottoHex is a free turf game on the lotto retailer map: the map is split into hexagon cells (0.6 km centre to corner, about a 15-minute walk across). Go to a retailer and tap "I\'ve been here" on its card; your location is checked (within 50 m), and whoever has visited the most retailers in a cell holds it. No purchase needed.')}
+            ${pEn('LottoHex(로또헥스)는 로또 판매점 지도 위 육각형 블록(가운데서 꼭짓점까지 0.6km, 끝에서 끝까지 걸어서 15분쯤)을 차지하는 무료 땅따먹기 게임입니다. 판매점 50m 안에서 판매점 카드의 "다녀왔어요"를 누르면 위치로 인증됩니다. 블록 안에서 다녀온 판매점이 가장 많은 사람이 그 블록의 주인이 됩니다. 복권을 살 필요는 없습니다.',
+                'LottoHex is a free turf game on the lotto retailer map: the map is split into hexagon blocks (0.6 km centre to corner, about a 15-minute walk across). Tap "I\'ve been here" on a retailer\'s card within 50 m of it and your visit is verified by location; whoever has visited the most retailers in a block holds it. No purchase needed.')}
             <h2 data-i18n-en="How to play">하는 법</h2>
             <ol>
                 ${li('구글로 로그인하고 별명을 정합니다.', 'Sign in with Google and choose a nickname.')}
-                ${li('LottoHex 참여 안내를 읽고 참여합니다. 위치 이용에도 따로 동의합니다(만 14세 이상).', 'Read the LottoHex notice and join. Agree separately to location use (14 or older).')}
-                ${li(`판매점 50m 안에서 카드의 "다녀왔어요"를 누릅니다. 위치로 확인되면 다녀온 곳으로 기록되고 ${LH_POINTS.visit}포인트를 받습니다.`, `Within 50 m of a retailer, tap "I've been here" on its card. Once your location is verified it is recorded and you earn ${LH_POINTS.visit} points.`)}
-                ${li('칸을 빼앗기면 그 칸 판매점에서 "오늘 또 다녀왔어요"로 되찾습니다(같은 판매점은 하루 한 번).', 'Lost a cell? Win it back with "Visited again today" at a retailer in it (once a day per retailer).')}
+                ${li('LottoHex 참여에 동의합니다(만 19세 이상). 위치정보 서비스 이용에도 따로 동의합니다.', 'Agree to join LottoHex (19 or older). Agree separately to the location-based service.')}
+                ${li(`판매점 50m 안에서 카드의 "다녀왔어요"를 누릅니다. 위치로 확인되면 다녀온 곳으로 기록되고 ${LH_POINTS.visit}P를 받습니다.`, `Within 50 m of a retailer, tap "I've been here" on its card. Once your location is verified it is recorded and you earn ${LH_POINTS.visit} pts.`)}
+                ${li('블록을 빼앗기면 그 블록 판매점에서 "오늘 또 다녀왔어요"로 되찾습니다(같은 판매점은 하루 한 번).', 'Lost a block? Win it back with "Visited again today" at a retailer in it (once a day per retailer).')}
             </ol>
             <h2 data-i18n-en="Rules">규칙</h2>
             <ul>
-                ${li('같은 수면 그 칸에 더 최근에 다녀온 사람이 차지합니다. 주인 없는 칸은 회색지대로, 지도에 옅은 회색으로 보입니다.', 'On a tie, whoever visited the cell most recently holds it. Cells no one holds are the grey zone, shown in light grey.')}
-                ${li('칸은 비우지 않습니다. 분기(1 · 4 · 7 · 10월 1일 0시)마다 그때의 Map 랭킹을 확정해 남깁니다.', 'Cells are never cleared. At the start of each quarter the Map ranking is finalised and kept.')}
-                ${li('모두에게 보이는 것은 칸 주인의 별명 · 칸 모양(빛 벽 포함) · 칸별 다녀온 판매점 수 · Map 랭킹과, 칸을 새로 차지하거나 빼앗았다는 소식(별명 · 빼앗긴 사람의 별명 · 몇 번째 칸인지 — 채팅 · LottoHex 소식 띠)뿐입니다. 어느 판매점을 언제 다녀왔는지는 공개하지 않습니다.', 'Only cell holders\' nicknames, cell skins (including light walls), visit counts per cell, the Map ranking and news that someone took a new cell or took one from another player (nicknames and how many cells they now hold — in the chat and the LottoHex ticker) are public. Which retailers you visited, and when, is never shown.')}
+                ${li('같은 수면 그 블록에 더 최근에 다녀온 사람이 차지합니다. 주인 없는 블록은 회색지대로, 지도에 옅은 회색으로 보입니다.', 'On a tie, whoever visited the block most recently holds it. Blocks no one holds are the grey zone, shown in light grey.')}
+                ${li('블록은 비우지 않습니다. 분기(1 · 4 · 7 · 10월 1일 0시)마다 그때의 Map 랭킹을 확정해 남깁니다.', 'Blocks are never cleared. At the start of each quarter the Map ranking is finalised and kept.')}
+                ${li('모두에게 보이는 것: 블록 주인 별명 · 블록 모양(빛 벽 포함) · 블록별 다녀온 판매점 수 · Map 랭킹 · 점령 소식(별명과 몇 번째 블록인지만). 어느 판매점을 언제 다녀왔는지는 보이지 않습니다.', 'What everyone can see: block holders\' nicknames, block skins (including light walls), visit counts per block, the Map ranking and capture news (only the nickname and how many blocks they now hold). Which retailers you visited, and when, is never shown.')}
                 ${li('폐점한 판매점은 세지 않습니다. 어디서 사든 1등 확률은 1/8,145,060으로 같습니다.', 'Closed retailers do not count. Your chance of 1st prize is 1 in 8,145,060 wherever you buy.')}
             </ul>
             <h2 data-i18n-en="Points">포인트</h2>
             <ul>
-                ${li(`위치로 인증한 다녀온 곳: 한 번에 ${LH_POINTS.visit}포인트(같은 판매점은 하루 한 번, 하루 ${LH_POINTS.daily}포인트까지)`, `Visits verified by location: ${LH_POINTS.visit} points each (once a day per retailer, up to ${LH_POINTS.daily} a day)`)}
-                ${li('점령 점수: 지금 차지한 칸 하나에 하루 0.1포인트(매일 0시 무렵 그때 차지한 칸으로 셉니다, 운영자 제외)', 'Cell points: 0.1 points a day for each cell you hold (counted just after midnight each day from the cells held then; operators excluded)')}
-                ${li(`분기 확정 순위: 1위 ${fmt(p1)} · 2위 ${p2} · 3위 ${p3} · 4~10위 ${p4}포인트(운영자 제외)`, `Quarterly final ranking: 1st ${fmt(p1)} · 2nd ${p2} · 3rd ${p3} · 4th–10th ${p4} points (operators excluded)`)}
-                ${li('마일스톤: 다녀온 판매점 · 다녀온 칸 · 다녀온 시·도 · 최대 영토가 단계에 이를 때마다 10~500포인트(단계마다 한 번)', 'Milestones: 10–500 points each time retailers visited, cells visited, provinces visited or most cells held reaches a new step (once per step)')}
-                ${li('포인트로 칸 모양을 바꾸거나(30), 영역 빛 벽을 사거나(300 — 3D 에서 내 영토 테두리가 빛나고 모두에게 보입니다), 1일 이용권을 열 수 있습니다(300). 현금으로 바꿀 수 없습니다.', 'Spend points on a new cell skin (30), the territory light wall (300 — your territory edge glows in 3D for everyone) or a 1-day pass (300). Points cannot be exchanged for cash.')}
+                ${li(`위치로 인증한 다녀온 곳: 한 번에 ${LH_POINTS.visit}P(같은 판매점은 하루 한 번, 하루 ${LH_POINTS.daily}P까지)`, `Visits verified by location: ${LH_POINTS.visit} pts each (once a day per retailer, up to ${LH_POINTS.daily} pts a day)`)}
+                ${li('점령 포인트: 지금 차지한 블록 하나에 하루 0.1P(매일 0시 무렵 그때 차지한 블록으로 셉니다, 운영자 제외)', 'Block points: 0.1 pts a day for each block you hold (counted just after midnight each day from the blocks held then; operators excluded)')}
+                ${li(`분기 확정 순위: 1위 ${fmt(p1)}P · 2위 ${p2}P · 3위 ${p3}P · 4~10위 ${p4}P(운영자 제외)`, `Quarterly final ranking: 1st ${fmt(p1)} · 2nd ${p2} · 3rd ${p3} · 4th–10th ${p4} pts (operators excluded)`)}
+                ${li('마일스톤: 다녀온 판매점 · 다녀온 블록 · 다녀온 시·도 · 차지한 블록(최대)이 단계에 이를 때마다 10~500P(단계마다 한 번)', 'Milestones: 10–500 pts each time retailers visited, blocks visited, provinces visited or most blocks held reaches a new step (once per step)')}
+                ${li('포인트로 블록 모양을 바꾸거나(30P), 영역 빛 벽을 사거나(300P — 3D에서 내 영역 테두리가 빛나고 모두에게 보입니다), 1일 이용권을 열 수 있습니다(300P). 현금으로 바꿀 수 없습니다.', 'Spend points on a new block skin (30 pts), the territory light wall (300 pts — your territory edge glows in 3D for everyone) or a 1-day pass (300 pts). Points cannot be exchanged for cash.')}
             </ul>
             <h2 data-i18n-en="Titles">칭호</h2>
             <ul>
-                ${li('인증한 방문으로 칭호를 얻어 칭호 도감에 모읍니다: 방문(초보탐험가 · 동네 탐험가 …), 영토(첫 깃발 · 세력확장자 · 영주 …), 칸 모양(삼각지 · 일자 진격 · 왕지렁이 · 벌집 · 도넛 …), 지역(마포구 단골 · 전문가 · 터줏대감, 시·도 완주, 팔도유람), 숨은 칭호', 'Verified visits earn titles for your collection: visits (Rookie Explorer …), territory (First Flag, Expansionist, Lord …), cell shapes (Triangle, Straight Ahead, Giant Worm, Honeycomb, Donut …), regions (district Regular · Expert · Local Legend, province Complete, Grand Tour) and hidden titles')}
-                ${li('얻은 칭호 중 하나를 골라 별명 앞에 달면 LottoHex 랭킹 · 칸 · 랭킹 페이지에 보입니다.', 'Wear one of your titles before your nickname on the LottoHex ranking, cells and the ranking page.')}
+                ${li('인증한 방문으로 칭호를 얻어 칭호 도감에 모읍니다: 방문(초보탐험가 · 동네 탐험가 …), 영역(첫 깃발 · 세력확장자 · 영주 …), 블록 모양(삼각지 · 일자 진격 · 왕지렁이 · 벌집 · 도넛 …), 지역(마포구 단골 · 전문가 · 터줏대감, 시·도 완주, 팔도유람), 숨은 칭호', 'Verified visits earn titles for your collection: visits (Rookie Explorer …), territory (First Flag, Expansionist, Lord …), block shapes (Triangle, Straight Ahead, Giant Worm, Honeycomb, Donut …), regions (district Regular · Expert · Local Legend, province Complete, Grand Tour) and hidden titles')}
+                ${li('얻은 칭호 하나를 골라 별명 앞에 달면 Map 랭킹 · 블록 · 회원 랭킹 페이지에 보입니다.', 'Pick one of your titles to show before your nickname on the Map ranking, blocks and the member ranking page.')}
             </ul>
             ${week}
             ${pEn(`함께 보기: <a href="${STORE_MAP_FILE}">로또 판매점 지도</a> · <a href="${STORES_FILE}">1등 판매점 통계</a> · <a href="terms.html#location">이용약관 위치기반서비스</a> · <a href="privacy.html#location">개인정보 처리방침 개인위치정보</a>`,
@@ -3009,10 +3010,10 @@ function storeMapPage(md, variant) {
     const sidoRows = [...S.sido.entries()].filter(([k]) => k !== '기타').sort((a, b) => b[1].w1 - a[1].w1);
     const net = S.net;
     const snap = hex ? lottohexSnap() : null;
-    const title = hex ? 'LottoHex(로또헥스) · 로또 판매점 땅따먹기 — 육각 칸 차지 · Map 랭킹 | lottodraw.kr'
+    const title = hex ? 'LottoHex(로또헥스) · 로또 판매점 땅따먹기 — 육각 블록 차지 · Map 랭킹 | lottodraw.kr'
         : top ? `로또 판매점 TOP 50 지도 · 1등이 가장 많이 나온 50곳 (${first}~${last}회) | lottodraw.kr`
         : `로또 판매점 지도 · 1등 · 2등 나온 곳 전국 지도 (${first}~${last}회) | lottodraw.kr`;
-    const desc = hex ? 'LottoHex(로또헥스)는 로또 판매점에 직접 다녀와 위치로 인증하고, 지도 위 육각형 칸을 차지하는 무료 땅따먹기 게임입니다. 칸 안에서 다녀온 판매점이 가장 많은 사람이 주인이 되고, 분기마다 Map 랭킹을 확정해 1~10위에 포인트를 드립니다. 복권을 살 필요는 없습니다.'
+    const desc = hex ? 'LottoHex(로또헥스)는 로또 판매점에 직접 다녀와 위치로 인증하고, 지도 위 육각형 블록을 차지하는 무료 땅따먹기 게임입니다. 블록 안에서 다녀온 판매점이 가장 많은 사람이 주인이 되고, 분기마다 Map 랭킹을 확정해 1~10위에 포인트를 드립니다. 복권을 살 필요는 없습니다.'
         : top ? `로또 1등이 가장 많이 나온 판매점 50곳을 지도 위 별로 봅니다(${first}~${last}회, 매주 갱신). 많이 팔린 곳일 가능성이 클 뿐, 어디서 사든 당첨 확률은 같습니다.`
         : `로또 1등 · 2등이 나온 판매점 ${fmt(md.rows.length)}곳을 전국 지도(3D · 2D)에서 봅니다(${first}~${last}회, 매주 갱신). 점이 클수록 1등 · 2등이 많이 나온 곳 — 많이 팔린 곳일 가능성이 큽니다. 어디서 사든 당첨 확률은 같습니다.`;
     const v = f => `${f}?v=${fingerprint(f)}`;
@@ -3111,12 +3112,12 @@ function storeMapPage(md, variant) {
              휴대폰은 지금처럼 한 줄로 흐르는 칩(LottoHex 카드도 칩 하나 + 켜면 "LottoHex만 보기") -->
         <div class="sm-chips" role="group" aria-label="지도에 보기" data-i18n-attr="aria-label:sm.layers">
             <div class="sm-turf" id="sm-turf" hidden>
-                <button type="button" class="sm-turf-main" id="sm-terr-chip" aria-pressed="false" title="육각 칸 땅따먹기 · Map 랭킹" data-i18n-attr="title:sm.terrTitle">
+                <button type="button" class="sm-turf-main" id="sm-terr-chip" aria-pressed="false" title="육각 블록 땅따먹기 · Map 랭킹" data-i18n-attr="title:sm.terrTitle">
                     <span class="sm-turf-ico" aria-hidden="true"></span>
                     <span class="sm-turf-txt"><b><span>LottoHex</span></b><small class="sm-turf-sub" id="sm-turf-stat" data-i18n-en="Retailer turf game">판매점 땅따먹기 게임</small></span>
                     <span class="sm-turf-sw" aria-hidden="true"></span>
                 </button>
-                <button type="button" class="sm-turf-only" id="sm-terr-only" data-terr-only aria-pressed="false" title="판매점 점은 감추고 LottoHex 칸만 보기" data-i18n-attr="title:sm.terrOnlyTitle"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="LottoHex only">LottoHex만 보기</span></button>
+                <button type="button" class="sm-turf-only" id="sm-terr-only" data-terr-only aria-pressed="false" title="판매점 점은 감추고 LottoHex 블록만 보기" data-i18n-attr="title:sm.terrOnlyTitle"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="LottoHex only">LottoHex만 보기</span></button>
             </div>
             <span class="sm-chips-h" data-i18n-en="On the map">지도에 보기</span>
             <button type="button" class="sm-chip sm-chip-top" data-layer="top" aria-pressed="false" title="TOP 50 판매점만 별로 보기" data-i18n-attr="title:sm.topTitle"><span class="sm-star-ico" aria-hidden="true">✦</span>TOP 50</button>
@@ -3127,7 +3128,7 @@ function storeMapPage(md, variant) {
             ${md.fun && md.fun.length ? `<button type="button" class="sm-chip sm-chip-fun sm-fun-toggle" aria-pressed="false" aria-controls="sm-fun"><span aria-hidden="true">🏆</span><span data-i18n-en="Unusual">이색 판매점</span></button>` : ''}
             <button type="button" class="sm-chip sm-chip-mine" id="sm-mine-chip" aria-pressed="false" hidden title="내가 다녀온 곳 · 내 댓글 (로그인 회원)" data-i18n-attr="title:sm.mineTitle">📍 <span data-i18n-en="My places">내 기록</span><small class="sm-mine-sub" data-i18n-en="places I've been · my comments">다녀온 곳 · 내 댓글</small></button>
         </div>
-        <p class="sm-pcnote" data-i18n-en="On a PC you can see the Top 50 as a list.">PC에서 보면 TOP 50을 목록으로 볼 수 있습니다.</p>
+        <p class="sm-pcnote" data-i18n-en="On a PC you can see the Top 50 as a list.">PC에서는 TOP 50을 목록으로 볼 수 있습니다.</p>
     </div>
     <nav class="sm-tabs" role="tablist" aria-label="판매점 지도 탭">
         <button type="button" class="sm-tab" data-tab="top" role="tab" aria-selected="true">TOP 50</button>
@@ -3157,13 +3158,13 @@ function storeMapPage(md, variant) {
         <div class="sm-fun" id="sm-fun" hidden>
             <h2 data-i18n-en="Unusual retailers">이색 판매점</h2>
             <ol>${md.fun.map((f, k) => `<li><button type="button" class="sm-fun-item" data-k="${k}"><span class="sm-fun-ico" aria-hidden="true">${f.icon}</span><span><b data-i18n-en="${esc(f.titleEn)}">${esc(f.title)}</b><span class="sm-fun-name">${esc(f.name)} <small>${esc(f.place)}</small></span><small data-i18n-en="${esc(f.textEn)}">${esc(f.text)}</small></span></button></li>`).join('')}</ol>
-            <p class="sm-small" data-i18n-en="Open retailers only, from Dong-haeng Lottery data. More in the blog post.">문을 연 판매점 기준(동행복권 자료). <a href="blog/lotto-store-extremes.html">블로그 글로 보기</a></p>
+            <p class="sm-small" data-i18n-en="Open retailers only, from Donghaeng Lottery data. More in the blog post.">문을 연 판매점 기준(동행복권 자료). <a href="blog/lotto-store-extremes.html">블로그 글로 보기</a></p>
         </div>` : ''}
         <div class="sm-chips sm-modes" role="group" aria-label="1등 방식 (로그인 회원)" data-i18n-attr="aria-label:sm.modes">
                 <span class="sm-modes-label" data-i18n-en="1st-prize type">1등 방식</span>
                 <button type="button" class="sm-chip sm-mode" data-mode="A" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Auto">자동</span></button>
                 <button type="button" class="sm-chip sm-mode" data-mode="M" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Manual">수동</span></button>
-                <button type="button" class="sm-chip sm-mode" data-mode="S" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Semi">반자동</span></button>
+                <button type="button" class="sm-chip sm-mode" data-mode="S" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Semi-auto">반자동</span></button>
                 <!-- 휴대폰: "시도별 · 안내"를 반자동 오른쪽에(2026-11-11 사장님). 누르면 아래 #sm-info 를 연다. PC 는 탭 "시도별"이라 감춘다 -->
                 <button type="button" class="sm-chip sm-info-btn" aria-controls="sm-info" aria-expanded="false" data-i18n-en="By province · about">시도별 · 안내</button>
         </div>
@@ -3174,23 +3175,23 @@ function storeMapPage(md, variant) {
     <details class="sm-info" id="sm-info">
         <summary data-i18n-en="By province · about">시도별 · 안내</summary>
         <div class="sm-info-body">
-            <p class="sm-small" data-i18n-en="${esc(`1st- and 2nd-prize retailers, draws ${first}–${last}, updated after each draw (last update ${UPDATED}). Source: Dong-haeng Lottery winning-retailer search.`)}">${first}~${last}회 1등 · 2등 판매점 · 매주 추첨 후 자동 갱신 (마지막 갱신 ${UPDATED}) · 출처: 동행복권 당첨 판매점 조회</p>
+            <p class="sm-small" data-i18n-en="${esc(`1st- and 2nd-prize retailers, draws ${first}–${last}, updated after each draw (last update ${UPDATED}). Source: Donghaeng Lottery winning-retailer search.`)}">${first}~${last}회 1등 · 2등 판매점 · 매주 추첨 후 자동 갱신 (마지막 갱신 ${UPDATED}) · 출처: 동행복권 당첨 판매점 조회</p>
             <p data-i18n-en="Tap an area name to move the map there. Where the 1st- and 2nd-prize shares are close, an area with many 1st prizes is simply one that sells more.">지역 이름을 누르면 지도가 그 지역으로 갑니다. 1등 비율과 2등 비율이 비슷하면, 1등이 많은 지역은 그만큼 많이 팔린 지역이라는 뜻입니다.</p>
             ${table([['지역', 'Area'], ['1등', '1st'], ['1등 비율', '1st share'], ['2등', '2nd'], ['2등 비율', '2nd share']],
                 sidoRows.map(([k, x]) => [k === '인터넷' ? en('인터넷(지도에 0등)', 'Online (#0 on the map)') : `<button type="button" class="sm-goto" data-sido="${esc(k)}">${esc(k)}</button>`,
                     fmt(x.w1), pct(x.w1, S.g1), fmt(x.w2), pct(x.w2, S.g2)]), 'tier-stat sm-sido')}
-            ${pEn(`점 크기는 2등 횟수 + 1등 횟수 × 6입니다(1등은 2등보다 6배 드물다). 판매점별 판매량은 공개되지 않아 팔린 양을 짐작하는 값이며, 앞으로 1등이 나올 곳을 뜻하지 않습니다. 동행복권 인터넷 판매(1등 ${net ? net.n1 : 0}게임)는 한 곳에 있는 판매점이 아니어서 동행복권 본사 자리에 붉은 "0등"으로 따로 찍었습니다(그곳에서 복권을 팔지는 않습니다).`
+            ${pEn(`점 크기는 2등 횟수 + 1등 횟수 × 6입니다(1등은 2등보다 6배 드뭅니다). 판매점별 판매량은 공개되지 않아 팔린 양을 짐작하는 값이며, 앞으로 1등이 나올 곳을 뜻하지 않습니다. 동행복권 인터넷 판매(1등 ${net ? net.n1 : 0}게임)는 한 곳에 있는 판매점이 아니어서 동행복권 본사 자리에 붉은 "0등"으로 따로 찍었습니다(그곳에서 복권을 팔지는 않습니다).`
                 + (md.noCoord ? ` 위치가 공개되지 않은 ${fmt(md.noCoord)}곳도 빠졌습니다.` : ''),
-                `Dot size is 2nd prizes + 1st prizes × 6 (a 1st prize is six times rarer). Sales per retailer are not published, so this only gauges how much was sold; it says nothing about where the next 1st prize will come from. Dong-haeng Lottery's online sales (${net ? net.n1 : 0} 1st-prize games) are not one location, so they are pinned in red as "#0" at the company office (tickets are not sold there).`
-                + (md.noCoord ? ` ${fmt(md.noCoord)} retailers without a published location are also left out.` : ''), 'sm-small')}
+                `Dot size is 2nd prizes + 1st prizes × 6 (a 1st prize is six times rarer). Sales per retailer are not published, so this only gauges how much was sold; it says nothing about where the next 1st prize will come from. Donghaeng Lottery's online sales (${net ? net.n1 : 0} 1st-prize games) are not one location, so they are pinned in red as "#0" at the company office (tickets are not sold there).`
+                + (md.noCoord ? ` ${fmt(md.noCoord)} ${md.noCoord === 1 ? 'retailer' : 'retailers'} without a published location ${md.noCoord === 1 ? 'is' : 'are'} also left out.` : ''), 'sm-small')}
             ${md.all ? pEn(`"일반 판매점"을 켜면 지금 로또를 파는 전국 판매점 ${fmt(md.all.total)}곳 중 1등 · 2등 기록이 없는 ${fmt(md.all.rows.length)}곳이 회색 점으로 보입니다(출처: 동행복권 판매점 찾기, ${md.all.updated} 기준 · 매달 갱신).`,
-                `"All others" shows the ${fmt(md.all.rows.length)} of ${fmt(md.all.total)} current lotto retailers with no 1st or 2nd prize on record, as grey dots (source: Dong-haeng Lottery retailer search, as of ${md.all.updated}, updated monthly).`, 'sm-small') : ''}
+                `"All others" shows the ${fmt(md.all.rows.length)} of ${fmt(md.all.total)} current lotto retailers with no 1st or 2nd prize on record, as grey dots (source: Donghaeng Lottery retailer search, as of ${md.all.updated}, updated monthly).`, 'sm-small') : ''}
             ${fs.existsSync(path.join(ROOT, STORE_MAP_STATIONS)) ? pEn(`역 이름 · 위치 · 전철 노선과 선로(검색창 역 찾기 · 지도의 역 표시 · 노선 선): © <a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap</a> 기여자, ODbL. 노선 색은 각 운영사 노선도의 색입니다.`,
                 `Station names and positions, metro lines and tracks (station search, station markers and line overlay): © <a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap</a> contributors, ODbL. Line colours follow each operator's route map.`, 'sm-small') : ''}
             ${pEn(`검색창의 지역 찾기(시·도 · 시·군·구 · 읍·면·동)는 통계청 통계지리정보서비스(SGIS)가 공공누리 제1유형으로 개방한 행정동 경계를 가공한 자료(<a href="https://github.com/vuski/admdongkor" rel="noopener">vuski/admdongkor</a>, CC BY 4.0)에서 이름과 위치만 뽑아 씁니다.`,
                 `Area search (province, city/district, neighbourhood) uses names and positions taken from administrative-dong boundaries released by Statistics Korea SGIS under KOGL Type 1, as modified by <a href="https://github.com/vuski/admdongkor" rel="noopener">vuski/admdongkor</a> (CC BY 4.0).`, 'sm-small')}
-            ${pEn(`<a href="${LOTTOHEX_FILE}"><b>LottoHex</b></a> — 판매점에 다녀와 위치로 인증하고 육각 칸을 차지하는 땅따먹기 게임(Map 랭킹 · 분기 보상).`,
-                `<a href="${LOTTOHEX_FILE}"><b>LottoHex</b></a> — a turf game: visit retailers, verify by location and take hexagon cells (Map ranking, quarterly rewards).`)}
+            ${pEn(`<a href="${LOTTOHEX_FILE}"><b>LottoHex</b></a> — 판매점에 다녀와 위치로 인증하고 육각 블록을 차지하는 땅따먹기 게임(Map 랭킹 · 분기 보상).`,
+                `<a href="${LOTTOHEX_FILE}"><b>LottoHex</b></a> — a turf game: visit retailers, verify by location and take hexagon blocks (Map ranking, quarterly rewards).`)}
             ${pEn(`순위와 "많이 팔린 곳"인지 견주는 방법은 <a href="${STORES_FILE}">1등 판매점 통계</a>에 있습니다. 함께 읽기: <a href="blog/lucky-store-myth.html">로또 명당은 정말 있을까</a>`,
                 `Rankings and how we check whether a place simply sells a lot are in <a href="${STORES_FILE}">1st-prize retailer statistics</a>. Read next: <a href="blog/lucky-store-myth.html">are there really lucky lottery stores?</a>`)}
             <p class="sm-small">지도: <a href="https://maplibre.org/" rel="noopener">MapLibre</a> · <a href="https://openfreemap.org/" rel="noopener">OpenFreeMap</a> · © <a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap</a> 기여자 · <a href="privacy.html" data-i18n="footer.privacy">개인정보 처리방침</a></p>
@@ -3395,7 +3396,7 @@ function updateTaxAndTop() {
             taxRow('3등 평균', '3rd, average', T.mean3),
             taxRow(`3등 최고 (${T.max3.round}회)`, `3rd, highest (draw ${T.max3.round})`, T.max3.a3),
         ], 'tier-stat tier-tax'),
-        pEn(`금액은 만 원 단위로 반올림했습니다. ${T.max3.a3 <= 2e6 ? '3등은 88회 이후 가장 많았던 회차도 200만 원을 넘지 않아 지금 세법으로는 세금이 없습니다(2022년까지는 5만 원만 넘어도 당첨금 전체에 22%를 매겼습니다). ' : ''}평균과 최고·최저 기록, 연도별 평균은 <a href="${TIER_FILE}">2등·3등 당첨금 통계</a>에 있습니다.`,
+        pEn(`금액은 만 원 단위로 반올림했습니다. ${T.max3.a3 <= 2e6 ? '3등은 88회 이후 가장 컸던 회차도 200만 원을 넘지 않아 지금 세법으로는 세금이 없습니다(2022년까지는 5만 원만 넘어도 당첨금 전체에 22%를 매겼습니다). ' : ''}평균과 최고·최저 기록, 연도별 평균은 <a href="${TIER_FILE}">2등·3등 당첨금 통계</a>에 있습니다.`,
             `Amounts are rounded. ${T.max3.a3 <= 2e6 ? 'Even the largest 3rd prize since draw 88 was 2m KRW or less, so under today\'s rules it is tax-free (until 2022, anything over 50,000 KRW was taxed at 22% in full). ' : ''}Averages, records and year-by-year averages are in <a href="${TIER_FILE}">2nd and 3rd prize statistics</a>.`, 'note'),
     ].join('\n') + '\n        '
         : pEn('2등·3등 자료를 준비하고 있습니다.', '2nd and 3rd prize data is being prepared.');
@@ -3410,7 +3411,7 @@ function updateTaxAndTop() {
     // 화면은 그대로이고(스크립트가 같은 내용으로 다시 그린다), JS 를 돌리지 않는 검색 로봇도 표를 읽는다.
     // 페이지 스크립트의 행 모양을 바꾸면 여기도 같이 바꾼다
     tp = replaceBetween('top-prize.html', tp, 'subtitle',
-        `(1인당 당첨금 · 세전 기준 / 최신 <strong>${data.draws.length}</strong>회차까지 자동 업데이트)`);
+        `(1인당 당첨금 · 세전 기준 / 최신 <strong>${data.draws.length}</strong>회차까지 자동 갱신)`);
     const rows = data.draws.slice().sort((a, b) => b.firstPrizeAmount - a.firstPrizeAmount).slice(0, 50).map((d, i) => {
         const winners = d.firstPrizeWinners || 1;
         return [
@@ -3541,15 +3542,15 @@ function aboutTriangle() {
     ].join('\n');
 }
 
-// About: "자료를 둘러보며 로또를 즐겨 보세요" — 통계 페이지 세 곳(많이 나온 번호 · 번호 합계 · AC값)의 그림을 맛보기로 옮겨 싣고
+// About: "자료 둘러보기" — 통계 페이지 세 곳(많이 나온 번호 · 번호 합계 · AC값)의 그림을 맛보기로 옮겨 싣고
 // 둘러볼 곳을 잇는다. 그림 읽는 법(정규분포 등)은 여기서 설명하지 않는다 — 각 통계 페이지가 한다. 그림은 매주 다시 만든다
 function updateAbout() {
     const more = (href, ko, english) => `<p class="about-more"><a href="${href}" data-i18n-en="${esc(english)}">${ko}</a></p>`;
     const link = (href, ko, english) => `<a href="${href}" data-i18n-en="${esc(english)}">${ko}</a>`;
     const block = [
         '',
-        h2En('자료를 둘러보며 로또를 즐겨 보세요', 'Explore the data and enjoy the game'),
-        pEn(`지난 ${fmt(N)}회의 당첨번호로 만든 그림과 통계가 사이트 곳곳에 있습니다. lottodraw.kr을 통해 로또를 더 깊이 있게 즐겨 보세요.`,
+        h2En('자료 둘러보기', 'Explore the data and enjoy the game'),
+        pEn(`지난 ${fmt(N)}회의 당첨번호로 만든 그림과 통계가 사이트 곳곳에 있습니다. 그중 세 가지를 맛보기로 모았습니다.`,
             `All over the site you will find charts and statistics built from ${fmt(N)} past draws. Enjoy the lottery in more depth with lottodraw.kr.`),
         `<h3 data-i18n-en="How often has each number come up?">번호마다 몇 번씩 나왔을까요?</h3>`,
         ABOUT.freq.figure,
@@ -3581,9 +3582,10 @@ function rssFeed(posts) {
     const rfc = d => new Date(d + 'T12:00:00+09:00').toUTCString();
     const items = posts.filter(p => p.date).map(p => ({ title: p.title, link: SITE + p.path, date: p.date, desc: p.description }))
         .concat((() => { const sn = lottohexSnap(); return sn && sn.at ? [{ title: `LottoHex 이번 주 Map 랭킹 (${sn.at})`, link: `${SITE}/${LOTTOHEX_FILE}`, guid: `${SITE}/${LOTTOHEX_FILE}#${sn.at}`, date: sn.at,
-            desc: `참여 ${sn.players}명 · 차지된 칸 ${(sn.cells || []).length}개. 다녀온 판매점으로 육각 칸을 차지하는 땅따먹기 LottoHex의 이번 주 순위.` }] : []; })())
-        .concat(draws.slice(-30).map(d => ({ title: `로또 ${d.round}회 당첨번호 (${d.date})`, link: `${SITE}/round/${d.round}.html`, date: d.date,
-            desc: `당첨번호 ${d.numbers.join(' · ')} + 보너스 ${d.bonus}. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.` })))
+            desc: `참여 ${sn.players}명 · 차지된 블록 ${(sn.cells || []).length}개. 다녀온 판매점으로 육각 블록을 차지하는 땅따먹기 LottoHex의 이번 주 순위.` }] : []; })())
+        // draws 는 최신 회차가 앞(66줄 내림차순)이라 앞에서 30개가 최근 30회다(전에는 slice(-30) 이라 1~30회가 들어갔다, 2026-11-13)
+        .concat(draws.slice(0, 30).map(d => ({ title: `로또 ${d.round}회 당첨번호 (${d.date})`, link: `${SITE}/round/${d.round}.html`, date: d.date,
+            desc: `당첨번호 ${d.numbers.join(' · ')} + 보너스 ${d.bonus}. 등수별 당첨금 · 당첨 게임 수${STORES && STORES.d.rounds[d.round] ? ' · 1등 판매점' : ''}.` })))
         .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
     const newest = items.length ? items[0].date : UPDATED;
     return `<?xml version="1.0" encoding="UTF-8"?>
@@ -3591,7 +3593,7 @@ function rssFeed(posts) {
 <channel>
     <title>lottodraw.kr — 로또 당첨번호 · 통계 · 블로그</title>
     <link>${SITE}/</link>
-    <description>매주 로또 당첨번호와 회차별 당첨금, 통계와 확률 이야기. 어디서 사든 1등 확률은 1/8,145,060으로 같습니다.</description>
+    <description>${SITE_KIND} lottodraw.kr — 매주 당첨번호와 회차별 당첨금, 통계와 확률 이야기. 어디서 사든 1등 확률은 1/8,145,060으로 같습니다.</description>
     <language>ko</language>
     <lastBuildDate>${rfc(newest)}</lastBuildDate>
     <atom:link href="${SITE}/rss.xml" rel="self" type="application/rss+xml"/>
@@ -3629,7 +3631,7 @@ function llmsTxt(posts) {
         line('/statistics-prize-2-3.html', '2등 · 3등 당첨금 통계', '평균 · 최고 · 최저 기록과 연도별 평균.'),
         line('/statistics-stores.html', '1등 판매점 통계', '판매점별 1등 · 2등 배출 기록.'),
         line('/store-map.html', '로또 판매점 지도', '1등 · 2등이 나온 판매점을 전국 지도에서 봅니다.'),
-        line(`/${LOTTOHEX_FILE}`, 'LottoHex', '판매점에 다녀와 위치로 인증하고 육각 칸을 차지하는 무료 땅따먹기 게임.'),
+        line(`/${LOTTOHEX_FILE}`, 'LottoHex', '판매점에 다녀와 위치로 인증하고 육각 블록을 차지하는 무료 땅따먹기 게임.'),
         line('/tax.html', '실수령액 계산기', '당첨금 세금(200만 원 이하 비과세, 3억 원까지 22%, 초과분 33%)과 실수령액.'),
         line('/probability.html', '로또 확률', '1등부터 5등까지 등수별 확률과 계산 공식.'),
         line('/top-prize.html', '역대 1등 당첨금 순위', '1인당 1등 당첨금 TOP 50과 2등 TOP 50.'),

@@ -20,8 +20,8 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <link rel="stylesheet" href="css/site.css?v=2bfbe279">
-    <script src="js/i18n-dict.js?v=8c7ec3aa"></script>
-    <script src="js/i18n.js?v=f54b4058"></script>
+    <script src="js/i18n-dict.js?v=201b0dd0"></script>
+    <script src="js/i18n.js?v=9f8daef6"></script>
     <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "91c08d8a39d944e69c10024f2314b955"}'></script><!-- End Cloudflare Web Analytics -->
 </head>
 <body>
@@ -53,7 +53,7 @@
 
     <main class="prose wide">
         <h1 data-i18n="top.h1">역대 로또 6/45 1등 당첨금 TOP 50</h1>
-        <p class="intro" id="subtitle" aria-live="polite" data-i18n="top.loading"><!-- seo:subtitle:start -->(1인당 당첨금 · 세전 기준 / 최신 <strong>1249</strong>회차까지 자동 업데이트)<!-- seo:subtitle:end --></p>
+        <p class="intro" id="subtitle" aria-live="polite" data-i18n="top.loading"><!-- seo:subtitle:start -->(1인당 당첨금 · 세전 기준 / 최신 <strong>1249</strong>회차까지 자동 갱신)<!-- seo:subtitle:end --></p>
 
         <details class="pchart" id="prize-chart" open aria-labelledby="pchart-title">
             <summary class="pchart-fold">
@@ -1665,7 +1665,7 @@
             const totalRounds = data.draws.length;
             subtitle.innerHTML =
                 I18N.lang === 'ko'
-                    ? `(1인당 당첨금 · 세전 기준 / 최신 <strong>${totalRounds}</strong>회차까지 자동 업데이트)`
+                    ? `(1인당 당첨금 · 세전 기준 / 최신 <strong>${totalRounds}</strong>회차까지 자동 갱신)`
                     : `(amount per winner, before tax / updated automatically through draw <strong>${totalRounds}</strong>)`;
 
             const sorted = [...data.draws]

@@ -972,7 +972,7 @@ test('LottoHex 칸 알림 메일(2026-11-12): 처음엔 지난번 칸만 적고,
         // 알림 끄기 링크: GET 은 확인 단추, POST 로 끔. 결과 메일 서명으로는 못 끈다
         const link = new URL(m.headers['List-Unsubscribe'].slice(1, -1));
         const get = await worker.fetch(new Request(link.toString()), env, ctx);
-        assert.match(await get.text(), /LottoHex 칸 알림 메일 수신 거부/);
+        assert.match(await get.text(), /LottoHex 블록 알림 메일 수신 거부/);
         const wrong = new URL(link); wrong.searchParams.delete('k');
         await worker.fetch(new Request(wrong.toString(), { method: 'POST' }), env, ctx);
         assert.equal((await me(a)).hexMail, true, '다른 메일 서명으로는 안 꺼짐');
