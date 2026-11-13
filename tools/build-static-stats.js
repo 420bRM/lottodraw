@@ -837,7 +837,7 @@ const ABOUT = {};
     STATS.push({
         file: 'statistics-trend.html', anchor: 'stat-trend', short: `최근 ${t.window}회 많이·적게`, shortEn: `Hot and cold, last ${t.window} draws`,
         title: `로또 최근 ${t.window}회 많이 나온 번호 · 적게 나온 번호`,
-        h1: `로또 최근 ${t.window}회 많이 나온 번호와 적게 나온 번호`,
+        h1: `로또 최근 ${t.window}회 많이 나온 번호와 적게 나온 번호`, h1En: `Most and Least Frequent Lotto Numbers in the Last ${t.window} Draws`,
         desc: `로또 최근 ${t.window}회(${stats.latestRound - t.window + 1}~${stats.latestRound}회) 동안 많이 나온 번호와 적게 나온 번호 Top 10. 최다 ${t.hot[0].number}번 ${t.hot[0].recent}회.`,
         fact: `최다 ${t.hot[0].number}번 ${t.hot[0].recent}회 · 최소 ${t.cold[0].number}번 ${t.cold[0].recent}회`,
         factEn: `most ${t.hot[0].number} (${t.hot[0].recent}×) · fewest ${t.cold[0].number} (${t.cold[0].recent}×)`,
@@ -2420,7 +2420,7 @@ function storesPage() {
         title,
         h1: '로또 1등 판매점 통계', h1En: 'Lotto 1st-Prize Retailer Statistics',
         desc,
-        scope: en(`${first}~${last}회 기준 · 매주 추첨 후 자동 갱신 (마지막 갱신 ${UPDATED}) · 출처: 동행복권 당첨 판매점 조회`, `Draws ${first}–${last} · updated automatically after each draw (last update ${UPDATED}) · source: Dong-haeng Lottery winning-retailer search`),
+        scope: en(`${first}~${last}회 기준 · 매주 추첨 후 자동 갱신 (마지막 갱신 ${UPDATED}) · 출처: 동행복권 당첨 판매점 조회`, `Draws ${first}–${last} · updated automatically after each draw (last update ${UPDATED}) · source: Donghaeng Lottery winning-retailer search`),
         lead: en(`동행복권이 공개하는 회차별 1등 · 2등 판매점 기록을 모았습니다. 결론부터 말하면, <strong>1등이 자주 나온 곳은 많이 팔린 곳일 가능성이 큽니다.</strong> 판매점별 판매량은 공개되지 않아, 같은 판매점의 2등 횟수로 그 판매량을 가늠했습니다.`,
             `This page collects the 1st- and 2nd-prize retailers Donghaeng Lottery publishes for each draw. In short: <strong>retailers with many 1st prizes most likely just sell a lot.</strong> Sales per retailer are not published, so we gauge them with each retailer's 2nd-prize count.`),
         ld: [{
@@ -2571,7 +2571,7 @@ function sidoStoresPage(x, st) {
         title,
         h1: `${ko} 로또 1등 판매점`, h1En: `Lotto 1st-Prize Retailers in ${x.en}`,
         desc,
-        scope: en(`${first}~${last}회 기준 · 매주 추첨 후 자동 갱신 (마지막 갱신 ${UPDATED}) · 출처: 동행복권 당첨 판매점 조회`, `Draws ${first}–${last} · updated automatically after each draw (last update ${UPDATED}) · source: Dong-haeng Lottery winning-retailer search`),
+        scope: en(`${first}~${last}회 기준 · 매주 추첨 후 자동 갱신 (마지막 갱신 ${UPDATED}) · 출처: 동행복권 당첨 판매점 조회`, `Draws ${first}–${last} · updated automatically after each draw (last update ${UPDATED}) · source: Donghaeng Lottery winning-retailer search`),
         lead: en(`${x.full}에서 1등 · 2등이 나온 판매점 기록입니다. ${first}회부터 ${ko}에서 1등은 <strong>${fmt(st.v.w1)}게임</strong>, 2등은 ${fmt(st.v.w2)}게임 나왔고, 1등이 나온 판매점은 ${fmt(st.with1)}곳입니다.`,
             `Retailers in ${x.en} that sold 1st- and 2nd-prize tickets. Since draw ${first}, ${x.en} has had <strong>${fmt(st.v.w1)}</strong> 1st-prize and ${fmt(st.v.w2)} 2nd-prize games, from ${fmt(st.with1)} retailers with a 1st prize.`),
         ld: [{
@@ -3164,7 +3164,7 @@ function storeMapPage(md, variant) {
                 <span class="sm-modes-label" data-i18n-en="1st-prize type">1등 방식</span>
                 <button type="button" class="sm-chip sm-mode" data-mode="A" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Auto">자동</span></button>
                 <button type="button" class="sm-chip sm-mode" data-mode="M" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Manual">수동</span></button>
-                <button type="button" class="sm-chip sm-mode" data-mode="S" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Semi">반자동</span></button>
+                <button type="button" class="sm-chip sm-mode" data-mode="S" aria-pressed="true"><span class="sm-check" aria-hidden="true"></span><span data-i18n-en="Semi-auto">반자동</span></button>
                 <!-- 휴대폰: "시도별 · 안내"를 반자동 오른쪽에(2026-11-11 사장님). 누르면 아래 #sm-info 를 연다. PC 는 탭 "시도별"이라 감춘다 -->
                 <button type="button" class="sm-chip sm-info-btn" aria-controls="sm-info" aria-expanded="false" data-i18n-en="By province · about">시도별 · 안내</button>
         </div>
@@ -3175,23 +3175,23 @@ function storeMapPage(md, variant) {
     <details class="sm-info" id="sm-info">
         <summary data-i18n-en="By province · about">시도별 · 안내</summary>
         <div class="sm-info-body">
-            <p class="sm-small" data-i18n-en="${esc(`1st- and 2nd-prize retailers, draws ${first}–${last}, updated after each draw (last update ${UPDATED}). Source: Dong-haeng Lottery winning-retailer search.`)}">${first}~${last}회 1등 · 2등 판매점 · 매주 추첨 후 자동 갱신 (마지막 갱신 ${UPDATED}) · 출처: 동행복권 당첨 판매점 조회</p>
+            <p class="sm-small" data-i18n-en="${esc(`1st- and 2nd-prize retailers, draws ${first}–${last}, updated after each draw (last update ${UPDATED}). Source: Donghaeng Lottery winning-retailer search.`)}">${first}~${last}회 1등 · 2등 판매점 · 매주 추첨 후 자동 갱신 (마지막 갱신 ${UPDATED}) · 출처: 동행복권 당첨 판매점 조회</p>
             <p data-i18n-en="Tap an area name to move the map there. Where the 1st- and 2nd-prize shares are close, an area with many 1st prizes is simply one that sells more.">지역 이름을 누르면 지도가 그 지역으로 갑니다. 1등 비율과 2등 비율이 비슷하면, 1등이 많은 지역은 그만큼 많이 팔린 지역이라는 뜻입니다.</p>
             ${table([['지역', 'Area'], ['1등', '1st'], ['1등 비율', '1st share'], ['2등', '2nd'], ['2등 비율', '2nd share']],
                 sidoRows.map(([k, x]) => [k === '인터넷' ? en('인터넷(지도에 0등)', 'Online (#0 on the map)') : `<button type="button" class="sm-goto" data-sido="${esc(k)}">${esc(k)}</button>`,
                     fmt(x.w1), pct(x.w1, S.g1), fmt(x.w2), pct(x.w2, S.g2)]), 'tier-stat sm-sido')}
             ${pEn(`점 크기는 2등 횟수 + 1등 횟수 × 6입니다(1등은 2등보다 6배 드뭅니다). 판매점별 판매량은 공개되지 않아 팔린 양을 짐작하는 값이며, 앞으로 1등이 나올 곳을 뜻하지 않습니다. 동행복권 인터넷 판매(1등 ${net ? net.n1 : 0}게임)는 한 곳에 있는 판매점이 아니어서 동행복권 본사 자리에 붉은 "0등"으로 따로 찍었습니다(그곳에서 복권을 팔지는 않습니다).`
                 + (md.noCoord ? ` 위치가 공개되지 않은 ${fmt(md.noCoord)}곳도 빠졌습니다.` : ''),
-                `Dot size is 2nd prizes + 1st prizes × 6 (a 1st prize is six times rarer). Sales per retailer are not published, so this only gauges how much was sold; it says nothing about where the next 1st prize will come from. Dong-haeng Lottery's online sales (${net ? net.n1 : 0} 1st-prize games) are not one location, so they are pinned in red as "#0" at the company office (tickets are not sold there).`
-                + (md.noCoord ? ` ${fmt(md.noCoord)} retailers without a published location are also left out.` : ''), 'sm-small')}
+                `Dot size is 2nd prizes + 1st prizes × 6 (a 1st prize is six times rarer). Sales per retailer are not published, so this only gauges how much was sold; it says nothing about where the next 1st prize will come from. Donghaeng Lottery's online sales (${net ? net.n1 : 0} 1st-prize games) are not one location, so they are pinned in red as "#0" at the company office (tickets are not sold there).`
+                + (md.noCoord ? ` ${fmt(md.noCoord)} ${md.noCoord === 1 ? 'retailer' : 'retailers'} without a published location ${md.noCoord === 1 ? 'is' : 'are'} also left out.` : ''), 'sm-small')}
             ${md.all ? pEn(`"일반 판매점"을 켜면 지금 로또를 파는 전국 판매점 ${fmt(md.all.total)}곳 중 1등 · 2등 기록이 없는 ${fmt(md.all.rows.length)}곳이 회색 점으로 보입니다(출처: 동행복권 판매점 찾기, ${md.all.updated} 기준 · 매달 갱신).`,
-                `"All others" shows the ${fmt(md.all.rows.length)} of ${fmt(md.all.total)} current lotto retailers with no 1st or 2nd prize on record, as grey dots (source: Dong-haeng Lottery retailer search, as of ${md.all.updated}, updated monthly).`, 'sm-small') : ''}
+                `"All others" shows the ${fmt(md.all.rows.length)} of ${fmt(md.all.total)} current lotto retailers with no 1st or 2nd prize on record, as grey dots (source: Donghaeng Lottery retailer search, as of ${md.all.updated}, updated monthly).`, 'sm-small') : ''}
             ${fs.existsSync(path.join(ROOT, STORE_MAP_STATIONS)) ? pEn(`역 이름 · 위치 · 전철 노선과 선로(검색창 역 찾기 · 지도의 역 표시 · 노선 선): © <a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap</a> 기여자, ODbL. 노선 색은 각 운영사 노선도의 색입니다.`,
                 `Station names and positions, metro lines and tracks (station search, station markers and line overlay): © <a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap</a> contributors, ODbL. Line colours follow each operator's route map.`, 'sm-small') : ''}
             ${pEn(`검색창의 지역 찾기(시·도 · 시·군·구 · 읍·면·동)는 통계청 통계지리정보서비스(SGIS)가 공공누리 제1유형으로 개방한 행정동 경계를 가공한 자료(<a href="https://github.com/vuski/admdongkor" rel="noopener">vuski/admdongkor</a>, CC BY 4.0)에서 이름과 위치만 뽑아 씁니다.`,
                 `Area search (province, city/district, neighbourhood) uses names and positions taken from administrative-dong boundaries released by Statistics Korea SGIS under KOGL Type 1, as modified by <a href="https://github.com/vuski/admdongkor" rel="noopener">vuski/admdongkor</a> (CC BY 4.0).`, 'sm-small')}
             ${pEn(`<a href="${LOTTOHEX_FILE}"><b>LottoHex</b></a> — 판매점에 다녀와 위치로 인증하고 육각 블록을 차지하는 땅따먹기 게임(Map 랭킹 · 분기 보상).`,
-                `<a href="${LOTTOHEX_FILE}"><b>LottoHex</b></a> — a turf game: visit retailers, verify by location and take hexagon cells (Map ranking, quarterly rewards).`)}
+                `<a href="${LOTTOHEX_FILE}"><b>LottoHex</b></a> — a turf game: visit retailers, verify by location and take hexagon blocks (Map ranking, quarterly rewards).`)}
             ${pEn(`순위와 "많이 팔린 곳"인지 견주는 방법은 <a href="${STORES_FILE}">1등 판매점 통계</a>에 있습니다. 함께 읽기: <a href="blog/lucky-store-myth.html">로또 명당은 정말 있을까</a>`,
                 `Rankings and how we check whether a place simply sells a lot are in <a href="${STORES_FILE}">1st-prize retailer statistics</a>. Read next: <a href="blog/lucky-store-myth.html">are there really lucky lottery stores?</a>`)}
             <p class="sm-small">지도: <a href="https://maplibre.org/" rel="noopener">MapLibre</a> · <a href="https://openfreemap.org/" rel="noopener">OpenFreeMap</a> · © <a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap</a> 기여자 · <a href="privacy.html" data-i18n="footer.privacy">개인정보 처리방침</a></p>
