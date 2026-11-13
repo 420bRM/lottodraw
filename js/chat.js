@@ -16,6 +16,10 @@
     const OPEN_STORE = 'lottodraw.chat.open';   // 이 탭에서 열어 두었는지 (휴대폰 · 태블릿)
     const PC_STORE = 'lottodraw.chat.pc';       // PC 에서 닫았는지('0') · 열었는지('1') — 기기에 남긴다
     const isPc = () => safe(() => matchMedia('(min-width: 900px) and (hover: hover) and (pointer: fine)').matches, false);
+    // 휴대폰 지도(store-map · lottohex, 2026-11-13 사장님): 오른쪽 아래 창 대신 지도 아래쪽에 반투명으로 붙인다(css/store-map.css html.chat-docked).
+    // 자리(--chat-dock)는 js/store-map.js 가 아래 도구 · 아래 판 높이로 정한다. 처음엔 펼친 채, 닫으면 그 기기에서는 다음에도 닫힌 채
+    const DOCK_STORE = 'lottodraw.chat.dock';
+    const isDock = () => !!document.getElementById('sm') && safe(() => matchMedia('(max-width: 899px)').matches, false);
     const VID_STORE = 'lottodraw.chat.vid';
     const api = () => String((window.PREMIUM_CONFIG && window.PREMIUM_CONFIG.apiBase) || 'https://api.lottodraw.kr').replace(/\/+$/, '');
     const wsUrl = () => api().replace(/^http/, 'ws') + '/api/chat?v=' + browserId();
@@ -217,6 +221,7 @@
         if (!auto) {
             safe(() => sessionStorage.setItem(OPEN_STORE, isOpen ? '1' : ''));
             if (isPc()) safe(() => localStorage.setItem(PC_STORE, isOpen ? '1' : '0'));
+            if (isDock()) safe(() => localStorage.setItem(DOCK_STORE, isOpen ? '1' : '0'));
         }
         if (isOpen) {
             renderGate();
@@ -236,5 +241,10 @@
 
     // 접힌 단추의 접속 수 (한 번만)
     fetch(api() + '/api/chat/info').then(r => r.json()).then(d => setOnline(d.online || 0)).catch(() => {});
-    if (isPc() ? safe(() => localStorage.getItem(PC_STORE), '') !== '0' : safe(() => sessionStorage.getItem(OPEN_STORE), '') === '1') toggle(true, true);
+    const docked = () => document.documentElement.classList.toggle('chat-docked', isDock());
+    docked();
+    window.addEventListener('resize', docked);
+    const startOpen = isDock() ? safe(() => localStorage.getItem(DOCK_STORE), '') !== '0'
+        : isPc() ? safe(() => localStorage.getItem(PC_STORE), '') !== '0' : safe(() => sessionStorage.getItem(OPEN_STORE), '') === '1';
+    if (startOpen) toggle(true, true);
 })();

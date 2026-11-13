@@ -1426,7 +1426,33 @@
         const top = (document.querySelector('.sm-top').offsetHeight || 80) + 14;
         return snap === 'peek' ? peek : snap === 'full' ? Math.max(peek, window.innerHeight - top) : Math.round(window.innerHeight * 0.46);
     }
-    function applySheet(px) { root.style.setProperty('--sheet-h', Math.round(px) + 'px'); }
+    function applySheet(px) { root.style.setProperty('--sheet-h', Math.round(px) + 'px'); chatDock(); }
+    // ───── 휴대폰: 실시간 채팅(js/chat.js)을 지도 아래쪽에 반투명으로 붙인다(2026-11-13 사장님 — 여닫을 수 있게, 아래 판을 끌어올리면 같이 올라감) ─────
+    // --chat-dock(html): 화면 아래에서 채팅창 바닥까지 — 판매점은 아래 도구(.sm-bl) 바로 위, LottoHex 는 아래 판(--sheet-h) 바로 위.
+    // 카드 · 근처 목록 · 내 기록이 같은 자리에 떠 있으면 chat-dock-busy(채팅은 잠시 숨김), 판을 많이 올려 위에 자리가 모자라면 chat-dock-off
+    function chatDock() {
+        const html = document.documentElement;
+        if (isWide()) { html.classList.remove('chat-dock-busy', 'chat-dock-off'); return; }
+        let bottom;
+        if (hexMobile()) bottom = sheetNow() + 8;
+        else {
+            const bl = root.querySelector('.sm-bl'), r = bl && bl.offsetHeight ? bl.getBoundingClientRect() : null;
+            bottom = (r ? window.innerHeight - r.top : 40) + 6;
+        }
+        html.style.setProperty('--chat-dock', Math.round(bottom) + 'px');
+        const top = root.querySelector('.sm-top'), topY = top ? top.getBoundingClientRect().bottom : 80;
+        html.classList.toggle('chat-dock-off', window.innerHeight - bottom - topY < 150);
+        html.classList.toggle('chat-dock-busy', [card, nearPanel, minePanel].some(el => el && !el.hidden));
+    }
+    function initChatDock() {
+        const mo = new MutationObserver(() => chatDock());
+        [card, nearPanel, minePanel, terrPanel].forEach(el => el && mo.observe(el, { attributes: true, attributeFilter: ['hidden'] }));
+        mo.observe(root, { attributes: true, attributeFilter: ['class'] });   // 판매점 ↔ LottoHex
+        const bl = root.querySelector('.sm-bl');
+        if (bl && window.ResizeObserver) new ResizeObserver(() => chatDock()).observe(bl);
+        window.addEventListener('resize', chatDock);
+        chatDock();
+    }
     function setSheet(snap) { sheetSnap = snap; if (hexMobile()) applySheet(sheetPx(snap)); }
     const sheetNow = () => { const v = parseFloat(getComputedStyle(root).getPropertyValue('--sheet-h')); return isNaN(v) ? sheetPx(sheetSnap) : v; };
     // 손잡이 · 탭 줄을 위아래로 끌면 판 높이가 따라오고, 놓으면 가까운 높이(빠르게 튕기면 그 방향)로. 판 위의 누르기는 지도로 가지 않는다
@@ -1435,7 +1461,7 @@
         const move = e => {
             if (!d || e.pointerId !== d.id) return;
             const dy = e.clientY - d.y;
-            if (!d.moved) { if (Math.abs(dy) < 6) return; d.moved = true; terrPanel.classList.add('is-drag'); }
+            if (!d.moved) { if (Math.abs(dy) < 6) return; d.moved = true; terrPanel.classList.add('is-drag'); document.documentElement.classList.add('sm-sheet-drag'); }
             if (e.cancelable) e.preventDefault();
             const now = performance.now();
             d.v = (e.clientY - d.lastY) / Math.max(1, now - d.lastT); d.lastY = e.clientY; d.lastT = now;
@@ -1448,6 +1474,7 @@
             window.removeEventListener('pointerup', end);
             window.removeEventListener('pointercancel', end);
             terrPanel.classList.remove('is-drag');
+            document.documentElement.classList.remove('sm-sheet-drag');
             if (!m.moved) {   // 손잡이만 톡: 접혀 있으면 펴고, 펴져 있으면 접는다
                 if (e.target && e.target.closest && e.target.closest('.sm-sheet-grip')) setSheet(sheetSnap === 'peek' ? 'half' : 'peek');
                 return;
@@ -2166,6 +2193,7 @@
         const hs = document.getElementById('sm-hexbar-stat');
         if (hs) hs.addEventListener('click', () => { terrTab = 'now'; setSheet(sheetSnap === 'peek' ? 'half' : sheetSnap); if (shown.terr) openTerrPanel(); });
         initSheetDrag();
+        initChatDock();
         window.addEventListener('lottodraw:account', () => { if (shown.terr) refreshTerr(); });
     }
 
