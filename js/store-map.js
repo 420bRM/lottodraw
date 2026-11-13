@@ -1452,12 +1452,15 @@
         }
         const top = root.querySelector('.sm-top'), topY = top ? top.getBoundingClientRect().bottom : 80;
         html.classList.toggle('chat-dock-off', window.innerHeight - bottom - topY < 150);
-        html.classList.toggle('chat-dock-busy', [card, nearPanel, minePanel, document.getElementById('sm-fun')].some(el => el && !el.hidden));   // 이색 판매점 목록도
+        const info = document.getElementById('sm-info');
+        html.classList.toggle('chat-dock-busy', [card, nearPanel, minePanel, document.getElementById('sm-fun')].some(el => el && !el.hidden) || !!(info && info.open));   // 이색 판매점 목록 · 시도별 안내도
     }
     let dockRO = null, dockCtrl = null;
     function initChatDock() {
         const mo = new MutationObserver(() => chatDock());
         [card, nearPanel, minePanel, terrPanel, document.getElementById('sm-fun')].forEach(el => el && mo.observe(el, { attributes: true, attributeFilter: ['hidden'] }));
+        const info = document.getElementById('sm-info');
+        if (info) mo.observe(info, { attributes: true, attributeFilter: ['open'] });   // 시도별 · 안내(details)
         mo.observe(root, { attributes: true, attributeFilter: ['class'] });   // 판매점 ↔ LottoHex
         const bl = root.querySelector('.sm-bl');
         if (window.ResizeObserver) { dockRO = new ResizeObserver(() => chatDock()); if (bl) dockRO.observe(bl); }
@@ -2963,7 +2966,9 @@
     function setFade(v) {
         fadeT = v <= 0 ? 0 : 0.05 + Math.pow(v / 100, 2) * 30;
         const out = document.getElementById('sm-fade-v');
-        out.textContent = !fadeT ? T('모두', 'All') : fadeT < 1 ? T('2등만 나온 곳 흐리게', '2nd-only dimmed') : T('1등 ' + Math.ceil(fadeT) + '회 이상', '1st × ' + Math.ceil(fadeT) + '+');
+        // 휴대폰은 아래 한 줄 판이라 짧게(2026-11-13)
+        out.textContent = !fadeT ? T('모두', 'All') : fadeT < 1 ? (isWide() ? T('2등만 나온 곳 흐리게', '2nd-only dimmed') : T('2등만 흐림', '2nd-only'))
+            : isWide() ? T('1등 ' + Math.ceil(fadeT) + '회 이상', '1st × ' + Math.ceil(fadeT) + '+') : T('1등 ' + Math.ceil(fadeT) + '회+', '1st ' + Math.ceil(fadeT) + '+');
         if (fadeRaf) return;
         fadeRaf = requestAnimationFrame(() => {
             fadeRaf = 0;

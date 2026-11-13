@@ -23,7 +23,7 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <link rel="stylesheet" href="css/site.css">
     <link rel="stylesheet" href="js/vendor/maplibre-gl.css?v=7e27dfc9">
-    <link rel="stylesheet" href="css/store-map.css?v=62bb17c7">
+    <link rel="stylesheet" href="css/store-map.css?v=9574d3b4">
     <script src="js/i18n-dict.js"></script>
     <script src="js/i18n.js"></script>
     <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"LottoHex","alternateName":["로또헥스","로또 판매점 땅따먹기"],"url":"https://www.lottodraw.kr/lottohex.html","description":"LottoHex(로또헥스)는 로또 판매점에 직접 다녀와 위치로 인증하고, 지도 위 육각형 블록을 차지하는 무료 땅따먹기 게임입니다. 블록 안에서 다녀온 판매점이 가장 많은 사람이 주인이 되고, 분기마다 Map 랭킹을 확정해 1~10위에 포인트를 드립니다. 복권을 살 필요는 없습니다.","applicationCategory":"GameApplication","operatingSystem":"Web","inLanguage":["ko","en"],"isAccessibleForFree":true,"offers":{"@type":"Offer","price":0,"priceCurrency":"KRW"},"dateModified":"2026-11-07","publisher":{"@type":"Organization","name":"lottodraw.kr","url":"https://www.lottodraw.kr/"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://www.lottodraw.kr/"},{"@type":"ListItem","position":2,"name":"판매점 지도","item":"https://www.lottodraw.kr/store-map.html"},{"@type":"ListItem","position":3,"name":"LottoHex","item":"https://www.lottodraw.kr/lottohex.html"}]}]}</script>
@@ -159,7 +159,7 @@
                 <!-- 휴대폰: "시도별 · 안내"를 반자동 오른쪽에(2026-11-11 사장님). 누르면 아래 #sm-info 를 연다. PC 는 탭 "시도별"이라 감춘다 -->
                 <button type="button" class="sm-chip sm-info-btn" aria-controls="sm-info" aria-expanded="false" data-i18n-en="By province · about">시도별 · 안내</button>
         </div>
-        <label class="sm-fade"><span data-i18n-en="Fade low counts">적게 나온 곳 흐리게</span>
+        <label class="sm-fade"><span data-i18n-en="Fade low counts">적게 나온 곳 흐리게</span><span class="sm-fade-s" data-i18n-en="Fade">흐리게</span>
             <input type="range" id="sm-fade" min="0" max="100" value="0" aria-describedby="sm-fade-v">
             <output id="sm-fade-v" data-i18n-en="All">모두</output></label>
     </div>
@@ -208,6 +208,6 @@
 <script src="js/license.js?v=e4775149"></script>
 <script src="js/vendor/maplibre-gl.js?v=74bdab14"></script>
 <script src="js/hexgrid.js?v=d670c638"></script>
-<script src="js/store-map.js?v=dcd4bd85"></script>
+<script src="js/store-map.js?v=6263f036"></script>
 </body>
 </html>
