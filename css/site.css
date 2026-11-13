@@ -403,8 +403,26 @@ details[open] > summary.card-title { padding-bottom: 0; }
 .gen-space.is-none { color: #c0392b; }
 /* 연속번호 조건을 켜면 걸릴 조합이 없는 특수 패턴(6개 연속 · 모두 홀수/짝수 · 모두 3/4/5의 배수)을 흐리게 */
 .patterns li.is-moot label { opacity: .5; }
-#gen-pop { scroll-margin-top: 140px; }
-#gen-pop:target { animation: gen-target 2.4s ease-out; border-radius: 6px; }
+/* 생성 이력: 1등 예상 당첨금(세전) · 남들이 덜 사는 번호로 뽑기 — 결제기능(2026-11-13). 잠금은 "자물쇠 결제기능" 한 줄로 담백하게 */
+.est-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0 0 8px; font-size: 12px; }
+.est-pick { display: inline-flex; align-items: center; gap: 5px; color: var(--text); font-weight: bold; cursor: pointer; }
+.est-pick input { margin: 0; accent-color: var(--brand); }
+.est-pick input:disabled { cursor: default; }
+.est-pick input:disabled + span { color: var(--muted); }
+.pay-tag { display: inline-flex; align-items: center; gap: 3px; color: var(--muted); font-size: 11.5px; font-weight: bold; text-decoration: none; white-space: nowrap; }
+.pay-tag .lock-tag { margin-left: 0; }
+.pay-tag:hover { color: var(--brand); }
+#est-sort { margin-left: auto; }
+.history .est-col { white-space: nowrap; }
+.history td.est-cell { font-weight: bold; white-space: nowrap; }
+.history td.est-up { color: var(--ok, #1a7f37); }
+.history td.est-down { color: var(--error, #c00); }
+.history td.est-mid { color: var(--muted); }
+.history td.est-lock { vertical-align: middle; }
+.est-note { margin: 6px 0 0; color: var(--muted); font-size: 11.5px; line-height: 1.5; }
+.est-note a { white-space: nowrap; }
+#gen-share { scroll-margin-top: 140px; }
+#gen-share:target { animation: gen-target 2.4s ease-out; border-radius: 6px; }
 .gen-log { margin-top: 10px; text-align: left; }
 .log { padding: 6px 8px; background: var(--soft, #fafbfd); border: 1px solid var(--line); border-radius: 6px; font-size: 11.5px; line-height: 1.6; overflow-wrap: anywhere; }
 .log-idle { color: var(--muted); }

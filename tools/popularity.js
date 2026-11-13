@@ -222,6 +222,10 @@ function fitPopularity(o) {
     const under = k2 => { let s = 0, n = 0; for (let j = k2; j < 4; j++) { s += bandSum[j]; n += bandN[j]; } return s / n / mAll; };
     const recent = rows.slice(-52);
     const lambda = recent.reduce((s, r) => s + r.e1, 0) / recent.length;
+    // 최근 52회 1등 총액(1인당 금액 × 당첨자 수)의 평균 — 이월 회차는 0 으로 들어가고 그 돈은 다음 회차에 붙는다.
+    // 예상 당첨금(세전) = 총액 × E[1 ÷ (1 + 다른 당첨자)] = 총액 × (1 − e^−L) ÷ L, L = λ × e^(a + c × 점수)
+    const last52 = o.draws.slice().sort((x, y) => y.round - x.round).slice(0, 52);
+    const pool = last52.reduce((s, d) => s + (d.firstPrizeAmount || 0) * (d.firstPrizeWinners || 0), 0) / last52.length;
 
     return {
         first: rows[0].round, last: rows[rows.length - 1].round, rounds: rows.length,
@@ -231,7 +235,7 @@ function fitPopularity(o) {
         hotEffect: { pct: pct(main.hot), se: main.se.hot * 100 },
         hot, latestNumbers: latest.numbers.slice().sort((x, y) => x - y),
         check: { tier4: corr(main.b, four.b), halves: corr(odd.b, even.b), eras: corr(early.b, late.b), mid },
-        firstPrize: { a: pz.a, c: pz.c, seC: pz.seC, quintiles: quint, lambda },
+        firstPrize: { a: pz.a, c: pz.c, seC: pz.seC, quintiles: quint, lambda, pool },
         w, cuts, pctl, meanFactor: mAll,
         bands: { 1: under(1), 2: under(2), 3: under(3) },
     };
