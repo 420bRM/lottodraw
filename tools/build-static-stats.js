@@ -2816,8 +2816,8 @@ function popularPage() {
         ], 'tier-stat'),
         pEn(`${fmt(TOTAL)}개 조합 모두에 다음 회차(${P.forRound}회) 기준 인기 점수를 매겨 덜 팔리는 쪽부터 잘랐습니다. 받는 몫은 최근 52회 평균 판매량(1등 기대 ${f1(fp.lambda)}명)으로 셈한 어림값입니다.`,
             `Every one of the ${fmt(TOTAL)} combinations was scored for the next draw (${P.forRound}) and cut from the least bought end. The share is an estimate based on average sales over the last 52 draws (${f1(fp.lambda)} expected 1st-prize winners).`, 'note'),
-        pEn(`이용권이 있으면 <a href="index.html#gen-share">홈 번호 생성기의 생성 이력</a>에서 번호마다 <strong>1등 예상 당첨금(세전)</strong>을 보고, <strong>남들이 덜 사는 번호로 뽑기</strong>로 덜 팔리는 20% 조합 안에서만 무작위로 뽑을 수 있습니다. 예상 당첨금은 최근 52회 평균 1등 총액(약 ${Math.round(P.firstPrize.pool / 1e8)}억 원)을 함께 당첨될 사람 수의 어림값으로 나눈 값입니다. <a href="mypage.html">마이페이지 내 번호</a>에도 회차별로 나옵니다.`,
-            `With a pass, the <a href="index.html#gen-share">history on the home page generator</a> shows an <strong>estimated 1st prize (pre-tax)</strong> for every line, and <strong>Draw numbers others buy less</strong> draws only from the least bought 20% of sets. The estimate divides the average 1st-prize total of the last 52 draws (about ${(P.firstPrize.pool / 1e9).toFixed(1)}bn KRW) by the estimated number of people you would share it with. It also appears for each draw in <a href="mypage.html">My numbers</a>.`),
+        pEn(`이용권이 있으면 <a href="index.html#gen-share">홈 번호 생성기의 생성 이력</a>에서 번호마다 <strong>1등 예상 당첨금(세전)</strong>을 볼 수 있습니다. 예상 당첨금은 최근 52회 평균 1등 총액(약 ${Math.round(P.firstPrize.pool / 1e8)}억 원)을 함께 당첨될 사람 수의 어림값으로 나눈 값입니다. <a href="mypage.html">마이페이지 내 번호</a>에도 회차별로 나옵니다.`,
+            `With a pass, the <a href="index.html#gen-share">history on the home page generator</a> shows an <strong>estimated 1st prize (pre-tax)</strong> for every line. The estimate divides the average 1st-prize total of the last 52 draws (about ${(P.firstPrize.pool / 1e9).toFixed(1)}bn KRW) by the estimated number of people you would share it with. It also appears for each draw in <a href="mypage.html">My numbers</a>.`),
     ];
 
     const method = [
@@ -3926,9 +3926,10 @@ if (write(REPEAT_FILE, repeatPage())) changed++;
 if (POP) {
     if (write('popularity.json', popularityJson())) changed++;
     if (write('popularity.csv', popularityCsv())) changed++;
-    // 홈 생성기 "남은 조합": 고정수 · 제외수가 없을 때의 표를 미리 세 둔다(휴대폰이 815만 개를 훑지 않게). 고정수 · 제외수를 고르면 그때 워커가 센다
-    const space = ComboSpace.scan({ w: POP.w, cuts: POP.cuts });
-    if (write('combo-space.json', JSON.stringify({ pv: 2, forRound: POP.forRound, total: space.total, zero: space.zero, masked: space.masked }) + '\n')) changed++;
+    // 홈 생성기 "남은 조합": 고정수 · 제외수가 없을 때의 표를 미리 세 둔다(휴대폰이 815만 개를 훑지 않게). 고정수 · 제외수를 고르면 그때 워커가 센다.
+    // pv = 패턴 번호 판(2026-11-13 개편 = 2). 인기 구간은 생성기에서 쓰지 않아 세지 않는다
+    const space = ComboSpace.scan({});
+    if (write('combo-space.json', JSON.stringify({ pv: 2, total: space.total, zero: space.zero, masked: space.masked }) + '\n')) changed++;
     if (write(POPULAR_FILE, popularPage())) changed++;
 }
 // 블로그는 원고(content/blog/)로 만든다. 같은 틀을 쓰고 사이트맵에 같이 넣으려고 여기서 부른다
