@@ -776,7 +776,7 @@ window.I18N_DICT = {
 
     'gen.sumIdle':   { en: '0 fixed · 0 excluded' },
     'borel.p1':      { en: 'Borel’s law is an empirical principle proposed by the mathematician Émile Borel: an event of sufficiently small probability can be treated as one that does not occur in practice. This site uses that idea to filter out unusual cases, such as a combination made up entirely of primes or of perfect squares.' },
-    'borel.p2':      { en: 'There are 8,145,060 ways to choose 6 numbers from 45. With all 16 patterns applied, 1,561,694 of them (about 19.17%) are excluded, leaving 6,583,366 (about 80.83%).' },
+    'borel.p2':      { en: 'There are 8,145,060 ways to choose 6 numbers from 45. With all 12 unusual patterns applied, 27,597 of them (about 0.34%) are excluded, leaving 8,117,463 (about 99.66%). With the 8 lopsided patterns as well, 357,760 (about 4.39%) are excluded, leaving 7,787,300 (about 95.61%).' },
     'borel.p3':      { en: '<strong>Filtering patterns does not improve the odds of winning.</strong> Every combination is equally likely, so a single ticket still has a 1 in 8,145,060 chance. What this tool does is avoid the combinations people tend to pick by hand — it matters only in that fewer people may share a first prize.' },
 
     /* ───── 통계 카드 (js/stats-render.js) ───── */

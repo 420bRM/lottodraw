@@ -53,6 +53,7 @@ check('전체 8,145,060개', h.total === 8145060, h.total);
 const SPECIAL_MASK = box.DEFAULT_PATTERNS.reduce((m, id) => m | (1 << (id - 1)), 0);
 check('기본(특수 패턴 12개)이면 27,597개 빠진다', CS.count(h, { pat: SPECIAL_MASK }).ok === 8145060 - 27597, 8145060 - CS.count(h, { pat: SPECIAL_MASK }).ok);
 check('20개 모두 켜면 357,760개 빠진다', CS.count(h, { pat: ALL_MASK }).ok === 8145060 - 357760, 8145060 - CS.count(h, { pat: ALL_MASK }).ok);
+check('홈 보렐 카드의 숫자가 이 수와 같다', ['27,597', '8,117,463', '357,760', '7,787,300'].every(x => html.includes(x)));
 const ONE = [1600, 180, 3003, 5005, 462, 84, 11350, 1540, 4480, 28, 84, 1, 5005, 5005, 5005, 715, 100947, 74613, 78525, 78525];
 check('패턴 하나씩 거르는 수', ONE.every((v, i) => 8145060 - CS.count(h, { pat: 1 << i }).ok === v), ONE.map((v, i) => 8145060 - CS.count(h, { pat: 1 << i }).ok).join(','));
 // 개편 전(16개 번호)으로 저장된 회원 설정 옮기기
