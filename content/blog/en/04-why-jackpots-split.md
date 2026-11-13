@@ -26,8 +26,8 @@ Many people also draw shapes on the OMR play slip, such as a vertical line, a ho
 **3. Arithmetic sequences and consecutive numbers**
 Combinations with an obvious pattern, like 5-10-15-20-25-30 or 1-2-3-4-5-6, sell surprisingly well, even to people who think "surely this won't come up". Reports from other countries say thousands of people pick 1 to 6 in every draw.
 
-**4. Last draw's numbers and popular numbers**
-This is when people buy last week's winning numbers again, or pick numbers that statistics sites present as "most frequently drawn". Draw 1019 was exactly this case.
+**4. Frequently drawn numbers (last week's numbers are actually bought less)**
+This is when people pick numbers that statistics sites present as "most frequently drawn". Draw 1019 was exactly this case. Going by the number of winning games at each prize tier since draw 88, every time the winning numbers included one of the ten most frequently drawn numbers up to that point, there were about 0.9% more 5th-prize wins on average. Last week's winning numbers went the other way: each one included meant about 1.0% fewer 5th-prize wins. More people avoid last week's numbers, thinking "a number that just came up won't come up again", than copy them. 5th prize has millions of winning games every draw, so it shows most finely which numbers people bought. The results by number are in [the numbers people buy most](/statistics-popular.html).
 
 ## Buying the same numbers on many tickets
 
@@ -46,7 +46,7 @@ There is no way to raise your odds. All you can do is **lower the chance of shar
 | All six numbers 31 or lower | Overlaps with birthday numbers |
 | Straight lines, diagonals and corners on the slip | Overlaps with shape picks |
 | Sequences with a fixed gap | Surprisingly popular |
-| Recent winning numbers, most frequently drawn numbers | Many people copy them |
+| The most frequently drawn numbers so far | Many people copy them |
 
 The simplest way is **automatic selection**. Automatic numbers are chosen at random by the machine, so human habits do not creep in. In fact, of the 50 1st-prize winners in draw 1019, only 6 used automatic selection. If you want to pick your own, mix in two or three numbers of 32 or higher, and spread them out so no pattern shows.
 

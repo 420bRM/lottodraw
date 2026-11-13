@@ -82,7 +82,7 @@ body.sm-full #theme-btn { display: none !important; }
 .sm-check { display: inline-block; width: 9px; height: 9px; border: 1.5px solid currentColor; border-radius: 2px; box-sizing: border-box; }
 .sm-mode[aria-pressed="true"] .sm-check { border-color: #f07a1a; background: #f07a1a url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.2 5 8.6 9.5 3.6' fill='none' stroke='%23fff' stroke-width='1.8'/%3E%3C/svg%3E") center / 100% no-repeat; }
 .sm-fade { display: flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 7px; font-size: 10.5px; }
-.sm-fade input { width: 96px; margin: 0; accent-color: #f07a1a; }
+.sm-fade input { width: 96px; margin: 0; }   /* 모양(눈금 · ◆ 손잡이 · 주황)은 css/site.css 끌기 막대 */
 .sm-fade output { min-width: 56px; color: var(--brand, #003087); font-weight: bold; }
 
 /* 이색 판매점: 단추 · 목록(왼쪽 아래 위로 펼침) · 지도 위 별 */

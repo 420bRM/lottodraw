@@ -141,6 +141,39 @@
         } catch (e) { draws = {}; }
         return draws;
     }
+    // 1등 나눔(2026-11-13): 그 게임이 1등이었다면 다른 당첨자가 몇 명쯤이었을지 — popularity.json(사람들이 많이 사는 번호, statistics-popular.html).
+    // 다른 당첨자 = λ × e^(a + c × 점수). 점수 = 번호 몫 합 + 그 회차의 지난주 번호 · 그때까지 가장 많이 나온 10개 효과(tools/popularity.js 와 같은 셈).
+    // λ 는 최근 52회 평균 판매량으로 본 1등 기대 수라, 판매량이 달랐던 옛 회차는 어림값이다
+    let pop = null;
+    async function loadPop() {
+        if (pop !== null) return pop;
+        try {
+            const res = await fetch('popularity.json');
+            const j = await res.json();
+            pop = { beta: j.generator.beta, gPrev: Math.log(1 + j.effects.lastDraw.pct / 100), gHot: Math.log(1 + j.effects.mostDrawn10.pct / 100),
+                a: j.firstPrize.a, c: j.firstPrize.c, lambda: j.firstPrize.lambda, mean: j.generator.meanFactor };
+        } catch (e) { pop = false; }
+        return pop;
+    }
+    let hotBefore = null;   // 회차 → 그 전까지 가장 많이 나온 번호 10개(같으면 작은 번호 먼저). next: 다음(추첨 전) 회차
+    function hotOf(r) {
+        if (!hotBefore) {
+            hotBefore = {};
+            const freq = new Array(46).fill(0);
+            const top = () => { const o = []; for (let n = 1; n <= 45; n++) o.push(n); return o.sort((x, y) => freq[y] - freq[x] || x - y).slice(0, 10); };
+            Object.keys(draws).map(Number).sort((a, b) => a - b).forEach(k => { hotBefore[k] = top(); draws[k].numbers.forEach(n => { freq[n]++; }); });
+            hotBefore.next = top();
+        }
+        return hotBefore[r] || hotBefore.next;
+    }
+    function shareOf(game, r) {
+        if (!pop) return null;
+        const prev = draws[r - 1] ? draws[r - 1].numbers : [];
+        const hot = hotOf(r);
+        let s = 0;
+        game.forEach(n => { s += pop.beta[n - 1] + (prev.indexOf(n) !== -1 ? pop.gPrev : 0) + (hot.indexOf(n) !== -1 ? pop.gHot : 0); });
+        return pop.lambda * Math.exp(pop.a + pop.c * s);
+    }
     const A = () => window.LottoAccount;
     // 한 줄에 한 게임: 숫자 6개(띄어쓰기 · 쉼표 · 점 무엇이든). 잘못된 줄은 몇 번째인지 알려 준다
     function parseGames(text) {
@@ -227,9 +260,13 @@
         const rows = list.map(g => {
             const res = d ? rankOf(g.n, d) : null;
             const tag = !res ? tr('my.numWait', '추첨 전') : res.rank ? tr('my.tier' + res.rank, res.rank + '등') + ' · ' + tr('my.numMatch', '{m}개 일치', { m: res.match }) + (res.bonus ? ' + ' + tr('my.numBonus', '보너스') : '') : tr('my.numLose', '낙첨') + ' · ' + tr('my.numMatch', '{m}개 일치', { m: res.match });
+            // 실제로 1등이었던 회차는 어림값 대신 그 회차 1등 수를 적는다
+            const share = shareOf(g.n, r);
+            const shareTag = res && res.rank === 1 ? tr('my.numShareReal', '이 회차 1등 {n}명', { n: num(d.firstPrizeWinners) }) + ' · '
+                : share === null ? '' : tr('my.numShare', '1등이면 약 {n}명과 나눔', { n: share.toFixed(1) }) + ' · ';
             return el('li', { className: res && res.rank ? 'my-win' : '' }, [
                 el('span', { className: 'my-balls' }, g.n.map(n => ball(n, d ? d.numbers.indexOf(n) !== -1 || (res.bonus && n === d.bonus) : undefined))),
-                el('span', { className: 'my-res' }, [tag + ' · ', el('a', { href: 'report.html?n=' + g.n.slice().sort((a, b) => a - b).join(','), text: tr('rc.myLink', '성적표') })]),
+                el('span', { className: 'my-res' }, [tag + ' · ' + shareTag, el('a', { href: 'report.html?n=' + g.n.slice().sort((a, b) => a - b).join(','), text: tr('rc.myLink', '성적표') })]),
                 el('button', { type: 'button', className: 'my-x', 'aria-label': tr('my.numDelOne', '이 게임 지우기'), text: '×', on: { click: () => remove({ id: g.id }, tr('my.numDelOneQ', '이 게임({nums})을 지울까요?', { nums: g.n.join(' ') })) } }),
             ]);
         });
@@ -248,6 +285,8 @@
             games.length ? summary(games) : null,
             form(),
             note ? el('p', { className: 'my-ok', role: 'status', text: note }) : null,
+            games.length && pop ? el('p', { className: 'my-muted' }, [tr('my.numShareLead', '"1등이면 약 n명과 나눔"은 그 번호로 1등이 됐을 때 함께 당첨됐을 다른 사람 수의 어림값입니다(평균 조합은 약 {m}명). 사람들이 많이 사는 번호일수록 늘어납니다 — ', { m: (pop.lambda * Math.exp(pop.a) * pop.mean).toFixed(1) }),
+                el('a', { href: 'statistics-popular.html', text: tr('my.numShareLink', '사람들이 많이 사는 번호') })]) : null,
             games.length ? el('div', { className: 'my-rounds' }, blocks) : el('p', { className: 'my-muted', text: tr('my.numNone', '아직 저장한 번호가 없습니다.') }),
             more ? el('div', { className: 'my-actions' }, [more]) : null,
             el('p', { className: 'my-muted', text: tr('my.numNote', '번호는 회차마다 20게임, 최근 104회차까지 보관합니다. 결과는 참고용입니다. 당첨 여부는 실물 복권(또는 동행복권 구매 내역)으로 확인해 주세요.') }),
@@ -258,7 +297,7 @@
         const box = $('my-numbers');
         box.hidden = false;
         try {
-            const [st] = await Promise.all([A().call('/api/me/numbers'), loadDraws()]);
+            const [st] = await Promise.all([A().call('/api/me/numbers'), loadDraws(), loadPop()]);
             numState = st;
             paintNumbers();
             showMail();

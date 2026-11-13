@@ -2965,6 +2965,8 @@
     let fadeRaf = 0;
     function setFade(v) {
         fadeT = v <= 0 ? 0 : 0.05 + Math.pow(v / 100, 2) * 30;
+        const bar = document.getElementById('sm-fade');
+        if (bar) bar.style.setProperty('--p', String(Math.max(0, Math.min(100, v)) / 100));   // 막대 그림: 손잡이까지 채운 선(css/site.css)
         const out = document.getElementById('sm-fade-v');
         // 휴대폰은 아래 한 줄 판이라 짧게(2026-11-13)
         out.textContent = !fadeT ? T('모두', 'All') : fadeT < 1 ? (isWide() ? T('2등만 나온 곳 흐리게', '2nd-only dimmed') : T('2등만 흐림', '2nd-only'))

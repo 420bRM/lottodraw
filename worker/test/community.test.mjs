@@ -236,6 +236,15 @@ test('번호 생성기 설정: 로그인한 회원만 저장 · 다듬어 저장
     const loose = await call(env, 'POST', '/api/me/generator', { headers: auth(s), body: { gen: { ac: 8, acExact: 'yes' } } });
     assert.equal(loose.data.user.gen.acExact, false);
     assert.equal(g.acExact, false, '없으면 범위(이상)');
+    // 연속번호(0 · 2 · 3)와 나눠 가질 사람 줄이기(0~3): 범위 밖이면 끔 · 가장자리로
+    assert.equal(g.run, 0, '없으면 끔');
+    assert.equal(g.pop, 0, '없으면 끔');
+    const runPop = await call(env, 'POST', '/api/me/generator', { headers: auth(s), body: { gen: { run: 3, pop: 2 } } });
+    assert.equal(runPop.data.user.gen.run, 3);
+    assert.equal(runPop.data.user.gen.pop, 2);
+    const runOdd = await call(env, 'POST', '/api/me/generator', { headers: auth(s), body: { gen: { run: 4, pop: 9 } } });
+    assert.equal(runOdd.data.user.gen.run, 0, '연속번호는 2 · 3 만');
+    assert.equal(runOdd.data.user.gen.pop, 3, '나눠 가질 사람 줄이기는 0~3');
     // 지우기
     const cleared = await call(env, 'POST', '/api/me/generator', { headers: auth(s), body: { gen: null } });
     assert.equal(cleared.data.user.gen, null);
