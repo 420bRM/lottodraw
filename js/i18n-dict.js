@@ -1386,7 +1386,7 @@ window.I18N_DICT = {
     'my.rank':        { ko: '순위', en: 'Rank' },
     'my.rankN':       { ko: '{rank}위 / {of}명', en: '#{rank} of {of}' },
     'my.rankUnnamed': { ko: '별명을 정하면 {rank}위로 랭킹에 오릅니다', en: 'Set a nickname to appear at #{rank}' },
-    'my.points':      { ko: '모은 포인트', en: 'Points' },
+    'my.points':      { ko: '모은 포인트', en: 'Points earned' },
     'my.avail':       { ko: '쓸 수 있는 포인트', en: 'Points to spend' },
     'my.days':        { ko: '출석', en: 'Check-ins' },
     'my.daysN':       { ko: '{n}일', en: '{n} days' },
