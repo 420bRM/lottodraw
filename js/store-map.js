@@ -129,9 +129,10 @@
             id: 'st-all', type: 'circle', source: 'all',
             layout: { visibility: shown.all ? 'visible' : 'none' },
             paint: {
-                'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, ['case', vis, 3, 1.2], 10, ['case', vis, 5, 2.6], 15, ['case', vis, 8, 6]],
+                // 다녀온 곳도 크기 · 테두리 굵기는 다른 판매점과 같고 색만 바뀐다(2026-11-13 사장님 — "줌아웃해도 크기가 유지돼 신경 쓰인다")
+                'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 1.2, 10, 2.6, 15, 6],
                 'circle-color': ['coalesce', ['feature-state', 'visit'], '#7d8799'], 'circle-opacity': 0.7 * Math.max(0, 1 - fadeT),
-                'circle-stroke-color': rim('#7d8799'), 'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 8, ['case', vis, 1, 0], 13, ['case', vis, 2, 1]],
+                'circle-stroke-color': rim('#7d8799'), 'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 8, 0, 13, 1],
             },
         }, 'st-w2');
         map.addLayer({ id: 'st-all-name', type: 'symbol', source: 'all', layout: nameLayout(0.6), paint: namePaint() });
@@ -422,7 +423,7 @@
                 'circle-opacity': dotAlpha(),
                 'circle-stroke-opacity': rimAlpha(),
                 'circle-stroke-color': rim(color),
-                'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 6, ['case', vis, 2, 0.3], 12, ['case', vis, 3.5, 1.2]],
+                'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 6, 0.3, 12, 1.2],   // 다녀온 곳도 굵기는 같게(색만 — 2026-11-13)
             },
         });
         map.addLayer(layer('st-w2', '#3b6fd8', 'w2'));
@@ -1361,13 +1362,12 @@
         if (map.getSource('hexstores')) { if (all && !hxAll) { hxAll = true; map.getSource('hexstores').setData(hexStoreData()); paintVisits(); } return; }
         hxAll = !!all;
         map.addSource('hexstores', { type: 'geojson', data: hexStoreData() });
-        const v = ['to-boolean', ['feature-state', 'visit']];
         for (let g = 0; g < 3; g++) map.addLayer({ id: 'hx-glow-' + g, type: 'circle', source: 'hexstores', filter: ['==', ['get', 'g'], g], minzoom: 8, layout: { visibility: 'none' }, paint: {
             'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 5, 11, 10, 15, 20], 'circle-color': hxGlow(), 'circle-blur': 1, 'circle-opacity': 0.5 } }, 'terr-name');
         map.addLayer({ id: 'hx-dot', type: 'circle', source: 'hexstores', layout: { visibility: 'none' }, paint: {
-            'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, ['case', v, 3, 1.2], 10, ['case', v, 5, 2.6], 15, ['case', v, 8, 6]],   // 일반 판매점(st-all)과 같은 크기
+            'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 1.2, 10, 2.6, 15, 6],   // 일반 판매점(st-all)과 같은 크기 — 다녀온 곳도 같고 색만 바뀐다(2026-11-13)
             'circle-color': ['coalesce', ['feature-state', 'visit'], hxDot()], 'circle-stroke-color': rim(hxDot()),
-            'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 8, ['case', v, 1, 0], 13, ['case', v, 2, 1]] } }, 'terr-name');
+            'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 8, 0, 13, 1] } }, 'terr-name');
         map.addLayer({ id: 'hx-name', type: 'symbol', source: 'hexstores', minzoom: 15, layout: Object.assign(nameLayout(0.6), { visibility: 'none' }), paint: Object.assign(namePaint(), { 'text-opacity': 1 }) }, 'terr-name');
         map.on('click', 'hx-dot', e => { const p = e.features && e.features[0] && e.features[0].properties; if (p) (p.t === 'w' ? open : openAll)(Number(p.i), false); });
         beamShow(true);   // 빛 벽이 이 점들 위에 오게
@@ -1408,9 +1408,10 @@
         ['sm-hexfx', 'sm-storefx'].forEach(x => { const el = document.getElementById(x); if (el && el !== fx) { clearTimeout(introT[x]); el.classList.remove('is-play'); el.hidden = true; } });
         clearTimeout(introT[fx.id]);
         fx.hidden = false;
+        document.documentElement.classList.add('sm-fx-on');   // 전환 화면 동안 채팅은 감춘다(css)
         fx.classList.remove('is-play'); void fx.offsetWidth; fx.classList.add('is-play');
         setTimeout(then, 280);
-        introT[fx.id] = setTimeout(() => { fx.classList.remove('is-play'); fx.hidden = true; }, 1500);
+        introT[fx.id] = setTimeout(() => { fx.classList.remove('is-play'); fx.hidden = true; document.documentElement.classList.remove('sm-fx-on'); }, 1500);
     }
     // LottoHex 는 밤 지도로 시작한다(2026-11-08 사장님 — "반전 효과"). 저장하지 않고 이 화면에서만(TOP 50 의 밤처럼),
     // 판매점으로 돌아오면 되돌린다. LottoHex 중에 🌙 을 직접 누르면 그 뜻을 따른다(되돌리지 않음)
