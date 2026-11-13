@@ -1698,7 +1698,7 @@
                 : '<p class="sm-small">' + T(me.cells.length ? '내 블록이 모두 2곳 이상 앞서 있습니다.' : '아직 내 블록이 없습니다.', me.cells.length ? 'All your blocks lead by 2 or more.' : 'You hold no blocks yet.') + '</p>') +
             '<h4 class="sm-terr-h">🎯 ' + T('노릴 블록', 'Blocks within reach') + ' <small>' + fmt(aim.length) + '</small></h4>' +
             (aim.length ? '<ol class="sm-todo-list">' + cut(aim, 'aim').map(x => cellRow(x.k, aimNote(x), x.need === 0 ? 'is-hot' : '', x.c && x.c[4])).join('') + '</ol>' + more(aim.length, 'aim')
-                : '<p class="sm-small">' + T('다녀온 블록과 그 옆 블록 중에 한 번만 더 다녀오면 차지할 블록이 없습니다.', 'Nothing within one visit around your cells.') + '</p>') +
+                : '<p class="sm-small">' + T('다녀온 블록과 그 옆 블록 중에 한 번만 더 다녀오면 차지할 블록이 없습니다.', 'No blocks in or next to yours that one more visit would take.') + '</p>') +
             '</div>';
     }
     const todoOpen = { keep: false, aim: false };
@@ -1734,11 +1734,11 @@
         const n = terrNews, d = new Date(n.since + 9 * 3600e3);
         const when = (d.getUTCMonth() + 1) + '/' + d.getUTCDate() + ' ' + String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0');
         const head = T('지난번 확인(' + when + ') 뒤로 ' + [n.lost.length ? '블록 ' + n.lost.length + '개를 잃었' : '', n.won.length ? (n.lost.length ? '고 ' : '블록 ') + n.won.length + '개를 얻었' : ''].join('') + '습니다.',
-            'Since ' + when + ': ' + [n.lost.length ? 'lost ' + n.lost.length : '', n.won.length ? 'gained ' + n.won.length : ''].filter(Boolean).join(', ') + ' cell(s).');
+            'Since ' + when + ': ' + [n.lost.length ? 'lost ' + n.lost.length : '', n.won.length ? 'gained ' + n.won.length : ''].filter(Boolean).join(', ') + ' block(s).');
         if (newsState === 'pending') { newsState = 'seen'; writeSeen(terr.me.cells); newsDots(); turfStatus(); }
         return '<div class="sm-terr-news" role="status"><p><b>' + head + '</b> <button type="button" class="sm-news-ok">' + T('확인', 'OK') + '</button></p>' +
             '<ol class="sm-todo-list">' + n.lost.map(k => cellRow(k, '', 'is-lost', null, '<b class="is-hot">' + T('잃음', 'lost') + '</b>')).join('') + n.won.map(k => cellRow(k, '', 'is-won', (terr.cells[k] || [])[4], '<b class="is-won">' + T('얻음', 'gained') + '</b>')).join('') + '</ol>' +
-            '<p class="sm-small">' + T('판매점 폐점 등으로 블록 목록에서 빠진 블록도 잃은 블록으로 나옵니다.', 'Cells dropped because a retailer closed also show as lost.') + '</p></div>';
+            '<p class="sm-small">' + T('판매점 폐점 등으로 블록 목록에서 빠진 블록도 잃은 블록으로 나옵니다.', 'Blocks removed from the block list, for example because a retailer closed, also show as lost.') + '</p></div>';
     }
     // ───── 마일스톤 · 칭호(2026-11-09 사장님 — worker/src/titles.js) ─────
     // 마일스톤 = "얼마나"(쌓이는 숫자의 단계, 단계마다 포인트, 나만 봄 — "할 일" 탭), 칭호 = "어떻게"(이름 붙은 업적, 칭호 도감에 모으고 하나를 골라 별명 앞에 단다 — "도감" 탭).
@@ -1792,7 +1792,7 @@
                 '<span class="sm-dex-bar"><i style="width:' + (fin ? 100 : Math.max(val[m.k] ? 3 : 0, pct)) + '%"></i></span>' +
                 '<p class="sm-small">' + (fin ? T('모든 단계를 이뤘습니다 🎉', 'All steps done 🎉')
                     : T('다음 ' + fmt(next) + unit(m) + ' · 지금 ' + fmt(val[m.k]) + unit(m) + ' · <b>+' + m.pts[done] + 'P</b>', 'Next ' + fmt(next) + ' · now ' + fmt(val[m.k]) + ' · <b>+' + m.pts[done] + 'P</b>')) +
-                (m.k === 't' ? T('', ' (cells held now)') : '') + '</p></li>';
+                (m.k === 't' ? T('', ' (blocks held now)') : '') + '</p></li>';
         }).join('');
         return '<div class="sm-ms"><h4 class="sm-terr-h">🏁 ' + T('마일스톤', 'Milestones') + ' <small>' + T('단계마다 포인트', 'points at each step') + '</small></h4><ul class="sm-ms-list">' + rows + '</ul>' +
             '<p class="sm-small">' + T('위치로 인증한 다녀온 곳으로 셉니다. 이룬 단계와 받은 포인트는 다녀온 곳을 지워도 그대로입니다.', 'Counted from places verified by location. Steps reached and points earned stay even if you remove a place.') + '</p></div>';
@@ -1825,7 +1825,7 @@
         }).join('');
         const sel = my.sel && got.get(my.sel);
         return '<div class="sm-ttldex"><h4 class="sm-terr-h">🏅 ' + T('칭호 도감', 'Titles') + ' <small>' + T(nGot + ' / ' + fixed.length + (areaGot.length ? ' · 지역 칭호 ' + areaGot.length : ''), nGot + ' / ' + fixed.length + (areaGot.length ? ' · regional ' + areaGot.length : '')) + '</small></h4>' +
-            '<p class="sm-ttl-cur">' + (sel ? T('지금 단 칭호 ', 'Wearing ') + '<span class="sm-ttl">' + esc(T(sel.ko, sel.en)) + '</span> <button type="button" class="sm-ttl-off">' + T('떼기', 'Remove') + '</button>'
+            '<p class="sm-ttl-cur">' + (sel ? T('지금 단 칭호 ', 'Showing: ') + '<span class="sm-ttl">' + esc(T(sel.ko, sel.en)) + '</span> <button type="button" class="sm-ttl-off">' + T('떼기', 'Remove') + '</button>'
                 : T('얻은 칭호를 누르면 별명 앞에 칭호가 붙습니다(Map 랭킹 · 블록 · 회원 랭킹 페이지).', 'Tap a title you have earned to show it before your nickname.')) + '</p>' +
             groups + '<p class="sm-terr-msg sm-ttl-msg" role="status"></p></div>';
     }
@@ -1840,7 +1840,7 @@
     // 새로 얻은 칭호 · 마일스톤 알림(인증 · LottoHex 를 열 때 서버가 알려 준다)
     function freshText(f) {
         if (!f || (!f.titles.length && !f.pts)) return '';
-        return [f.titles.length ? T('🏅 새 칭호: ', '🏅 New title: ') + f.titles.map(t => T(t.ko, t.en)).join(', ') : '', f.pts ? T('🏁 마일스톤 +' + f.pts + 'P', '🏁 Milestone +' + f.pts + 'P') : ''].filter(Boolean).join(' · ');
+        return [f.titles.length ? T('🏅 새 칭호: ', '🏅 New title: ') + f.titles.map(t => T(t.ko, t.en)).join(', ') : '', f.pts ? T('🏁 마일스톤 +' + f.pts + 'P', '🏁 Milestone +' + f.pts + ' pts') : ''].filter(Boolean).join(' · ');
     }
     // 새로 얻은 것: 화면 위 알림(6초, 누르면 닫힘) + 내 정보(칭호 · 포인트)를 새로
     function toast(msg) {
@@ -1883,9 +1883,9 @@
         const sido = [...tot.keys()].filter(Boolean).sort((a, b) => (got.get(b) || 0) - (got.get(a) || 0) || tot.get(b) - tot.get(a));
         const row = si => '<li><span>' + esc(si) + '</span>' + bar(got.get(si) || 0, tot.get(si)) + '<b>' + fmt(got.get(si) || 0) + '</b><small>/' + fmt(tot.get(si)) + '</small></li>';
         const on = sido.filter(si => got.get(si)), off = sido.filter(si => !got.get(si));
-        return '<div class="sm-hexdex"><h4 class="sm-terr-h">📖 ' + T('블록 도감', 'Cell collection') + ' <small>' + T('다녀온 곳이 있는 블록', 'cells with a place you visited') + '</small></h4>' +
-            '<p class="sm-dex-total"><b>' + fmt(n) + '</b> / ' + T(fmt(all_) + '블록', fmt(all_) + ' cells') + ' <small>' + pct(n / all_) + '</small></p>' + bar(n, all_) +
-            '<p class="sm-dex-badges">' + dexSteps().map(b => '<span class="sm-dex-badge' + (n >= b ? ' is-on' : '') + '" title="' + T(b + '블록 다녀오기', 'Visit ' + b + ' cells') + '">⬡ ' + b +
+        return '<div class="sm-hexdex"><h4 class="sm-terr-h">📖 ' + T('블록 도감', 'Block collection') + ' <small>' + T('다녀온 곳이 있는 블록', 'blocks with a place you visited') + '</small></h4>' +
+            '<p class="sm-dex-total"><b>' + fmt(n) + '</b> / ' + T(fmt(all_) + '블록', fmt(all_) + ' blocks') + ' <small>' + pct(n / all_) + '</small></p>' + bar(n, all_) +
+            '<p class="sm-dex-badges">' + dexSteps().map(b => '<span class="sm-dex-badge' + (n >= b ? ' is-on' : '') + '" title="' + T(b + '블록 다녀오기', 'Visit ' + b + ' blocks') + '">⬡ ' + b +
                 (n >= b ? '' : '<small>' + T((b - n) + '블록 남음', (b - n) + ' to go') + '</small>') + '</span>').join('') + '</p>' +
             (on.length ? '<ul class="sm-dex-sido">' + on.map(row).join('') + '</ul>' : '') +
             (off.length ? '<details class="sm-dex-more"><summary>' + T('나머지 시 · 도 ' + off.length + '곳', off.length + ' more regions') + '</summary><ul class="sm-dex-sido">' + off.map(row).join('') + '</ul></details>' : '') +
@@ -1897,7 +1897,7 @@
     let skinDraft = null;   // 고르는 중인 { c, d, p } — null 이면 닫힘
     function skinRow(me) {
         const A = account(), u = A && A.me() && A.me().user, avail = u && u.score ? Math.floor(u.score.avail) : null;
-        let h = '<div class="sm-terr-skin">' + swatch(me.skin, 'sm-skin-lg') + '<span>' + T('내 블록 모양', 'My cell skin') + (me.skinSet ? '' : T(' <small>(무작위)</small>', ' <small>(random)</small>')) + '</span>' +
+        let h = '<div class="sm-terr-skin">' + swatch(me.skin, 'sm-skin-lg') + '<span>' + T('내 블록 모양', 'My block skin') + (me.skinSet ? '' : T(' <small>(무작위)</small>', ' <small>(random)</small>')) + '</span>' +
             (skinDraft ? '' : '<button type="button" class="sm-terr-skin-edit">' + T('바꾸기', 'Change') + '</button>') + '</div>';
         if (!skinDraft) return h;
         const k = skinDraft, row = (key, cur) => '<div class="sm-skin-row" data-key="' + key + '">' + SKIN_COLORS.map(c => '<button type="button" class="sm-skin-pick' + (c === cur ? ' is-on' : '') + '" data-v="' + c + '" style="background:' + c + '" aria-label="' + c + '"></button>').join('') +
@@ -1908,10 +1908,10 @@
             '<p class="sm-skin-h">' + T('보조색', 'Second colour') + '</p>' + row('d', k.d) +
             '<p class="sm-skin-h">' + T('무늬', 'Pattern') + '</p><div class="sm-skin-pats">' + SKIN_PATS().map((n, i) => '<button type="button" class="sm-skin-pat' + (i === k.p ? ' is-on' : '') + '" data-p="' + i + '">' + swatch(skinStr(Object.assign({}, k, { p: i }))) + n + '</button>').join('') + '</div>' +
             '<p class="sm-skin-prev">' + swatch(skinStr(k), 'sm-skin-xl') + '</p>' +
-            '<p class="sm-skin-btns"><button type="button" class="sm-terr-ok sm-skin-apply"' + (same ? ' disabled' : '') + '>' + T('적용 · ' + SKIN_COST + 'P', 'Apply · ' + SKIN_COST + ' points') + '</button> ' +
+            '<p class="sm-skin-btns"><button type="button" class="sm-terr-ok sm-skin-apply"' + (same ? ' disabled' : '') + '>' + T('적용 · ' + SKIN_COST + 'P', 'Apply · ' + SKIN_COST + ' pts') + '</button> ' +
             '<button type="button" class="sm-terr-cancel sm-skin-cancel">' + T('취소', 'Cancel') + '</button>' +
             (me.skinSet ? ' <button type="button" class="sm-terr-cancel sm-skin-reset">' + T('무작위로 되돌리기(무료)', 'Back to random (free)') + '</button>' : '') + '</p>' +
-            '<p class="sm-small">' + T('바꾼 모양은 모두에게 보입니다.', 'Everyone sees your skin.') + (avail != null ? T(' 지금 내 포인트 ' + fmt(avail) + 'P', ' You have ' + fmt(avail) + ' points') : '') + '</p></div>';
+            '<p class="sm-small">' + T('바꾼 모양은 모두에게 보입니다.', 'Your block skin is visible to everyone.') + (avail != null ? T(' 지금 내 포인트 ' + fmt(avail) + 'P', ' You have ' + fmt(avail) + ' pts') : '') + '</p></div>';
         return h;
     }
     function bindSkin() {
@@ -1941,22 +1941,22 @@
     function beamRow() {
         const A = account(), u = A && A.me() && A.me().user, tb = u && u.terrBeam;
         if (!tb) return '<div class="sm-terr-beam"><span class="sm-terr-beam-t">✨ ' + T('영역 빛 벽', 'Territory light wall') + '<small>' + T('3D에서 내 영역 테두리가 빛납니다 · 모두에게 보임', 'Your territory edge glows in 3D · everyone sees it') + '</small></span>' +
-            '<button type="button" class="sm-terr-skin-edit sm-terr-beam-buy">' + T(BEAM_COST + 'P로 사기', 'Buy · ' + BEAM_COST + 'P') + '</button></div>';
-        return '<label class="sm-terr-beam"><input type="checkbox"' + (tb.on ? ' checked' : '') + '> ✨ ' + T('내 영역 빛나게 하기', 'Territory light wall') + ' <small>' + T('3D에서 · 모두에게 보임', 'in 3D · everyone sees it') + '</small></label>';
+            '<button type="button" class="sm-terr-skin-edit sm-terr-beam-buy">' + T(BEAM_COST + 'P로 사기', 'Buy · ' + BEAM_COST + ' pts') + '</button></div>';
+        return '<label class="sm-terr-beam"><input type="checkbox"' + (tb.on ? ' checked' : '') + '> ✨ ' + T('내 영역 빛나게 하기', 'Make my territory glow') + ' <small>' + T('3D에서 · 모두에게 보임', 'in 3D · everyone sees it') + '</small></label>';
     }
     // 칸 알림 메일(2026-11-12 사장님 — 처음부터 켜짐, 하루 한 번 묶음, LottoHex 창 · 마이페이지 · 메일의 알림 끄기)
     function hexMailRow() {
         const A = account(), u = A && A.me() && A.me().user;
         if (!u) return '';
         return '<label class="sm-terr-beam sm-terr-hexmail"><input type="checkbox"' + (u.hexMail !== false ? ' checked' : '') + '> ✉️ ' +
-            T('블록을 빼앗기면 메일 알림', 'Email me when my cells are taken') + ' <small>' + T('하루 한 번 저녁', 'once a day, evening') + '</small></label>';
+            T('블록을 빼앗기면 메일 알림', 'Email me when my blocks are taken') + ' <small>' + T('하루 한 번 저녁', 'once a day, evening') + '</small></label>';
     }
     async function saveHexMail(on) {
         const A = account();
         try { await A.call('/api/me/hex-mail', { method: 'POST', body: { on } }); }
         catch (e) { toast((e && e.message) || T('저장하지 못했습니다.', 'Could not save.')); drawTerr(); return; }
         await A.refresh().catch(() => null);
-        toast(on ? T('✉️ 블록을 빼앗긴 날 저녁에 메일로 알려 드립니다', '✉️ We will email you on evenings when your cells are taken') : T('블록 알림 메일을 껐습니다', 'Cell alert emails are off'));
+        toast(on ? T('✉️ 블록을 빼앗긴 날 저녁에 메일로 알려 드립니다', '✉️ We will email you on the evening of any day your blocks are taken') : T('블록 알림 메일을 껐습니다', 'Block alert emails are off'));
     }
     async function saveBeam(on) {
         const A = account();
@@ -1981,7 +1981,7 @@
     // 랭킹 목록(지금 · 지난 분기 확정). medal: 1~3위에 메달
     function rankList(rows, mine, medal) {
         return '<ol class="sm-terr-rank">' + rows.map((r, k) => '<li' + (mine === k + 1 ? ' class="is-me"' : '') + '><span class="sm-rank">' + (medal && MEDAL[k] ? MEDAL[k] : k + 1) + '</span><span class="sm-tname">' +
-            (r.skin ? swatch(r.skin) : '') + ttBadge(r.tt) + esc(r.nick || T('(탈퇴했거나 별명 없음)', '(no name)')) + '</span><span class="sm-tcnt"><b>' + fmt(r.cells) + '</b>' + T('블록', '') + '<small>' + T(fmt(r.stores) + '곳', fmt(r.stores) + ' visits') + '</small></span></li>').join('') + '</ol>';
+            (r.skin ? swatch(r.skin) : '') + ttBadge(r.tt) + esc(r.nick || T('(탈퇴했거나 별명 없음)', '(no nickname)')) + '</span><span class="sm-tcnt"><b>' + fmt(r.cells) + '</b>' + T('블록', '') + '<small>' + T(fmt(r.stores) + '곳', fmt(r.stores) + ' visits') + '</small></span></li>').join('') + '</ol>';
     }
     function drawTerr() {
         if (!shown.terr || !terrOpen) return;   // 창을 닫았으면 칸만 새로 그린다(drawTerrLayers)
@@ -1993,7 +1993,7 @@
         if (!A || !A.session()) status = '<button type="button" class="sm-terr-join">' + T('로그인하고 참여하기', 'Sign in to join') + '</button>';
         else if (!(me && me.joined)) status = '<button type="button" class="sm-terr-join">' + T('참여하기', 'Join') + '</button> <span class="sm-small">' + T('참여하면 다녀온 판매점으로 블록을 차지합니다', 'Counts only after you agree') + '</span>';
         else status = '<p class="sm-terr-me">' + T('내 블록 <b>' + fmt(me.cells.length) + '</b>' + (me.rank ? ' · <b>' + me.rank + '</b>위' : '') + ' · 다녀온 곳 ' + fmt(me.stores) + '곳' + (me.cells.length ? ' · 점령 포인트 하루 +' + holdDaily(me.cells.length) + 'P' : ''),
-            'My cells <b>' + fmt(me.cells.length) + '</b>' + (me.rank ? ' · rank <b>' + me.rank + '</b>' : '') + ' · ' + fmt(me.stores) + ' visited' + (me.cells.length ? ' · +' + holdDaily(me.cells.length) + ' a day' : '')) + '</p>' +
+            'My blocks <b>' + fmt(me.cells.length) + '</b>' + (me.rank ? ' · rank <b>' + me.rank + '</b>' : '') + ' · ' + fmt(me.stores) + ' visited' + (me.cells.length ? ' · +' + holdDaily(me.cells.length) + ' a day' : '')) + '</p>' +
             (me.lastRank ? '<p class="sm-terr-me">' + (MEDAL[me.lastRank - 1] || '🏅') + ' ' + T(seasonLabel(terr.last) + ' 확정 ' + me.lastRank + '위', seasonLabel(terr.last) + ' final: #' + me.lastRank) + '</p>' : '') +
             skinRow(me) +
             beamRow() +
@@ -2002,28 +2002,28 @@
         const last = terr && terr.last;
         const joined = !!(A && A.session() && me && me.joined), sheet = hexMobile();
         const title = '<h3><span class="sm-turf-ico" aria-hidden="true"></span> LottoHex</h3>' +   // 시험판 표시는 없앴다(2026-11-09 사장님)
-            '<p class="sm-terr-season">' + (terr ? T('참여 ' + fmt(terr.players) + '명 · ', fmt(terr.players) + ' players · ') : '') + T('판매점 땅따먹기 게임 · 분기마다 Map 랭킹 확정', 'Cells carry on; the ranking is finalised each quarter') + '</p>' +
+            '<p class="sm-terr-season">' + (terr ? T('참여 ' + fmt(terr.players) + '명 · ', fmt(terr.players) + ' players · ') : '') + T('판매점 땅따먹기 게임 · 분기마다 Map 랭킹 확정', 'Retailer turf game · Map ranking finalised each quarter') + '</p>' +
             (terr ? '' : '<p class="sm-small is-warn">' + T('LottoHex를 불러오지 못했습니다. 잠시 뒤 다시 열어 주세요.', 'Could not load LottoHex. Try again later.') + '</p>');
         const statusPart = '<div class="sm-terr-status">' + status + '</div>';
-        const cellPart = terrSel ? cellBlock() : '', hint = terrSel ? '' : '<p class="sm-small">' + T('블록을 누르면 그 블록의 주인과 판매점이 나옵니다.', 'Tap a cell to see who holds it and its retailers.') + '</p>';
+        const cellPart = terrSel ? cellBlock() : '', hint = terrSel ? '' : '<p class="sm-small">' + T('블록을 누르면 그 블록의 주인과 판매점이 나옵니다.', 'Tap a block to see who holds it and its retailers.') + '</p>';
         const tab = sheet ? terrTab : null;
         const news = joined && (!sheet || tab === 'now') ? newsBlock() : '';   // newsBlock 은 보이면 "봄"으로 적는다 — 보일 때만 부른다
         const todo = joined && terrCells ? todoLists(me) : '';
         const dex = A && A.session() ? titleDex() + dexBlock() : '';
         const ms = A && A.session() ? milestoneBlock() : '';
         const rankPart = '<h4 class="sm-terr-h">' + T('Map 랭킹', 'Map ranking') + ' <small>' + T(seasonLabel(s) + ' · ' + seasonEnd(s) + ' 24시에 확정', seasonLabel(s) + ' · final at the end of ' + seasonEnd(s)) + '</small></h4>' +
-            (rank.length ? rankList(rank, me && me.rank) : '<p class="sm-small">' + T('아직 블록을 차지한 사람이 없습니다.', 'No one holds a cell yet.') + '</p>') +
+            (rank.length ? rankList(rank, me && me.rank) : '<p class="sm-small">' + T('아직 블록을 차지한 사람이 없습니다.', 'No one holds a block yet.') + '</p>') +
             (last && last.rank.length ? '<h4 class="sm-terr-h">🏆 ' + T(seasonLabel(last) + ' 확정 순위', seasonLabel(last) + ' final ranking') + '</h4>' + rankList(last.rank, me && me.lastRank, true) : '');
         const rules = '<details class="sm-terr-rules"><summary>' + T('규칙', 'Rules') + '</summary><ul>' +
-            '<li>' + T('블록(육각형, 가운데서 꼭짓점까지 0.6km · 끝에서 끝까지 걸어서 15분쯤) 안에서 다녀온 판매점이 가장 많은 사람이 그 블록을 차지합니다.', 'Whoever has visited the most retailers in a hexagon cell (0.6 km centre to corner, about a 15-minute walk across) holds it.') + '</li>' +
-            '<li>' + T('주인이 없는 블록은 <b>회색지대</b>로, 지도에 옅은 회색으로 보입니다. 판매점 한 곳만 다녀와도 차지합니다.', 'Cells no one holds are the <b>grey zone</b>, shown in light grey. One visit takes one.') + '</li>' +
-            '<li>' + T('같은 수면 그 블록에 더 최근에 다녀온 사람이 차지합니다. 빼앗기면 그 블록 판매점 카드의 "오늘 또 다녀왔어요"로 되찾을 수 있습니다(같은 곳은 하루 한 번).', 'On a tie, whoever visited the cell most recently holds it. Lost it? Use "Visited again today" on a retailer card in that cell (once a day per retailer).') + '</li>' +
-            '<li>' + T('블록 모양: 참여자마다 색 두 가지와 무늬(단색 · 줄무늬 · 물방울 · 체크)가 무작위로 정해지고 모두에게 같게 보입니다. 내 블록 모양은 ' + SKIN_COST + 'P로 바꿀 수 있습니다. 내 블록은 테두리가 조금 굵습니다.', 'Skins: each player gets two colours and a pattern (solid, stripes, dots or checks) at random, and everyone sees the same. You can change yours for ' + SKIN_COST + ' points. Your cells have a slightly thicker edge.') + '</li>' +
-            '<li>' + T('소식 띠: 누가 블록을 새로 차지하면 "○○님이 N번째 블록을 점령했습니다", 남의 블록을 빼앗으면 "○○님이 △△님의 블록을 빼앗았습니다"가 LottoHex 화면 위 띠와 채팅에 나옵니다(어느 블록 · 지역인지는 나오지 않습니다).', 'News ticker: when someone takes a new cell, "X captured block #N" (or "X took a block from Y") runs along the top of the LottoHex screen and in the chat (which cell or area is never shown).') + '</li>' +
+            '<li>' + T('블록(육각형, 가운데서 꼭짓점까지 0.6km · 끝에서 끝까지 걸어서 15분쯤) 안에서 다녀온 판매점이 가장 많은 사람이 그 블록을 차지합니다.', 'Whoever has visited the most retailers in a hexagon block (0.6 km centre to corner, about a 15-minute walk across) holds it.') + '</li>' +
+            '<li>' + T('주인이 없는 블록은 <b>회색지대</b>로, 지도에 옅은 회색으로 보입니다. 판매점 한 곳만 다녀와도 차지합니다.', 'Blocks no one holds are the <b>grey zone</b>, shown in light grey. One visit takes one.') + '</li>' +
+            '<li>' + T('같은 수면 그 블록에 더 최근에 다녀온 사람이 차지합니다. 빼앗기면 그 블록 판매점 카드의 "오늘 또 다녀왔어요"로 되찾을 수 있습니다(같은 곳은 하루 한 번).', 'On a tie, whoever visited the block most recently holds it. Lost it? Use "Visited again today" on a retailer card in that block (once a day per retailer).') + '</li>' +
+            '<li>' + T('블록 모양: 참여자마다 색 두 가지와 무늬(단색 · 줄무늬 · 물방울 · 체크)가 무작위로 정해지고 모두에게 같게 보입니다. 내 블록 모양은 ' + SKIN_COST + 'P로 바꿀 수 있습니다. 내 블록은 테두리가 조금 굵습니다.', 'Skins: each player gets two colours and a pattern (solid, stripes, dots or checks) at random, and everyone sees the same. You can change yours for ' + SKIN_COST + ' pts. Your blocks have a slightly thicker edge.') + '</li>' +
+            '<li>' + T('소식 띠: 누가 블록을 새로 차지하면 "○○님이 N번째 블록을 점령했습니다", 남의 블록을 빼앗으면 "○○님이 △△님의 블록을 빼앗았습니다"가 LottoHex 화면 위 띠와 채팅에 나옵니다(어느 블록 · 지역인지는 나오지 않습니다).', 'News ticker: when someone takes a new block, "X captured block #N" (or "X took a block from Y") runs along the top of the LottoHex screen and in the chat (which block or area is never shown).') + '</li>' +
             '<li>' + T('영역 빛 벽: ' + BEAM_COST + 'P로 한 번 사면 계속 씁니다. 3D에서 내 영역 바깥 테두리가 위로 빛나고 모두에게 보입니다. 켜고 끄기는 무료입니다.', 'Light wall: buy it for ' + BEAM_COST + ' points (yours to keep) and your territory edge glows upward in 3D for everyone. Switching it on or off is free.') + '</li>' +
-            '<li>' + T('밤 지도에서 크게 보면 차지한 블록 테두리를 빛이 시계 방향으로 돌고, 블록 면에는 유리에 비친 듯한 45° 빛이 번쩍 지나갑니다.', 'On the night map, zoomed in, a light runs clockwise round held cells and a quick glassy 45° glint flashes across them.') + '</li>' +
-            '<li>' + T('블록은 비우지 않습니다. 분기(1 · 4 · 7 · 10월 1일 0시)마다 그때의 Map 랭킹을 확정해 남깁니다.', 'Cells are never cleared. At the start of each quarter the Map ranking at that moment is finalised and kept.') + '</li>' +
-            '<li>' + T('점령 포인트: 지금 차지한 블록 하나에 하루 0.1P(매일 0시 무렵 그때 차지한 블록으로 셉니다, 운영자 제외). 회원 랭킹 점수에도 들어갑니다.', 'Cell points: 0.1 points a day for each cell you hold (counted just after midnight each day from the cells held then; operators excluded). It also counts toward the member ranking.') + '</li>' +
+            '<li>' + T('밤 지도에서 크게 보면 차지한 블록 테두리를 빛이 시계 방향으로 돌고, 블록 면에는 유리에 비친 듯한 45° 빛이 번쩍 지나갑니다.', 'On the night map, zoomed in, a light runs clockwise round held blocks and a quick glassy 45° glint flashes across them.') + '</li>' +
+            '<li>' + T('블록은 비우지 않습니다. 분기(1 · 4 · 7 · 10월 1일 0시)마다 그때의 Map 랭킹을 확정해 남깁니다.', 'Blocks are never cleared. At the start of each quarter the Map ranking at that moment is finalised and kept.') + '</li>' +
+            '<li>' + T('점령 포인트: 지금 차지한 블록 하나에 하루 0.1P(매일 0시 무렵 그때 차지한 블록으로 셉니다, 운영자 제외). 회원 랭킹 점수에도 들어갑니다.', 'Block points: 0.1 pts a day for each block you hold (counted just after midnight each day from the blocks held then; operators excluded). They also count toward the member ranking.') + '</li>' +
             '<li>' + T('확정 순위 보상: 1위 1,000P · 2위 500P · 3위 300P · 4~10위 100P(운영자 제외).', 'Quarterly rewards: 1st 1,000 · 2nd 500 · 3rd 300 · 4th–10th 100 points (operators excluded).') + '</li>' +
             '<li>' + T('마일스톤: 다녀온 판매점 · 블록 · 시·도 수와 차지한 블록 수가 단계에 이를 때마다 포인트를 받습니다. 칭호: 조건을 채우면 얻고(왕지렁이 · 벌집 · 마포구 전문가 …), "도감" 탭에서 하나를 골라 별명 앞에 답니다.', 'Milestones and titles: reach steps in retailers, cells, provinces and territory for points, and earn titles for visits, territory, cell shapes (Giant Worm, Honeycomb …) and regions. Pick a title in "Collection" to show it before your nickname.') + '</li>' +
             '<li>' + (gpsCfg() ? T('다녀온 곳은 판매점 50m 안에서 위치로 인증한 곳만 셉니다. 폐점한 곳은 세지 않습니다.', 'Only retailers verified by location (within 50 m) count. Closed retailers do not count.')
