@@ -73,7 +73,7 @@ const RELATED = {
     probability:   ['probability.html', '로또 확률', 'Lotto odds', '등수별 당첨 확률과 계산 방법', 'Odds for each prize tier and how they are worked out'],
     tax:           ['tax.html', '실수령액 계산기', 'After-tax calculator', '당첨금을 넣으면 세금과 실수령액', 'Enter a prize to see the tax and take-home amount'],
     'top-prize':   ['top-prize.html', '역대 1등 당첨금 TOP 50', 'Top 50 jackpots', '1인당 당첨금이 컸던 회차', 'Draws with the largest prize per winner'],
-    generator:     ['index.html#sec-generator', '번호 생성기', 'Number generator', '고정수·제외수와 특수 패턴 16가지', 'Fixed and excluded numbers, 16 special patterns'],
+    generator:     ['index.html#sec-generator', '번호 생성기', 'Number generator', '고정수·제외수와 특수 · 쏠림 패턴 20가지', 'Fixed and excluded numbers, 20 unusual and lopsided patterns'],
 };
 
 // 목록 카드의 미리보기: 본문 앞에서부터 블록을 담는다(표는 건너뛴다). 5개를 채우거나

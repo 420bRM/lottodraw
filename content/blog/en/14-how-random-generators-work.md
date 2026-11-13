@@ -18,7 +18,7 @@ This site's [number generator](/index.html#sec-generator) also uses the browser'
 1. It builds a candidate list from 1 to 45, leaving out the **excluded numbers** and **fixed numbers**.
 2. It picks one slot from the candidate list at random, takes that number out, and removes it from the list.
 3. It repeats step 2 until there are six numbers, counting the fixed numbers.
-4. If the finished combination matches any of the **16 special patterns** you have checked, it throws away the whole combination and starts again from step 1. It tries up to 10,000 times.
+4. If the finished combination matches any of the **patterns** you have checked (12 unusual and 8 lopsided ones), it throws away the whole combination and starts again from step 1. It tries up to 10,000 times.
 
 The "Attempt log" under the Generate button shows exactly which combination was thrown away on which attempt, and because of which pattern.
 

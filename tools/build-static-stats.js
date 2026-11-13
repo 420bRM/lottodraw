@@ -3456,7 +3456,7 @@ function updateHome(posts) {
     // 제목은 "로또 통계" 검색어를 맡으므로 그대로 둔다(README 4-4). 사이트가 무엇인지는 설명 · 안내 문단 · 구조화 데이터가 말한다
     const title = `로또 통계 분석 · 번호 생성기 (${RANGE}) | lottodraw.kr`;
     const e = extremesOf(stats.frequency);
-    const desc = `lottodraw.kr은 ${SITE_KIND}입니다. 로또 6/45 ${RANGE} 전 회차 당첨번호와 통계 12종(많이 나온 번호 1위 ${numsText(e.top)} ${e.max}회·미출수·궁합수), 역대 당첨금 TOP 50·그래프, 실수령액 계산기, 16개 패턴을 거르는 번호 생성기. 매주 자동 갱신.`;
+    const desc = `lottodraw.kr은 ${SITE_KIND}입니다. 로또 6/45 ${RANGE} 전 회차 당첨번호와 통계 12종(많이 나온 번호 1위 ${numsText(e.top)} ${e.max}회·미출수·궁합수), 역대 당첨금 TOP 50·그래프, 실수령액 계산기, 특수 패턴을 거르는 번호 생성기. 매주 자동 갱신.`;
     const top = draws.filter(d => d.firstPrizeAmount).sort((a, b) => b.firstPrizeAmount - a.firstPrizeAmount)[0];
     const dataset = {
         '@type': 'Dataset',
@@ -3478,7 +3478,7 @@ function updateHome(posts) {
                 // 검색엔진 · AI 요약이 사이트를 한 문장으로 소개할 때 읽는 자리. 기능을 하나씩 다 적는다
                 description: `lottodraw.kr은 ${SITE_KIND}입니다. 동행복권 로또 6/45 ${RANGE} 당첨 기록으로 회차별 당첨번호와 등수별 당첨금, `
                     + '전 회차 통계 12종, 역대 당첨금 TOP 50과 회차별 그래프(물가 반영 · 서울 아파트값 · 최저임금 비교), 실수령액 계산기, '
-                    + '2·3등 당첨금 통계, 2~5등 당첨 게임 수로 셈한 번호별 구매 인기(사람들이 많이 사는 번호), 등수별 당첨 확률, 16개 특수 패턴을 거르는 번호 생성기, 해설 블로그를 제공합니다. 다음 회차를 예측하지 않습니다.',
+                    + '2·3등 당첨금 통계, 2~5등 당첨 게임 수로 셈한 번호별 구매 인기(사람들이 많이 사는 번호), 등수별 당첨 확률, 특수 패턴을 거르는 번호 생성기, 해설 블로그를 제공합니다. 다음 회차를 예측하지 않습니다.',
             },
             { '@type': 'Organization', '@id': SITE + '/#org', name: 'lottodraw.kr', url: SITE + '/', email: 'contact@lottodraw.kr' },
             dataset,
@@ -3928,7 +3928,7 @@ if (POP) {
     if (write('popularity.csv', popularityCsv())) changed++;
     // 홈 생성기 "남은 조합": 고정수 · 제외수가 없을 때의 표를 미리 세 둔다(휴대폰이 815만 개를 훑지 않게). 고정수 · 제외수를 고르면 그때 워커가 센다
     const space = ComboSpace.scan({ w: POP.w, cuts: POP.cuts });
-    if (write('combo-space.json', JSON.stringify({ forRound: POP.forRound, total: space.total, zero: space.zero, masked: space.masked }) + '\n')) changed++;
+    if (write('combo-space.json', JSON.stringify({ pv: 2, forRound: POP.forRound, total: space.total, zero: space.zero, masked: space.masked }) + '\n')) changed++;
     if (write(POPULAR_FILE, popularPage())) changed++;
 }
 // 블로그는 원고(content/blog/)로 만든다. 같은 틀을 쓰고 사이트맵에 같이 넣으려고 여기서 부른다

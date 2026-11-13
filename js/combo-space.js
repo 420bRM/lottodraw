@@ -2,7 +2,8 @@
 // 홈 생성기의 "남은 조합" 숫자와, 조건이 좁아 랜덤 시도로 못 찾을 때 전부 훑어 고르기(정확 표집)에 쓴다.
 // 한 파일이 세 군데서 돈다: 홈 페이지(<script> — 센 표로 다시 세기 · 조합 하나 분류), 웹 워커(new Worker 로 이 파일 —
 // 무거운 전수 훑기), Node(tools/build-static-stats.js 의 인기도 구간 · tools/test-combo-space.js).
-// 특수 패턴 번호 1~16 은 index.html 의 patternHit 과 같다 — 하나를 바꾸면 다른 하나도 바꾸고 tools/test-combo-space.js 를 돌린다.
+// 특수 패턴 번호 1~20 은 index.html 의 patternHit 과 같다 — 하나를 바꾸면 다른 하나도 바꾸고 tools/test-combo-space.js 를 돌린다.
+// (2026-11-13 개편: 1~12 특수 패턴 · 13~20 쏠림 패턴. 그 전 16개 번호는 index.html PAT_OLD 로 옮긴다)
 (function (root, factory) {
     const api = factory();
     if (typeof module === 'object' && module.exports) module.exports = api;
@@ -30,36 +31,48 @@
     const cellOf = (ac, run, band) => (ac * 7 + run) * BANDS + band;
 
     // 번호마다 성질 비트 — "모두 ~" 패턴은 6개의 비트를 AND 해서 본다
-    //   0: 15 이하 · 1: 20 이하 · 2: 31 이하 · 3: 3의 배수 · 4: 4의 배수 · 5: 5의 배수 · 6: 31 이상 · 7: 소수 · 8: 홀수 · 9: 짝수
+    //   0: 1~15 · 1: 16~30 · 2: 31~45 · 3: 3의 배수 · 4: 4의 배수 · 5: 5의 배수 · 6: 소수 · 7: 홀수 · 8: 짝수
+    //   9: 피보나치 수(1·2·3·5·8·13·21·34) · 10: 삼각수(1·3·6·10·15·21·28·36·45) · 11: 2의 거듭제곱(1·2·4·8·16·32)
     const isPrime = n => { if (n < 2) return false; for (let i = 2; i * i <= n; i++) if (n % i === 0) return false; return true; };
+    const FIB = [1, 2, 3, 5, 8, 13, 21, 34], TRI = [1, 3, 6, 10, 15, 21, 28, 36, 45], POW2 = [1, 2, 4, 8, 16, 32];
     const PROP = new Int32Array(46);
     const SQ = new Int32Array(46);
     for (let n = 1; n <= 45; n++) {
-        PROP[n] = (n <= 15 ? 1 : 0) | (n <= 20 ? 2 : 0) | (n <= 31 ? 4 : 0) | (n % 3 === 0 ? 8 : 0) | (n % 4 === 0 ? 16 : 0)
-            | (n % 5 === 0 ? 32 : 0) | (n >= 31 ? 64 : 0) | (isPrime(n) ? 128 : 0) | (n % 2 ? 256 : 0) | (n % 2 ? 0 : 512);
+        PROP[n] = (n <= 15 ? 1 : 0) | (n >= 16 && n <= 30 ? 2 : 0) | (n >= 31 ? 4 : 0) | (n % 3 === 0 ? 8 : 0) | (n % 4 === 0 ? 16 : 0)
+            | (n % 5 === 0 ? 32 : 0) | (isPrime(n) ? 64 : 0) | (n % 2 ? 128 : 0) | (n % 2 ? 0 : 256)
+            | (FIB.includes(n) ? 512 : 0) | (TRI.includes(n) ? 1024 : 0) | (POW2.includes(n) ? 2048 : 0);
     }
     [1, 4, 9, 16, 25, 36].forEach(n => { SQ[n] = 1; });
-    const ALL = 1023;
+    const ALL = 4095;
 
-    // 6개(오름차순)의 성질 → 특수 패턴 비트(패턴 k 는 1 << (k - 1))
-    function maskOf(p, sum, sq, run, lo, hi) {
+    // 6개(오름차순 n)의 성질 → 패턴 비트(패턴 k 는 1 << (k - 1))
+    //   특수 1 5개 이상 연속 · 2 6개 등차수열 · 3 모두 소수 · 4~6 모두 3 · 4 · 5의 배수 · 7 제곱수 4개 이상 · 8 대칭(합 46 쌍 3개)
+    //        9 끝수 2가지 이하 · 10 모두 피보나치 수 · 11 모두 삼각수 · 12 2의 거듭제곱
+    //   쏠림 13 모두 1~15 · 14 모두 16~30 · 15 모두 31~45 · 16 같은 십의 자리 · 17 모두 홀수 · 18 모두 짝수 · 19 합계 69 이하 · 20 합계 207 이상
+    function maskOf(p, sum, sq, run, n) {
         let m = 0;
-        if (run === 6) m |= 1;
-        if (p & 1) m |= 2;
-        if (p & 2) m |= 4;
-        if (p & 4) m |= 8;
-        if (p & 8) m |= 16;
-        if (p & 16) m |= 32;
-        if (p & 32) m |= 64;
-        if (p & 64) m |= 128;
-        if (((lo / 10) | 0) === ((hi / 10) | 0)) m |= 256;
-        if (p & 128) m |= 512;
-        if (p & 256) m |= 1024;
-        if (p & 512) m |= 2048;
-        if (sum < 50 || sum > 200) m |= 4096;
-        if ((sum >= 50 && sum <= 69) || (sum >= 181 && sum <= 200)) m |= 8192;
-        if (sq >= 4) m |= 16384;
-        if (sq >= 5) m |= 32768;
+        if (run >= 5) m |= 1;
+        const d = n[1] - n[0];
+        if (n[2] - n[1] === d && n[3] - n[2] === d && n[4] - n[3] === d && n[5] - n[4] === d) m |= 2;
+        if (p & 64) m |= 4;
+        if (p & 8) m |= 8;
+        if (p & 16) m |= 16;
+        if (p & 32) m |= 32;
+        if (sq >= 4) m |= 64;
+        if (n[0] + n[5] === 46 && n[1] + n[4] === 46 && n[2] + n[3] === 46) m |= 128;
+        const ends = (1 << (n[0] % 10)) | (1 << (n[1] % 10)) | (1 << (n[2] % 10)) | (1 << (n[3] % 10)) | (1 << (n[4] % 10)) | (1 << (n[5] % 10));
+        if (popcount(ends) <= 2) m |= 256;
+        if (p & 512) m |= 512;
+        if (p & 1024) m |= 1024;
+        if (p & 2048) m |= 2048;
+        if (p & 1) m |= 4096;
+        if (p & 2) m |= 8192;
+        if (p & 4) m |= 16384;
+        if (((n[0] / 10) | 0) === ((n[5] / 10) | 0)) m |= 32768;
+        if (p & 128) m |= 65536;
+        if (p & 256) m |= 131072;
+        if (sum <= 69) m |= 262144;
+        if (sum >= 207) m |= 524288;
         return m;
     }
     function popcount(x) {
@@ -87,7 +100,7 @@
             if (i) { if (n === sorted[i - 1] + 1) { run++; if (run > best) best = run; } else run = 1; }
             for (let j = 0; j < i; j++) diffs.add(n - sorted[j]);
         }
-        return { mask: maskOf(p, sum, sq, best, sorted[0], sorted[5]), ac: diffs.size - 5, run: best, band: w ? bandOf(score, cuts) : 0, score: score };
+        return { mask: maskOf(p, sum, sq, best, sorted), ac: diffs.size - 5, run: best, band: w ? bandOf(score, cuts) : 0, score: score };
     }
 
     // 조건: { pat: 켠 패턴 비트, acMin, acExact, run(0 = 상관없음 · 2 · 3 = 가장 긴 연속이 정확히 그만큼), band(0 = 끔 · 1~3 = 그 구간 이상) }
@@ -133,7 +146,7 @@
             for (let k = 1; k < 6; k++) { if (nums[k] === nums[k - 1] + 1) { run++; if (run > best) best = run; } else run = 1; }
             const ac = popcount(LO[need]) + popcount(HI[need]) - 5;
             const score = W[need];
-            visit(maskOf(P[need], S[need], Q[need], best, nums[0], nums[5]), ac, best, w ? bandOf(score, cuts) : 0, nums, score);
+            visit(maskOf(P[need], S[need], Q[need], best, nums), ac, best, w ? bandOf(score, cuts) : 0, nums, score);
             count++;
         }
         (function rec(depth, start) {

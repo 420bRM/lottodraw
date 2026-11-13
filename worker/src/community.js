@@ -14,7 +14,7 @@
 //                        buy: 로그인한 채 산 이용권 금액 합계(원) — 랭킹 점수용
 //                        trial: { orderId, keyId, key, expiresAt } — 가입 때 한 번 주는 무료 체험 키
 //                        ppass: { orderId, keyId, key, expiresAt, at } — 포인트로 연 1일 이용권(가장 최근 것), ppassN: 포인트로 연 횟수
-//                        gen:   { inc, exc, pat, recent, ac, acExact, run, pop, at } — 저장한 번호 생성기 설정(고정수 · 제외수 · 켠 패턴 번호 · 직전 당첨 조합 제외 칸 · AC값 조건과 "이 값만" · 연속번호 · 나눠 가질 사람 줄이기). 본인에게만 보인다
+//                        gen:   { inc, exc, pat, pv, recent, ac, acExact, run, pop, at } — 저장한 번호 생성기 설정(고정수 · 제외수 · 켠 패턴 번호 · 직전 당첨 조합 제외 칸 · AC값 조건과 "이 값만" · 연속번호 · 나눠 가질 사람 줄이기). 본인에게만 보인다
 //                        visits: { 판매점 번호: '#rrggbb' } — 판매점 지도에서 회원이 직접 표시한 "다녀온 곳"과 색(1,000곳까지). 본인에게만 보인다
 //                        vt:    { 판매점 번호: 시각 } — 다녀온 곳을 표시한(또는 "또 다녀왔어요"를 누른) 마지막 때(2026-11-07부터. 그 전 것은 없다). 표시를 지우면 같이 지운다
 //                        vday:  { day, n } — 오늘(한국 날짜) 다녀온 때를 새로 적은 횟수(territory.js VISIT_DAILY 까지)
