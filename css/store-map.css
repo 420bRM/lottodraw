@@ -786,7 +786,7 @@ html.sm-enter-hex #sm-hexfx .sm-hexfx-ico, html.sm-enter-store #sm-storefx .sm-s
    html.chat-docked 는 js/chat.js 가 이 페이지 · 좁은 화면에서 붙인다. --chat-dock(아래에서 채팅창 바닥까지)은 js/store-map.js chatDock().
    오른쪽은 지도 단추 줄(전체 화면 · 나침반 · 내 위치 · i)을 비운다. 카드 · 근처 목록이 같은 자리에 뜨면 잠시 숨긴다(chat-dock-busy) */
 @media (max-width: 899px) {
-    html.chat-docked .chat-panel { left: 8px; right: 66px; bottom: var(--chat-dock, 92px); width: auto; height: 24vh; height: min(24dvh, 200px); border: 0; border-radius: 12px;
+    html.chat-docked .chat-panel { left: 8px; right: 66px; bottom: var(--chat-dock, 92px); width: auto; height: var(--chat-h, min(24dvh, 200px)); border: 0; border-radius: 12px;
         background: rgba(10, 14, 22, .24); box-shadow: none; color: #fff; -webkit-backdrop-filter: blur(1.5px); backdrop-filter: blur(1.5px); transition: bottom .25s ease; }
     html.chat-docked .chat-head { padding: 3px 4px 0 10px; background: transparent; text-shadow: 0 1px 2px rgba(0, 0, 0, .7); }
     html.chat-docked .chat-head b { font-size: 12px; }

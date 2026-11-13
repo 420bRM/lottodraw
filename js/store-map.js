@@ -1440,16 +1440,25 @@
             bottom = (r ? window.innerHeight - r.top : 40) + 6;
         }
         html.style.setProperty('--chat-dock', Math.round(bottom) + 'px');
+        // 위 끝은 오른쪽 지도 단추 줄(전체 화면 · 나침반 · 내 위치 …)의 위 끝에 맞춘다(2026-11-13 사장님). 단추 줄은 지도 바닥에 붙어 있고
+        // LottoHex 에서는 margin-bottom 이 판 높이 + 10px(css .is-hex … ctrl-bottom-right) — 판이 움직이는 중에도 같은 값으로 셈한다
+        const ctrl = root.querySelector('.maplibregl-ctrl-bottom-right');
+        if (ctrl && dockRO && ctrl !== dockCtrl) { dockRO.observe(ctrl); dockCtrl = ctrl; }   // 지도 단추는 지도를 만든 뒤에 생긴다
+        if (ctrl && ctrl.offsetHeight) {
+            const mb = hexMobile() ? sheetNow() + 10 : (parseFloat(getComputedStyle(ctrl).marginBottom) || 0);
+            html.style.setProperty('--chat-h', Math.max(96, Math.round(mb + ctrl.offsetHeight - bottom)) + 'px');
+        }
         const top = root.querySelector('.sm-top'), topY = top ? top.getBoundingClientRect().bottom : 80;
         html.classList.toggle('chat-dock-off', window.innerHeight - bottom - topY < 150);
         html.classList.toggle('chat-dock-busy', [card, nearPanel, minePanel].some(el => el && !el.hidden));
     }
+    let dockRO = null, dockCtrl = null;
     function initChatDock() {
         const mo = new MutationObserver(() => chatDock());
         [card, nearPanel, minePanel, terrPanel].forEach(el => el && mo.observe(el, { attributes: true, attributeFilter: ['hidden'] }));
         mo.observe(root, { attributes: true, attributeFilter: ['class'] });   // 판매점 ↔ LottoHex
         const bl = root.querySelector('.sm-bl');
-        if (bl && window.ResizeObserver) new ResizeObserver(() => chatDock()).observe(bl);
+        if (window.ResizeObserver) { dockRO = new ResizeObserver(() => chatDock()); if (bl) dockRO.observe(bl); }
         window.addEventListener('resize', chatDock);
         chatDock();
     }
