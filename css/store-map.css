@@ -636,8 +636,12 @@ body.sm-full #theme-btn { display: none !important; }
     .sm-mode-sw a.has-new, .sm-hexbar-stat.has-new { position: relative; }
     .sm-mode-sw a.has-new::after, .sm-hexbar-stat.has-new::after { content: ''; position: absolute; top: -3px; right: -3px; width: 8px; height: 8px; border: 1.5px solid var(--surface, #fff); border-radius: 50%; background: #e0283a; }
     .sm-turf { display: none !important; }   /* 판매점 모드 칩 줄에서 LottoHex 칩은 빠진다(모드 단추가 대신) */
-    /* LottoHex 모드: 판매점 도구는 감춘다 */
-    .is-hex .sm-searchbox, .is-hex .sm-chips:not(.sm-modes), .is-hex .sm-pcnote, .is-hex .sm-near-btn, .is-hex .sm-bl, .is-hex .sm-info, .is-hex .sm-near:not(.sm-terr) { display: none !important; }
+    /* LottoHex 모드: 판매점 도구는 감춘다. 검색창은 남긴다(2026-11-13 사용자 의견 — "판매점 지도는 판매점 · 지역 검색이 되는데 LottoHex 는 검색창이 없어 불편").
+       판매점 모드와 같은 자리(모드 단추 바로 아래)에 두고 그 밑에 내 칸 · 순위 줄 · 소식 띠. 고르면 지도만 옮긴다(js/store-map.js goPlace) */
+    .is-hex .sm-chips:not(.sm-modes), .is-hex .sm-pcnote, .is-hex .sm-near-btn, .is-hex .sm-bl, .is-hex .sm-info, .is-hex .sm-near:not(.sm-terr) { display: none !important; }
+    .is-hex .sm-searchbox { order: 1; }
+    .is-hex .sm-hexbar, .is-hex .sm-ticker { order: 2; }
+    .is-hex.is-finding .sm-top { z-index: 6; }   /* 찾은 목록은 아래 판(z-index 4) · 판매점 카드(5) 위에 */
     .is-hex .sm-hexbar { display: flex; align-items: center; gap: 5px; }
     .sm-hexbar-stat { display: inline-flex; flex: 1 1 auto; align-items: center; gap: 6px; min-width: 0; padding: 5px 10px; border: 1px solid #4b3bb8; border-radius: 9px;
         background: linear-gradient(135deg, #24135f, #2d3a8f 60%, #0f6170); color: #fff; box-shadow: 0 1px 6px rgba(36, 19, 95, .35); font: inherit; font-size: 12px; font-weight: bold; text-align: left; cursor: pointer; }

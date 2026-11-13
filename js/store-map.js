@@ -682,6 +682,7 @@
         const chip = k => root.querySelector('.sm-chip[data-layer="' + k + '"]');
         const on = k => { if (!shown[k]) { shown[k] = true; const c = chip(k); if (c) c.setAttribute('aria-pressed', 'true'); } };
         let changed = false;
+        if (hexMode && terrOnly) setTerrOnly(false);   // LottoHex 의 "판매점 감추기"도 푼다(검색으로 고른 판매점이 지도에 보이게)
         if (shown.top && !(kind === 'w' && props[i] && props[i].top)) { const c = chip('top'); if (c) c.click(); }
         if (kind === 'w') {
             const r = data.rows[i];
@@ -1468,7 +1469,7 @@
         });
         window.addEventListener('resize', () => { if (hexMobile()) setSheet(sheetSnap); });
     }
-    // 모드 바꾸기. LottoHex 로 가면 판매점 도구(칩 · 검색 · 이 근처 · 이색 · 1등 방식 · 흐리게 · 시도별)는 CSS 가 감추고 칸을 켠다. 판매점으로 오면 칸을 끈다
+    // 모드 바꾸기. LottoHex 로 가면 판매점 도구(칩 · 이 근처 · 이색 · 1등 방식 · 흐리게 · 시도별)는 CSS 가 감추고 칸을 켠다(검색창은 남는다 — 2026-11-13). 판매점으로 오면 칸을 끈다
     // 주소 · 제목도 모드를 따른다(2026-11-09): LottoHex 는 lottohex.html, 판매점은 store-map.html(TOP 50 공유 주소는 그대로) — 새로 고쳐도 같은 화면, 링크로 나눌 수 있다
     function syncModeUrl(on) {
         try {
@@ -2840,19 +2841,22 @@
         nearAfterMove = !hexMode;   // LottoHex 에서는 칸을 보러 가는 것이라 목록은 열지 않는다
         areaWant = '';
         if (!isWide()) { card.hidden = true; nearPanel.hidden = true; }
-        map.flyTo({ center: [p.lng, p.lat], zoom: p.z, pitch: 0, bearing: 0, essential: true,
-            padding: isWide() ? pad() : Object.assign(pad(), { bottom: hexMode ? pad().bottom : Math.round(window.innerHeight * 0.4) + 16 }) });
+        if (hexMobile() && sheetSnap !== 'peek') setSheet('peek');   // 휴대폰 LottoHex: 지도를 보러 가는 것이라 아래 판은 접는다(카드를 열 때와 같게)
+        map.flyTo({ center: [p.lng, p.lat], zoom: p.z, pitch: 0, bearing: 0, essential: true,   // 휴대폰 LottoHex 는 아래 판을 비켜서(fitCells 와 같게)
+            padding: isWide() ? pad() : Object.assign(pad(), { bottom: hexMode ? sheetNow() + 16 : Math.round(window.innerHeight * 0.4) + 16 }) });
     }
 
     function initSearch() {
         const box = document.getElementById('sm-search');
         const list = document.getElementById('sm-found');
+        // 목록이 열려 있는 동안 #sm.is-finding — 휴대폰 LottoHex 에서 목록이 아래 판 · 카드 위에 오게(css)
+        const showList = on => { list.hidden = !on; root.classList.toggle('is-finding', on); };
         const item = (html, go) => {
             const li = document.createElement('li');
             const b = document.createElement('button');
             b.type = 'button';
             b.innerHTML = html;
-            b.addEventListener('click', () => { list.hidden = true; box.blur(); go(); });
+            b.addEventListener('click', () => { showList(false); box.blur(); go(); });
             li.appendChild(b);
             list.appendChild(li);
             return li;
@@ -2860,7 +2864,7 @@
         const render = () => {
             const raw = box.value.trim(), q = raw.toLowerCase();
             list.textContent = '';
-            if (q.length < 2) { list.hidden = true; return; }
+            if (q.length < 2) { showList(false); return; }
             if (!places || !stationRecs) Promise.all([loadPlaces(), loadStations()]).then(() => { if (box.value.trim() === raw) render(); });
             if (!all && root.dataset.all) needAll().then(() => { if (all && box.value.trim() === raw) render(); });   // 일반 판매점도 찾는다(층을 꺼 두었어도 — 2026-11-10 사장님 "박희도 로또LAB 이 안 나온다")
             const areas = findPlaces(raw, 5);
@@ -2868,7 +2872,7 @@
             for (let i = data.rows.length - 1; i >= 0 && hits.length < 20; i--) if (data.rows[i][4].toLowerCase().includes(q)) hits.push(i);   // 1등 많은 곳부터
             const more = [];   // 일반 판매점(층이 꺼져 있어도 찾는다 — 고르면 층을 켠다)
             if (all) for (let i = 0; i < all.rows.length && hits.length + more.length < 20; i++) if (all.rows[i][2].toLowerCase().includes(q)) more.push(i);
-            list.hidden = false;
+            showList(true);
             if (!areas.length && !hits.length && !more.length) {
                 list.innerHTML = '<li class="sm-none">' + (places && (all || !root.dataset.all) ? T('찾는 판매점 · 지역이 없습니다.', 'No retailer or area found.') : T('찾는 중…', 'Searching…')) + '</li>';
                 return;
