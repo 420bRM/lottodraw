@@ -807,8 +807,17 @@ html.sm-enter-hex #sm-hexfx .sm-hexfx-ico, html.sm-enter-store #sm-storefx .sm-s
     html.chat-docked .chat-form { padding: 3px 6px 6px; border-top: 0; }
     html.chat-docked .chat-input { padding: 5px 8px; border-color: rgba(255, 255, 255, .28); background: rgba(255, 255, 255, .14); color: #fff; font-size: 16px; }
     html.chat-docked .chat-input::placeholder { color: rgba(255, 255, 255, .65); }
-    html.chat-docked .chat-send { padding: 5px 10px; font-size: 13px; }
-    html.chat-docked .chat-fab { right: auto; left: 8px; bottom: var(--chat-dock, 92px); padding: 8px 10px; background: rgba(0, 48, 135, .82); box-shadow: 0 3px 10px rgba(0, 0, 0, .25); transition: bottom .25s ease; }
+    html.chat-docked .chat-send { width: 34px; height: 34px; }
+    /* 접으면 같은 자리에 긴 줄로(2026-11-13 사장님) — 펼쳤을 때와 같은 반투명 · 색, 누르면 펼친다 */
+    html.chat-docked .chat-fab { left: 8px; right: 66px; bottom: var(--chat-dock, 92px); justify-content: flex-start; gap: 7px; height: 34px; padding: 0 12px; border-radius: 12px;
+        background: rgba(10, 14, 22, .24); color: #fff; box-shadow: none; font-size: 12.5px; text-shadow: 0 1px 2px rgba(0, 0, 0, .7);
+        -webkit-backdrop-filter: blur(1.5px); backdrop-filter: blur(1.5px); transition: bottom .25s ease; }
+    html.chat-docked .chat-fab:hover { background: rgba(10, 14, 22, .32); }
+    html.chat-docked .chat-fab-ico { font-size: 14px; }
+    html.chat-docked .chat-fab-label, html.chat-docked .chat-count { display: none; }
+    html.chat-docked .chat-fab-title, html.chat-docked .chat-fab-online, html.chat-docked .chat-fab-up { display: inline; }
+    html.chat-docked .chat-fab-online { font-size: 11px; font-weight: normal; opacity: .85; }
+    html.chat-docked .chat-fab-up { margin-left: auto; font-size: 12px; opacity: .8; }
     html.chat-docked.sm-sheet-drag .chat-panel, html.chat-docked.sm-sheet-drag .chat-fab { transition: none; }
     html.chat-docked.chat-dock-busy .chat-panel, html.chat-docked.chat-dock-busy .chat-fab,
     html.chat-docked.chat-dock-off .chat-panel, html.chat-docked.chat-dock-off .chat-fab { display: none; }

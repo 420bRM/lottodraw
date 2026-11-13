@@ -69,18 +69,24 @@
     /* ───── 그리기 ───── */
 
     const count = el('span', { className: 'chat-count', hidden: '' });
+    const fabOnline = el('span', { className: 'chat-fab-online' });   // 휴대폰 지도(접힌 긴 줄)에서만 보인다 — "N명 접속"
     const fab = el('button', { type: 'button', id: 'chat-fab', className: 'chat-fab', 'aria-expanded': 'false', 'aria-controls': 'chat-panel',
         title: tr('chat.title', '실시간 채팅'), on: { click: () => toggle() } }, [
         el('span', { className: 'chat-fab-ico', 'aria-hidden': 'true', text: '💬' }),
         el('span', { className: 'chat-fab-label', text: tr('chat.fab', '채팅') }),
         count,
+        el('span', { className: 'chat-fab-title', text: tr('chat.title', '실시간 채팅') }),   // 휴대폰 지도: 접으면 같은 자리에 길게(2026-11-13 사장님)
+        fabOnline,
+        el('span', { className: 'chat-fab-up', 'aria-hidden': 'true', text: '▴' }),
     ]);
     const online = el('span', { className: 'chat-online' });
     const list = el('ol', { className: 'chat-list', 'aria-live': 'polite' });
     const status = el('p', { className: 'chat-status', role: 'status' });
     const input = el('input', { type: 'text', className: 'chat-input', maxlength: '200', autocomplete: 'off', placeholder: tr('chat.ph', '메시지 입력 (200자)'),
         'aria-label': tr('chat.ph', '메시지 입력 (200자)') });
-    const sendBtn = el('button', { type: 'submit', className: 'btn chat-send', text: tr('chat.send', '보내기') });
+    // 보내기는 화살표 단추(2026-11-13 사장님) — 글자는 화면 읽기 프로그램용으로만
+    const sendBtn = el('button', { type: 'submit', className: 'btn chat-send', 'aria-label': tr('chat.send', '보내기'), title: tr('chat.send', '보내기') });
+    sendBtn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     const form = el('form', { className: 'chat-form', on: { submit: e => { e.preventDefault(); send(); } } }, [input, sendBtn]);
     const gate = el('div', { className: 'chat-gate' });
     const panel = el('section', { id: 'chat-panel', className: 'chat-panel', hidden: '', 'aria-label': tr('chat.title', '실시간 채팅') }, [
@@ -128,6 +134,7 @@
 
     function setOnline(n) {
         online.textContent = n > 0 ? tr('chat.online', '{n}명 접속', { n }) : '';
+        fabOnline.textContent = online.textContent;
         count.textContent = String(n);
         count.hidden = !(n > 1);
     }

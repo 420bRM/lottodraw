@@ -1955,7 +1955,8 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 .chat-form { display: flex; gap: 6px; padding: 8px 12px 12px; border-top: 1px solid var(--line); }
 .chat-input { flex: 1; min-width: 0; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font: 15px var(--font); }
 .chat-input:focus { border-color: var(--brand); outline: none; }
-.chat-send { padding: 8px 12px; }
+.chat-send { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 38px; height: 38px; padding: 0; border-radius: 50%; }
+.chat-fab-title, .chat-fab-online, .chat-fab-up { display: none; }   /* 휴대폰 지도에서만(css/store-map.css html.chat-docked) */
 @media (max-width: 599px) {
     .chat-fab { right: 12px; bottom: 12px; padding: 10px 12px; }
     .chat-fab-label { display: none; }
