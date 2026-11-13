@@ -58,7 +58,7 @@
         <nav class="breadcrumb" aria-label="현재 위치" data-i18n-attr="aria-label:crumb.aria"><a href="index.html" data-i18n="crumb.home">홈</a> › <a href="index.html#sec-stats" data-i18n-en="Lotto statistics">로또 통계</a> › <span data-i18n-en="AC value">AC값</span></nav>
         <h1 data-i18n-en="AC Values, with a Calculator">로또 AC값 통계와 계산기</h1>
         <p class="stat-scope"><span data-i18n-en="Draws 1–1249 · 2002-12-07 ~ 2026-11-07 · updated automatically after each draw (last update 2026-11-07)">1~1249회 · 2002-12-07 ~ 2026-11-07 · 매주 추첨 후 자동 갱신 (마지막 갱신 2026-11-07)</span></p>
-        <p class="stat-lead"><span data-i18n-en="The AC value counts the distinct differences among the 15 pairs formed from six numbers, minus 5. It runs from 0 to 10, and the higher it is, the more spread out the numbers are. Across draws 1–1249 the most common value is &lt;strong&gt;AC 8&lt;/strong&gt; (34.7%).">AC값은 번호 6개를 두 개씩 뺀 차이 15개 중 서로 다른 값의 개수에서 5를 뺀 값입니다. 0~10 사이이고, 높을수록 번호가 고르게 흩어진 조합입니다. 1~1249회 중 가장 많은 값은 <strong>AC 8</strong>(34.7%)입니다.</span></p>
+        <p class="stat-lead"><span data-i18n-en="The AC value counts the distinct differences among the 15 pairs formed from six numbers, minus 5. It runs from 0 to 10, and the higher it is, the more spread out the numbers are. Across draws 1–1249 the most common value is &lt;strong&gt;AC 8&lt;/strong&gt; (34.7%).">AC값은 번호 6개에서 두 개씩 짝지은 15쌍의 차이 가운데 서로 다른 값이 몇 개인지 세어 5를 뺀 값입니다. 0~10 사이이고, 높을수록 번호가 고르게 흩어진 조합입니다. 1~1249회 중 가장 많은 값은 <strong>AC 8</strong>(34.7%)입니다.</span></p>
 
 <h2 data-i18n-en="AC value calculator">AC값 계산기</h2>
 
@@ -461,7 +461,7 @@ function acTriSvg(nums, row, aria) {
         for (var i = 0; i < 6; i++) for (var j = i + 1; j < 6; j++) diffs[uniq[j] - uniq[i]] = true;
         var ac = Object.keys(diffs).length - 5;
         var joined = uniq.join(', ');
-        out.textContent = EN ? ('AC value of ' + joined + ' is ' + ac + '.') : (joined + ' 의 AC값은 ' + ac + '입니다.');
+        out.textContent = EN ? ('AC value of ' + joined + ' is ' + ac + '.') : (joined + '의 AC값은 ' + ac + '입니다.');
         draw(uniq, '');
     }
     document.getElementById('ac-btn').addEventListener('click', run);

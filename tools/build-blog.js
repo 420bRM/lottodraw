@@ -64,7 +64,7 @@ const RELATED = {
     'low-high':    ['statistics-low-high.html', '저고 비율', 'Low/high split', '낮은 번호와 높은 번호의 비율', 'Low (1–22) and high (23–45) numbers'],
     consecutive:   ['statistics-consecutive.html', '연속번호 통계', 'Consecutive numbers', '연속번호가 나온 회차 비율', 'Share of draws with consecutive numbers'],
     'prize-stats': ['statistics-prize.html', '1등 당첨자 수 통계', '1st-prize winners per draw', '회차별 당첨자 수 분포와 이월 횟수', 'How many winners each draw had, and rollovers'],
-    lottohex:      ['lottohex.html', 'LottoHex', 'LottoHex', '다녀온 판매점으로 육각 칸 차지 · Map 랭킹', 'Take hexagon cells by visiting retailers · Map ranking'],
+    lottohex:      ['lottohex.html', 'LottoHex', 'LottoHex', '다녀온 판매점으로 육각 블록 차지 · Map 랭킹', 'Take hexagon blocks by visiting retailers · Map ranking'],
     'store-map':   ['store-map.html', '로또 판매점 지도', 'Lotto retailer map', '1등 · 2등이 나온 판매점 전국 지도', 'Nationwide map of 1st- and 2nd-prize retailers'],
     stores: ['statistics-stores.html', '1등 판매점 통계', '1st-prize retailer statistics', '1등 많이 나온 곳 순위 · 지역 · 2등과 견주기', 'Top retailers, areas and the 2nd-prize check'],
     repeat:        ['statistics-repeat.html', '당첨번호 중복', 'Repeated winning numbers', '6개 · 5개가 같은 회차와 생일 문제', 'Draws sharing six or five numbers, and the birthday problem'],
