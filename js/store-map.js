@@ -1033,6 +1033,7 @@
     }
     const seasonLabel = s => { const k = new Date(s.to - 1 + 9 * 3600e3); const q = Math.floor(k.getUTCMonth() / 3) + 1; return T(k.getUTCFullYear() + '년 ' + q + '분기', 'Q' + q + ' ' + k.getUTCFullYear()); };
     const seasonEnd = s => { const k = new Date(s.to - 1 + 9 * 3600e3); return (k.getUTCMonth() + 1) + '/' + k.getUTCDate(); };
+    const seasonEndEn = s => { const k = new Date(s.to - 1 + 9 * 3600e3); return k.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][k.getUTCMonth()]; };   // 영문 화면: "31 Dec"
     const kstDayOf = ms => new Date(ms + 9 * 3600e3).toISOString().slice(0, 10);
     const MEDAL = ['🥇', '🥈', '🥉'];
     const joinedNow = () => { const A = account(); const u = A && A.me() && A.me().user; return !!(u && u.terr); };
@@ -1921,7 +1922,7 @@
         const hm = terrPanel.querySelector('.sm-terr-hexmail input');
         if (hm) hm.addEventListener('change', () => saveHexMail(hm.checked));
         const bb = terrPanel.querySelector('.sm-terr-beam-buy');
-        if (bb) bb.addEventListener('click', () => { if (confirm(T('영역 빛 벽을 ' + BEAM_COST + 'P로 사시겠습니까? 한 번 사면 계속 쓸 수 있고, 켜고 끄기는 무료입니다.', 'Buy the territory light wall for ' + BEAM_COST + ' points? It is yours to keep and switching it on or off is free.'))) saveBeam(true); });
+        if (bb) bb.addEventListener('click', () => { if (confirm(T('영역 빛 벽을 ' + BEAM_COST + 'P로 사시겠습니까? 한 번 사면 계속 쓸 수 있고, 켜고 끄기는 무료입니다.', 'Buy the territory light wall for ' + BEAM_COST + ' pts? It is yours to keep and switching it on or off is free.'))) saveBeam(true); });
         const ed = terrPanel.querySelector('.sm-terr-skin-edit');
         if (ed) ed.addEventListener('click', () => { skinDraft = parseSkin(me.skin); drawTerr(); });
         if (!skinDraft || !terrPanel.querySelector('.sm-skin-edit')) return;
@@ -1993,7 +1994,7 @@
         if (!A || !A.session()) status = '<button type="button" class="sm-terr-join">' + T('로그인하고 참여하기', 'Sign in to join') + '</button>';
         else if (!(me && me.joined)) status = '<button type="button" class="sm-terr-join">' + T('참여하기', 'Join') + '</button> <span class="sm-small">' + T('참여하면 다녀온 판매점으로 블록을 차지합니다', 'Counts only after you agree') + '</span>';
         else status = '<p class="sm-terr-me">' + T('내 블록 <b>' + fmt(me.cells.length) + '</b>' + (me.rank ? ' · <b>' + me.rank + '</b>위' : '') + ' · 다녀온 곳 ' + fmt(me.stores) + '곳' + (me.cells.length ? ' · 점령 포인트 하루 +' + holdDaily(me.cells.length) + 'P' : ''),
-            'My blocks <b>' + fmt(me.cells.length) + '</b>' + (me.rank ? ' · rank <b>' + me.rank + '</b>' : '') + ' · ' + fmt(me.stores) + ' visited' + (me.cells.length ? ' · +' + holdDaily(me.cells.length) + ' a day' : '')) + '</p>' +
+            'My blocks <b>' + fmt(me.cells.length) + '</b>' + (me.rank ? ' · rank <b>' + me.rank + '</b>' : '') + ' · ' + fmt(me.stores) + ' visited' + (me.cells.length ? ' · +' + holdDaily(me.cells.length) + ' pts a day' : '')) + '</p>' +
             (me.lastRank ? '<p class="sm-terr-me">' + (MEDAL[me.lastRank - 1] || '🏅') + ' ' + T(seasonLabel(terr.last) + ' 확정 ' + me.lastRank + '위', seasonLabel(terr.last) + ' final: #' + me.lastRank) + '</p>' : '') +
             skinRow(me) +
             beamRow() +
@@ -2011,7 +2012,7 @@
         const todo = joined && terrCells ? todoLists(me) : '';
         const dex = A && A.session() ? titleDex() + dexBlock() : '';
         const ms = A && A.session() ? milestoneBlock() : '';
-        const rankPart = '<h4 class="sm-terr-h">' + T('Map 랭킹', 'Map ranking') + ' <small>' + T(seasonLabel(s) + ' · ' + seasonEnd(s) + ' 24시에 확정', seasonLabel(s) + ' · final at the end of ' + seasonEnd(s)) + '</small></h4>' +
+        const rankPart = '<h4 class="sm-terr-h">' + T('Map 랭킹', 'Map ranking') + ' <small>' + T(seasonLabel(s) + ' · ' + seasonEnd(s) + ' 24시에 확정', seasonLabel(s) + ' · final at midnight, ' + seasonEndEn(s) + ' (KST)') + '</small></h4>' +
             (rank.length ? rankList(rank, me && me.rank) : '<p class="sm-small">' + T('아직 블록을 차지한 사람이 없습니다.', 'No one holds a block yet.') + '</p>') +
             (last && last.rank.length ? '<h4 class="sm-terr-h">🏆 ' + T(seasonLabel(last) + ' 확정 순위', seasonLabel(last) + ' final ranking') + '</h4>' + rankList(last.rank, me && me.lastRank, true) : '');
         const rules = '<details class="sm-terr-rules"><summary>' + T('규칙', 'Rules') + '</summary><ul>' +
@@ -2020,7 +2021,7 @@
             '<li>' + T('같은 수면 그 블록에 더 최근에 다녀온 사람이 차지합니다. 빼앗기면 그 블록 판매점 카드의 "오늘 또 다녀왔어요"로 되찾을 수 있습니다(같은 곳은 하루 한 번).', 'On a tie, whoever visited the block most recently holds it. Lost it? Use "Visited again today" on a retailer card in that block (once a day per retailer).') + '</li>' +
             '<li>' + T('블록 모양: 참여자마다 색 두 가지와 무늬(단색 · 줄무늬 · 물방울 · 체크)가 무작위로 정해지고 모두에게 같게 보입니다. 내 블록 모양은 ' + SKIN_COST + 'P로 바꿀 수 있습니다. 내 블록은 테두리가 조금 굵습니다.', 'Skins: each player gets two colours and a pattern (solid, stripes, dots or checks) at random, and everyone sees the same. You can change yours for ' + SKIN_COST + ' pts. Your blocks have a slightly thicker edge.') + '</li>' +
             '<li>' + T('소식 띠: 누가 블록을 새로 차지하면 "○○님이 N번째 블록을 점령했습니다", 남의 블록을 빼앗으면 "○○님이 △△님의 블록을 빼앗았습니다"가 LottoHex 화면 위 띠와 채팅에 나옵니다(어느 블록 · 지역인지는 나오지 않습니다).', 'News ticker: when someone takes a new block, "X captured block #N" (or "X took a block from Y") runs along the top of the LottoHex screen and in the chat (which block or area is never shown).') + '</li>' +
-            '<li>' + T('영역 빛 벽: ' + BEAM_COST + 'P로 한 번 사면 계속 씁니다. 3D에서 내 영역 바깥 테두리가 위로 빛나고 모두에게 보입니다. 켜고 끄기는 무료입니다.', 'Light wall: buy it for ' + BEAM_COST + ' points (yours to keep) and your territory edge glows upward in 3D for everyone. Switching it on or off is free.') + '</li>' +
+            '<li>' + T('영역 빛 벽: ' + BEAM_COST + 'P로 한 번 사면 계속 씁니다. 3D에서 내 영역 바깥 테두리가 위로 빛나고 모두에게 보입니다. 켜고 끄기는 무료입니다.', 'Light wall: buy it for ' + BEAM_COST + ' pts (yours to keep) and your territory edge glows upward in 3D for everyone. Switching it on or off is free.') + '</li>' +
             '<li>' + T('밤 지도에서 크게 보면 차지한 블록 테두리를 빛이 시계 방향으로 돌고, 블록 면에는 유리에 비친 듯한 45° 빛이 번쩍 지나갑니다.', 'On the night map, zoomed in, a light runs clockwise round held blocks and a quick glassy 45° glint flashes across them.') + '</li>' +
             '<li>' + T('블록은 비우지 않습니다. 분기(1 · 4 · 7 · 10월 1일 0시)마다 그때의 Map 랭킹을 확정해 남깁니다.', 'Blocks are never cleared. At the start of each quarter the Map ranking at that moment is finalised and kept.') + '</li>' +
             '<li>' + T('점령 포인트: 지금 차지한 블록 하나에 하루 0.1P(매일 0시 무렵 그때 차지한 블록으로 셉니다, 운영자 제외). 회원 랭킹 점수에도 들어갑니다.', 'Block points: 0.1 pts a day for each block you hold (counted just after midnight each day from the blocks held then; operators excluded). They also count toward the member ranking.') + '</li>' +
@@ -2410,7 +2411,7 @@
                     (canPick ? '<label class="sm-color sm-color-any" title="' + T('다른 색', 'Any colour') + '"><input type="color" value="' + cur + '" aria-label="' + T('다른 색', 'Any colour') + '"></label>' : '') + '</span>' : '') + '</div>' +
                 // 안내는 짧게(2026-11-11 사장님 — 카드 위로 옮기며 "안내문자 간략하게")
                 '<p class="sm-visit-note">' + (cur ? (canPick ? T('다시 누르면 지움 · 색은 모든 곳에 적용', 'Tap again to remove · colour applies to all')
-                    : T('다시 누르면 지움 · 🔒 색은 ' + COLOR_COST + 'P 또는 <a href="statistics.html">이용권</a>', 'Tap again to remove · 🔒 colours: ' + COLOR_COST + 'P or a <a href="statistics.html">pass</a>'))
+                    : T('다시 누르면 지움 · 🔒 색은 ' + COLOR_COST + 'P 또는 <a href="statistics.html">이용권</a>', 'Tap again to remove · 🔒 colours: ' + COLOR_COST + ' pts or a <a href="statistics.html">pass</a>'))
                     : gpsCfg() ? T('판매점 50m 안에서 누르면 +10P (하루 50P까지)', 'Within 50 m: +10 pts (up to 50 pts a day)') : T('나만 보입니다', 'Only you can see it')) + '</p>' +
                 (cur && inTerr ? '<p class="sm-visit-again-p">' + (today ? '<span class="sm-visit-today">✓ ' + T('오늘 다녀옴', 'Visited today') + '</span>'
                     : '<button type="button" class="sm-visit-again">↻ ' + T('오늘 또 다녀왔어요', 'Visited again today') + '</button>') + '</p>' : '') +
@@ -2425,8 +2426,8 @@
                 const note = box.querySelector('.sm-visit-note');
                 note.classList.add('is-warn');
                 note.innerHTML = T('이 색은 ' + COLOR_COST + 'P로 열 수 있습니다' + (avail != null ? '(지금 ' + fmt(Math.floor(avail)) + 'P)' : '') + '. 한 번 열면 계속 씁니다.',
-                    'Unlock this colour for ' + COLOR_COST + ' points' + (avail != null ? ' (you have ' + fmt(Math.floor(avail)) + ')' : '') + '. It stays unlocked.') +
-                    ' <button type="button" class="sm-unlock"><span class="sm-swatch" style="background:' + c + '"></span>' + T(COLOR_COST + 'P로 열기', 'Unlock for ' + COLOR_COST) + '</button>' +
+                    'Unlock this colour for ' + COLOR_COST + ' pts' + (avail != null ? ' (you have ' + fmt(Math.floor(avail)) + ' pts)' : '') + '. It stays unlocked.') +
+                    ' <button type="button" class="sm-unlock"><span class="sm-swatch" style="background:' + c + '"></span>' + T(COLOR_COST + 'P로 열기', 'Unlock for ' + COLOR_COST + ' pts') + '</button>' +
                     ' <a href="statistics.html">' + T('이용권 보기', 'See passes') + '</a>';
                 note.querySelector('.sm-unlock').addEventListener('click', async e => {
                     e.target.disabled = true;
@@ -2466,8 +2467,8 @@
                 draw();
                 if (verify) {   // 위치로 확인했다는 것과 받은 포인트(같은 곳은 하루 한 번 · 하루 50포인트까지)
                     const n2 = box.querySelector('.sm-visit-note');
-                    if (n2) n2.textContent = (r.earned ? T('✓ 위치로 확인했습니다 · +' + r.earned + 'P', '✓ Verified by location · +' + r.earned + ' points')
-                        : T('✓ 위치로 확인했습니다. 오늘은 이 판매점 포인트를 이미 받았거나 하루 50P를 다 채웠습니다.', '✓ Verified by location. No points this time: already earned here today, or the daily 50 is reached.')) +
+                    if (n2) n2.textContent = (r.earned ? T('✓ 위치로 확인했습니다 · +' + r.earned + 'P', '✓ Verified by location · +' + r.earned + ' pts')
+                        : T('✓ 위치로 확인했습니다. 오늘은 이 판매점 포인트를 이미 받았거나 하루 50P를 다 채웠습니다.', '✓ Verified by location. No points this time: already earned here today, or you have reached the daily 50 pts.')) +
                         (r.fresh ? ' ' + freshText(r.fresh) : '');   // 새 칭호 · 마일스톤(2026-11-09)
                     if (r.fresh) afterFresh(r.fresh);
                     if (r.cap) {   // 점령(2026-11-10) — 띠에도 바로
@@ -2919,7 +2920,7 @@
     function setFade(v) {
         fadeT = v <= 0 ? 0 : 0.05 + Math.pow(v / 100, 2) * 30;
         const out = document.getElementById('sm-fade-v');
-        out.textContent = !fadeT ? T('모두', 'All') : fadeT < 1 ? T('2등만 나온 곳 흐리게', 'Fading 2nd-only') : T('1등 ' + Math.ceil(fadeT) + '회 이상', '1st × ' + Math.ceil(fadeT) + '+');
+        out.textContent = !fadeT ? T('모두', 'All') : fadeT < 1 ? T('2등만 나온 곳 흐리게', '2nd-only dimmed') : T('1등 ' + Math.ceil(fadeT) + '회 이상', '1st × ' + Math.ceil(fadeT) + '+');
         if (fadeRaf) return;
         fadeRaf = requestAnimationFrame(() => {
             fadeRaf = 0;
@@ -2979,7 +2980,7 @@
         if (!ol) return;
         const top = props.filter(p => p.top).sort((a, b) => a.top - b.top);
         const n = data.net;
-        ol.innerHTML = (n ? '<li class="is-zero"><button type="button" data-net="1"><span class="sm-rank">0</span><span class="sm-tname">' + T('동행복권 인터넷 판매', 'Dong-haeng Lottery online') +
+        ol.innerHTML = (n ? '<li class="is-zero"><button type="button" data-net="1"><span class="sm-rank">0</span><span class="sm-tname">' + T('동행복권 인터넷 판매', 'Donghaeng Lottery online') +
             '<small>' + T('인터넷 · 동행복권 본사(서초구)', 'Online · company office (Seocho)') + '</small></span><span class="sm-tcnt"><b>' + n.n1 + '</b>' + T('번', '') + '<small>2' + T('등 ', 'nd ') + fmt(n.n2) + '</small></span></button></li>' : '') +
             top.map(p => {
             const r = data.rows[p.i];
@@ -3021,15 +3022,15 @@
         const n = data.net;
         if (!n) return;
         const how = [n.auto ? T('자동 ', 'auto ') + n.auto : '', n.manual ? T('수동 ', 'manual ') + n.manual : '', n.semi ? T('반자동 ', 'semi-auto ') + n.semi : ''].filter(Boolean).join(' · ');
-        showCard('<h3>' + T('동행복권 인터넷 판매', 'Dong-haeng Lottery online sales') + ' <span class="sm-zero-tag">' + T('0등', '#0') + '</span></h3>' +
+        showCard('<h3>' + T('동행복권 인터넷 판매', 'Donghaeng Lottery online sales') + ' <span class="sm-zero-tag">' + T('0등', '#0') + '</span></h3>' +
             '<p class="sm-place">' + T('동행복권 본사 · 서울 서초구 남부순환로 2423', 'Company office · 2423 Nambusunhwan-ro, Seocho-gu, Seoul') + '</p>' +
             '<p class="sm-counts"><span><b>' + fmt(n.n1) + '</b>' + T('번 1등', ' × 1st') + (how ? ' <small>(' + how + ')</small>' : '') + '</span><span><b>' + fmt(n.n2) + '</b>' + T('번 2등', ' × 2nd') + '</span></p>' +
             '<div class="sm-rounds" id="sm-rounds"><p class="sm-small">' + T('당첨 회차 불러오는 중…', 'Loading draws…') + '</p></div>' +
             '<p class="sm-why">' + T('동행복권 누리집에서 인터넷으로 산 로또입니다(' + n.first + '회부터). 전국 어느 판매점보다 1등이 많이 나왔습니다 — 한 창구에서 가장 많이 팔리기 때문입니다. ' +
                 '지도 위치는 회사 자리이며 이곳에서 복권을 팔지는 않습니다.',
-                'Lotto bought online on the Dong-haeng Lottery website (from draw ' + n.first + '). More 1st prizes than any shop — simply because it sells the most. ' +
+                'Lotto bought online on the Donghaeng Lottery website (from draw ' + n.first + '). More 1st prizes than any shop — simply because it sells the most. ' +
                 'The pin marks the company office; tickets are not sold there.') + '</p>' +
-            '<p class="sm-links"><a href="https://www.dhlottery.co.kr/" target="_blank" rel="noopener">' + T('동행복권 누리집', 'Dong-haeng Lottery') + '</a></p>', n.lat, n.lng, fly);
+            '<p class="sm-links"><a href="https://www.dhlottery.co.kr/" target="_blank" rel="noopener">' + T('동행복권 누리집', 'Donghaeng Lottery') + '</a></p>', n.lat, n.lng, fly);
         card.dataset.i = 'n';
         loadRounds().then(rd => {
             const box = document.getElementById('sm-rounds');

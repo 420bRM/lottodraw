@@ -244,7 +244,7 @@ async function createOrder(request, env, ctx, url) {
     if (method === 'bank' && name.length < 2) throw new HttpError(400, 'need_name', '입금자명을 2자 이상 적어 주세요.');
     if (method === 'payapp' && !/^01\d{8,9}$/.test(phone)) throw new HttpError(400, 'need_phone', '휴대폰 번호를 확인해 주세요.');
     // 연락은 이메일로만 받는다 (키 재발송·문의 기록이 남게). 비워 두는 것은 괜찮다.
-    if (contact && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact)) throw new HttpError(400, 'bad_contact', '이메일 주소를 적어 주세요. 키를 다시 보내 드릴 때만 씁니다.');
+    if (contact && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact)) throw new HttpError(400, 'bad_contact', '이메일 주소를 확인해 주세요. 발급한 키를 보내 드리고, 잃어버렸을 때 다시 보내 드리는 데만 씁니다.');
 
     // 기한(72시간)이 지난 대기 주문은 세지 않는다. 버려진 주문이 쌓여 가게가 닫히는 일을 막는다.
     const ipTag = (await sha256('ip:' + ip)).slice(0, 12);
@@ -595,7 +595,7 @@ async function watchdog(env) {
  * 문의로 받아 판매자가 관리자 페이지에서 "환불 처리"한다. 예전 화면이 이 주소를 부르면 문의로 안내한다.
  */
 async function requestRefund(request) {
-    throw new HttpError(410, 'refund_contact', '환불은 문의로 신청해 주세요 (이용약관 4조).');
+    throw new HttpError(410, 'refund_contact', '환불은 문의로 신청해 주세요(이용약관 4번).');
 }
 
 async function payappCancel(env, order) {
@@ -664,7 +664,7 @@ async function sessionUser(request, env, markAttend) {
     if (!token) throw new HttpError(401, 'need_login', '로그인이 필요합니다.');
     const hash = await sha256('sess:' + token);
     const got = await community(env, 'sessionGet', { hash, now: Date.now(), markAttend: !!markAttend });
-    if (!got.user) throw new HttpError(401, 'need_login', '로그인이 끝났습니다. 다시 로그인해 주세요.');
+    if (!got.user) throw new HttpError(401, 'need_login', '로그인 시간이 지났습니다. 다시 로그인해 주세요.');
     return { user: got.user, rx: got.rx || {}, sub: got.sub, hash, attended: !!got.attended };
 }
 
@@ -815,9 +815,9 @@ async function territoryJoin(request, env) {
     const s = await sessionUser(request, env);
     await limited(env.REACT_LIMIT, s.hash);
     const body = await readJson(request);
-    if (body.agree !== true || body.v !== terrConsent(env)) throw new HttpError(400, 'need_consent', '참여 안내를 읽고 동의해 주세요.');
+    if (body.agree !== true || body.v !== terrConsent(env)) throw new HttpError(400, 'need_consent', 'LottoHex 참여에 동의해 주세요.');
     if (!s.user.nick) throw new HttpError(409, 'need_nick', 'LottoHex에는 별명으로 나옵니다. 별명을 먼저 정해 주세요.');
-    const map = await cellMap(siteUrl(env)).catch(() => { throw new HttpError(503, 'cells_unavailable', '칸 자료를 불러오지 못했습니다. 잠시 뒤 다시 해 주세요.'); });
+    const map = await cellMap(siteUrl(env)).catch(() => { throw new HttpError(503, 'cells_unavailable', '블록 자료를 불러오지 못했습니다. 잠시 뒤 다시 해 주세요.'); });
     const cells = {};
     for (const id of Object.keys(s.user.visits || {})) { const c = map.get(id); if (c) cells[id] = c; }
     const r = await community(env, 'terrJoin', { sub: s.sub, now: Date.now(), v: terrConsent(env), cells });
@@ -833,9 +833,9 @@ async function territorySkin(request, env) {
     await limited(env.REACT_LIMIT, s.hash);
     const body = await readJson(request);
     const skin = body.skin === null ? null : String(body.skin || '').toLowerCase();
-    if (skin !== null && !SKIN_RE.test(skin)) throw new HttpError(400, 'bad_skin', '칸 모양이 이상합니다.');
+    if (skin !== null && !SKIN_RE.test(skin)) throw new HttpError(400, 'bad_skin', '블록 모양이 올바르지 않습니다.');
     const r = await community(env, 'setTerrSkin', { sub: s.sub, skin });
-    if (r.error === 'need_points') throw new HttpError(402, 'need_points', `칸 모양을 바꾸려면 ${r.cost}포인트가 필요합니다. (지금 ${r.avail}포인트)`);
+    if (r.error === 'need_points') throw new HttpError(402, 'need_points', `블록 모양을 바꾸려면 ${r.cost}P가 필요합니다. (지금 ${r.avail}P)`);
     if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
     return json(request, env, { user: r.user, cost: r.cost });
 }
@@ -846,8 +846,8 @@ async function territoryBeam(request, env) {
     await limited(env.REACT_LIMIT, s.hash);
     const body = await readJson(request);
     const r = await community(env, 'setTerrBeam', { sub: s.sub, on: body.on === true });
-    if (r.error === 'need_points') throw new HttpError(402, 'need_points', `영역 빛 벽은 ${r.cost}포인트입니다. (지금 ${r.avail}포인트)`);
-    if (r.error === 'not_joined') throw new HttpError(409, 'not_joined', 'LottoHex 에 참여한 뒤에 살 수 있습니다.');
+    if (r.error === 'need_points') throw new HttpError(402, 'need_points', `영역 빛 벽을 사려면 ${r.cost}P가 필요합니다. (지금 ${r.avail}P)`);
+    if (r.error === 'not_joined') throw new HttpError(409, 'not_joined', 'LottoHex에 참여한 뒤에 살 수 있습니다.');
     if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
     return json(request, env, { user: r.user, cost: r.cost });
 }
@@ -930,23 +930,23 @@ async function saveVisit(request, env) {
     await limited(env.REACT_LIMIT, s.hash);
     const body = await readJson(request);
     if (body.all === true) {
-        if (!/^#[0-9a-fA-F]{6}$/.test(String(body.color || ''))) throw new HttpError(400, 'bad_visit', '색이 이상합니다.');
+        if (!/^#[0-9a-fA-F]{6}$/.test(String(body.color || ''))) throw new HttpError(400, 'bad_visit', '색이 올바르지 않습니다.');
         const r = await community(env, 'setVisitColorAll', { sub: s.sub, color: String(body.color).toLowerCase() });
         if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
         return json(request, env, { visits: r.visits, visitAt: r.visitAt, visitColor: r.visitColor });
     }
     const id = String(body.id || '');
-    if (!/^\d{8}$/.test(id)) throw new HttpError(400, 'bad_visit', '판매점 번호가 이상합니다.');
+    if (!/^\d{8}$/.test(id)) throw new HttpError(400, 'bad_visit', '판매점 번호가 올바르지 않습니다.');
     const again = body.again === true;
-    if (!again && body.color !== null && !/^#[0-9a-fA-F]{6}$/.test(String(body.color || ''))) throw new HttpError(400, 'bad_visit', '색이 이상합니다.');
+    if (!again && body.color !== null && !/^#[0-9a-fA-F]{6}$/.test(String(body.color || ''))) throw new HttpError(400, 'bad_visit', '색이 올바르지 않습니다.');
     const gps = gpsOn(env);
     if (gps && (again || body.color !== null)) await verifyVisit(env, s, id, body);   // 위치 인증(켜져 있을 때) — 지우기는 그대로
     const cell = s.user.terr ? (await cellMap(siteUrl(env)).catch(() => new Map())).get(id) || null : null;
     const r = await community(env, 'setVisit', { sub: s.sub, id, color: again || body.color === null ? null : String(body.color).toLowerCase(), max: VISIT_MAX, now: Date.now(), cell, again, gps, site: siteUrl(env) });
     if (r.error === 'too_many') throw new HttpError(409, 'too_many_visits', `다녀온 곳은 ${VISIT_MAX}곳까지 저장합니다.`);
     if (r.error === 'not_visited') throw new HttpError(409, 'not_visited', '다녀온 곳으로 표시한 판매점이 아닙니다.');
-    if (r.error === 'again_today') throw new HttpError(409, 'again_today', '오늘은 이미 다녀왔다고 표시했습니다. 같은 곳은 하루 한 번입니다.');
-    if (r.error === 'daily_limit') throw new HttpError(429, 'daily_limit', `다녀온 곳 표시는 하루 ${r.max}번까지입니다. 내일 다시 해 주세요.`);
+    if (r.error === 'again_today') throw new HttpError(409, 'again_today', '이 판매점은 오늘 이미 인증했습니다. 같은 곳은 하루 한 번입니다.');
+    if (r.error === 'daily_limit') throw new HttpError(429, 'daily_limit', `다녀온 곳 인증은 하루 ${r.max}번까지입니다. 내일 다시 해 주세요.`);
     if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
     if (r.cap && env.CHAT) await chatStub(env).fetch('https://chat/system', { method: 'POST', body: JSON.stringify({ kind: 'cap', text: capText(r.cap) }) }).catch(() => null);   // 점령 소식을 채팅에도
     return json(request, env, { visits: r.visits, visitAt: r.visitAt, visitColor: r.visitColor, earned: r.earned || 0, score: r.score, fresh: r.fresh || null, cap: r.cap || null });
@@ -964,7 +964,7 @@ async function setTitle(request, env) {
     await limited(env.REACT_LIMIT, s.hash);
     const body = await readJson(request);
     const id = body.id === null ? null : String(body.id || '');
-    if (id !== null && (!id || id.length > 60)) throw new HttpError(400, 'bad_title', '칭호가 이상합니다.');
+    if (id !== null && (!id || id.length > 60)) throw new HttpError(400, 'bad_title', '칭호가 올바르지 않습니다.');
     const r = await community(env, 'setTitle', { sub: s.sub, id });
     if (r.error === 'not_earned') throw new HttpError(409, 'not_earned', '아직 얻지 않은 칭호입니다.');
     if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
@@ -978,7 +978,7 @@ async function verifyVisit(env, s, id, body) {
     const g = s.user.geo;
     if (!g || g.v !== GEO_CONSENT) throw new HttpError(409, 'need_geo', '위치 이용에 동의해야 다녀온 곳을 인증할 수 있습니다.');
     const lat = Number(body.lat), lng = Number(body.lng), acc = Number(body.acc);
-    if (![lat, lng, acc].every(Number.isFinite) || Math.abs(lat) > 90 || Math.abs(lng) > 180 || acc < 0) throw new HttpError(400, 'bad_location', '위치 값이 이상합니다.');
+    if (![lat, lng, acc].every(Number.isFinite) || Math.abs(lat) > 90 || Math.abs(lng) > 180 || acc < 0) throw new HttpError(400, 'bad_location', '위치 값이 올바르지 않습니다.');
     const tried = await community(env, 'geoTry', { sub: s.sub, now: Date.now() });
     if (tried.error === 'too_many_tries') throw new HttpError(429, 'too_many_tries', `위치 확인은 하루 ${tried.max}번까지입니다. 내일 다시 해 주세요.`);
     let why = null, dist = 0;
@@ -992,7 +992,7 @@ async function verifyVisit(env, s, id, body) {
     // 여기까지 — 좌표(lat, lng, acc)는 더 쓰지 않는다
     await community(env, 'geoLog', { u: (await sha256('geo:' + s.sub)).slice(0, 16), t: Date.now(), id, ok: !why, why });
     if (why === 'inaccurate') throw new HttpError(422, 'gps_inaccurate', `위치 오차가 커서(약 ${Math.round(acc)}m) 확인하지 못했습니다. 밖이나 창가에서 다시 눌러 주세요.`);
-    if (why === 'no_store') throw new HttpError(404, 'no_store', '문을 연 판매점이 아니어서 인증할 수 없습니다.');
+    if (why === 'no_store') throw new HttpError(404, 'no_store', '폐점했거나 위치 정보가 없는 판매점이라 인증할 수 없습니다.');
     if (why === 'too_far') throw new HttpError(422, 'too_far', `판매점에서 약 ${Math.round(dist)}m 떨어져 있습니다. 판매점 ${GEO_RADIUS}m 안에서 다시 눌러 주세요.`);
 }
 
@@ -1004,11 +1004,11 @@ async function setGeo(request, env) {
     const body = await readJson(request);
     let r;
     if (body.agree === true) {
-        if (body.v !== GEO_CONSENT) throw new HttpError(400, 'need_consent', '위치 이용 안내를 읽고 동의해 주세요.');
+        if (body.v !== GEO_CONSENT) throw new HttpError(400, 'need_consent', '위치정보 서비스 이용에 동의해 주세요.');
         r = await community(env, 'geoConsent', { sub: s.sub, now: Date.now(), v: GEO_CONSENT });
     } else if (body.agree === false) {
         r = await community(env, 'geoWithdraw', { sub: s.sub });
-    } else throw new HttpError(400, 'need_consent', '동의 · 철회 값이 이상합니다.');
+    } else throw new HttpError(400, 'need_consent', '동의 · 철회 값이 올바르지 않습니다.');
     if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
     return json(request, env, { user: r.user });
 }
@@ -1023,7 +1023,7 @@ async function openVisitColor(request, env) {
     const color = String(body.color || '').toLowerCase();
     if (!VISIT_PALETTE.slice(1).includes(color)) throw new HttpError(400, 'bad_color', '열 수 없는 색입니다.');
     const r = await community(env, 'openVisitColor', { sub: s.sub, color });
-    if (r.error === 'need_points') throw new HttpError(402, 'need_points', `색 하나를 열려면 ${r.cost}포인트가 필요합니다. (지금 ${r.avail}포인트)`);
+    if (r.error === 'need_points') throw new HttpError(402, 'need_points', `색 하나를 열려면 ${r.cost}P가 필요합니다. (지금 ${r.avail}P)`);
     if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
     return json(request, env, { user: r.user, cost: r.cost });
 }
@@ -1034,7 +1034,7 @@ async function setVisitBadge(request, env) {
     const s = await sessionUser(request, env);
     await limited(env.REACT_LIMIT, s.hash);
     const body = await readJson(request);
-    if (typeof body.on !== 'boolean') throw new HttpError(400, 'bad_badge', '켜기 · 끄기 값이 이상합니다.');
+    if (typeof body.on !== 'boolean') throw new HttpError(400, 'bad_badge', '켜기 · 끄기 값이 올바르지 않습니다.');
     const r = await community(env, 'setVisitBadge', { sub: s.sub, on: body.on });
     if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
     return json(request, env, { user: r.user });
@@ -1189,10 +1189,10 @@ async function unsubscribe(request, env, url) {
     const ref = String(url.searchParams.get('r') || '').slice(0, 64);
     const token = String(url.searchParams.get('t') || '').slice(0, 64);
     const hex = url.searchParams.get('k') === 'hex';   // LottoHex 칸 알림 메일(2026-11-12)
-    const what = hex ? 'LottoHex 칸 알림 메일' : '추첨 결과 메일';
+    const what = hex ? 'LottoHex 블록 알림 메일' : '추첨 결과 메일';
     const page = (title, msg, form) => new Response(`<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${title} | lottodraw.kr</title>
 <style>body{font:16px/1.6 system-ui,sans-serif;max-width:32rem;margin:3rem auto;padding:0 16px;color:#1f2a44;background:#fff}h1{font-size:1.3rem}button{font:inherit;padding:.6rem 1.2rem;border:0;border-radius:6px;background:#1f2a44;color:#fff;cursor:pointer}a{color:#2456c8}</style></head>
-<body><h1>${title}</h1><p>${msg}</p>${form || ''}<p><a href="${siteUrl(env)}/mypage.html">마이페이지</a>에서 언제든 다시 켤 수 있습니다.</p></body></html>`,
+<body><h1>${title}</h1><p>${msg}</p>${form || ''}<p><a href="${siteUrl(env)}/mypage.html">마이페이지</a>에서 언제든 메일을 켜고 끌 수 있습니다.</p></body></html>`,
         { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' } });
     if (!loginReady(env) || !/^[A-Za-z0-9_-]{20,64}$/.test(ref) || !/^[A-Za-z0-9_-]{16,64}$/.test(token)) {
         return page('링크를 확인해 주세요', '수신 거부 링크가 올바르지 않습니다. 마이페이지에서 메일을 끌 수 있습니다.');
@@ -1203,7 +1203,7 @@ async function unsubscribe(request, env, url) {
     }
     const r = await community(env, 'mailUnsub', { ref, token, kind: hex ? 'hex' : null });
     if (r.error) return page('링크를 확인해 주세요', '수신 거부 링크가 올바르지 않습니다. 마이페이지에서 메일을 끌 수 있습니다.');
-    return page('수신 거부되었습니다', what + '을 더 보내지 않습니다.' + (hex ? ' LottoHex 창에서도 다시 켤 수 있습니다.' : ''));
+    return page('수신을 거부했습니다', what + '을 더 보내지 않습니다.' + (hex ? ' LottoHex 창에서도 다시 켤 수 있습니다.' : ''));
 }
 
 const weeklyDaily = env => { const n = Math.floor(Number(env.WEEKLY_MAIL_DAILY)); return n > 0 ? Math.min(n, 5000) : WEEKLY.daily; };
@@ -1487,7 +1487,7 @@ async function addComment(request, env, ctx) {
         if (b.banned) throw commentError('banned');
     }
     const to = body.to === undefined || body.to === null ? null : String(body.to);
-    if (to !== null && !/^\d{16}-[a-z0-9]{1,8}$/.test(to)) throw new HttpError(400, 'bad_reply', '답글을 달 댓글이 이상합니다.');
+    if (to !== null && !/^\d{16}-[a-z0-9]{1,8}$/.test(to)) throw new HttpError(400, 'bad_reply', '답글을 달 댓글이 올바르지 않습니다.');
     const r = await community(env, 'commentAdd', { sub: s.sub, post, text: c.text, now: Date.now(), to });
     if (r.error === 'no_user') throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
     if (r.error) throw commentError(r.error);

@@ -1518,7 +1518,7 @@ function roundStores(d, winners) {
     const onMap = id => mapReady && (id === NET_ID || typeof STORES.shop(id)[4] === 'number');
     const shopCell = id => {
         const s = STORES.shop(id);
-        const name = id === NET_ID ? en('동행복권 인터넷 판매', 'Dong-haeng Lottery online')
+        const name = id === NET_ID ? en('동행복권 인터넷 판매', 'Donghaeng Lottery online')
             : esc(s[0]) + (s[3] ? ` <span class="muted" data-i18n-en="(closed)">(폐점)</span>` : '');
         return onMap(id) ? `<a href="${mapHref(id)}">${name}</a>` : name;
     };
@@ -2012,12 +2012,12 @@ function blogFigures() {
 // 블로그 화면 사진(img/blog/*.jpg, 2026-11-09 — 글 19 "LottoHex 하는 법"). 사진은 tools/oneoff/shot-lottohex.mjs 로 찍었다(지도는 실제, 별명 · 칸은 예시).
 // 파일이 없으면 그 그림은 빠진다(빌드가 경고하고 자리를 비운다)
 const BLOG_SHOTS = {
-    'lottohex-map': ['lottohex-map.jpg', 'LottoHex 밤 지도 — 서울 종로 둘레 육각 블록을 참여자들이 나눠 가진 모습', 'LottoHex night map — hexagon cells around Jongno, Seoul held by players',
-        'LottoHex 화면(휴대폰). 블록마다 주인의 별명과 다녀온 판매점 수, 색 없는 블록은 회색지대입니다. 별명과 블록은 설명을 위한 예시입니다.', 'LottoHex on a phone. Each cell shows its holder and the number of retailers visited; uncoloured cells are the grey zone. Nicknames and cells are examples.', 'is-phone'],
-    'lottohex-card': ['lottohex-card.jpg', '판매점 카드 — 다녀왔어요를 누르고 위치로 확인된 모습(+10P)', 'Retailer card — a visit verified by location (+10 points)',
-        '판매점 50m 안에서 "다녀왔어요"를 누르면 위치로 확인하고 10P를 드립니다(화면 예시).', 'Tap "I\'ve been here" within 50 m of the retailer: your location is checked and you earn 10 points (example screen).', 'is-crop'],
-    'lottohex-rank': ['lottohex-rank.jpg', 'Map 랭킹 — 차지한 블록 수와 다녀온 판매점 수', 'Map ranking — cells held and retailers visited',
-        'Map 랭킹은 차지한 블록 수 순서입니다. 분기가 끝나면 확정해 1~10위에 포인트를 드립니다(별명은 예시).', 'The Map ranking is ordered by cells held. At the end of each quarter it is finalised and the top 10 earn points (nicknames are examples).', 'is-crop'],
+    'lottohex-map': ['lottohex-map.jpg', 'LottoHex 밤 지도 — 서울 종로 둘레 육각 블록을 참여자들이 나눠 가진 모습', 'LottoHex night map — hexagon blocks around Jongno, Seoul held by players',
+        'LottoHex 화면(휴대폰). 블록마다 주인의 별명과 다녀온 판매점 수, 색 없는 블록은 회색지대입니다. 별명과 블록은 설명을 위한 예시입니다.', 'LottoHex on a phone. Each block shows its holder and the number of retailers visited; uncoloured blocks are the grey zone. Nicknames and blocks are examples.', 'is-phone'],
+    'lottohex-card': ['lottohex-card.jpg', '판매점 카드 — 다녀왔어요를 누르고 위치로 확인된 모습(+10P)', 'Retailer card — a visit verified by location (+10 pts)',
+        '판매점 50m 안에서 "다녀왔어요"를 누르면 위치로 확인하고 10P를 드립니다(화면 예시).', 'Tap "I\'ve been here" within 50 m of the retailer: your location is checked and you earn 10 pts (example screen).', 'is-crop'],
+    'lottohex-rank': ['lottohex-rank.jpg', 'Map 랭킹 — 차지한 블록 수와 다녀온 판매점 수', 'Map ranking — blocks held and retailers visited',
+        'Map 랭킹은 차지한 블록 수 순서입니다. 분기가 끝나면 확정해 1~10위에 포인트를 드립니다(별명은 예시).', 'The Map ranking is ordered by blocks held. At the end of each quarter it is finalised and the top 10 earn points (nicknames are examples).', 'is-crop'],
 };
 function blogShots() {
     const out = {};
@@ -2343,7 +2343,7 @@ function storesPage() {
             [en('1등이 가장 많이 나온 곳', 'Most 1st prizes'), en(`${esc(top1.name)} · ${top1.n1}회`, `${esc(top1.name)} · ${top1.n1}`)],
         ], 'tier-stat'),
         pEn(`동행복권은 ${first}회(${draws.find(x => x.round === first).date.slice(0, 7).replace('-', '년 ')}월)부터 회차마다 1등 · 2등이 나온 판매점을 공개합니다. 그 앞 회차는 판매점 자료가 없어 셈에서 빠집니다. 1등은 게임 단위로 세므로, 한 판매점에서 같은 회차에 1등이 여러 게임 나오면 그 수만큼 셉니다.`,
-            `Dong-haeng Lottery has published the retailers behind every 1st and 2nd prize since draw ${first}; earlier draws have no retailer data and are left out. Each winning game counts once, so a retailer that sold several 1st-prize games in one draw is counted that many times.`, 'note'),
+            `Donghaeng Lottery has published the retailers behind every 1st and 2nd prize since draw ${first}; earlier draws have no retailer data and are left out. Each winning game counts once, so a retailer that sold several 1st-prize games in one draw is counted that many times.`, 'note'),
     ];
 
     const message = [
@@ -2363,7 +2363,7 @@ function storesPage() {
         pEn(`반대로 2등이 10번 넘게 나왔는데 1등은 한 번도 없는 판매점도 ${fmt(big2no1)}곳 있습니다. 많이 팔아도 1등은 운에 따라 0번일 수 있습니다. "1등 ○회 배출" 현수막은 1등이 나온 곳만 보여 주고, 같은 만큼 팔고도 1등이 없는 곳은 보여 주지 않습니다(생존자 편향).`,
             `On the other hand, ${fmt(big2no1)} retailers have had more than ten 2nd prizes but never a 1st. Even with high sales, 1st prize can come zero times by chance. A "1st prize ○ times" banner shows only the places where it happened, not those that sold as much and got none (survivorship bias).`),
         S.net ? pEn(`1등이 가장 많이 나온 "판매점"은 동행복권 인터넷 판매입니다(${S.netFirst}회부터, 1등 ${S.net.n1}게임 · 2등 ${fmt(S.net.n2)}게임). 전국에서 한 창구로 가장 많이 팔리니 1등도 가장 많이 나옵니다. 판매량이 1등 횟수를 정한다는 것을 가장 뚜렷하게 보여 주는 예입니다.`,
-            `The "retailer" with the most 1st prizes is Dong-haeng Lottery's own online sales (from draw ${S.netFirst}: ${S.net.n1} 1st-prize and ${fmt(S.net.n2)} 2nd-prize games). It is the single outlet that sells the most nationwide, so it produces the most 1st prizes — the clearest example of sales deciding the count.`) : '',
+            `The "retailer" with the most 1st prizes is Donghaeng Lottery's own online sales (from draw ${S.netFirst}: ${S.net.n1} 1st-prize and ${fmt(S.net.n2)} 2nd-prize games). It is the single outlet that sells the most nationwide, so it produces the most 1st prizes — the clearest example of sales deciding the count.`) : '',
         pEn(`판매량이 공개되지 않으므로 이 페이지는 "어디가 효율이 좋은가"를 가리지 않습니다. 2등 횟수도 운이 섞인 숫자라 판매량을 그대로 재지는 못합니다. 어느 판매점에서 사도 당첨 확률은 같습니다.`
             + (REVENUE_POST ? ` 1 · 2등 수로 판매점별 판매액과 수수료를 오차범위와 함께 거꾸로 셈해 본 글: <a href="blog/${REVENUE_POST}.html">로또 1등 판매점은 얼마 벌까?</a>` : ''),
             `Because sales are not published, this page does not rank retailers by "efficiency". 2nd-prize counts are themselves partly luck and only approximate sales. Your odds are the same wherever you buy.`
@@ -2422,7 +2422,7 @@ function storesPage() {
         desc,
         scope: en(`${first}~${last}회 기준 · 매주 추첨 후 자동 갱신 (마지막 갱신 ${UPDATED}) · 출처: 동행복권 당첨 판매점 조회`, `Draws ${first}–${last} · updated automatically after each draw (last update ${UPDATED}) · source: Dong-haeng Lottery winning-retailer search`),
         lead: en(`동행복권이 공개하는 회차별 1등 · 2등 판매점 기록을 모았습니다. 결론부터 말하면, <strong>1등이 자주 나온 곳은 많이 팔린 곳일 가능성이 큽니다.</strong> 판매점별 판매량은 공개되지 않아, 같은 판매점의 2등 횟수로 그 판매량을 가늠했습니다.`,
-            `This page collects the 1st- and 2nd-prize retailers Dong-haeng Lottery publishes for each draw. In short: <strong>retailers with many 1st prizes most likely just sell a lot.</strong> Sales per retailer are not published, so we gauge them with each retailer's 2nd-prize count.`),
+            `This page collects the 1st- and 2nd-prize retailers Donghaeng Lottery publishes for each draw. In short: <strong>retailers with many 1st prizes most likely just sell a lot.</strong> Sales per retailer are not published, so we gauge them with each retailer's 2nd-prize count.`),
         ld: [{
             '@type': 'Dataset',
             name: title,
@@ -2922,7 +2922,7 @@ function lhSeason(id) {
     const m = /^(\d{4})Q([1-4])$/.exec(id || '');
     if (!m) return { ko: id || '', en: id || '', endKo: '', endEn: '' };
     const q = +m[2], endM = q * 3, endD = [31, 30, 30, 31][q - 1];
-    return { ko: `${m[1]}년 ${q}분기`, en: `Q${q} ${m[1]}`, endKo: `${endM}월 ${endD}일 24시`, endEn: `the end of ${['March', 'June', 'September', 'December'][q - 1]} ${endD}` };
+    return { ko: `${m[1]}년 ${q}분기`, en: `Q${q} ${m[1]}`, endKo: `${endM}월 ${endD}일 24시`, endEn: `midnight, ${endD} ${['March', 'June', 'September', 'December'][q - 1]} (KST)` };
 }
 // 칸(차지된 것) → 시도: 그 칸 판매점들의 시도 중 가장 많은 것
 function lhSidoCounts(md, keys) {
@@ -2942,7 +2942,7 @@ function lhSidoCounts(md, keys) {
 }
 function lhRankList(rank) {
     return '<ol class="sm-terr-rank sm-hexabout-rank">' + rank.map((r, i) => `<li><span class="sm-rk-n">${i + 1}</span><span class="sm-rk-nick">${esc(r.nick || '(탈퇴한 회원)')}</span>` +
-        `<span class="sm-rk-v" data-i18n-en="${r.cells} cells · ${r.stores} retailers">블록 ${fmt(r.cells)} · ${fmt(r.stores)}곳</span></li>`).join('') + '</ol>';
+        `<span class="sm-rk-v" data-i18n-en="${fmt(r.cells)} block${r.cells === 1 ? '' : 's'} · ${fmt(r.stores)} retailer${r.stores === 1 ? '' : 's'}">블록 ${fmt(r.cells)} · ${fmt(r.stores)}곳</span></li>`).join('') + '</ol>';
 }
 function lottohexAboutHtml(md, snap) {
     let total = 0;
@@ -2955,12 +2955,12 @@ function lottohexAboutHtml(md, snap) {
         const sido = lhSidoCounts(md, snap.cells || []).slice(0, 5);
         week = `<h2 data-i18n-en="${esc(`LottoHex this week (as of ${snap.at})`)}">이번 주 LottoHex (${esc(snap.at)} 기준)</h2>` +
             pEn(`참여 ${fmt(snap.players)}명 · 차지된 블록 ${fmt(held)}개` + (total ? ` / 전체 ${fmt(total)}블록 · 회색지대 ${fmt(Math.max(0, total - held))}블록` : '') + '.',
-                `${fmt(snap.players)} players · ${fmt(held)} cells held` + (total ? ` of ${fmt(total)} · ${fmt(Math.max(0, total - held))} in the grey zone` : '') + '.') +
+                `${fmt(snap.players)} players · ${fmt(held)} blocks held` + (total ? ` of ${fmt(total)} · ${fmt(Math.max(0, total - held))} in the grey zone` : '') + '.') +
             (sido.length ? pEn('블록이 많이 차지된 지역: ' + sido.map(([k, v]) => `${esc(k)} ${fmt(v)}블록`).join(' · ') + '.',
-                'Regions with the most cells held: ' + sido.map(([k, v]) => `${esc(k)} ${fmt(v)}`).join(' · ') + '.') : '') +
+                'Regions with the most blocks held: ' + sido.map(([k, v]) => `${esc(k)} ${fmt(v)}`).join(' · ') + '.') : '') +
             `<h3 data-i18n-en="${esc(`Map ranking · ${s.en} · final at ${s.endEn}`)}">Map 랭킹 · ${s.ko} · ${s.endKo}에 확정</h3>` +
             (snap.rank && snap.rank.length ? lhRankList(snap.rank)
-                : pEn('아직 블록을 차지한 사람이 없습니다. 판매점 한 곳만 다녀와도 회색지대의 블록을 차지합니다.', 'No one holds a cell yet. A single verified visit takes a grey-zone cell.')) +
+                : pEn('아직 블록을 차지한 사람이 없습니다. 판매점 한 곳만 다녀와도 회색지대의 블록을 차지합니다.', 'No one holds a block yet. A single verified visit takes a grey-zone block.')) +
             (snap.last && snap.last.rank && snap.last.rank.length ? `<h3 data-i18n-en="${esc(lhSeason(snap.last.id).en + ' final ranking')}">${lhSeason(snap.last.id).ko} 확정 순위</h3>` + lhRankList(snap.last.rank) : '');
     }
     return `<details class="sm-hexabout" id="sm-hexabout" open>
@@ -2968,33 +2968,33 @@ function lottohexAboutHtml(md, snap) {
             <div class="sm-hexabout-body">
             <h2 data-i18n-en="What is LottoHex?">LottoHex란?</h2>
             ${pEn('LottoHex(로또헥스)는 로또 판매점 지도 위 육각형 블록(가운데서 꼭짓점까지 0.6km, 끝에서 끝까지 걸어서 15분쯤)을 차지하는 무료 땅따먹기 게임입니다. 판매점 50m 안에서 판매점 카드의 "다녀왔어요"를 누르면 위치로 인증됩니다. 블록 안에서 다녀온 판매점이 가장 많은 사람이 그 블록의 주인이 됩니다. 복권을 살 필요는 없습니다.',
-                'LottoHex is a free turf game on the lotto retailer map: the map is split into hexagon cells (0.6 km centre to corner, about a 15-minute walk across). Go to a retailer and tap "I\'ve been here" on its card; your location is checked (within 50 m), and whoever has visited the most retailers in a cell holds it. No purchase needed.')}
+                'LottoHex is a free turf game on the lotto retailer map: the map is split into hexagon blocks (0.6 km centre to corner, about a 15-minute walk across). Tap "I\'ve been here" on a retailer\'s card within 50 m of it and your visit is verified by location; whoever has visited the most retailers in a block holds it. No purchase needed.')}
             <h2 data-i18n-en="How to play">하는 법</h2>
             <ol>
                 ${li('구글로 로그인하고 별명을 정합니다.', 'Sign in with Google and choose a nickname.')}
-                ${li('LottoHex 참여에 동의합니다(만 19세 이상). 위치정보 서비스 이용에도 따로 동의합니다.', 'Read the LottoHex notice and join. Agree separately to location use (14 or older).')}
-                ${li(`판매점 50m 안에서 카드의 "다녀왔어요"를 누릅니다. 위치로 확인되면 다녀온 곳으로 기록되고 ${LH_POINTS.visit}P를 받습니다.`, `Within 50 m of a retailer, tap "I've been here" on its card. Once your location is verified it is recorded and you earn ${LH_POINTS.visit} points.`)}
-                ${li('블록을 빼앗기면 그 블록 판매점에서 "오늘 또 다녀왔어요"로 되찾습니다(같은 판매점은 하루 한 번).', 'Lost a cell? Win it back with "Visited again today" at a retailer in it (once a day per retailer).')}
+                ${li('LottoHex 참여에 동의합니다(만 19세 이상). 위치정보 서비스 이용에도 따로 동의합니다.', 'Agree to join LottoHex (19 or older). Agree separately to the location-based service.')}
+                ${li(`판매점 50m 안에서 카드의 "다녀왔어요"를 누릅니다. 위치로 확인되면 다녀온 곳으로 기록되고 ${LH_POINTS.visit}P를 받습니다.`, `Within 50 m of a retailer, tap "I've been here" on its card. Once your location is verified it is recorded and you earn ${LH_POINTS.visit} pts.`)}
+                ${li('블록을 빼앗기면 그 블록 판매점에서 "오늘 또 다녀왔어요"로 되찾습니다(같은 판매점은 하루 한 번).', 'Lost a block? Win it back with "Visited again today" at a retailer in it (once a day per retailer).')}
             </ol>
             <h2 data-i18n-en="Rules">규칙</h2>
             <ul>
-                ${li('같은 수면 그 블록에 더 최근에 다녀온 사람이 차지합니다. 주인 없는 블록은 회색지대로, 지도에 옅은 회색으로 보입니다.', 'On a tie, whoever visited the cell most recently holds it. Cells no one holds are the grey zone, shown in light grey.')}
-                ${li('블록은 비우지 않습니다. 분기(1 · 4 · 7 · 10월 1일 0시)마다 그때의 Map 랭킹을 확정해 남깁니다.', 'Cells are never cleared. At the start of each quarter the Map ranking is finalised and kept.')}
-                ${li('모두에게 보이는 것: 블록 주인 별명 · 블록 모양(빛 벽 포함) · 블록별 다녀온 판매점 수 · Map 랭킹 · 점령 소식(별명과 몇 번째 블록인지만). 어느 판매점을 언제 다녀왔는지는 보이지 않습니다.', 'Only cell holders\' nicknames, cell skins (including light walls), visit counts per cell, the Map ranking and news that someone took a new cell or took one from another player (nicknames and how many cells they now hold — in the chat and the LottoHex ticker) are public. Which retailers you visited, and when, is never shown.')}
+                ${li('같은 수면 그 블록에 더 최근에 다녀온 사람이 차지합니다. 주인 없는 블록은 회색지대로, 지도에 옅은 회색으로 보입니다.', 'On a tie, whoever visited the block most recently holds it. Blocks no one holds are the grey zone, shown in light grey.')}
+                ${li('블록은 비우지 않습니다. 분기(1 · 4 · 7 · 10월 1일 0시)마다 그때의 Map 랭킹을 확정해 남깁니다.', 'Blocks are never cleared. At the start of each quarter the Map ranking is finalised and kept.')}
+                ${li('모두에게 보이는 것: 블록 주인 별명 · 블록 모양(빛 벽 포함) · 블록별 다녀온 판매점 수 · Map 랭킹 · 점령 소식(별명과 몇 번째 블록인지만). 어느 판매점을 언제 다녀왔는지는 보이지 않습니다.', 'What everyone can see: block holders\' nicknames, block skins (including light walls), visit counts per block, the Map ranking and capture news (only the nickname and how many blocks they now hold). Which retailers you visited, and when, is never shown.')}
                 ${li('폐점한 판매점은 세지 않습니다. 어디서 사든 1등 확률은 1/8,145,060으로 같습니다.', 'Closed retailers do not count. Your chance of 1st prize is 1 in 8,145,060 wherever you buy.')}
             </ul>
             <h2 data-i18n-en="Points">포인트</h2>
             <ul>
-                ${li(`위치로 인증한 다녀온 곳: 한 번에 ${LH_POINTS.visit}P(같은 판매점은 하루 한 번, 하루 ${LH_POINTS.daily}P까지)`, `Visits verified by location: ${LH_POINTS.visit} points each (once a day per retailer, up to ${LH_POINTS.daily} a day)`)}
-                ${li('점령 포인트: 지금 차지한 블록 하나에 하루 0.1P(매일 0시 무렵 그때 차지한 블록으로 셉니다, 운영자 제외)', 'Cell points: 0.1 points a day for each cell you hold (counted just after midnight each day from the cells held then; operators excluded)')}
-                ${li(`분기 확정 순위: 1위 ${fmt(p1)}P · 2위 ${p2}P · 3위 ${p3}P · 4~10위 ${p4}P(운영자 제외)`, `Quarterly final ranking: 1st ${fmt(p1)} · 2nd ${p2} · 3rd ${p3} · 4th–10th ${p4} points (operators excluded)`)}
-                ${li('마일스톤: 다녀온 판매점 · 다녀온 블록 · 다녀온 시·도 · 차지한 블록(최대)이 단계에 이를 때마다 10~500P(단계마다 한 번)', 'Milestones: 10–500 points each time retailers visited, cells visited, provinces visited or most cells held reaches a new step (once per step)')}
-                ${li('포인트로 블록 모양을 바꾸거나(30P), 영역 빛 벽을 사거나(300P — 3D에서 내 영역 테두리가 빛나고 모두에게 보입니다), 1일 이용권을 열 수 있습니다(300P). 현금으로 바꿀 수 없습니다.', 'Spend points on a new cell skin (30), the territory light wall (300 — your territory edge glows in 3D for everyone) or a 1-day pass (300). Points cannot be exchanged for cash.')}
+                ${li(`위치로 인증한 다녀온 곳: 한 번에 ${LH_POINTS.visit}P(같은 판매점은 하루 한 번, 하루 ${LH_POINTS.daily}P까지)`, `Visits verified by location: ${LH_POINTS.visit} pts each (once a day per retailer, up to ${LH_POINTS.daily} pts a day)`)}
+                ${li('점령 포인트: 지금 차지한 블록 하나에 하루 0.1P(매일 0시 무렵 그때 차지한 블록으로 셉니다, 운영자 제외)', 'Block points: 0.1 pts a day for each block you hold (counted just after midnight each day from the blocks held then; operators excluded)')}
+                ${li(`분기 확정 순위: 1위 ${fmt(p1)}P · 2위 ${p2}P · 3위 ${p3}P · 4~10위 ${p4}P(운영자 제외)`, `Quarterly final ranking: 1st ${fmt(p1)} · 2nd ${p2} · 3rd ${p3} · 4th–10th ${p4} pts (operators excluded)`)}
+                ${li('마일스톤: 다녀온 판매점 · 다녀온 블록 · 다녀온 시·도 · 차지한 블록(최대)이 단계에 이를 때마다 10~500P(단계마다 한 번)', 'Milestones: 10–500 pts each time retailers visited, blocks visited, provinces visited or most blocks held reaches a new step (once per step)')}
+                ${li('포인트로 블록 모양을 바꾸거나(30P), 영역 빛 벽을 사거나(300P — 3D에서 내 영역 테두리가 빛나고 모두에게 보입니다), 1일 이용권을 열 수 있습니다(300P). 현금으로 바꿀 수 없습니다.', 'Spend points on a new block skin (30 pts), the territory light wall (300 pts — your territory edge glows in 3D for everyone) or a 1-day pass (300 pts). Points cannot be exchanged for cash.')}
             </ul>
             <h2 data-i18n-en="Titles">칭호</h2>
             <ul>
-                ${li('인증한 방문으로 칭호를 얻어 칭호 도감에 모읍니다: 방문(초보탐험가 · 동네 탐험가 …), 영역(첫 깃발 · 세력확장자 · 영주 …), 블록 모양(삼각지 · 일자 진격 · 왕지렁이 · 벌집 · 도넛 …), 지역(마포구 단골 · 전문가 · 터줏대감, 시·도 완주, 팔도유람), 숨은 칭호', 'Verified visits earn titles for your collection: visits (Rookie Explorer …), territory (First Flag, Expansionist, Lord …), cell shapes (Triangle, Straight Ahead, Giant Worm, Honeycomb, Donut …), regions (district Regular · Expert · Local Legend, province Complete, Grand Tour) and hidden titles')}
-                ${li('얻은 칭호 하나를 골라 별명 앞에 달면 Map 랭킹 · 블록 · 회원 랭킹 페이지에 보입니다.', 'Wear one of your titles before your nickname on the LottoHex ranking, cells and the ranking page.')}
+                ${li('인증한 방문으로 칭호를 얻어 칭호 도감에 모읍니다: 방문(초보탐험가 · 동네 탐험가 …), 영역(첫 깃발 · 세력확장자 · 영주 …), 블록 모양(삼각지 · 일자 진격 · 왕지렁이 · 벌집 · 도넛 …), 지역(마포구 단골 · 전문가 · 터줏대감, 시·도 완주, 팔도유람), 숨은 칭호', 'Verified visits earn titles for your collection: visits (Rookie Explorer …), territory (First Flag, Expansionist, Lord …), block shapes (Triangle, Straight Ahead, Giant Worm, Honeycomb, Donut …), regions (district Regular · Expert · Local Legend, province Complete, Grand Tour) and hidden titles')}
+                ${li('얻은 칭호 하나를 골라 별명 앞에 달면 Map 랭킹 · 블록 · 회원 랭킹 페이지에 보입니다.', 'Pick one of your titles to show before your nickname on the Map ranking, blocks and the member ranking page.')}
             </ul>
             ${week}
             ${pEn(`함께 보기: <a href="${STORE_MAP_FILE}">로또 판매점 지도</a> · <a href="${STORES_FILE}">1등 판매점 통계</a> · <a href="terms.html#location">이용약관 위치기반서비스</a> · <a href="privacy.html#location">개인정보 처리방침 개인위치정보</a>`,
@@ -3158,7 +3158,7 @@ function storeMapPage(md, variant) {
         <div class="sm-fun" id="sm-fun" hidden>
             <h2 data-i18n-en="Unusual retailers">이색 판매점</h2>
             <ol>${md.fun.map((f, k) => `<li><button type="button" class="sm-fun-item" data-k="${k}"><span class="sm-fun-ico" aria-hidden="true">${f.icon}</span><span><b data-i18n-en="${esc(f.titleEn)}">${esc(f.title)}</b><span class="sm-fun-name">${esc(f.name)} <small>${esc(f.place)}</small></span><small data-i18n-en="${esc(f.textEn)}">${esc(f.text)}</small></span></button></li>`).join('')}</ol>
-            <p class="sm-small" data-i18n-en="Open retailers only, from Dong-haeng Lottery data. More in the blog post.">문을 연 판매점 기준(동행복권 자료). <a href="blog/lotto-store-extremes.html">블로그 글로 보기</a></p>
+            <p class="sm-small" data-i18n-en="Open retailers only, from Donghaeng Lottery data. More in the blog post.">문을 연 판매점 기준(동행복권 자료). <a href="blog/lotto-store-extremes.html">블로그 글로 보기</a></p>
         </div>` : ''}
         <div class="sm-chips sm-modes" role="group" aria-label="1등 방식 (로그인 회원)" data-i18n-attr="aria-label:sm.modes">
                 <span class="sm-modes-label" data-i18n-en="1st-prize type">1등 방식</span>

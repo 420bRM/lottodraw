@@ -380,7 +380,7 @@ test('수신 거부: 링크를 열기만 해서는 꺼지지 않고(GET), 단추
     assert.match(await (await worker.fetch(new Request(forged, { method: 'POST' }), env, ctx)).text(), /올바르지 않습니다/);
     assert.equal((await call(env, 'GET', '/api/me/numbers', { headers: auth(s) })).data.mail, true);
     const post = await worker.fetch(new Request(url, { method: 'POST', body: 'List-Unsubscribe=One-Click', headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }), env, ctx);
-    assert.match(await post.text(), /수신 거부되었습니다/);
+    assert.match(await post.text(), /수신을 거부했습니다/);
     assert.equal((await call(env, 'GET', '/api/me/numbers', { headers: auth(s) })).data.mail, false);
     assert.equal((await call(env, 'GET', '/api/admin/status', { headers: asAdmin })).data.weekly.subs, 0);
     // 다시 보낼 때가 와도(그 회차 기록을 지워 흉내) 보내지 않는다
