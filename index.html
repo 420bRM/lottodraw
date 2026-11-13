@@ -22,7 +22,7 @@
     <link rel="icon" href="/favicon.ico" sizes="32x32">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    <link rel="stylesheet" href="css/site.css?v=4bcad217">
+    <link rel="stylesheet" href="css/site.css?v=165129f1">
     <style>
         /* 생성 이력 출력(인쇄) — "출력" 단추를 누를 때만(body.is-printing) 아래 종이 한 장을 찍는다. 그냥 인쇄(Ctrl+P)는 평소 화면.
            site.css 가 아니라 여기 두는 까닭: 배포 직후 브라우저가 옛 site.css 를 쥐고 있으면 인쇄 규칙이 없어 홈 전체가 찍혔다 */
@@ -891,7 +891,14 @@
         for (let i = 0; i < sorted.length; i++) for (let j = i + 1; j < sorted.length; j++) diffs.add(sorted[j] - sorted[i]);
         return diffs.size - (sorted.length - 1);
     }
+    // 끌기 막대 그림(2026-11-13): 손잡이까지 채운 선과 칸마다 눈금을 css/site.css 가 그리도록 위치(--p, 0~1)와 칸 수(--steps)를 넘긴다
+    function fillRange(r) {
+        const min = +r.min || 0, max = +r.max || 1;
+        r.style.setProperty('--p', String((+r.value - min) / (max - min)));
+        r.style.setProperty('--steps', String(max - min));
+    }
     function paintAc() {
+        fillRange(acRange());
         const v = AC_STEPS[+acRange().value] || 0;
         const exact = acExactOn() || v >= 10;   // 10 은 범위여도 10 하나
         document.getElementById('ac-text').textContent = !v ? I18N.t('gen.recentValOff') : exact ? String(v) : I18N.f('gen.acValN', { n: v });
@@ -904,6 +911,7 @@
     // 연속번호가 든 조합은 6개 연속 · 모두 홀수 · 모두 짝수 · 모두 3 · 4 · 5의 배수일 수 없다 — 그 패턴들은 걸릴 조합이 없어 흐리게 둔다
     const MOOT_WITH_RUN = [1, 5, 6, 7, 11, 12];
     function paintRun() {
+        fillRange(runRange());
         const v = RUN_STEPS[+runRange().value] || 0;
         document.getElementById('run-text').textContent = v ? I18N.f('gen.runValN', { n: v }) : I18N.t('gen.recentValOff');
         runRange().setAttribute('aria-valuetext', v ? I18N.f('gen.runN', { n: v }) : I18N.t('gen.runOff'));
@@ -915,6 +923,7 @@
         });
     }
     function paintPop() {
+        fillRange(popRange());
         const k = +popRange().value || 0;
         document.getElementById('pop-text').textContent = k ? POP_SHARE[k] + '%' : I18N.t('gen.recentValOff');
         popRange().setAttribute('aria-valuetext', k ? I18N.f('gen.popN', { n: POP_SHARE[k] }) : I18N.t('gen.popOff'));
@@ -937,6 +946,7 @@
         return v === Infinity ? pastCombos.length : Math.min(v, pastCombos.length);
     }
     function paintRecent() {
+        fillRange(recentRange());
         const v = RECENT_STEPS[+recentRange().value] || 0;
         // 막대 끝 칸에는 짧게(끔 · 10회 · 전체 — 폭이 같아 끄는 동안 막대가 밀리지 않는다), 화면 읽기 프로그램에는 문장으로
         document.getElementById('recent-text').textContent = !v ? I18N.t('gen.recentValOff') : v === Infinity ? I18N.t('gen.recentValAll') : I18N.f('gen.recentValN', { n: v });

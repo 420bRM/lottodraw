@@ -348,7 +348,41 @@ details[open] > summary.card-title { padding-bottom: 0; }
 .gen-recent-value { color: var(--brand); font-size: 12px; font-weight: bold; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .gen-recent.is-locked .gen-recent-value { color: var(--muted); }
 .gen-recent-label { color: var(--text); font-size: 12px; font-weight: bold; white-space: nowrap; }
-.gen-recent input[type="range"] { width: 100%; margin: 0; accent-color: var(--brand); cursor: pointer; }
+.gen-recent input[type="range"] { width: 100%; }
+/* 끌기 막대(2026-11-13 사장님 — 각진 모양: "눈금 자 + 다이아몬드 손잡이"). 생성기 막대 넷과 판매점 지도 · LottoHex 의 "흐리게".
+   기본 모양을 지우고 그린다: 칸마다 눈금(--steps), 손잡이 가운데까지 채운 선(--p = 0~1, 값이 바뀔 때마다 페이지 스크립트가 넣는다), ◆ 손잡이(--range-c).
+   눈금 · 채움은 손잡이 폭(--tw)의 절반 안쪽에서 시작해 손잡이 가운데와 맞는다 */
+.gen-recent input[type="range"], .sm-fade input[type="range"] {
+    --tw: 14px; --p: 0; --steps: 4; --range-c: var(--brand); --range-line: var(--line-strong, #c2c7cf);
+    -webkit-appearance: none; appearance: none; height: 22px; margin: 0; background: transparent; cursor: pointer;
+}
+.sm-fade input[type="range"] { --range-c: #f07a1a; }
+.gen-recent input[type="range"]:disabled { cursor: default; }
+.gen-recent input[type="range"]:focus-visible, .sm-fade input[type="range"]:focus-visible { outline: 2px solid var(--range-c); outline-offset: 2px; }
+.gen-recent input[type="range"]::-webkit-slider-runnable-track, .sm-fade input[type="range"]::-webkit-slider-runnable-track {
+    height: 22px;
+    background:
+        linear-gradient(to right, var(--range-c) calc(var(--tw) / 2 + var(--p) * (100% - var(--tw))), var(--range-line) 0) center / 100% 2px no-repeat,
+        repeating-linear-gradient(to right, var(--range-line) 0 1px, transparent 1px calc((100% - 1px) / var(--steps))) calc(var(--tw) / 2 - 0.5px) 50% / calc(100% - var(--tw) + 1px) 10px no-repeat;
+}
+.gen-recent input[type="range"]::-moz-range-track, .sm-fade input[type="range"]::-moz-range-track {
+    height: 22px; border: 0;
+    background:
+        linear-gradient(to right, var(--range-c) calc(var(--tw) / 2 + var(--p) * (100% - var(--tw))), var(--range-line) 0) center / 100% 2px no-repeat,
+        repeating-linear-gradient(to right, var(--range-line) 0 1px, transparent 1px calc((100% - 1px) / var(--steps))) calc(var(--tw) / 2 - 0.5px) 50% / calc(100% - var(--tw) + 1px) 10px no-repeat;
+}
+.gen-recent input[type="range"]::-webkit-slider-thumb, .sm-fade input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 14px; height: 14px; margin-top: 4px; border: 0; border-radius: 0; background: var(--range-c);
+    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+.gen-recent input[type="range"]::-moz-range-thumb, .sm-fade input[type="range"]::-moz-range-thumb {
+    width: 14px; height: 14px; border: 0; border-radius: 0; background: var(--range-c);
+    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+/* 고대비 모드에서는 그린 선이 지워지므로 브라우저 기본 모양으로 */
+@media (forced-colors: active) {
+    .gen-recent input[type="range"], .sm-fade input[type="range"] { -webkit-appearance: auto; appearance: auto; }
+}
 /* 막대 둘(직전 당첨 조합 제외 · AC값)의 이름 · 막대 · 값 칸을 같은 세로줄에 맞춘다(subgrid 를 모르는 브라우저는 줄마다 따로) */
 .gen-sliders { display: grid; grid-template-columns: auto minmax(60px, 1fr) 3.4em; column-gap: 8px; }
 .gen-sliders .gen-recent { grid-column: 1 / -1; grid-template-columns: subgrid; }
