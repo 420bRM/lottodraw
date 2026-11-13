@@ -826,26 +826,31 @@ html.sm-enter-hex #sm-hexfx .sm-hexfx-ico, html.sm-enter-store #sm-storefx .sm-s
     html.chat-docked.chat-dock-off .chat-panel, html.chat-docked.chat-dock-off .chat-fab { display: none; }
 }
 
-/* ───── 휴대폰 판매점 모드: 아래 도구를 화면 폭 한 판으로(2026-11-13 사장님 — "일반 지도 탭 하단 깔끔하게") ─────
-   1줄: 1등 방식 [자동 | 수동 | 반자동] · 시도별 · 안내   2줄: 적게 나온 곳 흐리게 ──●── 모두 · 🏆 이색 판매점
-   판 높이(--bl-h, js/store-map.js chatDock)만큼 지도 단추(ⓘ 포함) · 판매점 카드 · 근처 목록을 위로 올린다. 이색 판매점 목록은 판 위로 펼친다 */
+/* ───── 휴대폰 판매점 모드: 아래 도구를 화면 폭 한 줄 판으로(2026-11-13 사장님 — "하단 깔끔하게" → "자리를 너무 차지한다, 자동 · 수동 · 반자동은 빼고 시도별 · 안내를 이색 판매점과 같이") ─────
+   한 줄: 흐리게 ──●── 모두 · 시도별 · 안내 · 🏆 이색 판매점. 1등 방식(자동 · 수동 · 반자동)은 휴대폰에서 감춘다(PC 는 그대로, 고른 값은 저장하지 않아 늘 모두 켜짐).
+   판 높이(--bl-h, js/store-map.js chatDock)만큼 지도 단추(ⓘ 포함) · 판매점 카드 · 근처 목록 · 시도별 안내를 위로 올린다. 이색 판매점 목록은 판 위로 펼친다 */
+.sm-fade .sm-fade-s { display: none; }
 @media (max-width: 899px) {
-    .sm-bl { left: 0; right: 0; bottom: 0; grid-template-columns: minmax(0, 1fr) auto; align-items: center; justify-items: stretch; gap: 8px 10px;
-        padding: 9px 10px calc(9px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line, #e3e6eb); border-radius: 14px 14px 0 0;
+    .sm-bl { left: 0; right: 0; bottom: 0; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; justify-items: stretch; gap: 8px;
+        padding: 7px 10px calc(7px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line, #e3e6eb); border-radius: 14px 14px 0 0;
         background: var(--surface, #fff); box-shadow: 0 -4px 16px rgba(0, 0, 0, .1); pointer-events: auto; }
-    .sm-bl .sm-modes { grid-row: 1; grid-column: 1 / -1; display: flex; flex-wrap: nowrap; gap: 0; }
-    .sm-bl .sm-modes-label { display: block; flex: none; margin-right: 8px; padding: 0; color: var(--muted, #555); font-size: 11.5px; text-shadow: none; }
-    .sm-bl .sm-mode { flex: 1 1 0; justify-content: center; min-width: 0; margin-left: -1px; padding: 6px 4px; border-radius: 0; box-shadow: none; font-size: 12px; }
-    .sm-bl .sm-mode[data-mode="A"] { margin-left: 0; border-radius: 9px 0 0 9px; }
-    .sm-bl .sm-mode[data-mode="S"] { border-radius: 0 9px 9px 0; }
-    .sm-bl .sm-mode[aria-pressed="true"] { position: relative; z-index: 1; }
-    .sm-bl .sm-info-btn { flex: none; margin-left: 8px; padding: 6px 10px; border-radius: 9px; box-shadow: none; font-size: 12px; }
-    .sm-bl .sm-fade { grid-row: 2; grid-column: 1; gap: 8px; min-width: 0; margin: 0; padding: 0; border: 0; background: none; box-shadow: none; font-size: 11.5px; }
+    .sm-bl .sm-modes { display: contents; }
+    .sm-bl .sm-modes-label, .sm-bl .sm-mode { display: none; }
+    .sm-bl .sm-info-btn { grid-row: 1; grid-column: 2; margin: 0; padding: 5px 9px; border-radius: 9px; box-shadow: none; font-size: 11.5px; }
+    .sm-bl .sm-fade { grid-row: 1; grid-column: 1; gap: 6px; min-width: 0; margin: 0; padding: 0; border: 0; background: none; box-shadow: none; font-size: 11.5px; }
     .sm-bl .sm-fade > span { flex: none; color: var(--muted, #555); font-weight: bold; white-space: nowrap; }
-    .sm-bl .sm-fade input { flex: 1 1 auto; width: auto; min-width: 40px; }
-    .sm-bl .sm-fade output { min-width: 0; white-space: nowrap; }
-    .sm-bl .sm-fun-btn { grid-row: 2; grid-column: 2; justify-self: end; padding: 5px 10px; box-shadow: none; font-size: 11.5px; }
+    .sm-bl .sm-fade > span:first-child { display: none; }
+    .sm-bl .sm-fade .sm-fade-s { display: inline; }
+    .sm-bl .sm-fade input { flex: 1 1 auto; width: auto; min-width: 44px; }
+    .sm-bl .sm-fade output { flex: none; min-width: 0; white-space: nowrap; }
+    .sm-bl .sm-fun-btn { grid-row: 1; grid-column: 3; justify-self: end; padding: 5px 9px; box-shadow: none; font-size: 11.5px; white-space: nowrap; }
     .sm-bl .sm-fun { left: 6px; bottom: calc(100% + 6px); }
     .sm-map .maplibregl-ctrl-bottom-right { margin-bottom: var(--bl-h, 0px); }
-    .sm-card, .sm-near { bottom: calc(var(--bl-h, 30px) + 8px); }
+    .sm-card, .sm-near, .sm-info { bottom: calc(var(--bl-h, 30px) + 8px); }
 }
+@media (max-width: 380px) {   /* 아주 좁은 휴대폰: 단추를 조금 줄여 흐리게 막대 몫을 남긴다 */
+    .sm-bl { gap: 6px; padding-right: 8px; padding-left: 8px; }
+    .sm-bl .sm-info-btn, .sm-bl .sm-fun-btn { padding: 5px 7px; font-size: 11px; }
+    .sm-bl .sm-fade { gap: 5px; font-size: 11px; }
+}
+@media (max-width: 340px) { .sm-bl .sm-fade .sm-fade-s { display: none; } }   /* 320px 폭: "흐리게" 글자는 빼고 막대 · 값만 */
