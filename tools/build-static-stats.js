@@ -18,6 +18,7 @@
 //   statistics-prize-2-3.html  2등·3등 당첨금 (prize-data.json 이 있을 때만)
 //   statistics-stores.html   1등 판매점 (stores-data.json 이 있을 때만 — tools/update-stores.js)
 //   statistics-repeat.html   당첨번호 중복 (회차와 회차를 통째로 견줌)
+//   statistics-popular.html  사람들이 많이 사는 번호 + popularity.json · popularity.csv · combo-space.json (prize-data.json 이 있을 때만 — tools/popularity.js)
 //   index.html · tax.html · top-prize.html   <!-- seo:... --> 표식 사이만 고친다
 //   blog/                    블로그 목록과 글 (tools/build-blog.js 를 불러 만든다)
 //   sitemap.xml
@@ -156,7 +157,7 @@ function lottoTax(prize) {
 // 1~87회는 1게임이 2,000원이라 금액이 훨씬 크다 — 평균 · 최고 · 최저 · 연도별 표는 88회부터 센다
 const TIER_FILE = 'statistics-prize-2-3.html';
 const TIER_SINCE = '2026-10-10';   // 2·3등 통계 페이지와 다른 페이지의 링크를 넣은 날
-const ABOUT_SINCE = '2026-10-18';  // About 주요 기능 "내 번호 · 추첨 결과 메일"(2026-10-17 "이번 주 생성 번호 메일"에서 바꿈) · "1등 판매점 통계" · 거리 삼각형 (2026-10-14: 한글 상호 "로또드로우", 2026-10-11: "로또 데이터 플랫폼" 소개 · 주요 기능 목록)
+const ABOUT_SINCE = '2026-11-13';  // About 주요 기능 "사람들이 많이 사는 번호" · 생성기 남은 조합 · 회원 조건(2026-11-13). 그 전: "내 번호 · 추첨 결과 메일"(2026-10-17 "이번 주 생성 번호 메일"에서 바꿈) · "1등 판매점 통계" · 거리 삼각형 (2026-10-14: 한글 상호 "로또드로우", 2026-10-11: "로또 데이터 플랫폼" 소개 · 주요 기능 목록)
 const mean = a => a.reduce((s, v) => s + v, 0) / Math.max(1, a.length);
 const median = a => {
     const s = a.slice().sort(asc);
@@ -279,6 +280,14 @@ const REPEAT = (() => {
     };
 })();
 
+
+// 구매자 번호 선호도(2026-11-13) — 2~5등 당첨 게임 수로 사람들이 어떤 번호를 많이 사는지 거꾸로 셈한다(tools/popularity.js).
+// 페이지는 아래 popularPage. 자료: popularity.json · popularity.csv(공개 — 누구나 가져다 쓴다), combo-space.json(홈 생성기 "남은 조합" 표).
+// prize-data.json 이 있어야 한다. 815만 조합을 두 번 훑어(점수 분포 · 남은 조합 표) 몇 초 걸린다
+const POPULAR_FILE = 'statistics-popular.html';
+const POPULAR_SINCE = '2026-11-13';
+const ComboSpace = require(path.join(ROOT, 'js', 'combo-space.js'));
+const POP = prizeData ? require(path.join(__dirname, 'popularity.js')).fitPopularity({ draws, prizes: prizeData.draws, comboSpace: ComboSpace, latest: LATEST }) : null;
 
 function runsOf(numbers) {
     const nums = numbers.slice().sort(asc);
@@ -2718,6 +2727,178 @@ function repeatPage() {
     });
 }
 
+/* ───── 사람들이 많이 사는 번호 (statistics-popular.html + popularity.json · popularity.csv · combo-space.json, 2026-11-13) ─────
+ * 숫자는 모두 "그 번호가 당첨번호에 들었을 때 5등 당첨 게임이 평균보다 몇 % 많았나"다. 문구 규칙대로 확률 이야기는 하지 않는다 —
+ * 바뀌는 것은 1등이 됐을 때 나눠 가질 사람 수뿐이다. 조합 목록(덜 팔리는 6개 등)은 "추천 번호"로 읽힐 수 있어 싣지 않는다
+ */
+const signPct = (v, d = 1) => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(d) + '%';
+// 1등이 됐을 때 받는 몫의 기댓값: 다른 당첨자 X ~ 포아송(λ) 일 때 E[1/(1+X)] = (1 − e^−λ)/λ
+const shareOf = lambda => (1 - Math.exp(-lambda)) / lambda;
+
+function popularPage() {
+    const P = POP;
+    const span = `${P.first}~${P.last}회`;
+    const num = n => P.numbers[n - 1];
+    const top3 = P.order.slice(0, 3), low3 = P.order.slice(-3).reverse();
+    const avg = list => list.reduce((s, n) => s + num(n).pct, 0) / list.length;
+    const birth = avg(Array.from({ length: 31 }, (_, i) => i + 1)), high = avg(Array.from({ length: 14 }, (_, i) => i + 32));
+    const fp = P.firstPrize;
+    const q = fp.quintiles;
+    const payout = k => shareOf(fp.lambda * k) / shareOf(fp.lambda);
+    const nList = list => list.map(n => `${n}번`).join(' · ');
+    const nListEn = list => list.join(' · ');
+
+    const lead = en(`동행복권은 사람들이 어떤 번호를 샀는지 공개하지 않습니다. 대신 회차마다 등수별 당첨 게임 수와 판매액을 공개합니다. 사람들이 번호를 고르게 산다면 5등(3개 일치) 게임 수는 판매 게임 수로 정해지는 기대치와 같아야 합니다. 당첨번호에 사람들이 즐겨 사는 번호가 들면 기대보다 많고, 덜 사는 번호가 들면 적습니다. ${span} ${fmt(P.rounds)}회차를 모두 맞춰 번호 45개 각각의 몫을 거꾸로 셈했습니다. <strong>가장 많이 사는 번호는 ${nList(top3)}, 가장 덜 사는 번호는 ${nList(low3)}</strong>입니다.`,
+        `Donghaeng Lottery does not publish which numbers people buy, but it does publish, for every draw, how many games won each prize and how much was sold. If people bought numbers evenly, the number of 5th-prize wins (three numbers matched) would equal what the sales imply. When the winning numbers include numbers people like, there are more; when they include numbers people avoid, there are fewer. Fitting all ${fmt(P.rounds)} draws from ${P.first} to ${P.last} works out each of the 45 numbers' share. <strong>The numbers bought most are ${nListEn(top3)}, and the least ${nListEn(low3)}.</strong>`);
+
+    const glance = [
+        h2En('한눈에 보기', 'At a glance'),
+        table([['항목', 'Measure'], ['값', 'Value']], [
+            [en('쓴 회차', 'Draws used'), en(`${span} (${fmt(P.rounds)}회차)`, `${P.first}–${P.last} (${fmt(P.rounds)} draws)`)],
+            [en('가장 많이 사는 번호', 'Bought most'), `<span class="row-balls">${top3.map(ball).join('')}</span><span class="sub">${top3.map(n => signPct(num(n).pct)).join(' · ')}</span>`],
+            [en('가장 덜 사는 번호', 'Bought least'), `<span class="row-balls">${low3.map(ball).join('')}</span><span class="sub">${low3.map(n => signPct(num(n).pct)).join(' · ')}</span>`],
+            [en('1~31 평균 · 32~45 평균', 'Average of 1–31 · of 32–45'), `${signPct(birth, 2)} · ${signPct(high, 2)}`],
+            [en('지난주 당첨번호 하나당', 'Per number from last week\'s draw'), `${signPct(P.prev.pct, 2)} <span class="sub">± ${(1.96 * P.prev.se).toFixed(2)}%p</span>`],
+            [en('그때까지 가장 많이 나온 번호 10개 중 하나당', 'Per number among the ten drawn most so far'), `${signPct(P.hotEffect.pct, 2)} <span class="sub">± ${(1.96 * P.hotEffect.se).toFixed(2)}%p</span>`],
+        ], 'tier-stat tier-glance'),
+        pEn('퍼센트는 그 번호가 당첨번호에 들었을 때 5등 당첨 게임이 평균보다 몇 % 많았는지입니다. ± 는 95% 범위입니다. 같은 셈이 1등(6개 모두)에서는 약 두 배로 커집니다(아래 "믿을 만한가").',
+            'The percentage is how many more (or fewer) 5th-prize wins there were, on average, when that number was among the winning numbers. ± is the 95% range. The same effect roughly doubles at 1st prize, where all six must match (see "Can it be trusted?" below).', 'note'),
+    ];
+
+    const rows = P.order.map((n, i) => {
+        const x = num(n);
+        return [rank(i + 1), ball(n), `<strong>${signPct(x.pct, 2)}</strong>`, `± ${(1.96 * x.se).toFixed(2)}%p`];
+    });
+    const ranking = [
+        h2En('번호별 순위 (많이 사는 순)', 'All 45 numbers, bought most first'),
+        table([['순위', 'Rank'], ['번호', 'Number'], ['5등 게임 차이', '5th-prize wins vs. average'], ['95% 범위', '95% range']], rows, 'tier-stat'),
+        pEn(`이웃한 순위는 ± 범위가 겹치는 경우가 많아 순서가 바뀔 수 있습니다. 위아래 끝의 차이는 범위를 크게 넘습니다. 31 이하 번호(생일로 쓸 수 있는 번호)는 평균 ${signPct(birth, 2)}, 32 이상은 ${signPct(high, 2)}입니다.`,
+            `Neighbouring ranks often have overlapping ranges and could swap places; the gap between the top and the bottom is far wider than the ranges. Numbers up to 31 (usable as birthdays) average ${signPct(birth, 2)}, and 32 and above ${signPct(high, 2)}.`, 'note'),
+    ];
+
+    const latestKo = P.latestNumbers.join(' · ');
+    const habits = [
+        h2En('지난주 번호는 피하고, 많이 나온 번호는 따라 산다', 'Last week\'s numbers are avoided; frequently drawn numbers are followed'),
+        pEn(`당첨번호에 지난주 당첨번호가 하나 들 때마다 5등 게임은 평균 <strong>${signPct(P.prev.pct, 2)}</strong>였습니다. 지난주 번호를 그대로 따라 사는 사람보다 "방금 나온 번호는 또 안 나온다"며 피하는 사람이 더 많다는 뜻입니다. 반대로 그때까지 가장 많이 나온 번호 10개 중 하나가 들 때마다 <strong>${signPct(P.hotEffect.pct, 2)}</strong>였습니다. 통계 사이트에서 "많이 나온 번호"를 보고 고르는 사람이 실제로 있습니다. 어느 쪽이든 그 번호가 다음 회차에 나올 확률은 다른 번호와 같습니다(<a href="blog/cold-numbers-gamblers-fallacy.html">도박사의 오류</a>).`,
+            `Each of last week's winning numbers among the winning numbers meant <strong>${signPct(P.prev.pct, 2)}</strong> 5th-prize wins on average: more people avoid a number that "just came up" than copy last week's line. Each of the ten most frequently drawn numbers so far meant <strong>${signPct(P.hotEffect.pct, 2)}</strong>: some people really do pick the "most drawn" numbers that statistics sites show. Either way, those numbers are exactly as likely as any other to come up next (<a href="blog/cold-numbers-gamblers-fallacy.html">the gambler's fallacy</a>).`),
+        pEn(`그래서 다음 회차(${P.forRound}회)에는 지난주 번호(${latestKo})가 조금 덜, 지금까지 가장 많이 나온 10개(${P.hot.join(' · ')})가 조금 더 팔린다고 봅니다. 당첨번호가 아니라 사는 사람들 이야기이고, 홈 생성기는 이 두 가지를 더해 셉니다.`,
+            `So for the next draw (${P.forRound}) we expect last week's numbers (${latestKo}) to sell a little less and the ten most drawn so far (${P.hot.join(' · ')}) a little more. This is about buyers, not about the draw, and the home page generator includes both.`, 'note'),
+    ];
+
+    const trust = [
+        h2En('믿을 만한가', 'Can it be trusted?'),
+        pEn('같은 계산을 자료를 바꿔 여러 번 해 봤습니다. 우연히 나온 숫자라면 자료를 바꿀 때마다 순위가 뒤섞입니다.',
+            'We ran the same calculation on different slices of the data. If the numbers were noise, the ranking would reshuffle every time.'),
+        table([['견준 것', 'Comparison'], ['번호 45개 몫의 상관', 'Correlation of the 45 numbers']], [
+            [en('5등으로 셈한 것 ↔ 4등(4개 일치)으로 따로 셈한 것', '5th prize ↔ 4th prize (four matched), fitted separately'), `<strong>${P.check.tier4.toFixed(3)}</strong>`],
+            [en('홀수 회차만 ↔ 짝수 회차만', 'Odd draws only ↔ even draws only'), `<strong>${P.check.halves.toFixed(3)}</strong>`],
+            [en(`${Math.floor(P.check.mid)}회 전 ↔ 뒤`, `Before ↔ after draw ${Math.floor(P.check.mid)}`), `<strong>${P.check.eras.toFixed(3)}</strong>`],
+        ], 'tier-stat'),
+        pEn('1에 가까울수록 같은 순위가 다시 나온다는 뜻입니다. 사람들의 번호 취향은 십수 년째 거의 그대로입니다.',
+            'The closer to 1, the more the same ranking reappears. People\'s taste in numbers has barely changed in well over a decade.', 'note'),
+        pEn('1등에도 통하는지 보려고, 홀수 회차로 배운 번호 몫으로 짝수 회차를(거꾸로도) 점수 매기고 실제 1등 · 2등 당첨자 수와 견줬습니다. 점수가 높은 회차, 곧 사람들이 즐겨 사는 번호가 많이 든 회차일수록 1등이 기대보다 많이 나왔습니다.',
+            'To check that it carries over to 1st prize, the shares learned from odd draws scored the even draws (and the other way round), and the scores were set against the actual 1st- and 2nd-prize winners. The higher the score, meaning the more popular numbers a draw had, the more 1st-prize winners it had than expected.'),
+        table([['당첨번호 인기 점수', 'Popularity of the winning numbers'], ['회차', 'Draws'], ['1등 실제 ÷ 기대', '1st prize: actual ÷ expected'], ['2등 실제 ÷ 기대(중앙값)', '2nd prize: actual ÷ expected (median)']],
+            q.map((x, i) => [en(['가장 덜 사는 20%', '그다음 20%', '가운데 20%', '그다음 20%', '가장 많이 사는 20%'][i], ['Least bought 20%', 'Next 20%', 'Middle 20%', 'Next 20%', 'Most bought 20%'][i]),
+                fmt(x.rounds), `<strong>${x.first.toFixed(2)}</strong>`, x.second.toFixed(2)]), 'tier-stat'),
+        pEn(`포아송 회귀로 맞추면, 당첨번호의 인기 때문에 5등 게임이 1% 많을 때 1등 당첨자는 약 ${f1(fp.c)}%(95% 범위 ${f1(fp.c - 1.96 * fp.seC)}~${f1(fp.c + 1.96 * fp.seC)}%) 많습니다. 5등에서 작아 보이던 번호 몫이 6개를 모두 맞혀야 하는 1등에서는 약 두 배로 커진다는 뜻입니다.`,
+            `A Poisson fit says that when a draw's popular numbers mean 1% more 5th-prize wins, there are about ${f1(fp.c)}% (95% range ${f1(fp.c - 1.96 * fp.seC)}–${f1(fp.c + 1.96 * fp.seC)}%) more 1st-prize winners: the small share seen at 5th prize roughly doubles at 1st prize, where all six must match.`, 'note'),
+    ];
+
+    const use = [
+        h2En('이 숫자로 할 수 있는 것', 'What you can do with this'),
+        pEn('당첨 확률은 바꿀 수 없습니다. 어떤 6개를 고르든 1등 확률은 1/8,145,060입니다. 바꿀 수 있는 것은 <strong>1등이 됐을 때 나눠 가질 사람 수</strong>뿐입니다(<a href="blog/why-jackpots-split.html">당첨금이 쪼개지는 이유</a>).',
+            'You cannot change the odds: any six numbers have a 1 in 8,145,060 chance of 1st prize. What you can change is <strong>how many people you would share 1st prize with</strong> (<a href="blog/why-jackpots-split.html">why jackpots get split</a>).'),
+        table([['조합', 'Combinations'], ['1등 공동 당첨자 수 (평균 조합 = 1)', 'Co-winners at 1st prize (average = 1)'], ['1등이 되면 받는 몫', 'Your share if you win']], [
+            [en('덜 팔리는 50%', 'Least bought 50%'), `${P.bands[1].toFixed(2)}${en('배', '×')}`, `${payout(P.bands[1]).toFixed(2)}${en('배', '×')}`],
+            [en('덜 팔리는 20%', 'Least bought 20%'), `${P.bands[2].toFixed(2)}${en('배', '×')}`, `${payout(P.bands[2]).toFixed(2)}${en('배', '×')}`],
+            [en('덜 팔리는 5%', 'Least bought 5%'), `<strong>${P.bands[3].toFixed(2)}${en('배', '×')}</strong>`, `<strong>${payout(P.bands[3]).toFixed(2)}${en('배', '×')}</strong>`],
+        ], 'tier-stat'),
+        pEn(`${fmt(TOTAL)}개 조합 모두에 다음 회차(${P.forRound}회) 기준 인기 점수를 매겨 덜 팔리는 쪽부터 잘랐습니다. 받는 몫은 최근 52회 평균 판매량(1등 기대 ${f1(fp.lambda)}명)으로 셈한 어림값입니다.`,
+            `Every one of the ${fmt(TOTAL)} combinations was scored for the next draw (${P.forRound}) and cut from the least bought end. The share is an estimate based on average sales over the last 52 draws (${f1(fp.lambda)} expected 1st-prize winners).`, 'note'),
+        pEn('<a href="index.html#gen-pop">홈 번호 생성기</a>에서 로그인하면 <strong>나눠 가질 사람 줄이기</strong>로 덜 팔리는 조합 안에서만 무작위로 뽑을 수 있고, 만든 번호마다 1등 공동 당첨자 지수가 함께 나옵니다. <a href="mypage.html">마이페이지 내 번호</a>에도 회차별로 나옵니다.',
+            'Sign in on the <a href="index.html#gen-pop">home page generator</a> to draw at random only from less-bought combinations with <strong>Share less</strong>, and to see a co-winner index for every line you make. It also appears for each draw in <a href="mypage.html">My numbers</a>.'),
+    ];
+
+    const method = [
+        h2En('계산 방법과 한계', 'Method and limits'),
+        pEn(`회차마다 <code>ln(5등 게임 수 ÷ 기대 게임 수)</code>를 당첨번호 6개의 번호 몫 합 + 시기(3차식) + 지난주 번호 수 + 많이 나온 번호 수로 최소제곱 맞춤했습니다. 기대 게임 수는 판매 게임 수(판매액 ÷ 1,000원) × 182,780 ÷ ${fmt(TOTAL)}입니다(아무 조합이나 정확히 3개가 맞을 경우의 수 C(6,3) × C(39,3) = 182,780). 1게임이 1,000원이 된 88회부터 썼고, 번호 몫은 45개 평균이 0이 되게 맞췄습니다.`,
+            `For each draw, <code>ln(5th-prize wins ÷ expected wins)</code> was fitted by least squares to the sum of the six winning numbers' shares plus a time trend (cubic), the count of last week's numbers and the count of most drawn numbers. Expected wins are games sold (sales ÷ 1,000 KRW) × 182,780 ÷ ${fmt(TOTAL)}, where 182,780 = C(6,3) × C(39,3) is the number of combinations matching exactly three. Draws from 88 on are used (when a game started costing 1,000 KRW), and the 45 shares are set to average zero.`),
+        pEn('한계: 번호 하나하나의 몫만 셉니다. 같은 조합을 한꺼번에 많이 산 회차(<a href="round/1057.html">1057회</a> 2등 664게임)나 용지에 모양을 그린 조합처럼 조합 통째로 몰리는 일은 이 셈에 다 담기지 않습니다. 영국 로또를 분석한 Baker · McHale(2011, 영국 왕립통계학회지)도 사람들은 번호 하나보다 "비슷한 조합 묶음"을 고른다고 보고했습니다. 자동 · 수동 비율은 회차마다 공개되지 않아 둘을 섞은 전체 판매로 셉니다.',
+            'Limits: only each number\'s own share is counted. When a whole combination is bought in bulk (<a href="round/1057.html">draw 1057</a>, 664 2nd-prize wins) or drawn as a shape on the slip, the pile-up is not fully captured. Baker and McHale (2011, Journal of the Royal Statistical Society), studying the UK Lotto, also found that people choose "clusters of similar combinations" rather than single numbers. The share of automatic and manual tickets is not published per draw, so the calculation uses total sales, both mixed.'),
+    ];
+
+    const data = [
+        h2En('자료 내려받기', 'Download the data'),
+        pEn(`<a href="popularity.json">popularity.json</a> · <a href="popularity.csv">popularity.csv</a> — 번호별 몫(%)과 95% 범위, 지난주 · 많이 나온 번호 효과, 검증 수치. 매주 추첨 뒤 이 페이지와 함께 갱신됩니다. 가져다 쓸 때는 출처(lottodraw.kr)를 밝혀 주세요.`,
+            `<a href="popularity.json">popularity.json</a> · <a href="popularity.csv">popularity.csv</a> — each number's share (%) with its 95% range, the last-week and most-drawn effects, and the checks. Updated with this page after every draw. Please credit lottodraw.kr if you use it.`),
+    ];
+
+    const title = `로또 사람들이 많이 사는 번호 · 번호별 구매 인기 순위 (${span})`;
+    const desc = `로또 2~5등 당첨 게임 수로 거꾸로 셈한 번호별 구매 인기 순위(${span}). 가장 많이 사는 번호 ${nList(top3)}, 가장 덜 사는 번호 ${nList(low3)}. 지난주 번호는 덜 사고 많이 나온 번호는 더 삽니다.`;
+    return shell({
+        file: POPULAR_FILE,
+        crumbs: [['index.html#sec-stats', '로또 통계', null, 'Lotto statistics'], [null, '많이 사는 번호', null, 'Numbers people buy']],
+        title,
+        h1: '사람들이 많이 사는 로또 번호', h1En: 'The Lotto Numbers People Buy Most',
+        desc,
+        scope: en(`${span} · ${PERIOD} · 매주 추첨 후 자동 갱신 (마지막 갱신 ${UPDATED})`,
+            `Draws ${P.first}–${P.last} · ${PERIOD} · updated automatically after each draw (last update ${UPDATED})`),
+        lead,
+        ld: [{
+            '@type': 'Dataset',
+            name: title,
+            description: desc,
+            url: `${SITE}/${POPULAR_FILE}`,
+            isAccessibleForFree: true,
+            dateModified: UPDATED,
+            temporalCoverage: `${(draws.find(d => d.round === P.first) || LATEST).date}/${stats.latestDate}`,
+            creator: { '@type': 'Organization', name: 'lottodraw.kr', url: SITE + '/' },
+            keywords: ['로또 많이 사는 번호', '로또 인기 번호', '로또 번호 선호도', '로또 공동 당첨', '로또 당첨금 나눔'],
+            distribution: [
+                { '@type': 'DataDownload', encodingFormat: 'application/json', contentUrl: `${SITE}/popularity.json` },
+                { '@type': 'DataDownload', encodingFormat: 'text/csv', contentUrl: `${SITE}/popularity.csv` },
+            ],
+        }],
+        body: [].concat(glance, ranking, habits, trust, use, method, data, [
+            pEn('함께 보기: <a href="statistics-frequency.html">많이 나온 번호 순위</a> · <a href="statistics-prize.html">1등 당첨자 수 통계</a> · <a href="statistics-prize-2-3.html">2등 · 3등 당첨금</a> · <a href="blog/why-jackpots-split.html">당첨금이 쪼개지는 이유</a>',
+                'See also: <a href="statistics-frequency.html">most drawn numbers</a> · <a href="statistics-prize.html">1st-prize winners</a> · <a href="statistics-prize-2-3.html">2nd and 3rd prizes</a> · <a href="blog/why-jackpots-split.html">why jackpots get split</a>'),
+            h2En('다른 로또 통계', 'Other statistics'),
+            relatedLinks(POPULAR_FILE),
+        ]),
+    });
+}
+
+// 공개 자료 — 페이지와 같은 숫자. 소수는 줄여 매주 바뀐 만큼만 바뀌게 한다
+const r5 = v => Math.round(v * 1e5) / 1e5;
+function popularityJson() {
+    const P = POP;
+    return JSON.stringify({
+        name: '로또 6/45 번호별 구매 인기도 (lottodraw.kr)',
+        description: '동행복권 공개 자료(회차별 등수별 당첨 게임 수 · 판매액)로 셈한 번호별 구매 인기. pct = 그 번호가 당첨번호에 들었을 때 5등 당첨 게임이 평균보다 몇 % 많았나. 당첨 확률과는 관계없다.',
+        url: `${SITE}/${POPULAR_FILE}`,
+        updated: UPDATED,
+        draws: { first: P.first, last: P.last, count: P.rounds },
+        numbers: P.numbers.map(x => ({ number: x.n, rank: x.rank, pct: r5(x.pct), se: r5(x.se) })),
+        effects: {
+            lastDraw: { pct: r5(P.prev.pct), se: r5(P.prev.se), note: '지난 회차 당첨번호 하나당' },
+            mostDrawn10: { pct: r5(P.hotEffect.pct), se: r5(P.hotEffect.se), note: '그때까지 가장 많이 나온 번호 10개 중 하나당' },
+        },
+        checks: { tier4: r5(P.check.tier4), oddEven: r5(P.check.halves), eras: r5(P.check.eras) },
+        firstPrize: { a: r5(P.firstPrize.a), c: r5(P.firstPrize.c), seC: r5(P.firstPrize.seC), lambda: r5(P.firstPrize.lambda),
+            quintiles: P.firstPrize.quintiles.map(x => ({ draws: x.rounds, first: r5(x.first), second: r5(x.second) })) },
+        // 홈 생성기 · 마이페이지가 쓰는 다음 회차 기준 값: 번호별 무게(β + 지난주 · 많이 나온 번호 효과), 덜 팔리는 50 · 20 · 5% 경계, 점수 백분위(0~100%)
+        generator: {
+            forRound: P.forRound, lastDraw: P.latestNumbers, mostDrawn10: P.hot,
+            beta: P.b.map(r5), weights: P.w.slice(1).map(r5), cuts: P.cuts.map(r5), percentiles: P.pctl.map(r5),
+            meanFactor: r5(P.meanFactor), bands: { 50: r5(P.bands[1]), 20: r5(P.bands[2]), 5: r5(P.bands[3]) },
+        },
+    }) + '\n';
+}
+function popularityCsv() {
+    return 'number,rank,pct,se\n' + POP.numbers.map(x => [x.n, x.rank, x.pct.toFixed(3), x.se.toFixed(3)].join(',')).join('\n') + '\n';
+}
+
 /* ───── 판매점 지도 (store-map.html + store-map-data.json, 2026-10-26) ─────
  * 생성기 · 통계와 따로 둔 페이지. 지도는 브라우저에서 MapLibre(js/vendor/, BSD) + OpenFreeMap(키 없음, OpenStreetMap 자료)로 그린다.
  * 점: 1등 · 2등이 나온 판매점(stores-data.json 의 좌표). 크기는 2등 횟수 + 1등 횟수 × 6 — 1등은 2등보다 6배 드물어
@@ -3297,7 +3478,7 @@ function updateHome(posts) {
                 // 검색엔진 · AI 요약이 사이트를 한 문장으로 소개할 때 읽는 자리. 기능을 하나씩 다 적는다
                 description: `lottodraw.kr은 ${SITE_KIND}입니다. 동행복권 로또 6/45 ${RANGE} 당첨 기록으로 회차별 당첨번호와 등수별 당첨금, `
                     + '전 회차 통계 12종, 역대 당첨금 TOP 50과 회차별 그래프(물가 반영 · 서울 아파트값 · 최저임금 비교), 실수령액 계산기, '
-                    + '2·3등 당첨금 통계, 등수별 당첨 확률, 16개 특수 패턴을 거르는 번호 생성기, 해설 블로그를 제공합니다. 다음 회차를 예측하지 않습니다.',
+                    + '2·3등 당첨금 통계, 2~5등 당첨 게임 수로 셈한 번호별 구매 인기(사람들이 많이 사는 번호), 등수별 당첨 확률, 16개 특수 패턴을 거르는 번호 생성기, 해설 블로그를 제공합니다. 다음 회차를 예측하지 않습니다.',
             },
             { '@type': 'Organization', '@id': SITE + '/#org', name: 'lottodraw.kr', url: SITE + '/', email: 'contact@lottodraw.kr' },
             dataset,
@@ -3319,6 +3500,8 @@ function updateHome(posts) {
             + (REPEAT.byK[6]
                 ? `<span data-i18n-en="${esc(`${REPEAT.byK[6]} exact repeats · ${REPEAT.byK[5]} pairs share 5`)}">6개 같은 회차 ${REPEAT.byK[6]}쌍 · 5개 ${REPEAT.byK[5]}쌍</span></li>`
                 : `<span data-i18n-en="${esc(`no exact repeat yet · ${REPEAT.byK[5]} pairs share 5`)}">6개 같은 회차 없음 · 5개 ${REPEAT.byK[5]}쌍</span></li>`),
+        ...(POP ? [`                    <li><a href="${POPULAR_FILE}" data-i18n-en="Numbers people buy">많이 사는 번호</a>`
+            + `<span data-i18n-en="${esc(`bought most: ${POP.order[0]} · least: ${POP.order[44]}`)}">가장 많이 ${POP.order[0]}번 · 가장 적게 ${POP.order[44]}번</span></li>`] : []),
         '                    <li><a href="probability.html" data-i18n-en="Lotto odds">로또 확률</a><span data-i18n-en="1st 1/8,145,060 · 5th 1/45">1등 1/8,145,060 · 5등 1/45</span></li>',
         ...(TIER ? [`                    <li><a href="${TIER_FILE}" data-i18n-en="${esc('2nd & 3rd prizes')}">2등·3등 당첨금</a>`
             + `<span data-i18n-en="${esc(`average: 2nd ${wonAboutEn(TIER.mean2)} · 3rd ${wonAboutEn(TIER.mean3)}`)}">평균 2등 ${wonAbout(TIER.mean2)} · 3등 ${wonAbout(TIER.mean3)}</span></li>`] : []),
@@ -3630,6 +3813,7 @@ function llmsTxt(posts) {
         line('/statistics-prize.html', '1등 당첨자 수 통계', '회차별 1등 당첨자 수와 1인당 당첨금 분포.'),
         line('/statistics-prize-2-3.html', '2등 · 3등 당첨금 통계', '평균 · 최고 · 최저 기록과 연도별 평균.'),
         line('/statistics-stores.html', '1등 판매점 통계', '판매점별 1등 · 2등 배출 기록.'),
+        ...(POP ? [line('/' + POPULAR_FILE, '사람들이 많이 사는 번호', '2~5등 당첨 게임 수로 거꾸로 셈한 번호별 구매 인기 순위. 자료: /popularity.json · /popularity.csv')] : []),
         line('/store-map.html', '로또 판매점 지도', '1등 · 2등이 나온 판매점을 전국 지도에서 봅니다.'),
         line(`/${LOTTOHEX_FILE}`, 'LottoHex', '판매점에 다녀와 위치로 인증하고 육각 블록을 차지하는 무료 땅따먹기 게임.'),
         line('/tax.html', '실수령액 계산기', '당첨금 세금(200만 원 이하 비과세, 3억 원까지 22%, 초과분 33%)과 실수령액.'),
@@ -3672,6 +3856,7 @@ function updateSitemap(blog) {
         STORES ? SIDO.filter(x => SIDO_STATS(x.ko)).map(x => entry('/' + sidoFile(x.ko), UPDATED, 'weekly', '0.7')) : [],
         STORE_MAP_READY() ? [entry('/' + STORE_MAP_FILE, UPDATED, 'weekly', '0.8'), entry('/' + LOTTOHEX_FILE, (lottohexSnap() || {}).at || UPDATED, 'weekly', '0.7')] : [],
         [entry('/' + REPEAT_FILE, [UPDATED, REPEAT_SINCE].sort().pop(), 'weekly', '0.8')],
+        POP ? [entry('/' + POPULAR_FILE, [UPDATED, POPULAR_SINCE].sort().pop(), 'weekly', '0.8')] : [],
         [
             // 마지막으로 크게 바뀐 날: 중복 문단 · 링크(REPEAT_SINCE). 그 앞은 판매점(STORES_SINCE) · 2·3등(TIER_SINCE) 링크
             entry('/probability.html', atLeast('/probability.html', REPEAT_SINCE), 'yearly', '0.7'),
@@ -3738,6 +3923,14 @@ if (STORE_MAP_READY()) {
     if (write(LOTTOHEX_FILE, storeMapPage(STORE_MAP, 'hex'))) changed++;
 }
 if (write(REPEAT_FILE, repeatPage())) changed++;
+if (POP) {
+    if (write('popularity.json', popularityJson())) changed++;
+    if (write('popularity.csv', popularityCsv())) changed++;
+    // 홈 생성기 "남은 조합": 고정수 · 제외수가 없을 때의 표를 미리 세 둔다(휴대폰이 815만 개를 훑지 않게). 고정수 · 제외수를 고르면 그때 워커가 센다
+    const space = ComboSpace.scan({ w: POP.w, cuts: POP.cuts });
+    if (write('combo-space.json', JSON.stringify({ forRound: POP.forRound, total: space.total, zero: space.zero, masked: space.masked }) + '\n')) changed++;
+    if (write(POPULAR_FILE, popularPage())) changed++;
+}
 // 블로그는 원고(content/blog/)로 만든다. 같은 틀을 쓰고 사이트맵에 같이 넣으려고 여기서 부른다
 const blog = require(path.join(__dirname, 'build-blog.js'))({ shell, write, SITE, OG_IMAGE, figures: blogFigures() });
 changed += blog.changed;
@@ -3747,7 +3940,7 @@ if (updateAbout()) changed++;
 const urls = updateSitemap(blog.sitemap);
 if (write('rss.xml', rssFeed(blog.feed || []))) changed++;
 if (write('llms.txt', llmsTxt(blog.feed || []))) changed++;
-console.log(`통계 ${STATS.length}쪽${TIER ? ' · 2·3등' : ''}${STORES ? ' · 1등 판매점' : ''} · 중복 · 회차 ${draws.length}쪽 · 전체 조회 · 확률 · 블로그 ${blog.posts}편 · 사이트맵 ${urls}개 (${RANGE}, 갱신일 ${UPDATED})`);
+console.log(`통계 ${STATS.length}쪽${TIER ? ' · 2·3등' : ''}${STORES ? ' · 1등 판매점' : ''}${POP ? ' · 많이 사는 번호' : ''} · 중복 · 회차 ${draws.length}쪽 · 전체 조회 · 확률 · 블로그 ${blog.posts}편 · 사이트맵 ${urls}개 (${RANGE}, 갱신일 ${UPDATED})`);
 console.log(`바뀐 생성 페이지: ${changed}쪽`);
 // 손 관리 페이지의 css · js 주소에 내용 지문을 붙인다(배포 직후 옛 파일과 섞이지 않게) — 위에서 index · tax · top · about 을 고친 뒤에
 const versioned = require(path.join(__dirname, 'asset-version.js'))();

@@ -16,6 +16,7 @@
 - [1등 당첨자 수 통계](https://www.lottodraw.kr/statistics-prize.html): 회차별 1등 당첨자 수와 1인당 당첨금 분포.
 - [2등 · 3등 당첨금 통계](https://www.lottodraw.kr/statistics-prize-2-3.html): 평균 · 최고 · 최저 기록과 연도별 평균.
 - [1등 판매점 통계](https://www.lottodraw.kr/statistics-stores.html): 판매점별 1등 · 2등 배출 기록.
+- [사람들이 많이 사는 번호](https://www.lottodraw.kr/statistics-popular.html): 2~5등 당첨 게임 수로 거꾸로 셈한 번호별 구매 인기 순위. 자료: /popularity.json · /popularity.csv
 - [로또 판매점 지도](https://www.lottodraw.kr/store-map.html): 1등 · 2등이 나온 판매점을 전국 지도에서 봅니다.
 - [LottoHex](https://www.lottodraw.kr/lottohex.html): 판매점에 다녀와 위치로 인증하고 육각 블록을 차지하는 무료 땅따먹기 게임.
 - [실수령액 계산기](https://www.lottodraw.kr/tax.html): 당첨금 세금(200만 원 이하 비과세, 3억 원까지 22%, 초과분 33%)과 실수령액.

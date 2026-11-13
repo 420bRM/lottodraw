@@ -364,6 +364,13 @@ details[open] > summary.card-title { padding-bottom: 0; }
 .gen-ac-exact[aria-pressed="true"] { border-color: var(--brand-bg, var(--brand)); background: var(--brand-bg, var(--brand)); color: #fff; font-weight: bold; }
 .gen-ac-exact:disabled { opacity: .45; cursor: default; }
 .member-cover { position: absolute; inset: 0; width: 100%; padding: 0; border: 0; background: transparent; cursor: pointer; }
+/* 남은 조합(2026-11-13) — 막대 아래 한 줄. 조건이 맞지 않아 0개면 붉게 */
+.gen-space { min-height: 1.5em; margin: 8px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; text-align: left; font-variant-numeric: tabular-nums; }
+.gen-space.is-none { color: #c0392b; }
+/* 연속번호 조건을 켜면 걸릴 조합이 없는 특수 패턴(6개 연속 · 모두 홀수/짝수 · 모두 3/4/5의 배수)을 흐리게 */
+.patterns li.is-moot label { opacity: .5; }
+#gen-pop { scroll-margin-top: 140px; }
+#gen-pop:target { animation: gen-target 2.4s ease-out; border-radius: 6px; }
 .gen-log { margin-top: 10px; text-align: left; }
 .log { padding: 6px 8px; background: var(--soft, #fafbfd); border: 1px solid var(--line); border-radius: 6px; font-size: 11.5px; line-height: 1.6; overflow-wrap: anywhere; }
 .log-idle { color: var(--muted); }

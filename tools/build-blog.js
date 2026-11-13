@@ -68,6 +68,7 @@ const RELATED = {
     'store-map':   ['store-map.html', '로또 판매점 지도', 'Lotto retailer map', '1등 · 2등이 나온 판매점 전국 지도', 'Nationwide map of 1st- and 2nd-prize retailers'],
     stores: ['statistics-stores.html', '1등 판매점 통계', '1st-prize retailer statistics', '1등 많이 나온 곳 순위 · 지역 · 2등과 견주기', 'Top retailers, areas and the 2nd-prize check'],
     repeat:        ['statistics-repeat.html', '당첨번호 중복', 'Repeated winning numbers', '6개 · 5개가 같은 회차와 생일 문제', 'Draws sharing six or five numbers, and the birthday problem'],
+    popular:       ['statistics-popular.html', '사람들이 많이 사는 번호', 'The numbers people buy most', '2~5등 당첨 게임 수로 거꾸로 셈한 번호별 인기', 'How popular each number is, worked back from 2nd–5th prize wins'],
     'prize-tiers': ['statistics-prize-2-3.html', '2등·3등 당첨금 통계', '2nd & 3rd prize statistics', '평균·최고·최저와 연도별 흐름', 'Averages, records and the year-by-year picture'],
     probability:   ['probability.html', '로또 확률', 'Lotto odds', '등수별 당첨 확률과 계산 방법', 'Odds for each prize tier and how they are worked out'],
     tax:           ['tax.html', '실수령액 계산기', 'After-tax calculator', '당첨금을 넣으면 세금과 실수령액', 'Enter a prize to see the tax and take-home amount'],

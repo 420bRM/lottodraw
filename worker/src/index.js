@@ -895,7 +895,8 @@ async function setNickname(request, env) {
     return json(request, env, { user: r.user, cost: r.cost || 0 });
 }
 
-// 번호 생성기 설정(로그인 회원). 고정수 6개까지 · 제외수 · 켠 패턴 번호(1~16) · 직전 당첨 조합 제외 칸(0~10, 화면의 끌기 막대 위치).
+// 번호 생성기 설정(로그인 회원). 고정수 6개까지 · 제외수 · 켠 패턴 번호(1~16) · 직전 당첨 조합 제외 칸(0~10, 화면의 끌기 막대 위치)
+// · 연속번호(0 끔 · 2 · 3 — 가장 긴 연속이 그 개수인 조합만) · 나눠 가질 사람 줄이기(0 끔 · 1~3 = 덜 팔리는 50 · 20 · 5%, 2026-11-13).
 // 받은 값을 그대로 믿지 않고 다듬어 저장한다. { gen: null } 이면 지운다
 const GEN_RECENT_MAX = 10;
 function cleanGen(raw) {
@@ -907,7 +908,9 @@ function cleanGen(raw) {
     const recent = Math.max(0, Math.min(GEN_RECENT_MAX, Math.floor(Number(raw.recent) || 0)));
     const ac = Math.max(0, Math.min(10, Math.floor(Number(raw.ac) || 0)));   // AC값 조건: 이 값 이상(0 = 끔)
     const acExact = raw.acExact === true && ac > 0;                          // true 면 "이 값만": AC값이 딱 ac 인 조합만(2026-10-18)
-    return { inc, exc, pat, recent, ac, acExact, at: Date.now() };
+    const run = [2, 3].includes(Number(raw.run)) ? Number(raw.run) : 0;
+    const pop = Math.max(0, Math.min(3, Math.floor(Number(raw.pop) || 0)));
+    return { inc, exc, pat, recent, ac, acExact, run, pop, at: Date.now() };
 }
 async function saveGenerator(request, env) {
     const s = await sessionUser(request, env);
