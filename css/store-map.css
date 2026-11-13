@@ -692,6 +692,9 @@ body.sm-full #theme-btn { display: none !important; }
     /* PC 의 LottoHex: 판매점 필터(지도에 보기 격자 · 1등 방식 · 흐리게 · 이 근처)는 LottoHex 판매점 층에 쓰이지 않아 감춘다. LottoHex 카드는 남는다 */
     .is-hex .sm-chips:not(.sm-modes) > :not(.sm-turf), .is-hex .sm-modes, .is-hex .sm-fade, .is-hex .sm-near-btn { display: none !important; }
 }
+/* 전환 화면이 떠 있는 동안은 실시간 채팅(body 바로 밑, 창 95 · 단추 90)을 감춘다(2026-11-13 사장님 — "화면 전환될 때 채팅창 혼자 둥둥").
+   전환 화면은 지도 묶음(.sm-wrap, position: fixed) 안이라 z-index 를 올려도 채팅 위로 못 간다 — 들어올 때는 html.sm-enter-*, 모드를 바꿀 때는 html.sm-fx-on(js/store-map.js modeIntro) */
+html.sm-fx-on .chat-panel, html.sm-fx-on .chat-fab, html.sm-enter-hex .chat-panel, html.sm-enter-hex .chat-fab, html.sm-enter-store .chat-panel, html.sm-enter-store .chat-fab { visibility: hidden; }
 /* 다른 페이지에서 들어올 때(2026-11-09 사장님 — 바닥글 띠 · 생성기에서 지도로 갈 때도 전환 효과): 생성기가 <head> 에서 html.sm-enter-hex|store 를 달아
    첫 화면부터 전환 화면이 덮여 있고, 지도가 그려지면 js/store-map.js(enterFx)가 걷는다. 움직임 줄이기면 달지 않는다 */
 html.sm-enter-hex #sm-hexfx, html.sm-enter-store #sm-storefx { display: grid !important; opacity: 1; }
