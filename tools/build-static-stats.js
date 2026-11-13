@@ -2942,7 +2942,7 @@ function lhSidoCounts(md, keys) {
 }
 function lhRankList(rank) {
     return '<ol class="sm-terr-rank sm-hexabout-rank">' + rank.map((r, i) => `<li><span class="sm-rk-n">${i + 1}</span><span class="sm-rk-nick">${esc(r.nick || '(탈퇴한 회원)')}</span>` +
-        `<span class="sm-rk-v" data-i18n-en="${r.cells} cells · ${r.stores} retailers">칸 ${fmt(r.cells)} · ${fmt(r.stores)}곳</span></li>`).join('') + '</ol>';
+        `<span class="sm-rk-v" data-i18n-en="${r.cells} cells · ${r.stores} retailers">블록 ${fmt(r.cells)} · ${fmt(r.stores)}곳</span></li>`).join('') + '</ol>';
 }
 function lottohexAboutHtml(md, snap) {
     let total = 0;
@@ -2954,27 +2954,27 @@ function lottohexAboutHtml(md, snap) {
         const s = lhSeason(snap.season && snap.season.id), held = (snap.cells || []).length;
         const sido = lhSidoCounts(md, snap.cells || []).slice(0, 5);
         week = `<h2 data-i18n-en="${esc(`LottoHex this week (as of ${snap.at})`)}">이번 주 LottoHex (${esc(snap.at)} 기준)</h2>` +
-            pEn(`참여 ${fmt(snap.players)}명 · 차지된 칸 ${fmt(held)}개` + (total ? ` / 전체 ${fmt(total)}칸 · 회색지대 ${fmt(Math.max(0, total - held))}칸` : '') + '.',
+            pEn(`참여 ${fmt(snap.players)}명 · 차지된 블록 ${fmt(held)}개` + (total ? ` / 전체 ${fmt(total)}블록 · 회색지대 ${fmt(Math.max(0, total - held))}블록` : '') + '.',
                 `${fmt(snap.players)} players · ${fmt(held)} cells held` + (total ? ` of ${fmt(total)} · ${fmt(Math.max(0, total - held))} in the grey zone` : '') + '.') +
-            (sido.length ? pEn('칸이 많이 차지된 지역: ' + sido.map(([k, v]) => `${esc(k)} ${fmt(v)}칸`).join(' · ') + '.',
+            (sido.length ? pEn('블록이 많이 차지된 지역: ' + sido.map(([k, v]) => `${esc(k)} ${fmt(v)}블록`).join(' · ') + '.',
                 'Regions with the most cells held: ' + sido.map(([k, v]) => `${esc(k)} ${fmt(v)}`).join(' · ') + '.') : '') +
             `<h3 data-i18n-en="${esc(`Map ranking · ${s.en} · final at ${s.endEn}`)}">Map 랭킹 · ${s.ko} · ${s.endKo}에 확정</h3>` +
             (snap.rank && snap.rank.length ? lhRankList(snap.rank)
-                : pEn('아직 칸을 차지한 사람이 없습니다. 판매점 한 곳만 다녀와도 회색지대의 칸을 차지합니다.', 'No one holds a cell yet. A single verified visit takes a grey-zone cell.')) +
+                : pEn('아직 블록을 차지한 사람이 없습니다. 판매점 한 곳만 다녀와도 회색지대의 블록을 차지합니다.', 'No one holds a cell yet. A single verified visit takes a grey-zone cell.')) +
             (snap.last && snap.last.rank && snap.last.rank.length ? `<h3 data-i18n-en="${esc(lhSeason(snap.last.id).en + ' final ranking')}">${lhSeason(snap.last.id).ko} 확정 순위</h3>` + lhRankList(snap.last.rank) : '');
     }
     return `<details class="sm-hexabout" id="sm-hexabout" open>
             <summary data-i18n-en="About LottoHex · this week">LottoHex 안내 · 이번 주</summary>
             <div class="sm-hexabout-body">
             <h2 data-i18n-en="What is LottoHex?">LottoHex란?</h2>
-            ${pEn('LottoHex(로또헥스)는 로또 판매점 지도 위 육각형 칸(가운데서 꼭짓점까지 0.6km, 걸어서 15분쯤)을 차지하는 무료 땅따먹기 게임입니다. 판매점에 직접 가서 판매점 카드의 "다녀왔어요"를 누르면 위치로 확인하고(판매점 50m 안), 칸 안에서 다녀온 판매점이 가장 많은 사람이 그 칸의 주인이 됩니다. 복권을 살 필요는 없습니다.',
+            ${pEn('LottoHex(로또헥스)는 로또 판매점 지도 위 육각형 블록(가운데서 꼭짓점까지 0.6km, 끝에서 끝까지 걸어서 15분쯤)을 차지하는 무료 땅따먹기 게임입니다. 판매점 50m 안에서 판매점 카드의 "다녀왔어요"를 누르면 위치로 인증됩니다. 블록 안에서 다녀온 판매점이 가장 많은 사람이 그 블록의 주인이 됩니다. 복권을 살 필요는 없습니다.',
                 'LottoHex is a free turf game on the lotto retailer map: the map is split into hexagon cells (0.6 km centre to corner, about a 15-minute walk across). Go to a retailer and tap "I\'ve been here" on its card; your location is checked (within 50 m), and whoever has visited the most retailers in a cell holds it. No purchase needed.')}
             <h2 data-i18n-en="How to play">하는 법</h2>
             <ol>
                 ${li('구글로 로그인하고 별명을 정합니다.', 'Sign in with Google and choose a nickname.')}
-                ${li('LottoHex 참여 안내를 읽고 참여합니다. 위치 이용에도 따로 동의합니다(만 14세 이상).', 'Read the LottoHex notice and join. Agree separately to location use (14 or older).')}
-                ${li(`판매점 50m 안에서 카드의 "다녀왔어요"를 누릅니다. 위치로 확인되면 다녀온 곳으로 기록되고 ${LH_POINTS.visit}포인트를 받습니다.`, `Within 50 m of a retailer, tap "I've been here" on its card. Once your location is verified it is recorded and you earn ${LH_POINTS.visit} points.`)}
-                ${li('칸을 빼앗기면 그 칸 판매점에서 "오늘 또 다녀왔어요"로 되찾습니다(같은 판매점은 하루 한 번).', 'Lost a cell? Win it back with "Visited again today" at a retailer in it (once a day per retailer).')}
+                ${li('LottoHex 참여에 동의합니다(만 19세 이상). 위치정보 서비스 이용에도 따로 동의합니다.', 'Read the LottoHex notice and join. Agree separately to location use (14 or older).')}
+                ${li(`판매점 50m 안에서 카드의 "다녀왔어요"를 누릅니다. 위치로 확인되면 다녀온 곳으로 기록되고 ${LH_POINTS.visit}P를 받습니다.`, `Within 50 m of a retailer, tap "I've been here" on its card. Once your location is verified it is recorded and you earn ${LH_POINTS.visit} points.`)}
+                ${li('블록을 빼앗기면 그 블록 판매점에서 "오늘 또 다녀왔어요"로 되찾습니다(같은 판매점은 하루 한 번).', 'Lost a cell? Win it back with "Visited again today" at a retailer in it (once a day per retailer).')}
             </ol>
             <h2 data-i18n-en="Rules">규칙</h2>
             <ul>

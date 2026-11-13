@@ -1069,7 +1069,7 @@
             const c = sk ? sk.c : '#8a94a6';
             polys.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [HX.ringOf(k)] }, properties: { k, o: own ? 1 : 0, me: me ? 1 : 0, c, pat: own ? skinImage(own[4]) : '' } });
             if (own) {
-                pts.push({ type: 'Feature', geometry: { type: 'Point', coordinates: HX.centerOf(k) }, properties: { k, nm: (own[0] || T('(별명 없음)', '(no name)')) + ' · ' + own[1], c } });
+                pts.push({ type: 'Feature', geometry: { type: 'Point', coordinates: HX.centerOf(k) }, properties: { k, nm: (own[0] || T('(별명 없음)', '(no nickname)')) + ' · ' + own[1], c } });
                 rings.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: HX.ringOf(k).slice().reverse() }, properties: { k } });   // 시계 방향(빛이 도는 차례)
                 glintCells.push(glintCell(k));
                 if (own[6] === 1) beams.push(...beamWalls(k, c, ownerKey));   // 빛 벽을 산 사람이 켜 둔 칸(모두에게)
@@ -1589,7 +1589,7 @@
         const me = terr.me;
         const n = newsState === 'pending' && terrNews;
         const txt = (me && me.joined
-            ? T('내 블록 ' + fmt(me.cells.length) + ' · ' + (me.rank ? me.rank + '위' : '순위 밖'), 'My cells ' + fmt(me.cells.length) + ' · ' + (me.rank ? '#' + me.rank : 'unranked'))
+            ? T('내 블록 ' + fmt(me.cells.length) + ' · ' + (me.rank ? me.rank + '위' : '순위 밖'), 'My blocks ' + fmt(me.cells.length) + ' · ' + (me.rank ? '#' + me.rank : 'unranked'))
             : T('판매점 땅따먹기 · 참여 ' + fmt(terr.players || 0) + '명', 'Retailer turf game · ' + fmt(terr.players || 0) + ' players')) +
             (n ? (n.lost.length ? T(' · 블록 ' + n.lost.length + '개 잃음', ' · lost ' + n.lost.length) : '') + (n.won.length ? T(' · ' + n.won.length + '개 얻음', ' · gained ' + n.won.length) : '') : '');
         el.textContent = txt;
@@ -1627,8 +1627,8 @@
         const myLine = mineCell ? T(' · 내 블록', ' · mine') : !own ? '' : need > 0 ? T(' · ' + need + '곳 더 다녀오면 차지', ' · ' + need + ' more to take it')
             : T(' · 같은 수 — 이 블록 판매점에 오늘 또 다녀오면 차지', ' · tied — visit one again today to take it back');
         const where = list.length ? areaOf(list) : '';
-        return '<div class="sm-terr-cell"><h4>' + T('고른 블록', 'This cell') + (where ? ' · ' + esc(where) : '') + ' <small>' + T('판매점 ' + fmt(list.length) + '곳', fmt(list.length) + ' retailers') + '</small></h4>' +
-            '<p>' + (own ? T('주인 ', 'Held by ') + swatch(own[4]) + ttBadge(own[5]) + '<b>' + esc(own[0] || T('(별명 없음)', '(no name)')) + '</b>' +
+        return '<div class="sm-terr-cell"><h4>' + T('고른 블록', 'This block') + (where ? ' · ' + esc(where) : '') + ' <small>' + T('판매점 ' + fmt(list.length) + '곳', fmt(list.length) + ' retailers') + '</small></h4>' +
+            '<p>' + (own ? T('주인 ', 'Held by ') + swatch(own[4]) + ttBadge(own[5]) + '<b>' + esc(own[0] || T('(별명 없음)', '(no nickname)')) + '</b>' +
                 T(' · ' + own[1] + '곳', ' · ' + own[1]) + (own[2] ? T(' (2위 ' + own[2] + '곳)', ' (runner-up ' + own[2] + ')') : '')
                 : '<span class="sm-skin sm-skin-grey" aria-hidden="true"></span><b>' + T('회색지대', 'Grey zone') + '</b>' + T(' — 아직 주인이 없는 블록입니다. 이 블록 판매점 한 곳만 다녀와도 차지합니다.', ' — no one holds it yet; one visit takes it.')) + '</p>' +
             (me && me.joined ? '<p class="sm-terr-mine">' + T('나: ' + myN + '곳', 'Me: ' + myN) + myLine + '</p>' : '') +
@@ -1660,7 +1660,7 @@
     const cellRow = (k, note, cls, sk, tag) => {
         const l = cellLabel(k);
         return '<li' + (cls ? ' class="' + cls + '"' : '') + '><button type="button" data-k="' + esc(k) + '">' + (sk ? swatch(sk) : '<span class="sm-skin sm-skin-grey" aria-hidden="true"></span>') +
-            '<span class="sm-tname"><span class="sm-todo-where"><b>' + esc(l.gu || T('(이름 없는 블록)', '(cell)')) + '</b> <small>' + esc(l.shop) + '</small></span>' +
+            '<span class="sm-tname"><span class="sm-todo-where"><b>' + esc(l.gu || T('(이름 없는 블록)', '(unnamed block)')) + '</b> <small>' + esc(l.shop) + '</small></span>' +
             (note ? '<span class="sm-todo-note">' + note + '</span>' : '') + '</span>' + (tag ? '<span class="sm-todo-tag">' + tag + '</span>' : '') + '</button></li>';
     };
     const HEX_NB = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, -1], [-1, 1]];
@@ -1693,10 +1693,10 @@
             : x.need === 0 ? '<b class="is-hot">' + T('같은 수', 'tied') + '</b>' + T(' · 오늘 또 다녀오면 차지', ' · revisit today to take it')
             : '<b>' + T('1곳 더', '1 more') + '</b>' + T(' 다녀오면 차지', ' visit takes it'));
         return '<div class="sm-terr-todo">' +
-            '<h4 class="sm-terr-h">🛡 ' + T('지킬 블록', 'Cells to defend') + ' <small>' + fmt(keep.length) + '</small></h4>' +
+            '<h4 class="sm-terr-h">🛡 ' + T('지킬 블록', 'Blocks to defend') + ' <small>' + fmt(keep.length) + '</small></h4>' +
             (keep.length ? '<ol class="sm-todo-list">' + cut(keep, 'keep').map(x => cellRow(x.k, keepNote(x), x.c[2] >= x.c[1] ? 'is-hot' : '', x.c[4])).join('') + '</ol>' + more(keep.length, 'keep')
-                : '<p class="sm-small">' + T(me.cells.length ? '내 블록이 모두 2곳 이상 앞서 있습니다.' : '아직 내 블록이 없습니다.', me.cells.length ? 'All your cells lead by 2 or more.' : 'You hold no cells yet.') + '</p>') +
-            '<h4 class="sm-terr-h">🎯 ' + T('노릴 블록', 'Cells within reach') + ' <small>' + fmt(aim.length) + '</small></h4>' +
+                : '<p class="sm-small">' + T(me.cells.length ? '내 블록이 모두 2곳 이상 앞서 있습니다.' : '아직 내 블록이 없습니다.', me.cells.length ? 'All your blocks lead by 2 or more.' : 'You hold no blocks yet.') + '</p>') +
+            '<h4 class="sm-terr-h">🎯 ' + T('노릴 블록', 'Blocks within reach') + ' <small>' + fmt(aim.length) + '</small></h4>' +
             (aim.length ? '<ol class="sm-todo-list">' + cut(aim, 'aim').map(x => cellRow(x.k, aimNote(x), x.need === 0 ? 'is-hot' : '', x.c && x.c[4])).join('') + '</ol>' + more(aim.length, 'aim')
                 : '<p class="sm-small">' + T('다녀온 블록과 그 옆 블록 중에 한 번만 더 다녀오면 차지할 블록이 없습니다.', 'Nothing within one visit around your cells.') + '</p>') +
             '</div>';
