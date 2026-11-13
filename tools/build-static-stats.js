@@ -2012,12 +2012,12 @@ function blogFigures() {
 // 블로그 화면 사진(img/blog/*.jpg, 2026-11-09 — 글 19 "LottoHex 하는 법"). 사진은 tools/oneoff/shot-lottohex.mjs 로 찍었다(지도는 실제, 별명 · 칸은 예시).
 // 파일이 없으면 그 그림은 빠진다(빌드가 경고하고 자리를 비운다)
 const BLOG_SHOTS = {
-    'lottohex-map': ['lottohex-map.jpg', 'LottoHex 밤 지도 — 서울 종로 둘레 육각 칸을 참여자들이 나눠 가진 모습', 'LottoHex night map — hexagon cells around Jongno, Seoul held by players',
-        'LottoHex 화면(휴대폰). 칸마다 주인의 별명과 다녀온 판매점 수, 색 없는 칸은 회색지대입니다. 별명과 칸은 설명을 위한 예시입니다.', 'LottoHex on a phone. Each cell shows its holder and the number of retailers visited; uncoloured cells are the grey zone. Nicknames and cells are examples.', 'is-phone'],
-    'lottohex-card': ['lottohex-card.jpg', '판매점 카드 — 다녀왔어요를 누르고 위치로 확인된 모습(+10포인트)', 'Retailer card — a visit verified by location (+10 points)',
-        '판매점 50m 안에서 "다녀왔어요"를 누르면 위치로 확인하고 10포인트를 드립니다(화면 예시).', 'Tap "I\'ve been here" within 50 m of the retailer: your location is checked and you earn 10 points (example screen).', 'is-crop'],
-    'lottohex-rank': ['lottohex-rank.jpg', 'Map 랭킹 — 차지한 칸 수와 다녀온 판매점 수', 'Map ranking — cells held and retailers visited',
-        'Map 랭킹은 차지한 칸 수 순서입니다. 분기가 끝나면 확정해 1~10위에 포인트를 드립니다(별명은 예시).', 'The Map ranking is ordered by cells held. At the end of each quarter it is finalised and the top 10 earn points (nicknames are examples).', 'is-crop'],
+    'lottohex-map': ['lottohex-map.jpg', 'LottoHex 밤 지도 — 서울 종로 둘레 육각 블록을 참여자들이 나눠 가진 모습', 'LottoHex night map — hexagon cells around Jongno, Seoul held by players',
+        'LottoHex 화면(휴대폰). 블록마다 주인의 별명과 다녀온 판매점 수, 색 없는 블록은 회색지대입니다. 별명과 블록은 설명을 위한 예시입니다.', 'LottoHex on a phone. Each cell shows its holder and the number of retailers visited; uncoloured cells are the grey zone. Nicknames and cells are examples.', 'is-phone'],
+    'lottohex-card': ['lottohex-card.jpg', '판매점 카드 — 다녀왔어요를 누르고 위치로 확인된 모습(+10P)', 'Retailer card — a visit verified by location (+10 points)',
+        '판매점 50m 안에서 "다녀왔어요"를 누르면 위치로 확인하고 10P를 드립니다(화면 예시).', 'Tap "I\'ve been here" within 50 m of the retailer: your location is checked and you earn 10 points (example screen).', 'is-crop'],
+    'lottohex-rank': ['lottohex-rank.jpg', 'Map 랭킹 — 차지한 블록 수와 다녀온 판매점 수', 'Map ranking — cells held and retailers visited',
+        'Map 랭킹은 차지한 블록 수 순서입니다. 분기가 끝나면 확정해 1~10위에 포인트를 드립니다(별명은 예시).', 'The Map ranking is ordered by cells held. At the end of each quarter it is finalised and the top 10 earn points (nicknames are examples).', 'is-crop'],
 };
 function blogShots() {
     const out = {};

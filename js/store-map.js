@@ -2424,9 +2424,9 @@
                 const avail = (meNow().score || {}).avail;
                 const note = box.querySelector('.sm-visit-note');
                 note.classList.add('is-warn');
-                note.innerHTML = T('이 색은 ' + COLOR_COST + '포인트로 열 수 있습니다' + (avail != null ? '(지금 ' + fmt(Math.floor(avail)) + '포인트)' : '') + '. 한 번 열면 계속 씁니다.',
+                note.innerHTML = T('이 색은 ' + COLOR_COST + 'P로 열 수 있습니다' + (avail != null ? '(지금 ' + fmt(Math.floor(avail)) + 'P)' : '') + '. 한 번 열면 계속 씁니다.',
                     'Unlock this colour for ' + COLOR_COST + ' points' + (avail != null ? ' (you have ' + fmt(Math.floor(avail)) + ')' : '') + '. It stays unlocked.') +
-                    ' <button type="button" class="sm-unlock"><span class="sm-swatch" style="background:' + c + '"></span>' + T(COLOR_COST + '포인트로 열기', 'Unlock for ' + COLOR_COST) + '</button>' +
+                    ' <button type="button" class="sm-unlock"><span class="sm-swatch" style="background:' + c + '"></span>' + T(COLOR_COST + 'P로 열기', 'Unlock for ' + COLOR_COST) + '</button>' +
                     ' <a href="statistics.html">' + T('이용권 보기', 'See passes') + '</a>';
                 note.querySelector('.sm-unlock').addEventListener('click', async e => {
                     e.target.disabled = true;
@@ -2466,8 +2466,8 @@
                 draw();
                 if (verify) {   // 위치로 확인했다는 것과 받은 포인트(같은 곳은 하루 한 번 · 하루 50포인트까지)
                     const n2 = box.querySelector('.sm-visit-note');
-                    if (n2) n2.textContent = (r.earned ? T('✓ 위치로 확인했습니다 · +' + r.earned + '포인트', '✓ Verified by location · +' + r.earned + ' points')
-                        : T('✓ 위치로 확인했습니다. 이 판매점은 오늘 포인트를 이미 받았거나, 오늘 받을 수 있는 50포인트를 다 받았습니다.', '✓ Verified by location. No points this time: already earned here today, or the daily 50 is reached.')) +
+                    if (n2) n2.textContent = (r.earned ? T('✓ 위치로 확인했습니다 · +' + r.earned + 'P', '✓ Verified by location · +' + r.earned + ' points')
+                        : T('✓ 위치로 확인했습니다. 오늘은 이 판매점 포인트를 이미 받았거나 하루 50P를 다 채웠습니다.', '✓ Verified by location. No points this time: already earned here today, or the daily 50 is reached.')) +
                         (r.fresh ? ' ' + freshText(r.fresh) : '');   // 새 칭호 · 마일스톤(2026-11-09)
                     if (r.fresh) afterFresh(r.fresh);
                     if (r.cap) {   // 점령(2026-11-10) — 띠에도 바로

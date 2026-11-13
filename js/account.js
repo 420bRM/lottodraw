@@ -301,7 +301,7 @@
         else if (n.kind === 'trialBack') toast(tr('acct.trialBack', '로그인했습니다. 무료 체험이 {until}까지 이어집니다.', { until: fmtDate(n.until) }), go);
         else if (n.kind === 'login') toast(tr('acct.loggedIn', '로그인했습니다.'));
         else if (n.kind === 'logout') toast(tr('acct.loggedOut', '로그아웃했습니다.'));
-        else if (n.kind === 'deleted') toast(tr('acct.deleted', '탈퇴했습니다. 계정과 좋아요 기록을 지웠습니다.'));
+        else if (n.kind === 'deleted') toast(tr('acct.deleted', '탈퇴했습니다. 계정과 관련 기록을 모두 지웠습니다.'));
         if (n.askNick && me) openNick(true);
     }
 
@@ -454,8 +454,8 @@
     async function withdraw() {
         const hadTrial = !!(me && me.user && me.user.trial);
         const ok = window.confirm(hadTrial
-            ? tr('acct.deleteConfirm', '탈퇴하면 계정, 누른 좋아요, 저장한 내 번호와 메일 구독이 지워집니다.\n받은 무료 체험은 기간까지 이 브라우저에서 그대로 쓸 수 있지만, 다시 가입해도 체험은 다시 받을 수 없습니다.\n\n탈퇴할까요?')
-            : tr('acct.deleteConfirmPlain', '탈퇴하면 계정, 누른 좋아요, 저장한 내 번호와 메일 구독이 지워집니다.\n\n탈퇴할까요?'));
+            ? tr('acct.deleteConfirm', '탈퇴하면 계정과 별명, 포인트, 누른 좋아요, 저장한 내 번호, 메일 구독, 쓴 댓글, 다녀온 곳 · LottoHex 기록이 모두 지워집니다.\n받은 무료 체험은 기간까지 이 브라우저에서 그대로 쓸 수 있지만, 다시 가입해도 체험은 다시 받을 수 없습니다.\n\n탈퇴할까요?')
+            : tr('acct.deleteConfirmPlain', '탈퇴하면 계정과 별명, 포인트, 누른 좋아요, 저장한 내 번호, 메일 구독, 쓴 댓글, 다녀온 곳 · LottoHex 기록이 모두 지워집니다.\n\n탈퇴할까요?'));
         if (!ok) return;
         try {
             await request('/api/me/delete', { method: 'POST', auth: true, body: { confirm: true } });
