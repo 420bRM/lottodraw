@@ -2432,7 +2432,7 @@ function storesPage() {
             dateModified: UPDATED,
             temporalCoverage: `${draws.find(x => x.round === first).date}/${(draws.find(x => x.round === last) || LATEST).date}`,
             creator: { '@type': 'Organization', name: 'lottodraw.kr', url: SITE + '/' },
-            keywords: ['로또 1등 판매점', '로또 1등 배출점', '로또 판매점 순위', '로또 명당'],
+            keywords: ['로또 1등 판매점', '로또 1등 배출점', '로또 판매점 순위'],
         }],
         body: [].concat(STORE_MAP_READY() ? [`<p><a class="btn" href="${STORE_MAP_FILE}" data-i18n-en="See them on the map">판매점 지도에서 보기</a> <a class="btn btn-secondary" href="${LOTTOHEX_FILE}" data-i18n-en="LottoHex — retailer turf game">LottoHex — 판매점 땅따먹기</a></p>`] : [], glance, message, topTable, region, methods, latestBlock, [
             pEn('함께 읽기: <a href="blog/lucky-store-myth.html">로또 명당은 정말 있을까</a> · <a href="statistics-prize.html">1등 당첨자 수</a> · <a href="probability.html">로또 확률</a> · <a href="draws.html">회차별 당첨번호</a>',
@@ -3035,7 +3035,7 @@ function storeMapPage(md, variant) {
             { '@type': 'ListItem', position: 3, name: 'LottoHex', item: `${SITE}/${LOTTOHEX_FILE}` }] },
     ] } : { '@context': 'https://schema.org', '@graph': [
         { '@type': 'Dataset', name: title, description: desc, url: `${SITE}/${STORE_MAP_FILE}`, isAccessibleForFree: true, dateModified: UPDATED,
-            creator: { '@type': 'Organization', name: 'lottodraw.kr', url: SITE + '/' }, keywords: ['로또 판매점 지도', '로또 1등 판매점 지도', '로또 명당 지도', '로또 2등 판매점'] },
+            creator: { '@type': 'Organization', name: 'lottodraw.kr', url: SITE + '/' }, keywords: ['로또 판매점 지도', '로또 1등 판매점 지도', '로또 1등 배출점 지도', '로또 2등 판매점'] },
         { '@type': 'BreadcrumbList', itemListElement: [
             { '@type': 'ListItem', position: 1, name: '홈', item: `${SITE}/` },
             { '@type': 'ListItem', position: 2, name: '1등 판매점', item: `${SITE}/${STORES_FILE}` },

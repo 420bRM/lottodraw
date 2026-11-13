@@ -1128,14 +1128,14 @@ function hexMailText(env, it, unsubUrl) {
     const site = siteUrl(env);
     const by = it.by.length ? it.by.map(n => n + '님').join(', ') + (it.byMore ? ` 외 ${it.byMore}명` : '') : '';
     return [
-        `${it.nick ? it.nick + '님, ' : ''}오늘 LottoHex 칸 ${it.lost}개를 빼앗겼습니다.`,
-        ...(by ? [`지금 그 칸 주인: ${by}`] : []),
-        `지금 내 칸 ${it.cells}개` + (it.rank ? ` · Map 랭킹 ${it.rank}위` : ''),
+        `${it.nick ? it.nick + '님, ' : ''}오늘 LottoHex 블록 ${it.lost}개를 빼앗겼습니다.`,
+        ...(by ? [`지금 그 블록 주인: ${by}`] : []),
+        `지금 내 블록 ${it.cells}개` + (it.rank ? ` · Map 랭킹 ${it.rank}위` : ''),
         '',
-        '빼앗긴 칸의 판매점에 다시 다녀와 위치로 인증하면 되찾을 수 있습니다(같은 곳은 하루 한 번).',
+        '빼앗긴 블록의 판매점에 다시 다녀와 위치로 인증하면 되찾을 수 있습니다(같은 곳은 하루 한 번).',
         `LottoHex 열기: ${site}/lottohex.html?utm_source=mail&utm_medium=email&utm_campaign=hex_lost`,
         '',
-        '이 메일은 LottoHex 에 참여한 회원에게, 칸을 빼앗긴 날 저녁에 한 번 보냅니다.',
+        '이 메일은 LottoHex에 참여한 회원에게, 블록을 빼앗긴 날 저녁에 한 번 보냅니다.',
         `알림 끄기: ${unsubUrl}`,
         '마이페이지 · LottoHex 창에서도 끄고 켤 수 있습니다.',
         '문의: contact@lottodraw.kr',
@@ -1158,7 +1158,7 @@ async function hexMail(env, now) {
             const unsubUrl = `${api}/api/mail/unsubscribe?r=${encodeURIComponent(it.ref)}&t=${encodeURIComponent(it.token)}&k=hex`;
             return {
                 from, to: [it.email], reply_to: 'contact@lottodraw.kr',
-                subject: `LottoHex: 오늘 칸 ${it.lost}개를 빼앗겼습니다`,
+                subject: `LottoHex: 오늘 블록 ${it.lost}개를 빼앗겼습니다`,
                 text: hexMailText(env, it, unsubUrl),
                 headers: { 'List-Unsubscribe': `<${unsubUrl}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
             };
@@ -1174,12 +1174,12 @@ async function hexMail(env, now) {
             if (!ok) why = `HTTP ${res.status}`;
         } catch (e) { why = '메일 서버 연결 실패'; }
         if (!ok) {   // 지난번 칸은 그대로 둔다 — 다음 시간(10시 전) 또는 다음 날 그날 것까지 함께
-            if (hour === HEX_MAIL.toHour - 1) await notify(env, `LottoHex 칸 알림 메일을 보내지 못했습니다 (${why}). 내일 저녁에 이틀 치를 함께 보냅니다.`);
+            if (hour === HEX_MAIL.toHour - 1) await notify(env, `LottoHex 블록 알림 메일을 보내지 못했습니다 (${why}). 내일 저녁에 이틀 치를 함께 보냅니다.`);
             return { failed: why };
         }
     }
     await community(env, 'hexDigestCommit', { day, snap: d.snap, sent: items.length, now, utc });
-    if (items.length) await notify(env, `LottoHex 칸 알림 메일 ${items.length}통` + (d.items.length > items.length ? ` (하루 한도로 ${d.items.length - items.length}명은 못 보냄)` : ''));
+    if (items.length) await notify(env, `LottoHex 블록 알림 메일 ${items.length}통` + (d.items.length > items.length ? ` (하루 한도로 ${d.items.length - items.length}명은 못 보냄)` : ''));
     return { sent: items.length, skippedByBudget: d.items.length - items.length };
 }
 
