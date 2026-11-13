@@ -129,9 +129,10 @@
             id: 'st-all', type: 'circle', source: 'all',
             layout: { visibility: shown.all ? 'visible' : 'none' },
             paint: {
-                'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, ['case', vis, 3, 1.2], 10, ['case', vis, 5, 2.6], 15, ['case', vis, 8, 6]],
+                // 다녀온 곳도 크기 · 테두리 굵기는 다른 판매점과 같고 색만 바뀐다(2026-11-13 사장님 — "줌아웃해도 크기가 유지돼 신경 쓰인다")
+                'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 1.2, 10, 2.6, 15, 6],
                 'circle-color': ['coalesce', ['feature-state', 'visit'], '#7d8799'], 'circle-opacity': 0.7 * Math.max(0, 1 - fadeT),
-                'circle-stroke-color': rim('#7d8799'), 'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 8, ['case', vis, 1, 0], 13, ['case', vis, 2, 1]],
+                'circle-stroke-color': rim('#7d8799'), 'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 8, 0, 13, 1],
             },
         }, 'st-w2');
         map.addLayer({ id: 'st-all-name', type: 'symbol', source: 'all', layout: nameLayout(0.6), paint: namePaint() });
@@ -422,7 +423,7 @@
                 'circle-opacity': dotAlpha(),
                 'circle-stroke-opacity': rimAlpha(),
                 'circle-stroke-color': rim(color),
-                'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 6, ['case', vis, 2, 0.3], 12, ['case', vis, 3.5, 1.2]],
+                'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 6, 0.3, 12, 1.2],   // 다녀온 곳도 굵기는 같게(색만 — 2026-11-13)
             },
         });
         map.addLayer(layer('st-w2', '#3b6fd8', 'w2'));
@@ -682,6 +683,7 @@
         const chip = k => root.querySelector('.sm-chip[data-layer="' + k + '"]');
         const on = k => { if (!shown[k]) { shown[k] = true; const c = chip(k); if (c) c.setAttribute('aria-pressed', 'true'); } };
         let changed = false;
+        if (hexMode && terrOnly) setTerrOnly(false);   // LottoHex 의 "판매점 감추기"도 푼다(검색으로 고른 판매점이 지도에 보이게)
         if (shown.top && !(kind === 'w' && props[i] && props[i].top)) { const c = chip('top'); if (c) c.click(); }
         if (kind === 'w') {
             const r = data.rows[i];
@@ -1360,13 +1362,12 @@
         if (map.getSource('hexstores')) { if (all && !hxAll) { hxAll = true; map.getSource('hexstores').setData(hexStoreData()); paintVisits(); } return; }
         hxAll = !!all;
         map.addSource('hexstores', { type: 'geojson', data: hexStoreData() });
-        const v = ['to-boolean', ['feature-state', 'visit']];
         for (let g = 0; g < 3; g++) map.addLayer({ id: 'hx-glow-' + g, type: 'circle', source: 'hexstores', filter: ['==', ['get', 'g'], g], minzoom: 8, layout: { visibility: 'none' }, paint: {
             'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 5, 11, 10, 15, 20], 'circle-color': hxGlow(), 'circle-blur': 1, 'circle-opacity': 0.5 } }, 'terr-name');
         map.addLayer({ id: 'hx-dot', type: 'circle', source: 'hexstores', layout: { visibility: 'none' }, paint: {
-            'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, ['case', v, 3, 1.2], 10, ['case', v, 5, 2.6], 15, ['case', v, 8, 6]],   // 일반 판매점(st-all)과 같은 크기
+            'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 1.2, 10, 2.6, 15, 6],   // 일반 판매점(st-all)과 같은 크기 — 다녀온 곳도 같고 색만 바뀐다(2026-11-13)
             'circle-color': ['coalesce', ['feature-state', 'visit'], hxDot()], 'circle-stroke-color': rim(hxDot()),
-            'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 8, ['case', v, 1, 0], 13, ['case', v, 2, 1]] } }, 'terr-name');
+            'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 8, 0, 13, 1] } }, 'terr-name');
         map.addLayer({ id: 'hx-name', type: 'symbol', source: 'hexstores', minzoom: 15, layout: Object.assign(nameLayout(0.6), { visibility: 'none' }), paint: Object.assign(namePaint(), { 'text-opacity': 1 }) }, 'terr-name');
         map.on('click', 'hx-dot', e => { const p = e.features && e.features[0] && e.features[0].properties; if (p) (p.t === 'w' ? open : openAll)(Number(p.i), false); });
         beamShow(true);   // 빛 벽이 이 점들 위에 오게
@@ -1407,9 +1408,10 @@
         ['sm-hexfx', 'sm-storefx'].forEach(x => { const el = document.getElementById(x); if (el && el !== fx) { clearTimeout(introT[x]); el.classList.remove('is-play'); el.hidden = true; } });
         clearTimeout(introT[fx.id]);
         fx.hidden = false;
+        document.documentElement.classList.add('sm-fx-on');   // 전환 화면 동안 채팅은 감춘다(css)
         fx.classList.remove('is-play'); void fx.offsetWidth; fx.classList.add('is-play');
         setTimeout(then, 280);
-        introT[fx.id] = setTimeout(() => { fx.classList.remove('is-play'); fx.hidden = true; }, 1500);
+        introT[fx.id] = setTimeout(() => { fx.classList.remove('is-play'); fx.hidden = true; document.documentElement.classList.remove('sm-fx-on'); }, 1500);
     }
     // LottoHex 는 밤 지도로 시작한다(2026-11-08 사장님 — "반전 효과"). 저장하지 않고 이 화면에서만(TOP 50 의 밤처럼),
     // 판매점으로 돌아오면 되돌린다. LottoHex 중에 🌙 을 직접 누르면 그 뜻을 따른다(되돌리지 않음)
@@ -1425,7 +1427,46 @@
         const top = (document.querySelector('.sm-top').offsetHeight || 80) + 14;
         return snap === 'peek' ? peek : snap === 'full' ? Math.max(peek, window.innerHeight - top) : Math.round(window.innerHeight * 0.46);
     }
-    function applySheet(px) { root.style.setProperty('--sheet-h', Math.round(px) + 'px'); }
+    function applySheet(px) { root.style.setProperty('--sheet-h', Math.round(px) + 'px'); chatDock(); }
+    // ───── 휴대폰: 실시간 채팅(js/chat.js)을 지도 아래쪽에 반투명으로 붙인다(2026-11-13 사장님 — 여닫을 수 있게, 아래 판을 끌어올리면 같이 올라감) ─────
+    // --chat-dock(html): 화면 아래에서 채팅창 바닥까지 — 판매점은 아래 도구(.sm-bl) 바로 위, LottoHex 는 아래 판(--sheet-h) 바로 위.
+    // 카드 · 근처 목록 · 내 기록이 같은 자리에 떠 있으면 chat-dock-busy(채팅은 잠시 숨김), 판을 많이 올려 위에 자리가 모자라면 chat-dock-off
+    function chatDock() {
+        const html = document.documentElement;
+        if (isWide()) { html.classList.remove('chat-dock-busy', 'chat-dock-off'); return; }
+        let bottom;
+        if (hexMobile()) bottom = sheetNow() + 8;
+        else {
+            const bl = root.querySelector('.sm-bl'), r = bl && bl.offsetHeight ? bl.getBoundingClientRect() : null;
+            bottom = (r ? window.innerHeight - r.top : 40) + 6;
+            root.style.setProperty('--bl-h', (r ? Math.round(window.innerHeight - r.top) : 0) + 'px');   // 아래 판 높이 — 지도 단추 · 카드 · 근처 목록이 그 위로(css)
+        }
+        html.style.setProperty('--chat-dock', Math.round(bottom) + 'px');
+        // 위 끝은 오른쪽 지도 단추 줄(전체 화면 · 나침반 · 내 위치 …)의 위 끝에 맞춘다(2026-11-13 사장님). 단추 줄은 지도 바닥에 붙어 있고
+        // LottoHex 에서는 margin-bottom 이 판 높이 + 10px(css .is-hex … ctrl-bottom-right) — 판이 움직이는 중에도 같은 값으로 셈한다
+        const ctrl = root.querySelector('.maplibregl-ctrl-bottom-right');
+        if (ctrl && dockRO && ctrl !== dockCtrl) { dockRO.observe(ctrl); dockCtrl = ctrl; }   // 지도 단추는 지도를 만든 뒤에 생긴다
+        if (ctrl && ctrl.offsetHeight) {
+            const mb = hexMobile() ? sheetNow() + 10 : (parseFloat(getComputedStyle(ctrl).marginBottom) || 0);
+            html.style.setProperty('--chat-h', Math.max(96, Math.round(mb + ctrl.offsetHeight - bottom)) + 'px');
+        }
+        const top = root.querySelector('.sm-top'), topY = top ? top.getBoundingClientRect().bottom : 80;
+        html.classList.toggle('chat-dock-off', window.innerHeight - bottom - topY < 150);
+        const info = document.getElementById('sm-info');
+        html.classList.toggle('chat-dock-busy', [card, nearPanel, minePanel, document.getElementById('sm-fun')].some(el => el && !el.hidden) || !!(info && info.open));   // 이색 판매점 목록 · 시도별 안내도
+    }
+    let dockRO = null, dockCtrl = null;
+    function initChatDock() {
+        const mo = new MutationObserver(() => chatDock());
+        [card, nearPanel, minePanel, terrPanel, document.getElementById('sm-fun')].forEach(el => el && mo.observe(el, { attributes: true, attributeFilter: ['hidden'] }));
+        const info = document.getElementById('sm-info');
+        if (info) mo.observe(info, { attributes: true, attributeFilter: ['open'] });   // 시도별 · 안내(details)
+        mo.observe(root, { attributes: true, attributeFilter: ['class'] });   // 판매점 ↔ LottoHex
+        const bl = root.querySelector('.sm-bl');
+        if (window.ResizeObserver) { dockRO = new ResizeObserver(() => chatDock()); if (bl) dockRO.observe(bl); }
+        window.addEventListener('resize', chatDock);
+        chatDock();
+    }
     function setSheet(snap) { sheetSnap = snap; if (hexMobile()) applySheet(sheetPx(snap)); }
     const sheetNow = () => { const v = parseFloat(getComputedStyle(root).getPropertyValue('--sheet-h')); return isNaN(v) ? sheetPx(sheetSnap) : v; };
     // 손잡이 · 탭 줄을 위아래로 끌면 판 높이가 따라오고, 놓으면 가까운 높이(빠르게 튕기면 그 방향)로. 판 위의 누르기는 지도로 가지 않는다
@@ -1434,7 +1475,7 @@
         const move = e => {
             if (!d || e.pointerId !== d.id) return;
             const dy = e.clientY - d.y;
-            if (!d.moved) { if (Math.abs(dy) < 6) return; d.moved = true; terrPanel.classList.add('is-drag'); }
+            if (!d.moved) { if (Math.abs(dy) < 6) return; d.moved = true; terrPanel.classList.add('is-drag'); document.documentElement.classList.add('sm-sheet-drag'); }
             if (e.cancelable) e.preventDefault();
             const now = performance.now();
             d.v = (e.clientY - d.lastY) / Math.max(1, now - d.lastT); d.lastY = e.clientY; d.lastT = now;
@@ -1447,6 +1488,7 @@
             window.removeEventListener('pointerup', end);
             window.removeEventListener('pointercancel', end);
             terrPanel.classList.remove('is-drag');
+            document.documentElement.classList.remove('sm-sheet-drag');
             if (!m.moved) {   // 손잡이만 톡: 접혀 있으면 펴고, 펴져 있으면 접는다
                 if (e.target && e.target.closest && e.target.closest('.sm-sheet-grip')) setSheet(sheetSnap === 'peek' ? 'half' : 'peek');
                 return;
@@ -1468,7 +1510,7 @@
         });
         window.addEventListener('resize', () => { if (hexMobile()) setSheet(sheetSnap); });
     }
-    // 모드 바꾸기. LottoHex 로 가면 판매점 도구(칩 · 검색 · 이 근처 · 이색 · 1등 방식 · 흐리게 · 시도별)는 CSS 가 감추고 칸을 켠다. 판매점으로 오면 칸을 끈다
+    // 모드 바꾸기. LottoHex 로 가면 판매점 도구(칩 · 이 근처 · 이색 · 1등 방식 · 흐리게 · 시도별)는 CSS 가 감추고 칸을 켠다(검색창은 남는다 — 2026-11-13). 판매점으로 오면 칸을 끈다
     // 주소 · 제목도 모드를 따른다(2026-11-09): LottoHex 는 lottohex.html, 판매점은 store-map.html(TOP 50 공유 주소는 그대로) — 새로 고쳐도 같은 화면, 링크로 나눌 수 있다
     function syncModeUrl(on) {
         try {
@@ -2165,6 +2207,7 @@
         const hs = document.getElementById('sm-hexbar-stat');
         if (hs) hs.addEventListener('click', () => { terrTab = 'now'; setSheet(sheetSnap === 'peek' ? 'half' : sheetSnap); if (shown.terr) openTerrPanel(); });
         initSheetDrag();
+        initChatDock();
         window.addEventListener('lottodraw:account', () => { if (shown.terr) refreshTerr(); });
     }
 
@@ -2840,19 +2883,22 @@
         nearAfterMove = !hexMode;   // LottoHex 에서는 칸을 보러 가는 것이라 목록은 열지 않는다
         areaWant = '';
         if (!isWide()) { card.hidden = true; nearPanel.hidden = true; }
-        map.flyTo({ center: [p.lng, p.lat], zoom: p.z, pitch: 0, bearing: 0, essential: true,
-            padding: isWide() ? pad() : Object.assign(pad(), { bottom: hexMode ? pad().bottom : Math.round(window.innerHeight * 0.4) + 16 }) });
+        if (hexMobile() && sheetSnap !== 'peek') setSheet('peek');   // 휴대폰 LottoHex: 지도를 보러 가는 것이라 아래 판은 접는다(카드를 열 때와 같게)
+        map.flyTo({ center: [p.lng, p.lat], zoom: p.z, pitch: 0, bearing: 0, essential: true,   // 휴대폰 LottoHex 는 아래 판을 비켜서(fitCells 와 같게)
+            padding: isWide() ? pad() : Object.assign(pad(), { bottom: hexMode ? sheetNow() + 16 : Math.round(window.innerHeight * 0.4) + 16 }) });
     }
 
     function initSearch() {
         const box = document.getElementById('sm-search');
         const list = document.getElementById('sm-found');
+        // 목록이 열려 있는 동안 #sm.is-finding — 휴대폰 LottoHex 에서 목록이 아래 판 · 카드 위에 오게(css)
+        const showList = on => { list.hidden = !on; root.classList.toggle('is-finding', on); };
         const item = (html, go) => {
             const li = document.createElement('li');
             const b = document.createElement('button');
             b.type = 'button';
             b.innerHTML = html;
-            b.addEventListener('click', () => { list.hidden = true; box.blur(); go(); });
+            b.addEventListener('click', () => { showList(false); box.blur(); go(); });
             li.appendChild(b);
             list.appendChild(li);
             return li;
@@ -2860,7 +2906,7 @@
         const render = () => {
             const raw = box.value.trim(), q = raw.toLowerCase();
             list.textContent = '';
-            if (q.length < 2) { list.hidden = true; return; }
+            if (q.length < 2) { showList(false); return; }
             if (!places || !stationRecs) Promise.all([loadPlaces(), loadStations()]).then(() => { if (box.value.trim() === raw) render(); });
             if (!all && root.dataset.all) needAll().then(() => { if (all && box.value.trim() === raw) render(); });   // 일반 판매점도 찾는다(층을 꺼 두었어도 — 2026-11-10 사장님 "박희도 로또LAB 이 안 나온다")
             const areas = findPlaces(raw, 5);
@@ -2868,7 +2914,7 @@
             for (let i = data.rows.length - 1; i >= 0 && hits.length < 20; i--) if (data.rows[i][4].toLowerCase().includes(q)) hits.push(i);   // 1등 많은 곳부터
             const more = [];   // 일반 판매점(층이 꺼져 있어도 찾는다 — 고르면 층을 켠다)
             if (all) for (let i = 0; i < all.rows.length && hits.length + more.length < 20; i++) if (all.rows[i][2].toLowerCase().includes(q)) more.push(i);
-            list.hidden = false;
+            showList(true);
             if (!areas.length && !hits.length && !more.length) {
                 list.innerHTML = '<li class="sm-none">' + (places && (all || !root.dataset.all) ? T('찾는 판매점 · 지역이 없습니다.', 'No retailer or area found.') : T('찾는 중…', 'Searching…')) + '</li>';
                 return;
@@ -2922,7 +2968,9 @@
         const bar = document.getElementById('sm-fade');
         if (bar) bar.style.setProperty('--p', String(Math.max(0, Math.min(100, v)) / 100));   // 막대 그림: 손잡이까지 채운 선(css/site.css)
         const out = document.getElementById('sm-fade-v');
-        out.textContent = !fadeT ? T('모두', 'All') : fadeT < 1 ? T('2등만 나온 곳 흐리게', '2nd-only dimmed') : T('1등 ' + Math.ceil(fadeT) + '회 이상', '1st × ' + Math.ceil(fadeT) + '+');
+        // 휴대폰은 아래 한 줄 판이라 짧게(2026-11-13)
+        out.textContent = !fadeT ? T('모두', 'All') : fadeT < 1 ? (isWide() ? T('2등만 나온 곳 흐리게', '2nd-only dimmed') : T('2등만 흐림', '2nd-only'))
+            : isWide() ? T('1등 ' + Math.ceil(fadeT) + '회 이상', '1st × ' + Math.ceil(fadeT) + '+') : T('1등 ' + Math.ceil(fadeT) + '회+', '1st ' + Math.ceil(fadeT) + '+');
         if (fadeRaf) return;
         fadeRaf = requestAnimationFrame(() => {
             fadeRaf = 0;

@@ -636,8 +636,12 @@ body.sm-full #theme-btn { display: none !important; }
     .sm-mode-sw a.has-new, .sm-hexbar-stat.has-new { position: relative; }
     .sm-mode-sw a.has-new::after, .sm-hexbar-stat.has-new::after { content: ''; position: absolute; top: -3px; right: -3px; width: 8px; height: 8px; border: 1.5px solid var(--surface, #fff); border-radius: 50%; background: #e0283a; }
     .sm-turf { display: none !important; }   /* 판매점 모드 칩 줄에서 LottoHex 칩은 빠진다(모드 단추가 대신) */
-    /* LottoHex 모드: 판매점 도구는 감춘다 */
-    .is-hex .sm-searchbox, .is-hex .sm-chips:not(.sm-modes), .is-hex .sm-pcnote, .is-hex .sm-near-btn, .is-hex .sm-bl, .is-hex .sm-info, .is-hex .sm-near:not(.sm-terr) { display: none !important; }
+    /* LottoHex 모드: 판매점 도구는 감춘다. 검색창은 남긴다(2026-11-13 사용자 의견 — "판매점 지도는 판매점 · 지역 검색이 되는데 LottoHex 는 검색창이 없어 불편").
+       판매점 모드와 같은 자리(모드 단추 바로 아래)에 두고 그 밑에 내 칸 · 순위 줄 · 소식 띠. 고르면 지도만 옮긴다(js/store-map.js goPlace) */
+    .is-hex .sm-chips:not(.sm-modes), .is-hex .sm-pcnote, .is-hex .sm-near-btn, .is-hex .sm-bl, .is-hex .sm-info, .is-hex .sm-near:not(.sm-terr) { display: none !important; }
+    .is-hex .sm-searchbox { order: 1; }
+    .is-hex .sm-hexbar, .is-hex .sm-ticker { order: 2; }
+    .is-hex.is-finding .sm-top { z-index: 6; }   /* 찾은 목록은 아래 판(z-index 4) · 판매점 카드(5) 위에 */
     .is-hex .sm-hexbar { display: flex; align-items: center; gap: 5px; }
     .sm-hexbar-stat { display: inline-flex; flex: 1 1 auto; align-items: center; gap: 6px; min-width: 0; padding: 5px 10px; border: 1px solid #4b3bb8; border-radius: 9px;
         background: linear-gradient(135deg, #24135f, #2d3a8f 60%, #0f6170); color: #fff; box-shadow: 0 1px 6px rgba(36, 19, 95, .35); font: inherit; font-size: 12px; font-weight: bold; text-align: left; cursor: pointer; }
@@ -688,6 +692,9 @@ body.sm-full #theme-btn { display: none !important; }
     /* PC 의 LottoHex: 판매점 필터(지도에 보기 격자 · 1등 방식 · 흐리게 · 이 근처)는 LottoHex 판매점 층에 쓰이지 않아 감춘다. LottoHex 카드는 남는다 */
     .is-hex .sm-chips:not(.sm-modes) > :not(.sm-turf), .is-hex .sm-modes, .is-hex .sm-fade, .is-hex .sm-near-btn { display: none !important; }
 }
+/* 전환 화면이 떠 있는 동안은 실시간 채팅(body 바로 밑, 창 95 · 단추 90)을 감춘다(2026-11-13 사장님 — "화면 전환될 때 채팅창 혼자 둥둥").
+   전환 화면은 지도 묶음(.sm-wrap, position: fixed) 안이라 z-index 를 올려도 채팅 위로 못 간다 — 들어올 때는 html.sm-enter-*, 모드를 바꿀 때는 html.sm-fx-on(js/store-map.js modeIntro) */
+html.sm-fx-on .chat-panel, html.sm-fx-on .chat-fab, html.sm-enter-hex .chat-panel, html.sm-enter-hex .chat-fab, html.sm-enter-store .chat-panel, html.sm-enter-store .chat-fab { visibility: hidden; }
 /* 다른 페이지에서 들어올 때(2026-11-09 사장님 — 바닥글 띠 · 생성기에서 지도로 갈 때도 전환 효과): 생성기가 <head> 에서 html.sm-enter-hex|store 를 달아
    첫 화면부터 전환 화면이 덮여 있고, 지도가 그려지면 js/store-map.js(enterFx)가 걷는다. 움직임 줄이기면 달지 않는다 */
 html.sm-enter-hex #sm-hexfx, html.sm-enter-store #sm-storefx { display: grid !important; opacity: 1; }
@@ -777,3 +784,73 @@ html.sm-enter-hex #sm-hexfx .sm-hexfx-ico, html.sm-enter-store #sm-storefx .sm-s
 .sm-terr-torank { margin: 12px 0 4px; }
 .sm-terr-rankbtn { width: 100%; padding: 8px 10px; border: 1px solid var(--line, #ddd); border-radius: 9px; background: var(--soft, #f4f6fa); color: var(--brand, #003087); font: inherit; font-size: 13px; font-weight: bold; cursor: pointer; }
 :root[data-theme="dark"] .sm-terr-rankbtn { background: #1f2733; color: #ffb066; border-color: #2e3846; }
+
+/* ───── 휴대폰 지도: 실시간 채팅을 지도 아래쪽에 반투명으로(2026-11-13 사장님 — 여닫을 수 있게, 아래 판을 끌어올리면 같이 올라감) ─────
+   html.chat-docked 는 js/chat.js 가 이 페이지 · 좁은 화면에서 붙인다. --chat-dock(아래에서 채팅창 바닥까지)은 js/store-map.js chatDock().
+   오른쪽은 지도 단추 줄(전체 화면 · 나침반 · 내 위치 · i)을 비운다. 카드 · 근처 목록이 같은 자리에 뜨면 잠시 숨긴다(chat-dock-busy) */
+@media (max-width: 899px) {
+    html.chat-docked .chat-panel { left: 8px; right: 66px; bottom: var(--chat-dock, 92px); width: auto; height: var(--chat-h, min(24dvh, 200px)); border: 0; border-radius: 12px;
+        background: rgba(10, 14, 22, .24); box-shadow: none; color: #fff; -webkit-backdrop-filter: blur(1.5px); backdrop-filter: blur(1.5px); transition: bottom .25s ease; }
+    html.chat-docked .chat-head { padding: 3px 4px 0 10px; background: transparent; text-shadow: 0 1px 2px rgba(0, 0, 0, .7); }
+    html.chat-docked .chat-head b { font-size: 12px; }
+    html.chat-docked .chat-online { font-size: 11px; }
+    html.chat-docked .chat-x { width: 26px; height: 24px; font-size: 20px; }
+    html.chat-docked .chat-rule { display: none; }
+    html.chat-docked .chat-list { padding: 0 10px 2px; color: #fff; font-size: 12.5px; text-shadow: 0 1px 2px rgba(0, 0, 0, .85); }
+    html.chat-docked .chat-msg { padding: 1px 0; line-height: 1.4; }
+    html.chat-docked .chat-nick { color: #a8c8ff; }
+    html.chat-docked .chat-msg.is-mine .chat-nick { color: #ffa3cb; }
+    html.chat-docked .chat-nick.is-staff { color: #8ee6a8; }
+    html.chat-docked .chat-time { color: rgba(255, 255, 255, .6); }
+    html.chat-docked .chat-msg.is-sys { margin: 1px 0; padding: 2px 6px; background: rgba(131, 56, 236, .35); color: #f1e9ff; font-size: 12px; }
+    html.chat-docked .chat-empty { padding: 10px 0; color: rgba(255, 255, 255, .8); }
+    html.chat-docked .chat-status { color: #ffb4b4; }
+    html.chat-docked .chat-gate { padding: 2px 8px 6px; }
+    html.chat-docked .chat-gate .btn { padding: 4px 10px; font-size: 12px; }
+    html.chat-docked .chat-form { padding: 3px 6px 6px; border-top: 0; }
+    html.chat-docked .chat-input { padding: 5px 8px; border-color: rgba(255, 255, 255, .28); background: rgba(255, 255, 255, .14); color: #fff; font-size: 16px; }
+    html.chat-docked .chat-input::placeholder { color: rgba(255, 255, 255, .65); }
+    html.chat-docked .chat-send { width: 34px; height: 34px; }
+    /* 접으면 같은 자리에 긴 줄로(2026-11-13 사장님) — 펼쳤을 때와 같은 반투명 · 색, 누르면 펼친다 */
+    html.chat-docked .chat-fab { left: 8px; right: 66px; bottom: var(--chat-dock, 92px); justify-content: flex-start; gap: 7px; height: 34px; padding: 0 12px; border-radius: 12px;
+        background: rgba(10, 14, 22, .24); color: #fff; box-shadow: none; font-size: 12.5px; text-shadow: 0 1px 2px rgba(0, 0, 0, .7);
+        -webkit-backdrop-filter: blur(1.5px); backdrop-filter: blur(1.5px); transition: bottom .25s ease; }
+    html.chat-docked .chat-fab:hover { background: rgba(10, 14, 22, .32); }
+    html.chat-docked .chat-fab-ico { font-size: 14px; }
+    html.chat-docked .chat-fab-label, html.chat-docked .chat-count { display: none; }
+    html.chat-docked .chat-fab-title, html.chat-docked .chat-fab-online, html.chat-docked .chat-fab-up { display: inline; }
+    html.chat-docked .chat-fab-online { font-size: 11px; font-weight: normal; opacity: .85; }
+    html.chat-docked .chat-fab-up { margin-left: auto; font-size: 12px; opacity: .8; }
+    html.chat-docked.sm-sheet-drag .chat-panel, html.chat-docked.sm-sheet-drag .chat-fab { transition: none; }
+    html.chat-docked.chat-dock-busy .chat-panel, html.chat-docked.chat-dock-busy .chat-fab,
+    html.chat-docked.chat-dock-off .chat-panel, html.chat-docked.chat-dock-off .chat-fab { display: none; }
+}
+
+/* ───── 휴대폰 판매점 모드: 아래 도구를 화면 폭 한 줄 판으로(2026-11-13 사장님 — "하단 깔끔하게" → "자리를 너무 차지한다, 자동 · 수동 · 반자동은 빼고 시도별 · 안내를 이색 판매점과 같이") ─────
+   한 줄: 흐리게 ──●── 모두 · 시도별 · 안내 · 🏆 이색 판매점. 1등 방식(자동 · 수동 · 반자동)은 휴대폰에서 감춘다(PC 는 그대로, 고른 값은 저장하지 않아 늘 모두 켜짐).
+   판 높이(--bl-h, js/store-map.js chatDock)만큼 지도 단추(ⓘ 포함) · 판매점 카드 · 근처 목록 · 시도별 안내를 위로 올린다. 이색 판매점 목록은 판 위로 펼친다 */
+.sm-fade .sm-fade-s { display: none; }
+@media (max-width: 899px) {
+    .sm-bl { left: 0; right: 0; bottom: 0; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; justify-items: stretch; gap: 8px;
+        padding: 7px 10px calc(7px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line, #e3e6eb); border-radius: 14px 14px 0 0;
+        background: var(--surface, #fff); box-shadow: 0 -4px 16px rgba(0, 0, 0, .1); pointer-events: auto; }
+    .sm-bl .sm-modes { display: contents; }
+    .sm-bl .sm-modes-label, .sm-bl .sm-mode { display: none; }
+    .sm-bl .sm-info-btn { grid-row: 1; grid-column: 2; margin: 0; padding: 5px 9px; border-radius: 9px; box-shadow: none; font-size: 11.5px; }
+    .sm-bl .sm-fade { grid-row: 1; grid-column: 1; gap: 6px; min-width: 0; margin: 0; padding: 0; border: 0; background: none; box-shadow: none; font-size: 11.5px; }
+    .sm-bl .sm-fade > span { flex: none; color: var(--muted, #555); font-weight: bold; white-space: nowrap; }
+    .sm-bl .sm-fade > span:first-child { display: none; }
+    .sm-bl .sm-fade .sm-fade-s { display: inline; }
+    .sm-bl .sm-fade input { flex: 1 1 auto; width: auto; min-width: 44px; }
+    .sm-bl .sm-fade output { flex: none; min-width: 0; white-space: nowrap; }
+    .sm-bl .sm-fun-btn { grid-row: 1; grid-column: 3; justify-self: end; padding: 5px 9px; box-shadow: none; font-size: 11.5px; white-space: nowrap; }
+    .sm-bl .sm-fun { left: 6px; bottom: calc(100% + 6px); }
+    .sm-map .maplibregl-ctrl-bottom-right { margin-bottom: var(--bl-h, 0px); }
+    .sm-card, .sm-near, .sm-info { bottom: calc(var(--bl-h, 30px) + 8px); }
+}
+@media (max-width: 380px) {   /* 아주 좁은 휴대폰: 단추를 조금 줄여 흐리게 막대 몫을 남긴다 */
+    .sm-bl { gap: 6px; padding-right: 8px; padding-left: 8px; }
+    .sm-bl .sm-info-btn, .sm-bl .sm-fun-btn { padding: 5px 7px; font-size: 11px; }
+    .sm-bl .sm-fade { gap: 5px; font-size: 11px; }
+}
+@media (max-width: 340px) { .sm-bl .sm-fade .sm-fade-s { display: none; } }   /* 320px 폭: "흐리게" 글자는 빼고 막대 · 값만 */

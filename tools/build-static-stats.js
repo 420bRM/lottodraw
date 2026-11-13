@@ -3349,7 +3349,7 @@ function storeMapPage(md, variant) {
                 <!-- 휴대폰: "시도별 · 안내"를 반자동 오른쪽에(2026-11-11 사장님). 누르면 아래 #sm-info 를 연다. PC 는 탭 "시도별"이라 감춘다 -->
                 <button type="button" class="sm-chip sm-info-btn" aria-controls="sm-info" aria-expanded="false" data-i18n-en="By province · about">시도별 · 안내</button>
         </div>
-        <label class="sm-fade"><span data-i18n-en="Fade low counts">적게 나온 곳 흐리게</span>
+        <label class="sm-fade"><span data-i18n-en="Fade low counts">적게 나온 곳 흐리게</span><span class="sm-fade-s" data-i18n-en="Fade">흐리게</span>
             <input type="range" id="sm-fade" min="0" max="100" value="0" aria-describedby="sm-fade-v">
             <output id="sm-fade-v" data-i18n-en="All">모두</output></label>
     </div>
