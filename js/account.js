@@ -233,7 +233,7 @@
             reason ? el('p', { className: 'acct-reason', text: reason }) : null,
             el('p', { className: days ? 'acct-lead' : 'acct-lead is-short', text: days
                 ? tr('acct.lead', '가입과 로그인은 무료이고, 구글 계정으로 바로 가입됩니다. 처음 가입하면 이용권 기능(5개월 통계 · 상세 분석 4종 · TOP 50 그래프 도구)을 {days}일 동안 열어 드립니다. {days}일이 지나도 무료 기능은 그대로 씁니다.', { days })
-                : tr('acct.leadFree', '로그인하여 100% 즐기기') }),
+                : tr('acct.leadFree', '로그인하면 이런 기능을 쓸 수 있습니다') }),
             el('ul', { className: 'acct-perks' }, days ? [
                 el('li', { text: tr('acct.perk1', '{days}일 무료 체험 (계정당 한 번)', { days }) }),
                 el('li', { text: tr('acct.perk2', '♥ 좋아요 · $ 대박 기원 남기기') }),
@@ -334,14 +334,14 @@
                 closeModal();
                 renderHeader();
                 window.dispatchEvent(new Event('lottodraw:account'));
-                toast(got.cost ? tr('acct.nickDonePaid', '별명을 "{nick}"(으)로 바꿨습니다. {cost}포인트를 썼습니다.', { nick: got.user.nick, cost: got.cost })
+                toast(got.cost ? tr('acct.nickDonePaid', '별명을 "{nick}"(으)로 바꿨습니다. {cost}P를 썼습니다.', { nick: got.user.nick, cost: got.cost })
                     : tr('acct.nickDone', '별명을 "{nick}"(으)로 정했습니다.', { nick: got.user.nick }));
             } catch (x) {
-                err.textContent = x.code === 'need_points' ? tr('acct.nickNeedPts', '포인트가 모자랍니다. 별명을 바꾸려면 {cost}포인트가 필요합니다.', { cost: nickCost() })
+                err.textContent = x.code === 'need_points' ? tr('acct.nickNeedPts', '포인트가 모자랍니다. 별명을 바꾸려면 {cost}P가 필요합니다.', { cost: nickCost() })
                     : x.code === 'taken_nick' ? tr('acct.nickTaken', '이미 쓰고 있는 별명입니다. 다른 별명을 골라 주세요.')
                     : x.code === 'reserved_nick' ? tr('acct.nickReserved', '쓸 수 없는 별명입니다. 다른 별명을 골라 주세요.')
                     : x.code === 'bad_nick' ? tr('acct.nickRule', '한글·영문·숫자·밑줄(_)로 2~12자, 띄어쓰기 없이 적어 주세요.')
-                    : x.status === 401 ? tr('acct.expired', '로그인이 끝났습니다. 다시 로그인해 주세요.')
+                    : x.status === 401 ? tr('acct.expired', '로그인 시간이 지났습니다. 다시 로그인해 주세요.')
                     : tr('acct.tooMany', '잠시 뒤 다시 시도해 주세요.');
                 err.hidden = false;
             } finally {
@@ -363,7 +363,7 @@
             el('p', { className: 'acct-lead', text: first
                 ? tr('acct.nickLeadFirst', '사이트에서 쓸 별명입니다. 나중에 "내 계정"에서 바꿀 수 있습니다.')
                 : tr('acct.nickLead', '사이트에서 쓸 별명입니다. 다른 사람과 겹치지 않아야 합니다.') }),
-            paid ? el('p', { className: 'acct-reason', text: tr('acct.nickCost', '별명을 바꾸면 {cost}포인트를 씁니다. 지금 쓸 수 있는 포인트: {avail}', { cost: nickCost(), avail: avail }) }) : null,
+            paid ? el('p', { className: 'acct-reason', text: tr('acct.nickCost', '별명을 바꾸면 {cost}P를 씁니다. 지금 쓸 수 있는 포인트: {avail}P', { cost: nickCost(), avail: avail }) }) : null,
             u && u.nickAuto ? el('p', { className: 'acct-reason', text: tr('acct.nickAutoFree', '자동으로 붙은 별명입니다. 한 번은 포인트 없이 바꿀 수 있습니다.') }) : null,
             u && !u.nick && u.nickDue ? el('p', { className: 'acct-reason', text: tr('acct.nickDue', '{date}까지 정하지 않으면 별명이 자동으로 붙습니다. 자동 별명은 한 번 무료로 바꿀 수 있습니다.', { date: monthDay(u.nickDue) }) }) : null,
             form,
@@ -406,7 +406,7 @@
                 : tr('acct.trialNone', '무료 체험은 계정당 한 번입니다') }));
             const sc = me.user && me.user.score;
             if (me.user && me.user.staff) menu.appendChild(el('p', { className: 'acct-staff', text: tr('acct.staff', '운영자 계정') }));
-            if (sc) menu.appendChild(el('a', { className: 'acct-score', href: root + 'ranking.html', text: tr('acct.score2', '내 점수 {n}점 · 포인트 {avail} · 랭킹 보기 →', { n: sc.total, avail: sc.avail != null ? sc.avail : sc.total }) }));
+            if (sc) menu.appendChild(el('a', { className: 'acct-score', href: root + 'ranking.html', text: tr('acct.score2', '모은 포인트 {n}P · 쓸 수 있는 포인트 {avail}P · 랭킹 보기 →', { n: sc.total, avail: sc.avail != null ? sc.avail : sc.total }) }));
             menu.appendChild(el('a', { href: root + 'statistics.html', text: tr('acct.goStats', '5개월 통계 보기 →') }));
             menu.appendChild(el('button', { type: 'button', text: me.user && me.user.nick
                 ? (me.user.staff ? tr('acct.nickChange', '별명 바꾸기') : me.user.nickAuto ? tr('acct.nickChangeFree', '별명 바꾸기 (한 번 무료)') : tr('acct.nickChangePaid', '별명 바꾸기 ({cost}P)', { cost: nickCost() }))
@@ -579,7 +579,7 @@
             counts[id] = got.counts;
             repaint(id);
         } catch (e) {
-            if (e.status === 401) { signOutLocal(); renderHeader(); openLogin(tr('acct.expired', '로그인이 끝났습니다. 다시 로그인해 주세요.')); }
+            if (e.status === 401) { signOutLocal(); renderHeader(); openLogin(tr('acct.expired', '로그인 시간이 지났습니다. 다시 로그인해 주세요.')); }
             else toast(e.code === 'too_many' ? tr('acct.tooMany', '잠시 뒤 다시 시도해 주세요.') : tr('react.fail', '좋아요를 저장하지 못했습니다. 잠시 뒤 다시 눌러 주세요.'));
         } finally {
             boxes.forEach(b => b.classList.remove('is-busy'));
@@ -656,7 +656,7 @@
             toast(tr('acct.nickAutoGiven', '별명이 "{nick}"(으)로 자동으로 붙었습니다. 한 번은 무료로 바꿀 수 있습니다.', { nick: u.nick }),
                 { href: root + 'mypage.html', text: tr('acct.nickAutoGo', '마이페이지에서 바꾸기 →') });
         }
-        if (attendedToday && !document.getElementById('acct-toast')) toast(tr('acct.attended', '오늘 출석 +{n}점', { n: attendedToday }), { href: root + 'ranking.html', text: tr('acct.goRanking', '랭킹 보기 →') });
+        if (attendedToday && !document.getElementById('acct-toast')) toast(tr('acct.attended', '오늘 출석 +{n}P', { n: attendedToday }), { href: root + 'ranking.html', text: tr('acct.goRanking', '랭킹 보기 →') });
         renderReactions();
         // 이 파일이 붙이는 스크립트의 내용 지문(tools/asset-version.js 가 적는다 — 배포 직후 옛 파일을 쥐지 않게)
         const LOAD_V = { 'chat.js': '9c4a810e', 'comments.js': '9fb9fe81' };

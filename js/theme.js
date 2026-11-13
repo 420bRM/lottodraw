@@ -70,7 +70,7 @@
             band.querySelector('.l2').textContent = tr('mapLink.l2', '2등만 나온 곳');
             band.querySelector('.ln').textContent = tr('mapLink.ln', 'TOP 50 판매점 · 1등이 가장 많이 나온 50곳');   // 밤 모드 띠는 TOP 50 별 화면
             band.querySelector('b').textContent = tr('mapLink.title', '로또 판매점 지도');
-            band.querySelector('small').textContent = tr('mapLink.sub', '1등 · 2등이 나온 판매점 1만 곳을 지도 위 버블로. 서울부터 백령도까지, 내가 다녀온 곳도 표시해 보세요.');
+            band.querySelector('small').textContent = tr('mapLink.sub', '1등 · 2등이 나온 판매점 1만 곳을 지도에서 봅니다. 서울부터 백령도까지, 다녀온 곳도 표시할 수 있습니다.');
             band.querySelector('.map-band-go').textContent = tr('mapLink.go', '지도 열기 →');
             foot.insertAdjacentElement('afterend', band);
             // LottoHex 가는 띠(2026-11-09 사장님 — "로또헥스도 지도처럼 바로가기 배너"): 지도 띠 바로 아래. 배경은 실제 밤 지도 위 육각 칸(img/hex-banner*.jpg),
@@ -79,8 +79,8 @@
             hex.className = 'hex-band';
             hex.href = base + 'lottohex.html';
             hex.innerHTML = '<span class="hex-band-txt"><span class="hex-band-legend"><i>⬡</i><span></span></span><b><span class="hex-band-ico" aria-hidden="true"></span>LottoHex</b><small></small></span><span class="hex-band-go"></span>';
-            hex.querySelector('.hex-band-legend span').textContent = tr('hexLink.legend', '육각 칸 땅따먹기 · 칭호 도감 · 분기 랭킹');
-            hex.querySelector('small').textContent = tr('hexLink.sub', '판매점에 다녀와 위치로 인증하면 육각 칸을 차지합니다. 칭호를 모으고 분기 랭킹에 도전해 보세요.');
+            hex.querySelector('.hex-band-legend span').textContent = tr('hexLink.legend', '육각 블록 땅따먹기 · 칭호 도감 · 분기 랭킹');
+            hex.querySelector('small').textContent = tr('hexLink.sub', '판매점에 다녀와 위치로 인증하면 육각 블록을 차지합니다. 칭호를 모으고 분기 랭킹에 도전해 보세요.');
             hex.querySelector('.hex-band-go').textContent = tr('hexLink.go', 'LottoHex 열기 →');
             band.classList.add('has-next');
             band.insertAdjacentElement('afterend', hex);

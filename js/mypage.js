@@ -76,7 +76,7 @@
             fill('my-pass', [
                 el('p', { text: tr('my.passNone', '이 브라우저에는 이용권이 없습니다.') }),
                 trialLine,
-                el('p', { className: 'my-muted', text: tr('my.passNoneHint', '다른 기기에서 산 이용권은 그 기기의 "다른 기기용 링크"를 여기서 열면 이 브라우저에서도 열립니다.') }),
+                el('p', { className: 'my-muted', text: tr('my.passNoneHint', '다른 기기에서 산 이용권은, 그 기기에서 복사한 "다른 기기용 링크"를 이 브라우저에서 열면 여기서도 쓸 수 있습니다.') }),
                 el('div', { className: 'my-actions' }, [seePlans]),
             ]);
             return;
@@ -230,7 +230,7 @@
             return el('li', { className: res && res.rank ? 'my-win' : '' }, [
                 el('span', { className: 'my-balls' }, g.n.map(n => ball(n, d ? d.numbers.indexOf(n) !== -1 || (res.bonus && n === d.bonus) : undefined))),
                 el('span', { className: 'my-res' }, [tag + ' · ', el('a', { href: 'report.html?n=' + g.n.slice().sort((a, b) => a - b).join(','), text: tr('rc.myLink', '성적표') })]),
-                el('button', { type: 'button', className: 'my-x', 'aria-label': tr('my.numDelOne', '이 게임 지우기'), text: '×', on: { click: () => remove({ id: g.id }, tr('my.numDelOneQ', '{nums} 을(를) 지울까요?', { nums: g.n.join(' ') })) } }),
+                el('button', { type: 'button', className: 'my-x', 'aria-label': tr('my.numDelOne', '이 게임 지우기'), text: '×', on: { click: () => remove({ id: g.id }, tr('my.numDelOneQ', '이 게임({nums})을 지울까요?', { nums: g.n.join(' ') })) } }),
             ]);
         });
         return el('div', { className: 'my-round' }, [head, el('ul', { className: 'my-games' }, rows)]);
@@ -250,7 +250,7 @@
             note ? el('p', { className: 'my-ok', role: 'status', text: note }) : null,
             games.length ? el('div', { className: 'my-rounds' }, blocks) : el('p', { className: 'my-muted', text: tr('my.numNone', '아직 저장한 번호가 없습니다.') }),
             more ? el('div', { className: 'my-actions' }, [more]) : null,
-            el('p', { className: 'my-muted', text: tr('my.numNote', '번호는 회차마다 20게임, 최근 104회차까지 보관합니다. 결과는 참고용이며, 당첨금 수령은 실물 복권(또는 동행복권 구매 내역)으로 확인해 주세요.') }),
+            el('p', { className: 'my-muted', text: tr('my.numNote', '번호는 회차마다 20게임, 최근 104회차까지 보관합니다. 결과는 참고용입니다. 당첨 여부는 실물 복권(또는 동행복권 구매 내역)으로 확인해 주세요.') }),
         ]);
     }
 
@@ -285,7 +285,7 @@
         if (!on) toggle.classList.remove('btn-secondary');
         if (!ready && !on) toggle.disabled = true;
         fill('my-mail', [
-            el('p', { text: tr('my.mailLead', '추첨 다음 날(일요일) 오전에 그 회차 당첨번호와, 위 내 번호에 저장한 그 회차 번호의 등수 · 맞은 번호를 메일로 보냅니다. 그 회차 번호를 저장하지 않은 주에는 보내지 않습니다.') }),
+            el('p', { text: tr('my.mailLead', '추첨 다음 날(일요일)부터 그 회차 당첨번호와, 위 "내 번호"에 저장해 둔 번호의 등수 · 맞은 번호를 메일로 보냅니다. 그 회차 번호를 저장하지 않은 주에는 보내지 않습니다.') }),
             row(tr('my.mailState', '상태'), on ? tr('my.mailIsOn', '받는 중') : tr('my.mailIsOff', '받지 않음')),
             row(tr('my.email', '이메일'), email || ''),
             el('div', { className: 'my-actions' }, [toggle]),
@@ -309,8 +309,8 @@
         });
         if (!on) toggle.classList.remove('btn-secondary');
         return [
-            el('h3', { className: 'my-sub', text: tr('my.hexMailH', 'LottoHex 칸 알림 메일') }),
-            el('p', { text: tr('my.hexMailLead', 'LottoHex에 참여하면, 내 칸을 빼앗긴 날 저녁에 한 번 몇 칸을 빼앗겼는지 메일로 알려 드립니다. 처음부터 켜져 있고, 메일의 "알림 끄기"로도 끌 수 있습니다.') }),
+            el('h3', { className: 'my-sub', text: tr('my.hexMailH', 'LottoHex 블록 알림 메일') }),
+            el('p', { text: tr('my.hexMailLead', 'LottoHex에 참여하면, 내 블록을 빼앗긴 날 저녁에 한 번 몇 블록을 빼앗겼는지 메일로 알려 드립니다. 이 메일은 처음부터 켜져 있으며, 여기나 메일의 "알림 끄기"로 끌 수 있습니다.') }),
             row(tr('my.mailState', '상태'), on ? tr('my.mailIsOn', '받는 중') : tr('my.mailIsOff', '받지 않음')),
             el('div', { className: 'my-actions' }, [toggle]),
         ];
@@ -374,7 +374,7 @@
         fill('my-profile', [
             row(tr('my.nick', '별명'),
                 user.nick ? (user.nickAuto ? tr('my.nickAuto', '{nick} (자동)', { nick: user.nick }) : user.nick)
-                    : user.nickDue ? tr('my.nickNoneDue', '아직 없음 · {date}에 자동으로 붙습니다', { date: monthDay(user.nickDue) }) : tr('my.nickNone', '아직 없음'),
+                    : user.nickDue ? tr('my.nickNoneDue', '아직 없음 · {date}에 별명이 자동으로 붙습니다', { date: monthDay(user.nickDue) }) : tr('my.nickNone', '아직 없음'),
                 A && A.openNick ? btn(user.nick ? (user.nickAuto ? tr('my.nickChangeFree', '무료로 바꾸기') : tr('my.nickChange', '바꾸기')) : tr('my.nickSet', '정하기'), () => A.openNick(!user.nick)) : null),
             row(tr('my.email', '이메일'), user.email || ''),
             row(tr('my.joined', '가입일'), ymd(user.createdAt)),
@@ -409,18 +409,18 @@
         const rankLine = row(tr('my.rank', '순위'), tr('my.loading', '불러오는 중…'));
         fill('my-score', [
             el('div', { className: 'my-big' }, [
-                el('div', null, [el('b', { text: num(sc.total) }), el('span', { text: tr('my.points', '점수') })]),
+                el('div', null, [el('b', { text: num(sc.total) }), el('span', { text: tr('my.points', '모은 포인트') })]),
                 el('div', null, [el('b', { text: num(sc.avail != null ? sc.avail : sc.total) }), el('span', { text: tr('my.avail', '쓸 수 있는 포인트') })]),
             ]),
             rankLine,
             row(tr('my.days', '출석'), tr('my.daysN', '{n}일', { n: num(sc.days) })),
             row(tr('my.reacts', '남긴 반응'), tr('my.reactsN', '♥ {h} · $ {d} · ₩ {w}', counts)),
-            row(tr('my.buy', '이용권 점수'), tr('my.ptsN', '{n}점', { n: num(sc.buy) })),
-            sc.verified ? row(tr('my.verified', '다녀온 곳 인증'), tr('my.verifiedN', '{n}번 · {p}점', { n: num(sc.verified), p: num(sc.verified * 10) })) : null,
-            sc.hex ? row(tr('my.hex', 'LottoHex 보상'), tr('my.ptsN', '{n}점', { n: num(sc.hex) })) : null,
-            sc.hold ? row(tr('my.hold', 'LottoHex 점령'), tr('my.ptsN', '{n}점', { n: num(sc.hold) })) : null,   // 2026-11-12 — 차지한 칸 하나에 하루 0.1
-            sc.ms ? row(tr('my.ms', '마일스톤'), tr('my.ptsN', '{n}점', { n: num(sc.ms) })) : null,   // 2026-11-09 — 단계마다 한 번
-            sc.spent ? row(tr('my.spent', '쓴 포인트'), tr('my.ptsN', '{n}점', { n: num(sc.spent) })) : null,
+            row(tr('my.buy', '이용권 포인트'), tr('my.ptsN', '{n}P', { n: num(sc.buy) })),
+            sc.verified ? row(tr('my.verified', '다녀온 곳 인증'), tr('my.verifiedN', '{n}번 · {p}P', { n: num(sc.verified), p: num(sc.verified * 10) })) : null,
+            sc.hex ? row(tr('my.hex', 'LottoHex 보상'), tr('my.ptsN', '{n}P', { n: num(sc.hex) })) : null,
+            sc.hold ? row(tr('my.hold', 'LottoHex 점령'), tr('my.ptsN', '{n}P', { n: num(sc.hold) })) : null,   // 2026-11-12 — 차지한 칸 하나에 하루 0.1
+            sc.ms ? row(tr('my.ms', '마일스톤'), tr('my.ptsN', '{n}P', { n: num(sc.ms) })) : null,   // 2026-11-09 — 단계마다 한 번
+            sc.spent ? row(tr('my.spent', '쓴 포인트'), tr('my.ptsN', '{n}P', { n: num(sc.spent) })) : null,
             el('div', { className: 'my-actions' }, [el('a', { className: 'btn btn-secondary btn-mini', href: 'ranking.html', text: tr('my.goRanking', '랭킹 보기') })]),
         ]);
         // 순위는 랭킹 페이지와 같은 길로 묻는다
@@ -431,7 +431,7 @@
             const me = res.ok && data.me;
             rankLine.querySelector('.my-v').textContent = !me ? '—'
                 : me.nick ? tr('my.rankN', '{rank}위 / {of}명', { rank: num(me.rank), of: num(me.of) })
-                    : tr('my.rankUnnamed', '별명을 정하면 {rank}위로 오릅니다', { rank: num(me.rank) });
+                    : tr('my.rankUnnamed', '별명을 정하면 {rank}위로 랭킹에 오릅니다', { rank: num(me.rank) });
         } catch (e) {
             rankLine.querySelector('.my-v').textContent = '—';
         }
@@ -452,7 +452,7 @@
     function showGuest(loginOn) {
         const A = window.LottoAccount;
         const msg = loginOn
-            ? [el('p', { text: tr('my.needLogin', '로그인하면 내 정보·점수·랭킹을 볼 수 있습니다.') }),
+            ? [el('p', { text: tr('my.needLogin', '로그인하면 내 정보·포인트·랭킹을 볼 수 있습니다.') }),
                 el('div', { className: 'my-actions' }, [el('button', { type: 'button', className: 'btn', text: tr('my.login', '구글로 로그인'), on: { click: () => A.openLogin(tr('my.loginReason', '마이페이지는 로그인하면 볼 수 있습니다.')) } })])]
             : [el('p', { className: 'my-muted', text: tr('my.off', '회원 기능을 준비하고 있습니다.') })];
         fill('my-profile', msg);

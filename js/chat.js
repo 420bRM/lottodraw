@@ -137,7 +137,7 @@
             gate.appendChild(el('button', { type: 'button', className: 'btn btn-secondary', text: tr('chat.loginToTalk', '로그인하고 채팅하기'),
                 on: { click: () => A.openLogin(tr('chat.loginReason', '채팅은 로그인한 회원이 쓸 수 있습니다.')) } }));
         } else if (!myNick()) {
-            gate.appendChild(el('button', { type: 'button', className: 'btn btn-secondary', text: tr('chat.nickToTalk', '별명을 정하면 채팅할 수 있습니다'),
+            gate.appendChild(el('button', { type: 'button', className: 'btn btn-secondary', text: tr('chat.nickToTalk', '별명 정하고 채팅하기'),
                 on: { click: () => A.openNick && A.openNick(false) } }));
         } else if (banned) {
             gate.appendChild(el('p', { className: 'chat-status', text: ERR.banned() }));
