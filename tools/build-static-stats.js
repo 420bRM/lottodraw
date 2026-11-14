@@ -3470,17 +3470,19 @@ function updateHome(posts) {
         // description 은 구글 데이터세트 필수 항목이다 — 빠지면 Search Console 이 오류로 잡는다
         hasPart: STATS.map(p => ({ '@type': 'Dataset', name: p.title, description: p.desc, url: `${SITE}/${p.file}` })),
     };
+    // 사이트 이름의 다른 표기(2026-11-14 — 네이버 검색어에 띄어 쓴 '로또 드로우'가 7위): 붙여 쓴 한글 · 띄어 쓴 한글 · 영문
+    const BRAND_ALT = ['로또드로우', '로또 드로우', 'lottodraw'];
     const ld = JSON.stringify({
         '@context': 'https://schema.org',
         '@graph': [
             {
-                '@type': 'WebSite', '@id': SITE + '/#website', name: 'lottodraw.kr', alternateName: '로또드로우', url: SITE + '/', inLanguage: 'ko-KR',
+                '@type': 'WebSite', '@id': SITE + '/#website', name: 'lottodraw.kr', alternateName: BRAND_ALT, url: SITE + '/', inLanguage: 'ko-KR',
                 // 검색엔진 · AI 요약이 사이트를 한 문장으로 소개할 때 읽는 자리. 기능을 하나씩 다 적는다
                 description: `lottodraw.kr은 ${SITE_KIND}입니다. 동행복권 로또 6/45 ${RANGE} 당첨 기록으로 회차별 당첨번호와 등수별 당첨금, `
                     + '전 회차 통계 12종, 역대 당첨금 TOP 50과 회차별 그래프(물가 반영 · 서울 아파트값 · 최저임금 비교), 실수령액 계산기, '
                     + '2·3등 당첨금 통계, 2~5등 당첨 게임 수로 셈한 번호별 구매 인기(사람들이 많이 사는 번호), 등수별 당첨 확률, 특수 패턴을 거르는 번호 생성기, 해설 블로그를 제공합니다. 다음 회차를 예측하지 않습니다.',
             },
-            { '@type': 'Organization', '@id': SITE + '/#org', name: 'lottodraw.kr', url: SITE + '/', email: 'contact@lottodraw.kr' },
+            { '@type': 'Organization', '@id': SITE + '/#org', name: 'lottodraw.kr', alternateName: BRAND_ALT, url: SITE + '/', email: 'contact@lottodraw.kr' },
             dataset,
         ],
     });
