@@ -8,7 +8,7 @@ import { community } from '../src/community.js';
 import { _resetGoogleForTests } from '../src/google.js';
 import { b64urlEncode } from '../src/keys.js';
 import { seasonOf, prevSeason, computeTerritory, defaultSkin, LEGACY_T, TERR_CONSENT, VISIT_DAILY, _resetCellsForTests } from '../src/territory.js';
-import { shapeTitles, inducedPath, evaluate, milestonePoints, titleName, catalog, MILESTONES } from '../src/titles.js';
+import { shapeTitles, inducedPath, evaluate, milestonePoints, titleName, catalog, MILESTONES, feedTitles } from '../src/titles.js';
 
 const ADMIN = 'admin-token-0123456789abcdef';
 const ORIGIN = 'https://www.lottodraw.kr';
@@ -730,6 +730,11 @@ test('마일스톤 · 칭호 셈: 단계 포인트는 한 번 · 지역(시·군
     assert.deepEqual(titleName('s:제주'), ['제주 완주', '제주 Complete']);
     assert.deepEqual(titleName('worm7'), ['왕지렁이', 'Giant Worm']);
     assert.equal(titleName('nope'), null);
+    // 소식 띠에 올리는 칭호(2026-11-14): 지역(r: · s:)과 숨은 칭호는 이름 없이 개수만
+    assert.deepEqual(feedTitles(['t1', 'r:마포구:0', 's:제주', 'island', 'rest', 'pioneer', 'worm7', 'all17']),
+        { tn: [['첫 깃발', 'First Flag'], ['왕지렁이', 'Giant Worm'], ['팔도유람', 'Grand Tour']], th: 3, ta: 2 });
+    assert.equal(feedTitles([]), null);
+    assert.equal(feedTitles(['nope']), null);
     // 화면 목록: 숨은 칭호는 이름 · 조건을 내보내지 않는다
     const cat = catalog();
     const hidden = cat.titles.filter(t => t.g === 'hidden');
@@ -829,9 +834,24 @@ test('LottoHex 소식: 위치로 인증해 칸 주인이 되면 띠 · 채팅에
     const f = await call(env, 'GET', '/api/territory/feed');
     assert.equal(f.status, 200);
     assert.equal(f.headers.get('Cache-Control'), 'public, max-age=30');
-    assert.deepEqual(f.data.feed.map(e => [e.nick, e.n, e.st || 0, e.from || null]), [['라마바', 1, 1, '가나다'], ['가나다', 2, 0, null], ['가나다', 1, 0, null]], '최근 것부터 · 빼앗은 것은 st · from');
-    assert.ok(!/0,0|1,0|1110020|마포|37\.5/.test(JSON.stringify(f.data)), '어느 칸 · 판매점 · 지역인지는 없다');
+    assert.deepEqual(f.data.feed.filter(e => !e.tt).map(e => [e.nick, e.n, e.st || 0, e.from || null]), [['라마바', 1, 1, '가나다'], ['가나다', 2, 0, null], ['가나다', 1, 0, null]], '최근 것부터 · 빼앗은 것은 st · from');
+    // 칭호 소식(2026-11-14): 같은 인증의 점령 소식 바로 뒤 · 숨은 칭호(개척자)는 이름 없이 th 개수만 · 채팅에는 안 감
+    assert.deepEqual(f.data.feed.map(e => e.tt ? ['🏅', e.nick, e.tn.map(n => n[0]), e.th, e.ta] : [e.st ? '⚔️' : '🚩', e.nick]), [
+        ['⚔️', '라마바'], ['🏅', '라마바', ['첫 깃발'], 0, 0],
+        ['🏅', '가나다', ['초보탐험가'], 0, 0], ['🚩', '가나다'],
+        ['🚩', '가나다'], ['🏅', '가나다', ['첫 깃발'], 1, 0],
+    ]);
+    assert.ok(!/0,0|1,0|1110020|마포|37\.5|개척자|Pioneer/.test(JSON.stringify(f.data)), '어느 칸 · 판매점 · 지역 · 숨은 칭호 이름은 없다');
     assert.equal(f.data.notice, null);
+    // LottoHex 에 참여하지 않은 회원은 칭호를 얻어도 띠에 안 나온다
+    const c = await member(env, 'f3', '구경꾼');
+    await geoAgree(env, c);
+    let rc;
+    for (const i of [0, 1, 2]) { rc = await go(c, i); assert.equal(rc.status, 200); }
+    assert.ok(rc.data.fresh && rc.data.fresh.titles.some(t => t.id === 'v3'), '구경꾼도 칭호는 얻는다');
+    const f2 = await call(env, 'GET', '/api/territory/feed');
+    assert.ok(!f2.data.feed.some(e => e.nick === '구경꾼'), JSON.stringify(f2.data.feed));
+    assert.equal(f2.data.feed.length, f.data.feed.length);
     assert.deepEqual(posted.map(p => p[0]), Array(3).fill('https://chat/system'), '채팅에도 세 번');
     assert.deepEqual(posted.map(p => p[1].kind), ['cap', 'cap', 'cap']);
     assert.equal(posted[0][1].text, '🚩 가나다님이 1번째 블록을 점령했습니다');

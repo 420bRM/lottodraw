@@ -771,6 +771,7 @@ html.sm-enter-hex #sm-hexfx .sm-hexfx-ico, html.sm-enter-store #sm-storefx .sm-s
 .sm-ticker-in small { margin-left: 4px; color: #a99fd6; font-size: 10.5px; font-weight: normal; }
 .sm-ticker-in .is-notice { color: #ffd479; }
 .sm-ticker-in .is-steal { color: #ff9b9b; }   /* 빼앗음 */
+.sm-ticker-in .is-title { color: #8fe3c0; }   /* 칭호 소식(2026-11-14) */
 .sm-ticker:hover .sm-ticker-in, .sm-ticker:active .sm-ticker-in { animation-play-state: paused; }
 @keyframes sm-tick { to { transform: translateX(calc(-100% - var(--cw, 400px))); } }
 /* PC: 지도 위에 지도 폭 그대로(2026-11-11 사장님 — 왼쪽 칸 구석이라 안 보였다 → 가운데 720px → "화면 크기에 맞게": 지도 왼쪽 끝부터 오른쪽 끝까지).

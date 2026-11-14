@@ -3161,7 +3161,7 @@ function lottohexAboutHtml(md, snap) {
             <ul>
                 ${li('같은 수면 그 블록에 더 최근에 다녀온 사람이 차지합니다. 주인 없는 블록은 회색지대로, 지도에 옅은 회색으로 보입니다.', 'On a tie, whoever visited the block most recently holds it. Blocks no one holds are the grey zone, shown in light grey.')}
                 ${li('블록은 비우지 않습니다. 분기(1 · 4 · 7 · 10월 1일 0시)마다 그때의 Map 랭킹을 확정해 남깁니다.', 'Blocks are never cleared. At the start of each quarter the Map ranking is finalised and kept.')}
-                ${li('모두에게 보이는 것: 블록 주인 별명 · 블록 모양(빛 벽 포함) · 블록별 다녀온 판매점 수 · Map 랭킹 · 점령 소식(별명과 몇 번째 블록인지만). 어느 판매점을 언제 다녀왔는지는 보이지 않습니다.', 'What everyone can see: block holders\' nicknames, block skins (including light walls), visit counts per block, the Map ranking and capture news (only the nickname and how many blocks they now hold). Which retailers you visited, and when, is never shown.')}
+                ${li('모두에게 보이는 것: 블록 주인 별명 · 블록 모양(빛 벽 포함) · 블록별 다녀온 판매점 수 · Map 랭킹 · 점령 소식(별명과 몇 번째 블록인지만) · 칭호 소식(별명과 칭호 이름 — 지역 · 숨은 칭호는 이름 없이). 어느 판매점을 언제 다녀왔는지는 보이지 않습니다.', 'What everyone can see: block holders\' nicknames, block skins (including light walls), visit counts per block, the Map ranking, capture news (only the nickname and how many blocks they now hold) and title news (nickname and title name; area and hidden titles without their names). Which retailers you visited, and when, is never shown.')}
                 ${li('폐점한 판매점은 세지 않습니다. 어디서 사든 1등 확률은 1/8,145,060으로 같습니다.', 'Closed retailers do not count. Your chance of 1st prize is 1 in 8,145,060 wherever you buy.')}
             </ul>
             <h2 data-i18n-en="Points">포인트</h2>

@@ -71,7 +71,7 @@
 // 이름·사진은 받지 않는다. 이메일은 "로그인한 계정" 표시, 문의 응대, 회원이 켠 "추첨 결과 메일"에만 쓴다.
 
 import { seasonOf, prevSeason, computeTerritory, publicTerritory, seasonRecord, cellMap, storeGeoFull, FIRST_SEASON, VISIT_DAILY, kstDay as kstDate, GEO_TRIES, GEO_LOG_DAYS } from './territory.js';
-import { milestonePoints, evaluate, myTitles, selTitle, titleName } from './titles.js';
+import { milestonePoints, evaluate, myTitles, selTitle, titleName, feedTitles } from './titles.js';
 
 export const SESSION_DAYS = 30;
 const TRIAL_MEMORY_DAYS = 365;
@@ -288,6 +288,16 @@ export class Community {
             held = Object.keys(t.cells).filter(c => t.cells[c].sub === user.sub);
         }
         const r = evaluate(user, { cellOf: cm, geo: g.map, regions: g.regions, held, pioneer: !!pioneer, now });
+        // 칭호 소식(2026-11-14 사장님 — "칭호 얻었을 때도 이벤트 띠에"): LottoHex 참여자만, 점령 소식과 같은 hxf 에 { tt: 1, tn, th, ta }.
+        // 지역 · 숨은 칭호는 이름 없이 개수만(feedTitles). 방금 같은 인증으로 점령 소식이 들어갔으면 그 뒤(띠에서 점령 → 칭호 차례로 읽히게)
+        const ft = held && r.titles.length ? feedTitles(r.titles) : null;
+        if (ft) {
+            const at = now || Date.now(), nick = user.nick || null;
+            const feed = ((await this.storage.get('hxf')) || []).filter(e => e.at > at - HEX_FEED_MS);
+            const i = feed[0] && feed[0].at === at && feed[0].nick === nick && !feed[0].tt ? 1 : 0;
+            feed.splice(i, 0, Object.assign({ at, nick, tt: 1 }, ft));
+            await this.storage.put('hxf', feed.slice(0, HEX_FEED_MAX));
+        }
         return r.titles.length || r.pts ? r : null;
     }
 
@@ -552,7 +562,7 @@ const OPS = {
 
     // ───── LottoHex 소식(2026-11-10 사장님 — 점령하면 채팅 · LottoHex 화면 흐르는 띠에 "○○○님이 N번째 블록을 점령했습니다", 띠에는 공지도) ─────
     // 위치 걱정: 어느 칸 · 지역인지는 넣지 않는다(언제 어디 있었는지 드러나지 않게) — 별명과 지금 가진 칸 수(N번째)만.
-    // hxf: [{ at, nick, n, st?, from? }] 최근 것부터(st: 남의 칸을 빼앗음, from: 빼앗긴 사람 별명) HEX_FEED_MAX 개 · HEX_FEED_MS 안의 것, hxn: { text, at, until } 관리자 공지(띠 맨 앞)
+    // hxf: [{ at, nick, n, st?, from? } | { at, nick, tt: 1, tn, th, ta }] 최근 것부터(st: 남의 칸을 빼앗음, from: 빼앗긴 사람 별명, tt: 칭호 소식 — titleCheck) HEX_FEED_MAX 개 · HEX_FEED_MS 안의 것, hxn: { text, at, until } 관리자 공지(띠 순서는 js/store-map.js drawTicker)
     // steal: 남의 칸을 빼앗았으면 { from: 빼앗긴 사람 별명(없으면 null) } — 소식에 st: 1, from(2026-11-10 사장님 "블록 빼앗는 것도 알리자")
     async hexCaptured(user, n, now, steal) {
         const ev = Object.assign({ at: now, nick: user.nick || null, n }, steal ? { st: 1, from: steal.from || null } : {});
