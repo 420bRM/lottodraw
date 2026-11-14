@@ -5,8 +5,22 @@
     <link>https://www.lottodraw.kr/</link>
     <description>로또 데이터 플랫폼 lottodraw.kr — 매주 당첨번호와 회차별 당첨금, 통계와 확률 이야기. 어디서 사든 1등 확률은 1/8,145,060으로 같습니다.</description>
     <language>ko</language>
-    <lastBuildDate>Mon, 09 Nov 2026 03:00:00 GMT</lastBuildDate>
+    <lastBuildDate>Sat, 14 Nov 2026 03:00:00 GMT</lastBuildDate>
     <atom:link href="https://www.lottodraw.kr/rss.xml" rel="self" type="application/rss+xml"/>
+    <item>
+        <title>LottoHex 이번 주 Map 랭킹 (2026-11-14)</title>
+        <link>https://www.lottodraw.kr/lottohex.html</link>
+        <guid isPermaLink="false">https://www.lottodraw.kr/lottohex.html#2026-11-14</guid>
+        <pubDate>Sat, 14 Nov 2026 03:00:00 GMT</pubDate>
+        <description>참여 3명 · 차지된 블록 6개. 다녀온 판매점으로 육각 블록을 차지하는 땅따먹기 LottoHex의 이번 주 순위.</description>
+    </item>
+    <item>
+        <title>로또 1250회 당첨번호 (2026-11-14)</title>
+        <link>https://www.lottodraw.kr/round/1250.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/round/1250.html</guid>
+        <pubDate>Sat, 14 Nov 2026 03:00:00 GMT</pubDate>
+        <description>당첨번호 1 · 5 · 18 · 23 · 27 · 28 + 보너스 8. 등수별 당첨금 · 당첨 게임 수.</description>
+    </item>
     <item>
         <title>LottoHex(로또헥스) 하는 법 — 로또 판매점 지도 위 육각 블록 땅따먹기</title>
         <link>https://www.lottodraw.kr/blog/lottohex-how-to-play.html</link>
@@ -342,13 +356,6 @@
         <guid isPermaLink="true">https://www.lottodraw.kr/round/1221.html</guid>
         <pubDate>Sat, 25 Apr 2026 03:00:00 GMT</pubDate>
         <description>당첨번호 6 · 13 · 18 · 28 · 30 · 36 + 보너스 9. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
-    </item>
-    <item>
-        <title>로또 1220회 당첨번호 (2026-04-18)</title>
-        <link>https://www.lottodraw.kr/round/1220.html</link>
-        <guid isPermaLink="true">https://www.lottodraw.kr/round/1220.html</guid>
-        <pubDate>Sat, 18 Apr 2026 03:00:00 GMT</pubDate>
-        <description>당첨번호 2 · 22 · 25 · 28 · 34 · 43 + 보너스 16. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
     </item>
 </channel>
 </rss>
