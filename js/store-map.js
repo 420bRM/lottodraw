@@ -1566,9 +1566,15 @@
         });
     }
     // ───── LottoHex 소식 띠(2026-11-10 사장님 — "점령하면 '○○○님이 ~번째 블록을 점령했습니다'가 오른쪽에서 왼쪽으로 흐르게, 간단한 공지도, 나중엔 유료 확성기") ─────
-    // /api/territory/feed(30초 캐시)를 LottoHex 화면에서 1분마다. 관리자 공지가 맨 앞(노란 글씨), 점령 소식은 최근 것부터.
+    // /api/territory/feed(30초 캐시)를 LottoHex 화면에서 1분마다. 소식(점령 · 빼앗음)은 최근 것부터, 관리자 공지는 노란 글씨.
+    // 순서 규칙(2026-11-14 사장님 — "이용자가 생기고 있어 소식이 공지보다 먼저, 공지가 너무 밀리면 안 되니 규칙을"):
+    //   ① 공지 앞에는 최근 소식 TICK_AHEAD(3)개까지 → 공지는 늘 띠에서 4번째 안에 나온다(한 바퀴에 한 번)
+    //   ② 나머지 소식은 공지 뒤 ③ 공지를 새로 올린 뒤 TICK_NOTICE_NEW(30분)는 공지가 맨 앞 ④ 띠에 싣는 소식은 10개까지
+    //   ⑤ 움직임 줄이기(흐르지 않고 첫 줄만 보임)면 공지가 맨 앞
+    // 확성기 같은 새 소식 종류가 생겨도 같은 규칙(소식 쪽)으로 들어간다
     // 어느 칸 · 지역인지는 넣지 않는다(언제 어디 있었는지 드러나지 않게 — 서버도 별명 · N번째만 준다). 움직임 줄이기면 흐르지 않고 첫 줄만
     let feedData = null, feedAt = 0, feedSig = '';
+    const TICK_AHEAD = 3, TICK_NOTICE_NEW = 30 * 60000;
     async function loadFeed(force) {
         if (!hexMode || (!force && Date.now() - feedAt < 50000)) return;
         feedAt = Date.now();
@@ -1579,12 +1585,15 @@
     function drawTicker() {
         const box = document.getElementById('sm-ticker'), inner = document.getElementById('sm-ticker-in');
         if (!box || !inner) return;
-        const items = [];
-        if (feedData && feedData.notice && feedData.notice.text) items.push(['is-notice', '📢 ' + feedData.notice.text]);
-        ((feedData && feedData.feed) || []).slice(0, 10).forEach(e => items.push(e.st
+        const ev = [];
+        ((feedData && feedData.feed) || []).slice(0, 10).forEach(e => ev.push(e.st
             ? ['is-steal', '⚔️ ' + T((e.nick ? e.nick + '님이 ' : '누군가 ') + (e.from ? e.from + '님의' : '다른 사람의') + ' 블록을 빼앗았습니다 (' + e.n + '번째 블록)',   // 빼앗음(같은 날 사장님 — "블록 빼앗는 것도 알리자")
                 (e.nick || 'Someone') + ' took a block from ' + (e.from || 'another player') + ' (block #' + e.n + ')'), agoTxt(e.at)]
             : ['', '🚩 ' + T((e.nick ? e.nick + '님이 ' : '누군가 ') + e.n + '번째 블록을 점령했습니다', (e.nick || 'Someone') + ' captured block #' + e.n), agoTxt(e.at)]));
+        const nt = feedData && feedData.notice && feedData.notice.text ? feedData.notice : null;
+        const still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;   // 움직임 줄이기: 흐르지 않고 첫 줄만 보이므로 공지를 앞에
+        const ahead = !nt ? ev.length : still || Date.now() - (nt.at || 0) < TICK_NOTICE_NEW ? 0 : Math.min(TICK_AHEAD, ev.length);   // 위 순서 규칙
+        const items = ev.slice(0, ahead).concat(nt ? [['is-notice', '📢 ' + nt.text]] : [], ev.slice(ahead));
         box.hidden = !items.length;
         if (!items.length) { feedSig = ''; return; }
         const sig = JSON.stringify(items.map(x => x[1]));
