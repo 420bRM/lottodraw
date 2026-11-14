@@ -1572,7 +1572,7 @@
     //   ② 나머지 소식은 공지 뒤 ③ 공지를 새로 올린 뒤 TICK_NOTICE_NEW(30분)는 공지가 맨 앞 ④ 띠에 싣는 소식은 10개까지
     //   ⑤ 움직임 줄이기(흐르지 않고 첫 줄만 보임)면 공지가 맨 앞
     // 확성기 같은 새 소식 종류가 생겨도 같은 규칙(소식 쪽)으로 들어간다
-    // 어느 칸 · 지역인지는 넣지 않는다(언제 어디 있었는지 드러나지 않게 — 서버도 별명 · N번째만 준다). 움직임 줄이기면 흐르지 않고 첫 줄만
+    // 어느 칸 · 지역인지는 넣지 않는다(언제 어디 있었는지 드러나지 않게 — 서버도 별명 · N번째 · 이름을 올려도 되는 칭호만 준다). 움직임 줄이기면 흐르지 않고 첫 줄만
     let feedData = null, feedAt = 0, feedSig = '';
     const TICK_AHEAD = 3, TICK_NOTICE_NEW = 30 * 60000;
     async function loadFeed(force) {
@@ -1582,11 +1582,20 @@
         drawTicker();
     }
     const agoTxt = at => { const m = Math.max(1, Math.round((Date.now() - at) / 60000)); return m < 60 ? T(m + '분 전', m + 'm ago') : T(Math.round(m / 60) + '시간 전', Math.round(m / 60) + 'h ago'); };
+    // 칭호 소식(2026-11-14 사장님 — "칭호 얻었을 때도 이벤트 띠에"): 서버가 이름을 준 칭호(tn)만 이름으로, 지역 칭호(ta) · 숨은 칭호(th)는 개수만
+    function titleNews(e) {
+        const who = e.nick ? e.nick + '님이 ' : '누군가 ', whoEn = e.nick || 'Someone';
+        const tn = (e.tn || []).slice(0, 3), extra = (e.tn || []).length - tn.length + (e.th || 0) + (e.ta || 0);
+        if (tn.length) return T(who + tn.map(n => '「' + n[0] + '」').join(' · ') + ' 칭호' + (extra ? ' 외 ' + extra + '개' : '') + '를 얻었습니다',
+            whoEn + ' earned the title' + (tn.length > 1 ? 's ' : ' ') + tn.map(n => '“' + n[1] + '”').join(' · ') + (extra ? ' and ' + extra + ' more' : ''));
+        if (e.th) return T(who + '숨은 칭호를 찾았습니다', whoEn + ' found a hidden title');
+        return T(who + '지역 칭호를 얻었습니다', whoEn + ' earned an area title');
+    }
     function drawTicker() {
         const box = document.getElementById('sm-ticker'), inner = document.getElementById('sm-ticker-in');
         if (!box || !inner) return;
         const ev = [];
-        ((feedData && feedData.feed) || []).slice(0, 10).forEach(e => ev.push(e.st
+        ((feedData && feedData.feed) || []).slice(0, 10).forEach(e => ev.push(e.tt ? ['is-title', '🏅 ' + titleNews(e), agoTxt(e.at)] : e.st
             ? ['is-steal', '⚔️ ' + T((e.nick ? e.nick + '님이 ' : '누군가 ') + (e.from ? e.from + '님의' : '다른 사람의') + ' 블록을 빼앗았습니다 (' + e.n + '번째 블록)',   // 빼앗음(같은 날 사장님 — "블록 빼앗는 것도 알리자")
                 (e.nick || 'Someone') + ' took a block from ' + (e.from || 'another player') + ' (block #' + e.n + ')'), agoTxt(e.at)]
             : ['', '🚩 ' + T((e.nick ? e.nick + '님이 ' : '누군가 ') + e.n + '번째 블록을 점령했습니다', (e.nick || 'Someone') + ' captured block #' + e.n), agoTxt(e.at)]));
@@ -2071,7 +2080,7 @@
             '<li>' + T('주인이 없는 블록은 <b>회색지대</b>로, 지도에 옅은 회색으로 보입니다. 판매점 한 곳만 다녀와도 차지합니다.', 'Blocks no one holds are the <b>grey zone</b>, shown in light grey. One visit takes one.') + '</li>' +
             '<li>' + T('같은 수면 그 블록에 더 최근에 다녀온 사람이 차지합니다. 빼앗기면 그 블록 판매점 카드의 "오늘 또 다녀왔어요"로 되찾을 수 있습니다(같은 곳은 하루 한 번).', 'On a tie, whoever visited the block most recently holds it. Lost it? Use "Visited again today" on a retailer card in that block (once a day per retailer).') + '</li>' +
             '<li>' + T('블록 모양: 참여자마다 색 두 가지와 무늬(단색 · 줄무늬 · 물방울 · 체크)가 무작위로 정해지고 모두에게 같게 보입니다. 내 블록 모양은 ' + SKIN_COST + 'P로 바꿀 수 있습니다. 내 블록은 테두리가 조금 굵습니다.', 'Skins: each player gets two colours and a pattern (solid, stripes, dots or checks) at random, and everyone sees the same. You can change yours for ' + SKIN_COST + ' pts. Your blocks have a slightly thicker edge.') + '</li>' +
-            '<li>' + T('소식 띠: 누가 블록을 새로 차지하면 "○○님이 N번째 블록을 점령했습니다", 남의 블록을 빼앗으면 "○○님이 △△님의 블록을 빼앗았습니다"가 LottoHex 화면 위 띠와 채팅에 나옵니다(어느 블록 · 지역인지는 나오지 않습니다).', 'News ticker: when someone takes a new block, "X captured block #N" (or "X took a block from Y") runs along the top of the LottoHex screen and in the chat (which block or area is never shown).') + '</li>' +
+            '<li>' + T('소식 띠: 누가 블록을 새로 차지하면 "○○님이 N번째 블록을 점령했습니다", 남의 블록을 빼앗으면 "○○님이 △△님의 블록을 빼앗았습니다"가 LottoHex 화면 위 띠와 채팅에 나옵니다. 칭호를 얻으면 "○○님이 「첫 깃발」 칭호를 얻었습니다"가 띠에 나옵니다(지역 칭호 · 숨은 칭호는 이름 없이). 어느 블록 · 지역인지는 나오지 않습니다.', 'News ticker: when someone takes a new block, "X captured block #N" (or "X took a block from Y") runs along the top of the LottoHex screen and in the chat. New titles show there too ("X earned the title “First Flag”"; area and hidden titles without their names). Which block or area is never shown.') + '</li>' +
             '<li>' + T('영역 빛 벽: ' + BEAM_COST + 'P로 한 번 사면 계속 씁니다. 3D에서 내 영역 바깥 테두리가 위로 빛나고 모두에게 보입니다. 켜고 끄기는 무료입니다.', 'Light wall: buy it for ' + BEAM_COST + ' pts (yours to keep) and your territory edge glows upward in 3D for everyone. Switching it on or off is free.') + '</li>' +
             '<li>' + T('밤 지도에서 크게 보면 차지한 블록 테두리를 빛이 시계 방향으로 돌고, 블록 면에는 유리에 비친 듯한 45° 빛이 번쩍 지나갑니다.', 'On the night map, zoomed in, a light runs clockwise round held blocks and a quick glassy 45° glint flashes across them.') + '</li>' +
             '<li>' + T('블록은 비우지 않습니다. 분기(1 · 4 · 7 · 10월 1일 0시)마다 그때의 Map 랭킹을 확정해 남깁니다.', 'Blocks are never cleared. At the start of each quarter the Map ranking at that moment is finalised and kept.') + '</li>' +

@@ -76,6 +76,19 @@ export function titleGroup(id) {
     const t = BY_ID.get(id);
     return t ? t.g : /^r:/.test(id) ? 'area' : /^s:/.test(id) ? 'area' : null;
 }
+// LottoHex 소식 띠에 올리는 칭호(2026-11-14 사장님 — "칭호 얻었을 때도 이벤트 띠에"). 이름을 그대로 올려도 되는 칭호만 이름을 준다.
+// 지역 칭호(r: · s: — 시·군·구 · 시·도 이름이 든다)는 ta(개수)로, 숨은 칭호(섬 · 휴게소 · 개척자 — 어디 있었는지가 드러나거나 비밀)는 th(개수)로 이름 없이.
+// 올릴 것이 없으면 null
+export function feedTitles(ids) {
+    const tn = [];
+    let th = 0, ta = 0;
+    for (const id of ids || []) {
+        if (titleGroup(id) === 'hidden') th++;
+        else if (/^[rs]:/.test(id)) ta++;
+        else { const n = titleName(id); if (n) tn.push(n); }
+    }
+    return tn.length || th || ta ? { tn, th, ta } : null;
+}
 // 화면에 내려 보내는 목록(누구나): 숨은 칭호는 번호와 무리만(이름 · 조건은 얻은 사람에게만)
 export function catalog() {
     return {
