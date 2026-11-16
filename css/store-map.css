@@ -746,10 +746,8 @@ html.sm-enter-hex #sm-hexfx .sm-hexfx-ico, html.sm-enter-store #sm-storefx .sm-s
     .sm-map .maplibregl-ctrl-group:has(> .maplibregl-ctrl-zoom-in) { display: none; }
 }
 
-/* 전체화면 단추(2026-11-09): 휴대폰 크기에서만. PC 는 브라우저 F11 이 있다 */
-.sm-full-ctrl { display: none; }   /* PC(마우스)에는 없다 — 브라우저 F11 이 있다 */
-/* 휴대폰 크기 + 손가락으로 쓰는 기기(태블릿을 가로로 들어 900px 넘는 화면 — 2026-11-16 친구 태블릿에 단추가 없었다) */
-@media (max-width: 899px), (hover: none) and (pointer: coarse) { .sm-full-ctrl { display: block; } }
+/* 전체화면 단추(2026-11-16 사장님 — "그냥 기본값으로"): 브라우저가 지원하면 휴대폰 · 태블릿 · PC 모두에 보인다.
+   아이폰 Safari 처럼 페이지 전체화면이 없는 브라우저에는 js/store-map.js 가 단추를 달지 않는다 */
 .sm-map .sm-full-btn { display: grid; place-items: center; color: #333; }
 .sm-map .sm-full-btn svg { width: 18px; height: 18px; }
 
