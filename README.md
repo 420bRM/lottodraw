@@ -1310,7 +1310,7 @@ Search Console → 실적 → 검색결과 → 기간 **3개월** → **+ 새 �
 - **보렐 카드 둘째 문단** 숫자를 새 목록으로 고쳤다(사장님): 특수 12개 27,597개(약 0.34%) 제외 · 8,117,463개 남음, 쏠림까지 357,760개(약 4.39%) 제외 · 7,787,300개 남음. 숫자가 바뀌면 `tools/test-combo-space.js` 가 실패한다(홈 문장에 같은 수가 있는지 본다).
 - 그대로 둔 것: 보렐 카드 셋째 문단 · 사용법 6단계의 "몰리기 쉬운 조합을 피해 나눌 사람이 줄 수 있다" 설명.
 
-## 4-13. Cloudflare Workers 로 사이트 옮기기 (2026-11-16 준비 — 아직 www 는 GitHub Pages)
+## 4-13. Cloudflare Workers 로 사이트 옮기기 (2026-11-16 — www 는 Cloudflare, 저장소 비공개는 아직)
 
 저장소를 비공개로 돌리려고(코드 · 운영 기록 · 커밋 기록 가리기) 사이트를 GitHub Pages 에서 Cloudflare Workers 정적 파일로 옮긴다. Pages 제품은 쓰지 않는다 — `/about.html` 을 `/about` 으로 강제로 넘기고 끌 수 없어서(사이트맵 · 대표 주소 · 색인 주소가 모두 `.html`).
 
@@ -1322,11 +1322,11 @@ Search Console → 실적 → 검색결과 → 기간 **3개월** → **+ 새 �
 | `site-worker/_headers` | 모든 파일 10분 캐시(GitHub Pages 와 같게) |
 | `404.html` | 없는 주소 쪽(noindex) |
 | `tools/check-site.js` | 사이트맵 전체 200 · 넘김 없음, 폴더 주소 · 404, 내부 파일(README · tools · worker …) 404, 확인용 파일, 캐시 머리 |
-| `.github/workflows/deploy-site.yml` | 손으로 돌림 → workers.dev 시험 주소에 배포 + check-site |
+| `.github/workflows/check-site.yml` | 손으로 돌림 → 실제 주소 점검(Cloudflare 응답 · 사이트맵 전체 · api 가 사이트 파일 읽기). 배포는 하지 않는다 |
 
-**자동 배포(Workers Builds, 2026-11-16 연결)**: Cloudflare `lottodraw-site` → Settings → Build 에 저장소 `420bRM/lottodraw` · 브랜치 `html` · Root directory `site-worker` · Build command `node ../tools/build-dist.js` · Deploy command `npx wrangler deploy` · 다른 브랜치 빌드 끔. html 에 푸시되면(자동 갱신 봇 커밋 포함) Cloudflare 가 빌드 · 배포하므로 GitHub Actions 시간을 쓰지 않는다. `deploy-site.yml` 은 손으로 돌리는 점검용으로 남긴다.
+**자동 배포(Workers Builds, 2026-11-16 연결)**: Cloudflare `lottodraw-site` → Settings → Build 에 저장소 `420bRM/lottodraw` · 브랜치 `html` · Root directory `site-worker` · Build command `node ../tools/build-dist.js` · Deploy command `npx wrangler deploy` · 다른 브랜치 빌드 끔. html 에 푸시되면(자동 갱신 봇 커밋 포함) Cloudflare 가 빌드 · 배포하므로 GitHub Actions 시간을 쓰지 않는다. 결과는 커밋의 'Workers Builds: lottodraw-site' 표시로 보인다. 시험 배포용이던 `deploy-site.yml` 은 지웠고 workers.dev 주소는 껐다.
 
-다음 순서: ① 시험 주소 점검(deploy-site) ② 사장님이 Cloudflare 에서 www 의 GitHub DNS 레코드를 지우고 Worker 에 Custom Domain `www.lottodraw.kr` ③ 배포를 push · 자동 갱신 끝에서도 돌게(또는 Workers Builds) ④ 며칠 뒤 GitHub Pages 끄고 저장소 비공개. ② 전까지는 지금 사이트에 영향 없음.
+**진행**: ✅ 시험 주소 점검 → ✅ Workers Builds 연결 → ✅ www Custom Domain(11/16, check-site 로 사이트맵 1,316개 · api 확인). 남은 것: ① 토요일 자동 갱신 커밋이 Cloudflare 로 배포되는지 확인 ② www 없는 lottodraw.kr — 지금은 GitHub Pages 가 www 로 넘기므로, GitHub Pages 를 끄기 전에 Cloudflare 리디렉션 규칙으로 바꿀 것 ③ GitHub Pages 끄기 · 저장소 비공개.
 
 ## 5. 작업 방식과 주의사항
 
@@ -1384,6 +1384,7 @@ Dropbox `260914 클로드` 폴더의 README와 CLAUDE.md는 **실제로 적용�
 
 | 날짜 | 어디서 | 한 일 |
 |---|---|---|
+| 2026-11-16 | Claude Code 웹 | **www.lottodraw.kr 을 Cloudflare Worker 로 옮김**(사장님 — 탭제어로 Workers Builds 연결 · www Custom Domain) → [4-13번](#4-13-cloudflare-workers-로-사이트-옮기기-2026-11-16--www-는-cloudflare-저장소-비공개는-아직) — 첫 빌드는 README 커밋(#256)으로 깨움. check-site(#257)로 실제 주소 확인: server cloudflare, 사이트맵 1,316개 200 · 넘김 없음, /about 200 · /blog 301 · 404 쪽, api /api/territory 200(사이트 파일 읽기 정상). www 없는 주소는 아직 GitHub Pages 가 www 로 301. 시험 주소(workers.dev · 미리보기 주소) 끄고 deploy-site.yml 지움. 참고: Cloudflare 정적 파일은 Range 요청에도 전체를 준다(api 의 latestDraw 는 앞 2KB 만 쓰므로 결과는 같음) |
 | 2026-11-16 | Claude Code 웹 | **시도별 1등 판매점 17쪽이 자동 갱신에서 빠지던 것 고침** — 토요일 `update-lotto-data` 와 매월 `update-all-shops` 는 빌드는 돌리지만 `git add` 목록에 `stores/` 가 없어(11/9 #223 에서 페이지를 만들 때 빠짐) 시도별 페이지가 사람이 PR 로 빌드할 때만 바뀌었다(지금 "262~1249회"). 두 워크플로 `git add` 에 `stores/` 를 더하고 17쪽을 1250회로 다시 만듦. 자동 갱신 뒤 다시 빌드해 바뀌는 것이 stores/ 뿐인 것도 확인 |
 | 2026-11-16 | Claude Code 웹 | **Cloudflare Workers 로 사이트 옮기기 준비**(사장님 — 저장소 비공개 · 내부 자료 보호, "Workers 로 이전 진행") → [4-13번](#4-13-cloudflare-workers-로-사이트-옮기기-2026-11-16-준비--아직-www-는-github-pages) — `tools/build-dist.js` · `site-worker/`(html_handling none + 빈 주소 규칙 Worker · `_headers`) · `404.html` · `tools/check-site.js` · `deploy-site.yml`(손으로, workers.dev 시험 주소). `_config.yml` 에 site-worker · dist 제외. 로컬 wrangler dev 로 사이트맵 1,316개 200 · 폴더 주소 · 404 · 내부 파일 404 · 캐시 10분 확인. www 는 아직 GitHub Pages |
 | 2026-11-14 | Claude Code 웹 | **사이트 이름 띄어쓰기 표기 더함**(사장님 — 네이버 서치어드바이저 검색어에 띄어 쓴 '로또 드로우'가 7위, 'lottodraw' 1위) — 홈 구조화 데이터 WebSite · Organization `alternateName` 을 ["로또드로우", "로또 드로우", "lottodraw"](`tools/build-static-stats.js` `BRAND_ALT`), 소개 첫 문단 "로또드로우(로또 드로우, lottodraw.kr)는". 홈 제목은 그대로(이미 길어 잘릴 수 있음) |
