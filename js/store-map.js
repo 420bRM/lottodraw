@@ -2041,7 +2041,8 @@
     }
     // 랭킹 목록(지금 · 지난 분기 확정). medal: 1~3위에 메달
     function rankList(rows, mine, medal) {
-        return '<ol class="sm-terr-rank">' + rows.map((r, k) => '<li' + (mine === k + 1 ? ' class="is-me"' : '') + '><span class="sm-rank">' + (medal && MEDAL[k] ? MEDAL[k] : k + 1) + '</span><span class="sm-tname">' +
+        // 블록 0개 참여자(2026-11-16 — 랭킹에 모두 나온다)는 조금 옅게
+        return '<ol class="sm-terr-rank">' + rows.map((r, k) => '<li' + ((mine === k + 1 || !r.cells) ? ' class="' + [mine === k + 1 ? 'is-me' : '', !r.cells ? 'is-zero' : ''].filter(Boolean).join(' ') + '"' : '') + '><span class="sm-rank">' + (medal && MEDAL[k] ? MEDAL[k] : k + 1) + '</span><span class="sm-tname">' +
             (r.skin ? swatch(r.skin) : '') + ttBadge(r.tt) + esc(r.nick || T('(탈퇴했거나 별명 없음)', '(no nickname)')) + '</span><span class="sm-tcnt"><b>' + fmt(r.cells) + '</b>' + T('블록', '') + '<small>' + T(fmt(r.stores) + '곳', fmt(r.stores) + ' visits') + '</small></span></li>').join('') + '</ol>';
     }
     function drawTerr() {

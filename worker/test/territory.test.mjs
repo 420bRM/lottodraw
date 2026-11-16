@@ -619,6 +619,33 @@ test('LottoHex 분기 보상: 확정 순위 1위 1,000 · 2위 500 … 운영자
     } finally { Date.now = realNow; }
 });
 
+test('LottoHex 랭킹(2026-11-16): 블록 0개 참여자도 화면 랭킹 · 내 순위에 나온다(블록 → 다녀온 곳 → 먼저 참여 차례) · 분기 확정 · 보상에서는 빠진다', async () => {
+    let now = kstTime(2026, 12, 31, 21, 0);
+    Date.now = () => now;
+    try {
+        const env = await fresh();
+        const m = env.COMMUNITY._m;
+        const a = await member(env, '6001', '블록있음');
+        const b = await member(env, '6002', '아직안함');
+        const c = await member(env, '6003', '빼앗김');
+        for (const s of [a, b, c]) assert.equal((await join(env, s)).status, 200);
+        await visit(env, a, '11100001');
+        await visit(env, a, '11100002');   // 0,0 칸에서 2곳
+        await visit(env, c, '11100003');   // 같은 칸 1곳 — 블록은 못 가짐
+        const pub = (await call(env, 'GET', '/api/territory')).data;
+        assert.equal(pub.players, 3);
+        assert.deepEqual(pub.rank.map(r => [r.nick, r.cells, r.stores]), [['블록있음', 1, 2], ['빼앗김', 0, 1], ['아직안함', 0, 0]]);
+        const mine = (await call(env, 'GET', '/api/territory', { headers: auth(b) })).data.me;
+        assert.deepEqual([mine.joined, mine.cells.length, mine.rank], [true, 0, 3], '0블록이어도 순위');
+        now = kstTime(2027, 1, 1, 0, 17);
+        const f = await env.COMMUNITY.get().fetch('https://community/', { method: 'POST', body: JSON.stringify({ op: 'terrFinalize', now }) }).then(r => r.json());
+        assert.deepEqual(m.get('ts:2026Q4').rank.map(r => r.nick), ['블록있음'], '확정 순위는 블록이 있는 사람만');
+        assert.equal(f.paid, 1);
+        const key = nick => [...m.keys()].find(k => k.startsWith('u:') && m.get(k).nick === nick);
+        assert.ok(!m.get(key('아직안함')).trw && !m.get(key('빼앗김')).trw, '0블록은 보상이 없다');
+    } finally { Date.now = realNow; }
+});
+
 test('LottoHex 점령 점수(2026-11-12): 한국 날짜가 바뀐 뒤 처음 한 번, 차지한 칸 하나에 0.1점 · 운영자 빼고 · 같은 날 두 번 주지 않는다(중간에 끊겨도) · 점수 · 랭킹에 들어간다', async () => {
     let now = kstTime(2026, 12, 10, 22, 0);
     Date.now = () => now;
