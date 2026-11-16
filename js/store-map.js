@@ -254,7 +254,7 @@
 
     // 북쪽 보기 단추 — "내 위치" 단추 위, 같은 크기. 지도가 돌아간 만큼 바늘도 돈다
     // 전체화면(2026-11-09 사장님 — 휴대폰은 주소창 · 브라우저 도구가 지도를 많이 가린다). 페이지 전체(아래 판 · 카드 · 창 포함)를 전체화면으로.
-    // 휴대폰 크기 · 손가락으로 쓰는 태블릿에서만 보이고(css, 2026-11-16 태블릿 더함), 브라우저가 지원할 때만 단다 — 아이폰 Safari 는 페이지 전체화면을 지원하지 않아 단추가 없다
+    // 브라우저가 지원하면 휴대폰 · 태블릿 · PC 모두에 단다(2026-11-16 사장님 — "기본값으로") — 아이폰 Safari 는 페이지 전체화면을 지원하지 않아 단추가 없다
     const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement || null;
     const FS_IN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     const FS_OUT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -3208,7 +3208,7 @@
         geo.on('geolocate', e => { myLoc = [e.coords.longitude, e.coords.latitude]; if (!nearPanel.hidden) nearAfterMove = true; });
         geo.on('error', () => { if (!nearPanel.hidden) { const n = nearPanel.querySelector('.sm-near-note'); if (n) n.textContent = T('위치를 받지 못했습니다(브라우저 위치 권한을 확인해 주세요).', 'Could not get your location (check the browser permission).'); } });
         map.addControl(new NorthControl(), 'bottom-right');
-        if (document.fullscreenEnabled || document.webkitFullscreenEnabled) map.addControl(new FullControl(), 'bottom-right');   // 맨 위(휴대폰만 보인다)
+        if (document.fullscreenEnabled || document.webkitFullscreenEnabled) map.addControl(new FullControl(), 'bottom-right');   // 맨 위
         // 처음 화면: 서울 전체(2026-10-26 사장님 — 전국은 시도별 표 · 줌아웃으로)
         map.on('load', () => {
             koreanLabels(); whiteModel(); addStores(); nightModel(); nearLabel();
