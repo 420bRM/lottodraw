@@ -115,6 +115,7 @@
         if (shown.mine || only || hx) OTHER_LAYERS.forEach(id => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none'); });
         ['st-mine', 'st-mine-name'].forEach(id => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', shown.mine && !only && !hx ? 'visible' : 'none'); });
         HX_LAYERS.forEach(id => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', hx && !only ? 'visible' : 'none'); });
+        lbOrder();
         root.classList.toggle('is-terr-only', only);   // 이색 판매점 별(마커)도 감춘다(CSS)
     }
 
@@ -149,8 +150,9 @@
     }
 
     // 바탕 지도의 글자를 한글 이름으로(없으면 원래 이름).
-    // 도로 번호판(흰 네모 아이콘이 붙은 층)은 감춘다 — 판매점 지도에는 필요 없다(2026-10-27 사장님). 처음엔 도로 이름이 네모 안에 겹쳐 보였다
-    const isShield = l => !!(l.layout && l.layout['icon-image']);
+    // 도로 번호판(흰 네모 아이콘이 붙은 층)은 감춘다 — 판매점 지도에는 필요 없다(2026-10-27 사장님). 처음엔 도로 이름이 네모 안에 겹쳐 보였다.
+    // 도로 이름 층(transportation_name)만 — 아이콘이 붙은 층을 모두 감추던 때는 시 · 읍 · 면 이름(작은 점 아이콘)까지 사라졌다(2026-11-16)
+    const isShield = l => l['source-layer'] === 'transportation_name' && !!(l.layout && l.layout['icon-image']);
     function koreanLabels() {
         for (const l of map.getStyle().layers) {
             if (l.type === 'symbol' && isShield(l)) { map.setLayoutProperty(l.id, 'visibility', 'none'); continue; }
@@ -170,8 +172,14 @@
             if (l.type === 'background') paint(l.id, 'background-color', '#f6f6f3');
             else if (l.type === 'symbol' && /country|continent/.test(l.id)) map.setLayoutProperty(l.id, 'visibility', 'none');   // 큰 나라 이름은 위쪽 도구와 겹친다
             else if (l.type === 'fill-extrusion') map.removeLayer(l.id);
-            else if (l.type === 'fill' && sl === 'water') paint(l.id, 'fill-color', '#dce3e9');
-            else if (l.type === 'fill' && (sl === 'park' || sl === 'landcover')) paint(l.id, 'fill-color', '#edf0ea');
+            else if (l.type === 'fill' && sl === 'water') paint(l.id, 'fill-color', LB.water);
+            else if (l.type === 'fill' && sl === 'park') paint(l.id, 'fill-color', LB.npark);
+            else if (l.type === 'fill' && sl === 'landcover') paint(l.id, 'fill-color', '#edf0ea');
+            else if (l.id === 'boundary_3') map.setLayoutProperty(l.id, 'visibility', 'none');   // 시 · 도 / 시 · 군 · 구 경계는 lb-adm4 · lb-adm6 이 따로 그린다
+            else if (l.type === 'symbol' && (sl === 'water_name' || sl === 'waterway')) {   // 호수 · 강 이름: 파랗게, 조금 크게(2026-11-16)
+                paint(l.id, 'text-color', LB.wtext); paint(l.id, 'text-halo-color', 'rgba(255, 255, 255, .92)'); paint(l.id, 'text-halo-width', 1.6);
+                if (l.id === 'water_name_point_label') map.setLayoutProperty(l.id, 'text-size', ['interpolate', ['linear'], ['zoom'], 8, 12, 14, 15]);
+            }
             else if (l.type === 'fill' && sl === 'building') { paint(l.id, 'fill-color', '#ecebe7'); paint(l.id, 'fill-opacity', ['interpolate', ['linear'], ['zoom'], RISE[0], 1, RISE[1], 0.3]); }
         }
         const firstLabel = (map.getStyle().layers.find(l => l.type === 'symbol') || {}).id;
@@ -186,6 +194,137 @@
                 'fill-extrusion-opacity': 0.4, 'fill-extrusion-vertical-gradient': true },
         }, firstLabel);
         map.setLight({ anchor: 'map', color: '#ffffff', intensity: 0.25, position: [1.3, 210, 35] });   // 옆면이 너무 어두우면 회색 덩어리로 보인다
+        // 도시 공원(landcover 의 park · garden …)은 바탕 지도(positron)가 칠하지 않는다 — 옅은 초록으로, 물 밑에(공원 안 연못이 보이게)
+        map.addLayer({ id: 'lb-park', type: 'fill', source: src, 'source-layer': 'landcover',
+            filter: ['match', ['get', 'subclass'], ['park', 'garden', 'recreation_ground', 'village_green'], true, false],
+            paint: { 'fill-color': LB.park } }, map.getLayer('water') ? 'water' : firstLabel);
+        // 시 · 도 경계(행정 4단계)는 진한 실선, 시 · 군 · 구(6 · 7단계)는 점선. 땅따먹기 칸 면 위 · 글자 밑(바탕 지도 자료에 시 · 군 · 구 경계는 줌 10부터 있다)
+        const notSea = ['!=', ['get', 'maritime'], 1];
+        map.addLayer({ id: 'lb-adm6', type: 'line', source: src, 'source-layer': 'boundary', minzoom: 10,
+            filter: ['all', ['match', ['get', 'admin_level'], [6, 7], true, false], notSea], layout: { 'line-join': 'round' },
+            paint: { 'line-color': LB.adm6, 'line-width': ['interpolate', ['linear'], ['zoom'], 10, 0.7, 14, 1.5], 'line-dasharray': [3, 2] } }, firstLabel);
+        map.addLayer({ id: 'lb-adm4', type: 'line', source: src, 'source-layer': 'boundary', minzoom: 6,
+            filter: ['all', ['==', ['get', 'admin_level'], 4], notSea], layout: { 'line-join': 'round', 'line-cap': 'round' },
+            paint: { 'line-color': LB.adm4, 'line-width': ['interpolate', ['linear'], ['zoom'], 6, 0.8, 10, 1.7, 14, 2.6] } }, firstLabel);
+    }
+
+    // ───── 동네 찾기 표시(2026-11-16 사장님 — "LottoHex 맵에서 자기 동네를 못 찾아 애먹는 사람이 많다") ─────
+    // ① 시 · 도 / 시 · 군 · 구 / 읍 · 면 · 동 이름: 검색창 지역 찾기와 같은 행정동 자료(store-map-places.json)로 직접 쓴다(한국어 화면만 — 자료에 영어 이름이 없다).
+    //    시 · 군 · 구 이름 위에는 시 · 도(일반구는 시 · 도 + 시)를 작게 얹어, 줌인해도 어느 시 · 도인지 보인다. 바탕 지도의 같은 이름은 감춘다(두 번 나오지 않게)
+    // ② 학교(초 · 중 · 고) · 대학교 · 공원 · 도서관 · 공공건물(시청 · 구청 · 주민센터 · 경찰서 · 소방서 · 우체국 · 법원) · 공영주차장: 바탕 지도 자료(OpenMapTiles poi)에서 골라 그림 표시와 함께.
+    //    자료가 줌 14부터 들어 있다(넓은 대학은 12부터). 판매점 · 역 이름이 먼저 자리를 잡고, 겹치면 이쪽이 빠진다
+    // ③ 공원은 옅은 초록 면, 호수 · 강 이름은 파랗게(whiteModel). 땅따먹기 칸 면은 바탕 지도 글자 밑으로(drawTerrLayers) — 칸이 동네 이름을 덮어 흐렸다
+    const LB = { water: '#d5e3ef', npark: '#e7efe2', park: '#e0ecd8', wtext: '#3a6ca3', adm4: '#8d97a8', adm6: '#a7afbd' };
+    const LB_N = { park: '#17241b', wtext: '#7fa6d4', adm4: '#6f7b91', adm6: '#4b5568' };
+    // 시설 종류: 그림 바탕색 · 글자색(낮/밤)
+    const POI_KIND = {
+        uni: ['#7a5cc8', '#5a3fa8', '#bba6f2'], gov: ['#5d6b84', '#46536b', '#b6c1d4'], sch: ['#c27a2c', '#8a531a', '#e2a868'],
+        park: ['#3f9a5c', '#2f7445', '#82d09a'], lib: ['#2c8a86', '#1f6f6b', '#78cbc5'], pk: ['#3a6fc4', '#2f5ea8', '#93b4ee'],
+    };
+    const poiKind = ['match', ['get', 'class'], 'college', 'uni', 'school', 'sch', 'park', 'park', 'library', 'lib', 'parking', 'pk', 'gov'];
+    function poiIcon(k) {
+        const S = 36, cv = document.createElement('canvas');
+        cv.width = cv.height = S;
+        const c = cv.getContext('2d'), poly = (...p) => { c.beginPath(); c.moveTo(p[0], p[1]); for (let i = 2; i < p.length; i += 2) c.lineTo(p[i], p[i + 1]); c.closePath(); c.fill(); };
+        c.beginPath(); c.roundRect ? c.roundRect(2, 2, 32, 32, 9) : c.rect(2, 2, 32, 32);
+        c.fillStyle = POI_KIND[k][0]; c.fill(); c.lineWidth = 2; c.strokeStyle = 'rgba(255, 255, 255, .95)'; c.stroke();
+        c.fillStyle = '#fff';
+        if (k === 'sch') { poly(8, 17, 18, 9, 28, 17); c.fillRect(11, 17, 14, 10); c.fillStyle = POI_KIND.sch[0]; c.fillRect(16, 21, 4, 6); }   // 지붕 + 건물 + 문
+        else if (k === 'uni') { poly(5, 15, 18, 9, 31, 15, 18, 21); poly(11, 18, 18, 21.5, 25, 18, 25, 24, 18, 27, 11, 24); c.fillRect(27.5, 15, 1.6, 8); }   // 학사모
+        else if (k === 'park') { c.beginPath(); c.arc(18, 14, 7.5, 0, Math.PI * 2); c.fill(); c.fillRect(16.5, 19, 3, 9); }   // 나무
+        else if (k === 'lib') { poly(7, 11, 17, 13, 17, 27, 7, 25); poly(19, 13, 29, 11, 29, 25, 19, 27); }   // 펼친 책
+        else if (k === 'gov') { poly(7, 14, 18, 7, 29, 14); [10, 16.5, 23].forEach(x => c.fillRect(x, 16, 3, 9)); c.fillRect(8, 26, 20, 3); }   // 기둥 건물
+        else { c.font = '800 21px "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('P', 18, 19.5); }   // 주차
+        return c.getImageData(0, 0, S, S);
+    }
+    const nameF = () => ['coalesce', ['get', en() ? 'name:en' : 'name:ko'], ['get', 'name']];
+    // 판매점 · 역 · 땅따먹기 이름 층 바로 밑(이 층들이 먼저 자리를 잡는다)
+    const overlayFirst = (rail = true) => map.getStyle().layers.map(l => l.id).find(id => (rail && /^rail-/.test(id)) || /^(st|hx)-|^terr-(name|beam)/.test(id));
+    const layerAfter = id => { const ids = map.getStyle().layers.map(l => l.id); return ids[ids.indexOf(id) + 1]; };
+    function placeLabels() {
+        const st = map.getStyle(), src = Object.keys(st.sources).find(k => st.sources[k].type === 'vector');
+        if (!src || map.getLayer('lb-poi')) return;
+        Object.keys(POI_KIND).forEach(k => { if (!map.hasImage('lb-i-' + k)) map.addImage('lb-i-' + k, poiIcon(k), { pixelRatio: 2 }); });
+        const cls = v => ['==', ['get', 'class'], v], sub = v => ['==', ['get', 'subclass'], v];
+        map.addLayer({ id: 'lb-poi', type: 'symbol', source: src, 'source-layer': 'poi', minzoom: 12,
+            filter: ['all', ['has', 'name'], ['any',
+                ['all', cls('school'), sub('school')],   // 유치원은 빼고
+                cls('college'), cls('town_hall'),
+                ['all', cls('park'), sub('park')],
+                ['all', cls('library'), sub('library')],   // 서점(books)은 빼고
+                ['match', ['get', 'subclass'], ['police', 'fire_station', 'post_office'], true, false],
+                ['all', sub('parking'), ['in', '공영', ['to-string', ['get', 'name']]]]]],   // 주차장은 이름에 '공영'이 든 곳만
+            layout: {
+                'icon-image': ['concat', 'lb-i-', poiKind], 'icon-size': ['interpolate', ['linear'], ['zoom'], 13, 0.78, 16, 1], 'icon-padding': 1,
+                'text-field': nameF(), 'text-font': ['Noto Sans Regular'], 'text-size': ['match', poiKind, 'uni', 13, 12], 'text-max-width': 8, 'text-padding': 3,
+                'text-variable-anchor': ['left', 'right', 'top', 'bottom'], 'text-radial-offset': 0.95,
+                'symbol-sort-key': ['match', poiKind, 'uni', 1, 'gov', 2, 'sch', 3, 'park', 4, 'lib', 5, 6],
+            },
+            paint: { 'text-halo-width': 1.4 } }, overlayFirst());
+        // 국립공원 · 보호구역 이름(바탕 지도 park 층의 이름 점)
+        map.addLayer({ id: 'lb-npark', type: 'symbol', source: src, 'source-layer': 'park', minzoom: 8, filter: ['all', ['==', ['geometry-type'], 'Point'], ['has', 'name']],
+            layout: { 'icon-image': 'lb-i-park', 'icon-size': 0.78, 'text-field': nameF(), 'text-font': ['Noto Sans Regular'], 'text-size': 12, 'text-max-width': 8,
+                'text-variable-anchor': ['left', 'right'], 'text-radial-offset': 0.95, 'text-padding': 4 },
+            paint: { 'text-halo-width': 1.4 } }, layerAfter('lb-poi'));
+        lbPaint();
+        if (!en()) loadPlaces().then(() => adminLabels(placesRaw));
+    }
+    // 시 · 도 이름 자리: 자료의 가운데가 바다 · 끝에 걸린 곳만 옮긴다(인천 — 옹진 섬들, 경북 — 울릉도, 경기 — 서울에 붙어 겹친다)
+    const SIDO_AT = { 인천: [126.70, 37.46], 경기: [127.30, 37.27], 경북: [128.75, 36.40] };
+    function adminLabels(j) {
+        if (!j || !map || map.getSource('lb-adm')) return;
+        const S = j.s.map(x => x[0]), F = [], names = new Set(), pt = (lng, lat, p) => { F.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [lng, lat] }, properties: p }); names.add(p.nm); };
+        j.s.forEach(([n, lng, lat]) => { const at = SIDO_AT[n] || [lng, lat]; pt(at[0], at[1], { lv: 1, nm: n }); (SIDO_ALIAS[n] || []).forEach(a => names.add(a)); });
+        j.c.forEach(([s, si, lng, lat]) => pt(lng, lat, { lv: 2, nm: si, up: S[s] }));
+        j.g.forEach(([s, si, gu, lng, lat]) => pt(lng, lat, si && gu ? { lv: 4, nm: gu, up: S[s] + ' ' + si } : { lv: 3, nm: gu || si, up: S[s] }));
+        j.d.forEach(([, nm, lng, lat]) => pt(lng, lat, { lv: 5, nm }));
+        map.addSource('lb-adm', { type: 'geojson', data: { type: 'FeatureCollection', features: F } });
+        const lv = v => ['==', ['get', 'lv'], v];
+        const two = { 'text-field': upLine(), 'text-font': ['Noto Sans Bold'], 'text-max-width': 12, 'text-padding': 6, 'text-line-height': 1.15 };
+        // 아래에서 위로: 위에 있는 층이 먼저 자리를 잡는다(시 · 도 > 시 > 시 · 군 · 구 > 일반구 > 읍 · 면 · 동 > 시설)
+        const defs = [
+            { id: 'lb-dong', minzoom: 12.4, filter: lv(5), layout: { 'text-field': ['get', 'nm'], 'text-font': ['Noto Sans Regular'], 'text-size': ['interpolate', ['linear'], ['zoom'], 12.4, 12, 16, 14], 'text-padding': 4 } },
+            { id: 'lb-gu2', minzoom: 10.6, maxzoom: 13.6, filter: lv(4), layout: Object.assign({ 'text-size': ['interpolate', ['linear'], ['zoom'], 10.6, 13.5, 13.6, 15.5] }, two) },
+            { id: 'lb-gu', minzoom: 9.4, maxzoom: 13.6, filter: lv(3), layout: Object.assign({ 'text-size': ['interpolate', ['linear'], ['zoom'], 9.4, 13.5, 13.6, 15.5] }, two) },
+            { id: 'lb-si', minzoom: 8.6, maxzoom: 10.8, filter: lv(2), layout: Object.assign({ 'text-size': ['interpolate', ['linear'], ['zoom'], 8.6, 14, 10.8, 16] }, two) },
+            { id: 'lb-sido', minzoom: 5, maxzoom: 9.6, filter: lv(1), layout: { 'text-field': ['get', 'nm'], 'text-font': ['Noto Sans Bold'], 'text-size': ['interpolate', ['linear'], ['zoom'], 5, 12, 7, 15, 9, 18],
+                'text-letter-spacing': 0.08, 'text-padding': 8 } },
+        ];
+        for (const d of defs) map.addLayer(Object.assign({ type: 'symbol', source: 'lb-adm', paint: { 'text-halo-width': 1.8 } }, d), lbAt());
+        // 바탕 지도의 시 · 도 · 시 이름은 이 층들이 대신하고, 읍 · 면 · 동 이름은 같은 이름만 감춘다(행정동과 이름이 다른 법정동 이름은 남는다)
+        const dup = ['match', ['get', 'name'], [...names].filter(Boolean), false, true];
+        for (const l of map.getStyle().layers) {
+            if (l['source-layer'] !== 'place' || l.type !== 'symbol') continue;
+            if (/^label_(state|city|city_capital)$/.test(l.id)) map.setLayoutProperty(l.id, 'visibility', 'none');
+            else if (/^label_(other|town|village)$/.test(l.id)) map.setFilter(l.id, l.filter ? ['all', l.filter, dup] : dup);
+        }
+        lbPaint();
+    }
+    // 지역 이름은 판매점 점 위, 판매점 이름 · 숫자 밑 — 줌아웃하면 점들이 시 · 구 이름을 덮었다. LottoHex 모드는 점이 hx-* 층이라 그 위로 옮긴다(mineOnly 가 모드 바뀔 때마다)
+    const LB_ADM = ['lb-dong', 'lb-gu2', 'lb-gu', 'lb-si', 'lb-sido'];
+    const lbAt = () => (hexMode && shown.terr && map.getLayer('hx-name') ? 'hx-name' : map.getLayer('st-top') ? 'st-top' : overlayFirst());
+    function lbOrder() {
+        if (!map || !map.getLayer('lb-sido')) return;
+        const at = lbAt(), ids = map.getStyle().layers.map(l => l.id);
+        if (ids.indexOf('lb-sido') === ids.indexOf(at) - 1) return;   // 이미 그 자리
+        LB_ADM.forEach(id => map.moveLayer(id, at));
+    }
+    // 시 · 군 · 구 이름 위 작은 줄(시 · 도)의 색은 밤낮에 따라 — 'format' 안의 색이라 글자 칸째 다시 넣는다
+    const upLine = () => ['format', ['get', 'up'], { 'font-scale': 0.74, 'text-color': isNight() ? '#8d97a8' : '#6b7280' }, '\n', {}, ['get', 'nm'], {}];
+    function lbPaint() {
+        if (!map || !map.getLayer('lb-poi')) return;
+        const n = isNight(), P = (id, k, v) => { if (map.getLayer(id)) map.setPaintProperty(id, k, v); };
+        const halo = n ? 'rgba(20, 26, 35, .92)' : 'rgba(255, 255, 255, .95)';
+        P('lb-park', 'fill-color', n ? LB_N.park : LB.park);
+        P('lb-adm4', 'line-color', n ? LB_N.adm4 : LB.adm4);
+        P('lb-adm6', 'line-color', n ? LB_N.adm6 : LB.adm6);
+        const kc = ['match', poiKind]; Object.keys(POI_KIND).forEach(k => kc.push(k, POI_KIND[k][n ? 2 : 1])); kc.push(POI_KIND.gov[n ? 2 : 1]);
+        P('lb-poi', 'text-color', kc); P('lb-poi', 'text-halo-color', halo);
+        P('lb-npark', 'text-color', POI_KIND.park[n ? 2 : 1]); P('lb-npark', 'text-halo-color', halo);
+        P('lb-sido', 'text-color', n ? '#e6e9ef' : '#1f2937');
+        ['lb-si', 'lb-gu', 'lb-gu2'].forEach(id => { P(id, 'text-color', n ? '#d5dae3' : '#273142'); if (map.getLayer(id)) map.setLayoutProperty(id, 'text-field', upLine()); });
+        P('lb-dong', 'text-color', n ? '#b9c1cd' : '#384252');
+        ['lb-sido', 'lb-si', 'lb-gu', 'lb-gu2', 'lb-dong'].forEach(id => P(id, 'text-halo-color', halo));
     }
 
     // ───── 밤 지도(2026-10-26 사장님) — 사이트 낮/밤(data-theme="dark")을 따른다. 🌙 단추는 사이트 낮/밤 단추(js/theme.js)를 대신 누른다 ─────
@@ -207,7 +346,7 @@
         const N = k => (on ? NIGHT[k] : null);
         for (const l of map.getStyle().layers) {
             const sl = l['source-layer'], id = l.id;
-            if (/^(st|terr|rail)-/.test(id)) continue;   // 판매점 점 · 영역 칸 · 역은 제 색 그대로(영역 칸이 땅 색으로 칠해져 밤에 안 보였다 — 2026-11-07). 역은 railPaint
+            if (/^(st|terr|rail|lb)-/.test(id)) continue;   // 판매점 점 · 영역 칸 · 역은 제 색 그대로(영역 칸이 땅 색으로 칠해져 밤에 안 보였다 — 2026-11-07). 역은 railPaint, 동네 찾기 표시는 lbPaint
             if (id === 'sm-bld') setP(id, 'fill-extrusion-color', N('extr'));
             else if (id === 'sm-bld-line') setP(id, 'line-color', N('edge'));
             else if (l.type === 'background') setP(id, 'background-color', N('bg'));
@@ -218,10 +357,11 @@
                 setP(id, 'fill-outline-color', N(sl === 'building' ? 'edge' : k));
             }
             else if (l.type === 'line') setP(id, 'line-color', N(sl === 'water' || sl === 'waterway' ? 'water' : sl === 'boundary' ? 'border' : /casing/.test(id) ? 'casing' : /rail|transit/.test(id) ? 'rail' : 'road'));
-            else if (l.type === 'symbol' && l.layout && l.layout['text-field'] && !isShield(l)) { setP(id, 'text-color', N('text')); setP(id, 'text-halo-color', N('halo')); }
+            else if (l.type === 'symbol' && l.layout && l.layout['text-field'] && !isShield(l)) { setP(id, 'text-color', on ? (sl === 'water_name' || sl === 'waterway' ? LB_N.wtext : NIGHT.text) : null); setP(id, 'text-halo-color', N('halo')); }
         }
         names();
         railPaint();
+        lbPaint();
         if (map.getLayer('st-top-glow')) map.setLayoutProperty('st-top-glow', 'icon-image', on ? 'sm-star-glow-n' : 'sm-star-glow');
         if (map.getLayer('st-net-glow')) map.setLayoutProperty('st-net-glow', 'icon-image', on ? 'sm-star-glow-red-n' : 'sm-star-glow-red');
         if (map.getLayer('st-net')) map.setPaintProperty('st-net', 'circle-stroke-color', on ? NIGHT.bg : '#fff');
@@ -1241,17 +1381,19 @@
             map.addSource('terr-ring', { type: 'geojson', data: f.rings, lineMetrics: true });
             map.addSource('terr-glint', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
             const below = map.getLayer('st-all') ? 'st-all' : 'st-w2';
+            // 칸 면 · 테두리는 바탕 지도 글자 · 시 · 도 경계 밑(2026-11-16 — 칸이 동네 이름을 덮어 흐렸다). 빛 벽 · 칸 이름은 그대로 위
+            const under = map.getLayer('lb-adm6') ? 'lb-adm6' : (map.getStyle().layers.find(l => l.type === 'symbol') || {}).id;
             // 주인 없는 칸 = 회색지대(옅은 회색), 차지한 칸은 그 사람의 무늬(terr-pat). terr-fill 은 칸 누르기도 받는다
-            map.addLayer({ id: 'terr-fill', type: 'fill', source: 'terr', paint: { 'fill-color': greyColor(), 'fill-opacity': greyFill() } }, below);
+            map.addLayer({ id: 'terr-fill', type: 'fill', source: 'terr', paint: { 'fill-color': greyColor(), 'fill-opacity': greyFill() } }, under);
             map.addLayer({ id: 'terr-pat', type: 'fill', source: 'terr', filter: ['==', ['get', 'o'], 1], paint: {
-                'fill-pattern': ['get', 'pat'], 'fill-opacity': ['case', ['==', ['get', 'me'], 1], 0.55, 0.42] } }, below);
-            map.addLayer({ id: 'terr-glint', type: 'fill', source: 'terr-glint', minzoom: 11, paint: { 'fill-color': '#fff6dc', 'fill-opacity': ['get', 'a'] } }, below);
+                'fill-pattern': ['get', 'pat'], 'fill-opacity': ['case', ['==', ['get', 'me'], 1], 0.55, 0.42] } }, under);
+            map.addLayer({ id: 'terr-glint', type: 'fill', source: 'terr-glint', minzoom: 11, paint: { 'fill-color': '#fff6dc', 'fill-opacity': ['get', 'a'] } }, under);
             map.addLayer({ id: 'terr-line', type: 'line', source: 'terr', paint: {
                 'line-color': greyColor(), 'line-width': ['case', ['==', ['get', 'me'], 1], 1.76, ['==', ['get', 'o'], 1], 1.12, 0.64],   // 2026-11-07 사장님 — 처음보다 0.8배
-                'line-opacity': ['interpolate', ['linear'], ['zoom'], 6, ['case', ['==', ['get', 'o'], 1], 0.8, 0], 10, ['case', ['==', ['get', 'o'], 1], 0.9, 0], 12, ['case', ['==', ['get', 'o'], 1], 0.9, 0.55]] } }, below);   // 회색지대 테두리는 줌 10 부터(칸이 작아 멀리서는 촘촘하다)
-            map.addLayer({ id: 'terr-sel', type: 'line', source: 'terr', filter: ['==', ['get', 'k'], ''], paint: { 'line-color': isNight() ? '#f3f4f6' : '#111827', 'line-width': 2.4, 'line-dasharray': [2, 1] } }, below);
+                'line-opacity': ['interpolate', ['linear'], ['zoom'], 6, ['case', ['==', ['get', 'o'], 1], 0.8, 0], 10, ['case', ['==', ['get', 'o'], 1], 0.9, 0], 12, ['case', ['==', ['get', 'o'], 1], 0.9, 0.55]] } }, under);   // 회색지대 테두리는 줌 10 부터(칸이 작아 멀리서는 촘촘하다)
+            map.addLayer({ id: 'terr-sel', type: 'line', source: 'terr', filter: ['==', ['get', 'k'], ''], paint: { 'line-color': isNight() ? '#f3f4f6' : '#111827', 'line-width': 2.4, 'line-dasharray': [2, 1] } }, under);
             map.addLayer({ id: 'terr-glow', type: 'line', source: 'terr-ring', minzoom: 12.5, layout: { 'line-cap': 'round', 'line-join': 'round' },
-                paint: { 'line-width': 5, 'line-blur': 3, 'line-gradient': glowGradient(0) } }, below);
+                paint: { 'line-width': 5, 'line-blur': 3, 'line-gradient': glowGradient(0) } }, under);
             terrGlowLoop();
             map.addSource('terr-beam', { type: 'geojson', data: f.beams });
             beamLayers(below);
@@ -2689,14 +2831,14 @@
     }
 
     // ───── 지역 찾기(2026-11-10 사장님 — "판매점 이름보다 사는 곳을 찾고 그 근처 판매점을 지도에서 본다. 검색창은 하나로") ─────
-    // 목록(store-map-places.json, tools/make-places.mjs — 통계청 SGIS 행정동 경계를 가공한 vuski/admdongkor, CC BY 4.0)은 검색창을 처음 쓸 때 받는다.
+    // 목록(store-map-places.json, tools/make-places.mjs — 통계청 SGIS 행정동 경계를 가공한 vuski/admdongkor, CC BY 4.0)은 검색창을 처음 쓸 때 받는다(한국어 화면은 지도를 열 때 — 지도의 지역 이름, adminLabels).
     // "청주 사창동" · "사창동" · "청주" · "서원구" · "역삼"(역삼1 · 2동) · "청주사창동"(띄어쓰기 없이)처럼 낱말마다 시·도 · 시 · 구 · 동 중 하나에 맞으면 찾는다
-    let places = null, placesP = null;
+    let places = null, placesP = null, placesRaw = null;   // placesRaw: 받은 그대로(지도의 시 · 도 · 시 · 군 · 구 · 동 이름 — adminLabels)
     const SIDO_ALIAS = { 서울: ['서울특별시', '서울시'], 부산: ['부산광역시', '부산시'], 대구: ['대구광역시', '대구시'], 인천: ['인천광역시', '인천시'], 광주: ['광주광역시', '광주시'],
         대전: ['대전광역시', '대전시'], 울산: ['울산광역시', '울산시'], 세종: ['세종특별자치시', '세종시'], 경기: ['경기도'], 강원: ['강원도', '강원특별자치도'], 충북: ['충청북도'], 충남: ['충청남도'],
         전북: ['전라북도', '전북특별자치도'], 전남: ['전라남도'], 경북: ['경상북도'], 경남: ['경상남도'], 제주: ['제주도', '제주특별자치도'] };
     function loadPlaces() {
-        if (!placesP) placesP = (root.dataset.places ? fetch(root.dataset.places).then(r => (r.ok ? r.json() : null)) : Promise.resolve(null)).catch(() => null).then(j => { places = j ? buildPlaces(j) : []; return places; });
+        if (!placesP) placesP = (root.dataset.places ? fetch(root.dataset.places).then(r => (r.ok ? r.json() : null)) : Promise.resolve(null)).catch(() => null).then(j => { placesRaw = j; places = j ? buildPlaces(j) : []; return places; });
         return placesP;
     }
     // 자리: { c: [시·도, 시, 구, 동], leaf: 가장 작은 단위의 자리, name, sub, lng, lat, z }
@@ -2822,7 +2964,7 @@
         map.on('styleimagemissing', e => { if (/^rb:/.test(e.id) && !map.hasImage(e.id)) { try { map.addImage(e.id, badgeImage(e.id.slice(3).split('-').map(Number)), { pixelRatio: 2 }); } catch (er) { /* 그림 실패 — 표시 없이 */ } } });
         map.addSource('rail', { type: 'geojson', data: { type: 'FeatureCollection', features: plain } });
         map.addSource('rail-st', { type: 'geojson', data: { type: 'FeatureCollection', features: badges } });
-        const before = map.getStyle().layers.map(l => l.id).find(id => /^(st|terr|hx)-/.test(id));   // 판매점 · 칸 밑에
+        const before = overlayFirst(false);   // 판매점 · 빛 벽 · 칸 이름 밑, 바탕 지도 글자 · 동네 찾기 표시 위(칸 면은 이제 글자 밑이다)
         const nameF = ['coalesce', ['get', en() ? 'name:en' : 'name:ko'], ['get', 'name']];
         // 노선 없는 기차역(KTX · 일반 열차만): 예전처럼 흰 점 + 남색 테
         map.addLayer({ id: 'rail-dot', type: 'circle', source: 'rail', minzoom: 12.5, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 12.5, 3, 16, 5.5], 'circle-stroke-width': 2 } }, before);
@@ -2850,7 +2992,7 @@
                 if (co.length > 1) features.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: co }, properties: { cd: paleOf(L[2], false), cn: paleOf(L[2], true), cdw: paleOf(L[2], false, true), cnw: paleOf(L[2], true, true) } });
             }
             map.addSource('rail-lines', { type: 'geojson', data: { type: 'FeatureCollection', features } });
-            const before = map.getLayer('rail-dot') ? 'rail-dot' : map.getStyle().layers.map(l => l.id).find(id => /^(st|terr|hx)-/.test(id));
+            const before = map.getLayer('rail-dot') ? 'rail-dot' : overlayFirst(false);
             // 줌아웃하면 역처럼 감춘다(2026-11-10 사장님 — 축소하면 판매점 점과 겹쳐 복잡) — 11.5부터 서서히, 역 점(12.5)보다 조금 먼저
             const W = ['interpolate', ['linear'], ['zoom'], 11.5, 1.6, 13, 2.6, 15, 3.5, 18, 6];
             // 밤에는 밑에 옅은 흰 테두리(사장님이 고른 B안) — 1호선 · 7호선 · 9호선처럼 어두운 노선 색이 밤 바탕에 묻혔다. 선이 연해진 만큼 테두리도 옅게
@@ -3212,7 +3354,7 @@
         if (document.fullscreenEnabled || document.webkitFullscreenEnabled) map.addControl(new FullControl(), 'bottom-right');   // 맨 위
         // 처음 화면: 서울 전체(2026-10-26 사장님 — 전국은 시도별 표 · 줌아웃으로)
         map.on('load', () => {
-            koreanLabels(); whiteModel(); addStores(); nightModel(); nearLabel();
+            koreanLabels(); whiteModel(); placeLabels(); addStores(); nightModel(); nearLabel();
             // 들어올 때의 전환 화면은 그려지면 걷는다 — 빛나는 점이 계속 움직여 'idle' 이 오지 않을 수 있어 잠깐 뒤에도(enterFx 는 한 번만, 최소 1.1초)
             map.once('idle', enterFx);
             setTimeout(enterFx, 500);
