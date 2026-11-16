@@ -2,7 +2,7 @@
 # 손으로 돈다(Actions → check-site → Run workflow). 배포는 하지 않는다(배포는 Cloudflare Workers Builds).
 #  1) 누가 내보내나: server: cloudflare 이고 GitHub Pages 머리(x-github-request-id)가 없어야 한다
 #  2) tools/check-site.js: 사이트맵 전체 200 · 넘김 없음, 폴더 주소 · 404, 내부 파일 차단, 캐시
-#  3) www 없는 주소 · api.lottodraw.kr(사이트 파일을 읽는 길)도 살아 있는지
+#  3) www 없는 주소가 Cloudflare 넘김 규칙으로 301 www(경로 · 쿼리 유지, http 도), api.lottodraw.kr(사이트 파일을 읽는 길)도 살아 있는지
 name: check-site
 
 on:
@@ -43,6 +43,24 @@ jobs:
           if ! echo "$head" | grep -qi '^server: cloudflare'; then echo "::error::$URL 이 Cloudflare 에서 오지 않는다"; exit 1; fi
           if echo "$head" | grep -qi '^x-github-request-id'; then echo "::error::$URL 이 아직 GitHub Pages 에서 온다"; exit 1; fi
           echo "Cloudflare 에서 온다" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: www 없는 주소 → www (Cloudflare 넘김 규칙, 경로 · 쿼리 유지)
+        run: |
+          bad=0
+          probe() {   # $1 들어가는 주소, $2 기대 Location
+            h=$(curl -sSI "$1"); code=$(echo "$h" | head -1 | awk '{print $2}'); loc=$(echo "$h" | grep -i '^location:' | tr -d '\r' | sed 's/^[Ll]ocation: //'); srv=$(echo "$h" | grep -i '^server:' | tr -d '\r')
+            echo "$1 → $code $loc ($srv)"
+            if [ "$code" != "301" ] || [ "$loc" != "$2" ]; then echo "::error::$1 은 301 $2 여야 한다"; bad=1; fi
+            if ! echo "$srv" | grep -qi cloudflare; then echo "::error::$1 넘김이 Cloudflare 가 아니다($srv)"; bad=1; fi
+          }
+          probe "https://lottodraw.kr/" "https://www.lottodraw.kr/"
+          probe "https://lottodraw.kr/round/1250.html?x=1" "https://www.lottodraw.kr/round/1250.html?x=1"
+          probe "https://lottodraw.kr/about" "https://www.lottodraw.kr/about"
+          # http 는 'https 로 바꾸기'가 먼저 한 번 넘길 수 있어 끝까지 따라가 도착한 곳을 본다
+          end=$(curl -s -o /dev/null -L -w '%{http_code} %{url_effective} (넘김 %{num_redirects}번)' "http://lottodraw.kr/round/1250.html?x=1")
+          echo "http://lottodraw.kr/round/1250.html?x=1 → $end"
+          case "$end" in "200 https://www.lottodraw.kr/round/1250.html?x=1 "*) ;; *) echo "::error::http 로 들어오면 www 의 같은 쪽에 200 으로 닿아야 한다"; bad=1 ;; esac
+          exit $bad
 
       - name: api.lottodraw.kr (사이트 파일을 읽는 길)
         run: |
