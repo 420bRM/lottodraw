@@ -3,6 +3,8 @@
 // .github/workflows/draw-night.yml 이 부르고, 결과를 보고 update-lotto-data 를 바로 실행한다.
 //
 //   node tools/wait-for-draw.js [--budget=분]    이번 실행이 기다려도 되는 시간 (기본 330분)
+//   node tools/wait-for-draw.js --once          기다리지 않고 한 번만 본다(2026-11-16 — Cloudflare 예약이 토요일 20:40부터 10분마다 부른다,
+//                                               worker/src/drawpoke.js). 오늘 회차를 이미 갖고 있거나 20:40 전이면 할 일 없음(ready=false)
 //
 // 결과 (GITHUB_OUTPUT)
 //   ready=true     수집할 때다 → 워크플로가 update-lotto-data 를 실행한다
@@ -27,6 +29,7 @@ const KST = 9 * 3600 * 1000;
 const OPEN = '20:40';           // 이 시각(KST) 전에는 조회하지 않고 잔다
 const POLL_MS = 60 * 1000;
 
+const ONCE = process.argv.includes('--once');
 const budgetArg = process.argv.find(a => a.startsWith('--budget='));
 const BUDGET_MIN = budgetArg ? Number(budgetArg.split('=')[1]) : 330;
 
@@ -54,11 +57,20 @@ async function main() {
     if (new Date(start + KST).getUTCDay() !== 6)
         return done(true, false, `오늘(${today})은 토요일이 아니다 — 기다리지 않고 평소처럼 갱신한다.`);
     if (latest.date >= today)
-        return done(true, false, `${latest.round}회(${latest.date})를 이미 갖고 있다 — 기다리지 않고 평소처럼 갱신한다.`);
+        return ONCE ? done(false, false, `${latest.round}회(${latest.date})를 이미 갖고 있다 — 할 일 없음.`)
+            : done(true, false, `${latest.round}회(${latest.date})를 이미 갖고 있다 — 기다리지 않고 평소처럼 갱신한다.`);
 
     const target = latest.round + 1;
     const open = Date.parse(`${today}T${OPEN}:00+09:00`);
     const midnight = Date.parse(`${today}T00:00:00+09:00`) + 24 * 3600 * 1000;
+    if (ONCE) {
+        if (start < open) return done(false, false, `${clock(start)} — ${OPEN} 전이라 아직 보지 않는다.`);
+        let got = null;
+        try { got = await fetchRound(target); } catch (e) { return done(false, false, `${target}회 조회 실패(다음 부름에 다시 본다): ${e.message}`); }
+        if (got && got.firstPrizeWinners > 0)
+            return done(true, false, `${clock(Date.now())} ${target}회 확인: [${got.numbers.join(', ')}] +${got.bonus}, 1등 ${got.firstPrizeWinners}명 — 수집을 시작한다.`);
+        return done(false, false, got ? `${target}회 번호는 나왔다. 1등 당첨자 수 집계를 기다린다(다음 부름에 다시 본다).` : `${target}회 아직 안 나왔다(다음 부름에 다시 본다).`);
+    }
     console.log(`${target}회를 기다린다. ${OPEN}부터 1분마다 조회, 이 실행은 ${clock(end)}까지, 자정이 지나면 그만둔다.`);
 
     let last = '';

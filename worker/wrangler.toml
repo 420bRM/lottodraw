@@ -104,4 +104,5 @@ invocation_logs = false
 
 # 한 시간마다 지킴이: 입금 알림 연결(휴대폰)이 끊기면 판매자에게 알린다
 [triggers]
-crons = ["17 * * * *"]
+# 둘째: 토요일 20:00~23:50 KST 10분마다 — 추첨 결과가 나왔는지 GitHub draw-night 를 깨운다(src/drawpoke.js, 20:40 전은 그냥 지나감). 요일은 Cloudflare 식(1 = 일요일)이라 헷갈리지 않게 SAT
+crons = ["17 * * * *", "*/10 11-14 * * SAT"]
