@@ -89,7 +89,7 @@
 | `tools/update-lotto-data.js` | 동행복권에서 새 회차 받아오기 (`lotto-data.json` + 2~5등 · 판매액 `prize-data.json`. `--full` 은 1회부터 전부 다시, `--missing` 은 2~5등이 비었거나 집계 전인 회차만 — 둘 다 한 회차가 실패해도 멈추지 않는다. Actions 에서 다시 채우려면 git 기록 `7e94341` 의 일회용 워크플로 `backfill-prize-data.yml` 같은 것을 잠깐 넣는다) |
 | `stores-data.json` · `tools/update-stores.js` | **회차별 1등 · 2등 판매점**(262회부터). 판매점 번호 → [상호, 시도, 시군구, 폐점], 회차 → { w1: [[판매점, 자동 A · 수동 M · 반자동 S], …], w2: [판매점, …] }. 주소 상세 · 전화 · 좌표는 저장하지 않는다. `update-lotto-data` 가 매번 새 회차 + 최근 3회차를 받는다(회차가 그대로여도 — 추첨 직후 판매점이 늦게 올라오는 때를 위해, 실패해도 로또 갱신은 그대로). 1등 판매점 수가 1등 당첨자 수와 다르면 최근 회차는 저장하지 않고 다음에 다시. `--full` 은 262회부터 전부(요청 사이 1초, 약 30분) |
 | `tools/store-sales.js` · `tools/test-store-sales.js` · `content/blog/data/store-sales.json` | **판매점별 판매량 추정**(2026-10-30). 블로그 글 18 "로또 1등 판매점은 얼마 벌까?"의 계산. 날짜를 박은 글이라 매주 돌지 않고, `node tools/store-sales.js --snapshot 1247` 로 만든 **고정값**(`content/blog/data/store-sales.json`)으로 생성기가 글의 그림을 그린다 — 다시 셈하면 글의 숫자도 함께 고친다. 방법 · 검증은 [4-6번](#판매량-추정-2026-10-30). 시험: `node tools/test-store-sales.js`(가짜 판매점으로 95% 범위가 정말 95% 맞는지 + 실제 자료 홀짝 검증) |
-| `tools/wait-for-draw.js` | 토요일 밤 추첨 결과(1등 당첨자 수까지)가 나올 때까지 기다리기 (`draw-night` 이 쓴다) |
+| `tools/wait-for-draw.js` | 토요일 밤 추첨 결과(1등 당첨자 수까지) 확인 — `--once` 는 한 번만 보기(Cloudflare 가 10분마다 부름), 없으면 예전처럼 기다리기 (`draw-night` 이 쓴다) |
 | `tools/indexnow.js` | 바뀐 페이지를 네이버·Bing 에 바로 알리기 (IndexNow) |
 | `tools/build-static-stats.js` | 통계 페이지, 회차 페이지, 블로그, 사이트맵 다시 만들기 |
 | `tools/popularity.js` · `tools/test-combo-space.js` | 구매자 번호 선호도 모델(최소제곱 · 포아송, 815만 조합 점수 분포) → `statistics-popular.html` · `popularity.json` · `combo-space.json`. 시험은 조합 판정이 홈 생성기와 같은지 · 전수 수 · 모델 검증(4등 · 홀짝 상관, 1등 기울기, 구간 비율) |
@@ -97,7 +97,7 @@
 | `content/blog/*.md` `content/blog/en/*.md` | **블로그 원고(한국어·영어). 글을 고칠 곳은 여기다** |
 | `content/round-notes.md` | **회차 메모 원고**(2026-10-18, 23개 회차). `## 회차` 다음 한국어 한 줄 + `EN:` 영어 한 줄 → 그 회차 페이지 "이 회차에서 눈여겨볼 점" 맨 앞. 숫자는 `lotto-data.json` · `prize-data.json` 으로 확인한 것만, 나중에 바뀔 "역대 최다"에는 "(2026년 10월 기준)". 쓰는 법은 파일 첫머리. 늘릴수록 회차 페이지가 덜 "찍어 낸 페이지"로 보인다 |
 | `.github/workflows/update-lotto-data.yml` | 수집 → 페이지 생성 → 배포 → 색인 요청. `draw-night` 이 토요일 밤에 실행하고, 일·월 예약은 안전망 |
-| `.github/workflows/draw-night.yml` | 토요일 낮부터 기다렸다가 추첨 결과가 나오면 `update-lotto-data` 를 바로 실행 |
+| `.github/workflows/draw-night.yml` | 추첨 결과가 나왔는지 한 번 보고 나왔으면 `update-lotto-data` 를 바로 실행. GitHub 예약 없음 — api Worker(`worker/src/drawpoke.js`)가 토요일 20:40부터 10분마다 부른다(2026-11-16) |
 | `.github/workflows/update-all-shops.yml` | 판매점 지도의 일반 판매점(`shops-all.json`) — 매달 2일 새벽 + 수동. 40분쯤 |
 | `.github/workflows/deploy-worker.yml` | `worker/` 가 바뀌면 Cloudflare 에 배포 |
 
@@ -122,21 +122,21 @@
 > 꺼져 있어도 돌아간다.
 
 ```
-① 토요일 낮 12:07·16:07 예약 (draw-night)
-   · GitHub 예약은 2시간 반~5시간 늦게 시작한다(2026-09 기록). 그래서 일찍 시작해 기다린다
-   · 20:40 까지 자다가 1분마다 동행복권 조회
-   · 한 번 실행은 5시간 반까지 — 그 전에 결과가 안 나오면 자기 자신을 다시 실행해 이어서 기다린다
+① 토요일 20:40~23:50, 10분마다 Cloudflare 예약(api Worker, worker/src/drawpoke.js — 2026-11-16부터)
+   · 사이트 lotto-data.json 에 오늘 회차가 없으면 GitHub draw-night 를 부른다(비밀값 GH_DISPATCH_TOKEN)
+   · draw-night 는 동행복권을 한 번만 조회하고 30초 안에 끝난다
+   · 전에는 GitHub 예약이 2시간 반~5시간 늦게 떠서 토요일 낮부터 기다렸다(한 달 750분쯤 — 저장소 비공개 때 무료 시간을 깎는다)
         ↓
 ② 새 회차의 번호와 1등 당첨자 수가 나오면 update-lotto-data 를 바로 실행 (보통 토요일 21시 전후)
    · 1등 당첨자 수까지 기다리는 이유: 추첨 직후 API 가 1등 0명/0원을 줄 때가 있다(1228회).
      그대로 올리면 회차 페이지에 "1등이 없어 이월"이라고 잘못 나간다
-   · 자정까지 안 나오면 그만둔다 → 아래 일요일 예약이 받는다
+   · 23:50 까지 안 나오면 그만 부른다 → 아래 일요일 예약이 받는다(깨우기가 실패해도 마찬가지)
         ↓
 ③ 동행복권에서 새 회차를 받고, 최근 3회차를 다시 확인 → 바뀐 게 없으면 여기서 끝
         ↓
 ④ 통계 페이지, 회차 페이지, 블로그, 사이트맵을 새 데이터로 다시 생성
         ↓
-⑤ "github-actions[bot]" 이름으로 저장소에 저장(커밋) → GitHub Pages에 재배포 요청 → 사이트 반영
+⑤ "github-actions[bot]" 이름으로 저장소에 저장(커밋) → Cloudflare Workers Builds 가 사이트에 배포(4-13)
         ↓
 ⑥ 사이트에 반영된 것을 확인한 뒤 바뀐 페이지를 네이버·Bing 에 알림 (IndexNow)
 
@@ -156,10 +156,9 @@
   임시 컴퓨터가 대신 받아서 `lotto-data.json` 파일로 저장해 두고, 사이트는 그
   파일만 읽는다.
 - **실행 기록 보는 법:** GitHub 저장소 → 상단 **Actions** 탭. 초록 체크는 성공,
-  빨간 X는 실패다. 토요일에는 `draw-night` 이 몇 시간씩 "실행 중"(노란 점)인 것이 정상이다(기다리는 중).
-  겹친 예약이 회색 "Cancelled" 로 남는 것도 정상이다(기다리는 실행은 하나만 남긴다).
+  빨간 X는 실패다. 토요일 밤에는 `draw-night` 이 10분마다 짧게(30초) 돌다가 결과가 나오면 멈춘다.
 - **수동 실행:** Actions 탭 → 왼쪽 `update-lotto-data` → **Run workflow** 버튼. 바뀐 게 없어도
-  최신 회차 페이지들을 네이버·Bing 에 다시 알린다. 토요일 낮에 `draw-night` 을 수동 실행하면 추첨까지 기다린다.
+  최신 회차 페이지들을 네이버·Bing 에 다시 알린다. `draw-night` 을 mode=wait 로 수동 실행하면 예전처럼 자정까지 기다린다(깨우기가 고장 났을 때).
 - **주의:** 예약 실행은 저장소의 기본 브랜치(`html`)에 있는 대본만 돈다.
 
 ---
@@ -1326,7 +1325,7 @@ Search Console → 실적 → 검색결과 → 기간 **3개월** → **+ 새 �
 
 **자동 배포(Workers Builds, 2026-11-16 연결)**: Cloudflare `lottodraw-site` → Settings → Build 에 저장소 `420bRM/lottodraw` · 브랜치 `html` · Root directory `site-worker` · Build command `node ../tools/build-dist.js` · Deploy command `npx wrangler deploy` · 다른 브랜치 빌드 끔. html 에 푸시되면(자동 갱신 봇 커밋 포함) Cloudflare 가 빌드 · 배포하므로 GitHub Actions 시간을 쓰지 않는다. 결과는 커밋의 'Workers Builds: lottodraw-site' 표시로 보인다. 시험 배포용이던 `deploy-site.yml` 은 지웠고 workers.dev 주소는 껐다.
 
-**진행**: ✅ 시험 주소 점검 → ✅ Workers Builds 연결 → ✅ www Custom Domain(11/16, check-site 로 사이트맵 1,316개 · api 확인). 남은 것: ① 토요일 자동 갱신 커밋이 Cloudflare 로 배포되는지 확인 ② www 없는 lottodraw.kr — 지금은 GitHub Pages 가 www 로 넘기므로, GitHub Pages 를 끄기 전에 Cloudflare 리디렉션 규칙으로 바꿀 것 ③ GitHub Pages 끄기 · 저장소 비공개.
+**진행**: ✅ 시험 주소 점검 → ✅ Workers Builds 연결 → ✅ www Custom Domain(11/16, check-site 로 사이트맵 1,316개 · api 확인). 남은 것: ① 토요일 자동 갱신 커밋이 Cloudflare 로 배포되는지 확인 ② www 없는 lottodraw.kr — 지금은 GitHub Pages 가 www 로 넘기므로, GitHub Pages 를 끄기 전에 Cloudflare 리디렉션 규칙으로 바꿀 것 ③ GitHub Pages 끄기 · 저장소 비공개. (www 없는 주소: ✅ 11/16 Cloudflare 넘김 규칙으로 301, check-site 가 확인. draw-night 기다림: ✅ 11/16 Cloudflare 예약으로 옮김 — 3번 줄)
 
 ## 5. 작업 방식과 주의사항
 
@@ -1384,6 +1383,7 @@ Dropbox `260914 클로드` 폴더의 README와 CLAUDE.md는 **실제로 적용�
 
 | 날짜 | 어디서 | 한 일 |
 |---|---|---|
+| 2026-11-16 | Claude Code 웹 | **토요일 추첨 기다리기를 Cloudflare 예약으로**(사장님 — 저장소 비공개 전에 GitHub Actions 시간 줄이기) — 전에는 `draw-night` 이 GitHub 예약 지연(2시간 반~5시간) 때문에 토요일 낮부터 20:40 까지 잠들어 기다려 한 달 754분을 썼다. 이제 api Worker 둘째 예약(`*/10 11-14 * * SAT` UTC = 토 20:00~23:50 KST, `worker/src/drawpoke.js`)이 20:40부터 사이트 lotto-data.json 에 오늘 회차가 없으면 `draw-night` 을 mode=once 로 부르고(GitHub API, 비밀값 `GH_DISPATCH_TOKEN`), draw-night 는 `wait-for-draw.js --once` 로 한 번만 조회 → 1등 당첨자 수까지 나왔으면 update-lotto-data. 예상 한 달 20~80분. 토큰을 새로 넣으면 한 시간 예약이 mode=check 로 한 번 시험하고 텔레그램으로 알림, 토요일에 부르기가 실패하면 첫 번 한 번만 알림. GitHub 예약은 없앰(일 · 월 update-lotto-data 예약은 그대로 안전망). worker 시험 114개(새 6개) |
 | 2026-11-16 | Claude Code 웹 | **www.lottodraw.kr 을 Cloudflare Worker 로 옮김**(사장님 — 탭제어로 Workers Builds 연결 · www Custom Domain) → [4-13번](#4-13-cloudflare-workers-로-사이트-옮기기-2026-11-16--www-는-cloudflare-저장소-비공개는-아직) — 첫 빌드는 README 커밋(#256)으로 깨움. check-site(#257)로 실제 주소 확인: server cloudflare, 사이트맵 1,316개 200 · 넘김 없음, /about 200 · /blog 301 · 404 쪽, api /api/territory 200(사이트 파일 읽기 정상). www 없는 주소는 아직 GitHub Pages 가 www 로 301. 시험 주소(workers.dev · 미리보기 주소) 끄고 deploy-site.yml 지움. 참고: Cloudflare 정적 파일은 Range 요청에도 전체를 준다(api 의 latestDraw 는 앞 2KB 만 쓰므로 결과는 같음) |
 | 2026-11-16 | Claude Code 웹 | **시도별 1등 판매점 17쪽이 자동 갱신에서 빠지던 것 고침** — 토요일 `update-lotto-data` 와 매월 `update-all-shops` 는 빌드는 돌리지만 `git add` 목록에 `stores/` 가 없어(11/9 #223 에서 페이지를 만들 때 빠짐) 시도별 페이지가 사람이 PR 로 빌드할 때만 바뀌었다(지금 "262~1249회"). 두 워크플로 `git add` 에 `stores/` 를 더하고 17쪽을 1250회로 다시 만듦. 자동 갱신 뒤 다시 빌드해 바뀌는 것이 stores/ 뿐인 것도 확인 |
 | 2026-11-16 | Claude Code 웹 | **Cloudflare Workers 로 사이트 옮기기 준비**(사장님 — 저장소 비공개 · 내부 자료 보호, "Workers 로 이전 진행") → [4-13번](#4-13-cloudflare-workers-로-사이트-옮기기-2026-11-16-준비--아직-www-는-github-pages) — `tools/build-dist.js` · `site-worker/`(html_handling none + 빈 주소 규칙 Worker · `_headers`) · `404.html` · `tools/check-site.js` · `deploy-site.yml`(손으로, workers.dev 시험 주소). `_config.yml` 에 site-worker · dist 제외. 로컬 wrangler dev 로 사이트맵 1,316개 200 · 폴더 주소 · 404 · 내부 파일 404 · 캐시 10분 확인. www 는 아직 GitHub Pages |
@@ -1611,6 +1611,15 @@ Dropbox `260914 클로드` 폴더의 README와 CLAUDE.md는 **실제로 적용�
 | 2025-12-30 | — | 시작 |
 
 ## 7. 할 일
+
+### 🔜 토요일 추첨 깨우기 토큰 넣기 (2026-11-16 — 토요일 20:40 전까지) → [3번](#3-자동-갱신은-어떻게-돌아가나-github-actions)
+- GitHub → Settings → Developer settings → Personal access tokens → **Fine-grained tokens** → Generate new token
+  - 이름 `lottodraw-draw-poke`, 만료 1년(달력에 갱신 날짜 적기), Repository access: **Only select repositories → 420bRM/lottodraw**
+  - Permissions → Repository permissions → **Actions: Read and write** (나머지는 그대로)
+- 저장소 lottodraw → Settings → Secrets and variables → Actions → New repository secret: 이름 `GH_DISPATCH_TOKEN`, 값 = 위 토큰
+- Actions → `deploy-worker` → Run workflow (Worker 에 토큰을 올린다). 한 시간 안에 텔레그램으로 "토요일 추첨 깨우기 준비 완료"가 오면 끝
+- 토큰이 없으면 토요일 밤에 아무것도 깨우지 않고, 일요일 새벽 03:10 정기 갱신이 받는다(회차 페이지가 그만큼 늦게 뜬다)
+
 
 ### 🔜 많이 사는 번호 · 생성기 회원 조건 확인 (2026-11-13 머지 뒤) → [4-11번](#4-11-사람들이-많이-사는-번호--생성기-회원-조건--남은-조합-2026-11-13)
 - Search Console · 네이버 서치어드바이저에서 `statistics-popular.html` 색인 요청(사이트맵에는 들어 있다)

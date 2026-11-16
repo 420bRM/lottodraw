@@ -34,6 +34,7 @@ import { chatStub, checkText } from './chat.js';
 import { shopInfo, sharePage } from './share.js';
 import { SKIN_RE, cellMap, _resetCellsForTests, gpsOn, terrConsent, GEO_CONSENT, GEO_RADIUS, GEO_ACC_MAX, distM, storeGeo } from './territory.js';
 import { catalog as titleCatalog } from './titles.js';
+import { isDrawCron, drawPoke, drawPokeSelfTest } from './drawpoke.js';
 
 export { Community } from './community.js';
 export { ChatRoom } from './chat.js';
@@ -59,6 +60,13 @@ export default {
     // 한 시간마다: 입금 알림 연결이 살아 있는지 확인 (wrangler.toml [triggers])
     // 추첨 결과 메일 · 자동 별명(가입 3일 뒤)도 같은 한 시간 예약에서 돈다 — 따로 waitUntil 에 넣어 한쪽이 실패해도 다른 쪽은 그대로 간다
     async scheduled(event, env, ctx) {
+        // 토요일 밤 추첨 깨우기(wrangler.toml 의 둘째 예약, drawpoke.js) — 이 예약에서는 한 시간 일들을 돌리지 않는다
+        if (isDrawCron(event && event.cron)) {
+            ctx.waitUntil(drawPoke(env, Date.now(), { site: siteUrl(env), notify: m => notify(env, m) })
+                .then(r => console.log('draw poke', JSON.stringify(r))).catch(err => console.error('draw poke', err)));
+            return;
+        }
+        ctx.waitUntil(drawPokeSelfTest(env, { notify: m => notify(env, m) }).catch(err => console.error('draw poke check', err)));   // 깨우기 토큰을 새로 넣었으면 한 번 확인
         ctx.waitUntil(watchdog(env));
         ctx.waitUntil(resultMail(env, Date.now()).catch(err => console.error('result mail', err)));
         ctx.waitUntil(hexMail(env, Date.now()).catch(err => console.error('hex mail', err)));   // LottoHex 칸 알림 메일(하루 한 번 저녁)

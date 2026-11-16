@@ -3,28 +3,30 @@ name: draw-night
 # 토요일 밤 추첨(20:35 KST) 직후에 당첨번호를 사이트에 올린다. 기사가 쏟아지고 검색이 몰리는
 # 토요일 밤에 회차 페이지가 떠 있게 하려는 것이다 (전에는 일요일 아침 6시쯤 올라갔다).
 #
-# GitHub 예약 실행은 정시에 돌지 않는다. 2026-09 기록으로 2시간 반~5시간 늦게 시작했다.
-# 그래서 추첨 시각에 맞추지 않고 토요일 낮에 일찍 시작해서 기다린다 (tools/wait-for-draw.js).
-#   ① 토요일 낮에 시작 → 20:40 까지 잠 → 1분마다 동행복권 조회
-#   ② 새 회차의 1등 당첨자 수까지 나오면 → update-lotto-data 를 바로 실행한다
-#      (수집 · 페이지 생성 · 배포 · 네이버/Bing 색인 요청은 그쪽이 한다)
-#   ③ 한 번 실행에 주어진 시간(5시간 반)이 끝나면 → 자기 자신을 다시 실행해 이어서 기다린다
-#   ④ 토요일 자정까지 안 나오면 그만둔다 → 일요일 새벽 정기 갱신이 받는다
-# 토요일이 아닌 날 수동 실행(Run workflow)하면 기다리지 않고 바로 update-lotto-data 를 실행한다.
-#
-# 주의: schedule 은 저장소 기본 브랜치(html)에 있는 워크플로만 실행된다.
+# 2026-11-16 부터: GitHub 예약 실행을 쓰지 않는다. GitHub 예약은 2시간 반~5시간씩 늦게 떠서 토요일 낮부터 미리 시작해
+# 20:40 까지 잠들어 기다렸는데(아래 wait 방식), 그 기다림이 한 달 750분쯤 Actions 시간을 썼다.
+# 이제는 시각이 정확한 Cloudflare 예약(api Worker — worker/src/drawpoke.js, 토요일 20:00~23:50 KST 10분마다)이
+# 20:40 부터 사이트에 오늘 회차가 없으면 이 워크플로를 mode=once 로 부른다(비밀값 GH_DISPATCH_TOKEN).
+#   once  : 동행복권을 한 번만 조회 → 1등 당첨자 수까지 나왔으면 update-lotto-data 를 바로 실행. 30초 안에 끝난다
+#   check : 아무 일도 하지 않는다. Worker 가 토큰을 새로 받았을 때 부를 수 있는지 시험한다
+#   wait  : 예전 방식(손으로 돌릴 때). 토요일이면 20:40 까지 자고 1분마다 조회, 5시간 반이 지나면 자기 자신을 다시 실행
+# 토요일이 아닌 날 once · wait 로 돌리면 기다리지 않고 바로 update-lotto-data 를 실행한다.
+# 깨우기가 안 돼도 update-lotto-data 의 일요일 새벽 정기 갱신이 받는다.
 on:
-  schedule:
-    - cron: "7 3 * * 6"    # 토 12:07 KST
-    - cron: "7 7 * * 6"    # 토 16:07 KST — 위 실행이 빠지거나 아주 늦을 때를 대비
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "once = 한 번만 확인(Cloudflare 가 부른다) · check = 아무것도 안 함(토큰 시험) · wait = 예전처럼 자정까지 기다림"
+        type: choice
+        options: [once, check, wait]
+        default: once
 
 permissions:
   contents: read
   actions: write   # update-lotto-data 와 자기 자신을 실행한다
 
-# 기다리는 실행은 한 번에 하나만 돈다. 겹치면 뒤에 온 실행은 앞 실행이 끝난 뒤 돈다
-# (그때는 오늘 회차를 이미 갖고 있으면 바로 끝나고, 아니면 이어서 기다린다).
+# 한 번에 하나만 돈다. 겹치면 뒤에 온 실행은 앞 실행이 끝난 뒤 돈다
+# (그때는 오늘 회차를 이미 갖고 있으면 바로 끝난다).
 concurrency:
   group: draw-night
   cancel-in-progress: false
@@ -34,17 +36,24 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 350
     steps:
+      - name: 토큰 시험(check) — 아무것도 하지 않는다
+        if: inputs.mode == 'check'
+        run: echo "Cloudflare 깨우기 토큰 확인 — draw-night 를 부를 수 있다"
+
       - uses: actions/checkout@v4
+        if: inputs.mode != 'check'
         with:
           ref: html
 
       - uses: actions/setup-node@v4
+        if: inputs.mode != 'check'
         with:
-          node-version: "20"
+          node-version: "22"
 
-      - name: 추첨 결과 기다리기
+      - name: 추첨 결과 확인
         id: wait
-        run: node tools/wait-for-draw.js --budget=330
+        if: inputs.mode != 'check'
+        run: node tools/wait-for-draw.js ${{ inputs.mode == 'wait' && '--budget=330' || '--once' }}
 
       # GITHUB_TOKEN 으로 푸시한 커밋은 다른 워크플로를 깨우지 않지만,
       # workflow_dispatch 실행 요청은 예외라 GITHUB_TOKEN 으로도 된다(GitHub 문서).
@@ -54,8 +63,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh workflow run update-lotto-data.yml --repo "${{ github.repository }}" --ref html
 
-      - name: 다음 실행에 넘기기
+      - name: 다음 실행에 넘기기 (wait 방식만)
         if: steps.wait.outputs.handoff == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run draw-night.yml --repo "${{ github.repository }}" --ref html
+        run: gh workflow run draw-night.yml --repo "${{ github.repository }}" --ref html -f mode=wait
