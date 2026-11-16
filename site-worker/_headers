@@ -1,0 +1,5 @@
+# Cloudflare Workers 정적 파일의 응답 머리(2026-11-16). tools/build-dist.js 가 dist/_headers 로 넣는다.
+# GitHub Pages 와 같게 모든 파일을 10분 쥐어 둔다(Cloudflare 기본은 max-age=0 이라 매번 다시 묻는다).
+# css · js 는 주소 끝 ?v=지문 이 바뀌면 새로 받으므로(tools/asset-version.js) 나중에 더 길게 늘려도 된다.
+/*
+  Cache-Control: public, max-age=600

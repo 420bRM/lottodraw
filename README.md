@@ -1310,6 +1310,22 @@ Search Console → 실적 → 검색결과 → 기간 **3개월** → **+ 새 �
 - **보렐 카드 둘째 문단** 숫자를 새 목록으로 고쳤다(사장님): 특수 12개 27,597개(약 0.34%) 제외 · 8,117,463개 남음, 쏠림까지 357,760개(약 4.39%) 제외 · 7,787,300개 남음. 숫자가 바뀌면 `tools/test-combo-space.js` 가 실패한다(홈 문장에 같은 수가 있는지 본다).
 - 그대로 둔 것: 보렐 카드 셋째 문단 · 사용법 6단계의 "몰리기 쉬운 조합을 피해 나눌 사람이 줄 수 있다" 설명.
 
+## 4-13. Cloudflare Workers 로 사이트 옮기기 (2026-11-16 준비 — 아직 www 는 GitHub Pages)
+
+저장소를 비공개로 돌리려고(코드 · 운영 기록 · 커밋 기록 가리기) 사이트를 GitHub Pages 에서 Cloudflare Workers 정적 파일로 옮긴다. Pages 제품은 쓰지 않는다 — `/about.html` 을 `/about` 으로 강제로 넘기고 끌 수 없어서(사이트맵 · 대표 주소 · 색인 주소가 모두 `.html`).
+
+| 파일 | 하는 일 |
+|---|---|
+| `tools/build-dist.js` | 사이트로 내보낼 파일만 `dist/` 에(= `_config.yml` exclude + Jekyll 기본 규칙). `_config.yml` 을 고치면 같이 고친다 |
+| `site-worker/wrangler.jsonc` | Worker `lottodraw-site`, `assets.html_handling: "none"`(`.html` 주소 그대로 200) |
+| `site-worker/index.js` | 파일이 없을 때만 돈다: `/` · `/blog/` → index.html, `/about` → about.html, `/blog` → 301 `/blog/`, 그 밖 → `404.html`(404) |
+| `site-worker/_headers` | 모든 파일 10분 캐시(GitHub Pages 와 같게) |
+| `404.html` | 없는 주소 쪽(noindex) |
+| `tools/check-site.js` | 사이트맵 전체 200 · 넘김 없음, 폴더 주소 · 404, 내부 파일(README · tools · worker …) 404, 확인용 파일, 캐시 머리 |
+| `.github/workflows/deploy-site.yml` | 손으로 돌림 → workers.dev 시험 주소에 배포 + check-site |
+
+다음 순서: ① 시험 주소 점검(deploy-site) ② 사장님이 Cloudflare 에서 www 의 GitHub DNS 레코드를 지우고 Worker 에 Custom Domain `www.lottodraw.kr` ③ 배포를 push · 자동 갱신 끝에서도 돌게(또는 Workers Builds) ④ 며칠 뒤 GitHub Pages 끄고 저장소 비공개. ② 전까지는 지금 사이트에 영향 없음.
+
 ## 5. 작업 방식과 주의사항
 
 ### 브랜치
@@ -1366,6 +1382,7 @@ Dropbox `260914 클로드` 폴더의 README와 CLAUDE.md는 **실제로 적용�
 
 | 날짜 | 어디서 | 한 일 |
 |---|---|---|
+| 2026-11-16 | Claude Code 웹 | **Cloudflare Workers 로 사이트 옮기기 준비**(사장님 — 저장소 비공개 · 내부 자료 보호, "Workers 로 이전 진행") → [4-13번](#4-13-cloudflare-workers-로-사이트-옮기기-2026-11-16-준비--아직-www-는-github-pages) — `tools/build-dist.js` · `site-worker/`(html_handling none + 빈 주소 규칙 Worker · `_headers`) · `404.html` · `tools/check-site.js` · `deploy-site.yml`(손으로, workers.dev 시험 주소). `_config.yml` 에 site-worker · dist 제외. 로컬 wrangler dev 로 사이트맵 1,316개 200 · 폴더 주소 · 404 · 내부 파일 404 · 캐시 10분 확인. www 는 아직 GitHub Pages |
 | 2026-11-14 | Claude Code 웹 | **사이트 이름 띄어쓰기 표기 더함**(사장님 — 네이버 서치어드바이저 검색어에 띄어 쓴 '로또 드로우'가 7위, 'lottodraw' 1위) — 홈 구조화 데이터 WebSite · Organization `alternateName` 을 ["로또드로우", "로또 드로우", "lottodraw"](`tools/build-static-stats.js` `BRAND_ALT`), 소개 첫 문단 "로또드로우(로또 드로우, lottodraw.kr)는". 홈 제목은 그대로(이미 길어 잘릴 수 있음) |
 | 2026-11-14 | Claude Code 웹 | **LottoHex 소식 띠에 칭호 소식**(사장님 — "칭호 얻었을 때도 이벤트 띠에 올려") — LottoHex 참여자가 칭호를 새로 얻으면 띠에 "🏅 ○○님이 「첫 깃발」 칭호를 얻었습니다"(민트색). 위치가 드러나지 않게 지역 칭호(마포구 전문가 · 경기 완주)는 "지역 칭호", 숨은 칭호(섬마을 손님 · 휴게소 손님 · 개척자)는 "숨은 칭호를 찾았습니다"로 이름 없이. worker `titles.js` `feedTitles` · `community.js` `titleCheck`, 화면 `js/store-map.js` `titleNews`. 순서 규칙은 점령 소식과 같음(공지 앞 3개까지). 처리방침 "칭호는 고른 하나만 보인다"와 맞추려고 **약관 8조 · 처리방침 위치 5번 · LottoHex 공개 항목 · 시행일(2026-11-14)** 고침. worker 시험 108개 통과(점령 뒤 칭호 순서 · 개척자 이름 없음 · LottoHex 안 한 회원은 안 나옴 · `feedTitles` 단위), Playwright 한 · 영 문장 확인. **worker 배포(머지)** |
 | 2026-11-14 | Claude Code 웹 | **LottoHex 소식 띠: 점령 소식이 공지보다 먼저 · 공지가 밀리지 않는 규칙**(사장님 — "다른 이용자가 생기고 있어 점령 소식이나 다른 이벤트가 있으면 공지보다 먼저, 공지가 너무 밀리면 안 좋으니 규칙을") — `js/store-map.js` `drawTicker`: ① 공지 앞에는 최근 소식 3개까지 → 공지는 띠에서 늘 4번째 안(한 바퀴에 한 번) ② 나머지 소식은 공지 뒤 ③ 공지를 새로 올린 뒤 30분은 맨 앞 ④ 움직임 줄이기면 공지가 맨 앞(첫 줄만 보여서). 확성기 같은 새 소식 종류도 같은 규칙. 관리자 페이지 공지 칸 설명도 바꿈. Playwright 로 6가지(오래된 공지 + 소식 5 · 2개, 새 공지, 공지 없음, 공지만, 움직임 줄이기) 순서 확인 |

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex">
+    <!-- 없는 주소에 보이는 쪽(2026-11-16). 깊은 주소(/round/…)에서도 보이므로 모든 주소는 / 로 시작한다.
+         css 지문을 따로 챙기지 않도록 모양은 이 파일 안에 둔다 -->
+    <title>페이지를 찾을 수 없습니다 | lottodraw.kr</title>
+    <link rel="icon" href="/favicon.ico" sizes="32x32">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <style>
+        :root { --bg: #f5f7fb; --card: #fff; --text: #1a1e26; --muted: #5d6573; --brand: #003087; --line: #dde1e8; color-scheme: light dark; }
+        @media (prefers-color-scheme: dark) { :root { --bg: #12151b; --card: #1a1e26; --text: #e6e9ef; --muted: #9ba3b1; --brand: #7aa5ff; --line: #2b313c; } }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; background: var(--bg); color: var(--text);
+            font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif; line-height: 1.6; }
+        main { width: 100%; max-width: 440px; padding: 28px 24px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; text-align: center; }
+        .code { margin: 0; color: var(--brand); font-size: 44px; font-weight: 800; letter-spacing: .04em; }
+        h1 { margin: 6px 0 4px; font-size: 19px; }
+        p { margin: 0 0 18px; color: var(--muted); font-size: 14px; }
+        nav { display: grid; gap: 8px; }
+        a { display: block; padding: 11px 14px; border: 1px solid var(--line); border-radius: 10px; color: var(--text); font-weight: 700; text-decoration: none; }
+        a:hover, a:focus-visible { border-color: var(--brand); color: var(--brand); }
+        a.home { background: var(--brand); border-color: var(--brand); color: #fff; }
+        @media (prefers-color-scheme: dark) { a.home { color: #0b1020; } }
+        .en { margin-top: 16px; font-size: 12.5px; }
+    </style>
+</head>
+<body>
+    <main>
+        <p class="code">404</p>
+        <h1>페이지를 찾을 수 없습니다</h1>
+        <p>주소가 바뀌었거나 없는 페이지입니다.</p>
+        <nav aria-label="바로 가기">
+            <a class="home" href="/">첫 화면 · 번호 생성기</a>
+            <a href="/draws.html">회차별 당첨번호</a>
+            <a href="/statistics.html">로또 통계</a>
+            <a href="/store-map.html">판매점 지도</a>
+        </nav>
+        <p class="en" lang="en">Page not found. <a href="/" style="display:inline;padding:0;border:0;color:var(--brand)">Go to lottodraw.kr</a></p>
+    </main>
+</body>
+</html>
