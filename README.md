@@ -1324,6 +1324,8 @@ Search Console → 실적 → 검색결과 → 기간 **3개월** → **+ 새 �
 | `tools/check-site.js` | 사이트맵 전체 200 · 넘김 없음, 폴더 주소 · 404, 내부 파일(README · tools · worker …) 404, 확인용 파일, 캐시 머리 |
 | `.github/workflows/deploy-site.yml` | 손으로 돌림 → workers.dev 시험 주소에 배포 + check-site |
 
+**자동 배포(Workers Builds, 2026-11-16 연결)**: Cloudflare `lottodraw-site` → Settings → Build 에 저장소 `420bRM/lottodraw` · 브랜치 `html` · Root directory `site-worker` · Build command `node ../tools/build-dist.js` · Deploy command `npx wrangler deploy` · 다른 브랜치 빌드 끔. html 에 푸시되면(자동 갱신 봇 커밋 포함) Cloudflare 가 빌드 · 배포하므로 GitHub Actions 시간을 쓰지 않는다. `deploy-site.yml` 은 손으로 돌리는 점검용으로 남긴다.
+
 다음 순서: ① 시험 주소 점검(deploy-site) ② 사장님이 Cloudflare 에서 www 의 GitHub DNS 레코드를 지우고 Worker 에 Custom Domain `www.lottodraw.kr` ③ 배포를 push · 자동 갱신 끝에서도 돌게(또는 Workers Builds) ④ 며칠 뒤 GitHub Pages 끄고 저장소 비공개. ② 전까지는 지금 사이트에 영향 없음.
 
 ## 5. 작업 방식과 주의사항
