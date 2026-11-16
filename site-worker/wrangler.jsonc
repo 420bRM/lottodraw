@@ -1,0 +1,19 @@
+// lottodraw.kr 사이트(정적 파일) — GitHub Pages 대신 Cloudflare Workers 정적 파일로 내보낸다(2026-11-16 준비).
+// 배포: .github/workflows/deploy-site.yml (먼저 node tools/build-dist.js 로 dist/ 를 만든다).
+// 지금은 workers.dev 시험 주소에만 올린다. www.lottodraw.kr 연결은 시험이 끝난 뒤 Cloudflare 화면에서 Custom Domain 으로.
+// 결제 · 로그인 서버(api.lottodraw.kr)는 worker/ 의 lottodraw-api 로 따로 있다.
+{
+	"name": "lottodraw-site",
+	"main": "index.js",
+	"compatibility_date": "2026-09-01",
+	"workers_dev": true,
+	"assets": {
+		"directory": "../dist",
+		"binding": "ASSETS",
+		// "none": /about.html 을 /about 으로 넘기지 않고 그대로 200(사이트맵 · 대표 주소 · 색인 주소가 모두 .html).
+		// 기본값(auto-trailing-slash)은 /about.html → 307 /about 이라 색인된 1,300여 쪽이 모두 넘김이 된다.
+		"html_handling": "none",
+		// 맞는 파일이 없으면 index.js 가 받는다: / → index.html, /about → about.html, /blog → /blog/, 그 밖은 404.html
+		"not_found_handling": "none"
+	}
+}
