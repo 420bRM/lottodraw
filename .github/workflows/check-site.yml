@@ -1,0 +1,55 @@
+# 실제 사이트 점검(2026-11-16 — www.lottodraw.kr 을 Cloudflare Worker lottodraw-site 로 옮긴 뒤).
+# 손으로 돈다(Actions → check-site → Run workflow). 배포는 하지 않는다(배포는 Cloudflare Workers Builds).
+#  1) 누가 내보내나: server: cloudflare 이고 GitHub Pages 머리(x-github-request-id)가 없어야 한다
+#  2) tools/check-site.js: 사이트맵 전체 200 · 넘김 없음, 폴더 주소 · 404, 내부 파일 차단, 캐시
+#  3) www 없는 주소 · api.lottodraw.kr(사이트 파일을 읽는 길)도 살아 있는지
+name: check-site
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 점검할 사이트 주소
+        required: true
+        default: https://www.lottodraw.kr
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      URL: ${{ inputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: 누가 내보내나 (응답 머리)
+        run: |
+          show() { echo "== $1"; curl -sSI "$1" | grep -iE '^(HTTP|server|location|cache-control|content-type|x-github-request-id|cf-ray)' || true; }
+          show "$URL/"
+          show "$URL/about"
+          show "$URL/blog"
+          show "$URL/no-such-page"
+          show "https://lottodraw.kr/"
+          echo "== 앞부분만 받기(Range, api Worker 가 lotto-data.json 을 이렇게 읽는다)"
+          curl -s -o /dev/null -r 0-1023 -w 'status %{http_code}, %{size_download} bytes\n' "$URL/lotto-data.json"
+          head=$(curl -sSI "$URL/")
+          if ! echo "$head" | grep -qi '^server: cloudflare'; then echo "::error::$URL 이 Cloudflare 에서 오지 않는다"; exit 1; fi
+          if echo "$head" | grep -qi '^x-github-request-id'; then echo "::error::$URL 이 아직 GitHub Pages 에서 온다"; exit 1; fi
+          echo "Cloudflare 에서 온다" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: api.lottodraw.kr (사이트 파일을 읽는 길)
+        run: |
+          code=$(curl -s -o "$RUNNER_TEMP/terr.json" -w '%{http_code}' https://api.lottodraw.kr/api/territory)
+          echo "/api/territory: $code, $(wc -c < "$RUNNER_TEMP/terr.json") bytes"
+          if [ "$code" != "200" ] || ! grep -q '"cells"' "$RUNNER_TEMP/terr.json"; then echo "::error::api 가 store-map-cells.json 을 못 읽는다"; head -c 300 "$RUNNER_TEMP/terr.json"; exit 1; fi
+          echo "/api/config: $(curl -s -o /dev/null -w '%{http_code}' https://api.lottodraw.kr/api/config)"
+
+      - name: 점검 (사이트맵 전체 · 폴더 주소 · 404 · 내부 파일 차단 · 캐시)
+        run: node tools/check-site.js "$URL" | tee -a "$GITHUB_STEP_SUMMARY"
