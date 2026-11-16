@@ -93,9 +93,12 @@ export function computeTerritory(players, upTo, map) {
         stat.get(w.sub).cells++;
         cells[cell] = { sub: w.sub, n: w.n, next: list[1] ? list[1].n : 0, k: list.length };
     }
-    const rank = [...stat.values()].filter(s => s.cells > 0)
+    // board: 참여자 모두(블록 0개 포함, 2026-11-16 사장님 — "동의했지만 아직 안 하는 사람도 랭킹에") — 화면 랭킹 · 내 순위.
+    // rank: 블록이 있는 사람만 — 분기 확정 기록 · 순위 보상(0블록이 보상을 받지 않게) · 블록 알림 메일의 순위. 둘의 앞쪽 차례는 같다
+    const board = [...stat.values()]
         .sort((a, b) => (b.cells - a.cells) || (b.stores - a.stores) || (a.at - b.at) || (a.sub < b.sub ? -1 : a.sub > b.sub ? 1 : 0));
-    return { cells, rank, stat };
+    const rank = board.filter(s => s.cells > 0);
+    return { cells, rank, board, stat };
 }
 
 // 분기 확정 기록(ts:<분기>): 그 분기 끝 때의 랭킹 50명. 계정 번호는 탈퇴 때 지우려고 둔다(밖으로는 내보내지 않는다)
@@ -118,13 +121,13 @@ export function publicTerritory(t, season, sub, joined, last) {
     const out = {
         season: { id: season.id, from: season.from, to: season.to },
         cells,
-        rank: t.rank.slice(0, TERR_RANK).map(s => ({ nick: s.nick, skin: s.skin, cells: s.cells, stores: s.stores, tt: s.tt || null })),
+        rank: (t.board || t.rank).slice(0, TERR_RANK).map(s => ({ nick: s.nick, skin: s.skin, cells: s.cells, stores: s.stores, tt: s.tt || null })),   // 0블록 참여자 포함
         players: t.stat.size,
         last: last ? { id: last.id, from: last.from, to: last.to, rank: last.rank.slice(0, TERR_HALL).map(r => ({ nick: r.nick, skin: r.skin || null, cells: r.cells, stores: r.stores })) } : null,
     };
     if (sub) {
         const me = t.stat.get(sub);
-        const at = t.rank.findIndex(s => s.sub === sub);
+        const at = (t.board || t.rank).findIndex(s => s.sub === sub);   // 0블록이어도 참여자면 순위가 있다
         const was = last ? last.rank.findIndex(r => r.sub === sub) : -1;
         out.me = { joined: !!joined, cells: me ? Object.keys(t.cells).filter(c => t.cells[c].sub === sub) : [], counts: me ? me.counts : {},
             stores: me ? me.stores : 0, rank: at >= 0 ? at + 1 : null, lastRank: was >= 0 ? was + 1 : null,

@@ -398,6 +398,7 @@ body.sm-full #theme-btn { display: none !important; }
 .sm-terr-rank .sm-tname { overflow: hidden; font-weight: bold; text-overflow: ellipsis; white-space: nowrap; }
 .sm-terr-rank .sm-tcnt { text-align: right; white-space: nowrap; }
 .sm-terr-rank .sm-tcnt b { color: var(--brand, #003087); }
+.sm-terr-rank li.is-zero:not(.is-me) { opacity: .62; }   /* 블록 0개 참여자(2026-11-16 — 동의했지만 아직 블록이 없는 사람도 랭킹에) */
 .sm-terr-rank .sm-tcnt small { margin-left: 4px; color: var(--faint, #777); }
 .sm-terr-rules { margin: 8px 0 0; font-size: 11px; }
 .sm-terr-rules summary { color: var(--brand, #003087); font-weight: bold; cursor: pointer; }

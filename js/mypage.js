@@ -436,11 +436,7 @@
                     try { const r = await A.call('/api/me/geo', { method: 'POST', body: { agree: false } }); if (A.patchUser) A.patchUser({ geo: null, visits: {}, visitAt: {} }); showProfile(Object.assign({}, user, { geo: null }, r && r.user ? { visits: r.user.visits } : {})); }
                     catch (err) { e.target.disabled = false; window.alert((err && err.message) || tr('my.saveFail', '저장하지 못했습니다.')); }
                 }, 'my-danger') : null) : null,
-            // LottoHex 칭호(2026-11-09): 단 칭호와 얻은 수. 고르기는 LottoHex 도감 탭에서
-            A && A.gps && A.gps() && user.titles && user.titles.e.length ? row(tr('my.title', '칭호'),
-                (user.titles.sel ? (() => { const t = user.titles.e.find(x => x.id === user.titles.sel); return t ? ((window.I18N && window.I18N.lang) === 'en' ? t.en : t.ko) + ' · ' : ''; })() : tr('my.titleNone', '달지 않음 · ')) +
-                    tr('my.titleN', '얻은 칭호 {n}개', { n: num(user.titles.e.length) }),
-                el('a', { className: 'btn btn-secondary btn-mini', href: 'lottohex.html', text: tr('my.titleGo', '칭호 도감') })) : null,
+            // LottoHex 칭호는 아래 LottoHex 칸으로 옮겼다(2026-11-16)
             // 판매점 댓글의 "✓ 실방문자"(2026-11-09 사장님 — 마이페이지에서 켜고 끄기, 기본은 꺼짐). 켜면 다녀온 판매점에 단 내 댓글에 표시가 붙는다
             row(tr('my.vbadge', '실방문자 표시'), user.visitBadge ? tr('my.vbadgeOn', '켜짐 — 다녀온 판매점에 단 내 댓글에 "✓ 실방문자"가 보입니다') : tr('my.vbadgeOff', '꺼짐'),
                 A ? btn(user.visitBadge ? tr('my.vbadgeTurnOff', '끄기') : tr('my.vbadgeTurnOn', '켜기'), async e => {
@@ -487,6 +483,47 @@
         }
     }
 
+    // LottoHex(2026-11-16 사장님 — "마이페이지에 로또헥스 정보"): 참여 여부 · 내 블록 · Map 랭킹 · 다녀온 판매점 · 점령 포인트 · 지난 분기 확정 순위 · 칭호 · 바로 가기.
+    // 서버의 위치 인증이 켜져 있을 때만 보인다(LottoHex 는 위치로 인증한 다녀온 곳만 센다). 블록 · 순위는 지도와 같은 /api/territory 로 묻는다
+    const seasonOf = id => { const m = /^(\d{4})Q(\d)$/.exec(id || ''); return m ? tr('my.season', '{y}년 {q}분기', { y: m[1], q: m[2] }) : ''; };
+    const titleName = t => ((window.I18N && window.I18N.lang) === 'en' ? t.en : t.ko);
+    async function showHex(user) {
+        const A = window.LottoAccount;
+        if (!$('my-hex') || !(A && A.gps && A.gps())) return;
+        $('my-hex').hidden = false;
+        const titles = user.titles && user.titles.e.length ? row(tr('my.title', '칭호'),
+            (user.titles.sel ? (() => { const t = user.titles.e.find(x => x.id === user.titles.sel); return t ? titleName(t) + ' · ' : ''; })() : tr('my.titleNone', '달지 않음 · ')) +
+                tr('my.titleN', '얻은 칭호 {n}개', { n: num(user.titles.e.length) }),
+            el('a', { className: 'btn btn-secondary btn-mini', href: 'lottohex.html', text: tr('my.titleGo', '칭호 도감') })) : null;
+        const go = joined => el('div', { className: 'my-actions' }, [el('a', { className: 'btn btn-secondary btn-mini', href: 'lottohex.html',
+            text: joined ? tr('my.hexGo', 'LottoHex 열기') : tr('my.hexJoinGo', 'LottoHex 참여하러 가기') })]);
+        if (!user.terr) {
+            fill('my-hex', [el('p', { text: tr('my.hexNot', '아직 참여하지 않았습니다. 다녀온 판매점으로 지도의 육각 블록을 차지하는 땅따먹기 게임입니다.') }), titles, go(false)]);
+            return;
+        }
+        const joinedRow = row(tr('my.hexJoin', '참여'), tr('my.hexJoinedOn', '참여 중 · {date}부터', { date: ymd(user.terr.at) }));
+        const wait = row(tr('my.hexBlocks', '내 블록'), tr('my.loading', '불러오는 중…'));
+        fill('my-hex', [joinedRow, wait, titles, go(true)]);
+        let t = null;
+        try { t = await A.call('/api/territory'); } catch (e) { t = null; }
+        const me = t && t.me;
+        if (!me) { wait.querySelector('.my-v').textContent = tr('my.hexLoadFail', 'LottoHex 정보를 불러오지 못했습니다.'); return; }
+        const n = me.cells.length, sc = user.score || {};
+        const fresh = me.fresh && me.fresh.titles && me.fresh.titles.length ? me.fresh.titles : null;   // 이 부름에서 새로 얻은 칭호(지도에서는 알림으로 뜬다)
+        fill('my-hex', [
+            joinedRow,
+            row(tr('my.hexBlocks', '내 블록'), me.rank
+                ? tr('my.hexBlocksN', '{n}블록 · Map 랭킹 {rank}위 / {of}명', { n: num(n), rank: num(me.rank), of: num(t.players) })
+                : tr('my.hexBlocksOnly', '{n}블록', { n: num(n) })),
+            row(tr('my.hexStores', '다녀온 판매점'), tr('my.hexStoresN', '{n}곳', { n: num(me.stores) })),
+            n || sc.hold ? row(tr('my.hexHold', '점령 포인트'), tr('my.hexHoldN', '하루 +{d}P · 지금까지 {n}P', { d: String(Math.round(n) / 10), n: num(sc.hold || 0) })) : null,
+            me.lastRank && t.last ? row(tr('my.hexLast', '지난 분기'), tr('my.hexLastN', '{season} 확정 {rank}위', { season: seasonOf(t.last.id), rank: num(me.lastRank) })) : null,
+            fresh ? row(tr('my.hexNew', '새로 얻은 칭호'), fresh.map(titleName).join(' · ')) : null,
+            titles,
+            go(true),
+        ]);
+    }
+
     function showAccount() {
         const A = window.LottoAccount;
         fill('my-account', [
@@ -520,6 +557,7 @@
         showProfile(me.user);
         showPass(me.user);
         showScore(me.user, me.reactions);
+        showHex(me.user);
         showAccount();
         showNumbers();
         showNotes();
