@@ -210,7 +210,7 @@
 
     // ───── 동네 찾기 표시(2026-11-16 사장님 — "LottoHex 맵에서 자기 동네를 못 찾아 애먹는 사람이 많다") ─────
     // ① 시 · 도 / 시 · 군 · 구 / 읍 · 면 · 동 이름: 검색창 지역 찾기와 같은 행정동 자료(store-map-places.json)로 직접 쓴다(한국어 화면만 — 자료에 영어 이름이 없다).
-    //    시 · 군 · 구 이름 위에는 시 · 도(일반구는 시 · 도 + 시)를 작게 얹어, 줌인해도 어느 시 · 도인지 보인다. 바탕 지도의 같은 이름은 감춘다(두 번 나오지 않게)
+    //    시 · 군 · 구 이름은 한 줄로, 시 · 도보다 옅은 회색(처음엔 위에 시 · 도를 작게 얹었다 — 2026-11-17 사장님: 시 · 도는 넓게 볼 때 이미 보이니 빼고, 그 회색을 구 이름에). 바탕 지도의 같은 이름은 감춘다(두 번 나오지 않게)
     // ② 학교(초 · 중 · 고) · 대학교 · 공원 · 도서관 · 공공건물(시청 · 구청 · 주민센터 · 경찰서 · 소방서 · 우체국 · 법원) · 공영주차장: 바탕 지도 자료(OpenMapTiles poi)에서 골라 그림 표시와 함께.
     //    자료가 줌 14부터 들어 있다(넓은 대학은 12부터). 판매점 · 역 이름이 먼저 자리를 잡고, 겹치면 이쪽이 빠진다
     // ③ 공원은 옅은 초록 면, 호수 · 강 이름은 파랗게(whiteModel). 땅따먹기 칸 면은 바탕 지도 글자 밑으로(drawTerrLayers) — 칸이 동네 이름을 덮어 흐렸다
@@ -273,14 +273,14 @@
     const SIDO_AT = { 인천: [126.70, 37.46], 경기: [127.30, 37.27], 경북: [128.75, 36.40] };
     function adminLabels(j) {
         if (!j || !map || map.getSource('lb-adm')) return;
-        const S = j.s.map(x => x[0]), F = [], names = new Set(), pt = (lng, lat, p) => { F.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [lng, lat] }, properties: p }); names.add(p.nm); };
+        const F = [], names = new Set(), pt = (lng, lat, p) => { F.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [lng, lat] }, properties: p }); names.add(p.nm); };
         j.s.forEach(([n, lng, lat]) => { const at = SIDO_AT[n] || [lng, lat]; pt(at[0], at[1], { lv: 1, nm: n }); (SIDO_ALIAS[n] || []).forEach(a => names.add(a)); });
-        j.c.forEach(([s, si, lng, lat]) => pt(lng, lat, { lv: 2, nm: si, up: S[s] }));
-        j.g.forEach(([s, si, gu, lng, lat]) => pt(lng, lat, si && gu ? { lv: 4, nm: gu, up: S[s] + ' ' + si } : { lv: 3, nm: gu || si, up: S[s] }));
+        j.c.forEach(([, si, lng, lat]) => pt(lng, lat, { lv: 2, nm: si }));
+        j.g.forEach(([, si, gu, lng, lat]) => pt(lng, lat, si && gu ? { lv: 4, nm: gu } : { lv: 3, nm: gu || si }));
         j.d.forEach(([, nm, lng, lat]) => pt(lng, lat, { lv: 5, nm }));
         map.addSource('lb-adm', { type: 'geojson', data: { type: 'FeatureCollection', features: F } });
         const lv = v => ['==', ['get', 'lv'], v];
-        const two = { 'text-field': upLine(), 'text-font': ['Noto Sans Bold'], 'text-max-width': 12, 'text-padding': 6, 'text-line-height': 1.15 };
+        const two = { 'text-field': ['get', 'nm'], 'text-font': ['Noto Sans Bold'], 'text-max-width': 12, 'text-padding': 6 };
         // 아래에서 위로: 위에 있는 층이 먼저 자리를 잡는다(시 · 도 > 시 > 시 · 군 · 구 > 일반구 > 읍 · 면 · 동 > 시설)
         const defs = [
             { id: 'lb-dong', minzoom: 12.4, filter: lv(5), layout: { 'text-field': ['get', 'nm'], 'text-font': ['Noto Sans Regular'], 'text-size': ['interpolate', ['linear'], ['zoom'], 12.4, 12, 16, 14], 'text-padding': 4 } },
@@ -309,8 +309,6 @@
         if (ids.indexOf('lb-sido') === ids.indexOf(at) - 1) return;   // 이미 그 자리
         LB_ADM.forEach(id => map.moveLayer(id, at));
     }
-    // 시 · 군 · 구 이름 위 작은 줄(시 · 도)의 색은 밤낮에 따라 — 'format' 안의 색이라 글자 칸째 다시 넣는다
-    const upLine = () => ['format', ['get', 'up'], { 'font-scale': 0.74, 'text-color': isNight() ? '#8d97a8' : '#6b7280' }, '\n', {}, ['get', 'nm'], {}];
     function lbPaint() {
         if (!map || !map.getLayer('lb-poi')) return;
         const n = isNight(), P = (id, k, v) => { if (map.getLayer(id)) map.setPaintProperty(id, k, v); };
@@ -322,7 +320,7 @@
         P('lb-poi', 'text-color', kc); P('lb-poi', 'text-halo-color', halo);
         P('lb-npark', 'text-color', POI_KIND.park[n ? 2 : 1]); P('lb-npark', 'text-halo-color', halo);
         P('lb-sido', 'text-color', n ? '#e6e9ef' : '#1f2937');
-        ['lb-si', 'lb-gu', 'lb-gu2'].forEach(id => { P(id, 'text-color', n ? '#d5dae3' : '#273142'); if (map.getLayer(id)) map.setLayoutProperty(id, 'text-field', upLine()); });
+        ['lb-si', 'lb-gu', 'lb-gu2'].forEach(id => P(id, 'text-color', n ? '#8d97a8' : '#6b7280'));   // 시 · 도(진한 글자)보다 옅게
         P('lb-dong', 'text-color', n ? '#b9c1cd' : '#384252');
         ['lb-sido', 'lb-si', 'lb-gu', 'lb-gu2', 'lb-dong'].forEach(id => P(id, 'text-halo-color', halo));
     }
