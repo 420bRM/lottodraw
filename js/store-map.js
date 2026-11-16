@@ -254,7 +254,7 @@
 
     // 북쪽 보기 단추 — "내 위치" 단추 위, 같은 크기. 지도가 돌아간 만큼 바늘도 돈다
     // 전체화면(2026-11-09 사장님 — 휴대폰은 주소창 · 브라우저 도구가 지도를 많이 가린다). 페이지 전체(아래 판 · 카드 · 창 포함)를 전체화면으로.
-    // 휴대폰 크기에서만 보이고(css), 브라우저가 지원할 때만 단다 — 아이폰 Safari 는 페이지 전체화면을 지원하지 않아 단추가 없다
+    // 휴대폰 크기 · 손가락으로 쓰는 태블릿에서만 보이고(css, 2026-11-16 태블릿 더함), 브라우저가 지원할 때만 단다 — 아이폰 Safari 는 페이지 전체화면을 지원하지 않아 단추가 없다
     const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement || null;
     const FS_IN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     const FS_OUT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -2186,7 +2186,17 @@
                     const r = await A.call('/api/me/geo', { method: 'POST', body: { agree: true, v: g.geoV } });
                     if (A.patchUser) A.patchUser({ geo: r.user.geo });
                 }
-                await A.call('/api/territory/join', { method: 'POST', body: { agree: true, v: terrV() } });
+                const join = v => A.call('/api/territory/join', { method: 'POST', body: { agree: true, v } });
+                const sent = terrV();
+                try { await join(sent); }
+                catch (e) {
+                    // 동의 판이 맞지 않음(2026-11-16 — 태블릿에서 "동의해 주세요"만 되풀이): 이 탭이 들고 있는 서버 설정이 옛것일 때
+                    // (위치 인증을 켜기 전에 열어 둔 탭 · 설정을 못 받은 채). 서버 설정을 새로 받아 판이 다르면 그 판으로 한 번 더
+                    if (!(e && e.code === 'need_consent')) throw e;
+                    const fresh = await fetch(apiBase() + '/api/config', { cache: 'no-store' }).then(r => r.json()).then(c => c && c.login && c.login.terrV).catch(() => null);
+                    if (!fresh || fresh === sent) throw e;
+                    await join(fresh);
+                }
                 await A.refresh().catch(() => null);
                 terrView = 'main';
                 if (pop) pop.hidden = true;
@@ -2197,7 +2207,9 @@
                 if (!flyMine() && needGeo) geoStart();   // 칸이 아직 없으면 내 위치로(위치를 막 켰을 때)
             } catch (e) {
                 ok.disabled = false;
-                el.querySelector('.sm-terr-msg').textContent = (e && e.message) || T('참여하지 못했습니다.', 'Could not join.');
+                el.querySelector('.sm-terr-msg').textContent = e && e.code === 'need_consent'
+                    ? T('동의 문구가 바뀌었습니다. 화면을 새로고침한 뒤 다시 참여해 주세요.', 'The agreement has changed. Please reload the page and join again.')
+                    : (e && e.message) || T('참여하지 못했습니다.', 'Could not join.');
             }
         });
     }
