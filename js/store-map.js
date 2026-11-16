@@ -3270,11 +3270,13 @@
 
     // 3D(기울임). 줌인하면 저절로 기울고(auto), 손으로 2D 를 고르면 13 밑으로 나갈 때까지 저절로 기울이지 않는다
     let auto3d = false, keep2d = false;
+    // 3D 단추로 기울일 때 줌인은 한 단계(2배)만, 15 를 넘기지 않는다. 15 이상이면 그대로(2026-11-16 사장님 — 처음엔 15.5 까지 한 번에 들어가 화면이 꽉 찼다)
+    const zoom3d = z => (z >= 15 ? z : Math.min(15, z + 1));
     function set3d(on, keepZoom) {
         const d3 = document.getElementById('sm-3d');
         d3.setAttribute('aria-pressed', String(on));
         d3.textContent = on ? '2D' : '3D';
-        map.easeTo({ pitch: on ? 55 : 0, bearing: on ? -17 : 0, zoom: on && !keepZoom ? Math.max(map.getZoom(), 15.5) : map.getZoom(), duration: 900 });
+        map.easeTo({ pitch: on ? 55 : 0, bearing: on ? -17 : 0, zoom: on && !keepZoom ? zoom3d(map.getZoom()) : map.getZoom(), duration: 900 });
     }
     function autoTilt() {
         const z = map.getZoom(), tilted = map.getPitch() > 5;
