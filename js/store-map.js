@@ -140,11 +140,6 @@
         beamShow(true);   // 빛 벽이 일반 판매점 점 위에 오게
         names();
         paintVisits();
-        map.on('click', 'st-all', e => {
-            // 1등 · 2등 점과 겹치면 그쪽 카드를 연다
-            if (map.queryRenderedFeatures(e.point, { layers: ['st-w1', 'st-w2', 'st-top'] }).length) return;
-            if (e.features && e.features[0]) openAll(e.features[0].properties.i, false);
-        });
         map.on('mouseenter', 'st-all', () => { map.getCanvas().style.cursor = 'pointer'; });
         map.on('mouseleave', 'st-all', () => { map.getCanvas().style.cursor = ''; });
     }
@@ -545,6 +540,35 @@
         return g.getImageData(0, 0, STAR, STAR);
     }
 
+    // ───── 판매점 누르기(2026-11-17 사장님 — "휴대폰에서 판매점을 누르려다 블록이 눌린다", 여러 사람) ─────
+    // 점(LottoHex 는 지름 5~12px)을 정확히 맞혀야만 열리고, 조금 빗나가면 밑의 블록(terr-fill)이 눌렸다.
+    // 이제 지도 누르기 하나로: 누른 자리 둘레(손가락 16px · 마우스 4px — 점 자체의 크기는 따로 더해진다)에서 가장 가까운 판매점을 연다. 둘레에 판매점이 없을 때만 블록을 고른다.
+    // 판매점 이름표를 눌러도 그 판매점. 거리가 같으면 목록 앞쪽(인터넷 · TOP 50 · 1등 …)이 먼저
+    const TAP_LAYERS = ['st-net', 'st-net-top', 'st-top', 'st-w1', 'st-w2', 'st-mine', 'hx-dot', 'st-all',
+        'st-net-name', 'st-name', 'st-mine-name', 'hx-name', 'st-all-name'];
+    let lastPointer = 'mouse';
+    function storeAt(pt) {
+        const ids = TAP_LAYERS.filter(id => map.getLayer(id) && map.getLayoutProperty(id, 'visibility') !== 'none');
+        if (!ids.length) return null;
+        const r = lastPointer === 'mouse' ? 4 : 16;
+        let best = null, bd = Infinity;
+        for (const f of map.queryRenderedFeatures([[pt.x - r, pt.y - r], [pt.x + r, pt.y + r]], { layers: ids })) {
+            const c = f.geometry && f.geometry.type === 'Point' && f.geometry.coordinates;
+            if (!c) continue;
+            const q = map.project(c), d = Math.hypot(q.x - pt.x, q.y - pt.y) + TAP_LAYERS.indexOf(f.layer.id) * 0.01;
+            if (d < bd) { bd = d; best = f; }
+        }
+        return best;
+    }
+    function storeTap(e) {
+        const f = storeAt(e.point);
+        if (!f) return;
+        const id = f.layer.id, p = f.properties;
+        if (/^st-net/.test(id)) openNet(false);
+        else if (/^st-all/.test(id)) openAll(Number(p.i), false);
+        else if (/^(st-mine|hx-)/.test(id)) (p.t === 'w' ? open : openAll)(Number(p.i), false);
+        else open(Number(p.i), false);
+    }
     function addStores() {
         map.addSource('stores', { type: 'geojson', data: geojson(), maxzoom: 12 });   // 점 자료는 줌 12 조각을 크게 키워 쓴다 — 줌인할 때마다 조각을 새로 자르지 않게(2026-11-12)
         const radius = ['interpolate', ['linear'], ['zoom'],
@@ -598,7 +622,6 @@
         });
         addNet(radius, starSize);
         ['st-w1', 'st-w2', 'st-top'].forEach(id => {
-            map.on('click', id, e => { if (e.features && e.features[0]) open(e.features[0].properties.i, false); });
             map.on('mouseenter', id, () => { map.getCanvas().style.cursor = 'pointer'; });
             map.on('mouseleave', id, () => { map.getCanvas().style.cursor = ''; });
         });
@@ -1033,7 +1056,6 @@
             'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 5, 10, 8, 15, 12], 'circle-color': ['get', 'c'],
             'circle-stroke-color': '#fff', 'circle-stroke-width': 2 } });
         map.addLayer({ id: 'st-mine-name', type: 'symbol', source: 'mine', layout: Object.assign(nameLayout(1), { 'text-radial-offset': 1.1 }), paint: Object.assign(namePaint(), { 'text-opacity': 1 }) });
-        map.on('click', 'st-mine', e => { const f = e.features && e.features[0]; if (f) (f.properties.t === 'w' ? open : openAll)(f.properties.i, false); });
         map.on('mouseenter', 'st-mine', () => { map.getCanvas().style.cursor = 'pointer'; });
         map.on('mouseleave', 'st-mine', () => { map.getCanvas().style.cursor = ''; });
     }
@@ -1398,8 +1420,7 @@
             map.addLayer({ id: 'terr-name', type: 'symbol', source: 'terr-pt', minzoom: 11, layout: { 'text-field': ['get', 'nm'], 'text-font': ['Noto Sans Bold'], 'text-size': 12, 'text-max-width': 8, 'text-padding': 4 },
                 paint: { 'text-color': ['get', 'c'], 'text-halo-color': isNight() ? 'rgba(10, 14, 22, .9)' : 'rgba(255, 255, 255, .95)', 'text-halo-width': 1.6 } });
             map.on('click', 'terr-fill', e => {
-                const hits = ['st-w1', 'st-w2', 'st-top', 'st-all', 'st-net', 'st-net-top', 'st-mine', 'hx-dot'].filter(id => map.getLayer(id) && map.getLayoutProperty(id, 'visibility') !== 'none');
-                if (hits.length && map.queryRenderedFeatures(e.point, { layers: hits }).length) return;   // 판매점 점을 누른 것 — 판매점 카드가 열린다
+                if (storeAt(e.point)) return;   // 판매점을 누른 것(둘레 포함) — 판매점 카드가 열린다(storeTap)
                 const ft = e.features && e.features[0];
                 if (ft) pickCell(ft.properties.k);
             });
@@ -1509,7 +1530,6 @@
             'circle-color': ['coalesce', ['feature-state', 'visit'], hxDot()], 'circle-stroke-color': rim(hxDot()),
             'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 8, 0, 13, 1] } }, 'terr-name');
         map.addLayer({ id: 'hx-name', type: 'symbol', source: 'hexstores', minzoom: 15, layout: Object.assign(nameLayout(0.6), { visibility: 'none' }), paint: Object.assign(namePaint(), { 'text-opacity': 1 }) }, 'terr-name');
-        map.on('click', 'hx-dot', e => { const p = e.features && e.features[0] && e.features[0].properties; if (p) (p.t === 'w' ? open : openAll)(Number(p.i), false); });
         beamShow(true);   // 빛 벽이 이 점들 위에 오게
         map.on('mouseenter', 'hx-dot', () => { map.getCanvas().style.cursor = 'pointer'; });
         map.on('mouseleave', 'hx-dot', () => { map.getCanvas().style.cursor = ''; });
@@ -3234,7 +3254,6 @@
             layout: { 'text-field': ['to-string', ['get', 'w1']], 'text-font': ['Noto Sans Bold'], 'text-size': ['interpolate', ['linear'], ['zoom'], 5, 8, 9, 11, 14, 13], 'text-allow-overlap': true },
             paint: { 'text-color': '#fff', 'text-halo-color': 'rgba(120, 10, 20, .7)', 'text-halo-width': 0.8 } });
         ['st-net', 'st-net-top'].forEach(id => {
-            map.on('click', id, e => { e.originalEvent && e.originalEvent.stopPropagation && e.originalEvent.stopPropagation(); openNet(false); });
             map.on('mouseenter', id, () => { map.getCanvas().style.cursor = 'pointer'; });
             map.on('mouseleave', id, () => { map.getCanvas().style.cursor = ''; });
         });
@@ -3355,6 +3374,8 @@
         // 처음 화면: 서울 전체(2026-10-26 사장님 — 전국은 시도별 표 · 줌아웃으로)
         map.on('load', () => {
             koreanLabels(); whiteModel(); placeLabels(); addStores(); nightModel(); nearLabel();
+            map.on('click', storeTap);   // 판매점 누르기(둘레 포함) — 블록 누르기(terr-fill)보다 먼저 본다
+            map.getCanvasContainer().addEventListener('pointerdown', e => { lastPointer = e.pointerType || 'mouse'; }, { capture: true, passive: true });
             // 들어올 때의 전환 화면은 그려지면 걷는다 — 빛나는 점이 계속 움직여 'idle' 이 오지 않을 수 있어 잠깐 뒤에도(enterFx 는 한 번만, 최소 1.1초)
             map.once('idle', enterFx);
             setTimeout(enterFx, 500);
