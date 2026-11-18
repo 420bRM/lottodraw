@@ -211,9 +211,9 @@
         const list = q ? members.filter(m => (m.nick || '').toLowerCase().includes(q) || (m.email || '').includes(q)) : members;
         const table = $('members-table');
         table.textContent = '';
-        table.appendChild(el('thead', {}, [el('tr', {}, ['별명', '이메일', '가입', '최근 로그인', '무료 체험', '♥', '$', '₩', '점수', ''].map(h => el('th', { text: h })))]));
+        table.appendChild(el('thead', {}, [el('tr', {}, ['별명', '이메일', '가입', '최근 로그인', '무료 체험', '♥', '$', '₩', '점수', '쓴 P', '남은 P', ''].map(h => el('th', { text: h })))]));
         const body = el('tbody');
-        if (!list.length) body.appendChild(el('tr', {}, [el('td', { colspan: '10', text: q ? '찾는 회원이 없습니다.' : '아직 가입한 회원이 없습니다.' })]));
+        if (!list.length) body.appendChild(el('tr', {}, [el('td', { colspan: '12', text: q ? '찾는 회원이 없습니다.' : '아직 가입한 회원이 없습니다.' })]));
         list.forEach(m => {
             const trial = m.trial ? `${m.trial.keyId.toUpperCase()} · ${m.trial.expiresAt > Date.now() ? when(m.trial.expiresAt) + '까지' : '끝남'}` : '—';
             const tools = el('td', { className: 'admin-row-tools' }, [
@@ -225,9 +225,54 @@
                 el('td', { text: (m.staff ? '🛡 ' : '') + (m.nick || '—') + (m.nick && m.nickAuto ? ' (자동)' : '') }), el('td', { text: m.email || '' }), el('td', { text: when(m.createdAt) }),
                 el('td', { text: m.lastAt ? when(m.lastAt) : '' }), el('td', { text: trial }),
                 el('td', { text: String(m.hearts || 0) }), el('td', { text: String(m.dollars || 0) }), el('td', { text: String(m.wons || 0) }),
-                el('td', { title: m.score ? `출석 ${m.score.days}일 · 반응 ${m.score.reacts}개 · 채팅 ${m.score.chats || 0}개 · 댓글 ${m.score.comments || 0}개 · 이용권 ${(m.buy || 0).toLocaleString()}원` : '', text: m.score ? String(m.score.total) : '0' }), tools,
+                el('td', { title: m.score ? `출석 ${m.score.days}일 · 반응 ${m.score.reacts}개 · 채팅 ${m.score.chats || 0}개 · 댓글 ${m.score.comments || 0}개 · 이용권 ${(m.buy || 0).toLocaleString()}원` : '', text: m.score ? String(m.score.total) : '0' }),
+                el('td', { title: spendTip(m), text: m.score && m.score.spent ? fmtP(m.score.spent) : '—' }), el('td', { text: m.score ? fmtP(m.score.avail) : '0' }), tools,
             ]));
         });
+        table.appendChild(body);
+        renderSpend(list);
+    }
+
+    // 회원별 포인트 사용량(2026-11-18 사장님). 종류별 합계는 기록을 시작한 뒤(2026-11-18)부터 — 그 전에 쓴 것은 "이전"(쓴 합계 - 종류별 합계)
+    const SPEND_NAME = { pass: '1일 이용권', nick: '별명 바꾸기', color: '다녀온 곳 색', skin: '칸 모양', beam: '빛 벽' };
+    const fmtP = n => `${Math.round(n * 10) / 10}P`.replace(/^(-?)(\d+)/, (x, s, d) => s + Number(d).toLocaleString('ko-KR'));
+    const spendOf = m => {
+        const by = (m.spend && m.spend.by) || {}, spent = (m.score && m.score.spent) || 0;
+        const known = Object.keys(SPEND_NAME).reduce((a, k) => a + (by[k] || 0), 0);
+        return { by, spent, before: Math.max(0, Math.round((spent - known) * 10) / 10) };
+    };
+    const spendTip = m => {
+        const o = spendOf(m);
+        if (!o.spent) return '';
+        return Object.keys(SPEND_NAME).filter(k => o.by[k]).map(k => `${SPEND_NAME[k]} ${fmtP(o.by[k])}`).concat(o.before ? [`이전(내역 없음) ${fmtP(o.before)}`] : []).join(' · ');
+    };
+    function renderSpend(list) {
+        const table = $('spend-table');
+        if (!table) return;
+        const rows = list.filter(m => (m.score && m.score.spent) || (m.spend && m.spend.log && m.spend.log.length)).sort((a, b) => ((b.score && b.score.spent) || 0) - ((a.score && a.score.spent) || 0));
+        table.textContent = '';
+        table.appendChild(el('thead', {}, [el('tr', {}, ['회원', '모은 점수', '쓴 포인트', '남은 포인트', '1일 이용권', '별명 바꾸기', '다녀온 곳 색', '칸 모양', '빛 벽', '이전(내역 없음)', '최근 사용'].map(h => el('th', { text: h })))]));
+        const body = el('tbody');
+        if (!rows.length) body.appendChild(el('tr', {}, [el('td', { colspan: '11', text: '아직 포인트를 쓴 회원이 없습니다.' })]));
+        const sum = { total: 0, spent: 0, avail: 0, before: 0, by: {} };
+        rows.forEach(m => {
+            const o = spendOf(m), sp = m.spend || {}, by = o.by;
+            sum.total += m.score.total || 0; sum.spent += o.spent; sum.avail += m.score.avail || 0; sum.before += o.before;
+            Object.keys(SPEND_NAME).forEach(k => { sum.by[k] = (sum.by[k] || 0) + (by[k] || 0); });
+            const cell = (k, extra) => el('td', { text: (by[k] ? fmtP(by[k]) : '—') + (extra || '') });
+            const log = (sp.log || []).slice(0, 3).map(([at, k, p]) => `${when(at).slice(5)} ${SPEND_NAME[k] || k} ${p < 0 ? '돌려줌 ' + fmtP(-p) : fmtP(p)}`).join('\n');
+            body.appendChild(el('tr', {}, [
+                el('td', { title: m.email || '', text: (m.staff ? '🛡 ' : '') + (m.nick || m.email || '—') }),
+                el('td', { text: fmtP(m.score.total || 0) }), el('td', { text: fmtP(o.spent) }), el('td', { text: fmtP(m.score.avail || 0) }),
+                cell('pass', m.pointPasses ? ` · ${m.pointPasses}회` : ''), cell('nick'), cell('color', sp.colors ? ` · ${sp.colors}색 열림` : ''), cell('skin'), cell('beam', sp.beam ? ' · 있음' : ''),
+                el('td', { text: o.before ? fmtP(o.before) : '—' }),
+                el('td', { className: 'admin-spend-log', title: (sp.log || []).map(([at, k, p]) => `${when(at)} ${SPEND_NAME[k] || k} ${fmtP(p)}`).join('\n'), text: log || '—' }),
+            ]));
+        });
+        if (rows.length > 1) body.appendChild(el('tr', { className: 'admin-sum-row' }, [
+            el('td', { text: `합계 ${rows.length}명` }), el('td', { text: fmtP(sum.total) }), el('td', { text: fmtP(sum.spent) }), el('td', { text: fmtP(sum.avail) }),
+            ...Object.keys(SPEND_NAME).map(k => el('td', { text: sum.by[k] ? fmtP(sum.by[k]) : '—' })), el('td', { text: sum.before ? fmtP(sum.before) : '—' }), el('td', { text: '' }),
+        ]));
         table.appendChild(body);
     }
 
@@ -442,7 +487,8 @@
 
     /* ───── 광고 유입(utm) — 2026-11-11 ───── */
     // 서버: ad:<한국 날짜> { '매체|종류|캠페인': { l 들어옴, g 가입, h LottoHex 참여, v 첫 위치 인증 } }
-    const INFLOW = [['l', '들어옴'], ['g', '가입'], ['h', 'LottoHex 참여'], ['v', '첫 위치 인증']];
+    // 2026-11-18: 앱 안 브라우저(w — 구글 로그인이 막히는 곳) · 브라우저로 옮겨 옴(x) · 지도 써 봄(u) · 로그인 창 열어 봄(o)
+    const INFLOW = [['l', '들어옴'], ['w', '앱 안 브라우저'], ['x', '브라우저로 옮김'], ['u', '지도 써 봄'], ['o', '로그인 창'], ['g', '가입'], ['h', 'LottoHex 참여'], ['v', '첫 위치 인증']];
     let inflowDays = null;
     async function loadInflow() {
         try {
@@ -492,7 +538,7 @@
         dt.appendChild(db);
         const week = add({}, null);
         days.filter(d => [...Array(7)].some((_, i) => d.day === kstDay(now - i * 86400000))).forEach(d => Object.values(d.rows || {}).forEach(c => add(week, c)));
-        $('inflow-sum').textContent = `최근 7일 들어옴 ${n(week.l)} · 가입 ${n(week.g)} · LottoHex ${n(week.h)}`;
+        $('inflow-sum').textContent = `최근 7일 들어옴 ${n(week.l)} · 지도 써 봄 ${n(week.u)} · 로그인 창 ${n(week.o)} · 가입 ${n(week.g)} · LottoHex ${n(week.h)}`;
     }
 
     /* ───── 실시간 채팅 관리 ───── */

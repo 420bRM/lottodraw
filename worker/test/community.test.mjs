@@ -826,6 +826,37 @@ test('포인트로 1일 이용권: 300포인트로 24시간 키, 랭킹 점수�
     assert.equal(back.ppass, undefined);
 });
 
+test('회원별 포인트 사용량(2026-11-18): 쓴 곳마다 종류별 합계 · 최근 내역, 돌려준 것은 음수, 이전에 쓴 것은 따로, 관리자 명부에 나온다', async () => {
+    const env = await fresh({ SIGNUP_TRIAL_DAYS: '' });
+    const a = (await login(env, { sub: 'A', email: 'a@gmail.com' })).data;
+    const u = env.COMMUNITY._m.get('u:A'); u.buy = 9000; u.spent = 70; env.COMMUNITY._m.set('u:A', u);   // 900점 + 출석 10점, 기록 전에 70점을 썼던 회원
+    assert.equal((await call(env, 'POST', '/api/me/visit-color', { headers: auth(a.session), body: { color: '#3a86ff' } })).status, 200);
+    assert.equal((await call(env, 'POST', '/api/me/point-pass', { headers: auth(a.session) })).status, 200);
+    await call(env, 'POST', '/api/me/nickname', { body: { nickname: '첫별명' }, headers: auth(a.session) });   // 첫 별명은 무료 — 기록 없음
+    const st = env.COMMUNITY._m.get('u:A');
+    assert.equal(st.spent, 400, '합계는 그대로(70 + 30 + 300)');
+    assert.deepEqual(st.sb, { color: 30, pass: 300 });
+    assert.deepEqual(st.sl.map(x => [x[1], x[2]]), [['pass', 300], ['color', 30]], '최근 것이 먼저, 무료는 남기지 않는다');
+
+    const m = (await call(env, 'GET', '/api/admin/members', { headers: asAdmin })).data.members.find(x => x.email === 'a@gmail.com');
+    assert.deepEqual(m.spend.by, { color: 30, pass: 300 });
+    assert.equal(m.spend.colors, 1);
+    assert.equal(m.spend.beam, false);
+    assert.equal(m.spend.log.length, 2);
+    assert.deepEqual([m.score.spent, m.score.avail], [400, 510], '이전 70점은 spent - 종류별 합계로 화면이 계산한다');
+
+    // 발급 실패로 돌려주면 합계 · 종류별 · 내역이 함께 돌아온다
+    const env2 = makeEnv({ SIGNUP_TRIAL_DAYS: '' });
+    _resetForTests();
+    const b = (await login(env2, { sub: 'B', email: 'b@gmail.com' })).data;
+    const ub = env2.COMMUNITY._m.get('u:B'); ub.buy = 5000; env2.COMMUNITY._m.set('u:B', ub);
+    assert.equal((await call(env2, 'POST', '/api/me/point-pass', { headers: auth(b.session) })).status, 503);
+    const back = env2.COMMUNITY._m.get('u:B');
+    assert.equal(back.spent, 0);
+    assert.deepEqual(back.sb, { pass: 0 });
+    assert.deepEqual(back.sl.map(x => [x[1], x[2]]), [['pass', -300], ['pass', 300]]);
+});
+
 test('결제 흐름 집계: 결제 페이지 · 고름은 화면이, 주문 · 입금 · 포인트로 열기는 서버가 센다(화면에서는 못 보냄), 로봇은 세지 않는다', async () => {
     const env = await fresh({ SIGNUP_TRIAL_DAYS: '', BANK_NAME: '우리은행', BANK_ACCOUNT: '1002-123-456789', BANK_HOLDER: '홍길동' });
     const tap = (k, ua) => worker.fetch(new Request('https://api.lottodraw.kr/api/tap', {

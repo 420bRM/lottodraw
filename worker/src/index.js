@@ -1408,11 +1408,12 @@ function cleanAd(raw) {
 }
 async function adLand(request, env) {
     if (!allowedOrigin(request, env)) throw new HttpError(403, 'bad_origin', '허용되지 않은 사이트입니다.');
-    const ad = cleanAd(await readJson(request));
+    const raw = await readJson(request), ad = cleanAd(raw);
     if (!ad) throw new HttpError(400, 'bad_ad', '광고 정보가 올바르지 않습니다.');
+    const e = raw && typeof raw.e === 'string' ? raw.e : 'l';   // l 들어옴 · w 앱 안 브라우저 · x 앱에서 브라우저로 · u 지도 써 봄 · o 로그인 창(그 밖은 저장소가 l 로)
     if (!env.COMMUNITY || BOT_UA.test(request.headers.get('User-Agent') || '')) return new Response(null, { status: 204, headers: corsHeaders(request, env) });
     await limited(env.TAP_LIMIT, 'ad:' + (request.headers.get('CF-Connecting-IP') || 'local'));
-    await community(env, 'adLand', { ad, now: Date.now() });
+    await community(env, 'adLand', { ad, now: Date.now(), e });
     return new Response(null, { status: 204, headers: corsHeaders(request, env) });
 }
 

@@ -823,6 +823,7 @@
     // "다녀왔어요" 자리(visitUi 가 채운다). 카드의 이름 · 주소 바로 아래 — 채우기 전에도 자리를 잡아 두어 아래 내용이 밀리지 않게(css .sm-visit:empty)
     const VISIT_BOX = '<div class="sm-visit" id="sm-visit"></div>';
     function showCard(html, lat, lng, fly) {
+        adUse();
         card.dataset.i = '';
         markTop(null);
         card.innerHTML = '<button type="button" class="sm-close" aria-label="' + T('닫기', 'Close') + '">×</button>' + html;
@@ -989,6 +990,8 @@
         return best || PALETTE[0];
     }
     const account = () => window.LottoAccount;
+    // 광고 유입 집계 '지도 써 봄'(2026-11-18): 광고로 들어온 사람이 판매점 카드 · 블록 · 지역 찾기를 한 번 이상 썼는가(js/account.js adEvent — 하루 한 번)
+    const adUse = () => { const A = account(); if (A && A.adEvent) A.adEvent('u'); };
     const loadIds = () => (ids ? Promise.resolve(ids) : fetch(root.dataset.ids).then(r => r.json()).then(j => (ids = j)).catch(() => null));
     // 지도 점에 색 입히기(feature-state). 일반 판매점 층은 켤 때 다시 부른다
     const painted = { stores: new Set(), all: new Set(), hexstores: new Set() };
@@ -1430,6 +1433,7 @@
         map.setFilter('terr-sel', ['==', ['get', 'k'], terrSel || '']);
     }
     function pickCell(k) {
+        adUse();
         terrSel = k;
         terrView = 'main';
         if (hexMobile()) { terrTab = 'now'; if (sheetSnap === 'peek') setSheet('half'); }
@@ -3069,6 +3073,7 @@
     }
     let nearFrom = null;   // 지역 찾기로 옮겼으면 { c: [경도, 위도], name } — 근처 목록을 그 중심에서 가까운 순으로
     async function goPlace(p) {
+        adUse();
         if (!hexMode) await revealAllStores();
         nearFrom = hexMode ? null : { c: [p.lng, p.lat], name: p.name };
         nearAfterMove = !hexMode;   // LottoHex 에서는 칸을 보러 가는 것이라 목록은 열지 않는다

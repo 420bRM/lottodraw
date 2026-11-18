@@ -51,10 +51,32 @@
      * 같은 캠페인은 하루 한 번 "들어옴"을 센다(/api/arrive — 이름 셋 말고는 보내지 않는다). 가입할 때 기억한 캠페인을 같이 보내
      * 서버가 그 캠페인의 가입 · LottoHex 참여 · 첫 위치 인증을 센다. 주소의 utm 값은 지워 둔다(그 주소를 복사해 퍼뜨려도 광고로 세지 않게) */
     const AD_STORE = 'lottodraw.inflow';        // { s, m, c, at }
-    const AD_SEEN = 'lottodraw.inflow.seen';    // { day, k: ['매체|종류|캠페인'] } — 오늘 센 캠페인
+    const AD_SEEN = 'lottodraw.inflow.seen';    // { day, k: ['l|매체|종류|캠페인', …] } — 오늘 센 캠페인 · 종류(adSend)
     const AD_DAYS = 30;
     const AD_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'gbraid', 'wbraid'];
     const adName = v => { v = String(v || '').trim().toLowerCase().replace(/\s+/g, '_').slice(0, 40); return /^[a-z0-9][a-z0-9_.-]*$/.test(v) ? v : ''; };
+    // 앱 안 브라우저(2026-11-18 사장님 — 광고로 400명이 들어왔는데 가입 0): 구글은 앱 안에 든 브라우저(웹뷰)에서 구글 로그인을 막는다(403 disallowed_useragent, 2021-09~).
+    // 카톡 · 네이버 · 다음 · 디시 · 인스타 · 페이스북 · 라인 · 밴드 · 에브리타임 앱 등. 안드로이드 웹뷰는 '; wv)', 아이폰은 Safari 표시가 없는 것으로 가른다(크롬 · 파이어폭스 · 엣지 앱은 제외)
+    const UA = (navigator && navigator.userAgent) || '';
+    const IS_ANDROID = /Android/i.test(UA), IS_KAKAO = /KAKAOTALK/i.test(UA);
+    const IN_APP = /KAKAOTALK|NAVER\(inapp|DaumApps|FBAN|FBAV|FB_IAB|Instagram|Line\/|BAND\/|everytimeApp|dcinside|; wv\)/i.test(UA)
+        || (/iPhone|iPad|iPod/.test(UA) && !/Safari\//.test(UA) && !/CriOS|FxiOS|EdgiOS/.test(UA));
+    // 광고 유입 한 칸 보내기. e: l 들어옴 · w 앱 안 브라우저로 들어옴 · x 앱에서 브라우저로 옮겨 옴 · u 지도 써 봄 · o 로그인 창 열어 봄(가입 · 참여 · 인증은 서버가 센다).
+    // 같은 브라우저 · 캠페인 · 종류는 하루 한 번
+    const kstToday = () => new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+    function adSend(ad, e) {
+        const day = kstToday(), key = e + '|' + [ad.s, ad.m, ad.c].join('|');
+        const seen = local.get(AD_SEEN);
+        const list = seen && seen.day === day && Array.isArray(seen.k) ? seen.k : [];
+        if (list.indexOf(key) !== -1) return;
+        local.set(AD_SEEN, { day: day, k: list.concat(key).slice(-40) });
+        safe(() => navigator.sendBeacon && navigator.sendBeacon(api() + '/api/arrive', JSON.stringify({ s: ad.s, m: ad.m, c: ad.c, e: e })));
+    }
+    const adNow = () => {   // 30일 안에 광고 링크로 들어온 캠페인
+        const ad = local.get(AD_STORE);
+        return ad && ad.s && Date.now() - (ad.at || 0) < AD_DAYS * 86400000 ? ad : null;
+    };
+    const adEvent = e => { const ad = adNow(); if (ad && /^[uo]$/.test(e)) adSend(ad, e); };
     (function adArrive() {
         const q = safe(() => new URL(location.href), null);
         if (!q || !AD_KEYS.some(k => q.searchParams.has(k))) return;
@@ -65,17 +87,24 @@
         if (s) {
             const ad = { s: s, m: m || (s === 'google' && !p.get('utm_source') ? 'cpc' : '-'), c: c || '-', at: Date.now() };
             local.set(AD_STORE, ad);
-            const day = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10), key = [ad.s, ad.m, ad.c].join('|');
-            const seen = local.get(AD_SEEN);
-            const list = seen && seen.day === day && Array.isArray(seen.k) ? seen.k : [];
-            if (list.indexOf(key) === -1) {
-                local.set(AD_SEEN, { day: day, k: list.concat(key).slice(-20) });
-                safe(() => navigator.sendBeacon && navigator.sendBeacon(api() + '/api/arrive', JSON.stringify({ s: ad.s, m: ad.m, c: ad.c })));
-            }
+            if (p.get('utm_content') === 'outside') adSend(ad, 'x');   // 앱 안 브라우저에서 "브라우저로 열기"로 넘어온 것 — 들어옴은 이미 셌다
+            else { adSend(ad, 'l'); if (IN_APP) adSend(ad, 'w'); }
         }
         AD_KEYS.forEach(k => p.delete(k));
         safe(() => history.replaceState(history.state, '', q.pathname + (p.toString() ? '?' + p.toString() : '') + q.hash));
     })();
+    // 앱 안 브라우저에서 "브라우저로 열기"할 주소 — 광고로 들어왔으면 캠페인 이름을 붙여 새 브라우저에서도 이어 센다
+    function outsideUrl() {
+        const u = new URL(location.href), ad = adNow();
+        if (ad) { u.searchParams.set('utm_source', ad.s); u.searchParams.set('utm_medium', ad.m); u.searchParams.set('utm_campaign', ad.c); u.searchParams.set('utm_content', 'outside'); }
+        return u.toString();
+    }
+    function outsideHref() {
+        const url = outsideUrl();
+        if (IS_KAKAO) return 'kakaotalk://web/openExternal?url=' + encodeURIComponent(url);   // 카톡: 기본 브라우저로
+        if (IS_ANDROID) return 'intent://' + url.replace(/^https?:\/\//, '') + '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' + encodeURIComponent(url) + ';end';   // 크롬으로
+        return null;   // 아이폰 앱은 Safari 로 바로 여는 길이 없다 — 메뉴 안내 + 주소 복사
+    }
     // 가입할 때 같이 보낼 캠페인(30일 안에 들어온 것만)
     const adForSignup = () => {
         const ad = local.get(AD_STORE);
@@ -222,8 +251,29 @@
     }
     function escClose(e) { if (e.key === 'Escape') closeModal(); }
 
+    // 앱 안 브라우저 안내(로그인 창 위). 구글 단추는 그 아래 그대로 둔다 — 앱에 따라 되는 곳도 있다
+    function inAppBox() {
+        const href = outsideHref();
+        const note = el('span', { className: 'acct-inapp-done', role: 'status' });
+        const copy = el('button', { type: 'button', className: 'btn btn-secondary btn-mini', text: tr('acct.inappCopy', '주소 복사'), on: { click: async () => {
+            const url = outsideUrl();
+            let ok = false;
+            try { await navigator.clipboard.writeText(url); ok = true; } catch (e) { ok = !!window.prompt(tr('acct.inappCopyAsk', '아래 주소를 길게 눌러 복사해 주세요.'), url); }
+            note.textContent = ok ? tr('acct.inappCopied', '복사했습니다. 크롬이나 Safari 주소창에 붙여 넣어 주세요.') : '';
+        } } });
+        return el('div', { className: 'acct-inapp' }, [
+            el('p', { className: 'acct-inapp-t', text: tr('acct.inapp', '앱 안에서 열린 화면에서는 구글이 로그인을 막습니다.') }),
+            el('p', { text: href ? tr('acct.inappGo', '아래 단추로 브라우저에서 연 뒤 로그인해 주세요.') : tr('acct.inappIos', '화면의 ⋯ 메뉴에서 "Safari로 열기"(또는 "다른 브라우저로 열기")를 누르거나, 주소를 복사해 Safari에 붙여 넣어 주세요.') }),
+            el('p', { className: 'acct-inapp-btns' }, [
+                href ? el('a', { className: 'btn btn-primary btn-mini', href: href, text: IS_KAKAO ? tr('acct.inappOpen', '브라우저로 열기') : tr('acct.inappChrome', '크롬으로 열기') }) : null,
+                copy, note,
+            ]),
+        ]);
+    }
+
     async function openLogin(reason) {
         closeModal();
+        adEvent('o');   // 광고로 들어온 사람이 로그인 창을 열어 봄
         const slot = el('div', { className: 'acct-gbtn' }, [el('span', { className: 'acct-wait', text: tr('acct.loading', '구글 로그인 단추를 불러오는 중…') })]);
         const err = el('p', { className: 'acct-err', role: 'alert', hidden: '' });
         const days = (login && login.trialDays) || 0;   // 가입 체험 일수 — 서버가 끄면(2026-10-11~ 기본) 0, 체험 이야기를 빼고 가입하면 되는 일만
@@ -244,6 +294,7 @@
                 el('li', { text: tr('acct.perk2', '♥ 좋아요 · $ 대박 기원 남기기') }),
                 el('li', { text: tr('acct.perkTalk', '실시간 채팅 · 블로그 댓글 · 랭킹') }),
             ]),
+            IN_APP ? inAppBox() : null,
             slot,
             err,
             el('p', { className: 'acct-fine' }, [
@@ -679,6 +730,8 @@
     // js/chat.js · js/comments.js · TOP 50 그래프가 쓰는 길
     window.LottoAccount = {
         openLogin: r => (login ? openLogin(r) : null),
+        adEvent: e => adEvent(e),   // 광고 유입 집계: 'u' 지도 써 봄(js/store-map.js)
+        inApp: () => IN_APP,
         openNick: first => (me ? openNick(!!first) : null),
         session: () => { const s = local.get(SESSION_STORE); return s && s.session; },
         me: () => me,
