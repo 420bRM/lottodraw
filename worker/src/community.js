@@ -108,6 +108,15 @@ export const NICK_WORDS = {
 const rand = n => crypto.getRandomValues(new Uint32Array(1))[0] % n;
 export const autoNickName = () => NICK_WORDS.adj[rand(NICK_WORDS.adj.length)] + NICK_WORDS.noun[rand(NICK_WORDS.noun.length)] + (1000 + rand(9000));
 const tenth = x => Math.round(x * 10) / 10;   // 채팅 점수(0.1)가 섞여 소수 첫째 자리까지 쓴다
+// 쓴 포인트 기록(2026-11-18 사장님 — 관리자 페이지에서 회원별 포인트 사용량). spent 는 합계 그대로(랭킹 · 쓸 수 있는 포인트 계산),
+// sb 는 종류별 합계, sl 은 최근 20건 [시각, 종류, 포인트] — 돌려준 포인트는 음수로 남는다. 이 기록 전에 쓴 포인트는 spent - (sb 합계) = 관리자 화면의 "이전"
+export const SPEND_KINDS = ['pass', 'nick', 'color', 'skin', 'beam'];   // 1일 이용권 · 별명 바꾸기 · 다녀온 곳 색 · 칸 모양 · 빛 벽
+function spend(user, kind, cost, now) {
+    if (!cost) return;
+    user.spent = Math.max(0, tenth((user.spent || 0) + cost));
+    user.sb = Object.assign({}, user.sb, { [kind]: tenth(((user.sb && user.sb[kind]) || 0) + cost) });
+    user.sl = [[now || Date.now(), kind, cost]].concat(user.sl || []).slice(0, 20);
+}
 const kstDay = ms => new Date(ms + 9 * 3600 * 1000).toISOString().slice(0, 10);
 
 export function score(user) {
@@ -167,7 +176,8 @@ export const TAP_KINDS = ['gen-share', 'gen-print', 'post-share', 'post-sns', 'p
 // 광고 유입(utm) 집계(2026-11-11 사장님 — 구글 광고 시험). 매체 · 종류 · 캠페인 이름은 소문자 · 숫자 · _ . - 만, 40자까지(index.js cleanAd 가 다듬는다)
 export const AD_RE = /^[a-z0-9][a-z0-9_.-]{0,39}$/;
 const AD_KEYS_MAX = 100;   // 하루 캠페인 줄 수 한도(아무 이름이나 보내 저장소를 부풀리지 못하게)
-const AD_FIELDS = ['l', 'g', 'h', 'v'];
+const AD_LAND = ['l', 'w', 'x', 'u', 'o'];   // 브라우저가 /api/arrive 로 보내는 것(가입 · 참여 · 인증은 서버가 센다 — 브라우저가 못 보낸다)
+const AD_FIELDS = ['l', 'w', 'x', 'u', 'o', 'g', 'h', 'v'];   // 들어옴 · 앱 안 브라우저 · 앱에서 브라우저로 옮겨 옴 · 지도 써 봄 · 로그인 창 · 가입 · LottoHex 참여 · 첫 위치 인증(2026-11-18 w · x · u · o)
 
 // 블로그 댓글
 export const COMMENT = { max: 500, gapMs: 15000, daily: 30, list: 200 };   // 글자 수, 다음 댓글까지, 하루 최대, 한 글에 보여 주는 수
@@ -676,7 +686,7 @@ const OPS = {
             cost = user.staff ? 0 : POINTS.terrSkin;
             const avail = score(user).avail;
             if (cost && avail < cost) return { error: 'need_points', cost, avail };
-            user.spent = tenth((user.spent || 0) + cost);
+            spend(user, 'skin', cost);
             user.tskin = skin;
         }
         delete user.tcolor;   // 하루 쓰다 만 "내 화면에만 색"(2026-11-07)
@@ -696,7 +706,7 @@ const OPS = {
             cost = user.staff ? 0 : POINTS.terrBeam;
             const avail = score(user).avail;
             if (cost && avail < cost) return { error: 'need_points', cost, avail };
-            user.spent = tenth((user.spent || 0) + cost);
+            spend(user, 'beam', cost);
             user.tbeam = { at: Date.now(), on: true };
         } else user.tbeam.on = !!on;
         await this.saveUser(user);
@@ -814,7 +824,7 @@ const OPS = {
         if (open.includes(color)) return { ok: true, user: view(user), cost: 0 };
         const cost = POINTS.visitColor, avail = score(user).avail;
         if (avail < cost) return { error: 'need_points', cost, avail };
-        user.spent = tenth((user.spent || 0) + cost);
+        spend(user, 'color', cost);
         user.vcolors = open.concat(color);
         await this.saveUser(user);
         return { ok: true, user: view(user), cost };
@@ -845,7 +855,7 @@ const OPS = {
         await this.storage.put('n:' + key, sub);
         user.nick = nick;
         user.nickAt = now;
-        user.spent = (user.spent || 0) + cost;
+        spend(user, 'nick', cost, now);
         delete user.nickAuto;
         await this.unqueueNick(user);
         await this.saveUser(user);
@@ -919,7 +929,7 @@ const OPS = {
         const cost = POINTS.dayPass;
         const avail = score(user).avail;
         if (avail < cost) return { error: 'need_points', cost, avail };
-        user.spent = tenth((user.spent || 0) + cost);
+        spend(user, 'pass', cost, now);
         user.ppass = { pending: true, at: now };
         await this.saveUser(user);
         return { ok: true, cost };
@@ -935,7 +945,7 @@ const OPS = {
     async refundPointPass({ sub, cost }) {
         const user = await this.storage.get('u:' + sub);
         if (!user) return { error: 'no_user' };
-        user.spent = Math.max(0, tenth((user.spent || 0) - cost));
+        spend(user, 'pass', -cost);   // 발급 실패 — 돌려준 것도 기록에 남는다
         delete user.ppass;
         await this.saveUser(user);
         return { ok: true };
@@ -1088,8 +1098,8 @@ const OPS = {
     },
 
     // 광고 유입: utm 링크로 들어온 방문(index.js /api/arrive — 같은 브라우저 · 캠페인은 하루 한 번만 온다)
-    async adLand({ ad, now }) {
-        await this.adBump(ad, 'l', now || Date.now());
+    async adLand({ ad, now, e }) {
+        await this.adBump(ad, AD_LAND.includes(e) ? e : 'l', now || Date.now());
         return { ok: true };
     },
     // 관리자 페이지: 광고 유입 날짜별 집계, 최근 날짜가 먼저 — [{ day, rows: { '매체|종류|캠페인': { l, g, h, v } } }]
@@ -1164,6 +1174,7 @@ const OPS = {
                 trial: u.trial && u.trial.keyId ? { keyId: u.trial.keyId, expiresAt: u.trial.expiresAt } : null,
                 hearts: rx.filter(m => m.includes('h')).length, dollars: rx.filter(m => m.includes('d')).length,
                 wons: rx.filter(m => m.includes('w')).length, score: score(u), buy: u.buy || 0, staff: !!u.staff, nickAuto: !!u.nickAuto, pointPasses: u.ppassN || 0,
+                spend: { by: u.sb || {}, log: u.sl || [], colors: (u.vcolors || []).length, beam: !!u.tbeam },   // 회원별 포인트 사용량(관리자 화면)
             });
         }
         members.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));

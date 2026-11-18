@@ -1798,6 +1798,11 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 .acct-lead { margin: 0 0 8px; }
 .acct-lead.is-short { text-align: center; }   /* 체험이 없을 때의 한 줄 "로그인하여 100% 즐기기" */
 .acct-perks { margin: 0 0 14px; padding-left: 20px; color: var(--muted); font-size: 14px; }
+.acct-inapp { margin: 0 0 12px; padding: 10px 12px; border-radius: 10px; background: var(--tint-warm, #fff4e5); color: var(--text); font-size: 13px; line-height: 1.5; text-align: left; }   /* 앱 안 브라우저 안내(js/account.js inAppBox) */
+.acct-inapp p { margin: 0 0 6px; }
+.acct-inapp .acct-inapp-t { font-weight: 700; }
+.acct-inapp-btns { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 !important; }
+.acct-inapp-done { color: var(--muted); font-size: 12px; }
 .acct-gbtn { display: flex; justify-content: center; min-height: 44px; margin-bottom: 10px; color: var(--muted); font-size: 13px; text-align: center; }
 .acct-err { margin: 0 0 8px; color: var(--error); font-size: 13px; }
 .acct-fine { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
@@ -1843,6 +1848,8 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 .table-wrap { overflow-x: auto; }
 .admin-table { font-size: 13px; white-space: nowrap; }
 .admin-table th, .admin-table td { padding: 6px 8px; }
+.admin-table td.admin-spend-log { white-space: pre-line; font-size: 12px; color: var(--muted); }   /* 회원별 포인트 사용량의 최근 사용 3건 */
+.admin-table tr.admin-sum-row td { font-weight: 700; border-top: 2px solid var(--line); }
 .admin-row-tools { display: flex; gap: 4px; justify-content: center; }
 .admin-row-tools .danger { color: var(--error); }
 .members-rx { margin-top: 12px; }

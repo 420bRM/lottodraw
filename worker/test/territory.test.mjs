@@ -929,6 +929,9 @@ test('광고 유입(utm, 2026-11-11): 들어옴은 우리 사이트 · 이름 �
     assert.equal((await arrive({ s: '<b>x</b>', c: 'a' })).status, 400, '이름 규칙');
     assert.equal((await arrive(AD, 'https://evil.example')).status, 403, '다른 사이트');
     assert.equal((await arrive(AD, null)).status, 403, 'Origin 없음');
+    // 2026-11-18: 앱 안 브라우저(w) · 앱에서 브라우저로 옮겨 옴(x) · 지도 써 봄(u) · 로그인 창(o)도 같은 길로. 모르는 종류는 들어옴(l), 가입(g) 같은 서버 몫은 못 보낸다
+    for (const e of ['w', 'x', 'u', 'o']) assert.equal((await arrive(Object.assign({ e }, AD))).status, 204);
+    assert.equal((await arrive(Object.assign({ e: 'g' }, AD))).status, 204);
 
     // 그 캠페인으로 새로 가입 → 가입(g). 같은 계정이 다시 로그인하며 보내도 다시 세지 않는다. 캠페인 없이 가입한 회원은 어디에도 안 센다
     const signup = (sub, ad) => call(env, 'POST', '/api/auth/google', { body: { credential: await0(sub), ad } });
@@ -958,7 +961,7 @@ test('광고 유입(utm, 2026-11-11): 들어옴은 우리 사이트 · 이름 �
     assert.equal((await call(env, 'GET', '/api/admin/inflow', { headers: auth(a) })).status, 401, '회원도 못 본다');
     const st = await call(env, 'GET', '/api/admin/inflow', { headers: asAdmin });
     assert.equal(st.status, 200);
-    assert.deepEqual(st.data.days, [{ day: today, rows: { [KEY]: { l: 2, g: 1, h: 1, v: 1 }, 'naver|-|-': { l: 1 }, 'google|-|-': { g: 1 } } }]);
+    assert.deepEqual(st.data.days, [{ day: today, rows: { [KEY]: { l: 3, w: 1, x: 1, u: 1, o: 1, g: 1, h: 1, v: 1 }, 'naver|-|-': { l: 1 }, 'google|-|-': { g: 1 } } }]);
     assert.ok(!JSON.stringify(st.data).includes('ad1') && !JSON.stringify(env.COMMUNITY._m.get('ad:' + today)).includes('ad1'), '누가 했는지는 집계에 없다');
 
     // 탈퇴하면 회원 정보의 가입 경로도 같이 지워진다(집계 숫자는 남는다)
@@ -969,7 +972,7 @@ test('광고 유입(utm, 2026-11-11): 들어옴은 우리 사이트 · 이름 �
     // 하루 캠페인 줄 수 한도(아무 이름이나 보내 부풀리지 못하게)
     for (let i = 0; i < 120; i++) await arrive({ s: 'spam' + i });
     assert.ok(Object.keys(env.COMMUNITY._m.get('ad:' + today)).length <= 100);
-    assert.equal(env.COMMUNITY._m.get('ad:' + today)[KEY].l, 2, '이미 있던 줄은 계속 센다');
+    assert.equal(env.COMMUNITY._m.get('ad:' + today)[KEY].l, 3, '이미 있던 줄은 계속 센다');
 });
 
 test('LottoHex 칸 알림 메일(2026-11-12): 처음엔 지난번 칸만 적고, 다음 날 저녁 칸을 잃은 참여자에게 하루 한 번 — 처음부터 켜짐 · 알림 끄기 링크 · 스위치, 칸 위치는 안 넣음', async () => {
