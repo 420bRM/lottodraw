@@ -12,6 +12,8 @@ exclude:
   - CNAME
   - content
   - README.md
+  - CLAUDE.md
+  - docs
   - ads/README.md
   - tools
   - worker

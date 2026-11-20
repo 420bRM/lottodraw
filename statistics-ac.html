@@ -114,14 +114,14 @@
 <p data-i18n-en="Do low-AC sets, the kind people pick by hand, end up shared by more first-prize winners? We compared all 1,163 draws since draw 88 (1,000 KRW per game). Dividing the games sold in a draw by 8,145,060 gives the number of first-prize winners to expect if everyone picked at random; more actual winners than that means more people chose that set.">AC값이 낮은 조합은 사람이 손으로 고르기 쉬워 1등을 여럿이 나눠 가지지 않을까요? 88회(1게임 1,000원) 이후 1,163회를 회차마다 견줬습니다. 그 회차에 팔린 게임 수를 전체 조합 수(8,145,060)로 나누면 무작위로 샀을 때 나왔을 1등 인원(기대 인원)이 나오고, 실제 인원이 이보다 많으면 그 조합을 고른 사람이 많았다는 뜻입니다.</p>
 
 <style>
-.ac-figure { margin: 16px 0 10px; }
-.acc-toggles { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
-.acc-toggles button { padding: 5px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface, #fff); color: var(--muted); font: 13px/1.4 var(--font); cursor: pointer; }
+.ac-figure { margin: 16px 0 12px; }
+.acc-toggles { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+.acc-toggles button { padding: 4px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface, #fff); color: var(--muted); font: var(--fs-4)/var(--lh-tight) var(--font); cursor: pointer; }
 .acc-toggles button[aria-pressed="true"] { border-color: var(--brand-bg, var(--brand)); background: var(--brand-bg, var(--brand)); color: #fff; font-weight: bold; }
-.acc-panel { margin: 0 0 14px; }
+.acc-panel { margin: 0 0 16px; }
 .acc-panel[hidden] { display: none; }
-.acc-ptitle { margin: 0 0 2px; color: var(--text); font-size: 14px; font-weight: bold; }
-.acc-ptitle small { margin-left: 6px; color: var(--muted); font-size: 12px; font-weight: normal; }
+.acc-ptitle { margin: 0 0 4px; color: var(--text); font-size: var(--fs-3); font-weight: bold; }
+.acc-ptitle small { margin-left: 8px; color: var(--muted); font-size: var(--fs-5); font-weight: normal; }
 .acc-line { fill: none; stroke: var(--ball-3); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 .acc-line.is-few { stroke: #f9b4b4; }
 .acc-area { fill: var(--brand); opacity: .08; }
@@ -134,7 +134,7 @@
 .dist-dot { cursor: pointer; }
 .dist-dot:hover circle, .dist-dot.is-on circle { transform: scale(1.8); }
 .dist-dot:hover .acc-guide, .dist-dot.is-on .acc-guide { opacity: .45; }
-.acc-val { fill: var(--text); font-size: 12px; font-weight: bold; }
+.acc-val { fill: var(--text); font-size: 12px; /* 예외: 그래프 속 글자(SVG) */ font-weight: bold; }
 .ac-figure .dist-legend .key-line { height: 0; border-top: 3px solid var(--ball-3); background: none; }
 .ac-figure .dist-legend .key-line.key-few { border-top-color: #f9b4b4; }
 .ac-figure .dist-legend .key-mean { height: 0; border-top: 2px dashed var(--brand); background: none; opacity: .6; }
