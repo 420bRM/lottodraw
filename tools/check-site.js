@@ -69,7 +69,7 @@ async function sitemapAll() {
     await expect('/nothing-here', { status: 404 });
     // 나가면 안 되는 파일
     for (const p of ['/README.md', '/ads/README.md', '/CNAME', '/_config.yml', '/_headers', '/.gitignore', '/.github/workflows/deploy-worker.yml',
-        '/tools/build-static-stats.js', '/tools/build-dist.js', '/worker/src/index.js', '/worker/wrangler.toml', '/content/round-notes.md',
+        '/tools/build-static-stats.js', '/tools/build-dist.js', '/worker/src/index.js', '/worker/wrangler.toml', '/content/round-notes.md', '/CLAUDE.md', '/docs/design.md',
         '/site-worker/index.js', '/site-worker/wrangler.jsonc', '/preview/']) {
         await expect(p, { status: 404 }, '내부 파일');
     }

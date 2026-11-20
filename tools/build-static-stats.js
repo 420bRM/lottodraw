@@ -1112,14 +1112,14 @@ const AC_ONE_PAIR = 2141646;
     // 두 점 사이에서 값보다 튀어 오르거나 0 아래로 내려가는 가짜 봉우리가 생기지 않는다.
     // 선 · 점은 셋 다 주황, 점은 작게(반지름 2.5 — 선을 가리지 않게). 그 AC값 세로 칸을 짚거나 누르면 점이 커지고 세로 안내선과 함께 js/dist-balls.js 가 data-tip 글을 띄운다
     // (풍선은 js/dist-balls.js — SVG <title> 은 넣지 않는다: 쪽마다 <title> 이 하나여야 한다, 네이버 진단). 표본이 10회 미만인 값에 닿는 구간은 옅은 선 — 오차가 크다
-    const ACC_STYLE = `.ac-figure { margin: 16px 0 10px; }
-.acc-toggles { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
-.acc-toggles button { padding: 5px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface, #fff); color: var(--muted); font: 13px/1.4 var(--font); cursor: pointer; }
+    const ACC_STYLE = `.ac-figure { margin: 16px 0 12px; }
+.acc-toggles { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+.acc-toggles button { padding: 4px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface, #fff); color: var(--muted); font: var(--fs-4)/var(--lh-tight) var(--font); cursor: pointer; }
 .acc-toggles button[aria-pressed="true"] { border-color: var(--brand-bg, var(--brand)); background: var(--brand-bg, var(--brand)); color: #fff; font-weight: bold; }
-.acc-panel { margin: 0 0 14px; }
+.acc-panel { margin: 0 0 16px; }
 .acc-panel[hidden] { display: none; }
-.acc-ptitle { margin: 0 0 2px; color: var(--text); font-size: 14px; font-weight: bold; }
-.acc-ptitle small { margin-left: 6px; color: var(--muted); font-size: 12px; font-weight: normal; }
+.acc-ptitle { margin: 0 0 4px; color: var(--text); font-size: var(--fs-3); font-weight: bold; }
+.acc-ptitle small { margin-left: 8px; color: var(--muted); font-size: var(--fs-5); font-weight: normal; }
 .acc-line { fill: none; stroke: var(--ball-3); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 .acc-line.is-few { stroke: #f9b4b4; }
 .acc-area { fill: var(--brand); opacity: .08; }
@@ -1132,7 +1132,7 @@ const AC_ONE_PAIR = 2141646;
 .dist-dot { cursor: pointer; }
 .dist-dot:hover circle, .dist-dot.is-on circle { transform: scale(1.8); }
 .dist-dot:hover .acc-guide, .dist-dot.is-on .acc-guide { opacity: .45; }
-.acc-val { fill: var(--text); font-size: 12px; font-weight: bold; }
+.acc-val { fill: var(--text); font-size: 12px; /* 예외: 그래프 속 글자(SVG) */ font-weight: bold; }
 .ac-figure .dist-legend .key-line { height: 0; border-top: 3px solid var(--ball-3); background: none; }
 .ac-figure .dist-legend .key-line.key-few { border-top-color: #f9b4b4; }
 .ac-figure .dist-legend .key-mean { height: 0; border-top: 2px dashed var(--brand); background: none; opacity: .6; }

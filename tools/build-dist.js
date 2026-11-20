@@ -19,7 +19,7 @@ const OUT = path.join(ROOT, 'dist');
 
 // 맨 위에서 뺄 것: _config.yml exclude(CNAME · content · README.md · tools · worker · preview) + 배포 도구 · 저장소 파일
 const TOP_EXCLUDE = new Set([
-    'CNAME', 'content', 'README.md', 'tools', 'worker', 'preview',
+    'CNAME', 'content', 'README.md', 'tools', 'worker', 'preview', 'docs', 'CLAUDE.md',
     'dist', 'site-worker', 'node_modules', 'package.json', 'package-lock.json',
 ]);
 // 아래쪽에서 뺄 것(경로 그대로): _config.yml exclude 의 ads/README.md
