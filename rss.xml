@@ -5,14 +5,21 @@
     <link>https://www.lottodraw.kr/</link>
     <description>로또 데이터 플랫폼 lottodraw.kr — 매주 당첨번호와 회차별 당첨금, 통계와 확률 이야기. 어디서 사든 1등 확률은 1/8,145,060으로 같습니다.</description>
     <language>ko</language>
-    <lastBuildDate>Sat, 14 Nov 2026 03:00:00 GMT</lastBuildDate>
+    <lastBuildDate>Sun, 22 Nov 2026 03:00:00 GMT</lastBuildDate>
     <atom:link href="https://www.lottodraw.kr/rss.xml" rel="self" type="application/rss+xml"/>
     <item>
-        <title>LottoHex 이번 주 Map 랭킹 (2026-11-14)</title>
+        <title>LottoHex 이번 주 Map 랭킹 (2026-11-22)</title>
         <link>https://www.lottodraw.kr/lottohex.html</link>
-        <guid isPermaLink="false">https://www.lottodraw.kr/lottohex.html#2026-11-14</guid>
-        <pubDate>Sat, 14 Nov 2026 03:00:00 GMT</pubDate>
-        <description>참여 3명 · 차지된 블록 7개. 다녀온 판매점으로 육각 블록을 차지하는 땅따먹기 LottoHex의 이번 주 순위.</description>
+        <guid isPermaLink="false">https://www.lottodraw.kr/lottohex.html#2026-11-22</guid>
+        <pubDate>Sun, 22 Nov 2026 03:00:00 GMT</pubDate>
+        <description>참여 6명 · 차지된 블록 17개. 다녀온 판매점으로 육각 블록을 차지하는 땅따먹기 LottoHex의 이번 주 순위.</description>
+    </item>
+    <item>
+        <title>로또 1251회 당첨번호 (2026-11-21)</title>
+        <link>https://www.lottodraw.kr/round/1251.html</link>
+        <guid isPermaLink="true">https://www.lottodraw.kr/round/1251.html</guid>
+        <pubDate>Sat, 21 Nov 2026 03:00:00 GMT</pubDate>
+        <description>당첨번호 14 · 18 · 19 · 29 · 40 · 45 + 보너스 1. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
     </item>
     <item>
         <title>로또 1250회 당첨번호 (2026-11-14)</title>
@@ -349,13 +356,6 @@
         <guid isPermaLink="true">https://www.lottodraw.kr/round/1222.html</guid>
         <pubDate>Sat, 02 May 2026 03:00:00 GMT</pubDate>
         <description>당첨번호 4 · 11 · 17 · 22 · 32 · 41 + 보너스 34. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
-    </item>
-    <item>
-        <title>로또 1221회 당첨번호 (2026-04-25)</title>
-        <link>https://www.lottodraw.kr/round/1221.html</link>
-        <guid isPermaLink="true">https://www.lottodraw.kr/round/1221.html</guid>
-        <pubDate>Sat, 25 Apr 2026 03:00:00 GMT</pubDate>
-        <description>당첨번호 6 · 13 · 18 · 28 · 30 · 36 + 보너스 9. 등수별 당첨금 · 당첨 게임 수 · 1등 판매점.</description>
     </item>
 </channel>
 </rss>

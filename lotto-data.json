@@ -1,7 +1,22 @@
 {
-  "totalDraws": 1250,
-  "lastUpdated": "2026-11-14",
+  "totalDraws": 1251,
+  "lastUpdated": "2026-11-21",
   "draws": [
+    {
+      "round": 1251,
+      "date": "2026-11-21",
+      "numbers": [
+        14,
+        18,
+        19,
+        29,
+        40,
+        45
+      ],
+      "bonus": 1,
+      "firstPrizeWinners": 14,
+      "firstPrizeAmount": 2068843286
+    },
     {
       "round": 1250,
       "date": "2026-11-14",
