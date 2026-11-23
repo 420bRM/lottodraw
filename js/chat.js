@@ -81,12 +81,6 @@
     ]);
     const online = el('span', { className: 'chat-online' });
     const list = el('ol', { className: 'chat-list', 'aria-live': 'polite' });
-    // 비회원 안내(2026-11-23 사장님): 서버가 12시간 지난 대화만 준다(worker/src/chat.js GUEST_DELAY_MS) — 로그인하면 실시간
-    const guestNote = el('p', { className: 'chat-guest', hidden: '' }, [
-        el('span', { className: 'chat-guest-t' }), ' ',
-        el('button', { type: 'button', className: 'chat-guest-go', text: tr('chat.guestGo', '로그인하고 실시간으로 보기'),
-            on: { click: () => A.openLogin(tr('chat.loginReason', '채팅은 로그인한 회원이 쓸 수 있습니다.')) } }),
-    ]);
     const status = el('p', { className: 'chat-status', role: 'status' });
     const input = el('input', { type: 'text', className: 'chat-input', maxlength: '200', autocomplete: 'off', placeholder: tr('chat.ph', '메시지 입력 (200자)'),
         'aria-label': tr('chat.ph', '메시지 입력 (200자)') });
@@ -101,7 +95,6 @@
             el('button', { type: 'button', className: 'chat-x', 'aria-label': tr('acct.close', '닫기'), text: '×', on: { click: () => toggle(false) } }),
         ]),
         el('p', { className: 'chat-rule', text: tr('chat.rule', '메시지는 24시간 뒤 사라집니다 · 링크·연락처·홍보 금지') }),
-        guestNote,
         list,
         status,
         gate,
@@ -121,11 +114,16 @@
         return me && me.user ? me.user.nick : null;
     }
 
+    // 비회원(2026-11-23 사장님 — 로그인 유도): 서버가 12시간이 안 된 메시지의 내용을 빼고 보낸다(masked) — 내용 자리에 안내, 누르면 로그인
+    const textOf = m => (m.masked
+        ? el('button', { type: 'button', className: 'chat-text is-masked', text: tr('chat.masked', '비회원은 12시간 후 확인 가능합니다'),
+            title: tr('chat.guestGo', '로그인하고 실시간으로 보기'), on: { click: () => A.openLogin(tr('chat.loginReason', '채팅은 로그인한 회원이 쓸 수 있습니다.')) } })
+        : el('span', { className: 'chat-text', text: m.text }));
     function addMsg(m) {
         if (list.querySelector('[data-id="' + CSS.escape(m.id) + '"]')) return;
         if (m.sys) {   // 알림(2026-11-10 — LottoHex 점령 소식): 별명 없이 다른 색 한 줄
             list.appendChild(el('li', { className: 'chat-msg is-sys is-sys-' + m.sys, 'data-id': m.id }, [
-                el('span', { className: 'chat-text', text: m.text }),
+                textOf(m),
                 el('time', { className: 'chat-time', text: fmt(m.at) }),
             ]));
             while (list.children.length > 200) list.removeChild(list.firstChild);
@@ -136,7 +134,7 @@
         list.appendChild(el('li', { className: 'chat-msg' + (mine ? ' is-mine' : ''), 'data-id': m.id }, [
             el('span', { className: 'chat-nick' + (m.staff ? ' is-staff' : ''), text: m.nick }),
             m.staff ? el('span', { className: 'chat-staff', text: tr('chat.staff', '운영자') }) : null,
-            el('span', { className: 'chat-text', text: m.text }),
+            textOf(m),
             el('time', { className: 'chat-time', text: fmt(m.at) }),
         ]));
         while (list.children.length > 200) list.removeChild(list.firstChild);
@@ -226,18 +224,15 @@
         };
     }
 
-    // 비회원: 안내를 보이고 5분마다 12시간 지난 대화를 다시 받는다(서버는 1분에 한 번까지). 회원이 되면(delay 0) 멈춘다
+    // 비회원: 5분마다 목록을 다시 받아 12시간이 지난 메시지의 내용을 채운다(서버는 1분에 한 번까지). 회원이 되면(delay 0) 멈춘다
     let guestTimer = null, authWait = false, heldHello = null;
     function renderHello(m) {
         list.textContent = '';
         (m.history || []).forEach(addMsg);
-        if (!(m.history || []).length) list.appendChild(el('li', { className: 'chat-empty', text: m.delay
-            ? tr('chat.emptyGuest', '{h}시간이 지난 대화가 아직 없습니다.', { h: m.delay }) : tr('chat.empty', '아직 조용합니다. 첫 마디를 남겨 보세요.') }));
+        if (!(m.history || []).length) list.appendChild(el('li', { className: 'chat-empty', text: tr('chat.empty', '아직 조용합니다. 첫 마디를 남겨 보세요.') }));
         guestMode(m.delay || 0);
     }
     function guestMode(h) {
-        guestNote.hidden = !h;
-        if (h) guestNote.querySelector('.chat-guest-t').textContent = tr('chat.guest', '비회원은 {h}시간이 지난 대화만 볼 수 있습니다.', { h });
         if (h && !guestTimer) guestTimer = setInterval(() => { if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'hist' })); }, 5 * 60 * 1000);
         if (!h && guestTimer) { clearInterval(guestTimer); guestTimer = null; }
     }
