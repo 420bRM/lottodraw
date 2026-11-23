@@ -2,7 +2,9 @@
 //
 // 원칙 (README "실시간 채팅", 예전 검토 문서 「임베드형 휘발성 채팅 위젯」의 권고)
 //   · 휘발성: 메시지는 24시간 뒤 사라진다. 최근 것만 보여 준다.
-//   · 읽기는 누구나, 쓰기는 로그인하고 별명을 정한 회원만.
+//   · 읽기는 누구나, 쓰기는 로그인하고 별명을 정한 회원만. 비회원(로그인 전 소켓)에게도 메시지가 오는 것(별명 · 시각)은 실시간으로 보이지만,
+//     12시간이 안 된 메시지는 내용을 빼고 보낸다(masked — 화면에 "비회원은 12시간 후 확인 가능합니다"). 2026-11-23 사장님 — 로그인 유도.
+//     화면에서만 가리면 소켓으로 다 보이므로 서버에서 뺀다.
 //   · 리딩방·도박 홍보가 몰리는 분야라 링크·전화번호·메신저 주소는 막는다. 한 사람이 3초에 한 번까지.
 //   · 운영자는 관리자 페이지에서 메시지를 지우고 회원의 채팅을 막는다.
 //
@@ -16,6 +18,8 @@
 import { community } from './community.js';
 
 export const KEEP_MS = 24 * 3600 * 1000;
+export const GUEST_DELAY_MS = 12 * 3600 * 1000;   // 비회원은 이만큼 지난 메시지의 내용만 본다
+const HIST_GAP_MS = 60 * 1000;   // 비회원 화면이 목록을 다시 받는 간격의 하한(t: 'hist' — 12시간이 지난 내용을 채운다)
 const HISTORY = 50;           // 들어올 때 보여 주는 최근 메시지 수
 const MAX_KEEP = 300;         // 저장해 두는 최대 개수
 const GAP_MS = 3000;          // 한 사람이 다음 메시지를 쓰기까지
@@ -51,6 +55,8 @@ const sha256 = async s => {
 };
 
 const pub = m => Object.assign({ id: m.id, at: m.at, nick: m.nick, text: m.text }, m.staff ? { staff: true } : {}, m.sys ? { sys: m.sys } : {});   // sys: 알림(점령 소식 'cap') — 별명 없이 다른 색
+// 비회원에게 보내는 모양: 12시간이 안 됐으면 내용(text) 없이 masked
+const guestPub = (m, now) => (now - m.at >= GUEST_DELAY_MS ? pub(m) : Object.assign(pub(m), { text: null, masked: true }));
 
 export class ChatRoom {
     constructor(state, env) {
@@ -93,7 +99,7 @@ export class ChatRoom {
             const now = Date.now(), id = String(now).padStart(16, '0') + '-' + Math.random().toString(36).slice(2, 8);
             const m = { id, at: now, nick: null, text, sys: /^[a-z]{1,8}$/.test(body.kind || '') ? body.kind : 'note' };
             await this.storage.put('msg:' + id, m);
-            this.broadcast({ t: 'msg', m: pub(m) });
+            this.broadcastMsg(m);
             await this.trim();
             return reply({ ok: true, id });
         }
@@ -108,8 +114,14 @@ export class ChatRoom {
     // 새로 들어온 소켓에 최근 메시지와 접속 수를 보내고, 모두에게 접속 수를 알린다. v: 브라우저 번호(없거나 이상하면 버린다)
     async welcome(ws, v) {
         ws.serializeAttachment(BROWSER_ID.test(v || '') ? { v } : {});
-        ws.send(JSON.stringify({ t: 'hello', history: (await this.recent()).map(pub), online: this.online() }));
+        ws.send(JSON.stringify(await this.hello(false)));
         this.broadcastCount();
+    }
+
+    // 들어올 때 · 로그인했을 때 · 비회원이 다시 받을 때 보내는 목록(최근 HISTORY 개). 비회원은 12시간이 안 된 것의 내용을 뺀다(delay: 시간)
+    async hello(member) {
+        const list = await this.recent(), now = Date.now();
+        return { t: 'hello', history: list.map(m => (member ? pub(m) : guestPub(m, now))), online: this.online(), delay: member ? 0 : GUEST_DELAY_MS / 3600000 };
     }
 
     // 접속 수 = 사람 수. 로그인한 소켓은 계정, 아니면 브라우저 번호로 묶는다. 로그인 확인 전인 탭도 같은 브라우저의 다른 탭이
@@ -146,6 +158,16 @@ export class ChatRoom {
 
     broadcastCount() { this.broadcast({ t: 'count', online: this.online() }); }
 
+    // 새 메시지: 로그인한 소켓에는 그대로, 비회원 소켓에는 내용 없이(masked — 12시간 뒤 'hist' 로 내용을 받는다)
+    broadcastMsg(m) {
+        const full = JSON.stringify({ t: 'msg', m: pub(m) }), masked = JSON.stringify({ t: 'msg', m: guestPub(m, m.at) });
+        for (const ws of this.state.getWebSockets()) {
+            let a = null;
+            try { a = ws.deserializeAttachment(); } catch (e) { /* 없음 */ }
+            try { ws.send(a && a.sub ? full : masked); } catch (e) { /* 이미 닫힘 */ }
+        }
+    }
+
     async webSocketMessage(ws, raw) {
         let msg;
         try { msg = JSON.parse(typeof raw === 'string' ? raw : new TextDecoder().decode(raw)); } catch (e) { return; }
@@ -162,8 +184,17 @@ export class ChatRoom {
             if (me.v) att.v = me.v;
             ws.serializeAttachment(att);
             say({ t: 'auth', ok: true, nick: att.nick, banned: !!(await this.storage.get('ban:' + att.sub)) });
+            if (!me.sub) say(await this.hello(true));   // 로그인하면 실시간 목록으로 바꿔 준다
             if (this.online() !== before) this.broadcastCount();   // 다른 브라우저의 같은 계정과 합쳐지면 줄어든다
             return;
+        }
+
+        // 비회원 화면이 12시간 지난 대화를 다시 받는다(1분에 한 번까지). 회원은 실시간이라 필요 없지만 같은 길로 받는다
+        if (msg.t === 'hist') {
+            const now = Date.now();
+            if (now - (me.histAt || 0) < HIST_GAP_MS) return;
+            ws.serializeAttachment(Object.assign(me, { histAt: now }));
+            return say(await this.hello(!!me.sub));
         }
 
         if (msg.t === 'say') {
@@ -181,7 +212,7 @@ export class ChatRoom {
             const m = { id, at: now, nick: me.nick, text: c.text, sub: me.sub };
             if (me.staff) m.staff = true;   // 운영자 표시
             await this.storage.put('msg:' + id, m);
-            this.broadcast({ t: 'msg', m: pub(m) });
+            this.broadcastMsg(m);
             await this.trim();
             // 랭킹 점수(한 마디 0.1점). 한 글자짜리·같은 말 반복은 세지 않는다 — 판단은 Community 가(하루 상한 포함)
             const plain = c.text.toLowerCase().replace(/[\s\p{P}\p{S}]+/gu, '');

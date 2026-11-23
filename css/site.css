@@ -2018,6 +2018,7 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 .chat-online { font-size: var(--fs-5); opacity: 0.85; }
 .chat-x { width: 28px; height: 28px; border: 0; background: none; color: #fff; font-size: var(--fs-1); line-height: 1; cursor: pointer; }
 .chat-rule { margin: 0; padding: 8px 12px; background: var(--soft, #f3f6fd); color: var(--muted); font-size: var(--fs-5); }
+.chat-text.is-masked { padding: 0; border: 0; background: none; color: var(--faint, #888); font: inherit; font-style: italic; text-align: left; cursor: pointer; }   /* 비회원 — 12시간이 안 된 메시지(js/chat.js textOf) */
 .chat-list { flex: 1; margin: 0; padding: 8px 12px; overflow-y: auto; list-style: none; font-size: var(--fs-3); }
 .chat-msg { padding: 4px 0; line-height: var(--lh-tight); word-break: break-word; }
 /* 알림 한 줄(2026-11-10 — LottoHex 점령 소식): 보라 바탕 · 진한 글자 */

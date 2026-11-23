@@ -1,11 +1,14 @@
 name: update-all-shops
 
-# 판매점 지도의 "일반 판매점" 층(shops-all.json). 판매점은 자주 안 바뀌어서 한 달에 한 번, 매달 2일 04:20 KST(1일 19:20 UTC).
-# 전국 1,458쪽(2026-10)을 1.2초 간격으로 받아 40분쯤 걸린다. 받은 뒤 지도 자료(store-map-*.json)를 다시 만든다.
+# 판매점 지도의 "일반 판매점" 층(shops-all.json) — 매주 수요일 04:20 KST(화요일 19:20 UTC).
+# 처음엔 매달(2일)이었으나 새로 연 판매점이 한 달 가까이 지도에 없었다(2026-11-23 사장님 — "친구가 다녀온 새 판매점이 안 나온다").
+# 토 · 일 · 월 당첨 자료 갱신(update-lotto-data)과 겹치지 않는 날. 전국 1,449쪽(2026-11)을 2초 간격으로 받아 50분쯤 — 사이트가 막으면
+# 쉬었다 잇고(최대 150분), 못 끝내면 새 판매점만 더해 저장한다(tools/update-all-shops.js 머리 주석).
+# 받은 뒤 지도 자료(store-map-*.json)를 다시 만든다.
 # 주의: schedule 은 저장소 기본 브랜치에 있는 워크플로만 실행된다.
 on:
   schedule:
-    - cron: "20 19 1 * *"
+    - cron: "20 19 * * 2"
   workflow_dispatch: {}
 
 permissions:
@@ -19,7 +22,7 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    timeout-minutes: 175   # 수집 예산 150분(SHOPS_BUDGET_MIN) + 지도 자료 만들기 · 커밋
     steps:
       - uses: actions/checkout@v4
 
@@ -29,6 +32,8 @@ jobs:
 
       - name: 전국 판매점 수집
         id: shops
+        env:
+          SHOPS_BUDGET_MIN: "150"
         run: node tools/update-all-shops.js
 
       - name: 지도 자료 다시 만들기
