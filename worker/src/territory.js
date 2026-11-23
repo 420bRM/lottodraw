@@ -18,7 +18,7 @@ export const gpsOn = env => String((env && env.GPS_VERIFY) || '').toLowerCase() 
 export const GEO_CONSENT = 1;     // 위치 이용 동의 문구 판(js/store-map.js 동의 창). 문구를 크게 바꾸면 올려서 다시 동의받는다
 export const GEO_RADIUS = 50;     // 판매점에서 이 거리(m) 안이면 인증
 export const GEO_ACC_MAX = 100;   // 위치 오차가 이보다 크면 판정하지 않는다(다시 시도 안내)
-export const GEO_TRIES = 100;     // 하루(한국 날짜) 위치 판정 시도 횟수 — 좌표 없이 횟수만 센다
+export const GEO_TRIES = 120;     // 하루(한국 날짜) 위치 판정 시도 횟수 — 좌표 없이 횟수만 센다(2026-11-23 사장님 100 → 120)
 export const GEO_LOG_DAYS = 183;  // 확인자료 보관(약 6개월) 뒤 한 시간 예약이 지운다
 export function distM(lat1, lng1, lat2, lng2) {   // 두 점 사이 거리(m, 대원거리)
     const R = 6371000, d = Math.PI / 180, x = Math.sin((lat2 - lat1) * d / 2), y = Math.sin((lng2 - lng1) * d / 2);
