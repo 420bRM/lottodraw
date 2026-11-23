@@ -337,7 +337,18 @@ details[open] > summary.card-title { padding-bottom: 0; }
 /* 패턴 두 묶음(2026-11-13): 특수 패턴 · 쏠림 패턴(선택) — 묶음 제목 아래 한 줄 설명, 쏠림은 점선으로 나눈다 */
 .pat-sub { margin: 0 0 4px; color: var(--text); font-size: var(--fs-4); font-weight: bold; }
 .pat-sub small { display: block; color: var(--muted); font-size: var(--fs-5); font-weight: normal; }
-.pat-bias { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); }
+.pat-bias { position: relative; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); }   /* relative: 잠겼을 때 덮개(.member-cover) */
+.pat-bias.is-locked .patterns { opacity: .55; }
+/* 계정에 보관한 번호(index.html #gen-keep, 2026-11-23) */
+.gen-keep { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 8px; }
+.gen-keep > summary { cursor: pointer; font-size: var(--fs-4); font-weight: 700; line-height: var(--lh-tight); }
+.gen-keep-body { padding-top: 8px; }
+.gen-keep-note { margin: 0 0 8px; color: var(--muted); font-size: var(--fs-5); line-height: var(--lh-body); }
+.gen-keep-day { margin-bottom: 12px; }
+.gen-keep-head { display: flex; align-items: center; gap: 8px; margin: 0 0 4px; font-size: var(--fs-4); line-height: var(--lh-tight); }
+.gen-keep-head small { color: var(--muted); font-size: var(--fs-5); }
+.gen-keep-head .btn { margin-left: auto; }
+.gen-keep-list { margin: 0; padding-left: 28px; font-size: var(--fs-4); line-height: var(--lh-body); font-variant-numeric: tabular-nums; }
 /* 예시는 항목 아래 작은 글씨 한 줄 — PC 두 칸 배치에서도 잘리지 않게. 두 줄 항목이 있어 체크박스는 첫 줄에 맞춘다 */
 .patterns li:has(.pat-eg) { align-items: flex-start; }
 .patterns li:has(.pat-eg) input { margin-top: 4px; }

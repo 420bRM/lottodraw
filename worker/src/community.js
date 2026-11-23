@@ -80,6 +80,8 @@ const DAY = 86400 * 1000;
 
 // 내 번호: 한 회차에 20게임(용지 4장), 모두 600게임, 최근 104회차(2년)까지. 넘치면 오래된 회차부터 지운다
 export const MYNUM = { perRound: 20, total: 600, rounds: 104 };
+// 생성 이력 계정 보관(2026-11-23 사장님 — 로그인 기능 확대): 한국 날짜별로 days 일, 하루 perDay 게임까지(최근 것), 한 번에 perCall 게임까지 받는다
+export const GENLOG = { days: 30, perDay: 100, perCall: 100 };
 const gameKey = n => n.join(',');
 
 export const REACT_TYPES = ['h', 'd', 'w'];   // ♥ 좋아요, $ 대박 기원, ₩ 원화
@@ -1003,6 +1005,7 @@ const OPS = {
         await this.storage.delete('q:' + sub);   // 자동 별명 대기열
         if (user.ref) await this.storage.delete('m:' + user.ref);
         await this.storage.delete('k:' + sub);   // 내 번호
+        await this.storage.delete('gl:' + sub);   // 생성 이력 계정 보관
         await this.storage.delete('nt:' + sub);  // 답글 알림
         if (user.terr || (await this.terrRow(sub))) await this.terrSet(sub, null);   // 영역 참여자 색인
         await this.storage.delete('hs:' + sub);   // 칸 알림 메일의 지난번 칸
@@ -1335,6 +1338,32 @@ const OPS = {
 /* ───── 내 번호 · 추첨 결과 메일 ───── */
 // OPS 에 합친다(아래 Object.assign). 번호는 index.js 가 다듬어(cleanGame) 넘긴다
 const NUM_OPS = {
+    // 생성 이력 계정 보관: gl:<sub> { d: { '한국 날짜': ['1,5,12,23,34,45', …] } } — 넣은 차례대로, 오래된 날은 넣을 때 · 볼 때 걷는다
+    async genLogGet({ sub, now }) {
+        const g = await this.storage.get('gl:' + sub);
+        const from = kstDay(now - (GENLOG.days - 1) * 86400000);
+        const days = Object.keys((g && g.d) || {}).filter(d => d >= from).sort().reverse().map(day => ({ day, sets: g.d[day] }));
+        return { days };
+    },
+    async genLogAdd({ sub, sets, now }) {
+        const user = await this.storage.get('u:' + sub);
+        if (!user) return { error: 'no_user' };
+        const g = (await this.storage.get('gl:' + sub)) || { d: {} };
+        const day = kstDay(now), from = kstDay(now - (GENLOG.days - 1) * 86400000);
+        g.d[day] = (g.d[day] || []).concat(sets.map(n => n.join(','))).slice(-GENLOG.perDay);
+        for (const d of Object.keys(g.d)) if (d < from) delete g.d[d];
+        await this.storage.put('gl:' + sub, g);
+        return { today: g.d[day].length };
+    },
+    // 하루(day) 또는 전부(day 없음) 지우기 — 생성기 "초기화"는 오늘 것을 함께 지운다
+    async genLogClear({ sub, day }) {
+        const g = await this.storage.get('gl:' + sub);
+        if (!g) return { ok: true };
+        if (day) delete g.d[day]; else g.d = {};
+        if (Object.keys(g.d).length) await this.storage.put('gl:' + sub, g); else await this.storage.delete('gl:' + sub);
+        return { ok: true };
+    },
+
     async numbersGet({ sub }) {
         const k = (await this.storage.get('k:' + sub)) || { g: [] };
         return { games: k.g };

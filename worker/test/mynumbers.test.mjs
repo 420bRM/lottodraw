@@ -6,7 +6,7 @@ import worker, { _resetForTests, _resultMailForTests as resultMail, Community } 
 import { _resetGoogleForTests } from '../src/google.js';
 import { b64urlEncode } from '../src/keys.js';
 import { saleRound, rankOf, cleanGame, sat } from '../src/lotto.js';
-import { MYNUM } from '../src/community.js';
+import { MYNUM, GENLOG } from '../src/community.js';
 
 const ADMIN = 'admin-token-0123456789abcdef';
 const ORIGIN = 'https://www.lottodraw.kr';
@@ -227,6 +227,46 @@ test('탈퇴하면 내 번호와 메일 구독도 지운다', async () => {
     assert.equal((await call(env, 'POST', '/api/me/delete', { headers: auth(s), body: { confirm: true } })).status, 200);
     assert.ok(!env.COMMUNITY._m.has('k:1001') && !env.COMMUNITY._m.has('ms:1001'), '남은 줄: ' + [...env.COMMUNITY._m.keys()].join(','));
     assert.equal((await call(env, 'GET', '/api/admin/status', { headers: asAdmin })).data.weekly.subs, 0);
+});
+
+test('생성 이력 계정 보관(2026-11-23): 로그인 회원만, 한국 날짜별 · 하루 100게임 · 30일, 잘못된 번호 거절, 하루 · 전부 지우기, 탈퇴하면 지운다', async () => {
+    const env = await fresh();
+    assert.equal((await call(env, 'GET', '/api/me/genlog')).status, 401);
+    assert.equal((await call(env, 'POST', '/api/me/genlog', { body: { sets: [[1, 2, 3, 4, 5, 6]] } })).status, 401);
+    const s = await login(env);
+    const add = sets => call(env, 'POST', '/api/me/genlog', { headers: auth(s), body: { sets } });
+    let r = await add([[6, 5, 4, 3, 2, 1], [7, 8, 9, 10, 11, 45]]);
+    assert.equal(r.status, 200);
+    assert.equal(r.data.today, 2);
+    assert.equal((await add([[1, 1, 2, 3, 4, 5]])).status, 400, '같은 번호');
+    assert.equal((await add([[1, 2, 3, 4, 5, 46]])).status, 400, '1~45 밖');
+    assert.equal((await add([])).status, 400);
+    assert.equal((await add(Array.from({ length: GENLOG.perCall + 1 }, () => [1, 2, 3, 4, 5, 6]))).status, 400);
+    let g = (await call(env, 'GET', '/api/me/genlog', { headers: auth(s) })).data;
+    const today = new Date(Date.now() + KST).toISOString().slice(0, 10);
+    assert.deepEqual(g.days, [{ day: today, sets: ['1,2,3,4,5,6', '7,8,9,10,11,45'] }], '번호는 정렬해 넣은 차례대로');
+    assert.equal(g.keepDays, 30);
+    // 하루 100게임까지(최근 것), 30일 지난 날은 걷는다
+    const st = env.COMMUNITY._m.get('gl:1001');
+    st.d['2026-01-01'] = ['1,2,3,4,5,6'];
+    st.d[new Date(Date.now() + KST - 29 * 86400e3).toISOString().slice(0, 10)] = ['2,3,4,5,6,7'];
+    env.COMMUNITY._m.set('gl:1001', st);
+    for (let i = 0; i < 2; i++) await add(Array.from({ length: 60 }, (_, k) => [1, 2, 3, 4, 5, 6 + (k % 39)]));
+    g = (await call(env, 'GET', '/api/me/genlog', { headers: auth(s) })).data;
+    assert.equal(g.days.length, 2, '29일 전은 남고 오래된 날은 걷힌다');
+    assert.equal(g.days[0].sets.length, GENLOG.perDay);
+    assert.equal(g.days[0].sets[0], '1,2,3,4,5,26', '하루 한도를 넘으면 오래된 것부터 빠진다');
+    // 하루 지우기 · 전부 지우기
+    assert.equal((await call(env, 'POST', '/api/me/genlog/clear', { headers: auth(s), body: { day: 'x' } })).status, 400);
+    await call(env, 'POST', '/api/me/genlog/clear', { headers: auth(s), body: { day: today } });
+    assert.equal((await call(env, 'GET', '/api/me/genlog', { headers: auth(s) })).data.days.length, 1);
+    await call(env, 'POST', '/api/me/genlog/clear', { headers: auth(s), body: {} });
+    assert.ok(!env.COMMUNITY._m.has('gl:1001'));
+    // 탈퇴하면 지운다
+    await add([[1, 2, 3, 4, 5, 6]]);
+    assert.ok(env.COMMUNITY._m.has('gl:1001'));
+    assert.equal((await call(env, 'POST', '/api/me/delete', { headers: auth(s), body: { confirm: true } })).status, 200);
+    assert.ok(!env.COMMUNITY._m.has('gl:1001'));
 });
 
 /* ───── 추첨 결과 메일 ───── */
