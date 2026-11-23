@@ -26,7 +26,7 @@
 
 import { generateKeyPair, importPrivate, importPublic, signKey, verifyKey, parseKey, hex32, publicOnly, keyId, b64urlEncode } from './keys.js';
 import { plansFor, roundEndsAt } from './plans.js';
-import { community, SESSION_DAYS, REACT_TYPES, ITEM_RE, POINTS, COMMENT, TAP_KINDS, AD_RE, capText } from './community.js';
+import { community, SESSION_DAYS, REACT_TYPES, ITEM_RE, POINTS, COMMENT, TAP_KINDS, AD_RE, capText, GENLOG } from './community.js';
 import { verifyGoogleToken } from './google.js';
 import { saleRound, cleanGame, rankOf, kstParts, drawDay } from './lotto.js';
 
@@ -138,6 +138,9 @@ async function route(request, env, ctx) {
     if (path === '/api/me/comments' && method === 'GET') return myComments(request, env);
     if (path === '/api/me/notes' && method === 'GET') return myNotes(request, env, false);
     if (path === '/api/me/notes/read' && method === 'POST') return myNotes(request, env, true);
+    if (path === '/api/me/genlog' && method === 'GET') return getGenLog(request, env);
+    if (path === '/api/me/genlog' && method === 'POST') return addGenLog(request, env);
+    if (path === '/api/me/genlog/clear' && method === 'POST') return clearGenLog(request, env);
     if (path === '/api/me/numbers' && method === 'GET') return getNumbers(request, env);
     if (path === '/api/me/numbers' && method === 'POST') return addNumbers(request, env);
     if (path === '/api/me/numbers/delete' && method === 'POST') return deleteNumbers(request, env);
@@ -1051,6 +1054,37 @@ async function setVisitBadge(request, env) {
     const r = await community(env, 'setVisitBadge', { sub: s.sub, on: body.on });
     if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
     return json(request, env, { user: r.user });
+}
+
+/* ───── 생성 이력 계정 보관 (2026-11-23 사장님 — 로그인 기능 확대) ───── */
+// 로그인한 회원이 홈 번호 생성기로 만든 번호를 한국 날짜별로 GENLOG.days 일(하루 GENLOG.perDay 게임) 계정에 두어 다른 기기에서도 본다.
+// 받는 것은 번호 6개 묶음뿐. 화면은 몇 초씩 모아 보낸다(js/account.js genLog). 탈퇴하면 함께 지운다
+async function getGenLog(request, env) {
+    const s = await sessionUser(request, env);
+    const r = await community(env, 'genLogGet', { sub: s.sub, now: Date.now() });
+    return json(request, env, { days: r.days, keepDays: GENLOG.days });
+}
+async function addGenLog(request, env) {
+    const s = await sessionUser(request, env);
+    await limited(env.REACT_LIMIT, s.hash);
+    const body = await readJson(request);
+    const raw = Array.isArray(body.sets) ? body.sets : [];
+    if (!raw.length || raw.length > GENLOG.perCall) throw new HttpError(400, 'bad_sets', `한 번에 1~${GENLOG.perCall}게임까지 보관할 수 있습니다.`);
+    const sets = raw.map(cleanGame);
+    if (sets.some(g => !g)) throw new HttpError(400, 'bad_sets', '1~45 사이의 서로 다른 번호 6개여야 합니다.');
+    const r = await community(env, 'genLogAdd', { sub: s.sub, sets, now: Date.now() });
+    if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
+    return json(request, env, { ok: true, today: r.today });
+}
+// { day: '2026-11-23' } 그날 것, 빼면 전부
+async function clearGenLog(request, env) {
+    const s = await sessionUser(request, env);
+    await limited(env.REACT_LIMIT, s.hash);
+    const body = await readJson(request);
+    const day = typeof body.day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.day) ? body.day : null;
+    if (body.day !== undefined && body.day !== null && !day) throw new HttpError(400, 'bad_day', '날짜가 올바르지 않습니다.');
+    await community(env, 'genLogClear', { sub: s.sub, day });
+    return json(request, env, { ok: true });
 }
 
 /* ───── 내 번호 (마이페이지 · 홈 생성기 "내 번호에 저장") ───── */

@@ -728,8 +728,25 @@
     });
 
     // js/chat.js · js/comments.js · TOP 50 그래프가 쓰는 길
+    // 생성 이력 계정 보관(2026-11-23): 홈 생성기가 만든 번호를 몇 초 모아 한 번에 보낸다(로그인한 경우만). 페이지를 떠날 때도 보낸다(keepalive)
+    let glQueue = [], glTimer = 0;
+    function glFlush() {
+        clearTimeout(glTimer);
+        const sets = glQueue;
+        glQueue = [];
+        if (!sets.length || !local.get(SESSION_STORE)) return;
+        request('/api/me/genlog', { method: 'POST', auth: true, body: { sets: sets }, keepalive: true }).catch(() => {});
+    }
+    window.addEventListener('pagehide', glFlush);
+    const genLog = {
+        add: sets => { if (!local.get(SESSION_STORE)) return; glQueue = glQueue.concat(sets).slice(-100); clearTimeout(glTimer); glTimer = setTimeout(glFlush, 2500); },
+        list: () => { glFlush(); return request('/api/me/genlog', { auth: true }); },
+        clear: day => request('/api/me/genlog/clear', { method: 'POST', auth: true, body: day ? { day: day } : {} }),
+    };
+
     window.LottoAccount = {
         openLogin: r => (login ? openLogin(r) : null),
+        genLog: genLog,   // 홈 생성기 — 계정에 보관한 번호
         adEvent: e => adEvent(e),   // 광고 유입 집계: 'u' 지도 써 봄(js/store-map.js)
         inApp: () => IN_APP,
         openNick: first => (me ? openNick(!!first) : null),
