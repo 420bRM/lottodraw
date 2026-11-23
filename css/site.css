@@ -111,9 +111,12 @@ a { color: var(--link, #0066cc); }
 .latest-callout { margin: 0; color: var(--brand); font-weight: bold; font-variant-numeric: tabular-nums; }
 .latest-callout .bonus-sep { color: var(--muted); }
 .sticker {
+    /* 머리글 단추 넷(5개월 통계 · 내 계정 · 랭킹 · KO/EN)은 같은 높이 28px(2026-11-23 사장님 — "위아래 폭 맞춰줘").
+       글 속 <b> 사이 띄어쓰기가 사라지지 않게 flex 대신 inline-block + 한 줄 높이 20px + 위아래 4px */
     display: inline-block;
-    padding: 8px 16px;
+    padding: 4px 16px;
     border-radius: 6px;
+    line-height: 20px;   /* 예외: 머리글 단추 높이 28px 맞춤(한 줄 고정) */
     background: var(--brand-bg, var(--brand));
     color: #fff;
     font-size: var(--fs-4);
@@ -129,28 +132,28 @@ a { color: var(--link, #0066cc); }
     .banner-right { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 8px; width: 100%; }
     .banner-right .latest-callout { flex: 1 1 100%; min-width: 0; order: 0; }
     .banner-right .acct-head { order: 1; flex: 1 1 auto; flex-wrap: wrap; max-width: 100%; }   /* 남는 폭을 차지해 5개월 통계 · 언어를 오른쪽 끝에 붙인다 */
-    .banner-right .sticker { order: 2; margin-left: auto; padding: 8px 12px; font-size: var(--fs-4); }
+    .banner-right .sticker { order: 2; margin-left: auto; padding: 4px 12px; font-size: var(--fs-4); }
     .banner-right .lang-switch { order: 3; }
-    .banner-right .lang-switch button { padding: 4px 8px; }
-    .banner-right .acct-btn, .banner-right .acct-rank { padding: 4px 8px; }
+    .banner-right .lang-switch button { padding: 0 8px; }
+    .banner-right .acct-btn, .banner-right .acct-rank { padding: 0 8px; }
 }
 @media (max-width: 399px) {   /* 로그인 단추 · 5개월 통계 · 언어가 한 줄에 들어가게 조금씩 줄인다 */
     .banner-right { gap: 8px 8px; }
-    .banner-right .sticker { padding: 8px 8px; font-size: var(--fs-4); }
-    .banner-right .acct-btn, .banner-right .acct-rank { padding: 4px 8px; font-size: var(--fs-5); }
+    .banner-right .sticker { padding: 4px 8px; font-size: var(--fs-4); }
+    .banner-right .acct-btn, .banner-right .acct-rank { padding: 0 8px; font-size: var(--fs-5); }
     .banner-right .lang-switch { font-size: var(--fs-5); }
-    .banner-right .lang-switch button { padding: 4px 8px; }
+    .banner-right .lang-switch button { padding: 0 8px; }
 }
 @media (max-width: 379px) {
     .banner-right { gap: 8px 4px; }
     .banner-right .latest-callout { font-size: var(--fs-3); letter-spacing: -0.02em; }
-    .banner-right .sticker { padding: 8px 8px; }
-    .banner-right .acct-btn, .banner-right .acct-rank { padding: 4px 8px; }
-    .banner-right .lang-switch button { padding: 4px 8px; }
+    .banner-right .sticker { padding: 4px 8px; }
+    .banner-right .acct-btn, .banner-right .acct-rank { padding: 0 8px; }
+    .banner-right .lang-switch button { padding: 0 8px; }
 }
 @media (max-width: 339px) {
     .banner-right .latest-callout { font-size: var(--fs-4); letter-spacing: -0.03em; }
-    .banner-right .sticker { padding: 8px 8px; font-size: var(--fs-5); }
+    .banner-right .sticker { padding: 4px 8px; font-size: var(--fs-5); }
 }
 
 /* ───── 내비게이션 ───── */
@@ -1742,6 +1745,8 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 
 .lang-switch {
     display: inline-flex;
+    box-sizing: border-box;
+    min-height: 28px;   /* 머리글 단추와 같은 높이(.sticker 주석) */
     border: 1px solid var(--line);
     border-radius: 6px;
     overflow: hidden;
@@ -1750,7 +1755,8 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 }
 .lang-switch button {
     margin: 0;
-    padding: 4px 12px;
+    padding: 0 12px;
+    line-height: var(--lh-tight);
     border: 0;
     background: var(--surface, #fff);
     color: var(--muted);
@@ -1769,14 +1775,14 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 /* ───── 로그인 · 좋아요 (js/account.js) ───── */
 .acct-head { position: relative; display: inline-flex; align-items: center; gap: 8px; }
 .acct-rank {
-    display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px;
+    display: inline-flex; align-items: center; gap: 4px; box-sizing: border-box; min-height: 28px; padding: 0 12px;
     border: 1px solid var(--line); border-radius: 6px; background: var(--surface, #fff); color: var(--text);
     font: bold var(--fs-4)/var(--lh-tight) var(--font); text-decoration: none; white-space: nowrap;
 }
 .acct-rank:hover, .acct-rank[aria-current="page"] { border-color: var(--brand); color: var(--brand); }
 .acct-btn {
     display: inline-flex; align-items: center; gap: 8px;
-    margin: 0; padding: 4px 12px;
+    box-sizing: border-box; min-height: 28px; margin: 0; padding: 0 12px;
     border: 1px solid var(--brand); border-radius: 6px;
     background: var(--surface, #fff); color: var(--brand);
     font: bold var(--fs-4)/var(--lh-tight) var(--font); cursor: pointer; white-space: nowrap;
