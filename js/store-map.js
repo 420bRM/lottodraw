@@ -206,7 +206,8 @@
     // ───── 동네 찾기 표시(2026-11-16 사장님 — "LottoHex 맵에서 자기 동네를 못 찾아 애먹는 사람이 많다") ─────
     // ① 시 · 도 / 시 · 군 · 구 / 읍 · 면 · 동 이름: 검색창 지역 찾기와 같은 행정동 자료(store-map-places.json)로 직접 쓴다(한국어 화면만 — 자료에 영어 이름이 없다).
     //    시 · 군 · 구 이름은 한 줄로, 시 · 도보다 옅은 회색(처음엔 위에 시 · 도를 작게 얹었다 — 2026-11-17 사장님: 시 · 도는 넓게 볼 때 이미 보이니 빼고, 그 회색을 구 이름에). 바탕 지도의 같은 이름은 감춘다(두 번 나오지 않게)
-    // ② 학교(초 · 중 · 고) · 대학교 · 공원 · 도서관 · 공공건물(시청 · 구청 · 주민센터 · 경찰서 · 소방서 · 우체국 · 법원) · 공영주차장: 바탕 지도 자료(OpenMapTiles poi)에서 골라 그림 표시와 함께.
+    // ② 학교(초 · 중 · 고) · 대학교 · 공원 · 도서관 · 행정 건물(시청 · 구청 · 군청 · 도청 · 주민센터 · 법원) · 공영주차장: 바탕 지도 자료(OpenMapTiles poi)에서 골라 그림 표시와 함께.
+    //    우체국 · 경찰서 · 소방서 · 그 밖의 공공기관(복지관 등)은 뺐다(2026-11-23 사장님 설문 — "모든 공공건물이 다 나올 필요는 없다").
     //    자료가 줌 14부터 들어 있다(넓은 대학은 12부터). 판매점 · 역 이름이 먼저 자리를 잡고, 겹치면 이쪽이 빠진다
     // ③ 공원은 옅은 초록 면, 호수 · 강 이름은 파랗게(whiteModel). 땅따먹기 칸 면은 바탕 지도 글자 밑으로(drawTerrLayers) — 칸이 동네 이름을 덮어 흐렸다
     const LB = { water: '#d5e3ef', npark: '#e7efe2', park: '#e0ecd8', wtext: '#3a6ca3', adm4: '#8d97a8', adm6: '#a7afbd' };
@@ -216,6 +217,7 @@
         uni: ['#7a5cc8', '#5a3fa8', '#bba6f2'], gov: ['#5d6b84', '#46536b', '#b6c1d4'], sch: ['#c27a2c', '#8a531a', '#e2a868'],
         park: ['#3f9a5c', '#2f7445', '#82d09a'], lib: ['#2c8a86', '#1f6f6b', '#78cbc5'], pk: ['#3a6fc4', '#2f5ea8', '#93b4ee'],
     };
+    const GOV_NAMES = ['시청', '구청', '군청', '도청', '주민센터', '행정복지센터', '법원', '등기소'];
     const poiKind = ['match', ['get', 'class'], 'college', 'uni', 'school', 'sch', 'park', 'park', 'library', 'lib', 'parking', 'pk', 'gov'];
     function poiIcon(k) {
         const S = 36, cv = document.createElement('canvas');
@@ -244,10 +246,10 @@
         map.addLayer({ id: 'lb-poi', type: 'symbol', source: src, 'source-layer': 'poi', minzoom: 12,
             filter: ['all', ['has', 'name'], ['any',
                 ['all', cls('school'), sub('school')],   // 유치원은 빼고
-                cls('college'), cls('town_hall'),
+                cls('college'),
+                ['all', cls('town_hall'), ['any', sub('courthouse'), ...GOV_NAMES.map(w => ['in', w, ['to-string', ['get', 'name']]])]],   // 행정 건물은 이름으로 가른다(시청 · 구청 · 주민센터가 모두 townhall)
                 ['all', cls('park'), sub('park')],
                 ['all', cls('library'), sub('library')],   // 서점(books)은 빼고
-                ['match', ['get', 'subclass'], ['police', 'fire_station', 'post_office'], true, false],
                 ['all', sub('parking'), ['in', '공영', ['to-string', ['get', 'name']]]]]],   // 주차장은 이름에 '공영'이 든 곳만
             layout: {
                 'icon-image': ['concat', 'lb-i-', poiKind], 'icon-size': ['interpolate', ['linear'], ['zoom'], 13, 0.78, 16, 1], 'icon-padding': 1,

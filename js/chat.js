@@ -81,6 +81,12 @@
     ]);
     const online = el('span', { className: 'chat-online' });
     const list = el('ol', { className: 'chat-list', 'aria-live': 'polite' });
+    // 비회원 안내(2026-11-23 사장님): 서버가 12시간 지난 대화만 준다(worker/src/chat.js GUEST_DELAY_MS) — 로그인하면 실시간
+    const guestNote = el('p', { className: 'chat-guest', hidden: '' }, [
+        el('span', { className: 'chat-guest-t' }), ' ',
+        el('button', { type: 'button', className: 'chat-guest-go', text: tr('chat.guestGo', '로그인하고 실시간으로 보기'),
+            on: { click: () => A.openLogin(tr('chat.loginReason', '채팅은 로그인한 회원이 쓸 수 있습니다.')) } }),
+    ]);
     const status = el('p', { className: 'chat-status', role: 'status' });
     const input = el('input', { type: 'text', className: 'chat-input', maxlength: '200', autocomplete: 'off', placeholder: tr('chat.ph', '메시지 입력 (200자)'),
         'aria-label': tr('chat.ph', '메시지 입력 (200자)') });
@@ -95,6 +101,7 @@
             el('button', { type: 'button', className: 'chat-x', 'aria-label': tr('acct.close', '닫기'), text: '×', on: { click: () => toggle(false) } }),
         ]),
         el('p', { className: 'chat-rule', text: tr('chat.rule', '메시지는 24시간 뒤 사라집니다 · 링크·연락처·홍보 금지') }),
+        guestNote,
         list,
         status,
         gate,
@@ -103,7 +110,11 @@
     document.body.appendChild(fab);
     document.body.appendChild(panel);
 
-    const fmt = ms => { const d = new Date(ms); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+    // 오늘이 아니면 날짜도(비회원은 12~24시간 전 대화를 본다)
+    const fmt = ms => {
+        const d = new Date(ms), hm = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+        return d.toDateString() === new Date().toDateString() ? hm : (d.getMonth() + 1) + '/' + d.getDate() + ' ' + hm;
+    };
 
     function myNick() {
         const me = A.me && A.me();
@@ -174,16 +185,17 @@
             retry = 0;
             status.textContent = '';
             const s = A.session && A.session();
+            authWait = !!s;
             if (s) ws.send(JSON.stringify({ t: 'auth', session: s }));
         };
         ws.onmessage = e => {
             let m;
             try { m = JSON.parse(e.data); } catch (x) { return; }
             if (m.t === 'hello') {
-                list.textContent = '';
-                (m.history || []).forEach(addMsg);
-                if (!(m.history || []).length) list.appendChild(el('li', { className: 'chat-empty', text: tr('chat.empty', '아직 조용합니다. 첫 마디를 남겨 보세요.') }));
                 setOnline(m.online || 0);
+                // 로그인한 브라우저는 들어올 때 받는 비회원 목록을 그리지 않고 로그인 확인 뒤 오는 실시간 목록을 기다린다(깜빡임 없이). 확인이 실패하면 그때 그린다
+                if (m.delay && authWait) { heldHello = m; return; }
+                renderHello(m);
             } else if (m.t === 'msg') {
                 const empty = list.querySelector('.chat-empty');
                 if (empty) empty.remove();
@@ -194,6 +206,9 @@
             } else if (m.t === 'count') {
                 setOnline(m.online || 0);
             } else if (m.t === 'auth') {
+                authWait = false;
+                if (!m.ok && heldHello) renderHello(heldHello);
+                heldHello = null;
                 banned = !!m.banned;
                 renderGate();
             } else if (m.t === 'err') {
@@ -203,11 +218,28 @@
         };
         ws.onclose = () => {
             ws = null;
+            guestMode(0);
             if (!isOpen) return;
             retry = Math.min(retry + 1, 6);
             status.textContent = tr('chat.reconnect', '연결이 끊겼습니다. 다시 붙는 중…');
             setTimeout(connect, 1000 * Math.pow(2, retry - 1));
         };
+    }
+
+    // 비회원: 안내를 보이고 5분마다 12시간 지난 대화를 다시 받는다(서버는 1분에 한 번까지). 회원이 되면(delay 0) 멈춘다
+    let guestTimer = null, authWait = false, heldHello = null;
+    function renderHello(m) {
+        list.textContent = '';
+        (m.history || []).forEach(addMsg);
+        if (!(m.history || []).length) list.appendChild(el('li', { className: 'chat-empty', text: m.delay
+            ? tr('chat.emptyGuest', '{h}시간이 지난 대화가 아직 없습니다.', { h: m.delay }) : tr('chat.empty', '아직 조용합니다. 첫 마디를 남겨 보세요.') }));
+        guestMode(m.delay || 0);
+    }
+    function guestMode(h) {
+        guestNote.hidden = !h;
+        if (h) guestNote.querySelector('.chat-guest-t').textContent = tr('chat.guest', '비회원은 {h}시간이 지난 대화만 볼 수 있습니다.', { h });
+        if (h && !guestTimer) guestTimer = setInterval(() => { if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'hist' })); }, 5 * 60 * 1000);
+        if (!h && guestTimer) { clearInterval(guestTimer); guestTimer = null; }
     }
 
     function send() {
