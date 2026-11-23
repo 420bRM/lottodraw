@@ -125,11 +125,12 @@ test('채팅: 읽기는 누구나, 쓰기는 로그인+별명, 3초에 한 번, 
     await send(room, a, { t: 'auth', session: sA });
     assert.equal(a.last('auth').nick, '행운의곰');
     await send(room, a, { t: 'say', text: '토요일 추첨 기다리는 중' });
-    const got = guest.last('msg');
+    const got = b.last('msg');
     assert.equal(got.m.nick, '행운의곰');
     assert.equal(got.m.text, '토요일 추첨 기다리는 중');
     assert.equal(got.m.sub, undefined, '계정 번호는 내보내지 않는다');
-    assert.ok(b.last('msg'), '모두에게 간다');
+    assert.ok(a.last('msg'), '로그인한 사람 모두에게 간다');
+    assert.deepEqual([guest.last('msg').m.nick, guest.last('msg').m.text, guest.last('msg').m.masked], ['행운의곰', null, true], '비회원에게는 온 것만 — 내용은 12시간 뒤(2026-11-23)');
 
     await send(room, a, { t: 'say', text: '또' });
     assert.equal(a.last('err').code, 'slow');
@@ -189,6 +190,30 @@ test('채팅 접속 수는 사람 수: 같은 브라우저의 여러 탭 · 같�
     assert.equal(room.online(), 0);
 });
 
+test('채팅 비회원(2026-11-23): 메시지가 온 것은 다 보이고 12시간이 안 된 것은 내용 없이, 다시 받기는 1분에 한 번, 로그인하면 내용까지', async () => {
+    const { env, room, enter } = setup();
+    const put = async (agoH, text) => { const at = Date.now() - agoH * 3600e3, id = String(at).padStart(16, '0') + '-x'; await room.storage.put('msg:' + id, { id, at, nick: '누구', text, sub: 'Z' }); };
+    await put(20, '스무시간전'); await put(13, '열세시간전'); await put(12.01, '곧열두시간'); await put(1, '한시간전');
+    const g = await enter('browser-gggggggggggggggg');
+    const shown = () => g.last('hello').history.map(m => m.masked ? '(가림)' : m.text);
+    assert.deepEqual(shown(), ['스무시간전', '열세시간전', '곧열두시간', '(가림)']);
+    assert.equal(g.last('hello').delay, 12);
+    assert.ok(g.last('hello').history.every(m => m.nick === '누구' && m.at), '별명 · 시각은 보인다');
+    assert.equal(JSON.stringify(g.sent).includes('한시간전'), false, '가린 내용은 보내지 않는다');
+    await put(11.99, '거의열두시간');
+    await send(room, g, { t: 'hist' });
+    assert.deepEqual(shown(), ['스무시간전', '열세시간전', '곧열두시간', '(가림)', '(가림)']);
+    const n = g.sent.length;
+    await send(room, g, { t: 'hist' });
+    assert.equal(g.sent.length, n, '1분 안에 다시 받지 않는다');
+    // 로그인하면 내용까지, 새 메시지도 그대로
+    await send(room, g, { t: 'auth', session: await member(env, 'G', '손님') });
+    assert.deepEqual(shown(), ['스무시간전', '열세시간전', '곧열두시간', '거의열두시간', '한시간전']);
+    assert.equal(g.last('hello').delay, 0);
+    await send(room, g, { t: 'say', text: '이제 보입니다' });
+    assert.equal(g.last('msg').m.text, '이제 보입니다');
+});
+
 test('채팅: 24시간 지난 메시지는 보이지 않고 지워진다', async () => {
     const { env, room, join } = setup();
     const a = join();
@@ -206,6 +231,7 @@ test('채팅 관리: 관리자가 메시지를 지우고, 회원을 채팅 금�
     const a = join(), viewer = join();
     const sA = await member(env, 'A', '말썽꾼');
     await send(room, a, { t: 'auth', session: sA });
+    await send(room, viewer, { t: 'auth', session: await member(env, 'V') });   // 새 메시지는 로그인한 사람에게만(2026-11-23)
     await send(room, a, { t: 'say', text: '첫 마디' });
 
     let list = (await call(env, 'GET', '/api/admin/chat', { headers: asAdmin })).data;
@@ -252,19 +278,23 @@ test('채팅: 운영자 계정의 메시지에는 운영자 표시가 붙는다'
     await call(env, 'POST', '/api/admin/members/OP/staff', { headers: asAdmin });
     await call(env, 'POST', '/api/me/nickname', { body: { nickname: '운영자' }, headers: { Authorization: 'Bearer ' + s } });
     await send(room, ws, { t: 'auth', session: s });
+    await send(room, viewer, { t: 'auth', session: await member(env, 'V') });
     await send(room, ws, { t: 'say', text: '공지: 토요일 밤에 만나요' });
     assert.deepEqual([viewer.last('msg').m.nick, viewer.last('msg').m.staff], ['운영자', true]);
 });
 
-test('채팅 알림 한 줄(점령 소식): 별명 · 계정 없이 sys 로 모두에게, 들어온 사람에게도 보이고, 빈 글은 거절', async () => {
-    const { room, join, enter } = setup();
+test('채팅 알림 한 줄(점령 소식): 별명 · 계정 없이 sys 로 회원에게, 들어온 회원에게도 보이고, 빈 글은 거절', async () => {
+    const { env, room, join, enter } = setup();
     const viewer = join();
+    await send(room, viewer, { t: 'auth', session: await member(env, 'V') });
     const r = await room.fetch(new Request('https://chat/system', { method: 'POST', body: JSON.stringify({ kind: 'cap', text: '🚩 가나다님이 1번째 블록을 점령했습니다' }) }));
     assert.equal(r.status, 200);
     const m = viewer.last('msg').m;
     assert.deepEqual([m.nick, m.sys, m.text, m.sub], [null, 'cap', '🚩 가나다님이 1번째 블록을 점령했습니다', undefined]);
     const late = await enter('browser-aaaaaaaaaaaaaaaa');
-    assert.equal(late.last('hello').history.slice(-1)[0].sys, 'cap', '나중에 들어와도 최근 목록에');
+    assert.deepEqual(late.last('hello').history.map(x => [x.sys, x.masked, x.text]), [['cap', true, null]], '비회원은 온 것만, 내용은 12시간 뒤에');
+    await send(room, late, { t: 'auth', session: await member(env, 'L') });
+    assert.equal(late.last('hello').history.slice(-1)[0].sys, 'cap', '로그인하면 나중에 들어와도 최근 목록에');
     assert.equal((await room.fetch(new Request('https://chat/system', { method: 'POST', body: JSON.stringify({ kind: 'cap', text: '  ' }) }))).status, 400);
 });
 

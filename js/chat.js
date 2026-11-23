@@ -103,18 +103,27 @@
     document.body.appendChild(fab);
     document.body.appendChild(panel);
 
-    const fmt = ms => { const d = new Date(ms); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+    // 오늘이 아니면 날짜도(비회원은 12~24시간 전 대화를 본다)
+    const fmt = ms => {
+        const d = new Date(ms), hm = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+        return d.toDateString() === new Date().toDateString() ? hm : (d.getMonth() + 1) + '/' + d.getDate() + ' ' + hm;
+    };
 
     function myNick() {
         const me = A.me && A.me();
         return me && me.user ? me.user.nick : null;
     }
 
+    // 비회원(2026-11-23 사장님 — 로그인 유도): 서버가 12시간이 안 된 메시지의 내용을 빼고 보낸다(masked) — 내용 자리에 안내, 누르면 로그인
+    const textOf = m => (m.masked
+        ? el('button', { type: 'button', className: 'chat-text is-masked', text: tr('chat.masked', '비회원은 12시간 후 확인 가능합니다'),
+            title: tr('chat.guestGo', '로그인하고 실시간으로 보기'), on: { click: () => A.openLogin(tr('chat.loginReason', '채팅은 로그인한 회원이 쓸 수 있습니다.')) } })
+        : el('span', { className: 'chat-text', text: m.text }));
     function addMsg(m) {
         if (list.querySelector('[data-id="' + CSS.escape(m.id) + '"]')) return;
         if (m.sys) {   // 알림(2026-11-10 — LottoHex 점령 소식): 별명 없이 다른 색 한 줄
             list.appendChild(el('li', { className: 'chat-msg is-sys is-sys-' + m.sys, 'data-id': m.id }, [
-                el('span', { className: 'chat-text', text: m.text }),
+                textOf(m),
                 el('time', { className: 'chat-time', text: fmt(m.at) }),
             ]));
             while (list.children.length > 200) list.removeChild(list.firstChild);
@@ -125,7 +134,7 @@
         list.appendChild(el('li', { className: 'chat-msg' + (mine ? ' is-mine' : ''), 'data-id': m.id }, [
             el('span', { className: 'chat-nick' + (m.staff ? ' is-staff' : ''), text: m.nick }),
             m.staff ? el('span', { className: 'chat-staff', text: tr('chat.staff', '운영자') }) : null,
-            el('span', { className: 'chat-text', text: m.text }),
+            textOf(m),
             el('time', { className: 'chat-time', text: fmt(m.at) }),
         ]));
         while (list.children.length > 200) list.removeChild(list.firstChild);
@@ -174,16 +183,17 @@
             retry = 0;
             status.textContent = '';
             const s = A.session && A.session();
+            authWait = !!s;
             if (s) ws.send(JSON.stringify({ t: 'auth', session: s }));
         };
         ws.onmessage = e => {
             let m;
             try { m = JSON.parse(e.data); } catch (x) { return; }
             if (m.t === 'hello') {
-                list.textContent = '';
-                (m.history || []).forEach(addMsg);
-                if (!(m.history || []).length) list.appendChild(el('li', { className: 'chat-empty', text: tr('chat.empty', '아직 조용합니다. 첫 마디를 남겨 보세요.') }));
                 setOnline(m.online || 0);
+                // 로그인한 브라우저는 들어올 때 받는 비회원 목록을 그리지 않고 로그인 확인 뒤 오는 실시간 목록을 기다린다(깜빡임 없이). 확인이 실패하면 그때 그린다
+                if (m.delay && authWait) { heldHello = m; return; }
+                renderHello(m);
             } else if (m.t === 'msg') {
                 const empty = list.querySelector('.chat-empty');
                 if (empty) empty.remove();
@@ -194,6 +204,9 @@
             } else if (m.t === 'count') {
                 setOnline(m.online || 0);
             } else if (m.t === 'auth') {
+                authWait = false;
+                if (!m.ok && heldHello) renderHello(heldHello);
+                heldHello = null;
                 banned = !!m.banned;
                 renderGate();
             } else if (m.t === 'err') {
@@ -203,11 +216,25 @@
         };
         ws.onclose = () => {
             ws = null;
+            guestMode(0);
             if (!isOpen) return;
             retry = Math.min(retry + 1, 6);
             status.textContent = tr('chat.reconnect', '연결이 끊겼습니다. 다시 붙는 중…');
             setTimeout(connect, 1000 * Math.pow(2, retry - 1));
         };
+    }
+
+    // 비회원: 5분마다 목록을 다시 받아 12시간이 지난 메시지의 내용을 채운다(서버는 1분에 한 번까지). 회원이 되면(delay 0) 멈춘다
+    let guestTimer = null, authWait = false, heldHello = null;
+    function renderHello(m) {
+        list.textContent = '';
+        (m.history || []).forEach(addMsg);
+        if (!(m.history || []).length) list.appendChild(el('li', { className: 'chat-empty', text: tr('chat.empty', '아직 조용합니다. 첫 마디를 남겨 보세요.') }));
+        guestMode(m.delay || 0);
+    }
+    function guestMode(h) {
+        if (h && !guestTimer) guestTimer = setInterval(() => { if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'hist' })); }, 5 * 60 * 1000);
+        if (!h && guestTimer) { clearInterval(guestTimer); guestTimer = null; }
     }
 
     function send() {

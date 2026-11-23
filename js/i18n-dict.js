@@ -1261,6 +1261,8 @@ window.I18N_DICT = {
     'chat.ph':        { ko: '메시지 입력 (200자)', en: 'Type a message (200 chars)' },
     'chat.send':      { ko: '보내기', en: 'Send' },
     'chat.empty':     { ko: '아직 조용합니다. 첫 마디를 남겨 보세요.', en: 'It’s quiet. Say the first word.' },
+    'chat.masked':    { ko: '비회원은 12시간 후 확인 가능합니다', en: 'Sign in to read now (visible to guests after 12 hours)' },
+    'chat.guestGo':   { ko: '로그인하고 실시간으로 보기', en: 'Sign in to see it live' },
     'chat.connecting':{ ko: '연결하는 중…', en: 'Connecting…' },
     'chat.reconnect': { ko: '연결이 끊겼습니다. 다시 붙는 중…', en: 'Disconnected. Reconnecting…' },
     'chat.fail':      { ko: '채팅에 연결하지 못했습니다.', en: 'Could not connect to chat.' },
