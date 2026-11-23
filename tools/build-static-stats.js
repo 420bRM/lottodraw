@@ -188,9 +188,25 @@ const TIER = (() => {
 // 1등 판매점 통계의 자료 (페이지는 아래 storesPage — 설명은 그 위)
 const STORES_FILE = 'statistics-stores.html';
 const STORES_SINCE = '2026-10-17';   // 판매점 페이지와 링크를 넣은 날
+// 판매점 위치 손 고침(2026-11-23 사장님 — 광교 "호수공원 복권방"이 실제 가게에서 약 350m 떨어진 호수 둘레길에 찍혀 있었다).
+// 동행복권 좌표가 실제 가게와 크게 다른 곳만 shops-fix.json 에 { 번호: { at: [위도, 경도], from: [동행복권 위도, 경도], why } } 로 적는다.
+// 매주 받는 shops-all.json · stores-data.json 은 그대로 두고 지도 자료(점 · 칸 · 위치 인증 좌표)를 만들 때만 바꾼다 — 다음 수집이 되돌리지 않는다.
+// 동행복권 좌표가 from 에서 30m 넘게 바뀌었으면(가게가 옮겼거나 동행복권이 고쳤다) 적용하지 않고 알린다 — 그 줄은 지우거나 다시 본다.
+const SHOP_FIX = (() => { try { return JSON.parse(read('shops-fix.json')).fix || {}; } catch (e) { return {}; } })();
+const shopFixLog = { used: new Set(), stale: new Set() };
+function fixCoord(id, lat, lng) {
+    const f = SHOP_FIX[id];
+    if (!f || typeof lat !== 'number' || typeof lng !== 'number') return null;
+    const [flat, flng] = f.from || [];
+    const moved = 6371e3 * Math.hypot((lng - flng) * Math.PI / 180 * Math.cos(lat * Math.PI / 180), (lat - flat) * Math.PI / 180);
+    if (!(moved <= 30)) { shopFixLog.stale.add(id); return null; }
+    shopFixLog.used.add(id);
+    return f.at;
+}
 const STORES = (() => {
     let d;
     try { d = JSON.parse(read('stores-data.json')); } catch (e) { return null; }
+    for (const [id, sh] of Object.entries(d.shops || {})) { const at = fixCoord(id, sh[4], sh[5]); if (at) { sh[4] = at[0]; sh[5] = at[1]; } }
     const rounds = Object.keys(d.rounds).map(Number).sort(asc);
     if (rounds.length < 100) return null;
     const shop = id => d.shops[id] || ['(알 수 없음)', '', '', 0];
@@ -2963,7 +2979,12 @@ function storeMapGeo(md) {
     const keys = Object.keys(out).sort();
     return { note: '판매점 번호 → [위도, 경도, 지역 번호, 표시(1 섬 · 2 휴게소)] (공개된 사업장 위치, 폐점 제외). 위치 인증 50m 판정 · 칭호용', regions, stores: Object.fromEntries(keys.map(k => [k, out[k]])) };
 }
-const ALL_SHOPS = (() => { try { return JSON.parse(fs.readFileSync(path.join(ROOT, 'shops-all.json'), 'utf8')); } catch (e) { return null; } })();
+const ALL_SHOPS = (() => {
+    let d;
+    try { d = JSON.parse(fs.readFileSync(path.join(ROOT, 'shops-all.json'), 'utf8')); } catch (e) { return null; }
+    for (const [id, sh] of Object.entries(d.shops || {})) { const at = fixCoord(id, sh[3], sh[4]); if (at) { sh[3] = at[0]; sh[4] = at[1]; } }   // 위 SHOP_FIX
+    return d;
+})();
 // 좌표가 있는 판매점이 1,000곳을 넘을 때만 지도 페이지 · 링크를 만든다(좌표를 받기 전 자료에서는 만들지 않는다)
 const STORE_MAP_READY = () => !!(STORES && Object.values(STORES.d.shops).filter(sh => typeof sh[4] === 'number').length > 1000);
 const fingerprint = f => require('crypto').createHash('sha1').update(fs.readFileSync(path.join(ROOT, f))).digest('hex').slice(0, 8);
@@ -3904,6 +3925,8 @@ if (STORES && write(STORES_FILE, storesPage())) changed++;
 if (STORES) SIDO.forEach(x => { const st = SIDO_STATS(x.ko); if (st && write(sidoFile(x.ko), sidoStoresPage(x, st))) changed++; });
 // 판매점 지도: 좌표가 있는 판매점이 충분할 때만(좌표를 받기 전의 자료면 만들지 않는다). 자료 파일을 먼저 써야 페이지의 지문(?v=)이 맞다
 const STORE_MAP = STORES ? storeMapData() : null;
+if (Object.keys(SHOP_FIX).length) console.log(`판매점 위치 손 고침(shops-fix.json): ${shopFixLog.used.size}곳 적용`
+    + (shopFixLog.stale.size ? ` · 동행복권 좌표가 바뀌어 건너뜀 ${[...shopFixLog.stale].join(', ')} — 그 줄을 다시 볼 것` : ''));
 if (STORE_MAP_READY()) {
     if (write(STORE_MAP_DATA, JSON.stringify({ first: STORES.first, last: STORES.last, updated: UPDATED, sido: STORE_MAP.sidoNames,
         cols: ['lat', 'lng', 'w1', 'w2', 'name', 'sido', 'gu', 'closed', 'auto', 'manual', 'semi'], rows: STORE_MAP.rows, fun: STORE_MAP.fun,
