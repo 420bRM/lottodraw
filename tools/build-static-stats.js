@@ -2912,7 +2912,7 @@ const STORE_MAP_TOP_FILE = 'store-map-top50.html';
 const LOTTOHEX_FILE = 'lottohex.html';
 const LOTTOHEX_SNAP = 'lottohex-snapshot.json';   // 같은 지도를 TOP 50 별로 여는 공유용 주소(2026-10-27) — 공유 이미지만 다르고 canonical 은 store-map.html
 const STORE_MAP_DATA = 'store-map-data.json';
-// 일반 판매점 층(2단계): shops-all.json(tools/update-all-shops.js, 매달) 중 1등 · 2등 기록이 없는 곳. 칩을 켤 때 받는다
+// 일반 판매점 층(2단계): shops-all.json(tools/update-all-shops.js, 매주 — 2026-11-23 매달에서) 중 1등 · 2등 기록이 없는 곳. 칩을 켤 때 받는다
 const STORE_MAP_ALL = 'store-map-all.json';
 const STORE_MAP_ROUNDS = 'store-map-rounds.json';
 // 판매점 번호(동행복권 8자리) — 로그인 회원의 "다녀온 곳"을 지도 점과 잇는다. 로그인했을 때만 받는다. w: store-map-data 의 rows 차례, a: store-map-all 의 rows 차례
@@ -3365,8 +3365,8 @@ function storeMapPage(md, variant) {
                 + (md.noCoord ? ` 위치가 공개되지 않은 ${fmt(md.noCoord)}곳도 빠졌습니다.` : ''),
                 `Dot size is 2nd prizes + 1st prizes × 6 (a 1st prize is six times rarer). Sales per retailer are not published, so this only gauges how much was sold; it says nothing about where the next 1st prize will come from. Donghaeng Lottery's online sales (${net ? net.n1 : 0} 1st-prize games) are not one location, so they are pinned in red as "#0" at the company office (tickets are not sold there).`
                 + (md.noCoord ? ` ${fmt(md.noCoord)} ${md.noCoord === 1 ? 'retailer' : 'retailers'} without a published location ${md.noCoord === 1 ? 'is' : 'are'} also left out.` : ''), 'sm-small')}
-            ${md.all ? pEn(`"일반 판매점"을 켜면 지금 로또를 파는 전국 판매점 ${fmt(md.all.total)}곳 중 1등 · 2등 기록이 없는 ${fmt(md.all.rows.length)}곳이 회색 점으로 보입니다(출처: 동행복권 판매점 찾기, ${md.all.updated} 기준 · 매달 갱신).`,
-                `"All others" shows the ${fmt(md.all.rows.length)} of ${fmt(md.all.total)} current lotto retailers with no 1st or 2nd prize on record, as grey dots (source: Donghaeng Lottery retailer search, as of ${md.all.updated}, updated monthly).`, 'sm-small') : ''}
+            ${md.all ? pEn(`"일반 판매점"을 켜면 지금 로또를 파는 전국 판매점 ${fmt(md.all.total)}곳 중 1등 · 2등 기록이 없는 ${fmt(md.all.rows.length)}곳이 회색 점으로 보입니다(출처: 동행복권 판매점 찾기, ${md.all.updated} 기준 · 매주 갱신).`,
+                `"All others" shows the ${fmt(md.all.rows.length)} of ${fmt(md.all.total)} current lotto retailers with no 1st or 2nd prize on record, as grey dots (source: Donghaeng Lottery retailer search, as of ${md.all.updated}, updated weekly).`, 'sm-small') : ''}
             ${fs.existsSync(path.join(ROOT, STORE_MAP_STATIONS)) ? pEn(`역 이름 · 위치 · 전철 노선과 선로(검색창 역 찾기 · 지도의 역 표시 · 노선 선): © <a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap</a> 기여자, ODbL. 노선 색은 각 운영사 노선도의 색입니다.`,
                 `Station names and positions, metro lines and tracks (station search, station markers and line overlay): © <a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap</a> contributors, ODbL. Line colours follow each operator's route map.`, 'sm-small') : ''}
             ${pEn(`검색창의 지역 찾기(시·도 · 시·군·구 · 읍·면·동)와 지도에 보이는 시·도 · 시·군·구 · 읍·면·동 이름은 통계청 통계지리정보서비스(SGIS)가 공공누리 제1유형으로 개방한 행정동 경계를 가공한 자료(<a href="https://github.com/vuski/admdongkor" rel="noopener">vuski/admdongkor</a>, CC BY 4.0)에서 이름과 위치만 뽑아 씁니다.`,
