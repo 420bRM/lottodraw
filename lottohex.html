@@ -23,7 +23,7 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <link rel="stylesheet" href="css/site.css">
     <link rel="stylesheet" href="js/vendor/maplibre-gl.css?v=7e27dfc9">
-    <link rel="stylesheet" href="css/store-map.css?v=e302fe8a">
+    <link rel="stylesheet" href="css/store-map.css?v=ae58fae6">
     <script src="js/i18n-dict.js"></script>
     <script src="js/i18n.js"></script>
     <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"LottoHex","alternateName":["로또헥스","로또 판매점 땅따먹기"],"url":"https://www.lottodraw.kr/lottohex.html","description":"LottoHex(로또헥스)는 로또 판매점에 직접 다녀와 위치로 인증하고, 지도 위 육각형 블록을 차지하는 무료 땅따먹기 게임입니다. 블록 안에서 다녀온 판매점이 가장 많은 사람이 주인이 되고, 분기마다 Map 랭킹을 확정해 1~10위에 포인트를 드립니다. 복권을 살 필요는 없습니다.","applicationCategory":"GameApplication","operatingSystem":"Web","inLanguage":["ko","en"],"isAccessibleForFree":true,"offers":{"@type":"Offer","price":0,"priceCurrency":"KRW"},"dateModified":"2026-11-22","publisher":{"@type":"Organization","name":"lottodraw.kr","url":"https://www.lottodraw.kr/"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://www.lottodraw.kr/"},{"@type":"ListItem","position":2,"name":"판매점 지도","item":"https://www.lottodraw.kr/store-map.html"},{"@type":"ListItem","position":3,"name":"LottoHex","item":"https://www.lottodraw.kr/lottohex.html"}]}]}</script>
@@ -31,7 +31,7 @@
     <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "91c08d8a39d944e69c10024f2314b955", "spa": false}'></script><!-- End Cloudflare Web Analytics -->
 </head>
 <body class="sm-full">
-<main class="sm-wrap is-hex" id="sm" data-hex="1" data-src="store-map-data.json?v=d45198cc" data-all="store-map-all.json?v=e4499297" data-rounds="store-map-rounds.json?v=80c32e8e" data-ids="store-map-ids.json?v=35d3721c" data-places="store-map-places.json?v=7a954dad" data-stations="store-map-stations.json?v=f37a7396" data-lines="store-map-lines.json?v=7a075b24">
+<main class="sm-wrap is-hex" id="sm" data-hex="1" data-src="store-map-data.json?v=d45198cc" data-all="store-map-all.json?v=e4499297" data-rounds="store-map-rounds.json?v=80c32e8e" data-ids="store-map-ids.json?v=35d3721c" data-blocks="store-map-blocks.json?v=50b51eb3" data-places="store-map-places.json?v=7a954dad" data-stations="store-map-stations.json?v=f37a7396" data-lines="store-map-lines.json?v=7a075b24">
     <div class="sm-map" id="sm-map" role="region" aria-label="판매점 지도" data-i18n-attr="aria-label:sm.mapAria"><p class="sm-loading" data-i18n-en="Loading the map…">지도를 불러오는 중…</p></div>
     <!-- 지도 위 가운데: 지금 화면(○○구) 근처 판매점 목록 열기 -->
     <button type="button" class="sm-near-btn" id="sm-near-btn">⟳ <span data-i18n-en="Retailers around here">이 근처 판매점</span></button>
@@ -208,6 +208,6 @@
 <script src="js/license.js?v=e4775149"></script>
 <script src="js/vendor/maplibre-gl.js?v=74bdab14"></script>
 <script src="js/hexgrid.js?v=d670c638"></script>
-<script src="js/store-map.js?v=344a4558"></script>
+<script src="js/store-map.js?v=481b80f1"></script>
 </body>
 </html>

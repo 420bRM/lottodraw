@@ -2929,6 +2929,75 @@ function storeMapCells(md) {
     const keys = Object.keys(cells).sort();
     return { r: HEX.R, note: 'LottoHex 칸(js/hexgrid.js) → 그 칸의 판매점 번호. 폐점 제외', cells: Object.fromEntries(keys.map(k => [k, cells[k].sort()])) };
 }
+// 블록 번호(2026-11-23 사장님 — "블록 번호를 만들어 두면 여러모로 쓸모 있다", 시·도형): 판매점이 있는 블록마다 "경기-0421"처럼 시·도 + 네 자리.
+// 인스타그램 소식 · 해시태그(#경기0421) · 검색창 · 공유 주소(?block=경기-0421)에 쓴다.
+// **한 번 붙인 번호는 바꾸지 않는다**: 지난 store-map-blocks.json 을 읽어 번호를 그대로 두고, 새 블록만 그 시·도의 다음 번호를 받는다.
+// 판매점이 모두 닫은 블록도 번호는 남긴다(넷째 칸 1 = 지금 판매점 없음). 칸 크기(js/hexgrid.js R)를 바꾸면 블록이 모두 달라지므로 그때는 따로 정한다.
+// 처음 붙일 때 차례: 시·도 안에서 시·군·구 가나다 → 북쪽 줄부터 → 같은 줄은 서쪽부터 — 같은 동네 블록끼리 번호가 이어진다.
+// 블록의 시·도 · 시·군·구 = 그 블록 판매점이 가장 많은 곳(같으면 가나다 앞), 동 = 블록 가운데에서 가장 가까운 행정동 중심(store-map-places.json, 같은 시·군·구 안에서).
+// 시·군·구 · 동 이름은 행정구역이 바뀌면 따라 바뀌어도 된다(번호만 고정).
+const STORE_MAP_BLOCKS = 'store-map-blocks.json';
+function storeMapBlocks(md, cellsJson) {
+    let old = {};
+    try { old = JSON.parse(read(STORE_MAP_BLOCKS)).b || {}; } catch (e) { /* 처음 만들 때 */ }
+    const info = new Map();   // 판매점 번호 → [시·도, 시·군·구]
+    md.rows.forEach((r, i) => { if (md.ids[i]) info.set(md.ids[i], [md.sidoNames[r[5]], r[6] || '']); });
+    if (md.all) md.all.rows.forEach((r, i) => { if (md.all.ids[i]) info.set(md.all.ids[i], [md.all.sido[r[3]], r[4] || '']); });
+    let P = null;
+    try { P = JSON.parse(read(STORE_MAP_PLACES)); } catch (e) { /* 동 이름 없이 */ }
+    const dongs = new Map();   // '시·도 시·군·구' → [[동, 경도, 위도]]
+    if (P) P.d.forEach(([gi, name, lng, lat]) => {
+        const g = P.g[gi], sd = g && P.s[g[0]];
+        if (!sd) return;
+        const key = sd[0] + ' ' + [g[1], g[2]].filter(Boolean).join(' ');
+        if (!dongs.has(key)) dongs.set(key, []);
+        dongs.get(key).push([name, lng, lat]);
+    });
+    const near = (list, lng, lat) => {
+        let best = '', bd = Infinity;
+        const kx = Math.cos(lat * Math.PI / 180);
+        for (const [name, x, y] of list || []) { const d = ((x - lng) * kx) ** 2 + (y - lat) ** 2; if (d < bd) { bd = d; best = name; } }
+        return best;
+    };
+    const top = m => [...m.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ko'))[0][0];
+    const cur = cellsJson.cells, out = {}, maxNo = {}, fresh = [];
+    for (const [k, list] of Object.entries(cur)) {
+        const sc = new Map(), gc = new Map();
+        for (const id of list) { const x = info.get(id); if (!x) continue; sc.set(x[0], (sc.get(x[0]) || 0) + 1); gc.set(x[0] + '\t' + x[1], (gc.get(x[0] + '\t' + x[1]) || 0) + 1); }
+        if (!sc.size) continue;
+        const sido = top(sc);
+        // 1 · 2등 판매점 자료는 시·군·구를 "수원시"까지만, 전국 판매점 자료는 "수원시 영통구"까지 적는다 — "수원시"는 그 아래 구의 몫으로 함께 센다
+        const gus = [...gc].filter(([key]) => key.startsWith(sido + '\t')).map(([key, n]) => [key.split('\t')[1], n]);
+        const score = new Map(gus.map(([g]) => [g, gus.reduce((t, [g2, n]) => t + (g2 === g || g.startsWith(g2 + ' ') ? n : 0), 0)]));
+        let gu = [...score.entries()].sort((a, b) => b[1] - a[1] || b[0].split(' ').length - a[0].split(' ').length || a[0].localeCompare(b[0], 'ko'))[0][0];
+        const [lng, lat] = HEX.centerOf(k);
+        // 동: 그 시·군·구(구가 빠졌으면 그 시의 모든 구) 안에서 가장 가까운 행정동. 구가 빠졌으면 그 동의 구로 채운다
+        let cand = [];
+        for (const [key, list] of dongs) if (key === sido + ' ' + gu || key.startsWith(sido + ' ' + (gu ? gu + ' ' : ''))) list.forEach(d => cand.push([d[0], d[1], d[2], key]));
+        const dk = near(cand.map(d => [d[0] + '\t' + d[3], d[1], d[2]]), lng, lat);
+        const dong = dk ? dk.split('\t')[0] : '';
+        if (dk) gu = dk.split('\t')[1].slice(sido.length + 1);
+        if (old[k]) out[k] = [old[k][0], gu, dong];
+        else fresh.push({ k, sido, gu, dong, lat: Math.round(lat * 1e4), lng });
+    }
+    for (const [k, v] of Object.entries(old)) {
+        const [sd, no] = v[0].split('-');
+        maxNo[sd] = Math.max(maxNo[sd] || 0, Number(no));
+        if (!out[k]) out[k] = [v[0], v[1], v[2], 1];   // 판매점이 다 닫은 블록 — 번호는 남긴다
+    }
+    fresh.sort((a, b) => a.sido.localeCompare(b.sido, 'ko') || a.gu.localeCompare(b.gu, 'ko') || b.lat - a.lat || a.lng - b.lng);
+    for (const x of fresh) {
+        const no = (maxNo[x.sido] || 0) + 1;
+        maxNo[x.sido] = no;
+        out[x.k] = [x.sido + '-' + String(no).padStart(4, '0'), x.gu, x.dong];
+    }
+    const keys = Object.keys(out).sort((a, b) => out[a][0].localeCompare(out[b][0], 'ko'));
+    return {
+        note: '블록 번호: { 칸("q,r", js/hexgrid.js): [번호, 시·군·구, 동, 1이면 지금 판매점 없음] }. 한 번 붙인 번호는 바꾸지 않는다(tools/build-static-stats.js storeMapBlocks). 동은 블록 가운데에서 가장 가까운 행정동',
+        en: Object.fromEntries(SIDO.map(x => [x.ko, x.slug[0].toUpperCase() + x.slug.slice(1)])),
+        b: Object.fromEntries(keys.map(k => [k, out[k]])),
+    };
+}
 // 위치 인증(2026-11-09): 서버가 "판매점 50m 안"을 판정할 때 쓰는 판매점 좌표 — 공개된 사업장 위치(동행복권), 폐점 제외, 칸 목록과 같은 판매점.
 // { 판매점 번호: [위도, 경도, 지역 번호, 표시?] } 소수 다섯째 자리(약 1m).
 // 칭호(2026-11-09, worker/src/titles.js)도 이 파일로 센다: regions[지역 번호] = [시·도, 시·군·구, 칭호에 쓰는 이름]. 시·군·구는 주소의 첫 낱말
@@ -3256,7 +3325,7 @@ function storeMapPage(md, variant) {
     ${CF_BEACON_MAP}
 </head>
 <body class="sm-full">
-<main class="sm-wrap${hex ? ' is-hex' : ''}" id="sm"${top ? ' data-top="1"' : ''}${hex ? ' data-hex="1"' : ''} data-src="${STORE_MAP_DATA}?v=${fingerprint(STORE_MAP_DATA)}"${md.all ? ` data-all="${STORE_MAP_ALL}?v=${fingerprint(STORE_MAP_ALL)}"` : ''} data-rounds="${STORE_MAP_ROUNDS}?v=${fingerprint(STORE_MAP_ROUNDS)}" data-ids="${STORE_MAP_IDS}?v=${fingerprint(STORE_MAP_IDS)}"${fs.existsSync(path.join(ROOT, STORE_MAP_PLACES)) ? ` data-places="${STORE_MAP_PLACES}?v=${fingerprint(STORE_MAP_PLACES)}"` : ''}${fs.existsSync(path.join(ROOT, STORE_MAP_STATIONS)) ? ` data-stations="${STORE_MAP_STATIONS}?v=${fingerprint(STORE_MAP_STATIONS)}"` : ''}${fs.existsSync(path.join(ROOT, STORE_MAP_LINES)) ? ` data-lines="${STORE_MAP_LINES}?v=${fingerprint(STORE_MAP_LINES)}"` : ''}>
+<main class="sm-wrap${hex ? ' is-hex' : ''}" id="sm"${top ? ' data-top="1"' : ''}${hex ? ' data-hex="1"' : ''} data-src="${STORE_MAP_DATA}?v=${fingerprint(STORE_MAP_DATA)}"${md.all ? ` data-all="${STORE_MAP_ALL}?v=${fingerprint(STORE_MAP_ALL)}"` : ''} data-rounds="${STORE_MAP_ROUNDS}?v=${fingerprint(STORE_MAP_ROUNDS)}" data-ids="${STORE_MAP_IDS}?v=${fingerprint(STORE_MAP_IDS)}"${fs.existsSync(path.join(ROOT, STORE_MAP_BLOCKS)) ? ` data-blocks="${STORE_MAP_BLOCKS}?v=${fingerprint(STORE_MAP_BLOCKS)}"` : ''}${fs.existsSync(path.join(ROOT, STORE_MAP_PLACES)) ? ` data-places="${STORE_MAP_PLACES}?v=${fingerprint(STORE_MAP_PLACES)}"` : ''}${fs.existsSync(path.join(ROOT, STORE_MAP_STATIONS)) ? ` data-stations="${STORE_MAP_STATIONS}?v=${fingerprint(STORE_MAP_STATIONS)}"` : ''}${fs.existsSync(path.join(ROOT, STORE_MAP_LINES)) ? ` data-lines="${STORE_MAP_LINES}?v=${fingerprint(STORE_MAP_LINES)}"` : ''}>
     <div class="sm-map" id="sm-map" role="region" aria-label="판매점 지도" data-i18n-attr="aria-label:sm.mapAria"><p class="sm-loading" data-i18n-en="Loading the map…">지도를 불러오는 중…</p></div>
     <!-- 지도 위 가운데: 지금 화면(○○구) 근처 판매점 목록 열기 -->
     <button type="button" class="sm-near-btn" id="sm-near-btn">⟳ <span data-i18n-en="Retailers around here">이 근처 판매점</span></button>
@@ -3918,7 +3987,9 @@ if (STORE_MAP_READY()) {
     if (write(STORE_MAP_IDS, JSON.stringify({ w: STORE_MAP.ids, a: STORE_MAP.all ? STORE_MAP.all.ids : [] }) + '\n')) changed++;
     if (STORE_MAP.all && write(STORE_MAP_ALL, JSON.stringify({ updated: STORE_MAP.all.updated, sido: STORE_MAP.all.sido,
         cols: ['lat', 'lng', 'name', 'sido', 'gu'], rows: STORE_MAP.all.rows }) + '\n')) changed++;
-    if (write(STORE_MAP_CELLS, JSON.stringify(storeMapCells(STORE_MAP)) + '\n')) changed++;
+    const cellsJson = storeMapCells(STORE_MAP);
+    if (write(STORE_MAP_CELLS, JSON.stringify(cellsJson) + '\n')) changed++;
+    if (write(STORE_MAP_BLOCKS, JSON.stringify(storeMapBlocks(STORE_MAP, cellsJson)) + '\n')) changed++;
     if (write(STORE_MAP_GEO, JSON.stringify(storeMapGeo(STORE_MAP)) + '\n')) changed++;
     if (write(STORE_MAP_FILE, storeMapPage(STORE_MAP))) changed++;
     if (write(STORE_MAP_TOP_FILE, storeMapPage(STORE_MAP, true))) changed++;

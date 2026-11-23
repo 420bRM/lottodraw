@@ -386,6 +386,8 @@ body.sm-full #theme-btn { display: none !important; }
 .sm-terr-cell h4, .sm-terr-h { margin: 0 0 4px; font-size: var(--fs-4); }
 .sm-terr-cell h4 small, .sm-terr-h small { color: var(--faint, #888); font-weight: normal; }
 .sm-terr-cell p { margin: 0 0 4px; font-size: var(--fs-5); }
+.sm-blk-no { font-weight: bold; font-variant-numeric: tabular-nums; white-space: nowrap; }   /* 블록 번호(경기-0421, 2026-11-23) */
+.sm-blk-link { margin-left: 4px; padding: 0 8px; border: 1px solid var(--line, #e3e3e3); border-radius: 999px; background: var(--surface, #fff); color: var(--text, #222); font: inherit; font-size: var(--fs-5); font-weight: normal; line-height: var(--lh-tight); cursor: pointer; }
 .sm-terr-mine { color: #c41f30; font-weight: bold; }
 
 .sm-terr-v { display: inline-block; margin-right: 4px; color: #16a34a; }
