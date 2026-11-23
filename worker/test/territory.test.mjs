@@ -514,19 +514,24 @@ test('위치 인증 켠 날: 손 표시 · LottoHex 참여 · 칸 집계를 한 
     assert.deepEqual(Object.keys((await call(env, 'GET', '/api/me', { headers: auth(a) })).data.user.visits), ['11100001']);
 });
 
-test('위치 판정은 하루 100번까지 · 확인자료는 6개월 지난 것부터 지운다', async () => {
+test('위치 판정은 하루 120번까지 · 확인자료는 6개월 지난 것부터 지운다', async () => {
     const env = await fresh();
     env.GPS_VERIFY = 'on';
     const a = await member(env, 'g3', '많이눌러');
     await geoAgree(env, a);
     const key = [...env.COMMUNITY._m.keys()].find(k => k.startsWith('u:') && env.COMMUNITY._m.get(k).nick === '많이눌러');
-    const u = env.COMMUNITY._m.get(key);
     const today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
-    env.COMMUNITY._m.set(key, Object.assign(u, { gtry: { day: today, n: 100 } }));
+    // 100번 쓴 날도 아직 된다(2026-11-23 100 → 120)
+    env.COMMUNITY._m.set(key, Object.assign(env.COMMUNITY._m.get(key), { gtry: { day: today, n: 100 } }));
     env.COMMUNITY.restart();
-    const r = await visit(env, a, '11100001', near(37.5, 127.0));
+    const ok = await visit(env, a, '11100001', near(37.5, 127.0));
+    assert.notEqual(ok.status, 429, '100번째 다음도 판정한다');
+    env.COMMUNITY._m.set(key, Object.assign(env.COMMUNITY._m.get(key), { gtry: { day: today, n: 120 } }));
+    env.COMMUNITY.restart();
+    const r = await visit(env, a, '11100002', near(37.5, 127.0));
     assert.equal(r.status, 429);
     assert.equal(r.data.error, 'too_many_tries');
+    assert.match(JSON.stringify(r.data), /120번/);
     // 오래된 확인자료(200일 전)는 지우고 최근 것은 남긴다
     const now = Date.now();
     const day = ms => new Date(ms + 9 * 3600e3).toISOString().slice(0, 10);
@@ -534,7 +539,7 @@ test('위치 판정은 하루 100번까지 · 확인자료는 6개월 지난 것
     env.COMMUNITY._m.set('gl:' + day(now - 10 * 86400e3) + ':b:1', { u: 'x', t: now - 10 * 86400e3, id: '11100001', ok: true, why: null });
     const h = await community(env, 'geoHousekeep', { now, gps: true });
     assert.equal(h.pruned, 1);
-    assert.equal(glRows(env).length, 1);
+    assert.equal(glRows(env).length, 2, '10일 전 것 + 오늘 101번째 판정');
 });
 
 test('위치 인증 포인트: 한 번에 10P · 같은 곳은 하루 한 번(지웠다 다시 해도) · 하루 50P까지 · 다음 날 또 다녀왔어요도 10P · 꺼져 있으면 없다', async () => {
