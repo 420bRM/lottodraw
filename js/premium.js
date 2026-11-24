@@ -1,4 +1,5 @@
-// 5개월 통계 페이지: 이용권 구매(계좌이체 · 페이앱)와 잠금 화면.
+// 5개월 통계 페이지: 이용권(포인트로 열기 — 2026-11-24 현금 판매를 마침)과 잠금 화면.
+// 현금 주문(계좌이체 · 페이앱) 코드는 서버가 CASH_SALES=on 일 때를 위해 남겨 두었다 — 지금은 결제 페이지에 구매 단추가 없다.
 // 키가 진짜인지 판단하는 규칙은 js/license.js 에 있고, 여기서는 주문과 화면 전환만 맡는다.
 //
 // 구매 흐름
@@ -170,36 +171,39 @@
         tap('pay-view');
     }
 
-    /* ───── 포인트로 1일 이용권 (로그인 회원, 2026-10-21) ─────
-       1일 카드의 "포인트로 열기". 로그인이 꺼진 서버면 단추를 숨긴다. 서버가 포인트를 쓰고 24시간 키를 주면 산 키처럼 저장하고 연다 */
+    /* ───── 포인트로 이용권 (로그인 회원, 2026-10-21 1일 · 2026-11-24 이번 회차 · 30일) ─────
+       카드마다 "포인트로 열기"(data-ppass = day · round · month). 로그인이 꺼진 서버면 단추를 숨긴다.
+       서버가 포인트를 쓰고 키를 주면 산 키처럼 저장하고 연다. 값은 내 정보(points) → 설정(pointPlans) → 화면 기본값 차례 */
     const account = () => window.LottoAccount;
-    const pointCost = () => { const m = account() && account().me && account().me(); return (m && m.points && m.points.dayPass) || 300; };
+    const PASS_KEY = { day: 'dayPass', round: 'roundPass', month: 'monthPass' };
+    let pointPlans = Object.assign({ day: 30, round: 70, month: 300 }, cfg.pointPlans || {});
+    const pointCost = plan => { const m = account() && account().me && account().me(); return (m && m.points && m.points[PASS_KEY[plan]]) || pointPlans[plan]; };
+    const passName = plan => T(plan === 'round' ? 's5.p.round' : plan === 'month' ? 's5.p.month30' : 's5.p.day');
     function paintPoints() {
-        const btn = $('point-pass');
-        const note = $('point-note');
-        if (!btn) return;
         const A = account();
-        const on = !!(A && A.loginOn && A.loginOn());
-        btn.hidden = !on;
-        note.hidden = !on;
-        if (!on) return;
-        const cost = pointCost();
-        btn.textContent = T('s5.points', { cost: cost });
-        const me = A.me && A.me();
+        const loginOn = !!(A && A.loginOn && A.loginOn());
+        document.querySelectorAll('[data-pcost]').forEach(p => { p.textContent = pointCost(p.dataset.pcost) + 'P'; });
+        document.querySelectorAll('[data-ppass]').forEach(b => {
+            b.hidden = !loginOn;
+            b.textContent = A && A.session && A.session() ? T('s5.points', { cost: pointCost(b.dataset.ppass) }) : T('s5.openLogin');
+        });
+        const note = $('point-note');
+        if (!note) return;
+        const me = loginOn && A.session && A.session() && A.me && A.me();
         const sc = me && me.user && me.user.score;
-        note.textContent = sc ? T('s5.pointsHave', { avail: Number(sc.avail).toLocaleString(I18N.lang === 'en' ? 'en-US' : 'ko-KR'), cost: cost }) : T('s5.pointsNote');
+        note.textContent = sc ? T('s5.pointsHave', { avail: Number(sc.avail).toLocaleString(I18N.lang === 'en' ? 'en-US' : 'ko-KR') }) : T('s5.pointsNote');
     }
-    async function openWithPoints() {
+    async function openWithPoints(plan) {
         const A = account();
         if (!A || !A.loginOn || !A.loginOn()) return;
         if (!A.session()) { A.openLogin(T('s5.pointsLogin')); return; }
-        const cost = pointCost();
-        if (!window.confirm(T('s5.pointsConfirm', { cost: cost }))) return;
-        const btn = $('point-pass');
-        btn.disabled = true;
+        const cost = pointCost(plan);
+        if (!window.confirm(T('s5.pointsConfirmP', { cost: cost, name: passName(plan) }))) return;
+        const btns = document.querySelectorAll('[data-ppass]');
+        btns.forEach(b => { b.disabled = true; });
         setStatus('plans-status', T('pay.checking'));
         try {
-            const r = await A.call('/api/me/point-pass', { method: 'POST' });
+            const r = await A.call('/api/me/point-pass', { method: 'POST', body: { plan: plan } });
             store.set(L.KEY_STORE, r.key);
             store.set(PURCHASED_STORE, r.key);
             if (A.refresh) A.refresh().then(paintPoints).catch(() => {});
@@ -212,15 +216,14 @@
             setStatus('plans-status', e.code === 'need_points' || e.code === 'active' || e.code === 'busy' ? e.message
                 : e.status === 401 ? T('s5.pointsLogin') : (e.message || T('pay.offline')), true);
         } finally {
-            btn.disabled = false;
+            btns.forEach(b => { b.disabled = false; });
         }
     }
     function setupPoints() {
-        const btn = $('point-pass');
-        if (!btn) return;
-        btn.hidden = true;
-        $('point-note').hidden = true;
-        btn.addEventListener('click', openWithPoints);
+        document.querySelectorAll('[data-ppass]').forEach(b => {
+            b.hidden = true;
+            b.addEventListener('click', () => openWithPoints(b.dataset.ppass));
+        });
         const go = () => paintPoints();
         if (account() && account().ready) account().ready.then(go);
         else document.addEventListener('lotto:account-ready', go, { once: true });
@@ -238,7 +241,9 @@
 
     function setBuyable(on) {
         buyable = on;
-        document.querySelectorAll('[data-plan]').forEach(b => {
+        const cash = document.querySelectorAll('[data-plan]');
+        if (!cash.length) return;   // 현금 구매 단추가 없는 화면(2026-11-24부터) — "결제 준비 중" 안내도 내지 않는다
+        cash.forEach(b => {
             b.textContent = on ? T('s5.buy') : T('pay.soon');
             b.classList.toggle('is-disabled', !on);
             if (on) b.removeAttribute('aria-disabled'); else b.setAttribute('aria-disabled', 'true');
@@ -255,6 +260,7 @@
             Object.keys(c.plans || {}).forEach(id => {
                 if (plans[id]) Object.assign(plans[id], { amount: c.plans[id].amount, days: c.plans[id].days });
             });
+            if (c.pointPlans) { pointPlans = Object.assign(pointPlans, c.pointPlans); paintPoints(); }
             renderPrices();
             $('co-bank').hidden = !methods.bank;
             $('co-payapp').hidden = !methods.payapp;

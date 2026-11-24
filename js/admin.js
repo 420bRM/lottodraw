@@ -234,7 +234,7 @@
     }
 
     // 회원별 포인트 사용량(2026-11-18 사장님). 종류별 합계는 기록을 시작한 뒤(2026-11-18)부터 — 그 전에 쓴 것은 "이전"(쓴 합계 - 종류별 합계)
-    const SPEND_NAME = { pass: '1일 이용권', nick: '별명 바꾸기', color: '다녀온 곳 색', skin: '칸 모양', beam: '빛 벽' };
+    const SPEND_NAME = { pass: '이용권', nick: '별명 바꾸기', color: '다녀온 곳 색', skin: '칸 모양', beam: '빛 벽' };
     const fmtP = n => `${Math.round(n * 10) / 10}P`.replace(/^(-?)(\d+)/, (x, s, d) => s + Number(d).toLocaleString('ko-KR'));
     const spendOf = m => {
         const by = (m.spend && m.spend.by) || {}, spent = (m.score && m.score.spent) || 0;
@@ -251,7 +251,7 @@
         if (!table) return;
         const rows = list.filter(m => (m.score && m.score.spent) || (m.spend && m.spend.log && m.spend.log.length)).sort((a, b) => ((b.score && b.score.spent) || 0) - ((a.score && a.score.spent) || 0));
         table.textContent = '';
-        table.appendChild(el('thead', {}, [el('tr', {}, ['회원', '모은 점수', '쓴 포인트', '남은 포인트', '1일 이용권', '별명 바꾸기', '다녀온 곳 색', '칸 모양', '빛 벽', '이전(내역 없음)', '최근 사용'].map(h => el('th', { text: h })))]));
+        table.appendChild(el('thead', {}, [el('tr', {}, ['회원', '모은 점수', '쓴 포인트', '남은 포인트', '이용권', '별명 바꾸기', '다녀온 곳 색', '칸 모양', '빛 벽', '이전(내역 없음)', '최근 사용'].map(h => el('th', { text: h })))]));
         const body = el('tbody');
         if (!rows.length) body.appendChild(el('tr', {}, [el('td', { colspan: '11', text: '아직 포인트를 쓴 회원이 없습니다.' })]));
         const sum = { total: 0, spent: 0, avail: 0, before: 0, by: {} };

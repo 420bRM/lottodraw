@@ -63,7 +63,7 @@
                 const rules = $('rank-rules').children;
                 rules[0].textContent = tr('rank.r1x', '출석: 하루 한 번, 로그인한 채 사이트에 들어오면 +{n}P', { n: p.attend });
                 rules[1].textContent = tr('rank.r2x', '반응: 카드에 남긴 ♥ · $ · ₩ 하나마다 +{n}P (취소하면 빠집니다)', { n: p.react });
-                rules[2].textContent = tr('rank.r3x', '이용권: 로그인한 채 산 이용권 금액 100원마다 +{n}P (환불하면 빠집니다)', { n: p.buyPer100 });
+                rules[2].textContent = tr('rank.r3x', '가입 축하: 처음 가입하면 +{n}P (2026년 11월 24일부터) · 그 전에 로그인한 채 산 이용권은 100원마다 +{b}P', { n: p.join || 50, b: p.buyPer100 });   // 2026-11-24 현금 판매를 마치고 가입 축하
             }
             fill(data.top || [], (data.top || []).length ? '' : tr('rank.empty', '아직 순위에 오른 회원이 없습니다. 첫 번째가 되어 보세요!'));
             showMe(data.me, data.points);

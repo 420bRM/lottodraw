@@ -501,7 +501,7 @@ test('댓글 점수(공지하지 않는 규칙): 하나에 1점·하루 5개, �
 test('관리자 주문 목록: 로그인한 채 산 주문에 회원 참조값(앞 12자)이 붙고, 회원 명부에도 같은 값이 있다', async () => {
     const { env } = setup();
     const s = await member(env, 'Q', '구매곰');
-    env.BANK_NAME = '우리은행'; env.BANK_ACCOUNT = '1'; env.BANK_HOLDER = '홍길동';
+    env.BANK_NAME = '우리은행'; env.BANK_ACCOUNT = '1'; env.BANK_HOLDER = '홍길동'; env.CASH_SALES = 'on';   // 현금 판매 코드(2026-11-24부터 기본 꺼짐)
     const o = await call(env, 'POST', '/api/orders', { body: { plan: 'day', method: 'bank', name: '홍길동', agree: true }, headers: auth(s) });
     assert.equal(o.status, 201, JSON.stringify(o.data));
     const list = (await call(env, 'GET', '/api/admin/orders?status=all', { headers: asAdmin })).data.orders;

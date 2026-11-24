@@ -535,7 +535,7 @@ details[open] > summary.card-title { padding-bottom: 0; }
 .stats-loading { padding: 24px 0; color: var(--muted); }
 
 /* ───── 이용권 (5개월 통계) ───── */
-.plans { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 8px; }
+.plans { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 8px; }   /* 포인트 이용권 셋(2026-11-24 — 1일 · 이번 회차 · 30일) */
 .plan {
     display: flex;
     flex-direction: column;
@@ -556,7 +556,11 @@ details[open] > summary.card-title { padding-bottom: 0; }
 /* 이번 회차 이용권: 언제까지 · 남은 시간(1초마다, js/premium.js) */
 .plan-until { margin: -4px 0 0; color: var(--text); font-size: var(--fs-4); font-weight: bold; text-align: center; }
 .plan-left { margin: -6px 0 0; color: var(--error); font-size: var(--fs-3); font-weight: bold; font-variant-numeric: tabular-nums; }
-.plan-left[hidden], .plan-points[hidden], #point-note[hidden] { display: none; }
+.plan-left[hidden], .plan-points[hidden], #point-note[hidden], .plan [data-ppass][hidden] { display: none; }
+/* 포인트 모으기(2026-11-24): 이용권 카드 아래 한 장 */
+.points-earn { margin: 8px 0 16px; }
+.points-earn .card-title small { color: var(--text); font-weight: bold; }
+.earn-list { margin: 0; padding: 0 0 0 20px; font-size: var(--fs-4); line-height: var(--lh-body); }
 .license-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .license-form { display: flex; flex-wrap: wrap; gap: 8px; }
 .license-form input {
@@ -1476,7 +1480,7 @@ details.pchart[open] > .pchart-fold { margin-bottom: 8px; }
 }
 @media (max-width: 899px) {
     .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .plans { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .plans { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 599px) {
     .stat-grid, .plans { grid-template-columns: minmax(0, 1fr); }

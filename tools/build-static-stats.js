@@ -3239,7 +3239,7 @@ function lottohexAboutHtml(md, snap) {
                 ${li('점령 포인트: 지금 차지한 블록 하나에 하루 0.1P(매일 0시 무렵 그때 차지한 블록으로 셉니다, 운영자 제외)', 'Block points: 0.1 pts a day for each block you hold (counted just after midnight each day from the blocks held then; operators excluded)')}
                 ${li(`분기 확정 순위: 1위 ${fmt(p1)}P · 2위 ${p2}P · 3위 ${p3}P · 4~10위 ${p4}P(운영자 제외)`, `Quarterly final ranking: 1st ${fmt(p1)} · 2nd ${p2} · 3rd ${p3} · 4th–10th ${p4} pts (operators excluded)`)}
                 ${li('마일스톤: 다녀온 판매점 · 다녀온 블록 · 다녀온 시·도 · 차지한 블록(최대)이 단계에 이를 때마다 10~500P(단계마다 한 번)', 'Milestones: 10–500 pts each time retailers visited, blocks visited, provinces visited or most blocks held reaches a new step (once per step)')}
-                ${li('포인트로 블록 모양을 바꾸거나(30P), 영역 빛 벽을 사거나(300P — 3D에서 내 영역 테두리가 빛나고 모두에게 보입니다), 1일 이용권을 열 수 있습니다(300P). 현금으로 바꿀 수 없습니다.', 'Spend points on a new block skin (30 pts), the territory light wall (300 pts — your territory edge glows in 3D for everyone) or a 1-day pass (300 pts). Points cannot be exchanged for cash.')}
+                ${li('포인트로 블록 모양을 바꾸거나(30P), 영역 빛 벽을 사거나(300P — 3D에서 내 영역 테두리가 빛나고 모두에게 보입니다), 최근 5개월 통계 이용권을 열 수 있습니다(1일 30P · 이번 회차 70P · 30일 300P). 현금으로 바꿀 수 없습니다.', 'Spend points on a new block skin (30 pts), the territory light wall (300 pts — your territory edge glows in 3D for everyone) or a pass for the last five months of statistics (1 day 30 · single draw 70 · 30 days 300 pts). Points cannot be exchanged for cash.')}
             </ul>
             <h2 data-i18n-en="Titles">칭호</h2>
             <ul>

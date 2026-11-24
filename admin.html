@@ -8,7 +8,7 @@
     <link rel="icon" href="/favicon.ico" sizes="32x32">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    <link rel="stylesheet" href="css/site.css?v=2c003f26">
+    <link rel="stylesheet" href="css/site.css?v=ad1a7bb5">
 </head>
 <body>
 <!-- 판매자 전용. 관리자 토큰(Worker 의 ADMIN_TOKEN)이 없으면 아무것도 할 수 없다.
@@ -68,7 +68,7 @@
                     <details class="members-rx" id="spend-box">
                         <summary>회원별 포인트 사용량</summary>
                         <p class="card-note">포인트를 쓴 회원만, 쓴 포인트가 많은 순. 종류별 금액은 2026-11-18부터 기록합니다 — 그 전에 쓴 포인트는 "이전(내역 없음)"에 모입니다.
-                            1일 이용권 횟수 · 연 색 수 · 빛 벽은 지금까지 전체입니다. 최근 사용은 3건(칸에 마우스를 올리면 20건까지).</p>
+                            이용권(포인트로 연 횟수 — 1일 · 이번 회차 · 30일) · 연 색 수 · 빛 벽은 지금까지 전체입니다. 최근 사용은 3건(칸에 마우스를 올리면 20건까지).</p>
                         <div class="table-wrap"><table class="data-table admin-table" id="spend-table"></table></div>
                     </details>
                     <details class="members-rx">
@@ -102,7 +102,7 @@
                         <div class="table-wrap"><table class="data-table admin-table" id="pay-days"></table></div>
                     </details>
                     <p class="card-note">2026-10-21부터 셉니다. 결제 페이지는 이용권이 없어 결제 화면이 보인 것(같은 브라우저 하루 한 번), 고름은 "구매하기"로 주문서를 연 것(페이지마다 한 번),
-                        주문은 주문을 만든 것, 입금은 키가 발급된 것(계좌이체 · 카드), 포인트는 포인트로 1일 이용권을 연 것입니다. 앞의 둘은 화면이 보내 광고 차단기 등으로 조금 적게,
+                        주문은 주문을 만든 것, 입금은 키가 발급된 것(계좌이체 · 카드), 포인트는 포인트로 이용권을 연 것입니다(2026-11-24부터 현금 판매를 마쳐 주문 · 입금은 0). 앞의 둘은 화면이 보내 광고 차단기 등으로 조금 적게,
                         스크립트를 돌리는 로봇은 빠집니다. 뒤의 셋은 서버가 셉니다. 주문률 = 주문 ÷ 결제 페이지, 입금률 = 입금 ÷ 주문.</p>
                 </div>
             </section>
@@ -292,6 +292,6 @@
 </div>
 
 <script src="js/premium-config.js?v=ca702ca6"></script>
-<script src="js/admin.js?v=d8fdffe7"></script>
+<script src="js/admin.js?v=1c4cd3b4"></script>
 </body>
 </html>

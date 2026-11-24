@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>최근 5개월 로또 통계 · 22회차 분석 11종 | lottodraw.kr</title>
-    <meta name="description" content="최근 5개월(22회차) 로또 당첨번호로 계산한 통계 11종을 한 화면에서 확인하세요. 이용권으로 열람하며(1일 1,500원 · 이번 회차 2,900원 · 평생 12,900원, 1일 이용권은 포인트로도), 지난 기록 요약이지 예측이 아닙니다.">
+    <meta name="description" content="최근 5개월(22회차) 로또 당첨번호로 계산한 통계 11종을 한 화면에서 확인하세요. 로그인하고 포인트로 엽니다(1일 30P · 이번 회차 70P · 30일 300P, 가입하면 50P). 지난 기록 요약이지 예측이 아닙니다.">
     <link rel="canonical" href="https://www.lottodraw.kr/statistics.html">
     <meta property="og:title" content="최근 5개월 로또 통계 · 22회차 분석 11종 | lottodraw.kr">
     <meta property="og:description" content="최근 5개월(22회차) 당첨번호로 계산한 통계 11종. 지난 기록 요약이며 예측이 아닙니다.">
@@ -20,8 +20,8 @@
     <link rel="icon" href="/favicon.ico" sizes="32x32">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    <link rel="stylesheet" href="css/site.css?v=2c003f26">
-    <script src="js/i18n-dict.js?v=beff4ae5"></script>
+    <link rel="stylesheet" href="css/site.css?v=ad1a7bb5">
+    <script src="js/i18n-dict.js?v=2731cf62"></script>
     <script src="js/i18n.js?v=2957cb60"></script>
     <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "91c08d8a39d944e69c10024f2314b955"}'></script><!-- End Cloudflare Web Analytics -->
 </head>
@@ -70,18 +70,19 @@
         </section>
     </section>
     <p class="notice" data-i18n-html="s5.notice">
-        <strong>결제 전에 알아 두세요.</strong>
+        <strong>열기 전에 알아 두세요.</strong>
         최근 5개월은 추첨 22회 분량이라 표본이 작고 우연의 영향이 큽니다.
         이 통계는 지난 기록을 요약할 뿐 다음 회차를 예측하지 않으며, 어떤 조합이든 1등 확률은 1/8,145,060입니다.
     </p>
 
     <section id="paywall" aria-labelledby="plans-title">
         <h2 class="sr-only" id="plans-title" data-i18n="s5.plans">이용권</h2>
+        <!-- 이용권은 포인트로 연다(2026-11-24 사장님 — 현금 판매를 마침. 이미 산 키는 그대로 열린다). 값은 서버 POINTS(dayPass · roundPass · monthPass)가 덮어쓴다 -->
         <div class="plans">
             <section class="plan" aria-labelledby="plan-day-t">
                 <h3 class="card-title" id="plan-day-t"><span data-i18n="s5.p.day">1일 이용권</span></h3>
                 <div class="card-body">
-                    <p class="plan-price" data-price="day">1,500원</p>
+                    <p class="plan-price" data-pcost="day">30P</p>
                     <ul>
                         <li data-i18n="s5.f.day1">키를 받은 때부터 24시간</li>
                         <li data-i18n="s5.f.eleven">최근 5개월 통계 11종</li>
@@ -90,15 +91,14 @@
                         <li data-i18n-html="s5.f.est"><a href="index.html#gen-share">생성 이력의 1등 예상 당첨금(세전)</a></li>
                         <li data-i18n-html="s5.f.report"><a href="report.html">내 번호 성적표</a> 자세한 내역 (당첨 회차 · 아까웠던 회차 · 연도별)</li>
                     </ul>
-                    <button type="button" class="btn" data-plan="day" data-i18n="s5.buy">구매하기</button>
-                    <button type="button" class="btn btn-secondary plan-points" id="point-pass">포인트로 열기 (300P)</button>
-                    <p class="plan-note" id="point-note" data-i18n="s5.pointsNote">로그인 회원은 출석 · 반응으로 모은 포인트로도 엽니다. 포인트를 써도 랭킹은 그대로입니다.</p>
+                    <button type="button" class="btn" data-ppass="day" data-i18n="s5.open">포인트로 열기</button>
+                    <p class="plan-note" data-i18n="s5.joinNote">새로 가입하면 50P — 바로 하루 맛볼 수 있습니다.</p>
                 </div>
             </section>
             <section class="plan featured" aria-labelledby="plan-round-t">
                 <h3 class="card-title" id="plan-round-t"><span data-i18n="s5.p.round">이번 회차 이용권</span></h3>
                 <div class="card-body">
-                    <p class="plan-price" data-price="round">2,900원</p>
+                    <p class="plan-price" data-pcost="round">70P</p>
                     <p class="plan-until" id="round-until" data-i18n="s5.roundUntil0">토요일 추첨까지 (토요일 밤 12시에 끝)</p>
                     <p class="plan-left" id="round-left" role="timer" hidden></p>
                     <ul>
@@ -108,14 +108,14 @@
                         <li data-i18n-html="s5.f.est"><a href="index.html#gen-share">생성 이력의 1등 예상 당첨금(세전)</a></li>
                         <li data-i18n-html="s5.f.report"><a href="report.html">내 번호 성적표</a> 자세한 내역 (당첨 회차 · 아까웠던 회차 · 연도별)</li>
                     </ul>
-                    <button type="button" class="btn" data-plan="round" data-i18n="s5.buy">구매하기</button>
-                    <p class="plan-note" data-i18n="s5.roundNote">토요일 오후 8시(판매 마감) 뒤에 사면 다음 회차 토요일까지 열립니다.</p>
+                    <button type="button" class="btn" data-ppass="round" data-i18n="s5.open">포인트로 열기</button>
+                    <p class="plan-note" data-i18n="s5.roundNoteP">일주일 출석(하루 10P)이면 매주 열 수 있습니다. 토요일 오후 8시 뒤에 열면 다음 회차 토요일까지.</p>
                 </div>
             </section>
             <section class="plan" aria-labelledby="plan-month-t">
-                <h3 class="card-title" id="plan-month-t"><span data-i18n="s5.p.month">1개월 이용권</span></h3>
+                <h3 class="card-title" id="plan-month-t"><span data-i18n="s5.p.month30">30일 이용권</span></h3>
                 <div class="card-body">
-                    <p class="plan-price" data-price="month">5,900원</p>
+                    <p class="plan-price" data-pcost="month">300P</p>
                     <ul>
                         <li data-i18n="s5.f.days30">키를 받은 때부터 30일</li>
                         <li data-i18n="s5.f.eleven">최근 5개월 통계 11종</li>
@@ -124,26 +124,23 @@
                         <li data-i18n-html="s5.f.est"><a href="index.html#gen-share">생성 이력의 1등 예상 당첨금(세전)</a></li>
                         <li data-i18n-html="s5.f.report"><a href="report.html">내 번호 성적표</a> 자세한 내역 (당첨 회차 · 아까웠던 회차 · 연도별)</li>
                     </ul>
-                    <button type="button" class="btn" data-plan="month" data-i18n="s5.buy">구매하기</button>
-                    <p class="plan-note" data-i18n="s5.noRenew">자동 결제되지 않습니다. 기간이 끝나면 저절로 멈춥니다.</p>
-                </div>
-            </section>
-            <section class="plan" aria-labelledby="plan-lifetime-t">
-                <h3 class="card-title" id="plan-lifetime-t"><span data-i18n="s5.p.lifetime">평생 이용권</span></h3>
-                <div class="card-body bg-lime">
-                    <p class="plan-price" data-price="lifetime">12,900원</p>
-                    <ul>
-                        <li data-i18n="s5.f.forever">기간 제한 없음 (사이트 운영 기간)</li>
-                        <li data-i18n="s5.f.eleven">최근 5개월 통계 11종</li>
-                        <li data-i18n="s5.f.detail">홈의 상세 분석 4종</li>
-                        <li data-i18n-html="s5.f.chart"><a href="top-prize.html#prize-chart">TOP 50 그래프</a> 물가 반영·세후·강남3구 비교·분기봉·연봉·보조지표·그림도구</li>
-                        <li data-i18n-html="s5.f.est"><a href="index.html#gen-share">생성 이력의 1등 예상 당첨금(세전)</a></li>
-                        <li data-i18n-html="s5.f.report"><a href="report.html">내 번호 성적표</a> 자세한 내역 (당첨 회차 · 아까웠던 회차 · 연도별)</li>
-                    </ul>
-                    <button type="button" class="btn" data-plan="lifetime" data-i18n="s5.buy">구매하기</button>
+                    <button type="button" class="btn" data-ppass="month" data-i18n="s5.open">포인트로 열기</button>
+                    <p class="plan-note" data-i18n="s5.monthNoteP">한 달 출석이면 300P입니다.</p>
                 </div>
             </section>
         </div>
+        <section class="card points-earn" aria-labelledby="earn-title">
+            <h3 class="card-title" id="earn-title"><span data-i18n="s5.earn.h">포인트 모으기</span><small id="point-note" data-i18n="s5.pointsNote">로그인한 회원만 씁니다</small></h3>
+            <div class="card-body">
+                <ul class="earn-list">
+                    <li data-i18n-html="s5.earn.join"><b>가입</b> 50P (처음 한 번)</li>
+                    <li data-i18n-html="s5.earn.attend"><b>출석</b> 하루 10P (그날 처음 들어올 때)</li>
+                    <li data-i18n-html="s5.earn.react"><b>반응</b> 카드에 남긴 반응 하나에 2P</li>
+                    <li data-i18n-html="s5.earn.hex"><a href="lottohex.html">LottoHex</a> 판매점 다녀온 곳 인증 10P(하루 50P까지) · 블록 점령 · 분기 순위</li>
+                </ul>
+                <p class="card-note" data-i18n="s5.earn.note">포인트를 써도 랭킹 점수는 그대로입니다. 포인트는 돈으로 살 수 없고 현금으로 바꿀 수 없습니다.</p>
+            </div>
+        </section>
         <p class="license-status plans-status" id="plans-status" role="status" aria-live="polite"></p>
 
         <section class="card checkout" id="checkout" hidden aria-labelledby="checkout-title">
@@ -277,7 +274,7 @@
 <script src="js/license.js?v=e4775149"></script>
 <script src="js/premium-config.js?v=ca702ca6"></script>
 <script src="js/seller.js?v=6da20494"></script>
-<script src="js/premium.js?v=a7cb9032"></script>
+<script src="js/premium.js?v=f44689c1"></script>
 <script src="js/draw-countdown.js?v=08472ba7" defer></script>
 </body>
 </html>

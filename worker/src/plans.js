@@ -16,6 +16,12 @@ export const BASE_PLANS = {
     lifetime: { name: '평생 이용권',    amount: 12900, days: 0 },
 };
 
+// 현금 판매(계좌이체 · 카드) 스위치(2026-11-24 사장님 — "사람들이 잘 사지 않고, 비전(광고 수익을 블록 주인과 나눔)과 부딪칠 수 있다,
+// 로그인도 늘게 포인트로"). 기본은 꺼짐: 결제 페이지에 현금 이용권이 나오지 않고 주문은 sales_closed, 입금 알림 지킴이도 쉰다.
+// 이용권은 포인트로 연다(POINTS.dayPass · roundPass · monthPass, community.js). 이미 판 키(평생 포함)는 그대로 열린다.
+// 다시 팔려면 Worker 변수 CASH_SALES=on(아래 가격 · 주문 · 입금 확인 코드는 그대로 남아 있다).
+export const cashSalesOn = env => String((env && env.CASH_SALES) || '').toLowerCase() === 'on';
+
 export function plansFor(env) {
     let override = {};
     if (env && env.PRICES) {

@@ -37,7 +37,7 @@ Whoever has visited the most retailers in a block holds it. On a tie, whoever vi
 - Block points: 0.1 pts a day for each block you hold, counted just after midnight each day from the blocks held then (operators excluded).
 - Blocks are never cleared. At the start of each quarter (1 January, April, July and October) the Map ranking at that moment is finalised and kept.
 - Quarterly rewards: 1st 1,000 · 2nd 500 · 3rd 300 · 4th–10th 100 pts (operators excluded).
-- Spend points on a new block skin (30 pts) or a 1-day pass (300 pts). Points cannot be exchanged for cash.
+- Spend points on a new block skin (30 pts) or a pass for the [last five months of statistics](/statistics.html) (1 day 30 · single draw 70 · 30 days 300 pts). Points cannot be exchanged for cash.
 
 {{figure lottohex-rank}}
 

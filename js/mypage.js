@@ -461,7 +461,8 @@
             rankLine,
             row(tr('my.days', '출석'), tr('my.daysN', '{n}일', { n: num(sc.days) })),
             row(tr('my.reacts', '남긴 반응'), tr('my.reactsN', '♥ {h} · $ {d} · ₩ {w}', counts)),
-            row(tr('my.buy', '이용권 포인트'), tr('my.ptsN', '{n}P', { n: num(sc.buy) })),
+            sc.join ? row(tr('my.join', '가입 축하'), tr('my.ptsN', '{n}P', { n: num(sc.join) })) : null,   // 2026-11-24 — 새로 가입한 회원 한 번
+            sc.buy ? row(tr('my.buy', '이용권 포인트'), tr('my.ptsN', '{n}P', { n: num(sc.buy) })) : null,   // 2026-11-24 전에 산 이용권(현금 판매를 마침)
             sc.verified ? row(tr('my.verified', '다녀온 곳 인증'), tr('my.verifiedN', '{n}번 · {p}P', { n: num(sc.verified), p: num(sc.verified * 10) })) : null,
             sc.hex ? row(tr('my.hex', 'LottoHex 보상'), tr('my.ptsN', '{n}P', { n: num(sc.hex) })) : null,
             sc.hold ? row(tr('my.hold', 'LottoHex 점령'), tr('my.ptsN', '{n}P', { n: num(sc.hold) })) : null,   // 2026-11-12 — 차지한 칸 하나에 하루 0.1
