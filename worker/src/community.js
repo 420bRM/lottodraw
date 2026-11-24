@@ -87,7 +87,7 @@ const gameKey = n => n.join(',');
 export const REACT_TYPES = ['h', 'd', 'w'];   // ♥ 좋아요, $ 대박 기원, ₩ 원화
 
 // 랭킹 점수. 바꾸려면 여기만 고친다(이용약관 7조 문구도 같이).
-export const POINTS = { attend: 10, react: 2, buyPer100: 10, nickChange: 500, dayPass: 300, visitColor: 30, terrSkin: 30, terrBeam: 300, visit: 10, visitDaily: 50, terrRank: [1000, 500, 300, 100, 100, 100, 100, 100, 100, 100], terrHold: 0.1 };   // buyPer100: 이용권 100원마다 몇 점, nickChange: 별명 바꾸기에 쓰는 포인트, dayPass: 1일 이용권을 여는 포인트, visitColor: 다녀온 곳 색 하나를 여는 포인트, terrSkin: 영역 칸 모양 바꾸기 한 번, terrBeam: 영역 빛 벽 사기(한 번 사면 계속 — 켜고 끄기는 무료), terrHold: LottoHex 점령 점수 — 지금 차지한 칸 하나에 하루 몇 점(terrHoldPay)
+export const POINTS = { attend: 10, react: 2, buyPer100: 10, nickChange: 500, dayPass: 30, roundPass: 70, monthPass: 300, join: 50, visitColor: 30, terrSkin: 30, terrBeam: 300, visit: 10, visitDaily: 50, terrRank: [1000, 500, 300, 100, 100, 100, 100, 100, 100, 100], terrHold: 0.1 };   // buyPer100: 이용권 100원마다 몇 점(현금 판매는 2026-11-24에 마침 — 그 전에 산 몫), nickChange: 별명 바꾸기에 쓰는 포인트, dayPass · roundPass · monthPass: 1일 · 이번 회차 · 30일 이용권을 여는 포인트(2026-11-24 사장님 — 300 → 30, 회차 · 30일 새로), join: 새로 가입하면 한 번(2026-11-24, user.jb), visitColor: 다녀온 곳 색 하나를 여는 포인트, terrSkin: 영역 칸 모양 바꾸기 한 번, terrBeam: 영역 빛 벽 사기(한 번 사면 계속 — 켜고 끄기는 무료), terrHold: LottoHex 점령 점수 — 지금 차지한 칸 하나에 하루 몇 점(terrHoldPay)
 // 채팅 점수 — 공지하지 않는 규칙이라 POINTS(회원에게 내려 보내는 값)와 따로 둔다.
 // per: 메시지 하나에 몇 점, daily: 하루에 점수를 받는 메시지 수 상한(50개 = 5점)
 export const CHAT_POINTS = { per: 0.1, daily: 50 };
@@ -131,9 +131,10 @@ export function score(user) {
     const hex = (user.trw && user.trw.pts) || 0;            // LottoHex 분기 확정 순위 보상(POINTS.terrRank) 합계
     const ms = milestonePoints(user.ach);                     // 마일스톤 단계 보상(titles.js, 2026-11-09)
     const hold = (user.thp && user.thp.pts) || 0;             // LottoHex 점령 점수(2026-11-12) — 차지한 칸 하나에 하루 POINTS.terrHold(terrHoldPay)
-    const total = tenth(days * POINTS.attend + reacts * POINTS.react + buy + chats * CHAT_POINTS.per + comments * COMMENT_POINTS.per + verified * POINTS.visit + hex + ms + hold);
+    const join = user.jb || 0;                                // 가입 축하(2026-11-24 사장님 — "맛보기로 하루 써 볼 수 있게") — 그날부터 새로 가입한 회원만, 받은 값 그대로
+    const total = tenth(days * POINTS.attend + reacts * POINTS.react + buy + chats * CHAT_POINTS.per + comments * COMMENT_POINTS.per + verified * POINTS.visit + hex + ms + hold + join);
     const spent = user.spent || 0;
-    return { total, days, reacts, buy, chats, comments, verified, hex, ms, hold, spent, avail: tenth(total - spent) };
+    return { total, days, reacts, buy, chats, comments, verified, hex, ms, hold, join, spent, avail: tenth(total - spent) };
 }
 
 // 다녀온 곳 인증 포인트(2026-11-09 사장님): 위치로 인증한 방문 한 번에 POINTS.visit, 같은 판매점은 하루 한 번, 하루 POINTS.visitDaily 까지.
@@ -474,7 +475,7 @@ const OPS = {
         let user = await this.storage.get('u:' + sub);
         const isNew = !user;
         if (!user) {
-            user = { sub, email, createdAt: now, lastAt: now, trial: null, rx: {}, sess: [] };
+            user = { sub, email, createdAt: now, lastAt: now, trial: null, rx: {}, sess: [], jb: POINTS.join };   // jb: 가입 축하 포인트(2026-11-24)
             await this.queueNick(user, now);
             if (trial) {
                 const used = await this.storage.get('t:' + subHash);
@@ -919,16 +920,16 @@ const OPS = {
     },
 
     // 로그인한 채 산 이용권: 결제되면 +금액, 환불되면 -금액 (랭킹 점수용)
-    // 포인트로 1일 이용권(2026-10-21). 쓸 수 있는 포인트(total - spent)에서 POINTS.dayPass 를 쓴다 — 랭킹 점수는 그대로.
-    // 포인트로 연 이용권이 아직 살아 있으면 쓰지 않는다(두 번 눌러 포인트만 나가는 것을 막는다). 키는 index.js 가 발급해 setPointPass 로 붙이고,
-    // 발급이 실패하면 refundPointPass 로 돌려준다
-    async spendForPass({ sub, now }) {
+    // 포인트로 이용권(2026-10-21 1일, 2026-11-24 이번 회차 · 30일 — 현금 판매를 마치며). 쓸 수 있는 포인트(total - spent)에서 쓴다 — 랭킹 점수는 그대로.
+    // 포인트로 연 이용권이 새로 열 것보다 1시간 넘게 짧지 않으면 쓰지 않는다(두 번 눌러 포인트만 나가는 것을 막는다). 더 길게 여는 것(1일 → 30일)은 된다.
+    // until: 새로 열 이용권이 끝나는 때(ms, index.js 가 셈). 키는 index.js 가 발급해 setPointPass 로 붙이고, 발급이 실패하면 refundPointPass 로 돌려준다
+    async spendForPass({ sub, now, plan, until }) {
         const user = await this.storage.get('u:' + sub);
         if (!user) return { error: 'no_user' };
         const p = user.ppass;
-        if (p && p.expiresAt > now) return { error: 'active', expiresAt: p.expiresAt };
+        if (p && p.expiresAt > now && p.expiresAt + 3600 * 1000 >= (until || 0)) return { error: 'active', expiresAt: p.expiresAt };   // 1시간 넘게 더 길어질 때만 새로
         if (p && p.pending && now - p.at < 60 * 1000) return { error: 'busy' };
-        const cost = POINTS.dayPass;
+        const cost = plan === 'round' ? POINTS.roundPass : plan === 'month' ? POINTS.monthPass : POINTS.dayPass;
         const avail = score(user).avail;
         if (avail < cost) return { error: 'need_points', cost, avail };
         spend(user, 'pass', cost, now);

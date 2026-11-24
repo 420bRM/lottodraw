@@ -25,7 +25,7 @@
 // 비밀값과 설정은 README "4. 유료화" 와 worker/wrangler.toml 참고.
 
 import { generateKeyPair, importPrivate, importPublic, signKey, verifyKey, parseKey, hex32, publicOnly, keyId, b64urlEncode } from './keys.js';
-import { plansFor, roundEndsAt } from './plans.js';
+import { plansFor, roundEndsAt, cashSalesOn } from './plans.js';
 import { community, SESSION_DAYS, REACT_TYPES, ITEM_RE, POINTS, COMMENT, TAP_KINDS, AD_RE, capText, GENLOG } from './community.js';
 import { verifyGoogleToken } from './google.js';
 import { saleRound, cleanGame, rankOf, kstParts, drawDay } from './lotto.js';
@@ -195,6 +195,7 @@ function bankInfo(env) {
 
 // 판매하는 이용권만(1주 이용권은 이번 회차 이용권으로 바뀌어 팔지 않는다 — plans.js)
 function publicPlans(env) {
+    if (!cashSalesOn(env)) return {};   // 현금 판매를 마침(2026-11-24) — 포인트로 연다
     const plans = plansFor(env);
     const out = {};
     Object.keys(plans).forEach(id => { if (plans[id].sale !== false) out[id] = { amount: plans[id].amount, days: plans[id].days }; });
@@ -209,8 +210,10 @@ async function payTap(env, kind) {
 
 async function getConfig(request, env) {
     return json(request, env, {
-        methods: methodsOf(env),
+        methods: cashSalesOn(env) ? methodsOf(env) : { bank: false, payapp: false },
         plans: publicPlans(env),
+        sales: cashSalesOn(env),                                                                   // 현금 판매(2026-11-24부터 꺼짐)
+        pointPlans: { day: POINTS.dayPass, round: POINTS.roundPass, month: POINTS.monthPass },   // 포인트로 여는 이용권(로그인 전에도 값을 보인다)
         depositHours: DEPOSIT_HOURS,
         // 입금 알림 연결이 살아 있으면 계좌이체도 몇 분 안에 저절로 열린다. 화면 안내 문구가 이걸 따른다.
         autoConfirm: await hookAlive(env),
@@ -238,6 +241,7 @@ async function createOrder(request, env, ctx, url) {
         const { success } = await env.ORDER_LIMIT.limit({ key: ip });
         if (!success) throw new HttpError(429, 'too_many', '주문이 너무 잦습니다. 1분 뒤 다시 시도해 주세요.');
     }
+    if (!cashSalesOn(env)) throw new HttpError(410, 'sales_closed', '이용권 판매를 마쳤습니다. 로그인하고 포인트로 열어 주세요.');
     const body = await readJson(request);
     const plans = plansFor(env);
     if (!has(plans, body.plan) || plans[body.plan].sale === false) throw new HttpError(400, 'bad_plan', '이용권 종류가 올바르지 않습니다.');
@@ -590,6 +594,7 @@ function amountsIn(s) {
 
 /* ───── 지킴이 (한 시간마다) ───── */
 async function watchdog(env) {
+    if (!cashSalesOn(env)) return;   // 현금 판매를 마친 동안(2026-11-24)은 휴대폰 입금 알림 연결이 필요 없다
     if (!(await hookSecrets(env)).length) return;
     const h = await env.DB.get('meta:hook', 'json');
     if (!h || !h.lastAt) return;   // 아직 한 번도 연결된 적이 없으면 조용히 있는다
@@ -706,20 +711,26 @@ async function googleLogin(request, env, ctx) {
     return json(request, env, { session: token, user, isNew: r.isNew, trialNew, attended: !!r.attended, points: POINTS }, 200);
 }
 
-// 포인트로 1일 이용권(2026-10-21): 로그인 회원이 모은 포인트(POINTS.dayPass)로 24시간 키를 받는다. 랭킹 점수는 그대로, 쓸 수 있는 포인트만 준다.
+// 포인트로 이용권(2026-10-21 1일, 2026-11-24 이번 회차 · 30일): 로그인 회원이 모은 포인트로 키를 받는다. 랭킹 점수는 그대로, 쓸 수 있는 포인트만 준다.
+// body.plan: 'day'(POINTS.dayPass · 24시간 · 키 종류 pday) · 'round'(roundPass · 판매 중인 회차 토요일 밤 12시까지 · 키 종류 round) · 'month'(monthPass · 30일 · 키 종류 month)
 // 키는 무료 체험처럼 주문으로 남긴다(관리자 주문 목록 · 정지 · 조회가 같은 길, 0원, 메일 없음, 이메일은 주문에 적지 않는다).
 // 포인트를 먼저 쓰고 발급하며, 발급이 실패하면 포인트를 돌려준다
 async function pointPass(request, env, ctx) {
     const s = await sessionUser(request, env);
     await limited(env.REACT_LIMIT, s.hash);
     const now = Date.now();
-    const r = await community(env, 'spendForPass', { sub: s.sub, now });
-    if (r.error === 'need_points') throw new HttpError(402, 'need_points', `포인트가 모자랍니다. 1일 이용권은 ${r.cost}포인트입니다. (지금 ${r.avail}포인트)`);
-    if (r.error === 'active') throw new HttpError(409, 'active', '포인트로 연 이용권이 아직 남아 있습니다.');
+    const body = await readJson(request).catch(() => ({}));
+    const plan = ['day', 'round', 'month'].includes(body && body.plan) ? body.plan : 'day';
+    const PASS = { day: { code: 'pday', name: '1일 이용권(포인트)', label: '1일 이용권', until: now + 86400 * 1000 },
+        round: { code: 'round', name: '이번 회차 이용권(포인트)', label: '이번 회차 이용권', until: roundEndsAt(now) },
+        month: { code: 'month', name: '30일 이용권(포인트)', label: '30일 이용권', until: now + 30 * 86400 * 1000 } }[plan];
+    const r = await community(env, 'spendForPass', { sub: s.sub, now, plan, until: PASS.until });
+    if (r.error === 'need_points') throw new HttpError(402, 'need_points', `포인트가 모자랍니다. ${PASS.label}은 ${r.cost}포인트입니다. (지금 ${r.avail}포인트)`);
+    if (r.error === 'active') throw new HttpError(409, 'active', '포인트로 연 이용권이 이보다 늦게 끝납니다. 끝난 뒤에 다시 열어 주세요.');
     if (r.error === 'busy') throw new HttpError(409, 'busy', '처리하고 있습니다. 잠시 뒤 다시 확인해 주세요.');
     if (r.error) throw new HttpError(401, 'need_login', '다시 로그인해 주세요.');
     const order = {
-        id: await freshId(env), tokenHash: '', plan: 'pday', planName: '1일 이용권(포인트)',
+        id: await freshId(env), tokenHash: '', plan: PASS.code, planName: PASS.name,
         listPrice: 0, amount: 0, method: 'points', name: '포인트', contact: '', memberRef: await memberRef(s.sub),
         status: 'pending', createdAt: now, deadline: now, log: [{ at: now, what: 'created', by: 'points' }],
     };

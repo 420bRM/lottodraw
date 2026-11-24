@@ -59,7 +59,10 @@ async function main() {
     }
     const cfg = await call('GET', '/api/config');
     if (!step(cfg.status === 200, `서버 응답 (${API})`)) return;
-    step(cfg.data.methods.bank, '계좌이체 주문 열림 (BANK_NAME·BANK_ACCOUNT·BANK_HOLDER)');
+    // 현금 판매를 마친 동안(2026-11-24 — 이용권은 포인트로)은 계좌이체 주문이 닫혀 있는 것이 정상이다. 아래 점검 주문은 관리자 길로 만들어
+    // 키 서명 · 조회 · 정지(이미 판 키와 포인트로 연 키가 쓰는 같은 길)를 그대로 확인한다.
+    if (cfg.data.sales === false) console.log('· 현금 판매 꺼짐(CASH_SALES) — 이용권은 포인트로 연다. 키 발급 · 정지 길만 점검');
+    else step(cfg.data.methods.bank, '계좌이체 주문 열림 (BANK_NAME·BANK_ACCOUNT·BANK_HOLDER)');
 
     let st = await call('GET', '/api/admin/status', { headers: asAdmin });
     if (!step(st.status === 200, '관리자 토큰 확인')) return;
@@ -90,7 +93,8 @@ async function main() {
     const hookKey = sec.data && sec.data.secret;
     step(!!hookKey, '입금 알림 연결 열쇠 있음');
     const hs = st.data.hooks && st.data.hooks.state;
-    if (hs && hs.lastAt) {
+    if (cfg.data.sales === false) { /* 휴대폰 입금 알림 연결은 현금 판매 때만 필요 */ }
+    else if (hs && hs.lastAt) {
         const h = Math.floor((Date.now() - hs.lastAt) / 3600000);
         console.log(`  ${st.data.hooks.alive ? '·' : '⚠'} 휴대폰 알림 연결: 마지막 신호 ${h}시간 전${st.data.hooks.alive ? '' : ' — 끊긴 것 같습니다 (지킴이가 따로 알립니다)'}`);
     } else {

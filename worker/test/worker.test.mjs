@@ -45,6 +45,7 @@ function makeEnv(extra) {
         SITE_URL: 'https://www.lottodraw.kr',
         ALLOWED_ORIGINS: 'https://www.lottodraw.kr,https://lottodraw.kr',
         ADMIN_TOKEN: ADMIN,
+        CASH_SALES: 'on',   // 현금 판매는 2026-11-24부터 기본 꺼짐 — 남겨 둔 주문 · 입금 · 환불 코드를 계속 시험한다
         BANK_NAME: '우리은행',
         BANK_ACCOUNT: '1002-123-456789',
         BANK_HOLDER: '홍길동',

@@ -4,7 +4,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import worker, { _resetForTests, _hexMailForTests as hexMail, Community } from '../src/index.js';
-import { community } from '../src/community.js';
+import { community, POINTS } from '../src/community.js';
+POINTS.join = 0;   // 가입 축하 포인트(2026-11-24)는 community.test.mjs 에서 따로 — 여기 포인트 셈은 그 전과 같은 숫자로
 import { _resetGoogleForTests } from '../src/google.js';
 import { b64urlEncode } from '../src/keys.js';
 import { seasonOf, prevSeason, computeTerritory, defaultSkin, LEGACY_T, TERR_CONSENT, VISIT_DAILY, _resetCellsForTests } from '../src/territory.js';
