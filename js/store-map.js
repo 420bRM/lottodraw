@@ -1515,7 +1515,7 @@
         drawTerr();
         if (hexMobile()) setSheet(sheetSnap);
         if (blockWant) { const k = blockWant; blockWant = null; goCell(k); }   // ?block= · 검색창의 블록 번호
-        else if (!flyMine() && map.getZoom() < 10) map.flyTo({ center: map.getCenter(), zoom: 11.5, essential: true });   // 전국을 보고 있으면 칸이 보이는 크기로
+        else if (!flyMine() && map.getZoom() < 11) map.flyTo({ center: map.getCenter(), zoom: map.getZoom() < 10 ? 11.5 : 11.2, essential: true });   // 멀리서 보고 있으면 칸 주인 이름이 보이는 크기로(이름은 줌 11부터 — 2026-11-25: 판매점 지도 첫 화면 10.8 에서 LottoHex 로 바꿀 때도)
         askJoin();
     }
     // LottoHex 에 들어왔을 때 아직 참여 전이면 참여 창을 바로 띄운다(2026-11-09 사장님 — 휴대폰에서 아래 판을 올려야 "참여하기"가 보였다).
@@ -3452,6 +3452,10 @@
             // 가운데 126.985 · 37.534, 줌 10.8). 폭이 다르면 같은 넓이가 보이게 줌만 폭에 맞춘다. "적게 나온 곳 흐리게"는 0(모두 — 같은 날 사장님, 예전엔 1등 10회 이상)
             if (byArea) { /* 지역 공유 링크는 그 지역 화면 그대로, 흐리게 막대도 0 */ }
             else if (!fromLink && isWide()) map.jumpTo({ center: [126.985, 37.538], zoom: 12.9, padding: pad() });
+            // 휴대폰 LottoHex(lottohex.html · ?mode=hex — 배너 · 검색으로 처음 오는 사람, 2026-11-25 사장님 — "너무 멀리서 보여 주니까 이게 뭐지? 하다가 나갈 것 같다"):
+            // 칸 주인 이름(terr-name, 줌 11부터)이 보이는 크기로 — 캡처대로 종로구가 위 · 동작구가 아래 · 한강이 가운데, 축척 2km, 폭 412px 기준 가운데 126.967 · 37.552, 줌 11.2.
+            // 내 칸이 있는 회원은 전처럼 내 칸으로 간다(initTerr 의 flyMine). 판매점 지도(store-map.html)는 그대로 10.8
+            else if (!fromLink && (root.dataset.hex || new URLSearchParams(location.search).get('mode') === 'hex')) map.jumpTo({ center: [126.967, 37.552], zoom: Math.max(11, 11.2 + Math.log2(Math.max(300, mapBox.clientWidth) / 412)) });   // 좁은 휴대폰(360px 밑)도 이름이 보이는 줌 11 밑으로는 내려가지 않는다
             else if (!fromLink) map.jumpTo({ center: [126.985, 37.534], zoom: 10.8 + Math.log2(Math.max(300, mapBox.clientWidth) / 412) });
             if (fromLink && map.getPitch() > 5) { const d3 = document.getElementById('sm-3d'); d3.setAttribute('aria-pressed', 'true'); d3.textContent = '2D'; }   // 기울어진 화면 링크
             // ?block=경기-0421(블록 공유 · 인스타그램 소식): LottoHex 를 켜고 그 블록을 연다
